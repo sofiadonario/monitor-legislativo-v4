@@ -1,0 +1,518 @@
+# Service Mesh Configuration for Legislative Monitor
+# Using Istio for service mesh capabilities
+
+---
+# Namespace for the application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitor-legislativo
+  labels:
+    istio-injection: enabled
+    app: monitor-legislativo
+
+---
+# Gateway for external traffic
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: monitor-legislativo-gateway
+  namespace: monitor-legislativo
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "monitor-legislativo.local"
+    - "api.monitor-legislativo.local"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: monitor-legislativo-tls
+    hosts:
+    - "monitor-legislativo.local"
+    - "api.monitor-legislativo.local"
+
+---
+# Virtual Service for traffic routing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: monitor-legislativo-vs
+  namespace: monitor-legislativo
+spec:
+  hosts:
+  - "monitor-legislativo.local"
+  - "api.monitor-legislativo.local"
+  gateways:
+  - monitor-legislativo-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/
+    route:
+    - destination:
+        host: api-service
+        port:
+          number: 8000
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+  - match:
+    - uri:
+        prefix: /metrics
+    route:
+    - destination:
+        host: monitoring-service
+        port:
+          number: 9090
+  - match:
+    - uri:
+        prefix: /health
+    route:
+    - destination:
+        host: health-service
+        port:
+          number: 8080
+  - route:
+    - destination:
+        host: web-service
+        port:
+          number: 3000
+
+---
+# Destination Rules for load balancing and circuit breaking
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-service-dr
+  namespace: monitor-legislativo
+spec:
+  host: api-service
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_CONN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+        connectTimeout: 30s
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 10
+        maxRetries: 3
+        consecutiveGatewayErrors: 5
+        interval: 30s
+        baseEjectionTime: 30s
+    circuitBreaker:
+      consecutiveGatewayErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+
+---
+# API Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-service
+  namespace: monitor-legislativo
+  labels:
+    app: api-service
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-service
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: api-service
+        version: v1
+      annotations:
+        sidecar.istio.io/inject: "true"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: api-service
+        image: monitor-legislativo/api:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: monitor-legislativo
+  labels:
+    app: api-service
+spec:
+  selector:
+    app: api-service
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  type: ClusterIP
+
+---
+# Web Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-service
+  namespace: monitor-legislativo
+  labels:
+    app: web-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-service
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: web-service
+        version: v1
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+      - name: web-service
+        image: monitor-legislativo/web:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: API_URL
+          value: "http://api-service:8000"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
+---
+# Web Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+  namespace: monitor-legislativo
+  labels:
+    app: web-service
+spec:
+  selector:
+    app: web-service
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+  type: ClusterIP
+
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-service
+  namespace: monitor-legislativo
+  labels:
+    app: redis-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-service
+  template:
+    metadata:
+      labels:
+        app: redis-service
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command:
+        - redis-server
+        - --appendonly yes
+        - --maxmemory 256mb
+        - --maxmemory-policy allkeys-lru
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
+
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: monitor-legislativo
+  labels:
+    app: redis-service
+spec:
+  selector:
+    app: redis-service
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  type: ClusterIP
+
+---
+# Redis PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: monitor-legislativo
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: fast-ssd
+
+---
+# Security Policy - PeerAuthentication
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: monitor-legislativo
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# Authorization Policy for API access
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: api-access-policy
+  namespace: monitor-legislativo
+spec:
+  selector:
+    matchLabels:
+      app: api-service
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/monitor-legislativo/sa/web-service"]
+  - to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/*"]
+  - when:
+    - key: request.headers[x-api-key]
+      values: ["*"]
+
+---
+# Rate Limiting Policy
+apiVersion: networking.istio.io/v1beta1
+kind: EnvoyFilter
+metadata:
+  name: rate-limit-filter
+  namespace: monitor-legislativo
+spec:
+  workloadSelector:
+    labels:
+      app: api-service
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+          type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          value:
+            stat_prefix: rate_limiter
+            token_bucket:
+              max_tokens: 100
+              tokens_per_fill: 100
+              fill_interval: 60s
+            filter_enabled:
+              runtime_key: rate_limit_enabled
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: rate_limit_enforced
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+
+---
+# Service Monitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: monitor-legislativo-metrics
+  namespace: monitor-legislativo
+  labels:
+    app: monitor-legislativo
+spec:
+  selector:
+    matchLabels:
+      app: api-service
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+# Telemetry v2 Configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: metrics-config
+  namespace: monitor-legislativo
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        destination_service_name:
+          value: "monitor-legislativo"
+        source_app:
+          value: "monitor-legislativo"
+
+---
+# Distributed Tracing Configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: tracing-config
+  namespace: monitor-legislativo
+spec:
+  tracing:
+  - providers:
+    - name: jaeger
+  - customTags:
+      user_id:
+        header:
+          name: x-user-id
+      request_id:
+        header:
+          name: x-request-id
+
+---
+# Network Policy for additional security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitor-legislativo-netpol
+  namespace: monitor-legislativo
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+  - from:
+    - podSelector: {}
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+  - to:
+    - podSelector: {}
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

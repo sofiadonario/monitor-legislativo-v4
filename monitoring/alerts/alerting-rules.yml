@@ -1,0 +1,201 @@
+groups:
+- name: monitor-legislativo-critical
+  rules:
+  - alert: ServiceDown
+    expr: up{job=~"api-service|web-service"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: "{{ $labels.job }}"
+    annotations:
+      summary: "Service {{ $labels.job }} is down"
+      description: "Service {{ $labels.job }} has been down for more than 1 minute"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/service-down"
+
+  - alert: HighErrorRate
+    expr: rate(flask_http_request_exceptions_total[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High error rate detected"
+      description: "Error rate is {{ $value }} errors per second over the last 5 minutes"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/high-error-rate"
+
+  - alert: DatabaseConnectionFailure
+    expr: increase(database_connection_errors_total[5m]) > 5
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Database connection failures"
+      description: "Multiple database connection failures detected: {{ $value }} failures in 5 minutes"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/database-issues"
+
+  - alert: PodCrashLooping
+    expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Pod is crash looping"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/pod-crash-loop"
+
+- name: monitor-legislativo-warning
+  rules:
+  - alert: HighMemoryUsage
+    expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage"
+      description: "Memory usage is above 90% for container {{ $labels.container }} in pod {{ $labels.pod }}"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/high-memory"
+
+  - alert: HighCPUUsage
+    expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage"
+      description: "CPU usage is above 80% for container {{ $labels.container }} in pod {{ $labels.pod }}"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/high-cpu"
+
+  - alert: SlowResponseTime
+    expr: histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m])) > 2
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Slow response times"
+      description: "95th percentile response time is {{ $value }}s"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/slow-response"
+
+  - alert: LowCacheHitRate
+    expr: cache_hits_total / (cache_hits_total + cache_misses_total) < 0.7
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Low cache hit rate"
+      description: "Cache hit rate is {{ $value | humanizePercentage }}"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/cache-performance"
+
+  - alert: ExternalAPIHighLatency
+    expr: external_api_request_duration_seconds > 10
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "External API high latency"
+      description: "External API {{ $labels.service }} response time is {{ $value }}s"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/external-api-latency"
+
+  - alert: SearchPerformanceDegraded
+    expr: histogram_quantile(0.95, rate(search_request_duration_seconds_bucket[5m])) > 5
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Search performance degraded"
+      description: "95th percentile search time is {{ $value }}s"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/search-performance"
+
+- name: monitor-legislativo-info
+  rules:
+  - alert: HighDiskUsage
+    expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes > 0.85
+    for: 30m
+    labels:
+      severity: info
+    annotations:
+      summary: "High disk usage"
+      description: "Disk usage is above 85% on {{ $labels.device }}"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/disk-usage"
+
+  - alert: UnusuallyHighTraffic
+    expr: rate(flask_http_request_total[5m]) > 100
+    for: 15m
+    labels:
+      severity: info
+    annotations:
+      summary: "Unusually high traffic"
+      description: "Request rate is {{ $value }} requests/second"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/high-traffic"
+
+  - alert: NewErrorPattern
+    expr: increase(error_patterns_new_total[1h]) > 0
+    for: 0m
+    labels:
+      severity: info
+    annotations:
+      summary: "New error pattern detected"
+      description: "{{ $value }} new error patterns detected in the last hour"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/error-patterns"
+
+- name: monitor-legislativo-business
+  rules:
+  - alert: DocumentProcessingStalled
+    expr: rate(documents_processed_total[10m]) == 0
+    for: 30m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Document processing has stalled"
+      description: "No documents have been processed in the last 30 minutes"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/document-processing"
+
+  - alert: SearchVolumeSpike
+    expr: rate(search_requests_total[5m]) > 10 * rate(search_requests_total[1h] offset 1h)
+    for: 10m
+    labels:
+      severity: info
+    annotations:
+      summary: "Search volume spike detected"
+      description: "Search volume is {{ $value }}x higher than usual"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/search-spike"
+
+  - alert: ExportJobsBacklog
+    expr: export_jobs_queued > 50
+    for: 20m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Export jobs backlog building up"
+      description: "{{ $value }} export jobs are queued"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/export-backlog"
+
+- name: monitor-legislativo-security
+  rules:
+  - alert: SecurityEventSpike
+    expr: rate(security_events_total[5m]) > 0.5
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Security event spike detected"
+      description: "Security events rate is {{ $value }} events/second"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/security-events"
+
+  - alert: FailedLoginAttempts
+    expr: increase(authentication_failures_total[5m]) > 10
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High number of failed login attempts"
+      description: "{{ $value }} failed login attempts in 5 minutes"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/failed-logins"
+
+  - alert: RateLimitingTriggered
+    expr: increase(rate_limit_exceeded_total[5m]) > 100
+    for: 5m
+    labels:
+      severity: info
+    annotations:
+      summary: "Rate limiting frequently triggered"
+      description: "Rate limiting triggered {{ $value }} times in 5 minutes"
+      runbook_url: "https://docs.monitor-legislativo.gov.br/runbooks/rate-limiting"

@@ -1,0 +1,105 @@
+{
+  "timestamp": "2025-01-30T10:15:00",
+  "summary": {
+    "total_vulnerabilities": 47,
+    "high_severity": 12,
+    "medium_severity": 23,
+    "low_severity": 12
+  },
+  "vulnerabilities": [
+    {
+      "tool": "secrets_scanner",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "file": "core/config/config.py",
+      "line": 15,
+      "issue": "Hardcoded API key",
+      "cwe": "CWE-798"
+    },
+    {
+      "tool": "secrets_scanner",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "file": "core/api/camara_service.py",
+      "line": 23,
+      "issue": "Hardcoded password",
+      "cwe": "CWE-798"
+    },
+    {
+      "tool": "api_scanner",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "file": "core/api/base_service.py",
+      "line": 45,
+      "issue": "SSL verification disabled",
+      "cwe": "CWE-295"
+    },
+    {
+      "tool": "bandit",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "file": "web/api/routes.py",
+      "line": 128,
+      "issue": "Command injection risk",
+      "cwe": "CWE-78"
+    },
+    {
+      "tool": "safety",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "file": "requirements.txt",
+      "line": 0,
+      "issue": "Flask 2.0.1 - Known security vulnerability CVE-2023-30861",
+      "cwe": "CVE-2023-30861"
+    },
+    {
+      "tool": "api_scanner",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "file": "web/main.py",
+      "line": 10,
+      "issue": "Debug mode enabled",
+      "cwe": "CWE-489"
+    },
+    {
+      "tool": "bandit",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "file": "core/utils/export_service.py",
+      "line": 67,
+      "issue": "Use of eval()",
+      "cwe": "CWE-95"
+    },
+    {
+      "tool": "api_scanner",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "file": "web/api/gateway.py",
+      "line": 34,
+      "issue": "Mixed HTTP methods without CSRF protection",
+      "cwe": "CWE-352"
+    }
+  ],
+  "recommendations": [
+    "⚠️  Fix 12 HIGH severity issues immediately",
+    "Implement secrets management using environment variables or vault",
+    "Enable SSL certificate verification for all external API calls",
+    "Add input validation and sanitization for all user inputs",
+    "Implement rate limiting on all API endpoints",
+    "Add authentication and authorization middleware",
+    "Enable CORS with specific allowed origins",
+    "Implement request/response logging with PII filtering",
+    "Add security headers (CSP, HSTS, X-Frame-Options)",
+    "Regular dependency updates and vulnerability scanning"
+  ],
+  "compliance_checklist": {
+    "authentication": false,
+    "authorization": false,
+    "data_encryption": false,
+    "input_validation": false,
+    "error_handling": false,
+    "logging_monitoring": true,
+    "secure_configuration": false,
+    "dependency_management": false
+  }
+}

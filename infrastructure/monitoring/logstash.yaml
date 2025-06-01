@@ -1,0 +1,309 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: monitor-legislativo
+  labels:
+    app: logstash
+    component: logging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+        component: logging
+    spec:
+      containers:
+      - name: logstash
+        image: docker.elastic.co/logstash/logstash:8.11.0
+        ports:
+        - containerPort: 5044
+          name: beats
+        - containerPort: 9600
+          name: http
+        env:
+        - name: LS_JAVA_OPTS
+          value: "-Xmx2g -Xms2g"
+        - name: ELASTICSEARCH_HOSTS
+          value: "https://elasticsearch:9200"
+        - name: ELASTICSEARCH_USERNAME
+          value: "elastic"
+        - name: ELASTICSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: elasticsearch-credentials
+              key: password
+        resources:
+          requests:
+            memory: 3Gi
+            cpu: 1000m
+          limits:
+            memory: 4Gi
+            cpu: 2000m
+        volumeMounts:
+        - name: logstash-config
+          mountPath: /usr/share/logstash/config/logstash.yml
+          subPath: logstash.yml
+        - name: logstash-pipeline
+          mountPath: /usr/share/logstash/pipeline/
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 9600
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9600
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: logstash-config
+        configMap:
+          name: logstash-config
+      - name: logstash-pipeline
+        configMap:
+          name: logstash-pipeline
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash
+  namespace: monitor-legislativo
+  labels:
+    app: logstash
+spec:
+  selector:
+    app: logstash
+  ports:
+  - name: beats
+    port: 5044
+    targetPort: 5044
+  - name: http
+    port: 9600
+    targetPort: 9600
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: monitor-legislativo
+data:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    path.config: /usr/share/logstash/pipeline
+    
+    # Monitoring
+    xpack.monitoring.enabled: true
+    xpack.monitoring.elasticsearch.hosts: ["https://elasticsearch:9200"]
+    xpack.monitoring.elasticsearch.username: "elastic"
+    
+    # Performance tuning
+    pipeline.workers: 4
+    pipeline.batch.size: 1000
+    pipeline.batch.delay: 50
+    
+    # Dead letter queue
+    dead_letter_queue.enable: true
+    dead_letter_queue.max_bytes: 1024mb
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-pipeline
+  namespace: monitor-legislativo
+data:
+  main.conf: |
+    input {
+      beats {
+        port => 5044
+      }
+    }
+    
+    filter {
+      # Parse timestamp
+      date {
+        match => [ "timestamp", "ISO8601" ]
+        target => "@timestamp"
+      }
+      
+      # Add Monitor Legislativo metadata
+      mutate {
+        add_field => {
+          "project" => "Monitor Legislativo"
+          "developers" => "Sofia Pereira Medeiros Donario & Lucas Ramos Guimarães"
+          "organization" => "MackIntegridade"
+          "funding" => "MackPesquisa"
+        }
+      }
+      
+      # Parse JSON logs
+      if [message] {
+        json {
+          source => "message"
+          target => "parsed"
+        }
+      }
+      
+      # Extract log level
+      if [parsed][level] {
+        mutate {
+          add_field => { "log_level" => "%{[parsed][level]}" }
+        }
+      }
+      
+      # Extract component information
+      if [parsed][component] {
+        mutate {
+          add_field => { "component" => "%{[parsed][component]}" }
+        }
+      }
+      
+      # Extract user information for audit logs
+      if [parsed][user_id] {
+        mutate {
+          add_field => { "user_id" => "%{[parsed][user_id]}" }
+        }
+      }
+      
+      # Extract API endpoint information
+      if [parsed][endpoint] {
+        mutate {
+          add_field => { "api_endpoint" => "%{[parsed][endpoint]}" }
+        }
+      }
+      
+      # Extract response time
+      if [parsed][response_time] {
+        mutate {
+          add_field => { "response_time_ms" => "%{[parsed][response_time]}" }
+          convert => { "response_time_ms" => "integer" }
+        }
+      }
+      
+      # Extract error information
+      if [parsed][error] {
+        mutate {
+          add_field => { 
+            "error_message" => "%{[parsed][error][message]}"
+            "error_type" => "%{[parsed][error][type]}"
+          }
+        }
+      }
+      
+      # Geolocate IP addresses for security analysis
+      if [parsed][client_ip] {
+        geoip {
+          source => "[parsed][client_ip]"
+          target => "geoip"
+        }
+      }
+      
+      # Security event classification
+      if [parsed][security_event] {
+        mutate {
+          add_field => { "security_classification" => "%{[parsed][security_event]}" }
+        }
+      }
+      
+      # Performance categorization
+      if [response_time_ms] {
+        if [response_time_ms] < 100 {
+          mutate { add_field => { "performance_category" => "fast" } }
+        } else if [response_time_ms] < 1000 {
+          mutate { add_field => { "performance_category" => "normal" } }
+        } else if [response_time_ms] < 5000 {
+          mutate { add_field => { "performance_category" => "slow" } }
+        } else {
+          mutate { add_field => { "performance_category" => "very_slow" } }
+        }
+      }
+      
+      # Clean up parsed field
+      mutate {
+        remove_field => ["parsed"]
+      }
+    }
+    
+    output {
+      elasticsearch {
+        hosts => ["https://elasticsearch:9200"]
+        user => "elastic"
+        password => "${ELASTICSEARCH_PASSWORD}"
+        ssl => true
+        ssl_certificate_verification => false
+        
+        # Dynamic index naming based on log type
+        index => "monitor-legislativo-%{[component]:app}-%{+YYYY.MM.dd}"
+        
+        # Document type
+        document_type => "_doc"
+        
+        # Template for index settings
+        template_name => "monitor-legislativo"
+        template_pattern => "monitor-legislativo-*"
+        template => "/usr/share/logstash/templates/monitor-legislativo.json"
+        template_overwrite => true
+      }
+      
+      # Dead letter queue for failed documents
+      if "_grokparsefailure" in [tags] or "_jsonparsefailure" in [tags] {
+        elasticsearch {
+          hosts => ["https://elasticsearch:9200"]
+          user => "elastic"
+          password => "${ELASTICSEARCH_PASSWORD}"
+          ssl => true
+          ssl_certificate_verification => false
+          index => "monitor-legislativo-failed-%{+YYYY.MM.dd}"
+        }
+      }
+      
+      # Debug output (remove in production)
+      # stdout { codec => rubydebug }
+    }
+  
+  monitor-legislativo-template.json: |
+    {
+      "index_patterns": ["monitor-legislativo-*"],
+      "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 1,
+        "index": {
+          "lifecycle": {
+            "name": "monitor-legislativo-policy",
+            "rollover_alias": "monitor-legislativo"
+          }
+        }
+      },
+      "mappings": {
+        "properties": {
+          "@timestamp": { "type": "date" },
+          "project": { "type": "keyword" },
+          "developers": { "type": "text" },
+          "organization": { "type": "keyword" },
+          "funding": { "type": "keyword" },
+          "log_level": { "type": "keyword" },
+          "component": { "type": "keyword" },
+          "user_id": { "type": "keyword" },
+          "api_endpoint": { "type": "keyword" },
+          "response_time_ms": { "type": "integer" },
+          "performance_category": { "type": "keyword" },
+          "error_message": { "type": "text" },
+          "error_type": { "type": "keyword" },
+          "security_classification": { "type": "keyword" },
+          "geoip": {
+            "properties": {
+              "location": { "type": "geo_point" },
+              "country_name": { "type": "keyword" },
+              "city_name": { "type": "keyword" }
+            }
+          }
+        }
+      }
+    }

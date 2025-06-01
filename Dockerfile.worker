@@ -1,0 +1,40 @@
+# Dockerfile for Background Worker (Celery)
+FROM python:3.11-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -u 1000 -s /bin/bash appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY --chown=appuser:appuser . .
+
+# Create necessary directories
+RUN mkdir -p /app/data/logs /app/data/exports && \
+    chown -R appuser:appuser /app/data
+
+# Switch to non-root user
+USER appuser
+
+# Set environment variables
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    APP_ENV=production
+
+# Health check for Celery worker
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD celery -A core.tasks inspect ping || exit 1
+
+# Run Celery worker
+CMD ["celery", "-A", "core.tasks", "worker", "--loglevel=info", "--concurrency=2"]

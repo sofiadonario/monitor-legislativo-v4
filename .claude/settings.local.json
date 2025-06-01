@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(apt:*)",
+      "Bash(apt install:*)",
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(chmod:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(pip3 install:*)",
+      "Bash(py --version)",
+      "WebFetch(domain:dadosabertos.camara.leg.br)",
+      "Bash(cp:*)",
+      "Bash(find:*)",
+      "Bash(rm:*)",
+      "Bash(true)",
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(grep:*)",
+      "Bash(tree:*)",
+      "Bash(./venv/bin/python3 launch.py:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(source:*)",
+      "Bash(find:*)",
+      "Bash(pip install:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": false
+}

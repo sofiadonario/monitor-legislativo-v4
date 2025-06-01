@@ -1,0 +1,203 @@
+{
+  "colors": {
+    "primary": {
+      "50": "#FFF0F2",
+      "100": "#FFD6DB",
+      "200": "#FFB3BD",
+      "300": "#FF8A9F",
+      "400": "#FF6181",
+      "500": "#e1001e",
+      "600": "#C70019",
+      "700": "#AD0015",
+      "800": "#930011",
+      "900": "#79000D",
+      "950": "#5F000A"
+    },
+    "secondary": {
+      "50": "#FFF7ED",
+      "100": "#FFEED5",
+      "200": "#FFD9AA",
+      "300": "#FFC074",
+      "400": "#FF9A3C",
+      "500": "#FF7C16",
+      "600": "#F95E0C",
+      "700": "#CC430C",
+      "800": "#A13612",
+      "900": "#822F12",
+      "950": "#461507"
+    },
+    "success": {
+      "50": "#F0FDF4",
+      "100": "#DCFCE7",
+      "200": "#BBF7D0",
+      "300": "#86EFAC",
+      "400": "#4ADE80",
+      "500": "#22C55E",
+      "600": "#16A34A",
+      "700": "#15803D",
+      "800": "#166534",
+      "900": "#14532D",
+      "950": "#052E16"
+    },
+    "warning": {
+      "50": "#FFFBEB",
+      "100": "#FEF3C7",
+      "200": "#FDE68A",
+      "300": "#FCD34D",
+      "400": "#FBBF24",
+      "500": "#F59E0B",
+      "600": "#D97706",
+      "700": "#B45309",
+      "800": "#92400E",
+      "900": "#78350F",
+      "950": "#451A03"
+    },
+    "error": {
+      "50": "#FEF2F2",
+      "100": "#FEE2E2",
+      "200": "#FECACA",
+      "300": "#FCA5A5",
+      "400": "#F87171",
+      "500": "#EF4444",
+      "600": "#DC2626",
+      "700": "#B91C1C",
+      "800": "#991B1B",
+      "900": "#7F1D1D",
+      "950": "#450A0A"
+    },
+    "neutral": {
+      "0": "#FFFFFF",
+      "50": "#F9FAFB",
+      "100": "#F3F4F6",
+      "200": "#E5E7EB",
+      "300": "#D1D5DB",
+      "400": "#9CA3AF",
+      "500": "#6B7280",
+      "600": "#4B5563",
+      "700": "#374151",
+      "800": "#1F2937",
+      "900": "#111827",
+      "950": "#030712",
+      "1000": "#000000"
+    },
+    "info": {
+      "50": "#EFF6FF",
+      "100": "#DBEAFE",
+      "200": "#BFDBFE",
+      "300": "#93C5FD",
+      "400": "#60A5FA",
+      "500": "#3B82F6",
+      "600": "#2563EB",
+      "700": "#1D4ED8",
+      "800": "#1E40AF",
+      "900": "#1E3A8A",
+      "950": "#172554"
+    },
+    "surface": {
+      "background": "#FFFFFF",
+      "backgroundAlt": "#F9FAFB",
+      "card": "#FFFFFF",
+      "cardHover": "#F9FAFB",
+      "overlay": "rgba(0, 0, 0, 0.5)",
+      "border": "#E5E7EB",
+      "divider": "#F3F4F6"
+    },
+    "text": {
+      "primary": "#111827",
+      "secondary": "#6B7280",
+      "tertiary": "#9CA3AF",
+      "disabled": "#D1D5DB",
+      "inverse": "#FFFFFF",
+      "link": "#3B82F6",
+      "linkHover": "#2563EB"
+    },
+    "government": {
+      "federal": "#003D7A",
+      "federalLight": "#E6F0FA",
+      "camara": "#00584A",
+      "camaraLight": "#E6F5F2",
+      "senado": "#003366",
+      "senadoLight": "#E6ECF2",
+      "executive": "#7A003D",
+      "executiveLight": "#FAE6F0"
+    },
+    "status": {
+      "active": "#22C55E",
+      "activeBackground": "#F0FDF4",
+      "archived": "#6B7280",
+      "archivedBackground": "#F3F4F6",
+      "pending": "#F59E0B",
+      "pendingBackground": "#FFFBEB",
+      "rejected": "#EF4444",
+      "rejectedBackground": "#FEF2F2",
+      "approved": "#3B82F6",
+      "approvedBackground": "#EFF6FF"
+    },
+    "chart": {
+      "1": "#3B82F6",
+      "2": "#10B981",
+      "3": "#F59E0B",
+      "4": "#EF4444",
+      "5": "#8B5CF6",
+      "6": "#EC4899",
+      "7": "#14B8A6",
+      "8": "#F97316",
+      "9": "#6366F1",
+      "10": "#84CC16",
+      "11": "#06B6D4",
+      "12": "#A855F7"
+    },
+    "party": {
+      "pt": "#FF0000",
+      "psdb": "#0080FF",
+      "pmdb": "#2E8B57",
+      "pp": "#000080",
+      "psd": "#FFA500",
+      "pl": "#00008B",
+      "psb": "#FFD700",
+      "republicanos": "#87CEEB",
+      "podemos": "#800080",
+      "psol": "#FFFF00",
+      "pcdob": "#8B0000",
+      "pv": "#008000",
+      "avante": "#FF4500",
+      "solidariedade": "#FF69B4",
+      "novo": "#FF8C00",
+      "rede": "#32CD32",
+      "outros": "#808080"
+    }
+  },
+  "darkMode": {
+    "primary": {
+      "50": "#0D2E3E",
+      "100": "#154A62",
+      "200": "#206C88",
+      "300": "#2A809F",
+      "400": "#3694B6",
+      "500": "#3FA4C3",
+      "600": "#5CB2CC",
+      "700": "#79C0D5",
+      "800": "#9FD2E1",
+      "900": "#C5E4ED",
+      "950": "#E8F4F8"
+    },
+    "surface": {
+      "background": "#111827",
+      "backgroundAlt": "#1F2937",
+      "card": "#1F2937",
+      "cardHover": "#374151",
+      "overlay": "rgba(0, 0, 0, 0.8)",
+      "border": "#374151",
+      "divider": "#4B5563"
+    },
+    "text": {
+      "primary": "#F9FAFB",
+      "secondary": "#D1D5DB",
+      "tertiary": "#9CA3AF",
+      "disabled": "#6B7280",
+      "inverse": "#111827",
+      "link": "#60A5FA",
+      "linkHover": "#93C5FD"
+    }
+  }
+}

@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: monitor-legislativo
+data:
+  recording-rules.yaml: |
+    groups:
+    - name: monitor_legislativo_recording_rules
+      interval: 30s
+      rules:
+      # API Performance Metrics
+      - record: api:request_rate_5m
+        expr: |
+          sum(rate(http_requests_total{app="monitor-legislativo",component="api"}[5m])) by (method, endpoint, status)
+      
+      - record: api:request_duration_p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{app="monitor-legislativo",component="api"}[5m])) by (method, endpoint, le)
+          )
+      
+      - record: api:request_duration_p99_5m
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket{app="monitor-legislativo",component="api"}[5m])) by (method, endpoint, le)
+          )
+      
+      - record: api:error_rate_5m
+        expr: |
+          sum(rate(http_requests_total{app="monitor-legislativo",component="api",status=~"5.."}[5m])) by (method, endpoint)
+          /
+          sum(rate(http_requests_total{app="monitor-legislativo",component="api"}[5m])) by (method, endpoint)
+      
+      # Document Processing Metrics
+      - record: documents:processing_rate_5m
+        expr: |
+          sum(rate(documents_processed_total[5m])) by (source, type, status)
+      
+      - record: documents:processing_duration_p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(document_processing_duration_seconds_bucket[5m])) by (source, type, le)
+          )
+      
+      - record: documents:queue_depth
+        expr: |
+          sum(redis_queue_length) by (queue)
+      
+      - record: documents:queue_wait_time_p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(queue_wait_time_seconds_bucket[5m])) by (queue, le)
+          )
+      
+      # Database Performance Metrics
+      - record: database:query_rate_5m
+        expr: |
+          sum(rate(database_queries_total[5m])) by (query_type, table)
+      
+      - record: database:query_duration_p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(database_query_duration_seconds_bucket[5m])) by (query_type, table, le)
+          )
+      
+      - record: database:connection_pool_usage
+        expr: |
+          sum(database_connection_pool_active) by (pool)
+          /
+          sum(database_connection_pool_size) by (pool)
+      
+      - record: database:replication_lag_seconds
+        expr: |
+          max(postgres_replication_lag_seconds) by (replica)
+      
+      # Cache Performance Metrics
+      - record: cache:hit_rate_5m
+        expr: |
+          sum(rate(cache_hits_total[5m])) by (cache_type)
+          /
+          sum(rate(cache_requests_total[5m])) by (cache_type)
+      
+      - record: cache:eviction_rate_5m
+        expr: |
+          sum(rate(cache_evictions_total[5m])) by (cache_type, reason)
+      
+      - record: cache:memory_usage_percentage
+        expr: |
+          sum(cache_memory_bytes) by (cache_type)
+          /
+          sum(cache_memory_limit_bytes) by (cache_type)
+          * 100
+      
+      # External API Metrics
+      - record: external_api:request_rate_5m
+        expr: |
+          sum(rate(external_api_requests_total[5m])) by (api, endpoint, status)
+      
+      - record: external_api:response_time_p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(external_api_response_time_seconds_bucket[5m])) by (api, endpoint, le)
+          )
+      
+      - record: external_api:error_rate_5m
+        expr: |
+          sum(rate(external_api_requests_total{status=~"5.."}[5m])) by (api, endpoint)
+          /
+          sum(rate(external_api_requests_total[5m])) by (api, endpoint)
+      
+      # Resource Usage Metrics
+      - record: pod:cpu_usage_percentage
+        expr: |
+          sum(rate(container_cpu_usage_seconds_total{namespace="monitor-legislativo",container!=""}[5m])) by (pod, container)
+          * 100
+      
+      - record: pod:memory_usage_percentage
+        expr: |
+          sum(container_memory_usage_bytes{namespace="monitor-legislativo",container!=""}) by (pod, container)
+          /
+          sum(container_spec_memory_limit_bytes{namespace="monitor-legislativo",container!=""}) by (pod, container)
+          * 100
+      
+      - record: pod:network_receive_rate_5m
+        expr: |
+          sum(rate(container_network_receive_bytes_total{namespace="monitor-legislativo"}[5m])) by (pod)
+      
+      - record: pod:network_transmit_rate_5m
+        expr: |
+          sum(rate(container_network_transmit_bytes_total{namespace="monitor-legislativo"}[5m])) by (pod)
+      
+      # Business Metrics
+      - record: business:active_users_5m
+        expr: |
+          count(count by (user_id) (rate(user_activity_total[5m]) > 0))
+      
+      - record: business:alerts_created_rate_1h
+        expr: |
+          sum(rate(alerts_created_total[1h])) by (alert_type)
+      
+      - record: business:documents_by_status
+        expr: |
+          sum(documents_total) by (status, type)
+      
+      - record: business:search_queries_rate_5m
+        expr: |
+          sum(rate(search_queries_total[5m])) by (search_type, result_status)

@@ -1,0 +1,183 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: monitor-legislativo
+  labels:
+    app: kibana
+    component: logging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+        component: logging
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:8.11.0
+        ports:
+        - containerPort: 5601
+          name: ui
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: "https://elasticsearch:9200"
+        - name: ELASTICSEARCH_USERNAME
+          value: "elastic"
+        - name: ELASTICSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: elasticsearch-credentials
+              key: password
+        - name: XPACK_SECURITY_ENCRYPTIONKEY
+          valueFrom:
+            secretKeyRef:
+              name: kibana-secrets
+              key: encryption-key
+        - name: XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY
+          valueFrom:
+            secretKeyRef:
+              name: kibana-secrets
+              key: saved-objects-key
+        - name: XPACK_REPORTING_ENCRYPTIONKEY
+          valueFrom:
+            secretKeyRef:
+              name: kibana-secrets
+              key: reporting-key
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 500m
+          limits:
+            memory: 2Gi
+            cpu: 1000m
+        volumeMounts:
+        - name: kibana-config
+          mountPath: /usr/share/kibana/config/kibana.yml
+          subPath: kibana.yml
+        readinessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      volumes:
+      - name: kibana-config
+        configMap:
+          name: kibana-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: monitor-legislativo
+  labels:
+    app: kibana
+spec:
+  selector:
+    app: kibana
+  ports:
+  - name: ui
+    port: 5601
+    targetPort: 5601
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-config
+  namespace: monitor-legislativo
+data:
+  kibana.yml: |
+    server.name: kibana
+    server.host: 0.0.0.0
+    server.port: 5601
+    
+    # Elasticsearch configuration
+    elasticsearch.hosts: ["https://elasticsearch:9200"]
+    elasticsearch.username: "elastic"
+    elasticsearch.ssl.verificationMode: none
+    
+    # Security
+    xpack.security.enabled: true
+    xpack.encryptedSavedObjects.enabled: true
+    
+    # Monitoring
+    monitoring.ui.container.elasticsearch.enabled: true
+    
+    # Custom branding for Monitor Legislativo
+    server.customResponseHeaders:
+      "X-Developed-By": "Sofia Pereira Medeiros Donario & Lucas Ramos Guimarães"
+      "X-Organization": "MackIntegridade"
+      "X-Funding": "MackPesquisa"
+    
+    # Index patterns for Monitor Legislativo
+    kibana.defaultAppId: "discover"
+    
+    # Custom styling
+    uiSettings:
+      overrides:
+        "theme:darkMode": false
+        "defaultRoute": "/app/discover"
+        "dateFormat": "DD/MM/YYYY HH:mm:ss"
+        "timezone": "America/Sao_Paulo"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kibana-secrets
+  namespace: monitor-legislativo
+type: Opaque
+data:
+  encryption-key: bW9uaXRvci1sZWdpc2xhdGl2by1raWJhbmEtZW5jcnlwdGlvbi1rZXk=  # monitor-legislativo-kibana-encryption-key
+  saved-objects-key: bW9uaXRvci1sZWdpc2xhdGl2by1raWJhbmEtc2F2ZWQtb2JqZWN0cy1rZXk=  # monitor-legislativo-kibana-saved-objects-key
+  reporting-key: bW9uaXRvci1sZWdpc2xhdGl2by1raWJhbmEtcmVwb3J0aW5nLWtleQ==  # monitor-legislativo-kibana-reporting-key
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kibana-ingress
+  namespace: monitor-legislativo
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: kibana-basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required - Monitor Legislativo Logs'
+spec:
+  tls:
+  - hosts:
+    - logs.monitor-legislativo.gov.br
+    secretName: kibana-tls
+  rules:
+  - host: logs.monitor-legislativo.gov.br
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kibana
+            port:
+              number: 5601
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kibana-basic-auth
+  namespace: monitor-legislativo
+type: Opaque
+data:
+  auth: YWRtaW46JGFwcjEkLlpQN2NISDEkZVhqOXNGcXlUQU5yUWpSZ2drbWVrMA==  # admin:monitor-legislativo (htpasswd generated)

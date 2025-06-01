@@ -1,0 +1,839 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Legislative Monitoring API",
+    "description": "API for monitoring Brazilian legislative activities across multiple government bodies",
+    "version": "4.0.0",
+    "contact": {
+      "name": "Legislative Monitoring Team",
+      "email": "support@legislativo.gov.br"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.legislativo.gov.br",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "description": "Returns the health status of the application and its dependencies",
+        "operationId": "getHealth",
+        "tags": ["System"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "System is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "System is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "User authentication",
+        "description": "Authenticate user and return JWT tokens",
+        "operationId": "login",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/camara/proposicoes": {
+      "get": {
+        "summary": "Get Camara proposals",
+        "description": "Retrieve legislative proposals from the Brazilian Chamber of Deputies",
+        "operationId": "getCamaraProposicoes",
+        "tags": ["Camara"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "ano",
+            "in": "query",
+            "description": "Year of the proposal",
+            "schema": {
+              "type": "integer",
+              "minimum": 1988,
+              "maximum": 2030
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "description": "Type of proposal",
+            "schema": {
+              "type": "string",
+              "enum": ["PL", "PEC", "PDC", "PLP", "PLV"]
+            }
+          },
+          {
+            "name": "numero",
+            "in": "query",
+            "description": "Proposal number",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of results to skip",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of proposals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CamaraProposalList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "External API unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/camara/proposicoes/{id}": {
+      "get": {
+        "summary": "Get specific Camara proposal",
+        "description": "Retrieve detailed information about a specific proposal",
+        "operationId": "getCamaraProposal",
+        "tags": ["Camara"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Proposal ID",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposal details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CamaraProposal"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Proposal not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/senado/materias": {
+      "get": {
+        "summary": "Get Senate matters",
+        "description": "Retrieve legislative matters from the Brazilian Senate",
+        "operationId": "getSenadoMaterias",
+        "tags": ["Senado"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "ano",
+            "in": "query",
+            "description": "Year of the matter",
+            "schema": {
+              "type": "integer",
+              "minimum": 1988,
+              "maximum": 2030
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "description": "Type of matter",
+            "schema": {
+              "type": "string",
+              "enum": ["PLS", "PEC", "PDC", "PLP"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of matters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SenadoMatterList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search": {
+      "post": {
+        "summary": "Unified search",
+        "description": "Search across all legislative sources with advanced filtering",
+        "operationId": "unifiedSearch",
+        "tags": ["Search"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid search parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "summary": "System metrics",
+        "description": "Get system performance and usage metrics",
+        "operationId": "getMetrics",
+        "tags": ["Monitoring"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "System metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metrics"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "HealthStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["healthy", "unhealthy"]
+          },
+          "version": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "services": {
+            "type": "object",
+            "properties": {
+              "database": {
+                "type": "string",
+                "enum": ["connected", "disconnected"]
+              },
+              "redis": {
+                "type": "string",
+                "enum": ["connected", "disconnected"]
+              },
+              "camara_api": {
+                "type": "string",
+                "enum": ["available", "unavailable"]
+              },
+              "senado_api": {
+                "type": "string",
+                "enum": ["available", "unavailable"]
+              }
+            }
+          }
+        },
+        "required": ["status", "version", "timestamp"]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": ["username", "password"]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "default": "Bearer"
+          },
+          "expires_in": {
+            "type": "integer"
+          }
+        },
+        "required": ["access_token", "token_type", "expires_in"]
+      },
+      "CamaraProposal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "siglaTipo": {
+            "type": "string"
+          },
+          "numero": {
+            "type": "integer"
+          },
+          "ano": {
+            "type": "integer"
+          },
+          "ementa": {
+            "type": "string"
+          },
+          "dataApresentacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "statusProposicao": {
+            "type": "object",
+            "properties": {
+              "dataHora": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "descricaoSituacao": {
+                "type": "string"
+              },
+              "descricaoTramitacao": {
+                "type": "string"
+              }
+            }
+          },
+          "autor": {
+            "type": "string"
+          },
+          "urlInteiroTeor": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": ["id", "siglaTipo", "numero", "ano", "ementa"]
+      },
+      "CamaraProposalList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CamaraProposal"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "required": ["data", "pagination"]
+      },
+      "SenadoMatter": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "integer"
+          },
+          "siglaSubtipo": {
+            "type": "string"
+          },
+          "numero": {
+            "type": "integer"
+          },
+          "ano": {
+            "type": "integer"
+          },
+          "descricaoObjetivo": {
+            "type": "string"
+          },
+          "dataApresentacao": {
+            "type": "string",
+            "format": "date"
+          },
+          "situacaoAtual": {
+            "type": "object",
+            "properties": {
+              "dataSituacao": {
+                "type": "string",
+                "format": "date"
+              },
+              "descricaoSituacao": {
+                "type": "string"
+              }
+            }
+          },
+          "autorPrincipal": {
+            "type": "object",
+            "properties": {
+              "nomeAutor": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": ["codigo", "siglaSubtipo", "numero", "ano"]
+      },
+      "SenadoMatterList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SenadoMatter"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "required": ["data", "pagination"]
+      },
+      "SearchRequest": {
+        "type": "object",
+        "properties": {
+          "keywords": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 500
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["camara", "senado", "planalto", "anatel", "aneel", "anvisa"]
+            },
+            "minItems": 1
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          }
+        },
+        "required": ["keywords", "sources"]
+      },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          },
+          "facets": {
+            "type": "object",
+            "properties": {
+              "sources": {
+                "type": "object"
+              },
+              "types": {
+                "type": "object"
+              },
+              "years": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "required": ["results", "pagination"]
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": ["id", "source", "title", "date"]
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "has_next": {
+            "type": "boolean"
+          },
+          "has_prev": {
+            "type": "boolean"
+          }
+        },
+        "required": ["total", "limit", "offset", "has_next", "has_prev"]
+      },
+      "Metrics": {
+        "type": "object",
+        "properties": {
+          "requests": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "success_rate": {
+                "type": "number"
+              },
+              "average_response_time": {
+                "type": "number"
+              }
+            }
+          },
+          "cache": {
+            "type": "object",
+            "properties": {
+              "hit_rate": {
+                "type": "number"
+              },
+              "memory_usage": {
+                "type": "integer"
+              }
+            }
+          },
+          "external_apis": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "response_time": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["error", "message"]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "System",
+      "description": "System health and status endpoints"
+    },
+    {
+      "name": "Authentication",
+      "description": "User authentication and authorization"
+    },
+    {
+      "name": "Camara",
+      "description": "Brazilian Chamber of Deputies API"
+    },
+    {
+      "name": "Senado",
+      "description": "Brazilian Senate API"
+    },
+    {
+      "name": "Search",
+      "description": "Unified search across all sources"
+    },
+    {
+      "name": "Monitoring",
+      "description": "System monitoring and metrics"
+    }
+  ]
+}

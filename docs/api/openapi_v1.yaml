@@ -1,0 +1,1217 @@
+openapi: 3.0.3
+info:
+  title: Monitor Legislativo v4 API
+  description: |
+    Comprehensive API for monitoring Brazilian legislative documents and regulatory changes.
+    
+    ## Features
+    - **Document Search**: Advanced search with filters and facets
+    - **Real-time Monitoring**: Set up alerts for legislative changes
+    - **Smart Alerts**: ML-powered relevance scoring
+    - **Export Capabilities**: Multiple format support
+    - **User Management**: Authentication and authorization
+    
+    ## Authentication
+    This API uses JWT (JSON Web Token) authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Rate Limiting
+    API requests are rate-limited to ensure fair usage:
+    - **Authenticated users**: 1000 requests/hour
+    - **Search endpoints**: 100 requests/minute
+    - **Export endpoints**: 10 requests/minute
+    
+    ## Error Handling
+    All endpoints return standardized error responses with structured error information.
+    
+  version: 1.0.0
+  contact:
+    name: Monitor Legislativo Support
+    email: support@monitorlegislativo.com
+    url: https://monitorlegislativo.com/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.monitorlegislativo.com/v1
+    description: Production server
+  - url: https://staging-api.monitorlegislativo.com/v1
+    description: Staging server
+  - url: http://localhost:5000/api/v1
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Authentication Endpoints
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive JWT tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              standard_user:
+                summary: Standard user login
+                value:
+                  username: "user@example.com"
+                  password: "securepassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh JWT token
+      description: Get new access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate current JWT token
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  # Document Endpoints
+  /documents/search:
+    get:
+      tags:
+        - Documents
+      summary: Search documents
+      description: |
+        Search legislative documents with advanced filtering and faceting capabilities.
+        
+        **Search Features:**
+        - Full-text search across titles and content
+        - Filter by document type, source, date range
+        - Faceted search results for easy refinement
+        - Relevance-based ranking with ML scoring
+        - Pagination support
+        
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+          description: Search query string
+          example: "proteção de dados pessoais"
+        
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        
+        - name: sources
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [Camara, Senado, Planalto, TCU, STF]
+          style: form
+          explode: false
+          description: Filter by document sources
+          example: "Camara,Senado"
+        
+        - name: document_types
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA]
+          style: form
+          explode: false
+          description: Filter by document types
+        
+        - name: date_start
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Start date for filtering (YYYY-MM-DD)
+          example: "2024-01-01"
+        
+        - name: date_end
+          in: query
+          schema:
+            type: string
+            format: date
+          description: End date for filtering (YYYY-MM-DD)
+          example: "2024-12-31"
+        
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [relevance, date, title]
+            default: relevance
+          description: Sort criteria
+        
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order
+      
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /documents/{document_id}:
+    get:
+      tags:
+        - Documents
+      summary: Get document by ID
+      description: Retrieve detailed information for a specific document
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: Unique document identifier
+          example: 12345
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # Alert Endpoints
+  /alerts:
+    get:
+      tags:
+        - Alerts
+      summary: Get user alerts
+      description: Retrieve monitoring alerts for the authenticated user
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, ACTIVE, RESOLVED, DISMISSED]
+          description: Filter by alert status
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+          description: Filter by alert priority
+      responses:
+        '200':
+          description: User alerts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Alerts
+      summary: Create monitoring alert
+      description: Create a new monitoring rule for legislative changes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlertRequest'
+      responses:
+        '201':
+          description: Alert created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /alerts/{alert_id}:
+    get:
+      tags:
+        - Alerts
+      summary: Get alert details
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Alert ID
+      responses:
+        '200':
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Alerts
+      summary: Update alert
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Alert ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAlertRequest'
+      responses:
+        '200':
+          description: Alert updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Alerts
+      summary: Delete alert
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Alert ID
+      responses:
+        '204':
+          description: Alert deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Export Endpoints
+  /export/search-results:
+    post:
+      tags:
+        - Export
+      summary: Export search results
+      description: |
+        Export search results in various formats (CSV, PDF, Excel).
+        
+        **Export Formats:**
+        - **CSV**: Comma-separated values for spreadsheet analysis
+        - **PDF**: Formatted report with document summaries
+        - **Excel**: Structured workbook with multiple sheets
+        - **JSON**: Machine-readable format for API integration
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '202':
+          description: Export job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJobResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /export/jobs/{job_id}:
+    get:
+      tags:
+        - Export
+      summary: Get export job status
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Export job ID
+      responses:
+        '200':
+          description: Export job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJobResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Health Check
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health check
+      description: Check system health and service availability
+      security: []
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  # Metrics (Admin only)
+  /admin/metrics:
+    get:
+      tags:
+        - Admin
+      summary: Get system metrics
+      description: Retrieve system performance and usage metrics (admin only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: System metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number for pagination
+
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items per page
+
+  schemas:
+    # Standard Response Wrapper
+    StandardResponse:
+      type: object
+      required:
+        - status
+        - data
+        - metadata
+      properties:
+        status:
+          type: string
+          enum: [success, error, warning, partial]
+          description: Response status
+        data:
+          description: Response data (type varies by endpoint)
+        metadata:
+          $ref: '#/components/schemas/ResponseMetadata'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+          description: Error details (present when status is error)
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Warning messages
+
+    ResponseMetadata:
+      type: object
+      required:
+        - timestamp
+        - version
+        - request_id
+        - execution_time_ms
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+        version:
+          type: string
+          description: API version
+          example: "v1"
+        request_id:
+          type: string
+          format: uuid
+          description: Unique request identifier
+        execution_time_ms:
+          type: number
+          format: float
+          description: Request execution time in milliseconds
+        total_count:
+          type: integer
+          description: Total number of items (for paginated responses)
+        page:
+          type: integer
+          description: Current page number
+        per_page:
+          type: integer
+          description: Items per page
+        has_more:
+          type: boolean
+          description: Whether more pages are available
+
+    ErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Query parameter is required"
+        details:
+          type: object
+          description: Additional error context
+
+    # Authentication Schemas
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          format: email
+          description: User email address
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: User password
+          example: "securepassword123"
+
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                  description: JWT access token
+                refresh_token:
+                  type: string
+                  description: JWT refresh token
+                token_type:
+                  type: string
+                  enum: [Bearer]
+                expires_in:
+                  type: integer
+                  description: Token expiration time in seconds
+                user:
+                  $ref: '#/components/schemas/User'
+
+    RefreshRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: Valid refresh token
+
+    TokenResponse:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                token_type:
+                  type: string
+                  enum: [Bearer]
+                expires_in:
+                  type: integer
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: User ID
+        username:
+          type: string
+          description: Username
+        email:
+          type: string
+          format: email
+          description: Email address
+        first_name:
+          type: string
+          description: First name
+        last_name:
+          type: string
+          description: Last name
+        role:
+          type: string
+          enum: [admin, analyst, user, readonly]
+          description: User role
+
+    # Document Schemas
+    Document:
+      type: object
+      required:
+        - id
+        - title
+        - source
+        - document_type
+        - published_date
+      properties:
+        id:
+          type: integer
+          description: Document ID
+          example: 12345
+        title:
+          type: string
+          description: Document title
+          example: "Lei Geral de Proteção de Dados Pessoais"
+        content:
+          type: string
+          description: Document content (may be truncated)
+        summary:
+          type: string
+          description: Document summary
+        source:
+          type: string
+          enum: [Camara, Senado, Planalto, TCU, STF]
+          description: Document source
+          example: "Planalto"
+        document_type:
+          type: string
+          enum: [LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA]
+          description: Document type
+          example: "LEI"
+        document_number:
+          type: string
+          description: Official document number
+          example: "13.709"
+        document_year:
+          type: integer
+          description: Document year
+          example: 2018
+        published_date:
+          type: string
+          format: date
+          description: Publication date
+          example: "2018-08-14"
+        effective_date:
+          type: string
+          format: date
+          description: Effective date
+        status:
+          type: string
+          enum: [ativo, revogado, suspenso, em_tramitacao, arquivado]
+          description: Document status
+          example: "ativo"
+        url:
+          type: string
+          format: uri
+          description: Document URL
+        keywords:
+          type: array
+          items:
+            type: string
+          description: Document keywords
+        metadata:
+          type: object
+          description: Additional document metadata
+
+    SearchResponse:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                results:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Document'
+                facets:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SearchFacet'
+                suggestions:
+                  type: array
+                  items:
+                    type: string
+                  description: Search suggestions
+
+    DocumentDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/Document'
+                - type: object
+                  properties:
+                    full_content:
+                      type: string
+                      description: Complete document content
+                    revisions:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/DocumentRevision'
+                    related_documents:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Document'
+
+    DocumentRevision:
+      type: object
+      properties:
+        revision_number:
+          type: integer
+        change_date:
+          type: string
+          format: date-time
+        change_summary:
+          type: string
+        changed_by:
+          type: string
+
+    SearchFacet:
+      type: object
+      required:
+        - field
+        - name
+        - values
+      properties:
+        field:
+          type: string
+          description: Field name
+          example: "source"
+        name:
+          type: string
+          description: Display name
+          example: "Fonte"
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetValue'
+
+    FacetValue:
+      type: object
+      required:
+        - value
+        - count
+      properties:
+        value:
+          type: string
+          description: Facet value
+          example: "Planalto"
+        count:
+          type: integer
+          description: Number of documents
+          example: 42
+
+    # Alert Schemas
+    Alert:
+      type: object
+      required:
+        - id
+        - title
+        - status
+        - created_at
+      properties:
+        id:
+          type: integer
+          description: Alert ID
+        title:
+          type: string
+          description: Alert title
+        message:
+          type: string
+          description: Alert message
+        alert_type:
+          type: string
+          enum: [DOCUMENT_MATCH, KEYWORD_ALERT, STATUS_CHANGE, DEADLINE_REMINDER]
+          description: Alert type
+        status:
+          type: string
+          enum: [PENDING, ACTIVE, RESOLVED, DISMISSED]
+          description: Alert status
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          description: Alert priority
+        relevance_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: ML-based relevance score
+        is_read:
+          type: boolean
+          description: Whether alert has been read
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        read_at:
+          type: string
+          format: date-time
+          description: Read timestamp
+        expires_at:
+          type: string
+          format: date-time
+          description: Expiration timestamp
+
+    CreateAlertRequest:
+      type: object
+      required:
+        - name
+        - keywords
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          description: Alert name
+          example: "LGPD Updates"
+        description:
+          type: string
+          description: Alert description
+        keywords:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: Keywords to monitor
+          example: ["proteção de dados", "LGPD", "privacidade"]
+        sources:
+          type: array
+          items:
+            type: string
+            enum: [Camara, Senado, Planalto, TCU, STF]
+          description: Sources to monitor
+        document_types:
+          type: array
+          items:
+            type: string
+            enum: [LEI, DECRETO, PORTARIA, RESOLUCAO, INSTRUCAO_NORMATIVA]
+          description: Document types to monitor
+        date_range_start:
+          type: string
+          format: date
+          description: Start date for monitoring
+        date_range_end:
+          type: string
+          format: date
+          description: End date for monitoring
+
+    UpdateAlertRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        sources:
+          type: array
+          items:
+            type: string
+        document_types:
+          type: array
+          items:
+            type: string
+        is_enabled:
+          type: boolean
+
+    AlertResponse:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Alert'
+
+    AlertListResponse:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                alerts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Alert'
+
+    # Export Schemas
+    ExportRequest:
+      type: object
+      required:
+        - format
+        - search_query
+      properties:
+        format:
+          type: string
+          enum: [csv, pdf, excel, json]
+          description: Export format
+        search_query:
+          type: string
+          description: Original search query
+        filters:
+          type: object
+          description: Applied search filters
+        include_content:
+          type: boolean
+          default: false
+          description: Include full document content
+        date_range:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+
+    ExportJobResponse:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                job_id:
+                  type: string
+                  format: uuid
+                  description: Export job ID
+                status:
+                  type: string
+                  enum: [pending, processing, completed, failed]
+                  description: Job status
+                progress:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  description: Progress percentage
+                download_url:
+                  type: string
+                  format: uri
+                  description: Download URL (when completed)
+                file_size:
+                  type: integer
+                  description: File size in bytes
+                expires_at:
+                  type: string
+                  format: date-time
+                  description: Download link expiration
+
+    # System Schemas
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        services:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [healthy, degraded, unhealthy]
+              response_time_ms:
+                type: number
+              last_checked:
+                type: string
+                format: date-time
+        timestamp:
+          type: string
+          format: date-time
+
+    MetricsResponse:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                system:
+                  type: object
+                  properties:
+                    cpu_usage:
+                      type: number
+                    memory_usage:
+                      type: number
+                    disk_usage:
+                      type: number
+                requests:
+                  type: object
+                  properties:
+                    total_requests:
+                      type: integer
+                    requests_per_minute:
+                      type: number
+                    avg_response_time:
+                      type: number
+                    error_rate:
+                      type: number
+
+    MessageResponse:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                message:
+                  type: string
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/StandardResponse'
+              - type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [error]
+          example:
+            status: error
+            data: null
+            metadata:
+              timestamp: "2025-01-06T12:00:00Z"
+              version: "v1"
+              request_id: "123e4567-e89b-12d3-a456-426614174000"
+              execution_time_ms: 45.2
+            errors:
+              - code: "VALIDATION_ERROR"
+                message: "Query parameter is required"
+                details:
+                  field: "query"
+
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/StandardResponse'
+              - type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [error]
+          example:
+            status: error
+            data: null
+            metadata:
+              timestamp: "2025-01-06T12:00:00Z"
+              version: "v1"
+              request_id: "123e4567-e89b-12d3-a456-426614174000"
+              execution_time_ms: 12.1
+            errors:
+              - code: "AUTHENTICATION_ERROR"
+                message: "Authentication required"
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/StandardResponse'
+              - type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [error]
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/StandardResponse'
+              - type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [error]
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/StandardResponse'
+              - type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [error]
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Request limit per time window
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Time when rate limit resets (Unix timestamp)
+
+tags:
+  - name: Authentication
+    description: User authentication and token management
+  - name: Documents
+    description: Legislative document search and retrieval
+  - name: Alerts
+    description: Monitoring alerts and notifications
+  - name: Export
+    description: Data export functionality
+  - name: System
+    description: System health and status
+  - name: Admin
+    description: Administrative functions (admin access required)

@@ -1,0 +1,35 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: monitor-legislativo-api-pdb
+  namespace: monitor-legislativo
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: monitor-legislativo
+      component: api
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: monitor-legislativo-worker-pdb
+  namespace: monitor-legislativo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: monitor-legislativo
+      component: worker
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: monitor-legislativo-nginx-pdb
+  namespace: monitor-legislativo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: monitor-legislativo
+      component: nginx
