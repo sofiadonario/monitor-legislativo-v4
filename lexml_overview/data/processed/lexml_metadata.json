@@ -1,0 +1,50 @@
+{
+  "total_documents": 1949,
+  "search_terms": 108,
+  "date_range": {
+    "start": "1856-04-25",
+    "end": "2025-05-06"
+  },
+  "document_types": {
+    "doutrina": 1015,
+    "legislation": 482,
+    "other": 337,
+    "jurisprudence": 115
+  },
+  "top_search_terms": {
+    "ANP": 37,
+    "diesel": 20,
+    "etanol": 20,
+    "gasolina": 20,
+    "gás natural": 20,
+    "GNV": 20,
+    "combustível do futuro": 20,
+    "hidrogênio": 20,
+    "transporte de carga": 20,
+    "transporte aquaviário": 20
+  },
+  "regulatory_agencies": [
+    "ANP",
+    "ANTT",
+    "ANEEL",
+    "ANA",
+    "CONTRAN",
+    "DENATRAN",
+    "DNIT",
+    "IBAMA",
+    "INMETRO"
+  ],
+  "jurisdictions": {
+    "Federal": 326,
+    "Estadual": 61
+  },
+  "subject_categories": {
+    "Transporte": "179",
+    "Energia": "25",
+    "Combustível": "69",
+    "Veículo": "10",
+    "Fiscalização": "52",
+    "Tributação": "153",
+    "Ambiente": "78"
+  }
+}

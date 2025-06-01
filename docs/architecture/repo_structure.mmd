@@ -1,0 +1,18 @@
+```mermaid
+graph TD;
+  A["monitor_legislativo_v4"] --> B["backend/"];
+  B --> Bsrc["src/"];
+  Bsrc --> Brouters["routers/"];
+  Bsrc --> Bservices["services/"];
+  Bsrc --> Bdatabase["database/"];
+  Bsrc --> Bmodels["models/"];
+  A --> C["frontend/"];
+  C --> Csrc["src/"];
+  Csrc --> Ccomponents["components/"];
+  Csrc --> Cpages["pages/"];
+  Csrc --> Capis["api/"];
+  A --> D["r-shiny-app/"];
+  A --> E["docs/"];
+  A --> F["deployment/"];
+  A --> G["services/"];
+``` 

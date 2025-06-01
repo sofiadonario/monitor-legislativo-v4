@@ -1,0 +1,74 @@
+{
+  "execution_summary": {
+    "total_categories_searched": 5,
+    "total_documents_found": 52,
+    "unique_documents": 49,
+    "duplicate_rate": 0.057692307692307696
+  },
+  "category_breakdown": {
+    "combustiveis_energia": {
+      "total_found": 3,
+      "successfully_processed": 3,
+      "primary_themes": {}
+    },
+    "tecnologia_inovacao": {
+      "total_found": 0,
+      "successfully_processed": 0,
+      "primary_themes": {}
+    },
+    "regulamentacao_normas": {
+      "total_found": 35,
+      "successfully_processed": 35,
+      "primary_themes": {}
+    },
+    "transporte_geral": {
+      "total_found": 8,
+      "successfully_processed": 8,
+      "primary_themes": {}
+    },
+    "eficiencia_emissoes": {
+      "total_found": 6,
+      "successfully_processed": 6,
+      "primary_themes": {}
+    }
+  },
+  "classification_distribution": {
+    "main_categories": {
+      "legislation": 43,
+      "doctrine": 6
+    },
+    "document_types": {
+      "legislacao_geral": 34,
+      "doutrina_geral": 6,
+      "lei_ordinaria": 2,
+      "lei_complementar": 6,
+      "instrucao_normativa": 1
+    },
+    "quality_levels": {
+      "B": 33,
+      "A": 16
+    }
+  },
+  "quality_metrics": {
+    "avg_completeness": 0.96,
+    "min_completeness": 0.96,
+    "max_completeness": 0.96,
+    "avg_accuracy": 0.7636734693877552,
+    "min_accuracy": 0.7,
+    "max_accuracy": 0.82,
+    "avg_consistency": 0.8163265306122449,
+    "min_consistency": 0.8,
+    "max_consistency": 0.9,
+    "avg_relevance": 0.5408163265306123,
+    "min_relevance": 0.5,
+    "max_relevance": 0.7,
+    "avg_overall": 0.789795918367347,
+    "min_overall": 0.76,
+    "max_overall": 0.83
+  },
+  "processing_errors": 0,
+  "system_performance": {
+    "average_processing_time": "N/A",
+    "success_rate": 0.9423076923076923
+  }
+}

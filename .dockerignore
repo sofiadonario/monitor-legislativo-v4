@@ -1,0 +1,347 @@
+# =============================================================================
+# COMPREHENSIVE DOCKERIGNORE - ENTERPRISE SECURITY CONFIGURATION
+# Excludes sensitive files, secrets, and development artifacts
+# =============================================================================
+
+# =============================================
+# CRITICAL SECURITY EXCLUSIONS
+# =============================================
+
+# Dangerous database fix files (CRITICAL - contains hardcoded credentials)
+RAILWAY_PRODUCTION_DB_FIX.R
+**/RAILWAY_PRODUCTION_DB_FIX.R
+RAILWAY_PRODUCTION_DB_FIX.*
+**/RAILWAY_*_DB_FIX.*
+*production*fix*
+*emergency*fix*
+*nuclear*fix*
+
+# Any file containing passwords, secrets, or credentials
+*password*
+*secret*
+*credential*
+*key*
+*.pem
+*.p12
+*.pfx
+*.keystore
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+id_*
+
+# Environment files and configuration
+.env*
+*.env
+.env.local
+.env.development
+.env.production
+.env.test
+config.ini
+config.json
+secrets.json
+private.json
+
+# Database connection files
+railway_db_connection.log
+*connection*.log
+db_*.log
+database_*.log
+
+# =============================================
+# DEVELOPMENT AND BUILD ARTIFACTS
+# =============================================
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+.github/
+.gitlab-ci.yml
+
+# Development tools
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Documentation (exclude from production builds)
+README*.md
+CHANGELOG*.md
+LICENSE*
+CONTRIBUTING*.md
+CODE_OF_CONDUCT*.md
+*.txt
+*.md
+
+# Node.js and NPM (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# =============================================
+# APPLICATION-SPECIFIC EXCLUSIONS
+# =============================================
+
+# R and RStudio artifacts
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+packrat/lib*/
+packrat/src/
+renv/
+.httr-oauth
+*.rds
+*.RData
+
+# Temporary and cache files
+tmp/
+temp/
+cache/
+*.tmp
+*.temp
+*.cache
+*.bak
+*.backup
+*.old
+*~$*
+temp_venv/
+
+# Log files
+*.log
+logs/
+log/
+**/*.log
+railway_*.log
+shiny_*.log
+error_*.log
+debug_*.log
+
+# Test files and test data
+test/
+tests/
+*test*
+*Test*
+*TEST*
+spec/
+__tests__/
+*.test.js
+*.spec.js
+*.test.R
+*.spec.R
+
+# =============================================
+# LARGE DIRECTORIES AND FILES
+# =============================================
+
+# Large data directories (should be mounted or pulled at runtime)
+data_current/
+analytics_output/
+exports/
+legacy/
+Lib/
+R analysis/
+
+# Development and debug directories
+dev-tools/
+debug_*/
+diagnostic*/
+check_env/
+
+# Media and documentation assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.pdf
+*.doc
+*.docx
+*.ppt
+*.pptx
+
+# =============================================
+# CONTAINER AND DEPLOYMENT EXCLUSIONS
+# =============================================
+
+# Docker files (except the one being built)
+Dockerfile*
+!docker/Dockerfile.secure
+!railway/Dockerfile
+docker-compose*.yml
+!docker/docker-compose.yml
+
+# Kubernetes and orchestration
+k8s/
+kubernetes/
+*.yaml
+*.yml
+
+# CI/CD files
+.travis.yml
+.circleci/
+Jenkinsfile
+azure-pipelines.yml
+.github/workflows/
+
+# Build and deployment artifacts
+target/
+build/
+out/
+bin/
+obj/
+
+# =============================================
+# RAILWAY-SPECIFIC EXCLUSIONS
+# =============================================
+
+# Railway configuration (use secure version instead)
+railway.toml
+railway.json
+!railway/railway-secure.toml
+
+# Nixpacks configuration
+nixpacks.toml
+
+# =============================================
+# MISCELLANEOUS EXCLUSIONS
+# =============================================
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor temporary files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Certificate files
+*.crt
+*.cert
+*.ca-bundle
+*.p7b
+*.p7s
+*.crl
+
+# Compression artifacts
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.tar
+*.gz
+
+# Coverage reports
+coverage/
+*.lcov
+.nyc_output/
+
+# Dependency directories that should be rebuilt
+vendor/
+bower_components/
+
+# =============================================================================
+# ADDITIONAL SECURITY EXCLUSIONS FOR RAILWAY DEPLOYMENT
+# =============================================================================
+
+# Backup files and temporary fixes
+*.backup*
+*.bak
+*.old
+*_backup
+*_old
+*_temp
+*_temporary
+
+# Database dumps and exports
+*.sql.gz
+*.dump
+*.backup.sql
+database_*.sql
+backup_*.sql
+export_*.sql
+
+# Development containers and tools
+dev-tools/
+development/
+.devcontainer/
+
+# Local development overrides
+local.*
+local_*
+override.*
+override_*
+
+# Security scanning results
+security_scan_results/
+vulnerability_reports/
+*.security
+*.vuln
+
+# Railway-specific excludes
+railway_*.log
+railway_debug/
+railway_temp/
+
+# Performance and monitoring logs
+performance_*.log
+monitoring_*.log
+metrics_*.log
+
+# Authentication test files  
+*test_auth*
+*auth_test*
+mock_auth*
+
+# Cache and runtime directories that will be created at runtime
+cache/
+tmp/
+temp/
+ 
+# =============================
+# Explicit include: full dataset
+# Allow ONLY this file from data_current to be sent in build context
+!data_current/
+!data_current/processed/
+!data_current/processed/production/
+!data_current/processed/production/lexml_unified_dataset.csv

@@ -1,0 +1,155 @@
+# Production Configuration for Monitor Legislativo v4
+# Optimized settings for production deployment
+
+app:
+  title: "Monitor Legislativo v4 - Production"
+  version: "4.0.0"
+  environment: "production"
+  host: "0.0.0.0"
+  port: 3838
+  workers: 4
+  max_request_size: "50MB"
+  session_timeout: 1800  # 30 minutes
+  
+database:
+  driver: "postgresql"
+  host: !expr Sys.getenv("POSTGRES_HOST", "localhost")
+  port: !expr as.integer(Sys.getenv("POSTGRES_PORT", "5432"))
+  database: !expr Sys.getenv("POSTGRES_DB", "monitor_legislativo")
+  username: !expr Sys.getenv("POSTGRES_USER", "monitor_user")
+  password: !expr Sys.getenv("POSTGRES_PASSWORD", "")
+  pool_size: 20
+  max_overflow: 10
+  pool_timeout: 30
+  pool_recycle: 3600
+  ssl_mode: "require"
+  
+cache:
+  driver: "redis"
+  host: !expr Sys.getenv("REDIS_HOST", "localhost")
+  port: !expr as.integer(Sys.getenv("REDIS_PORT", "6379"))
+  password: !expr Sys.getenv("REDIS_PASSWORD", "")
+  database: 0
+  ttl_default: 3600  # 1 hour
+  max_memory: "512MB"
+  eviction_policy: "allkeys-lru"
+  
+performance:
+  enable_caching: true
+  enable_compression: true
+  enable_minification: true
+  enable_async: true
+  max_results_default: 1000
+  max_concurrent_requests: 100
+  request_timeout: 30
+  memory_limit: "2GB"
+  cpu_cores: 4
+  
+logging:
+  level: !expr Sys.getenv("LOG_LEVEL", "INFO")
+  file: "/app/logs/monitor-legislativo.log"
+  rotation: true
+  max_size: "100MB"
+  backup_count: 10
+  format: "json"
+  include_request_id: true
+  
+security:
+  jwt_secret: !expr Sys.getenv("JWT_SECRET", "production-secret-change-me")
+  session_secret: !expr Sys.getenv("SESSION_SECRET", "session-secret-change-me")
+  csrf_protection: true
+  rate_limiting: true
+  rate_limit_requests: 100
+  rate_limit_window: 900  # 15 minutes
+  secure_cookies: true
+  same_site: "strict"
+  
+ssl:
+  enabled: true
+  cert_file: "/etc/nginx/ssl/cert.pem"
+  key_file: "/etc/nginx/ssl/key.pem"
+  redirect_http: true
+  
+apis:
+  camara_deputados:
+    base_url: "https://dadosabertos.camara.leg.br/api/v2"
+    timeout: 30
+    retry_attempts: 3
+    rate_limit: 300
+    cache_ttl: 3600
+    
+  senado_federal:
+    base_url: "https://legis.senado.leg.br/dadosabertos"
+    timeout: 30
+    retry_attempts: 3
+    rate_limit: 200
+    cache_ttl: 3600
+    
+  lexml:
+    base_url: "https://www.lexml.gov.br"
+    timeout: 60
+    retry_attempts: 3
+    rate_limit: 500
+    cache_ttl: 7200
+    
+  ibge:
+    base_url: "https://servicodados.ibge.gov.br"
+    timeout: 45
+    retry_attempts: 3
+    rate_limit: 100
+    cache_ttl: 86400  # 24 hours
+    
+ai_services:
+  openai:
+    api_key: !expr Sys.getenv("OPENAI_API_KEY", "")
+    base_url: "https://api.openai.com/v1"
+    model: "gpt-4o-mini"
+    max_tokens: 1000
+    temperature: 0.3
+    timeout: 30
+    rate_limit: 60
+    
+  anthropic:
+    api_key: !expr Sys.getenv("ANTHROPIC_API_KEY", "")
+    base_url: "https://api.anthropic.com/v1"
+    model: "claude-3-haiku-20240307"
+    max_tokens: 1000
+    timeout: 45
+    rate_limit: 50
+    
+monitoring:
+  enabled: true
+  metrics_port: 9091
+  health_check_interval: 30
+  alert_webhook: !expr Sys.getenv("ALERT_WEBHOOK", "")
+  prometheus_enabled: true
+  grafana_enabled: true
+  
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention_days: 30
+  s3_bucket: !expr Sys.getenv("BACKUP_S3_BUCKET", "")
+  s3_region: !expr Sys.getenv("BACKUP_S3_REGION", "us-east-1")
+  
+ui:
+  primary_color: "#2E8B57"
+  secondary_color: "#4682B4"
+  success_color: "#28a745"
+  warning_color: "#ffc107"
+  danger_color: "#dc3545"
+  info_color: "#17a2b8"
+  enable_animations: false  # Disabled for performance
+  theme: "flatly"
+  
+features:
+  document_analysis: true
+  geographic_mapping: true
+  advanced_analytics: true
+  ai_integration: true
+  semantic_search: true
+  knowledge_graph: true
+  recommendations: true
+  user_management: true
+  api_access: true
+  export_functionality: true

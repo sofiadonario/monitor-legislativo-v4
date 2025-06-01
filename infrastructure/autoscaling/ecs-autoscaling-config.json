@@ -1,0 +1,277 @@
+{
+  "version": "2.0",
+  "description": "ECS Auto Scaling Configuration for Monitor Legislativo v4 - Supports 500+ concurrent users",
+  "service": {
+    "name": "monitor-legislativo-service",
+    "cluster": "monitor-legislativo-cluster",
+    "region": "sa-east-1"
+  },
+  "scaling_policies": {
+    "cpu_scaling": {
+      "policy_name": "monitor-legislativo-cpu-scaling",
+      "policy_type": "TargetTrackingScaling",
+      "target_tracking_configuration": {
+        "target_value": 70.0,
+        "predefined_metric_specification": {
+          "predefined_metric_type": "ECSServiceAverageCPUUtilization"
+        },
+        "scale_out_cooldown": 300,
+        "scale_in_cooldown": 300,
+        "disable_scale_in": false
+      },
+      "description": "Scale based on average CPU utilization across all tasks"
+    },
+    "memory_scaling": {
+      "policy_name": "monitor-legislativo-memory-scaling",
+      "policy_type": "TargetTrackingScaling",
+      "target_tracking_configuration": {
+        "target_value": 80.0,
+        "predefined_metric_specification": {
+          "predefined_metric_type": "ECSServiceAverageMemoryUtilization"
+        },
+        "scale_out_cooldown": 300,
+        "scale_in_cooldown": 600,
+        "disable_scale_in": false
+      },
+      "description": "Scale based on average memory utilization across all tasks"
+    },
+    "request_count_scaling": {
+      "policy_name": "monitor-legislativo-request-scaling",
+      "policy_type": "TargetTrackingScaling",
+      "target_tracking_configuration": {
+        "target_value": 1000.0,
+        "predefined_metric_specification": {
+          "predefined_metric_type": "ALBRequestCountPerTarget"
+        },
+        "scale_out_cooldown": 180,
+        "scale_in_cooldown": 600,
+        "disable_scale_in": false
+      },
+      "description": "Scale based on request count per target (ALB target group)"
+    },
+    "custom_shiny_users_scaling": {
+      "policy_name": "monitor-legislativo-shiny-users-scaling",
+      "policy_type": "TargetTrackingScaling",
+      "target_tracking_configuration": {
+        "target_value": 25.0,
+        "custom_metric_specification": {
+          "metric_name": "ActiveUserSessions",
+          "namespace": "MonitorLegislativo/Application",
+          "statistic": "Average"
+        },
+        "scale_out_cooldown": 120,
+        "scale_in_cooldown": 900,
+        "disable_scale_in": false
+      },
+      "description": "Scale based on active R/Shiny user sessions (custom metric)"
+    }
+  },
+  "capacity_configuration": {
+    "development": {
+      "min_capacity": 1,
+      "max_capacity": 4,
+      "desired_capacity": 1,
+      "task_definition": {
+        "cpu": 1024,
+        "memory": 2048
+      }
+    },
+    "staging": {
+      "min_capacity": 2,
+      "max_capacity": 8,
+      "desired_capacity": 2,
+      "task_definition": {
+        "cpu": 2048,
+        "memory": 4096
+      }
+    },
+    "production": {
+      "min_capacity": 2,
+      "max_capacity": 16,
+      "desired_capacity": 4,
+      "task_definition": {
+        "cpu": 2048,
+        "memory": 4096
+      }
+    }
+  },
+  "scaling_scenarios": {
+    "normal_load": {
+      "description": "Typical academic research usage (50-100 concurrent users)",
+      "expected_tasks": "2-4",
+      "cpu_utilization": "40-60%",
+      "memory_utilization": "50-70%",
+      "response_time": "<2 seconds"
+    },
+    "peak_load": {
+      "description": "High usage during research deadlines (200-400 concurrent users)",
+      "expected_tasks": "8-12",
+      "cpu_utilization": "60-75%",
+      "memory_utilization": "70-85%",
+      "response_time": "<3 seconds"
+    },
+    "extreme_load": {
+      "description": "Maximum capacity for conferences/events (500+ concurrent users)",
+      "expected_tasks": "12-16",
+      "cpu_utilization": "70-85%",
+      "memory_utilization": "80-90%",
+      "response_time": "<3 seconds"
+    }
+  },
+  "optimization_strategies": {
+    "cost_optimization": {
+      "scheduled_scaling": {
+        "description": "Reduce capacity during off-hours (weekends, holidays)",
+        "weekend_schedule": {
+          "scale_down": {
+            "time": "22:00",
+            "timezone": "America/Sao_Paulo",
+            "min_capacity": 1,
+            "desired_capacity": 1
+          },
+          "scale_up": {
+            "time": "06:00",
+            "timezone": "America/Sao_Paulo",
+            "min_capacity": 2,
+            "desired_capacity": 2
+          }
+        },
+        "holiday_schedule": {
+          "scale_down": {
+            "min_capacity": 1,
+            "desired_capacity": 1
+          }
+        }
+      },
+      "spot_instances": {
+        "enabled": false,
+        "description": "Fargate Spot not recommended for primary application due to interruption risk",
+        "alternative": "Use Spot instances for batch processing tasks only"
+      }
+    },
+    "performance_optimization": {
+      "predictive_scaling": {
+        "enabled": true,
+        "description": "Use historical data to predict scaling needs",
+        "schedule_based": {
+          "weekday_morning": {
+            "time": "07:00-09:00",
+            "action": "pre_scale",
+            "target_capacity": 4
+          },
+          "lunch_break": {
+            "time": "12:00-14:00",
+            "action": "maintain",
+            "target_capacity": 3
+          },
+          "evening": {
+            "time": "18:00-22:00",
+            "action": "scale_down",
+            "target_capacity": 2
+          }
+        }
+      },
+      "warm_pool": {
+        "enabled": false,
+        "description": "Fargate doesn't support warm pools, but tasks start quickly (~30 seconds)"
+      }
+    }
+  },
+  "monitoring_and_alerts": {
+    "scaling_events": {
+      "cloudwatch_logs": "/aws/ecs/autoscaling/monitor-legislativo",
+      "sns_notifications": "arn:aws:sns:sa-east-1:ACCOUNT:monitor-legislativo-scaling-events"
+    },
+    "custom_metrics": {
+      "r_shiny_metrics": {
+        "active_sessions": {
+          "metric_name": "ActiveUserSessions",
+          "namespace": "MonitorLegislativo/Application",
+          "unit": "Count",
+          "description": "Number of active R/Shiny user sessions"
+        },
+        "database_queries": {
+          "metric_name": "DatabaseQueriesPerMinute",
+          "namespace": "MonitorLegislativo/Application",
+          "unit": "Count/Minute",
+          "description": "Rate of database queries from R application"
+        },
+        "cache_hit_rate": {
+          "metric_name": "CacheHitRate",
+          "namespace": "MonitorLegislativo/Application",
+          "unit": "Percent",
+          "description": "Redis cache hit rate for legislative documents"
+        }
+      }
+    },
+    "scaling_alarms": {
+      "rapid_scaling_out": {
+        "description": "Alert when scaling out more than 4 tasks in 10 minutes",
+        "threshold": 4,
+        "evaluation_periods": 2,
+        "datapoints_to_alarm": 1
+      },
+      "max_capacity_reached": {
+        "description": "Alert when max capacity is reached",
+        "threshold": 16,
+        "evaluation_periods": 1,
+        "datapoints_to_alarm": 1
+      },
+      "scaling_failures": {
+        "description": "Alert on scaling policy failures",
+        "metric": "ScalingPolicyExecutionErrors",
+        "threshold": 1
+      }
+    }
+  },
+  "deployment_configuration": {
+    "blue_green": {
+      "enabled": true,
+      "description": "Use blue-green deployment with auto-scaling",
+      "procedure": {
+        "1": "Deploy new version to green environment with min capacity",
+        "2": "Gradually shift traffic from blue to green (10%, 25%, 50%, 100%)",
+        "3": "Monitor metrics during each traffic shift",
+        "4": "Rollback if errors detected",
+        "5": "Scale down blue environment after successful deployment"
+      }
+    },
+    "rolling_update": {
+      "enabled": true,
+      "max_unavailable_percent": 25,
+      "max_surge_percent": 100,
+      "description": "Rolling updates with auto-scaling compensation"
+    }
+  },
+  "troubleshooting": {
+    "common_issues": {
+      "slow_scaling": {
+        "problem": "Tasks take too long to scale out",
+        "solutions": [
+          "Reduce scale-out cooldown period",
+          "Use predictive scaling",
+          "Optimize container startup time",
+          "Pre-warm database connections"
+        ]
+      },
+      "flapping": {
+        "problem": "Frequent scale-in/scale-out cycles",
+        "solutions": [
+          "Increase scale-in cooldown period",
+          "Adjust target values",
+          "Use multiple metrics with different thresholds",
+          "Implement custom smoothing logic"
+        ]
+      },
+      "cost_overrun": {
+        "problem": "Auto-scaling causing high costs",
+        "solutions": [
+          "Implement scheduled scaling",
+          "Review scaling policies",
+          "Use reserved capacity for baseline",
+          "Set budget alerts"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+Municipality Investigation Summary
+================================
+Total documents: 134014
+Documents with municipality field: 2994
+Coverage percentage: 2.23 %
+
+Key Finding: The database is primarily federal-level documents with limited
+municipality-specific content. Only ~2,994 documents have explicit municipality
+data, mostly 'Brasília'. Text mining reveals potential but with high noise.
+
+The investigation confirms that municipality data is sparse in this dataset,
+which appears to focus on federal legislation and jurisprudence rather than
+municipal-level legal documents.

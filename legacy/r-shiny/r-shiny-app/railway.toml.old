@@ -1,0 +1,20 @@
+# Railway Production Configuration for Monitor Legislativo v4
+# Week 12: Production deployment with enhanced features
+
+[build]
+builder = "dockerfile"
+
+[deploy]
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+replicas = 1
+
+# Environment variables for production
+[deploy.env]
+PORT = "3838"
+R_CONFIG_ACTIVE = "production"
+SHINY_LOG_LEVEL = "INFO"
+ENVIRONMENT = "production"
+R_MAX_MEMORY = "2GB"
+SHINY_MAX_SESSIONS = "100"
+# DATABASE_URL = "Set via Railway environment variables" 

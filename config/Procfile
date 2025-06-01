@@ -1,0 +1,1 @@
+web: R -e "source('start_app.R')"

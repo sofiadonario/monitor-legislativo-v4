@@ -1,0 +1,333 @@
+# Brazilian Legislative Monitoring System - Production .gitignore
+# Optimized for R/Python/Railway deployment
+
+#################################################
+# Virtual Environments & Python Dependencies
+#################################################
+
+# Python virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+Lib/
+Scripts/
+pyvenv.cfg
+*_env/
+*env/
+temp_venv/
+test_env/
+reload_env/
+lexml_env/
+check_env/
+
+# Python executables and installers
+pip*.exe
+python*.exe
+*.exe
+*.msi
+
+#################################################
+# R Environment & Dependencies
+#################################################
+
+# R session data
+.RData
+.Rhistory
+.Rapp.history
+.RProfile
+.Ruserdata
+.rds
+.rdx
+
+# R temporary files
+*.Rproj
+*.Rproj.user/
+.Rproj.user/
+R/.Rapp.history
+
+# R package building
+*.tar.gz
+*.tgz
+R-*.tar.gz
+src/*.o
+src/*.so
+src/*.dll
+
+# R cache and output
+cache/
+*_cache/
+/cache
+packrat/lib*/
+rsconnect/
+
+# renv (R package management)
+renv/library/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/staging/
+
+#################################################
+# Large Data Files & Exports
+#################################################
+
+# Data files (except essential ones for deployment)
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.rds
+*.json
+*.xml
+
+# Allow essential data files for production
+!data/brazil_states.R
+!modules/maps/essential_data.csv
+!lexml_overview/use_version/Geral.csv
+!data_current/processed/production/sample_data.csv
+!railway_data_10k.csv
+!railway_data_50k.csv
+!railway_medium_dataset.csv
+
+# Analytics outputs
+analytics_output/
+reports/
+exports/
+logs/
+*.log
+
+# Large datasets
+data_current/processed/**/*.csv
+data_current/processed/**/*.parquet
+data_current/raw/
+data_current/external/
+legacy/data/
+
+#################################################
+# Development & Testing Files
+#################################################
+
+# Test files and temporary scripts
+test_*.R
+debug_*.R
+temp*.R
+*_test*.R
+*_debug*.R
+syntax_test.R
+app_minimal*.R
+app_test*.R
+app_debug*.R
+app_backup*.R
+
+# Archive and legacy code
+archive/temporary/
+archive/app_development_versions/
+archive/backup_files/
+archive/temp_files/
+archive/debug_files/
+archive/config_files/
+archive/old-files/
+archive/miscellaneous/
+archive/legacy_data/
+archive/legacy_environments/
+archive/legacy_node/
+
+# Development tools and duplicates
+dev-tools/node_modules/
+dev-tools/scripts/*.exe
+dev-tools/scripts/*.tar.gz
+
+#################################################
+# Docker & Deployment
+#################################################
+
+# Multiple Dockerfiles (keeping main ones)
+Dockerfile.*
+!Dockerfile
+!Dockerfile.railway
+
+# Docker artifacts
+.dockerignore.backup
+docker-compose.override.yml
+
+#################################################
+# Documentation & Reports
+#################################################
+
+# Generated documentation (keeping essential docs)
+*.md
+!README.md
+!docs/README.md
+!documentation/README.md
+!RAILWAY_DEPLOYMENT_CHECKLIST.md
+
+# Reports and analysis
+*_REPORT*.md
+*_SUMMARY*.md
+*_ANALYSIS*.md
+*.txt
+!requirements.txt
+!runtime.txt
+
+# Media files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+!docs/media/
+!documentation/media/
+
+#################################################
+# IDE & System Files
+#################################################
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.Rproj.user
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+#################################################
+# Security & Configuration
+#################################################
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+config/private/
+
+# Database connections
+*.db
+*.sqlite
+*.sqlite3
+database.yml
+db_config.json
+
+#################################################
+# Build & Cache
+#################################################
+
+# Build artifacts
+build/
+dist/
+out/
+target/
+
+# Cache
+.cache/
+.pytest_cache/
+node_modules/
+.npm/
+.yarn/
+
+# Coverage and testing
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+.nyc_output/
+
+#################################################
+# Temporary Files
+#################################################
+
+# General temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+*~
+
+# Application specific temporary files
+railway_db_connection.log
+deployment_*.log
+*_backup.R
+*_old.R
+comprehensive_*
+refined_*
+final_*
+
+#################################################
+# Railway Specific
+#################################################
+
+# Railway build artifacts
+.railway/
+railway-build/
+nixpacks.toml.backup
+railway.json.backup
+
+# Keep essential Railway files
+!railway.toml
+!nixpacks.toml
+!Procfile
+
+#################################################
+# Legacy & Cleanup
+#################################################
+
+# Legacy directories to be cleaned up
+legacy/backend/
+legacy/frontend/
+legacy/config/
+legacy/r-shiny/
+
+# Backup and old files
+*_DESKTOP-*
+*.backup*
+app.R.backup*
+*_backup_*
+backup_*
+
+# Specific files to ignore
+found_municipalities.csv
+existing_municipalities.csv
+municipality_*.csv
+municipality_*.png
+*.png
+activity_heatmap.png
+states_timeline.png
+transport_timeline.png

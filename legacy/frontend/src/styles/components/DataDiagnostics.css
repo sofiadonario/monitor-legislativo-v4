@@ -1,0 +1,156 @@
+.data-diagnostics {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.data-diagnostics h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.diagnostic-section {
+  margin-bottom: 30px;
+  padding: 15px;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.diagnostic-section h4 {
+  margin: 0 0 15px 0;
+  color: #555;
+  font-size: 1rem;
+}
+
+.diagnostic-summary {
+  margin-bottom: 15px;
+  color: #666;
+}
+
+.diagnostic-summary strong {
+  color: #333;
+}
+
+.warning {
+  color: #ff6b6b;
+  font-weight: 500;
+}
+
+.missing-states {
+  margin-top: 10px;
+  padding: 10px;
+  background: #fff5f5;
+  border-left: 3px solid #ff6b6b;
+  border-radius: 4px;
+}
+
+.missing-states p {
+  margin: 0 0 5px 0;
+  font-weight: 500;
+}
+
+.missing-states ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.missing-states li {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.state-distribution {
+  margin-top: 20px;
+}
+
+.state-distribution p {
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.state-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.state-bar {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.state-name {
+  width: 80px;
+  color: #555;
+}
+
+.state-count {
+  width: 50px;
+  text-align: right;
+  margin-right: 10px;
+  font-weight: 500;
+}
+
+.bar {
+  height: 20px;
+  background: linear-gradient(to right, #4ecdc4, #44a08d);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.date-stats {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+}
+
+.date-stats li {
+  margin: 5px 0;
+  color: #666;
+}
+
+.date-stats strong {
+  color: #333;
+}
+
+.year-distribution {
+  margin-top: 20px;
+}
+
+.year-distribution p {
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.year-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.year-bar {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.year {
+  width: 60px;
+  color: #555;
+}
+
+.count {
+  font-weight: 500;
+  color: #333;
+}
+
+.more-years {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+}

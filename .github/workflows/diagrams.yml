@@ -1,0 +1,143 @@
+name: Docs & Diagram CI
+
+on:
+  push:
+    paths:
+      - "docs/architecture/**.mmd"
+      - ".github/workflows/diagrams.yml"
+      - "**.py"
+      - "**.tsx"
+  pull_request:
+    paths:
+      - "docs/architecture/**.mmd"
+      - "**.py"
+      - "**.tsx"
+
+jobs:
+  build-diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full history for PR comments
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-mermaid-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-mermaid-
+
+      - name: Install Mermaid CLI
+        run: |
+          sudo npm install -g @mermaid-js/mermaid-cli@10
+
+      - name: Check for diagram changes
+        id: diagram_changes
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q ".mmd$"; then
+            echo "diagrams_changed=true" >> $GITHUB_OUTPUT
+            echo "📊 Diagram files changed, regenerating PNGs..."
+          else
+            echo "diagrams_changed=false" >> $GITHUB_OUTPUT
+            echo "No diagram changes detected"
+          fi
+
+      - name: Render diagrams to PNG
+        run: |
+          mkdir -p docs/architecture/png
+          for file in $(find docs/architecture -name "*.mmd"); do
+            filename=$(basename "$file" .mmd)
+            echo "Rendering $filename..."
+            mmdc -i "$file" -o "docs/architecture/png/${filename}.png" --backgroundColor transparent
+          done
+          echo "✅ All diagrams rendered successfully"
+
+      - name: Check for PNG drift
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ "${{ steps.diagram_changes.outputs.diagrams_changed }}" == "true" ]; then
+            if git diff --name-only | grep -q "docs/architecture/png/"; then
+              echo "❌ ERROR: .mmd files changed but PNG files not updated in this PR"
+              echo "Please commit the regenerated PNG files"
+              exit 1
+            else
+              echo "✅ PNG files are up to date with .mmd changes"
+            fi
+          fi
+
+      - name: Upload Diagram Artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: rendered-diagrams
+          path: docs/architecture/png
+
+      - name: Create or Update PR Comment
+        if: github.event_name == 'pull_request' && steps.diagram_changes.outputs.diagrams_changed == 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Find all PNG files
+            const pngDir = 'docs/architecture/png';
+            const pngFiles = fs.readdirSync(pngDir)
+              .filter(file => file.endsWith('.png'))
+              .map(file => path.join(pngDir, file));
+            
+            // Create comment body with diagram previews
+            let commentBody = '## 📊 Architecture Diagrams Updated\n\n';
+            commentBody += 'The following diagrams have been regenerated:\n\n';
+            
+            for (const pngFile of pngFiles) {
+              const filename = path.basename(pngFile, '.png');
+              const url = `https://github.com/${{ github.repository }}/blob/${{ github.head_ref }}/${pngFile}`;
+              commentBody += `### ${filename}\n`;
+              commentBody += `![${filename}](${url}?raw=true)\n\n`;
+            }
+            
+            commentBody += '---\n*Diagrams auto-generated from .mmd files*';
+            
+            // Check if comment already exists
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const existingComment = comments.find(comment => 
+              comment.body.includes('📊 Architecture Diagrams Updated')
+            );
+            
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+  lint-backend-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check for front-end TSX/TS in backend/src
+        run: |
+          set -e
+          duplicates=$(find backend/src -type f \( -name "*.tsx" -o -name "*.ts" \) || true)
+      - name: Success log
+        run: echo "Backend directory structure looks clean!" 

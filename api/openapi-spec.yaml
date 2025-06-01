@@ -1,0 +1,3897 @@
+openapi: 3.0.3
+info:
+  title: Monitor Legislativo v4 API
+  description: |
+    ## Brazilian Legislative Research Platform API
+    
+    **Academic-grade REST API for Brazilian transport legislation research**
+    
+    The Monitor Legislativo v4 API provides comprehensive access to 134,000+ authentic Brazilian legislative documents, specifically designed for academic researchers studying transport policy and legislation. This API serves as a bridge between raw legislative data and scholarly research, offering sophisticated analysis tools and standardized academic outputs.
+    
+    ### Key Features
+    - **134k+ Documents**: Complete collection of Brazilian transport-related legislation
+    - **Academic Standards**: ABNT-compliant citations and research-grade data quality
+    - **Geographic Analysis**: Municipal and state-level policy mapping capabilities
+    - **Portuguese Legal NLP**: Advanced natural language processing for legal text
+    - **R Integration**: Optimized for R statistical computing workflows
+    - **Export Capabilities**: Multiple formats (JSON, CSV, BibTeX) for research workflows
+    
+    ### Research Use Cases
+    - Policy trend analysis and temporal studies
+    - Geographic distribution of transport legislation
+    - Citation network analysis and policy influence mapping
+    - Regulatory complexity assessment
+    - Machine learning training data for legal document classification
+    
+    ### Authentication
+    All endpoints require an API key for rate limiting and usage tracking. Academic researchers can request keys through the institutional portal.
+    
+    ### Rate Limits
+    - **Standard Academic**: 1000 requests/hour, 50 requests/minute
+    - **Research Institution**: 5000 requests/hour, 200 requests/minute
+    - **Bulk Research**: Custom limits for large-scale studies
+    
+    ### Data Quality Guarantee
+    All data undergoes academic-grade validation and is updated continuously from official Brazilian legislative sources.
+    
+  version: "4.0.0"
+  contact:
+    name: Monitor Legislativo Research Team
+    email: api-support@monitor-legislativo.br
+    url: https://monitor-legislativo-unified-production.up.railway.app
+  license:
+    name: Academic Research License
+    url: https://monitor-legislativo.br/license
+  termsOfService: https://monitor-legislativo.br/terms
+
+servers:
+  - url: https://monitor-legislativo-unified-production.up.railway.app/api/v4
+    description: Production API Server (Railway)
+  - url: https://staging.monitor-legislativo.br/api/v4  
+    description: Staging API Server
+  - url: http://localhost:3838/api/v4
+    description: Local Development Server
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Authentication
+    description: API key management and authentication
+  - name: Legislative Search
+    description: Core document search and filtering capabilities
+  - name: Geographic Analysis
+    description: Spatial analysis and mapping endpoints
+  - name: Citation Generation
+    description: ABNT-compliant academic citation tools
+  - name: Analytics & Insights
+    description: Advanced analytics and research insights
+  - name: Export & Download
+    description: Data export in various academic formats
+  - name: Research Tools
+    description: Specialized tools for academic research workflows
+  - name: Metadata & Schema
+    description: API metadata and data schema information
+
+paths:
+  # Authentication Endpoints
+  /auth/validate:
+    get:
+      tags: [Authentication]
+      summary: Validate API Key
+      description: Verify API key validity and retrieve usage limits
+      responses:
+        '200':
+          description: API key is valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyValidation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /auth/usage:
+    get:
+      tags: [Authentication]
+      summary: Get API Usage Statistics
+      description: Retrieve current usage statistics and rate limit status
+      responses:
+        '200':
+          description: Usage statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageStatistics'
+
+  # Core Legislative Search Endpoints
+  /documents:
+    get:
+      tags: [Legislative Search]
+      summary: Search Legislative Documents
+      description: |
+        **Primary endpoint for legislative document search and filtering**
+        
+        Supports comprehensive filtering by category, geographic scope, temporal range, and full-text search. Optimized for academic research workflows with standardized response schemas.
+        
+        ### Academic Research Features
+        - Full-text search across titles, summaries, and legal content
+        - Advanced filtering by legal instrument type and regulatory authority
+        - Temporal analysis with precise date range filtering
+        - Geographic filtering by state, municipality, and regulatory jurisdiction
+        - Relevance scoring and academic citation preparation
+        
+        ### Response Optimization
+        - Configurable pagination for large result sets
+        - Multiple response formats (JSON, CSV headers for bulk download)
+        - Embedded citation metadata for immediate academic use
+        - Performance metrics for query optimization
+      
+      parameters:
+        - name: q
+          in: query
+          description: |
+            **Full-text search query**
+            
+            Searches across document titles, summaries, legal content, and metadata. Supports:
+            - Boolean operators: AND, OR, NOT
+            - Phrase searching: "exact phrase"
+            - Wildcard matching: transport*
+            - Portuguese legal terminology recognition
+          
+          schema:
+            type: string
+            maxLength: 500
+          example: "transporte rodoviário AND (ANTT OR CONTRAN)"
+            
+        - name: category
+          in: query
+          description: |
+            **Document category filter**
+            
+            Brazilian legal document categorization:
+            - `legislation`: Laws, decrees, constitutional amendments
+            - `regulation`: Administrative rules, resolutions, ordinances  
+            - `jurisprudence`: Court decisions and legal precedents
+            - `doctrine`: Legal commentary and academic analysis
+          
+          schema:
+            type: string
+            enum: [all, legislation, regulation, jurisprudence, doctrine]
+            default: all
+          example: legislation
+            
+        - name: state
+          in: query
+          description: |
+            **Geographic filter by Brazilian state**
+            
+            Filter documents by state of origin using standard Brazilian state abbreviations (AC, AL, AP, AM, BA, CE, DF, ES, GO, MA, MT, MS, MG, PA, PB, PR, PE, PI, RJ, RN, RS, RO, RR, SC, SP, SE, TO)
+          
+          schema:
+            type: string
+            pattern: '^(all|AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$'
+            default: all
+          example: SP
+          
+        - name: municipality
+          in: query
+          description: Municipality name for local-level filtering
+          schema:
+            type: string
+            maxLength: 100
+          example: "São Paulo"
+          
+        - name: authority
+          in: query  
+          description: |
+            **Regulatory authority filter**
+            
+            Filter by issuing authority or regulatory agency:
+            - ANTT (Agência Nacional de Transportes Terrestres)
+            - CONTRAN (Conselho Nacional de Trânsito)
+            - DNIT (Departamento Nacional de Infraestrutura)
+            - ANP (Agência Nacional do Petróleo)
+            - Federal, State, or Municipal governments
+          
+          schema:
+            type: string
+            maxLength: 100
+          example: ANTT
+          
+        - name: document_type
+          in: query
+          description: |
+            **Legal instrument type**
+            
+            Filter by specific type of legal instrument:
+            - Lei (Law)
+            - Decreto (Decree)  
+            - Resolução (Resolution)
+            - Portaria (Ordinance)
+            - Medida Provisória (Provisional Measure)
+            - Instrução Normativa (Normative Instruction)
+          
+          schema:
+            type: string
+            enum: [Lei, Decreto, Resolução, Portaria, "Medida Provisória", "Instrução Normativa"]
+          example: "Decreto"
+          
+        - name: date_start
+          in: query
+          description: Start date for temporal filtering (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+          example: "2020-01-01"
+          
+        - name: date_end
+          in: query
+          description: End date for temporal filtering (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+          example: "2024-12-31"
+          
+        - name: transport_modal
+          in: query
+          description: |
+            **Transport modal specialization filter**
+            
+            Filter by specific transport modality:
+            - road: Road transport (rodoviário)
+            - rail: Railway transport (ferroviário)  
+            - air: Air transport (aéreo)
+            - water: Water transport (aquaviário)
+            - urban: Urban transport (urbano)
+            - cargo: Cargo transport (carga)
+            - passenger: Passenger transport (passageiros)
+          
+          schema:
+            type: string
+            enum: [road, rail, air, water, urban, cargo, passenger]
+          example: road
+          
+        - name: include_analysis
+          in: query
+          description: Include advanced NLP analysis in response (impacts performance)
+          schema:
+            type: boolean
+            default: false
+          example: true
+          
+        - name: sort
+          in: query
+          description: |
+            **Result sorting options**
+            
+            Available sorting methods:
+            - `relevance`: Search relevance score (default for queries)
+            - `date_desc`: Newest documents first
+            - `date_asc`: Oldest documents first  
+            - `title_asc`: Alphabetical by title
+            - `authority_asc`: Grouped by issuing authority
+            - `importance_desc`: By calculated importance score
+          
+          schema:
+            type: string
+            enum: [relevance, date_desc, date_asc, title_asc, authority_asc, importance_desc]
+            default: relevance
+          example: date_desc
+          
+        - name: page
+          in: query
+          description: Page number for pagination (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 1
+          example: 1
+          
+        - name: per_page
+          in: query
+          description: |
+            **Results per page**
+            
+            Standard limits for different use cases:
+            - Research browsing: 25-50 items
+            - Bulk analysis: 100-500 items  
+            - Performance testing: 10 items
+            - Maximum allowed: 1000 items
+          
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+          example: 50
+          
+        - name: format
+          in: query
+          description: Response format preference
+          schema:
+            type: string
+            enum: [json, csv_headers]
+            default: json
+          example: json
+
+      responses:
+        '200':
+          description: Documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentSearchResponse'
+              examples:
+                transport_legislation:
+                  summary: Transport legislation search results
+                  value:
+                    status: "success"
+                    query:
+                      text: "transporte rodoviário"
+                      filters: 
+                        category: "legislation"
+                        state: "SP"
+                    pagination:
+                      page: 1
+                      per_page: 50
+                      total_results: 2847
+                      total_pages: 57
+                    performance:
+                      query_time_ms: 156
+                      total_documents_searched: 134014
+                    documents:
+                      - id: "doc_12345"
+                        title: "Lei Federal 14.368/2022 - Política Nacional de Biocombustíveis"
+                        type: "Lei"
+                        category: "legislation"
+                        authority: "Governo Federal"
+                        state: "DF"
+                        date: "2022-05-11"
+                        url: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/L14368.htm"
+                        summary: "Institui a Política Nacional de Biocombustíveis e o Programa RenovaBio..."
+                        transport_modal: ["road", "cargo"]
+                        relevance_score: 0.95
+                        citation_abnt: "BRASIL. Lei nº 14.368, de 11 de maio de 2022. Política Nacional de Biocombustíveis. Diário Oficial da União, Brasília, DF, 12 maio 2022."
+                      - id: "doc_12346"  
+                        title: "Resolução ANTT 5.849/2020 - Registro Nacional de Transportadores"
+                        type: "Resolução"
+                        category: "regulation"
+                        authority: "ANTT"
+                        state: "DF"
+                        date: "2020-08-15"
+                        url: "https://www.antt.gov.br/resolucoes/2020/5849.html"
+                        summary: "Disciplina o Registro Nacional de Transportadores Rodoviários de Carga..."
+                        transport_modal: ["road", "cargo"]
+                        relevance_score: 0.89
+                        citation_abnt: "AGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Resolução nº 5.849, de 15 de agosto de 2020. Registro Nacional de Transportadores Rodoviários de Carga. Diário Oficial da União, Brasília, DF, 18 ago. 2020."
+                        
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /documents/{id}:
+    get:
+      tags: [Legislative Search]
+      summary: Get Document by ID
+      description: |
+        **Retrieve complete document information by unique identifier**
+        
+        Returns comprehensive document metadata, full text (when available), analysis results, and prepared academic citations. Optimized for single-document research workflows.
+        
+        ### Enhanced Features
+        - Complete document metadata with legal classifications
+        - Full-text content when publicly available
+        - Advanced NLP analysis including topic classification and entity extraction
+        - Ready-to-use ABNT citations with proper legal formatting
+        - Cross-reference analysis showing related documents
+        - Historical version tracking for amended legislation
+        
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique document identifier
+          schema:
+            type: string
+            pattern: '^doc_[a-zA-Z0-9]+$'
+          example: "doc_12345"
+          
+        - name: include_full_text
+          in: query
+          description: Include full document text in response (when available)
+          schema:
+            type: boolean
+            default: false
+          example: true
+            
+        - name: include_analysis
+          in: query
+          description: Include advanced NLP analysis results
+          schema:
+            type: boolean  
+            default: false
+          example: true
+            
+        - name: include_citations
+          in: query
+          description: Include cross-reference and citation analysis
+          schema:
+            type: boolean
+            default: true
+          example: true
+            
+        - name: citation_format
+          in: query
+          description: Preferred citation format for academic use
+          schema:
+            type: string
+            enum: [abnt, bibtex, apa, chicago]
+            default: abnt
+          example: abnt
+
+      responses:
+        '200':
+          description: Document retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetail'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # Geographic Analysis Endpoints
+  /geographic/distribution:
+    get:
+      tags: [Geographic Analysis]
+      summary: Geographic Document Distribution
+      description: |
+        **Analyze geographic distribution of legislative documents**
+        
+        Provides state-level and municipal-level analysis of document distribution, enabling researchers to study regional policy patterns and legislative activity concentration.
+        
+        ### Research Applications
+        - Regional policy concentration studies
+        - Federal vs. state vs. municipal legislation analysis
+        - Transport infrastructure policy mapping
+        - Regulatory jurisdiction analysis
+        - Academic geographic policy research
+        
+        ### Data Aggregation
+        - Document counts by geographic administrative level
+        - Policy density calculations per capita and area
+        - Temporal trends in regional legislative activity
+        - Cross-modal transport policy distribution
+        
+      parameters:
+        - name: level
+          in: query
+          description: Geographic aggregation level
+          schema:
+            type: string
+            enum: [state, municipality, region]
+            default: state
+          example: state
+            
+        - name: category
+          in: query  
+          description: Filter by document category
+          schema:
+            type: string
+            enum: [all, legislation, regulation, jurisprudence, doctrine]
+            default: all
+          example: legislation
+            
+        - name: transport_modal
+          in: query
+          description: Filter by transport modality
+          schema:
+            type: string
+            enum: [all, road, rail, air, water, urban, cargo, passenger]
+            default: all
+          example: road
+            
+        - name: date_start
+          in: query
+          description: Start date for temporal analysis
+          schema:
+            type: string
+            format: date
+          example: "2020-01-01"
+            
+        - name: date_end
+          in: query
+          description: End date for temporal analysis
+          schema:
+            type: string
+            format: date
+          example: "2024-12-31"
+            
+        - name: include_geojson
+          in: query
+          description: Include GeoJSON boundaries for mapping
+          schema:
+            type: boolean
+            default: false
+          example: true
+            
+        - name: normalize_population
+          in: query
+          description: Normalize counts by population (documents per 100k inhabitants)
+          schema:
+            type: boolean
+            default: false
+          example: true
+
+      responses:
+        '200':
+          description: Geographic distribution data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeographicDistribution'
+
+  /geographic/corridors:
+    get:
+      tags: [Geographic Analysis]
+      summary: Transport Corridor Analysis
+      description: |
+        **Analyze legislative patterns along transport corridors**
+        
+        Identifies and analyzes policy patterns along major Brazilian transport corridors, enabling research into infrastructure policy coordination and regional development patterns.
+        
+        ### Corridor Analysis Features
+        - Major highway corridor policy analysis (BR-101, BR-116, etc.)
+        - Railway corridor legislative patterns
+        - Port and airport catchment area analysis
+        - Cross-state policy coordination assessment
+        - Infrastructure investment policy mapping
+        
+      parameters:
+        - name: corridor_type
+          in: query
+          description: Type of transport corridor to analyze
+          schema:
+            type: string
+            enum: [highway, railway, waterway, aviation, multimodal]
+            default: highway
+          example: highway
+            
+        - name: corridor_id
+          in: query
+          description: Specific corridor identifier (e.g., BR-101, BR-116)
+          schema:
+            type: string
+            maxLength: 50
+          example: "BR-101"
+            
+        - name: buffer_km
+          in: query
+          description: Analysis buffer distance in kilometers
+          schema:
+            type: integer
+            minimum: 5
+            maximum: 200
+            default: 50
+          example: 50
+            
+        - name: include_municipalities
+          in: query
+          description: Include municipal-level analysis
+          schema:
+            type: boolean
+            default: true
+          example: true
+
+      responses:
+        '200':
+          description: Corridor analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CorridorAnalysis'
+
+  # Citation Generation Endpoints
+  /citations/generate:
+    post:
+      tags: [Citation Generation]
+      summary: Generate Academic Citations
+      description: |
+        **Generate ABNT-compliant academic citations for Brazilian legislative documents**
+        
+        Produces properly formatted academic citations following ABNT (Brazilian Association of Technical Standards) guidelines for legal documents. Essential for academic research and publication preparation.
+        
+        ### Citation Standards
+        - ABNT NBR 6023:2018 compliance for legal references
+        - Proper Brazilian legal document formatting
+        - Authority name standardization and abbreviation
+        - Date formatting according to Brazilian academic standards
+        - URL and access date inclusion for digital documents
+        - Cross-reference support for amended legislation
+        
+        ### Supported Formats
+        - ABNT (Brazilian standard)
+        - BibTeX for LaTeX integration  
+        - APA for international publications
+        - Chicago style for legal academic work
+        - Custom format templates for institutional requirements
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CitationRequest'
+            examples:
+              single_document:
+                summary: Single document citation
+                value:
+                  document_ids: ["doc_12345"]
+                  citation_format: "abnt"
+                  include_access_date: true
+                  grouping: "none"
+              multiple_documents:
+                summary: Multiple document bibliography
+                value:
+                  document_ids: ["doc_12345", "doc_12346", "doc_12347"]
+                  citation_format: "abnt"
+                  include_access_date: true
+                  grouping: "by_authority"
+                  sort_order: "alphabetical"
+
+      responses:
+        '200':
+          description: Citations generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CitationResponse'
+              examples:
+                abnt_citations:
+                  summary: ABNT formatted citations
+                  value:
+                    status: "success"
+                    citation_format: "abnt"
+                    total_documents: 2
+                    generated_at: "2024-01-15T14:30:00Z"
+                    citations:
+                      - document_id: "doc_12345"
+                        formatted_citation: "BRASIL. Lei nº 14.368, de 11 de maio de 2022. Política Nacional de Biocombustíveis. Diário Oficial da União, Brasília, DF, 12 maio 2022. Disponível em: https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/L14368.htm. Acesso em: 15 jan. 2024."
+                        bibtex_entry: "@misc{brasil2022_14368,\n  author = {{Brasil}},\n  title = {Lei nº 14.368, de 11 de maio de 2022. Política Nacional de Biocombustíveis},\n  year = {2022},\n  url = {https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/L14368.htm},\n  note = {Acesso em: 15 jan. 2024}\n}"
+                        validation:
+                          abnt_compliant: true
+                          authority_standardized: true
+                          date_format_valid: true
+                      - document_id: "doc_12346"
+                        formatted_citation: "AGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Resolução nº 5.849, de 15 de agosto de 2020. Registro Nacional de Transportadores Rodoviários de Carga. Diário Oficial da União, Brasília, DF, 18 ago. 2020. Disponível em: https://www.antt.gov.br/resolucoes/2020/5849.html. Acesso em: 15 jan. 2024."
+                        bibtex_entry: "@misc{antt2020_5849,\n  author = {{Agência Nacional de Transportes Terrestres}},\n  title = {Resolução nº 5.849, de 15 de agosto de 2020. Registro Nacional de Transportadores Rodoviários de Carga},\n  year = {2020},\n  url = {https://www.antt.gov.br/resolucoes/2020/5849.html},\n  note = {Acesso em: 15 jan. 2024}\n}"
+                        validation:
+                          abnt_compliant: true
+                          authority_standardized: true
+                          date_format_valid: true
+                          
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /citations/network:
+    get:
+      tags: [Citation Generation]
+      summary: Citation Network Analysis
+      description: |
+        **Analyze citation relationships between legislative documents**
+        
+        Performs advanced citation network analysis to identify policy influence patterns, legislative hierarchies, and cross-reference networks within Brazilian transport legislation.
+        
+        ### Network Analysis Features
+        - Document citation relationship mapping
+        - Policy influence scoring and ranking
+        - Hierarchical authority relationship analysis
+        - Temporal citation pattern analysis
+        - Cross-modal policy influence assessment
+        - Regulatory cascade effect identification
+        
+        ### Academic Research Applications
+        - Policy diffusion studies
+        - Legal precedence analysis
+        - Regulatory influence assessment
+        - Institutional policy coordination research
+        - Legislative evolution tracking
+        
+      parameters:
+        - name: document_ids
+          in: query
+          description: |
+            **Document IDs for network analysis**
+            
+            Comma-separated list of document IDs to include in citation network analysis. Leave empty to analyze entire corpus within specified filters.
+            
+          schema:
+            type: string
+            maxLength: 2000
+          example: "doc_12345,doc_12346,doc_12347"
+            
+        - name: max_depth
+          in: query
+          description: Maximum citation depth to traverse (1-5)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+            default: 3
+          example: 3
+            
+        - name: min_citations
+          in: query
+          description: Minimum citation count to include document in network
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100
+            default: 1
+          example: 2
+            
+        - name: include_temporal
+          in: query
+          description: Include temporal citation pattern analysis
+          schema:
+            type: boolean
+            default: false
+          example: true
+            
+        - name: authority_filter
+          in: query
+          description: Filter network by specific authorities
+          schema:
+            type: string
+            maxLength: 200
+          example: "ANTT,CONTRAN,DNIT"
+            
+        - name: transport_modal
+          in: query
+          description: Filter by transport modality
+          schema:
+            type: string
+            enum: [all, road, rail, air, water, urban, cargo, passenger]
+            default: all
+          example: road
+            
+        - name: output_format
+          in: query
+          description: Network data output format
+          schema:
+            type: string
+            enum: [json, graphml, gexf, cytoscape]
+            default: json
+          example: json
+
+      responses:
+        '200':
+          description: Citation network analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CitationNetwork'
+
+  # Analytics & Insights Endpoints
+  /analytics/trends:
+    get:
+      tags: [Analytics & Insights]
+      summary: Legislative Trend Analysis
+      description: |
+        **Comprehensive temporal trend analysis of Brazilian transport legislation**
+        
+        Provides sophisticated time-series analysis of legislative activity, policy evolution, and regulatory patterns. Essential for academic research into policy development and regulatory trends.
+        
+        ### Analytical Capabilities
+        - Temporal publication pattern analysis
+        - Policy topic evolution tracking
+        - Regulatory complexity trend assessment
+        - Authority activity level analysis
+        - Seasonal and cyclical pattern identification
+        - Predictive trend modeling (when requested)
+        
+        ### Statistical Methods
+        - Time series decomposition (trend, seasonal, irregular components)
+        - Moving averages and smoothing techniques
+        - Change point detection for policy regime shifts
+        - Correlation analysis between different policy areas
+        - Statistical significance testing for observed trends
+        
+      parameters:
+        - name: timeframe
+          in: query
+          description: |
+            **Analysis timeframe**
+            
+            Predefined analytical periods:
+            - `year`: Annual trends over available years
+            - `quarter`: Quarterly analysis for detailed patterns
+            - `month`: Monthly granularity for recent periods
+            - `custom`: User-defined date range
+            
+          schema:
+            type: string
+            enum: [year, quarter, month, custom]
+            default: year
+          example: year
+            
+        - name: date_start
+          in: query
+          description: Start date for custom timeframe analysis
+          schema:
+            type: string
+            format: date
+          example: "2015-01-01"
+            
+        - name: date_end
+          in: query
+          description: End date for custom timeframe analysis
+          schema:
+            type: string
+            format: date
+          example: "2024-12-31"
+            
+        - name: category
+          in: query
+          description: Filter analysis by document category
+          schema:
+            type: string
+            enum: [all, legislation, regulation, jurisprudence, doctrine]
+            default: all
+          example: legislation
+            
+        - name: authority
+          in: query
+          description: Filter by issuing authority
+          schema:
+            type: string
+            maxLength: 100
+          example: "ANTT"
+            
+        - name: transport_modal
+          in: query
+          description: Filter by transport modality
+          schema:
+            type: string
+            enum: [all, road, rail, air, water, urban, cargo, passenger]
+            default: all
+          example: road
+            
+        - name: geographic_scope
+          in: query
+          description: |
+            **Geographic analysis scope**
+            
+            Geographic levels for trend analysis:
+            - `national`: Federal-level legislation trends
+            - `state`: State-level aggregated trends
+            - `municipal`: Municipal-level aggregated trends
+            - `regional`: Regional (geographic regions) trends
+            
+          schema:
+            type: string
+            enum: [national, state, municipal, regional]
+            default: national
+          example: national
+            
+        - name: include_forecasting
+          in: query
+          description: Include trend forecasting (experimental feature)
+          schema:
+            type: boolean
+            default: false
+          example: false
+            
+        - name: statistical_tests
+          in: query
+          description: Include statistical significance tests
+          schema:
+            type: boolean
+            default: true
+          example: true
+            
+        - name: smoothing_method
+          in: query
+          description: |
+            **Time series smoothing method**
+            
+            Available smoothing techniques:
+            - `none`: Raw data without smoothing
+            - `moving_average`: Simple moving average
+            - `exponential`: Exponential smoothing
+            - `loess`: Local regression smoothing
+            - `seasonal`: Seasonal decomposition
+            
+          schema:
+            type: string
+            enum: [none, moving_average, exponential, loess, seasonal]
+            default: moving_average
+          example: moving_average
+
+      responses:
+        '200':
+          description: Trend analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendAnalysis'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /analytics/complexity:
+    get:
+      tags: [Analytics & Insights]
+      summary: Regulatory Complexity Analysis
+      description: |
+        **Advanced regulatory complexity assessment and scoring**
+        
+        Analyzes regulatory complexity using sophisticated NLP and structural analysis techniques. Provides objective metrics for comparing regulatory burden and policy complexity across different areas and time periods.
+        
+        ### Complexity Metrics
+        - **Textual Complexity**: Readability scores, sentence complexity, technical terminology density
+        - **Structural Complexity**: Cross-references, amendments, exceptions, and conditional clauses
+        - **Procedural Complexity**: Implementation steps, compliance requirements, stakeholder obligations
+        - **Temporal Complexity**: Phase-in periods, deadlines, renewal requirements
+        - **Jurisdictional Complexity**: Multi-level authority involvement and coordination requirements
+        
+        ### Academic Applications
+        - Regulatory burden assessment studies
+        - Policy implementation difficulty analysis
+        - Comparative complexity analysis across jurisdictions
+        - Regulatory evolution and simplification tracking
+        - Compliance cost prediction research
+        
+      parameters:
+        - name: category
+          in: query
+          description: Filter by document category
+          schema:
+            type: string
+            enum: [all, legislation, regulation, jurisprudence, doctrine]
+            default: all
+          example: regulation
+            
+        - name: authority
+          in: query
+          description: Filter by regulatory authority
+          schema:
+            type: string
+            maxLength: 100
+          example: "ANTT"
+            
+        - name: transport_modal
+          in: query
+          description: Filter by transport modality
+          schema:
+            type: string
+            enum: [all, road, rail, air, water, urban, cargo, passenger]
+            default: all
+          example: road
+            
+        - name: complexity_metrics
+          in: query
+          description: |
+            **Specific complexity metrics to calculate**
+            
+            Available complexity measures:
+            - `textual`: Text-based complexity (readability, terminology)
+            - `structural`: Document structure complexity
+            - `procedural`: Implementation complexity
+            - `temporal`: Time-based complexity (deadlines, phases)
+            - `jurisdictional`: Multi-authority complexity
+            - `all`: Calculate all complexity measures
+            
+          schema:
+            type: string
+            enum: [textual, structural, procedural, temporal, jurisdictional, all]
+            default: all
+          example: all
+            
+        - name: benchmark_comparison
+          in: query
+          description: Include complexity benchmarking against similar documents
+          schema:
+            type: boolean
+            default: true
+          example: true
+            
+        - name: temporal_analysis
+          in: query
+          description: Include temporal complexity evolution analysis
+          schema:
+            type: boolean
+            default: false
+          example: true
+            
+        - name: date_start
+          in: query
+          description: Start date for temporal complexity analysis
+          schema:
+            type: string
+            format: date
+          example: "2018-01-01"
+            
+        - name: date_end
+          in: query
+          description: End date for temporal complexity analysis
+          schema:
+            type: string
+            format: date
+          example: "2024-12-31"
+
+      responses:
+        '200':
+          description: Complexity analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplexityAnalysis'
+
+  # Export & Download Endpoints
+  /export/documents:
+    post:
+      tags: [Export & Download]
+      summary: Bulk Document Export
+      description: |
+        **Export filtered document sets in various academic formats**
+        
+        Enables bulk export of filtered document collections for offline analysis, academic research, and integration with statistical software packages. Optimized for large-scale research workflows.
+        
+        ### Export Formats
+        - **CSV**: Structured data for statistical analysis (R, SPSS, Excel)
+        - **JSON**: Full metadata for programmatic analysis
+        - **BibTeX**: Bibliography integration for LaTeX documents
+        - **RDS**: Native R data format for seamless R integration
+        - **Parquet**: High-performance columnar format for big data analysis
+        
+        ### Export Features
+        - Configurable column selection for specific research needs
+        - Citation-ready formatting with proper academic metadata
+        - Batch processing for large datasets (100k+ documents)
+        - Resume capability for interrupted exports
+        - Data validation and quality assurance
+        - Statistical software compatibility optimization
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+            examples:
+              research_export:
+                summary: Academic research export
+                value:
+                  filters:
+                    category: "legislation"
+                    transport_modal: "road"
+                    date_start: "2020-01-01"
+                    date_end: "2024-12-31"
+                    state: "SP"
+                  format: "csv"
+                  columns: ["id", "title", "authority", "date", "state", "transport_modal", "citation_abnt"]
+                  include_analysis: false
+                  filename: "sp_road_legislation_2020_2024"
+              comprehensive_export:
+                summary: Comprehensive dataset export
+                value:
+                  filters:
+                    category: "all"
+                  format: "json"
+                  columns: "all"
+                  include_analysis: true
+                  include_full_text: false
+                  filename: "brazilian_transport_corpus_complete"
+
+      responses:
+        '200':
+          description: Export initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportInitiated'
+        '202':
+          description: Export queued for processing (large datasets)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportQueued'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /export/status/{export_id}:
+    get:
+      tags: [Export & Download]
+      summary: Check Export Status
+      description: Check the status of a bulk export operation
+      parameters:
+        - name: export_id
+          in: path
+          required: true
+          description: Export operation identifier
+          schema:
+            type: string
+            pattern: '^export_[a-zA-Z0-9]+$'
+          example: "export_abc123"
+      responses:
+        '200':
+          description: Export status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportStatus'
+
+  /export/download/{export_id}:
+    get:
+      tags: [Export & Download]
+      summary: Download Export File
+      description: Download completed export file
+      parameters:
+        - name: export_id
+          in: path
+          required: true
+          description: Export operation identifier
+          schema:
+            type: string
+            pattern: '^export_[a-zA-Z0-9]+$'
+          example: "export_abc123"
+      responses:
+        '200':
+          description: File download initiated
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Research Tools Endpoints
+  /research/keywords:
+    get:
+      tags: [Research Tools]
+      summary: Extract Research Keywords
+      description: |
+        **Extract and analyze research keywords from document corpus**
+        
+        Advanced keyword extraction and analysis specifically designed for Brazilian legal and transport terminology. Uses sophisticated NLP techniques to identify key terms, concepts, and emerging policy themes.
+        
+        ### Keyword Analysis Features
+        - Portuguese legal terminology extraction
+        - Transport-specific technical term identification
+        - Regulatory authority and institutional name recognition
+        - Policy concept and theme identification
+        - Temporal keyword trend analysis
+        - Keyword co-occurrence and relationship mapping
+        
+        ### Academic Research Applications
+        - Literature review keyword identification
+        - Research trend analysis
+        - Policy theme evolution tracking
+        - Comparative terminology analysis
+        - Academic search strategy development
+        
+      parameters:
+        - name: extraction_method
+          in: query
+          description: |
+            **Keyword extraction methodology**
+            
+            Available extraction methods:
+            - `tf_idf`: Term frequency-inverse document frequency
+            - `legal_entities`: Brazilian legal entity recognition
+            - `transport_terms`: Transport-specific terminology
+            - `policy_concepts`: Policy and regulatory concept extraction
+            - `combined`: Hybrid approach using multiple methods
+            
+          schema:
+            type: string
+            enum: [tf_idf, legal_entities, transport_terms, policy_concepts, combined]
+            default: combined
+          example: combined
+            
+        - name: max_keywords
+          in: query
+          description: Maximum number of keywords to return
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 500
+            default: 100
+          example: 100
+            
+        - name: min_frequency
+          in: query
+          description: Minimum keyword frequency to include in results
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 5
+          example: 5
+            
+        - name: category
+          in: query
+          description: Filter source documents by category
+          schema:
+            type: string
+            enum: [all, legislation, regulation, jurisprudence, doctrine]
+            default: all
+          example: legislation
+            
+        - name: transport_modal
+          in: query
+          description: Filter by transport modality
+          schema:
+            type: string
+            enum: [all, road, rail, air, water, urban, cargo, passenger]
+            default: all
+          example: road
+            
+        - name: date_start
+          in: query
+          description: Start date for temporal keyword analysis
+          schema:
+            type: string
+            format: date
+          example: "2020-01-01"
+            
+        - name: date_end
+          in: query
+          description: End date for temporal keyword analysis
+          schema:
+            type: string
+            format: date
+          example: "2024-12-31"
+            
+        - name: include_trends
+          in: query
+          description: Include temporal keyword trend analysis
+          schema:
+            type: boolean
+            default: false
+          example: true
+            
+        - name: include_cooccurrence
+          in: query
+          description: Include keyword co-occurrence analysis
+          schema:
+            type: boolean
+            default: false
+          example: true
+
+      responses:
+        '200':
+          description: Keywords extracted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeywordAnalysis'
+
+  /research/comparison:
+    post:
+      tags: [Research Tools]
+      summary: Comparative Policy Analysis
+      description: |
+        **Advanced comparative analysis between document sets**
+        
+        Performs sophisticated comparative analysis between different document sets, enabling researchers to study policy differences across jurisdictions, time periods, authorities, or policy domains.
+        
+        ### Comparison Capabilities
+        - Cross-jurisdictional policy comparison (state vs. federal, inter-state)
+        - Temporal comparison (policy evolution over time)
+        - Authority comparison (different regulatory approaches)
+        - Modal comparison (transport mode policy differences)
+        - Complexity comparison (regulatory burden analysis)
+        - Topic distribution comparison (policy focus areas)
+        
+        ### Statistical Analysis
+        - Significance testing for observed differences
+        - Effect size calculations for practical importance
+        - Confidence intervals for population estimates
+        - Correlation analysis between different policy approaches
+        - Cluster analysis for policy similarity grouping
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComparisonRequest'
+            examples:
+              state_comparison:
+                summary: State-level policy comparison
+                value:
+                  comparison_type: "jurisdictional"
+                  group_a:
+                    label: "São Paulo"
+                    filters:
+                      state: "SP"
+                      category: "legislation"
+                      transport_modal: "urban"
+                  group_b:
+                    label: "Rio de Janeiro"
+                    filters:
+                      state: "RJ"
+                      category: "legislation"
+                      transport_modal: "urban"
+                  analysis_methods: ["frequency", "complexity", "topics"]
+                  statistical_tests: true
+              temporal_comparison:
+                summary: Temporal policy evolution comparison
+                value:
+                  comparison_type: "temporal"
+                  group_a:
+                    label: "Pre-2020 Period"
+                    filters:
+                      date_start: "2010-01-01"
+                      date_end: "2019-12-31"
+                      category: "regulation"
+                  group_b:
+                    label: "Post-2020 Period"
+                    filters:
+                      date_start: "2020-01-01"
+                      date_end: "2024-12-31"
+                      category: "regulation"
+                  analysis_methods: ["frequency", "complexity", "topics", "keywords"]
+                  statistical_tests: true
+
+      responses:
+        '200':
+          description: Comparative analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComparisonAnalysis'
+
+  # Metadata & Schema Endpoints
+  /meta/schema:
+    get:
+      tags: [Metadata & Schema]
+      summary: Get Data Schema Information
+      description: |
+        **Retrieve complete data schema and field definitions**
+        
+        Provides comprehensive documentation of all data fields, their types, valid values, and relationships. Essential for researchers planning data analysis and integration workflows.
+        
+      parameters:
+        - name: format
+          in: query
+          description: Schema format preference
+          schema:
+            type: string
+            enum: [json, json_schema, openapi]
+            default: json
+          example: json
+            
+        - name: include_examples
+          in: query
+          description: Include example values for each field
+          schema:
+            type: boolean
+            default: true
+          example: true
+
+      responses:
+        '200':
+          description: Schema information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSchema'
+
+  /meta/statistics:
+    get:
+      tags: [Metadata & Schema]
+      summary: Get Corpus Statistics
+      description: |
+        **Retrieve comprehensive corpus statistics and metadata**
+        
+        Provides detailed statistics about the legislative document corpus, including data quality metrics, coverage statistics, and update information.
+        
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CorpusStatistics'
+
+  /meta/authorities:
+    get:
+      tags: [Metadata & Schema]
+      summary: Get Authority Directory
+      description: |
+        **Retrieve standardized directory of Brazilian regulatory authorities**
+        
+        Provides comprehensive directory of Brazilian regulatory authorities, their full names, abbreviations, jurisdictions, and contact information.
+        
+      responses:
+        '200':
+          description: Authority directory retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorityDirectory'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        **API Key Authentication**
+        
+        All endpoints require a valid API key for access control and rate limiting. Academic researchers can request API keys through the institutional portal.
+        
+        ### Usage
+        Include your API key in the `X-API-Key` header with every request:
+        ```
+        X-API-Key: your_api_key_here
+        ```
+        
+        ### Rate Limits by Key Type
+        - **Standard Academic**: 1000 requests/hour, 50 requests/minute
+        - **Research Institution**: 5000 requests/hour, 200 requests/minute
+        - **Bulk Research**: Custom limits for large-scale studies
+        
+        ### Key Management
+        - Keys do not expire but can be revoked for security
+        - Usage monitoring and analytics available
+        - Support for multiple keys per researcher/institution
+
+  responses:
+    BadRequestError:
+      description: Bad request - Invalid parameters or malformed request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            invalid_parameter:
+              summary: Invalid parameter value
+              value:
+                status: "error"
+                error_code: "INVALID_PARAMETER"
+                message: "Invalid value for parameter 'state': 'XX' is not a valid Brazilian state code"
+                details:
+                  parameter: "state"
+                  provided_value: "XX"
+                  valid_values: ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]
+                documentation_url: "https://api.monitor-legislativo.br/docs#states"
+
+    UnauthorizedError:
+      description: Unauthorized - Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missing_key:
+              summary: Missing API key
+              value:
+                status: "error"
+                error_code: "MISSING_API_KEY"
+                message: "API key is required. Include your key in the X-API-Key header."
+                documentation_url: "https://api.monitor-legislativo.br/docs#authentication"
+            invalid_key:
+              summary: Invalid API key
+              value:
+                status: "error"
+                error_code: "INVALID_API_KEY"
+                message: "The provided API key is invalid or has been revoked."
+                documentation_url: "https://api.monitor-legislativo.br/docs#authentication"
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            document_not_found:
+              summary: Document not found
+              value:
+                status: "error"
+                error_code: "DOCUMENT_NOT_FOUND"
+                message: "Document with ID 'doc_invalid' was not found in the corpus."
+                details:
+                  resource_type: "document"
+                  resource_id: "doc_invalid"
+                suggestions: ["Check the document ID format", "Verify the document exists using the search endpoint"]
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            rate_limit_exceeded:
+              summary: Rate limit exceeded
+              value:
+                status: "error"
+                error_code: "RATE_LIMIT_EXCEEDED"
+                message: "API rate limit exceeded. Please wait before making additional requests."
+                details:
+                  limit_type: "hourly"
+                  current_usage: 1000
+                  limit: 1000
+                  reset_time: "2024-01-15T15:00:00Z"
+                  retry_after_seconds: 1800
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            database_error:
+              summary: Database connection error
+              value:
+                status: "error"
+                error_code: "DATABASE_ERROR"
+                message: "A temporary database error occurred. Please try again in a few moments."
+                details:
+                  timestamp: "2024-01-15T14:30:00Z"
+                  request_id: "req_abc123"
+                contact_support: "api-support@monitor-legislativo.br"
+
+  schemas:
+    # Core Data Models
+    Document:
+      type: object
+      description: Core legislative document object with all essential metadata
+      properties:
+        id:
+          type: string
+          pattern: '^doc_[a-zA-Z0-9]+$'
+          description: Unique document identifier
+          example: "doc_12345"
+        title:
+          type: string
+          maxLength: 1000
+          description: Full document title
+          example: "Lei Federal 14.368/2022 - Política Nacional de Biocombustíveis"
+        type:
+          type: string
+          description: Type of legal instrument
+          enum: [Lei, Decreto, Resolução, Portaria, "Medida Provisória", "Instrução Normativa", "Súmula", "Acórdão"]
+          example: "Lei"
+        category:
+          type: string
+          description: Document category classification
+          enum: [legislation, regulation, jurisprudence, doctrine]
+          example: "legislation"
+        authority:
+          type: string
+          maxLength: 200
+          description: Issuing authority or regulatory agency
+          example: "Governo Federal"
+        state:
+          type: string
+          pattern: '^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$'
+          description: Brazilian state abbreviation
+          example: "DF"
+        municipality:
+          type: string
+          maxLength: 100
+          description: Municipality name (when applicable)
+          example: "São Paulo"
+        date:
+          type: string
+          format: date
+          description: Publication or effective date
+          example: "2022-05-11"
+        url:
+          type: string
+          format: uri
+          maxLength: 500
+          description: Official document URL
+          example: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/L14368.htm"
+        summary:
+          type: string
+          maxLength: 2000
+          description: Document summary or abstract
+          example: "Institui a Política Nacional de Biocombustíveis e o Programa RenovaBio..."
+        transport_modal:
+          type: array
+          items:
+            type: string
+            enum: [road, rail, air, water, urban, cargo, passenger]
+          description: Applicable transport modalities
+          example: ["road", "cargo"]
+        urn:
+          type: string
+          maxLength: 200
+          description: Uniform Resource Name (legal identifier)
+          example: "urn:lex:br:federal:lei:2022-05-11;14368"
+        relevance_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Search relevance score (0.0 to 1.0)
+          example: 0.95
+        citation_abnt:
+          type: string
+          maxLength: 1000
+          description: ABNT-formatted citation
+          example: "BRASIL. Lei nº 14.368, de 11 de maio de 2022. Política Nacional de Biocombustíveis. Diário Oficial da União, Brasília, DF, 12 maio 2022."
+      required:
+        - id
+        - title
+        - type
+        - category
+        - authority
+        - date
+
+    DocumentDetail:
+      allOf:
+        - $ref: '#/components/schemas/Document'
+        - type: object
+          properties:
+            full_text:
+              type: string
+              description: Full document text (when available and requested)
+            analysis:
+              $ref: '#/components/schemas/DocumentAnalysis'
+            citations:
+              $ref: '#/components/schemas/DocumentCitations'
+            metadata:
+              type: object
+              properties:
+                word_count:
+                  type: integer
+                  example: 2847
+                language:
+                  type: string
+                  example: "pt-BR"
+                encoding:
+                  type: string
+                  example: "UTF-8"
+                last_updated:
+                  type: string
+                  format: date-time
+                  example: "2024-01-15T14:30:00Z"
+                source_verified:
+                  type: boolean
+                  example: true
+
+    DocumentAnalysis:
+      type: object
+      description: Advanced NLP analysis results for document
+      properties:
+        topics:
+          type: array
+          items:
+            type: object
+            properties:
+              topic_id:
+                type: string
+                example: "transport_infrastructure"
+              topic_name:
+                type: string
+                example: "Transport Infrastructure"
+              probability:
+                type: number
+                minimum: 0
+                maximum: 1
+                example: 0.87
+        entities:
+          type: array
+          items:
+            type: object
+            properties:
+              entity:
+                type: string
+                example: "ANTT"
+              entity_type:
+                type: string
+                enum: [regulatory_agency, legal_instrument, geographic_entity, transport_entity]
+                example: "regulatory_agency"
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+                example: 0.95
+        complexity_score:
+          type: object
+          properties:
+            overall_score:
+              type: number
+              minimum: 0
+              maximum: 10
+              example: 6.7
+            textual_complexity:
+              type: number
+              example: 7.2
+            structural_complexity:
+              type: number
+              example: 6.1
+            procedural_complexity:
+              type: number
+              example: 6.9
+        sentiment_analysis:
+          type: object
+          properties:
+            regulatory_tone:
+              type: string
+              enum: [prescriptive, balanced, flexible]
+              example: "prescriptive"
+            certainty_level:
+              type: number
+              minimum: 0
+              maximum: 1
+              example: 0.89
+
+    DocumentCitations:
+      type: object
+      description: Citation and cross-reference analysis
+      properties:
+        cited_documents:
+          type: array
+          items:
+            type: object
+            properties:
+              document_id:
+                type: string
+                example: "doc_67890"
+              citation_context:
+                type: string
+                example: "conforme estabelecido pela Lei 12.619/2012"
+              citation_type:
+                type: string
+                enum: [direct_reference, amendment, revocation, complement]
+                example: "direct_reference"
+        citing_documents:
+          type: array
+          items:
+            type: object
+            properties:
+              document_id:
+                type: string
+                example: "doc_54321"
+              citation_context:
+                type: string
+                example: "alterada pela presente lei"
+        influence_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Policy influence score based on citation network
+          example: 0.73
+
+    # Search and Response Models
+    DocumentSearchResponse:
+      type: object
+      description: Response object for document search operations
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        query:
+          type: object
+          properties:
+            text:
+              type: string
+              example: "transporte rodoviário"
+            filters:
+              type: object
+              example:
+                category: "legislation"
+                state: "SP"
+                transport_modal: "road"
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+        performance:
+          type: object
+          properties:
+            query_time_ms:
+              type: integer
+              description: Query execution time in milliseconds
+              example: 156
+            total_documents_searched:
+              type: integer
+              description: Total documents in corpus
+              example: 134014
+            index_coverage:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: Proportion of corpus searched
+              example: 1.0
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+      required:
+        - status
+        - pagination
+        - documents
+
+    PaginationInfo:
+      type: object
+      description: Pagination metadata for search results
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        per_page:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          example: 50
+        total_results:
+          type: integer
+          minimum: 0
+          example: 2847
+        total_pages:
+          type: integer
+          minimum: 0
+          example: 57
+        has_next:
+          type: boolean
+          example: true
+        has_previous:
+          type: boolean
+          example: false
+        next_page:
+          type: integer
+          nullable: true
+          example: 2
+        previous_page:
+          type: integer
+          nullable: true
+          example: null
+      required:
+        - page
+        - per_page
+        - total_results
+        - total_pages
+
+    # Geographic Analysis Models
+    GeographicDistribution:
+      type: object
+      description: Geographic analysis results with document distribution
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        analysis_parameters:
+          type: object
+          properties:
+            level:
+              type: string
+              example: "state"
+            category:
+              type: string
+              example: "legislation"
+            date_range:
+              type: object
+              properties:
+                start:
+                  type: string
+                  format: date
+                  example: "2020-01-01"
+                end:
+                  type: string
+                  format: date
+                  example: "2024-12-31"
+        geographic_data:
+          type: array
+          items:
+            type: object
+            properties:
+              geographic_id:
+                type: string
+                description: Geographic identifier (state code or municipality ID)
+                example: "SP"
+              name:
+                type: string
+                description: Geographic entity name
+                example: "São Paulo"
+              document_count:
+                type: integer
+                minimum: 0
+                example: 1247
+              documents_per_capita:
+                type: number
+                description: Documents per 100,000 inhabitants
+                example: 2.8
+              percentage_of_total:
+                type: number
+                minimum: 0
+                maximum: 100
+                example: 15.7
+              geojson:
+                type: object
+                description: GeoJSON boundary data (when requested)
+                example:
+                  type: "Feature"
+                  properties:
+                    name: "São Paulo"
+                  geometry:
+                    type: "Polygon"
+                    coordinates: [[[-46.0, -23.0], [-47.0, -23.0], [-47.0, -24.0], [-46.0, -24.0], [-46.0, -23.0]]]
+        statistics:
+          type: object
+          properties:
+            total_documents:
+              type: integer
+              example: 7934
+            geographic_entities_with_documents:
+              type: integer
+              example: 26
+            coverage_percentage:
+              type: number
+              example: 96.3
+            top_entities:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "São Paulo"
+                  document_count:
+                    type: integer
+                    example: 1247
+
+    CorridorAnalysis:
+      type: object
+      description: Transport corridor policy analysis results
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        corridor_info:
+          type: object
+          properties:
+            corridor_id:
+              type: string
+              example: "BR-101"
+            corridor_type:
+              type: string
+              example: "highway"
+            total_length_km:
+              type: number
+              example: 4694.7
+            states_crossed:
+              type: array
+              items:
+                type: string
+              example: ["RN", "PB", "PE", "AL", "SE", "BA", "ES", "RJ", "SP", "PR", "SC", "RS"]
+        analysis_results:
+          type: object
+          properties:
+            documents_in_corridor:
+              type: integer
+              example: 342
+            policy_density_per_km:
+              type: number
+              description: Number of relevant policies per kilometer
+              example: 0.073
+            municipalities_analyzed:
+              type: integer
+              example: 127
+            coordination_score:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: Cross-jurisdictional policy coordination score
+              example: 0.67
+        policy_themes:
+          type: array
+          items:
+            type: object
+            properties:
+              theme:
+                type: string
+                example: "Infrastructure Investment"
+              document_count:
+                type: integer
+                example: 87
+              relevance_score:
+                type: number
+                example: 0.84
+
+    # Citation Models
+    CitationRequest:
+      type: object
+      description: Request for academic citation generation
+      properties:
+        document_ids:
+          type: array
+          items:
+            type: string
+            pattern: '^doc_[a-zA-Z0-9]+$'
+          minItems: 1
+          maxItems: 100
+          description: List of document IDs to cite
+          example: ["doc_12345", "doc_12346"]
+        citation_format:
+          type: string
+          enum: [abnt, bibtex, apa, chicago]
+          default: abnt
+          description: Academic citation format
+          example: "abnt"
+        include_access_date:
+          type: boolean
+          default: true
+          description: Include access date in citation
+          example: true
+        access_date:
+          type: string
+          format: date
+          description: Custom access date (defaults to current date)
+          example: "2024-01-15"
+        grouping:
+          type: string
+          enum: [none, by_authority, by_year, by_type]
+          default: none
+          description: Citation grouping method
+          example: "by_authority"
+        sort_order:
+          type: string
+          enum: [alphabetical, chronological, relevance]
+          default: alphabetical
+          description: Citation sorting order
+          example: "alphabetical"
+        custom_format:
+          type: object
+          description: Custom citation format template (advanced users)
+          properties:
+            template:
+              type: string
+              example: "{authority}. {title}. {publication}, {location}, {date}."
+            fields:
+              type: object
+              example:
+                authority: "uppercase"
+                date: "brazilian_format"
+      required:
+        - document_ids
+
+    CitationResponse:
+      type: object
+      description: Generated academic citations response
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        citation_format:
+          type: string
+          example: "abnt"
+        total_documents:
+          type: integer
+          example: 2
+        generated_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T14:30:00Z"
+        citations:
+          type: array
+          items:
+            type: object
+            properties:
+              document_id:
+                type: string
+                example: "doc_12345"
+              formatted_citation:
+                type: string
+                description: Human-readable formatted citation
+                example: "BRASIL. Lei nº 14.368, de 11 de maio de 2022. Política Nacional de Biocombustíveis. Diário Oficial da União, Brasília, DF, 12 maio 2022."
+              bibtex_entry:
+                type: string
+                description: BibTeX format entry (always included)
+                example: "@misc{brasil2022_14368,\n  author = {{Brasil}},\n  title = {Lei nº 14.368, de 11 de maio de 2022. Política Nacional de Biocombustíveis},\n  year = {2022},\n  url = {https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/L14368.htm}\n}"
+              validation:
+                type: object
+                properties:
+                  abnt_compliant:
+                    type: boolean
+                    example: true
+                  authority_standardized:
+                    type: boolean
+                    example: true
+                  date_format_valid:
+                    type: boolean
+                    example: true
+                  url_accessible:
+                    type: boolean
+                    example: true
+        bibliography:
+          type: string
+          description: Complete formatted bibliography
+          example: "BRASIL. Lei nº 14.368, de 11 de maio de 2022...\n\nAGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Resolução nº 5.849..."
+      required:
+        - status
+        - citations
+
+    CitationNetwork:
+      type: object
+      description: Citation network analysis results
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        network_statistics:
+          type: object
+          properties:
+            total_nodes:
+              type: integer
+              description: Total documents in network
+              example: 156
+            total_edges:
+              type: integer
+              description: Total citation relationships
+              example: 287
+            average_citations_per_document:
+              type: number
+              example: 1.84
+            network_density:
+              type: number
+              minimum: 0
+              maximum: 1
+              example: 0.023
+            strongly_connected_components:
+              type: integer
+              example: 12
+        nodes:
+          type: array
+          items:
+            type: object
+            properties:
+              document_id:
+                type: string
+                example: "doc_12345"
+              title:
+                type: string
+                example: "Lei Federal 14.368/2022"
+              centrality_measures:
+                type: object
+                properties:
+                  degree:
+                    type: integer
+                    description: Number of direct connections
+                    example: 8
+                  betweenness:
+                    type: number
+                    description: Betweenness centrality score
+                    example: 0.15
+                  closeness:
+                    type: number
+                    description: Closeness centrality score
+                    example: 0.34
+                  pagerank:
+                    type: number
+                    description: PageRank influence score
+                    example: 0.067
+              cluster_id:
+                type: string
+                description: Policy cluster identifier
+                example: "transport_regulation_cluster"
+        edges:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                description: Citing document ID
+                example: "doc_12345"
+              target:
+                type: string
+                description: Cited document ID
+                example: "doc_67890"
+              relationship_type:
+                type: string
+                enum: [cites, amends, revokes, complements, references]
+                example: "cites"
+              weight:
+                type: number
+                description: Relationship strength
+                example: 1.0
+        policy_clusters:
+          type: array
+          items:
+            type: object
+            properties:
+              cluster_id:
+                type: string
+                example: "transport_regulation_cluster"
+              cluster_name:
+                type: string
+                example: "Transport Regulation Cluster"
+              document_count:
+                type: integer
+                example: 23
+              central_documents:
+                type: array
+                items:
+                  type: string
+                example: ["doc_12345", "doc_67890"]
+              policy_themes:
+                type: array
+                items:
+                  type: string
+                example: ["cargo transport", "ANTT regulation", "road safety"]
+
+    # Analytics Models
+    TrendAnalysis:
+      type: object
+      description: Temporal trend analysis results
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        analysis_parameters:
+          type: object
+          properties:
+            timeframe:
+              type: string
+              example: "year"
+            date_range:
+              type: object
+              properties:
+                start:
+                  type: string
+                  format: date
+                  example: "2015-01-01"
+                end:
+                  type: string
+                  format: date
+                  example: "2024-12-31"
+            filters_applied:
+              type: object
+              example:
+                category: "legislation"
+                transport_modal: "road"
+        temporal_data:
+          type: array
+          items:
+            type: object
+            properties:
+              period:
+                type: string
+                description: Time period identifier
+                example: "2023"
+              period_start:
+                type: string
+                format: date
+                example: "2023-01-01"
+              period_end:
+                type: string
+                format: date
+                example: "2023-12-31"
+              document_count:
+                type: integer
+                example: 87
+              smoothed_value:
+                type: number
+                description: Smoothed trend value
+                example: 89.3
+              trend_direction:
+                type: string
+                enum: [increasing, decreasing, stable]
+                example: "increasing"
+              change_from_previous:
+                type: object
+                properties:
+                  absolute_change:
+                    type: integer
+                    example: 12
+                  percentage_change:
+                    type: number
+                    example: 16.0
+                  statistical_significance:
+                    type: boolean
+                    example: true
+        trend_statistics:
+          type: object
+          properties:
+            overall_trend:
+              type: string
+              enum: [increasing, decreasing, stable, cyclical]
+              example: "increasing"
+            trend_strength:
+              type: number
+              minimum: -1
+              maximum: 1
+              description: Trend correlation coefficient
+              example: 0.73
+            average_annual_change:
+              type: number
+              description: Average change per year
+              example: 8.7
+            volatility_index:
+              type: number
+              minimum: 0
+              description: Trend volatility measure
+              example: 0.23
+            r_squared:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: Trend model fit quality
+              example: 0.67
+            statistical_tests:
+              type: object
+              properties:
+                mann_kendall_test:
+                  type: object
+                  properties:
+                    tau:
+                      type: number
+                      example: 0.71
+                    p_value:
+                      type: number
+                      example: 0.003
+                    significant:
+                      type: boolean
+                      example: true
+                seasonal_decomposition:
+                  type: object
+                  properties:
+                    seasonal_component_detected:
+                      type: boolean
+                      example: false
+                    residual_variance:
+                      type: number
+                      example: 0.15
+        forecasting:
+          type: object
+          nullable: true
+          description: Forecasting results (when requested)
+          properties:
+            method:
+              type: string
+              example: "arima"
+            forecast_periods:
+              type: integer
+              example: 12
+            predictions:
+              type: array
+              items:
+                type: object
+                properties:
+                  period:
+                    type: string
+                    example: "2025-Q1"
+                  predicted_value:
+                    type: number
+                    example: 95.7
+                  confidence_interval:
+                    type: object
+                    properties:
+                      lower:
+                        type: number
+                        example: 78.2
+                      upper:
+                        type: number
+                        example: 113.2
+                      confidence_level:
+                        type: number
+                        example: 0.95
+
+    ComplexityAnalysis:
+      type: object
+      description: Regulatory complexity analysis results
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        analysis_scope:
+          type: object
+          properties:
+            documents_analyzed:
+              type: integer
+              example: 1247
+            complexity_metrics_calculated:
+              type: array
+              items:
+                type: string
+              example: ["textual", "structural", "procedural", "temporal", "jurisdictional"]
+        complexity_scores:
+          type: object
+          properties:
+            overall_complexity:
+              type: object
+              properties:
+                mean:
+                  type: number
+                  minimum: 0
+                  maximum: 10
+                  example: 6.7
+                median:
+                  type: number
+                  example: 6.2
+                standard_deviation:
+                  type: number
+                  example: 1.8
+                percentile_25:
+                  type: number
+                  example: 5.4
+                percentile_75:
+                  type: number
+                  example: 7.9
+            textual_complexity:
+              type: object
+              properties:
+                flesch_reading_ease:
+                  type: number
+                  description: Flesch reading ease score (Portuguese adapted)
+                  example: 23.4
+                average_sentence_length:
+                  type: number
+                  example: 32.7
+                technical_terminology_density:
+                  type: number
+                  description: Percentage of technical terms
+                  example: 18.3
+                legal_jargon_index:
+                  type: number
+                  minimum: 0
+                  maximum: 10
+                  example: 7.2
+            structural_complexity:
+              type: object
+              properties:
+                cross_reference_count:
+                  type: number
+                  description: Average cross-references per document
+                  example: 12.4
+                amendment_layers:
+                  type: number
+                  description: Average amendment complexity
+                  example: 2.1
+                exception_clauses:
+                  type: number
+                  description: Average exception clauses per document
+                  example: 3.7
+                hierarchical_depth:
+                  type: number
+                  description: Document structure depth (articles, paragraphs, etc.)
+                  example: 4.2
+            procedural_complexity:
+              type: object
+              properties:
+                implementation_steps:
+                  type: number
+                  description: Average implementation steps required
+                  example: 8.3
+                stakeholder_obligations:
+                  type: number
+                  description: Number of different stakeholder obligations
+                  example: 5.7
+                compliance_checkpoints:
+                  type: number
+                  description: Compliance verification points
+                  example: 4.1
+            temporal_complexity:
+              type: object
+              properties:
+                deadline_count:
+                  type: number
+                  description: Average deadlines per document
+                  example: 3.2
+                phase_in_periods:
+                  type: number
+                  description: Implementation phases
+                  example: 2.1
+                renewal_requirements:
+                  type: boolean
+                  description: Documents with renewal requirements (percentage)
+                  example: 67.3
+            jurisdictional_complexity:
+              type: object
+              properties:
+                authority_coordination_required:
+                  type: number
+                  description: Multi-authority coordination score
+                  example: 4.7
+                federal_state_interaction:
+                  type: boolean
+                  description: Requires federal-state coordination (percentage)
+                  example: 43.2
+                multi_level_compliance:
+                  type: number
+                  description: Compliance levels involved
+                  example: 2.8
+        benchmarking:
+          type: object
+          description: Complexity benchmarking against similar documents
+          properties:
+            complexity_ranking:
+              type: string
+              enum: [very_low, low, medium, high, very_high]
+              example: "high"
+            percentile_ranking:
+              type: number
+              minimum: 0
+              maximum: 100
+              description: Complexity percentile within corpus
+              example: 78.3
+            similar_complexity_documents:
+              type: array
+              items:
+                type: object
+                properties:
+                  document_id:
+                    type: string
+                    example: "doc_67890"
+                  title:
+                    type: string
+                    example: "Resolução ANTT 5.232/2016"
+                  complexity_score:
+                    type: number
+                    example: 6.9
+                  similarity_score:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+                    example: 0.87
+        temporal_evolution:
+          type: object
+          nullable: true
+          description: Temporal complexity evolution (when requested)
+          properties:
+            complexity_trend:
+              type: string
+              enum: [increasing, decreasing, stable]
+              example: "increasing"
+            trend_significance:
+              type: object
+              properties:
+                p_value:
+                  type: number
+                  example: 0.023
+                significant:
+                  type: boolean
+                  example: true
+            average_annual_change:
+              type: number
+              description: Average complexity change per year
+              example: 0.15
+
+    # Export Models
+    ExportRequest:
+      type: object
+      description: Bulk export request configuration
+      properties:
+        filters:
+          type: object
+          description: Document filters to apply before export
+          properties:
+            category:
+              type: string
+              enum: [all, legislation, regulation, jurisprudence, doctrine]
+              default: all
+            state:
+              type: string
+              pattern: '^(all|AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$'
+              default: all
+            transport_modal:
+              type: string
+              enum: [all, road, rail, air, water, urban, cargo, passenger]
+              default: all
+            authority:
+              type: string
+              maxLength: 100
+            date_start:
+              type: string
+              format: date
+            date_end:
+              type: string
+              format: date
+            document_type:
+              type: string
+              enum: [Lei, Decreto, Resolução, Portaria, "Medida Provisória", "Instrução Normativa"]
+            search_query:
+              type: string
+              maxLength: 500
+        format:
+          type: string
+          enum: [csv, json, bibtex, rds, parquet]
+          default: csv
+          description: Export file format
+        columns:
+          oneOf:
+            - type: string
+              enum: [all, essential, research, citations_only]
+              description: Predefined column sets
+            - type: array
+              items:
+                type: string
+              description: Custom column selection
+          default: essential
+          example: ["id", "title", "authority", "date", "state", "transport_modal", "citation_abnt"]
+        include_analysis:
+          type: boolean
+          default: false
+          description: Include NLP analysis results in export
+        include_full_text:
+          type: boolean
+          default: false
+          description: Include full document text (significantly increases file size)
+        filename:
+          type: string
+          maxLength: 100
+          pattern: '^[a-zA-Z0-9_-]+$'
+          description: Custom filename (without extension)
+          example: "sp_road_legislation_2020_2024"
+        compression:
+          type: string
+          enum: [none, gzip, zip]
+          default: gzip
+          description: File compression method
+        max_documents:
+          type: integer
+          minimum: 1
+          maximum: 134014
+          description: Maximum documents to export (for large datasets)
+          example: 10000
+        email_notification:
+          type: boolean
+          default: false
+          description: Send email when export is complete (for large exports)
+      required:
+        - format
+
+    ExportInitiated:
+      type: object
+      description: Export operation initiated successfully
+      properties:
+        status:
+          type: string
+          enum: [initiated]
+          example: "initiated"
+        export_id:
+          type: string
+          pattern: '^export_[a-zA-Z0-9]+$'
+          description: Unique export operation identifier
+          example: "export_abc123"
+        estimated_completion_time:
+          type: string
+          format: date-time
+          description: Estimated completion timestamp
+          example: "2024-01-15T14:35:00Z"
+        estimated_file_size_mb:
+          type: number
+          description: Estimated file size in megabytes
+          example: 15.7
+        document_count:
+          type: integer
+          description: Number of documents to be exported
+          example: 1247
+        status_check_url:
+          type: string
+          format: uri
+          description: URL to check export status
+          example: "https://api.monitor-legislativo.br/v4/export/status/export_abc123"
+      required:
+        - status
+        - export_id
+
+    ExportQueued:
+      type: object
+      description: Export queued for processing (large datasets)
+      properties:
+        status:
+          type: string
+          enum: [queued]
+          example: "queued"
+        export_id:
+          type: string
+          example: "export_abc123"
+        queue_position:
+          type: integer
+          minimum: 1
+          description: Position in processing queue
+          example: 3
+        estimated_start_time:
+          type: string
+          format: date-time
+          description: Estimated processing start time
+          example: "2024-01-15T14:45:00Z"
+        estimated_completion_time:
+          type: string
+          format: date-time
+          example: "2024-01-15T15:30:00Z"
+        document_count:
+          type: integer
+          example: 45678
+        message:
+          type: string
+          example: "Large export queued for processing. You will receive an email notification when complete."
+
+    ExportStatus:
+      type: object
+      description: Export operation status information
+      properties:
+        export_id:
+          type: string
+          example: "export_abc123"
+        status:
+          type: string
+          enum: [queued, processing, completed, failed, expired]
+          example: "completed"
+        progress:
+          type: object
+          properties:
+            documents_processed:
+              type: integer
+              example: 1247
+            total_documents:
+              type: integer
+              example: 1247
+            percentage_complete:
+              type: number
+              minimum: 0
+              maximum: 100
+              example: 100.0
+            current_stage:
+              type: string
+              example: "finalizing"
+        timestamps:
+          type: object
+          properties:
+            created_at:
+              type: string
+              format: date-time
+              example: "2024-01-15T14:30:00Z"
+            started_at:
+              type: string
+              format: date-time
+              nullable: true
+              example: "2024-01-15T14:32:00Z"
+            completed_at:
+              type: string
+              format: date-time
+              nullable: true
+              example: "2024-01-15T14:38:00Z"
+        file_info:
+          type: object
+          nullable: true
+          description: File information (when export is completed)
+          properties:
+            filename:
+              type: string
+              example: "sp_road_legislation_2020_2024.csv.gz"
+            file_size_mb:
+              type: number
+              example: 12.3
+            format:
+              type: string
+              example: "csv"
+            compression:
+              type: string
+              example: "gzip"
+            download_url:
+              type: string
+              format: uri
+              example: "https://api.monitor-legislativo.br/v4/export/download/export_abc123"
+            expires_at:
+              type: string
+              format: date-time
+              description: Download URL expiration time
+              example: "2024-01-22T14:38:00Z"
+        error:
+          type: object
+          nullable: true
+          description: Error information (when status is failed)
+          properties:
+            error_code:
+              type: string
+              example: "PROCESSING_ERROR"
+            message:
+              type: string
+              example: "Database connection timeout during export processing"
+
+    # Research Tools Models
+    KeywordAnalysis:
+      type: object
+      description: Keyword extraction and analysis results
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        extraction_parameters:
+          type: object
+          properties:
+            method:
+              type: string
+              example: "combined"
+            max_keywords:
+              type: integer
+              example: 100
+            min_frequency:
+              type: integer
+              example: 5
+            corpus_size:
+              type: integer
+              description: Documents analyzed
+              example: 2847
+        keywords:
+          type: array
+          items:
+            type: object
+            properties:
+              keyword:
+                type: string
+                example: "transporte rodoviário"
+              frequency:
+                type: integer
+                description: Occurrence frequency in corpus
+                example: 342
+              tf_idf_score:
+                type: number
+                description: TF-IDF relevance score
+                example: 0.87
+              keyword_type:
+                type: string
+                enum: [legal_entity, transport_term, policy_concept, technical_term, geographic_entity]
+                example: "transport_term"
+              related_keywords:
+                type: array
+                items:
+                  type: string
+                example: ["ANTT", "carga", "registro nacional"]
+              context_examples:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    document_id:
+                      type: string
+                      example: "doc_12345"
+                    context:
+                      type: string
+                      maxLength: 200
+                      example: "...disciplinar o transporte rodoviário de cargas perigosas..."
+        temporal_trends:
+          type: object
+          nullable: true
+          description: Keyword temporal trends (when requested)
+          properties:
+            trending_up:
+              type: array
+              items:
+                type: object
+                properties:
+                  keyword:
+                    type: string
+                    example: "veículos elétricos"
+                  trend_strength:
+                    type: number
+                    example: 0.73
+                  recent_frequency:
+                    type: integer
+                    example: 45
+            trending_down:
+              type: array
+              items:
+                type: object
+                properties:
+                  keyword:
+                    type: string
+                    example: "combustíveis fósseis"
+                  trend_strength:
+                    type: number
+                    example: -0.42
+            emerging_keywords:
+              type: array
+              items:
+                type: object
+                properties:
+                  keyword:
+                    type: string
+                    example: "mobilidade sustentável"
+                  first_appearance:
+                    type: string
+                    format: date
+                    example: "2021-03-15"
+                  growth_rate:
+                    type: number
+                    example: 2.3
+        cooccurrence_network:
+          type: object
+          nullable: true
+          description: Keyword co-occurrence analysis (when requested)
+          properties:
+            network_density:
+              type: number
+              example: 0.15
+            strongest_associations:
+              type: array
+              items:
+                type: object
+                properties:
+                  keyword_pair:
+                    type: array
+                    items:
+                      type: string
+                    example: ["ANTT", "transporte rodoviário"]
+                  cooccurrence_score:
+                    type: number
+                    example: 0.89
+                  joint_frequency:
+                    type: integer
+                    example: 156
+
+    ComparisonRequest:
+      type: object
+      description: Request for comparative policy analysis
+      properties:
+        comparison_type:
+          type: string
+          enum: [jurisdictional, temporal, authority, modal]
+          description: Type of comparison to perform
+          example: "jurisdictional"
+        group_a:
+          type: object
+          properties:
+            label:
+              type: string
+              maxLength: 100
+              description: Descriptive label for first group
+              example: "São Paulo"
+            filters:
+              type: object
+              description: Document filters for first group
+              example:
+                state: "SP"
+                category: "legislation"
+                transport_modal: "urban"
+        group_b:
+          type: object
+          properties:
+            label:
+              type: string
+              maxLength: 100
+              description: Descriptive label for second group
+              example: "Rio de Janeiro"
+            filters:
+              type: object
+              description: Document filters for second group
+              example:
+                state: "RJ"
+                category: "legislation"
+                transport_modal: "urban"
+        analysis_methods:
+          type: array
+          items:
+            type: string
+            enum: [frequency, complexity, topics, keywords, citations, temporal]
+          description: Analysis methods to apply
+          example: ["frequency", "complexity", "topics"]
+        statistical_tests:
+          type: boolean
+          default: true
+          description: Include statistical significance testing
+          example: true
+        confidence_level:
+          type: number
+          minimum: 0.80
+          maximum: 0.99
+          default: 0.95
+          description: Statistical confidence level
+          example: 0.95
+      required:
+        - comparison_type
+        - group_a
+        - group_b
+
+    ComparisonAnalysis:
+      type: object
+      description: Comparative policy analysis results
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        comparison_metadata:
+          type: object
+          properties:
+            comparison_type:
+              type: string
+              example: "jurisdictional"
+            group_a_label:
+              type: string
+              example: "São Paulo"
+            group_b_label:
+              type: string
+              example: "Rio de Janeiro"
+            analysis_date:
+              type: string
+              format: date-time
+              example: "2024-01-15T14:30:00Z"
+            documents_analyzed:
+              type: object
+              properties:
+                group_a:
+                  type: integer
+                  example: 347
+                group_b:
+                  type: integer
+                  example: 298
+        frequency_analysis:
+          type: object
+          nullable: true
+          properties:
+            documents_per_year:
+              type: object
+              properties:
+                group_a_average:
+                  type: number
+                  example: 34.7
+                group_b_average:
+                  type: number
+                  example: 29.8
+                difference:
+                  type: number
+                  example: 4.9
+                percentage_difference:
+                  type: number
+                  example: 16.4
+            statistical_test:
+              type: object
+              properties:
+                test_type:
+                  type: string
+                  example: "t_test"
+                p_value:
+                  type: number
+                  example: 0.032
+                significant:
+                  type: boolean
+                  example: true
+                confidence_interval:
+                  type: object
+                  properties:
+                    lower:
+                      type: number
+                      example: 0.8
+                    upper:
+                      type: number
+                      example: 8.9
+        complexity_analysis:
+          type: object
+          nullable: true
+          properties:
+            average_complexity:
+              type: object
+              properties:
+                group_a:
+                  type: number
+                  example: 6.7
+                group_b:
+                  type: number
+                  example: 5.9
+                difference:
+                  type: number
+                  example: 0.8
+            complexity_distribution:
+              type: object
+              properties:
+                group_a:
+                  type: object
+                  properties:
+                    low_complexity:
+                      type: number
+                      description: Percentage of low complexity documents
+                      example: 23.1
+                    medium_complexity:
+                      type: number
+                      example: 54.2
+                    high_complexity:
+                      type: number
+                      example: 22.7
+                group_b:
+                  type: object
+                  properties:
+                    low_complexity:
+                      type: number
+                      example: 31.5
+                    medium_complexity:
+                      type: number
+                      example: 48.7
+                    high_complexity:
+                      type: number
+                      example: 19.8
+            statistical_test:
+              type: object
+              properties:
+                test_type:
+                  type: string
+                  example: "mann_whitney_u"
+                p_value:
+                  type: number
+                  example: 0.018
+                significant:
+                  type: boolean
+                  example: true
+                effect_size:
+                  type: number
+                  description: Cohen's d or similar effect size measure
+                  example: 0.43
+        topic_analysis:
+          type: object
+          nullable: true
+          properties:
+            top_topics_comparison:
+              type: array
+              items:
+                type: object
+                properties:
+                  topic:
+                    type: string
+                    example: "Infrastructure Investment"
+                  group_a_prevalence:
+                    type: number
+                    description: Percentage of documents with this topic in group A
+                    example: 23.5
+                  group_b_prevalence:
+                    type: number
+                    example: 31.2
+                  difference:
+                    type: number
+                    example: -7.7
+                  statistical_significance:
+                    type: boolean
+                    example: true
+            unique_topics:
+              type: object
+              properties:
+                group_a_unique:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Municipal Integration", "Local Transport Hubs"]
+                group_b_unique:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Port Logistics", "Tourism Transport"]
+        recommendations:
+          type: object
+          properties:
+            policy_gaps:
+              type: array
+              items:
+                type: object
+                properties:
+                  gap_type:
+                    type: string
+                    example: "coverage_gap"
+                  description:
+                    type: string
+                    example: "Group B has significantly lower coverage of infrastructure investment policies"
+                  recommendation:
+                    type: string
+                    example: "Consider developing comprehensive infrastructure investment framework"
+            best_practices:
+              type: array
+              items:
+                type: object
+                properties:
+                  practice_area:
+                    type: string
+                    example: "regulatory_complexity"
+                  leading_group:
+                    type: string
+                    example: "group_b"
+                  description:
+                    type: string
+                    example: "Group B demonstrates more streamlined regulatory approach with lower average complexity"
+
+    # Metadata Models
+    DataSchema:
+      type: object
+      description: Comprehensive data schema information
+      properties:
+        schema_version:
+          type: string
+          example: "4.0.0"
+        last_updated:
+          type: string
+          format: date-time
+          example: "2024-01-15T14:30:00Z"
+        document_fields:
+          type: object
+          description: Complete field definitions for document objects
+          additionalProperties:
+            type: object
+            properties:
+              type:
+                type: string
+                example: "string"
+              description:
+                type: string
+                example: "Unique document identifier"
+              required:
+                type: boolean
+                example: true
+              max_length:
+                type: integer
+                nullable: true
+                example: 100
+              pattern:
+                type: string
+                nullable: true
+                example: "^doc_[a-zA-Z0-9]+$"
+              enum:
+                type: array
+                items:
+                  type: string
+                nullable: true
+                example: ["Lei", "Decreto", "Resolução"]
+              examples:
+                type: array
+                items:
+                  type: string
+                example: ["doc_12345", "doc_67890"]
+        analysis_fields:
+          type: object
+          description: NLP analysis result field definitions
+        geographic_fields:
+          type: object
+          description: Geographic analysis field definitions
+        relationships:
+          type: object
+          description: Inter-field relationships and dependencies
+        validation_rules:
+          type: object
+          description: Data validation rules and constraints
+
+    CorpusStatistics:
+      type: object
+      description: Comprehensive corpus statistics and metadata
+      properties:
+        corpus_info:
+          type: object
+          properties:
+            total_documents:
+              type: integer
+              example: 134014
+            data_coverage_start:
+              type: string
+              format: date
+              example: "1990-01-01"
+            data_coverage_end:
+              type: string
+              format: date
+              example: "2024-12-31"
+            last_updated:
+              type: string
+              format: date-time
+              example: "2024-01-15T14:30:00Z"
+            update_frequency:
+              type: string
+              example: "daily"
+        document_types:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            Lei: 45678
+            Decreto: 32145
+            Resolução: 23456
+            Portaria: 18932
+            "Medida Provisória": 7654
+            "Instrução Normativa": 6149
+        categories:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            legislation: 89234
+            regulation: 34567
+            jurisprudence: 8765
+            doctrine: 1448
+        geographic_distribution:
+          type: object
+          properties:
+            states_represented:
+              type: integer
+              example: 27
+            municipalities_represented:
+              type: integer
+              example: 2154
+            federal_documents:
+              type: integer
+              example: 67890
+            state_documents:
+              type: integer
+              example: 54321
+            municipal_documents:
+              type: integer
+              example: 11803
+        transport_modalities:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            road: 78954
+            urban: 23456
+            cargo: 19876
+            rail: 8765
+            water: 2345
+            air: 1618
+        data_quality:
+          type: object
+          properties:
+            completeness_score:
+              type: number
+              minimum: 0
+              maximum: 1
+              example: 0.94
+            validation_passed:
+              type: number
+              description: Percentage of documents passing validation
+              example: 97.8
+            url_accessibility:
+              type: number
+              description: Percentage of URLs accessible
+              example: 89.3
+            citation_completeness:
+              type: number
+              description: Percentage of documents with complete citation metadata
+              example: 95.6
+        processing_statistics:
+          type: object
+          properties:
+            nlp_analyzed:
+              type: integer
+              description: Documents with NLP analysis
+              example: 134014
+            citation_network_analyzed:
+              type: integer
+              description: Documents in citation network
+              example: 89765
+            geographic_geocoded:
+              type: integer
+              description: Documents with geographic coordinates
+              example: 122456
+
+    AuthorityDirectory:
+      type: object
+      description: Standardized directory of Brazilian regulatory authorities
+      properties:
+        authorities:
+          type: array
+          items:
+            type: object
+            properties:
+              authority_id:
+                type: string
+                example: "antt"
+              full_name:
+                type: string
+                example: "Agência Nacional de Transportes Terrestres"
+              abbreviation:
+                type: string
+                example: "ANTT"
+              english_name:
+                type: string
+                nullable: true
+                example: "National Land Transportation Agency"
+              authority_type:
+                type: string
+                enum: [regulatory_agency, ministry, department, council, other]
+                example: "regulatory_agency"
+              jurisdiction_level:
+                type: string
+                enum: [federal, state, municipal, multi_level]
+                example: "federal"
+              jurisdiction_scope:
+                type: string
+                example: "Land transportation regulation and oversight"
+              transport_modalities:
+                type: array
+                items:
+                  type: string
+                  enum: [road, rail, urban, cargo, passenger]
+                example: ["road", "rail", "cargo", "passenger"]
+              contact_info:
+                type: object
+                properties:
+                  website:
+                    type: string
+                    format: uri
+                    example: "https://www.antt.gov.br"
+                  legal_framework:
+                    type: string
+                    example: "Lei 10.233/2001"
+              document_count:
+                type: integer
+                description: Number of documents in corpus from this authority
+                example: 2347
+              date_range:
+                type: object
+                properties:
+                  first_document:
+                    type: string
+                    format: date
+                    example: "2002-01-15"
+                  last_document:
+                    type: string
+                    format: date
+                    example: "2024-12-20"
+        hierarchy:
+          type: object
+          description: Administrative hierarchy relationships between authorities
+          properties:
+            federal_level:
+              type: array
+              items:
+                type: string
+              example: ["antt", "contran", "dnit"]
+            reporting_relationships:
+              type: array
+              items:
+                type: object
+                properties:
+                  subordinate:
+                    type: string
+                    example: "antt"
+                  superior:
+                    type: string
+                    example: "ministério_dos_transportes"
+
+    # Authentication Models
+    ApiKeyValidation:
+      type: object
+      description: API key validation response
+      properties:
+        valid:
+          type: boolean
+          example: true
+        key_type:
+          type: string
+          enum: [standard_academic, research_institution, bulk_research, demo]
+          example: "research_institution"
+        rate_limits:
+          type: object
+          properties:
+            requests_per_hour:
+              type: integer
+              example: 5000
+            requests_per_minute:
+              type: integer
+              example: 200
+            burst_limit:
+              type: integer
+              example: 50
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ["read_documents", "export_data", "advanced_analytics"]
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Key expiration (null for non-expiring keys)
+          example: null
+
+    UsageStatistics:
+      type: object
+      description: API usage statistics for authenticated user
+      properties:
+        current_period:
+          type: object
+          properties:
+            period_start:
+              type: string
+              format: date-time
+              example: "2024-01-15T14:00:00Z"
+            period_end:
+              type: string
+              format: date-time
+              example: "2024-01-15T15:00:00Z"
+            requests_made:
+              type: integer
+              example: 247
+            requests_remaining:
+              type: integer
+              example: 4753
+            rate_limit_exceeded:
+              type: boolean
+              example: false
+        daily_usage:
+          type: object
+          properties:
+            date:
+              type: string
+              format: date
+              example: "2024-01-15"
+            total_requests:
+              type: integer
+              example: 1847
+            endpoints_used:
+              type: array
+              items:
+                type: string
+              example: ["/documents", "/analytics/trends", "/export/documents"]
+        most_used_endpoints:
+          type: array
+          items:
+            type: object
+            properties:
+              endpoint:
+                type: string
+                example: "/documents"
+              request_count:
+                type: integer
+                example: 1234
+              percentage_of_total:
+                type: number
+                example: 67.0
+
+    # Error Models
+    Error:
+      type: object
+      description: Standard error response format
+      properties:
+        status:
+          type: string
+          enum: [error]
+          example: "error"
+        error_code:
+          type: string
+          description: Machine-readable error code
+          example: "INVALID_PARAMETER"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid value for parameter 'state'"
+        details:
+          type: object
+          nullable: true
+          description: Additional error details and context
+          example:
+            parameter: "state"
+            provided_value: "XX"
+            valid_values: ["SP", "RJ", "MG"]
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T14:30:00Z"
+        request_id:
+          type: string
+          description: Unique request identifier for support purposes
+          example: "req_abc123"
+        documentation_url:
+          type: string
+          format: uri
+          description: Link to relevant documentation
+          example: "https://api.monitor-legislativo.br/docs#parameters"
+        suggestions:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Suggested actions to resolve the error
+          example: ["Check parameter format", "Refer to API documentation"]
+      required:
+        - status
+        - error_code
+        - message
+
+# R Integration Examples
+x-code-samples:
+  - lang: R
+    label: "Basic Document Search"
+    source: |
+      library(httr)
+      library(jsonlite)
+      
+      # Set up API configuration
+      api_base <- "https://monitor-legislativo-unified-production.up.railway.app/api/v4"
+      api_key <- "your_api_key_here"
+      
+      # Search for transport legislation in São Paulo
+      response <- GET(
+        paste0(api_base, "/documents"),
+        add_headers("X-API-Key" = api_key),
+        query = list(
+          q = "transporte rodoviário",
+          state = "SP",
+          category = "legislation",
+          per_page = 50
+        )
+      )
+      
+      # Parse results
+      if (status_code(response) == 200) {
+        data <- fromJSON(content(response, "text"))
+        documents <- data$documents
+        
+        # Display results
+        print(paste("Found", data$pagination$total_results, "documents"))
+        head(documents[, c("title", "authority", "date")])
+      } else {
+        print(paste("API Error:", status_code(response)))
+      }
+
+  - lang: R  
+    label: "Bulk Data Export for Analysis"
+    source: |
+      library(httr)
+      library(jsonlite)
+      
+      # Request bulk export
+      export_request <- list(
+        filters = list(
+          category = "legislation",
+          transport_modal = "road",
+          date_start = "2020-01-01",
+          date_end = "2024-12-31"
+        ),
+        format = "csv",
+        columns = c("id", "title", "authority", "date", "state", "citation_abnt"),
+        filename = "road_legislation_analysis"
+      )
+      
+      response <- POST(
+        paste0(api_base, "/export/documents"),
+        add_headers("X-API-Key" = api_key),
+        body = export_request,
+        encode = "json"
+      )
+      
+      if (status_code(response) == 200) {
+        export_info <- fromJSON(content(response, "text"))
+        export_id <- export_info$export_id
+        
+        # Check status periodically
+        repeat {
+          status_response <- GET(
+            paste0(api_base, "/export/status/", export_id),
+            add_headers("X-API-Key" = api_key)
+          )
+          
+          status_data <- fromJSON(content(status_response, "text"))
+          
+          if (status_data$status == "completed") {
+            # Download the file
+            download.file(
+              status_data$file_info$download_url,
+              destfile = paste0(status_data$file_info$filename),
+              headers = c("X-API-Key" = api_key)
+            )
+            break
+          } else if (status_data$status == "failed") {
+            stop("Export failed: ", status_data$error$message)
+          }
+          
+          Sys.sleep(30)  # Wait 30 seconds before checking again
+        }
+      }
+
+  - lang: R
+    label: "Geographic Analysis with Visualization"
+    source: |
+      library(httr)
+      library(jsonlite)
+      library(ggplot2)
+      library(maps)
+      
+      # Get geographic distribution
+      response <- GET(
+        paste0(api_base, "/geographic/distribution"),
+        add_headers("X-API-Key" = api_key),
+        query = list(
+          level = "state",
+          category = "legislation",
+          transport_modal = "road",
+          normalize_population = TRUE
+        )
+      )
+      
+      if (status_code(response) == 200) {
+        geo_data <- fromJSON(content(response, "text"))
+        
+        # Prepare data for visualization
+        state_data <- do.call(rbind, lapply(geo_data$geographic_data, data.frame))
+        
+        # Create visualization
+        ggplot(state_data, aes(x = reorder(name, document_count), 
+                               y = document_count)) +
+          geom_col(fill = "steelblue") +
+          coord_flip() +
+          labs(
+            title = "Transport Legislation by Brazilian State",
+            subtitle = "Road transport documents per 100k inhabitants",
+            x = "State",
+            y = "Documents per 100k inhabitants"
+          ) +
+          theme_minimal()
+      }
+
+  - lang: R
+    label: "Citation Analysis for Academic Research"  
+    source: |
+      library(httr)
+      library(jsonlite)
+      
+      # Get documents first
+      docs_response <- GET(
+        paste0(api_base, "/documents"),
+        add_headers("X-API-Key" = api_key),
+        query = list(
+          q = "ANTT regulamentação transporte",
+          per_page = 20
+        )
+      )
+      
+      docs_data <- fromJSON(content(docs_response, "text"))
+      document_ids <- docs_data$documents$id
+      
+      # Generate ABNT citations
+      citation_request <- list(
+        document_ids = document_ids,
+        citation_format = "abnt",
+        include_access_date = TRUE,
+        grouping = "by_authority",
+        sort_order = "chronological"
+      )
+      
+      citation_response <- POST(
+        paste0(api_base, "/citations/generate"),
+        add_headers("X-API-Key" = api_key),
+        body = citation_request,
+        encode = "json"
+      )
+      
+      if (status_code(citation_response) == 200) {
+        citations <- fromJSON(content(citation_response, "text"))
+        
+        # Output formatted bibliography
+        cat("BIBLIOGRAFIA\n\n")
+        for (citation in citations$citations) {
+          cat(citation$formatted_citation, "\n\n")
+        }
+        
+        # Save BibTeX for LaTeX users
+        bibtex_entries <- sapply(citations$citations, function(x) x$bibtex_entry)
+        writeLines(bibtex_entries, "references.bib")
+      }
+
+  - lang: R
+    label: "Advanced Analytics with Statistical Testing"
+    source: |
+      library(httr)  
+      library(jsonlite)
+      library(dplyr)
+      
+      # Comparative analysis between states
+      comparison_request <- list(
+        comparison_type = "jurisdictional",
+        group_a = list(
+          label = "São Paulo",
+          filters = list(
+            state = "SP",
+            category = "legislation",
+            transport_modal = "urban"
+          )
+        ),
+        group_b = list(
+          label = "Rio de Janeiro", 
+          filters = list(
+            state = "RJ",
+            category = "legislation",
+            transport_modal = "urban"
+          )
+        ),
+        analysis_methods = c("frequency", "complexity", "topics"),
+        statistical_tests = TRUE,
+        confidence_level = 0.95
+      )
+      
+      response <- POST(
+        paste0(api_base, "/research/comparison"),
+        add_headers("X-API-Key" = api_key),
+        body = comparison_request,
+        encode = "json"
+      )
+      
+      if (status_code(response) == 200) {
+        comparison <- fromJSON(content(response, "text"))
+        
+        # Statistical summary
+        freq_analysis <- comparison$frequency_analysis
+        print(paste("Average documents per year:"))
+        print(paste("São Paulo:", freq_analysis$documents_per_year$group_a_average))
+        print(paste("Rio de Janeiro:", freq_analysis$documents_per_year$group_b_average))
+        print(paste("Difference:", freq_analysis$documents_per_year$difference))
+        print(paste("P-value:", freq_analysis$statistical_test$p_value))
+        print(paste("Significant:", freq_analysis$statistical_test$significant))
+        
+        # Complexity comparison
+        if (!is.null(comparison$complexity_analysis)) {
+          complex_analysis <- comparison$complexity_analysis
+          print("\nComplexity Analysis:")
+          print(paste("SP Average Complexity:", complex_analysis$average_complexity$group_a))
+          print(paste("RJ Average Complexity:", complex_analysis$average_complexity$group_b))
+          print(paste("Effect Size:", complex_analysis$statistical_test$effect_size))
+        }
+      }
+
+# Academic Integration Guidelines
+x-academic-integration:
+  citation_standards:
+    abnt_compliance: |
+      All citations generated by this API follow ABNT NBR 6023:2018 standards for legal document references:
+      - Authority names are standardized and properly abbreviated
+      - Date formats follow Brazilian academic conventions
+      - Legal instrument numbering is correctly formatted
+      - Official publication information is included when available
+      - Electronic access dates are properly formatted
+      
+  r_statistical_workflows: |
+    This API is optimized for R statistical computing workflows:
+    - All numeric data is properly typed for statistical analysis
+    - Missing values are consistently handled (NA for R compatibility)
+    - Large datasets support chunked processing to avoid memory issues
+    - Export formats are optimized for direct import into R data frames
+    - Geographic data includes proper coordinate system information (SIRGAS 2000)
+    
+  reproducible_research: |
+    Support for reproducible academic research:
+    - All API responses include metadata about data sources and processing
+    - Query parameters are logged to enable exact replication
+    - Data quality indicators help assess reliability
+    - Version tracking ensures consistency across research phases
+    - Bulk export capabilities preserve exact datasets for long-term research
+
+# Performance Considerations
+x-performance:
+  rate_limits:
+    academic_standard: "1000 requests/hour, 50 requests/minute - suitable for exploratory research"
+    research_institution: "5000 requests/hour, 200 requests/minute - for comprehensive studies"
+    bulk_research: "Custom limits negotiated for large-scale longitudinal studies"
+    
+  optimization_tips:
+    - Use specific filters to reduce dataset size before processing
+    - Request only necessary fields to minimize bandwidth
+    - Use pagination for large result sets to avoid memory issues
+    - Cache frequently accessed data locally for repeated analysis
+    - Use bulk export for datasets larger than 1000 documents
+    
+  response_times:
+    simple_search: "< 200ms for filtered searches"
+    complex_analytics: "< 5 seconds for trend analysis"
+    bulk_exports: "Minutes to hours depending on dataset size"
+    geographic_analysis: "< 3 seconds with caching"

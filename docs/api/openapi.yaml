@@ -1,0 +1,1005 @@
+openapi: 3.0.3
+info:
+  title: Monitor Legislativo API
+  description: |
+    Comprehensive API for Brazilian legislative document research and analysis.
+    
+    ## Features
+    - **Full-text search** with Portuguese language optimization
+    - **Advanced filtering** by state, document type, date ranges
+    - **Academic citations** in ABNT, APA, and BibTeX formats  
+    - **Geospatial analysis** with choropleth mapping
+    - **NLP analytics** including sentiment analysis and entity recognition
+    - **LGPD-compliant** security and data protection
+    - **High-performance** caching and optimization
+    
+    ## Authentication
+    All endpoints require API key authentication via `X-API-Key` header.
+    Academic researchers can request API keys through institutional partnerships.
+    
+    ## Rate Limiting
+    - **Standard Users**: 100 requests/hour
+    - **Academic Research**: 1000 requests/hour
+    - **Institutional**: Custom limits available
+    
+    ## Data Sources
+    - Brazilian federal and state legislation
+    - Municipal ordinances and regulations
+    - Administrative acts and decrees
+    - Legal precedents and jurisprudence
+    
+    ## Academic Standards
+    - ABNT (Brazilian) citation formats
+    - APA and Vancouver academic standards
+    - Institutional research compliance
+    - Reproducible research workflows
+    
+  version: "4.0.0"
+  termsOfService: "https://monitor-legislativo.railway.app/terms"
+  contact:
+    name: Monitor Legislativo Research Team
+    email: research@monitor-legislativo.org
+    url: "https://monitor-legislativo.railway.app"
+  license:
+    name: Academic Research License
+    url: "https://monitor-legislativo.railway.app/license"
+
+servers:
+  - url: https://monitor-legislativo.railway.app/api/v1
+    description: Production server (Railway)
+  - url: http://localhost:8080/api/v1
+    description: Development server
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      summary: System Health Check
+      description: |
+        Comprehensive system health check for monitoring platform status.
+        Returns detailed information about database connectivity, caching,
+        and system resources within Railway constraints.
+      tags:
+        - System
+      security: []
+      parameters:
+        - name: detailed
+          in: query
+          description: Include detailed diagnostic information
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: System health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              examples:
+                healthy:
+                  summary: Healthy system example
+                  value:
+                    status: "healthy"
+                    timestamp: "2024-01-15T10:30:00Z"
+                    version: "4.0.0"
+                    environment: "production"
+                    health_score: 95.2
+                    response_time_ms: 45
+                    checks:
+                      database:
+                        status: "healthy"
+                        response_time_ms: 12
+                        document_count: 134014
+                      redis:
+                        status: "healthy"
+                        hit_rate_percent: 85.3
+                        memory_usage_mb: 45.2
+                      system_resources:
+                        status: "healthy"
+                        memory_usage_percent: 65.4
+
+  /search:
+    post:
+      summary: Search Legislative Documents
+      description: |
+        Advanced full-text search across Brazilian legislative documents with
+        Portuguese language optimization and academic research features.
+        
+        Supports complex queries with Boolean operators, phrase matching,
+        and domain-specific term boosting for legal terminology.
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+            examples:
+              basic_search:
+                summary: Basic text search
+                value:
+                  query: "transporte público"
+                  limit: 50
+              advanced_search:
+                summary: Advanced filtered search
+                value:
+                  query: "mobilidade urbana"
+                  filters:
+                    state: "SP"
+                    document_type: "lei"
+                    year_start: 2020
+                    year_end: 2024
+                  limit: 100
+                  include_content: true
+      responses:
+        '200':
+          description: Search results with documents and metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Invalid search parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /search/suggestions:
+    get:
+      summary: Search Suggestions and Autocomplete
+      description: |
+        Provides intelligent search suggestions based on legal terminology,
+        popular queries, and user input patterns. Optimized for Brazilian
+        Portuguese legal language.
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          description: Partial query for autocomplete suggestions
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+          example: "transpo"
+        - name: limit
+          in: query
+          description: Maximum number of suggestions to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+      responses:
+        '200':
+          description: List of search suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestionsResponse'
+
+  /documents:
+    get:
+      summary: List Documents with Pagination
+      description: |
+        Retrieve legislative documents with advanced filtering, sorting,
+        and pagination. Supports various output formats for academic research.
+      tags:
+        - Documents
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of documents per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: state
+          in: query
+          description: Brazilian state code filter
+          required: false
+          schema:
+            type: string
+            enum: [AC, AL, AP, AM, BA, CE, DF, ES, GO, MA, MT, MS, MG, PA, PB, PR, PE, PI, RJ, RN, RS, RO, RR, SC, SP, SE, TO]
+        - name: document_type
+          in: query
+          description: Type of legislative document
+          required: false
+          schema:
+            type: string
+            enum: [lei, decreto, portaria, resolução, instrução_normativa, medida_provisória]
+        - name: year_start
+          in: query
+          description: Start year for date range filter
+          required: false
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2030
+        - name: year_end
+          in: query
+          description: End year for date range filter
+          required: false
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2030
+        - name: sort
+          in: query
+          description: Sort order for results
+          required: false
+          schema:
+            type: string
+            enum: [date_desc, date_asc, relevance, title_asc]
+            default: date_desc
+      responses:
+        '200':
+          description: Paginated list of documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentsResponse'
+
+  /documents/{id}:
+    get:
+      summary: Get Document by ID
+      description: |
+        Retrieve a specific legislative document by its unique identifier.
+        Includes full content, metadata, and academic citation information.
+      tags:
+        - Documents
+      parameters:
+        - name: id
+          in: path
+          description: Unique document identifier
+          required: true
+          schema:
+            type: string
+          example: "lei_12345_2020_sp"
+        - name: include_content
+          in: query
+          description: Include full document content in response
+          required: false
+          schema:
+            type: boolean
+            default: true
+        - name: citation_format
+          in: query
+          description: Academic citation format to include
+          required: false
+          schema:
+            type: string
+            enum: [abnt, apa, vancouver, bibtex]
+      responses:
+        '200':
+          description: Document details with metadata and content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetail'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /analytics/sentiment:
+    post:
+      summary: Regulatory Sentiment Analysis
+      description: |
+        Analyze the regulatory tone of legislative documents using specialized
+        Portuguese legal language processing. Classifies documents as
+        Prescriptive, Flexible, or Balanced based on linguistic markers.
+      tags:
+        - Analytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SentimentAnalysisRequest'
+      responses:
+        '200':
+          description: Sentiment analysis results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SentimentAnalysisResponse'
+
+  /analytics/entities:
+    post:
+      summary: Legal Entity Recognition
+      description: |
+        Extract and categorize legal entities from Brazilian legislative texts.
+        Identifies institutions, legislation types, and domain-specific
+        organizations using specialized knowledge bases.
+      tags:
+        - Analytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntityExtractionRequest'
+      responses:
+        '200':
+          description: Extracted legal entities by category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityExtractionResponse'
+
+  /geographic/choropleth:
+    get:
+      summary: Geographic Choropleth Data
+      description: |
+        Generate geographic visualization data for Brazilian states and
+        municipalities. Supports legislative document distribution analysis
+        and regional policy research.
+      tags:
+        - Geographic
+      parameters:
+        - name: level
+          in: query
+          description: Geographic aggregation level
+          required: true
+          schema:
+            type: string
+            enum: [state, municipality, region]
+        - name: metric
+          in: query
+          description: Metric to visualize
+          required: true
+          schema:
+            type: string
+            enum: [document_count, law_density, regulatory_activity]
+        - name: year_start
+          in: query
+          description: Start year for temporal analysis
+          required: false
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2030
+        - name: year_end
+          in: query
+          description: End year for temporal analysis
+          required: false
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2030
+      responses:
+        '200':
+          description: Geographic data for choropleth visualization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChoroplethResponse'
+
+  /export/citations:
+    post:
+      summary: Export Academic Citations
+      description: |
+        Generate academic citations in various formats (ABNT, APA, BibTeX)
+        for selected legislative documents. Supports batch export for
+        research bibliography management.
+      tags:
+        - Export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CitationExportRequest'
+      responses:
+        '200':
+          description: Generated citations in requested format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CitationExportResponse'
+            text/plain:
+              schema:
+                type: string
+                description: Citations in plain text format (BibTeX, etc.)
+
+  /export/documents:
+    post:
+      summary: Export Document Data
+      description: |
+        Export legislative documents and metadata in various formats
+        (CSV, JSON, XML) for academic research and analysis.
+        Includes security controls and rate limiting for LGPD compliance.
+      tags:
+        - Export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentExportRequest'
+      responses:
+        '200':
+          description: Exported documents in requested format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentExportResponse'
+            text/csv:
+              schema:
+                type: string
+                description: CSV format export
+            application/xml:
+              schema:
+                type: string
+                description: XML format export
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API key for authentication. Academic researchers can obtain keys
+        through institutional partnerships. Include in all requests.
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: Overall system health status
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp (ISO 8601)
+        version:
+          type: string
+          description: Application version
+        environment:
+          type: string
+          description: Deployment environment
+        health_score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Numeric health score (0-100)
+        response_time_ms:
+          type: number
+          description: Health check response time in milliseconds
+        checks:
+          type: object
+          description: Individual component health results
+          properties:
+            database:
+              $ref: '#/components/schemas/ComponentHealth'
+            redis:
+              $ref: '#/components/schemas/ComponentHealth'
+            system_resources:
+              $ref: '#/components/schemas/ComponentHealth'
+
+    ComponentHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy, disabled, unavailable]
+        response_time_ms:
+          type: number
+        last_error:
+          type: string
+          nullable: true
+
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Search query with Portuguese legal terms
+          example: "transporte público mobilidade urbana"
+        filters:
+          $ref: '#/components/schemas/SearchFilters'
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 50
+          description: Maximum number of results to return
+        include_content:
+          type: boolean
+          default: false
+          description: Include full document content in results
+        boost_legal_terms:
+          type: boolean
+          default: true
+          description: Boost relevance of legal terminology
+
+    SearchFilters:
+      type: object
+      properties:
+        state:
+          type: string
+          description: Brazilian state code (e.g., SP, RJ, MG)
+          example: "SP"
+        document_type:
+          type: string
+          enum: [lei, decreto, portaria, resolução, instrução_normativa, medida_provisória]
+          description: Type of legislative document
+        year_start:
+          type: integer
+          minimum: 1900
+          maximum: 2030
+          description: Start year for date range filter
+        year_end:
+          type: integer
+          minimum: 1900
+          maximum: 2030
+          description: End year for date range filter
+        municipality:
+          type: string
+          description: Municipality name for local legislation
+          example: "São Paulo"
+
+    SearchResponse:
+      type: object
+      properties:
+        total_results:
+          type: integer
+          description: Total number of matching documents
+        page:
+          type: integer
+          description: Current page number
+        per_page:
+          type: integer
+          description: Number of results per page
+        total_pages:
+          type: integer
+          description: Total number of pages
+        search_time_ms:
+          type: number
+          description: Search execution time in milliseconds
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentSummary'
+        facets:
+          $ref: '#/components/schemas/SearchFacets'
+
+    DocumentSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique document identifier
+        title:
+          type: string
+          description: Document title
+        document_type:
+          type: string
+          description: Type of legislative document
+        state:
+          type: string
+          description: Brazilian state or federal level
+        municipality:
+          type: string
+          nullable: true
+          description: Municipality (for local legislation)
+        publication_date:
+          type: string
+          format: date
+          description: Publication date (ISO 8601)
+        year:
+          type: integer
+          description: Publication year
+        issuing_authority:
+          type: string
+          description: Authority that issued the document
+        summary:
+          type: string
+          description: Brief document summary
+        relevance_score:
+          type: number
+          description: Search relevance score
+        url:
+          type: string
+          format: uri
+          description: URL to full document details
+
+    DocumentDetail:
+      allOf:
+        - $ref: '#/components/schemas/DocumentSummary'
+        - type: object
+          properties:
+            content:
+              type: string
+              description: Full document content
+            metadata:
+              type: object
+              description: Additional document metadata
+            citations:
+              type: object
+              description: Academic citations in various formats
+              properties:
+                abnt:
+                  type: string
+                apa:
+                  type: string
+                bibtex:
+                  type: string
+            related_documents:
+              type: array
+              items:
+                $ref: '#/components/schemas/DocumentSummary'
+              description: Related legislative documents
+
+    DocumentsResponse:
+      type: object
+      properties:
+        total_count:
+          type: integer
+          description: Total number of documents
+        page:
+          type: integer
+          description: Current page number
+        per_page:
+          type: integer
+          description: Number of documents per page
+        total_pages:
+          type: integer
+          description: Total number of pages
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentSummary'
+
+    SearchFacets:
+      type: object
+      properties:
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetItem'
+        document_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetItem'
+        years:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetItem'
+
+    FacetItem:
+      type: object
+      properties:
+        value:
+          type: string
+          description: Facet value
+        count:
+          type: integer
+          description: Number of documents with this value
+        percentage:
+          type: number
+          description: Percentage of total results
+
+    SuggestionsResponse:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Original query input
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchSuggestion'
+
+    SearchSuggestion:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Suggested search term
+        type:
+          type: string
+          enum: [term, phrase, legal_concept]
+          description: Type of suggestion
+        frequency:
+          type: integer
+          description: Usage frequency in corpus
+        category:
+          type: string
+          description: Legal domain category
+
+    SentimentAnalysisRequest:
+      type: object
+      required:
+        - texts
+      properties:
+        texts:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+          description: Legislative texts to analyze
+        include_confidence:
+          type: boolean
+          default: false
+          description: Include confidence scores in results
+
+    SentimentAnalysisResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SentimentResult'
+        processing_time_ms:
+          type: number
+          description: Analysis processing time
+
+    SentimentResult:
+      type: object
+      properties:
+        text_id:
+          type: integer
+          description: Index of analyzed text
+        sentiment:
+          type: string
+          enum: [Prescriptive, Flexible, Balanced]
+          description: Regulatory sentiment classification
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Classification confidence score
+        indicators:
+          type: object
+          properties:
+            prescriptive_count:
+              type: integer
+            flexible_count:
+              type: integer
+
+    EntityExtractionRequest:
+      type: object
+      required:
+        - texts
+      properties:
+        texts:
+          type: array
+          items:
+            type: string
+          maxItems: 50
+          description: Legislative texts for entity extraction
+        categories:
+          type: array
+          items:
+            type: string
+            enum: [institutions, legislation_types, transport_entities, environmental_entities, economic_entities]
+          description: Entity categories to extract
+
+    EntityExtractionResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityResult'
+        processing_time_ms:
+          type: number
+
+    EntityResult:
+      type: object
+      properties:
+        text_id:
+          type: integer
+          description: Index of analyzed text
+        entities:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Extracted entities by category
+
+    ChoroplethResponse:
+      type: object
+      properties:
+        level:
+          type: string
+          description: Geographic aggregation level
+        metric:
+          type: string
+          description: Visualization metric
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeographicDataPoint'
+        metadata:
+          type: object
+          properties:
+            total_regions:
+              type: integer
+            date_range:
+              type: object
+              properties:
+                start:
+                  type: string
+                  format: date
+                end:
+                  type: string
+                  format: date
+
+    GeographicDataPoint:
+      type: object
+      properties:
+        region_id:
+          type: string
+          description: Geographic region identifier
+        region_name:
+          type: string
+          description: Human-readable region name
+        value:
+          type: number
+          description: Metric value for visualization
+        document_count:
+          type: integer
+          description: Number of documents in region
+        geometry:
+          type: object
+          description: GeoJSON geometry for mapping
+
+    CitationExportRequest:
+      type: object
+      required:
+        - document_ids
+        - format
+      properties:
+        document_ids:
+          type: array
+          items:
+            type: string
+          maxItems: 1000
+          description: Document IDs to cite
+        format:
+          type: string
+          enum: [abnt, apa, vancouver, bibtex]
+          description: Citation format
+        include_abstracts:
+          type: boolean
+          default: false
+          description: Include document abstracts in citations
+
+    CitationExportResponse:
+      type: object
+      properties:
+        format:
+          type: string
+          description: Citation format used
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        export_url:
+          type: string
+          format: uri
+          description: Download URL for formatted citations
+
+    Citation:
+      type: object
+      properties:
+        document_id:
+          type: string
+        formatted_citation:
+          type: string
+          description: Formatted citation text
+        bibtex_key:
+          type: string
+          description: BibTeX citation key (if applicable)
+
+    DocumentExportRequest:
+      type: object
+      required:
+        - document_ids
+        - format
+      properties:
+        document_ids:
+          type: array
+          items:
+            type: string
+          maxItems: 5000
+          description: Document IDs to export
+        format:
+          type: string
+          enum: [json, csv, xml]
+          description: Export format
+        fields:
+          type: array
+          items:
+            type: string
+          description: Specific fields to include in export
+        include_content:
+          type: boolean
+          default: false
+          description: Include full document content
+
+    DocumentExportResponse:
+      type: object
+      properties:
+        format:
+          type: string
+        document_count:
+          type: integer
+        export_url:
+          type: string
+          format: uri
+          description: Download URL for exported data
+        expires_at:
+          type: string
+          format: date-time
+          description: Export URL expiration time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type or code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+        request_id:
+          type: string
+          description: Unique request identifier for debugging
+
+tags:
+  - name: System
+    description: System health and monitoring endpoints
+  - name: Search
+    description: Legislative document search and discovery
+  - name: Documents
+    description: Document retrieval and management
+  - name: Analytics
+    description: NLP and text analysis capabilities
+  - name: Geographic
+    description: Geospatial analysis and visualization
+  - name: Export
+    description: Data export and citation generation

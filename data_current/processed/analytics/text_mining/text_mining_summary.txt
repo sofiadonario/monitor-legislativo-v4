@@ -1,0 +1,55 @@
+
+BRAZILIAN LEGISLATIVE DATASET - ADVANCED TEXT MINING SUMMARY
+===========================================================
+
+PROCESSING OVERVIEW:
+- Analysis Date: 2025-07-26 13:44:27
+- Total Documents: 134,014
+- Documents with Text: 134,014 (100.0%)
+- Advanced Packages Available: 
+
+WORD FREQUENCY ANALYSIS:
+- Unique Words Identified: 179,273
+- Most Frequent Word: 'direito'
+- Domain Categories: 7
+- Language: Portuguese (Legal Domain)
+
+TRANSPORT RESEARCH ANALYSIS:
+- Transport-Related Documents: 2,037
+- Transport Themes Identified: 6
+- Historical Coverage: 1829 to 2025
+- Key Themes: Electrification, Infrastructure, Public Transport
+
+LEGAL ENTITY EXTRACTION:
+- Regulatory Agencies Identified: 13
+- Legal Document References: 10700
+- Court System References: Extracted and categorized
+
+TOPIC MODELING:
+⚠ Advanced packages not available - basic analysis performed
+
+RESEARCH APPLICATIONS:
+✓ Policy Evolution Tracking (Transport Themes 1829-2025)
+✓ Regulatory Agency Analysis (ANTT, ANTAQ, ANAC, etc.)
+✓ Legal Citation Networks Ready
+✓ Transport Decarbonization Content Identified
+✓ Federal vs State Policy Language Analysis
+
+FILES GENERATED:
+✓ word_frequencies_detailed.csv - Complete word analysis
+✓ domain_word_analysis.csv - Domain-specific terminology
+✓ transport_theme_evolution.csv - Temporal theme analysis
+✓ regulatory_agencies_analysis.csv - Agency mention analysis
+✓ text_mining_metadata.rds - Complete processing metadata
+
+
+NEXT STEPS:
+1. Implement topic modeling on full dataset
+2. Build citation networks from extracted references
+3. Analyze temporal evolution of transport policies
+4. Create interactive visualizations
+5. Integrate with geospatial analysis
+
+Advanced text mining completed successfully!
+Ready for temporal and network analysis phases.
+

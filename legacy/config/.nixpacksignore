@@ -1,0 +1,50 @@
+# Ignore R Shiny directories to prevent conflicts
+r-shiny-app/
+r-shiny-minimal/
+r-shiny-standalone/
+
+# Ignore development and testing directories
+development/
+tests/
+documentation/
+test-scripts/
+
+# Ignore data files to reduce build size
+data/
+*.csv
+*.xlsx
+*.rds
+
+# Ignore R specific files
+*.R
+*.Rmd
+.Rprofile
+renv/
+renv.lock
+
+# Ignore frontend build files
+dist/
+build/
+node_modules/
+public/
+
+# Ignore git and cache
+.git/
+.cache/
+__pycache__/
+
+# Ignore frontend build files (keep src/ for Python API)
+vite.config.ts
+tsconfig.json
+tsconfig.node.json
+package.json
+package-lock.json
+.npmrc
+jest.config.js
+.eslintrc.js
+
+# Ignore docs and planning
+planning/
+*.md
+*.pdf
+img9.png 

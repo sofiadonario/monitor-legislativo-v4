@@ -1,0 +1,149 @@
+# =============================================================================
+# R Linting Configuration for Monitor Legislativo v4
+# Using lintr package for comprehensive R code analysis
+# =============================================================================
+
+# Linters to use (comprehensive set for professional R development)
+linters: linters_with_defaults(
+    # Code style and formatting
+    line_length_linter(120),
+    indentation_linter(indent = 2L),
+    trailing_whitespace_linter(),
+    trailing_blank_lines_linter(),
+    
+    # Naming conventions
+    object_name_linter(styles = c("snake_case", "symbols")),
+    function_name_linter(styles = c("snake_case", "symbols")),
+    variable_name_linter(styles = c("snake_case", "symbols")),
+    
+    # Code quality
+    cyclocomp_linter(complexity_limit = 20L),
+    duplicate_argument_linter(),
+    function_left_parentheses_linter(),
+    commas_linter(),
+    spaces_left_parentheses_linter(),
+    spaces_inside_linter(),
+    infix_spaces_linter(),
+    
+    # Best practices
+    assignment_linter(),
+    equals_na_linter(),
+    absolute_path_linter(),
+    any_duplicated_linter(),
+    any_is_na_linter(),
+    boolean_arithmetic_linter(),
+    condition_message_linter(),
+    conjunct_test_linter(),
+    consecutive_stopifnot_linter(),
+    empty_assignment_linter(),
+    fixed_regex_linter(),
+    for_loop_index_linter(),
+    function_argument_linter(),
+    if_not_else_linter(),
+    implicit_assignment_linter(),
+    is_numeric_linter(),
+    length_levels_linter(),
+    literal_coercion_linter(),
+    missing_argument_linter(),
+    nested_ifelse_linter(),
+    nonportable_path_linter(),
+    numeric_leading_zero_linter(),
+    outer_negation_linter(),
+    paste_linter(),
+    redundant_equals_linter(),
+    redundant_ifelse_linter(),
+    regex_subset_linter(),
+    repeat_linter(),
+    routine_registration_linter(),
+    scalar_in_linter(),
+    seq_linter(),
+    sort_linter(),
+    sprintf_linter(),
+    T_and_F_symbol_linter(),
+    todo_comment_linter(),
+    undesirable_function_linter(),
+    undesirable_operator_linter(),
+    unreachable_code_linter(),
+    unused_import_linter(),
+    vector_logic_linter(),
+    which_grepl_linter(),
+    
+    # Package and documentation
+    package_hooks_linter(),
+    
+    # Disable some linters that may be too strict for this project
+    NULL
+)
+
+# Files to exclude from linting
+exclusions: list(
+    # Legacy and archive directories
+    "legacy" = Inf,
+    "archive" = Inf,
+    
+    # Cache and temporary files
+    "cache" = Inf,
+    "logs" = Inf,
+    "temp_venv" = Inf,
+    "check_env" = Inf,
+    "lexml_env" = Inf,
+    "reload_env" = Inf,
+    "node_modules" = Inf,
+    
+    # Specific file patterns to exclude
+    "renv" = Inf,
+    ".Rproj.user" = Inf,
+    
+    # Generated files
+    "packrat" = Inf,
+    ".git" = Inf,
+    
+    # Test files may have different standards
+    "tests/testthat" = list(
+        "object_name_linter" = Inf,
+        "cyclocomp_linter" = Inf
+    ),
+    
+    # Script files may be more lenient
+    "scripts" = list(
+        "cyclocomp_linter" = Inf,
+        "line_length_linter" = Inf
+    ),
+    
+    # Development and debugging files
+    "dev-tools" = list(
+        "object_name_linter" = Inf,
+        "todo_comment_linter" = Inf
+    ),
+    
+    # Database and migration scripts
+    "database" = list(
+        "line_length_linter" = Inf
+    ),
+    
+    # Shiny app files may have different conventions
+    "app.R" = list(
+        "line_length_linter" = 150,
+        "cyclocomp_linter" = 25
+    ),
+    
+    # Module files
+    "modules" = list(
+        "line_length_linter" = 150
+    ),
+    
+    # Specific problematic files
+    "RAILWAY_PRODUCTION_DB_FIX.R" = Inf,
+    "app_backup.R" = Inf,
+    "app_debug.R" = Inf,
+    "app_minimal.R" = Inf,
+    "test_*.R" = list(
+        "object_name_linter" = Inf
+    )
+)
+
+# Encoding
+encoding: "UTF-8"
+
+# Cache linting results for performance
+cache_directory: ".lintr_cache"

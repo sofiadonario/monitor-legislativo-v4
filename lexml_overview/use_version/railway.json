@@ -1,0 +1,35 @@
+{
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "./Dockerfile"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  },
+  "envVars": {
+    "PORT": {
+      "value": "3838"
+    },
+    "SHINY_LOG_LEVEL": {
+      "value": "INFO"
+    },
+    "PYTHON_PATH": {
+      "value": "/app/lexml_overview/use_version"
+    },
+    "R_LIBS_USER": {
+      "value": "/app/R/library"
+    }
+  },
+  "healthcheck": {
+    "type": "HTTP",
+    "path": "/health",
+    "port": 3838,
+    "initialDelaySeconds": 30,
+    "periodSeconds": 10,
+    "timeoutSeconds": 5,
+    "successThreshold": 1,
+    "failureThreshold": 3
+  }
+}

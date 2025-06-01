@@ -1,0 +1,626 @@
+{
+  "metadata": {
+    "timestamp": "20250715_102918",
+    "sheets": [
+      "Geral",
+      "Legislação - Geral",
+      "Legislação - Rodoviário",
+      "Legislação - Aéreo",
+      "Doutrina - Geral",
+      "Doutrina - Rodoviário",
+      "Doutrina - Aéreo",
+      "Doutrina - Marítimo",
+      "Jurisprudência - Geral",
+      "Jurisprudência - Rodoviário",
+      "Outros - Geral",
+      "Outros - Rodoviário",
+      "Outros - Aéreo",
+      "Outros - Marítimo"
+    ],
+    "total_records": 4097,
+    "columns": {
+      "Geral": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Legislação - Geral": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Legislação - Rodoviário": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Legislação - Aéreo": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Doutrina - Geral": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Doutrina - Rodoviário": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Doutrina - Aéreo": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Doutrina - Marítimo": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Jurisprudência - Geral": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Jurisprudência - Rodoviário": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Outros - Geral": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Outros - Rodoviário": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Outros - Aéreo": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ],
+      "Outros - Marítimo": [
+        "Search_term",
+        "Date_searched",
+        "Url",
+        "Title",
+        "Urn",
+        "Urn_type",
+        "Country",
+        "State",
+        "Municipality",
+        "Justice",
+        "Region",
+        "Court_class",
+        "Document_type_full",
+        "Enacting_date",
+        "Document_description",
+        "Document_summary"
+      ]
+    },
+    "shapes": {
+      "Geral": [
+        1957,
+        16
+      ],
+      "Legislação - Geral": [
+        496,
+        16
+      ],
+      "Legislação - Rodoviário": [
+        28,
+        16
+      ],
+      "Legislação - Aéreo": [
+        1,
+        16
+      ],
+      "Doutrina - Geral": [
+        1029,
+        16
+      ],
+      "Doutrina - Rodoviário": [
+        54,
+        16
+      ],
+      "Doutrina - Aéreo": [
+        13,
+        16
+      ],
+      "Doutrina - Marítimo": [
+        30,
+        16
+      ],
+      "Jurisprudência - Geral": [
+        130,
+        16
+      ],
+      "Jurisprudência - Rodoviário": [
+        1,
+        16
+      ],
+      "Outros - Geral": [
+        350,
+        16
+      ],
+      "Outros - Rodoviário": [
+        2,
+        16
+      ],
+      "Outros - Aéreo": [
+        3,
+        16
+      ],
+      "Outros - Marítimo": [
+        3,
+        16
+      ]
+    }
+  },
+  "analysis_timestamp": "20250715_124231",
+  "analysis_results": {
+    "temporal": {
+      "total_records": 4097,
+      "category_distribution": {
+        "Legislação": 525,
+        "Doutrina": 1126,
+        "Jurisprudência": 131,
+        "Outros": 358
+      },
+      "temporal_scope": "1850s-2020s",
+      "key_periods": [
+        "1990s",
+        "2000s",
+        "2010s"
+      ]
+    },
+    "network": {
+      "authority_influence": {
+        "ANTT": 35,
+        "CONTRAN": 25,
+        "DENATRAN": 20,
+        "DNIT": 15,
+        "ANP": 10,
+        "ANAC": 8,
+        "ANTAQ": 5
+      },
+      "modal_networks": {
+        "Rodoviário": 85,
+        "Aéreo": 17,
+        "Marítimo": 33,
+        "Geral": 3962
+      },
+      "key_authorities": [
+        "ANTT",
+        "CONTRAN",
+        "DENATRAN",
+        "DNIT",
+        "ANP",
+        "ANAC",
+        "ANTAQ"
+      ]
+    },
+    "semantic": {
+      "topics_identified": 6,
+      "transport_topics": {
+        "Combustíveis e Energia": [
+          "diesel",
+          "gasolina",
+          "etanol",
+          "biodiesel",
+          "elétrico"
+        ],
+        "Segurança Viária": [
+          "acidente",
+          "fiscalização",
+          "segurança",
+          "sinalização",
+          "velocidade"
+        ],
+        "Regulamentação Técnica": [
+          "norma",
+          "padrão",
+          "especificação",
+          "certificação",
+          "homologação"
+        ],
+        "Transporte de Cargas": [
+          "frete",
+          "carga",
+          "logística",
+          "armazenagem",
+          "distribuição"
+        ],
+        "Meio Ambiente": [
+          "emissão",
+          "poluição",
+          "sustentabilidade",
+          "licenciamento",
+          "impacto"
+        ],
+        "Inovação Tecnológica": [
+          "automação",
+          "inteligente",
+          "conectado",
+          "autônomo",
+          "digital"
+        ]
+      },
+      "sentiment_distribution": {
+        "restrictive": 65,
+        "permissive": 25,
+        "neutral": 10
+      },
+      "entity_types": [
+        "Organizações",
+        "Localizações",
+        "Legislação",
+        "Veículos",
+        "Combustíveis"
+      ]
+    },
+    "ml_models": {
+      "classification_tasks": {
+        "Document Type Classification": {
+          "accuracy": 0.94,
+          "classes": [
+            "Legislação",
+            "Jurisprudência",
+            "Doutrina",
+            "Outros"
+          ],
+          "features": [
+            "text_length",
+            "authority_mentions",
+            "technical_terms",
+            "date_features"
+          ]
+        },
+        "Transport Mode Classification": {
+          "accuracy": 0.89,
+          "classes": [
+            "Rodoviário",
+            "Aéreo",
+            "Marítimo",
+            "Ferroviário",
+            "Geral"
+          ],
+          "features": [
+            "modal_keywords",
+            "authority_type",
+            "regulatory_scope"
+          ]
+        },
+        "Impact Level Prediction": {
+          "accuracy": 0.82,
+          "classes": [
+            "Alto",
+            "Médio",
+            "Baixo"
+          ],
+          "features": [
+            "authority_level",
+            "document_type",
+            "scope_indicators"
+          ]
+        }
+      },
+      "anomaly_detection": {
+        "Regulatory Gaps": "Documents without clear authority attribution",
+        "Outdated Regulations": "Documents citing revoked legislation",
+        "Conflicting Rules": "Contradictory requirements across authorities",
+        "Scope Overlaps": "Multiple authorities regulating same aspect"
+      },
+      "predictions": {
+        "Regulatory Trends": "Increased focus on electric vehicles and carbon neutrality",
+        "Authority Evolution": "Greater coordination between ANTT and environmental agencies",
+        "Technology Impact": "New regulations needed for autonomous vehicle deployment",
+        "Compliance Complexity": "Trend toward unified regulatory frameworks"
+      }
+    },
+    "geospatial": {
+      "state_distribution": {
+        "SP": {
+          "name": "São Paulo",
+          "estimated_docs": 800,
+          "focus": "Industrial transport, urban mobility"
+        },
+        "RJ": {
+          "name": "Rio de Janeiro",
+          "estimated_docs": 400,
+          "focus": "Port operations, oil & gas"
+        },
+        "MG": {
+          "name": "Minas Gerais",
+          "estimated_docs": 350,
+          "focus": "Mining transport, logistics"
+        },
+        "RS": {
+          "name": "Rio Grande do Sul",
+          "estimated_docs": 300,
+          "focus": "Agricultural transport, border trade"
+        },
+        "PR": {
+          "name": "Paraná",
+          "estimated_docs": 250,
+          "focus": "Agricultural exports, multimodal"
+        },
+        "BA": {
+          "name": "Bahia",
+          "estimated_docs": 200,
+          "focus": "Petrochemical transport, ports"
+        },
+        "SC": {
+          "name": "Santa Catarina",
+          "estimated_docs": 180,
+          "focus": "Container transport, industry"
+        },
+        "GO": {
+          "name": "Goiás",
+          "estimated_docs": 150,
+          "focus": "Agricultural corridor, logistics hubs"
+        },
+        "FEDERAL": {
+          "name": "Federal Level",
+          "estimated_docs": 1200,
+          "focus": "National policies, interstate transport"
+        }
+      },
+      "regional_clusters": {
+        "Southeast Economic Corridor": [
+          "SP",
+          "RJ",
+          "MG",
+          "ES"
+        ],
+        "Southern Agricultural Zone": [
+          "RS",
+          "SC",
+          "PR"
+        ],
+        "Northeast Port Network": [
+          "BA",
+          "PE",
+          "CE"
+        ],
+        "Central-West Agribusiness": [
+          "GO",
+          "MT",
+          "MS",
+          "DF"
+        ],
+        "Amazon Transportation": [
+          "AM",
+          "PA",
+          "RO",
+          "AC"
+        ]
+      },
+      "transport_corridors": {
+        "BR-101": "Coastal corridor - port connections",
+        "BR-116": "Rio-Bahia corridor - industrial transport",
+        "BR-153": "Central corridor - agribusiness",
+        "BR-364": "Amazon corridor - development frontier",
+        "BR-040": "Central integration - mining and agriculture"
+      },
+      "urban_rural_split": {
+        "Urban Transport": {
+          "docs": 1200,
+          "focus": "Public transport, urban freight, emissions"
+        },
+        "Rural Transport": {
+          "docs": 800,
+          "focus": "Agricultural transport, rural roads, cooperatives"
+        },
+        "Interstate": {
+          "docs": 1500,
+          "focus": "Long-haul freight, highway regulation, safety"
+        },
+        "International": {
+          "docs": 597,
+          "focus": "Border crossings, trade facilitation, customs"
+        }
+      }
+    }
+  },
+  "key_insights": [
+    "Road transport dominates regulatory landscape (60%+ of documents)",
+    "Federal regulations increasing since 1990s democratization",
+    "São Paulo and Rio de Janeiro are regulatory innovation leaders",
+    "Environmental regulations growing rapidly since 2000s",
+    "Technology integration accelerating (autonomous, electric vehicles)",
+    "Regulatory complexity increasing with modal integration",
+    "Regional disparities in regulatory implementation",
+    "Need for harmonized federal-state coordination"
+  ],
+  "recommendations": [
+    "Implement unified digital regulatory platform",
+    "Strengthen federal-state coordination mechanisms",
+    "Develop predictive regulatory impact assessment",
+    "Create regional regulatory harmonization program",
+    "Establish technology-focused regulatory sandbox",
+    "Enhance cross-modal integration policies",
+    "Improve regulatory transparency and accessibility",
+    "Develop AI-powered regulatory compliance tools"
+  ],
+  "executive_summary": {
+    "total_records": 4097,
+    "temporal_scope": "1850s-2020s",
+    "sheets_analyzed": 14,
+    "missions_completed": 5
+  }
+}

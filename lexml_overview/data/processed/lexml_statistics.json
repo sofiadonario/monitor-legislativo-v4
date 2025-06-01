@@ -1,0 +1,95 @@
+{
+  "collection_info": {
+    "total_documents": 1949,
+    "unique_search_terms": 108,
+    "date_collected": "2025-07-14 21:11:01",
+    "file_size_mb": 2.16
+  },
+  "document_distribution": {
+    "by_type": {
+      "doutrina": 1015,
+      "legislation": 482,
+      "other": 337,
+      "jurisprudence": 115
+    },
+    "by_search_term": {
+      "ANP": 37,
+      "diesel": 20,
+      "etanol": 20,
+      "gasolina": 20,
+      "gás natural": 20,
+      "GNV": 20,
+      "combustível do futuro": 20,
+      "hidrogênio": 20,
+      "transporte de carga": 20,
+      "transporte aquaviário": 20,
+      "energia renovável": 20,
+      "biodiesel": 20,
+      "ANA": 20,
+      "ANTT": 20,
+      "CONTRAN": 20,
+      "caminhão elétrico": 20,
+      "transporte multimodal": 20,
+      "logística": 20,
+      "cabotagem": 20,
+      "transporte ferroviário": 20
+    },
+    "by_jurisdiction": {
+      "Federal": 221,
+      "Congresso Nacional": 119,
+      "Agência Nacional de Energia Elétrica": 106,
+      "Municipal": 88,
+      "Estadual": 61,
+      "Câmara dos Deputados": 43,
+      "Senado Federal": 39,
+      "Distrital": 12,
+      "Agência Nacional de EnergiaElétrica": 11,
+      "Superior Tribunal de Justiça. 1ª Turma": 11
+    }
+  },
+  "temporal_analysis": {
+    "date_range": {
+      "earliest": "1856-04-25",
+      "latest": "2025-05-06"
+    },
+    "decade_distribution": {
+      "2010.0s": 268,
+      "1980.0s": 41,
+      "2000.0s": 218,
+      "1990.0s": 84,
+      "1960.0s": 19,
+      "1940.0s": 13,
+      "1930.0s": 8,
+      "2020.0s": 151,
+      "1850.0s": 1,
+      "1950.0s": 9,
+      "1890.0s": 1,
+      "1970.0s": 28,
+      "1900.0s": 1
+    }
+  },
+  "content_analysis": {
+    "subject_categories": {
+      "Transporte": "179",
+      "Energia": "25",
+      "Combustível": "69",
+      "Veículo": "10",
+      "Fiscalização": "52",
+      "Tributação": "153",
+      "Ambiente": "78"
+    },
+    "regulatory_agencies": [
+      "ANP",
+      "ANTT",
+      "ANEEL",
+      "ANA",
+      "CONTRAN",
+      "DENATRAN",
+      "DNIT",
+      "IBAMA",
+      "INMETRO"
+    ],
+    "avg_title_length": 44.9,
+    "avg_description_length": 77.4
+  }
+}

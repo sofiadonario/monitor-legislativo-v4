@@ -1,0 +1,314 @@
+# =============================================================================
+# Pre-commit Configuration for Monitor Legislativo v4
+# Comprehensive code quality checks for Python, R, and SQL
+# =============================================================================
+
+# Pre-commit configuration version
+ci:
+    autofix_commit_msg: |
+        [pre-commit.ci] auto fixes from pre-commit.com hooks
+        
+        for more information, see https://pre-commit.ci
+    autofix_prs: true
+    autoupdate_branch: ''
+    autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+    autoupdate_schedule: weekly
+    skip: []
+    submodules: false
+
+# Repository-wide settings
+default_language_version:
+    python: python3.8
+
+default_stages: [commit]
+fail_fast: false
+minimum_pre_commit_version: '2.15.0'
+
+repos:
+    # ==========================================================================
+    # General file and formatting checks
+    # ==========================================================================
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.5.0
+      hooks:
+          - id: trailing-whitespace
+            args: [--markdown-linebreak-ext=md]
+            exclude: '(legacy/|archive/|\.Rd$)'
+          - id: end-of-file-fixer
+            exclude: '(legacy/|archive/|\.Rd$)'
+          - id: check-yaml
+            exclude: '(legacy/|archive/)'
+          - id: check-json
+            exclude: '(legacy/|archive/)'
+          - id: check-toml
+            exclude: '(legacy/|archive/)'
+          - id: check-xml
+            exclude: '(legacy/|archive/)'
+          - id: check-merge-conflict
+          - id: check-case-conflict
+          - id: check-symlinks
+          - id: check-added-large-files
+            args: ['--maxkb=5000']  # 5MB limit
+          - id: check-executables-have-shebangs
+            exclude: '(legacy/|archive/)'
+          - id: check-shebang-scripts-are-executable
+            exclude: '(legacy/|archive/)'
+          - id: detect-private-key
+          - id: mixed-line-ending
+            args: ['--fix=lf']
+          - id: requirements-txt-fixer
+            files: requirements.*\.txt$
+
+    # ==========================================================================
+    # Python Code Quality
+    # ==========================================================================
+    
+    # Python imports sorting
+    - repo: https://github.com/pycqa/isort
+      rev: 5.13.2
+      hooks:
+          - id: isort
+            name: isort (python)
+            args: ["--profile", "black", "--filter-files"]
+            exclude: '(legacy/|archive/|migrations/.*\.py$)'
+
+    # Python code formatting with Black
+    - repo: https://github.com/psf/black
+      rev: 23.12.1
+      hooks:
+          - id: black
+            name: black
+            language_version: python3.8
+            args: ["--line-length=88"]
+            exclude: '(legacy/|archive/|migrations/.*\.py$)'
+
+    # Python linting with Ruff (fast alternative to flake8, pylint, etc.)
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.1.13
+      hooks:
+          - id: ruff
+            name: ruff
+            args: [--fix, --exit-non-zero-on-fix]
+            exclude: '(legacy/|archive/|migrations/.*\.py$)'
+          - id: ruff-format
+            name: ruff-format
+            exclude: '(legacy/|archive/|migrations/.*\.py$)'
+
+    # Python docstring formatting
+    - repo: https://github.com/pycqa/docformatter
+      rev: v1.7.5
+      hooks:
+          - id: docformatter
+            args: [
+                --in-place,
+                --wrap-summaries=88,
+                --wrap-descriptions=88,
+                --pre-summary-newline,
+                --make-summary-multi-line
+            ]
+            exclude: '(legacy/|archive/|migrations/.*\.py$|tests?/)'
+
+    # Python security linting
+    - repo: https://github.com/pycqa/bandit
+      rev: 1.7.6
+      hooks:
+          - id: bandit
+            args: ["-c", "pyproject.toml"]
+            additional_dependencies: ["bandit[toml]"]
+            exclude: '(legacy/|archive/|tests?/)'
+
+    # ==========================================================================
+    # SQL Code Quality
+    # ==========================================================================
+    
+    # SQL linting and formatting
+    - repo: https://github.com/sqlfluff/sqlfluff
+      rev: 3.0.2
+      hooks:
+          - id: sqlfluff-lint
+            name: sqlfluff-lint
+            additional_dependencies: ['dbt-postgres', 'sqlfluff-templater-dbt']
+            exclude: '(legacy/|archive/|migrations/.*\.sql$)'
+          - id: sqlfluff-fix
+            name: sqlfluff-fix
+            additional_dependencies: ['dbt-postgres', 'sqlfluff-templater-dbt']
+            exclude: '(legacy/|archive/|migrations/.*\.sql$)'
+
+    # ==========================================================================
+    # Documentation and Markdown
+    # ==========================================================================
+    
+    # Markdown linting and formatting
+    - repo: https://github.com/igorshubovych/markdownlint-cli
+      rev: v0.38.0
+      hooks:
+          - id: markdownlint
+            name: markdownlint
+            args: ['--fix']
+            exclude: '(legacy/|archive/)'
+
+    # ==========================================================================
+    # Git and Commit Message Quality
+    # ==========================================================================
+    
+    # Commit message linting
+    - repo: https://github.com/compilerla/conventional-pre-commit
+      rev: v3.0.0
+      hooks:
+          - id: conventional-pre-commit
+            stages: [commit-msg]
+            args: [
+                "build", "chore", "ci", "docs", "feat", "fix", 
+                "perf", "refactor", "revert", "style", "test"
+            ]
+
+    # ==========================================================================
+    # Security and Secrets Detection
+    # ==========================================================================
+    
+    # Detect secrets in codebase
+    - repo: https://github.com/Yelp/detect-secrets
+      rev: v1.4.0
+      hooks:
+          - id: detect-secrets
+            args: ['--baseline', '.secrets.baseline']
+            exclude: '(legacy/|archive/|package-lock\.json|\.lock$)'
+
+    # ==========================================================================
+    # Dependencies and Vulnerabilities
+    # ==========================================================================
+    
+    # Python dependency scanning
+    - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+      rev: v1.3.2
+      hooks:
+          - id: python-safety-dependencies-check
+            files: requirements.*\.txt$
+
+    # ==========================================================================
+    # Custom Local Hooks
+    # ==========================================================================
+    
+    - repo: local
+      hooks:
+          # R code style check (styler)
+          - id: style-r
+            name: style-r
+            entry: Rscript -e "styler::style_file(commandArgs(trailingOnly = TRUE))"
+            language: system
+            files: '\.R$'
+            exclude: '(legacy/|archive/|\.Rproj\.user/)'
+            require_serial: false
+            
+          # R linting (lintr)
+          - id: lintr-r
+            name: lintr-r
+            entry: Rscript -e "lintr::lint(commandArgs(trailingOnly = TRUE))"
+            language: system
+            files: '\.R$'
+            exclude: '(legacy/|archive/|\.Rproj\.user/)'
+            require_serial: false
+            
+          # Python type checking with mypy (optional, can be slow)
+          - id: mypy
+            name: mypy
+            entry: mypy
+            language: python
+            types: [python]
+            exclude: '(legacy/|archive/|migrations/.*\.py$|tests?/)'
+            additional_dependencies: [
+                mypy,
+                types-requests,
+                types-python-dateutil,
+                types-setuptools
+            ]
+            args: [
+                "--config-file=pyproject.toml",
+                "--ignore-missing-imports",
+                "--show-error-codes"
+            ]
+            require_serial: false
+            
+          # Check Python imports can be resolved
+          - id: check-python-imports
+            name: check-python-imports
+            entry: python
+            language: system
+            args: [-m, py_compile]
+            files: '\.py$'
+            exclude: '(legacy/|archive/)'
+            
+          # Validate JSON files in config directories
+          - id: validate-config-json
+            name: validate-config-json
+            entry: python -m json.tool
+            language: system
+            files: '^config/.*\.json$'
+            exclude: '(legacy/|archive/)'
+            
+          # Check for Portuguese encoding issues
+          - id: check-portuguese-encoding
+            name: check-portuguese-encoding
+            entry: python -c "
+import sys;
+import codecs;
+[sys.exit(1) if any(ord(c) > 127 and not f.encoding in ['utf-8', 'UTF-8'] for c in open(f, 'r', encoding='utf-8', errors='ignore').read()) else None for f in sys.argv[1:]]
+"
+            language: system
+            files: '\.(py|R|sql|md|txt)$'
+            exclude: '(legacy/|archive/|\.git/)'
+            
+          # Check database connection strings don't contain passwords
+          - id: check-db-security
+            name: check-db-security
+            entry: python -c "
+import sys;
+import re;
+[sys.exit(1) if re.search(r'postgresql://.*:[^:@]*@', open(f, 'r', encoding='utf-8', errors='ignore').read()) else None for f in sys.argv[1:]]
+"
+            language: system
+            files: '\.(py|R|sql)$'
+            exclude: '(legacy/|archive/|\.env)'
+
+    # ==========================================================================
+    # File-specific exclusions and configurations
+    # ==========================================================================
+    
+exclude: |
+    (?x)^(
+        legacy/.*|
+        archive/.*|
+        cache/.*|
+        logs/.*|
+        temp_venv/.*|
+        check_env/.*|
+        lexml_env/.*|
+        reload_env/.*|
+        node_modules/.*|
+        \.git/.*|
+        \.Rproj\.user/.*|
+        \.ruff_cache/.*|
+        \.mypy_cache/.*|
+        __pycache__/.*|
+        \.pytest_cache/.*|
+        htmlcov/.*|
+        \.coverage.*|
+        .*\.egg-info/.*|
+        build/.*|
+        dist/.*|
+        \.venv/.*|
+        venv/.*|
+        .*\.pyc$|
+        .*\.pyo$|
+        .*\.orig$|
+        .*\.rej$|
+        .*\.backup$|
+        .*\.bak$|
+        .*\.swp$|
+        .*\.tmp$|
+        .*~$|
+        \.DS_Store$|
+        Thumbs\.db$|
+        pip3\.exe$|
+        pip3\.13\.exe$
+    )

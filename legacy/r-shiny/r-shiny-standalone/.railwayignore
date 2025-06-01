@@ -1,0 +1,6 @@
+# Ignore everything except this directory
+/*
+!/r-shiny-standalone/
+/r-shiny-standalone/*
+!/r-shiny-standalone/app.R
+!/r-shiny-standalone/Dockerfile

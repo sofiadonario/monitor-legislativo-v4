@@ -1,0 +1,72 @@
+{
+  "summary": {
+    "total_unique_municipalities": 15,
+    "total_patterns_found": 15,
+    "states_with_municipalities": 4,
+    "pattern_type_counts": {
+      "dash_patterns": 15
+    }
+  },
+  "top_states": {
+    "RS": 6,
+    "MG": 5,
+    "SP": 3,
+    "RJ": 1
+  },
+  "top_municipalities": {
+    "Itabirito": 1,
+    "Ponte Nova": 1,
+    "Uberaba": 1,
+    "Miguel Pereira": 1,
+    "Terra de Areia": 1,
+    "Herval": 1,
+    "Pedras Altas": 1,
+    "Machadinho": 1,
+    "Santa Margarida do Sul": 1,
+    "Campinas": 1,
+    "Hortolândia": 1,
+    "Caxias do Sul": 1,
+    "Arinos": 1,
+    "Divinópolis": 1,
+    "Catanduva": 1
+  },
+  "examples_by_pattern": {
+    "dash_patterns": [
+      {
+        "original": "Itabirito - MG",
+        "city": "Itabirito",
+        "state": "MG",
+        "column": "locality",
+        "row": 3
+      },
+      {
+        "original": "Ponte Nova - MG",
+        "city": "Ponte Nova",
+        "state": "MG",
+        "column": "locality",
+        "row": 4
+      },
+      {
+        "original": "Uberaba - MG",
+        "city": "Uberaba",
+        "state": "MG",
+        "column": "locality",
+        "row": 9
+      },
+      {
+        "original": "Miguel Pereira - RJ",
+        "city": "Miguel Pereira",
+        "state": "RJ",
+        "column": "locality",
+        "row": 12
+      },
+      {
+        "original": "Terra de Areia - RS",
+        "city": "Terra de Areia",
+        "state": "RS",
+        "column": "locality",
+        "row": 15
+      }
+    ]
+  }
+}

@@ -1,0 +1,2200 @@
+openapi: 3.0.3
+info:
+  title: Monitor Legislativo v4 API - Week 6 Enhanced
+  description: |
+    # 🏛️ API do Monitor Legislativo v4 - Sistema Brasileiro de Monitoramento Legislativo
+
+    ## Visão Geral
+    
+    API REST acadêmica para acesso a **134.000+ documentos legislativos brasileiros** autênticos, 
+    especializada em transporte e mobilidade urbana. Desenvolvida para pesquisadores acadêmicos 
+    que estudam políticas públicas de transporte no Brasil.
+
+    ## 🎯 Recursos Principais
+    
+    ### 📊 Dados Abrangentes
+    - **134.000+ Documentos**: Coleção completa de legislação brasileira sobre transporte
+    - **Cobertura Nacional**: Todos os 26 estados + Distrito Federal
+    - **Dados Municipais**: Mais de 2.000 municípios brasileiros
+    - **Período**: 1988-2024 (Constituição Federal até dados atuais)
+    
+    ### 🔍 Busca Avançada
+    - **Busca em Texto Completo**: Processamento de linguagem natural em português
+    - **Filtros Geográficos**: Por estado, região, município
+    - **Filtros Temporais**: Por ano, período, tendências
+    - **Tipos de Documento**: Leis, decretos, portarias, resoluções
+    
+    ### 📚 Recursos Acadêmicos
+    - **Citações ABNT**: Geração automática conforme NBR 6023
+    - **Múltiplos Formatos**: JSON, CSV, Excel, BibTeX, RIS
+    - **Análise Geográfica**: Integração com dados IBGE
+    - **Exportação em Massa**: Para análises quantitativas
+    
+    ## 🔐 Autenticação e Limites
+    
+    ### Níveis de Acesso
+    
+    | Nível | Requisições/Hora | Máx. Resultados | Recursos Especiais |
+    |-------|------------------|-----------------|-------------------|
+    | **Demo** | 100 | 50 | Acesso básico para testes |
+    | **Acadêmico** | 1.000 | 1.000 | Email institucional, exportação |
+    | **Institucional** | 2.000 | 5.000 | Suporte prioritário, limites customizados |
+    
+    ### Domínios Acadêmicos Reconhecidos
+    Universidades públicas (USP, UNICAMP, UFRJ, etc.) e privadas reconhecidas pelo MEC.
+    
+    ## 🇧🇷 Contexto Brasileiro
+    
+    ### Conformidade Legal
+    - **LGPD**: Lei Geral de Proteção de Dados Pessoais
+    - **LAI**: Lei de Acesso à Informação
+    - **Marco Civil da Internet**: Princípios de neutralidade
+    
+    ### Padrões Técnicos
+    - **ABNT**: Normas brasileiras para citações e metadados
+    - **IBGE**: Integração com dados geográficos oficiais
+    - **e-PING**: Padrões de interoperabilidade do governo eletrônico
+    
+    ## 📋 Casos de Uso
+    
+    ### Pesquisa Acadêmica
+    ```javascript
+    // Análise temporal da legislação de transporte em São Paulo
+    GET /api/v1/legislation/search?estado=SP&tipo=lei&year_start=2010&year_end=2024
+    ```
+    
+    ### Análise Geográfica
+    ```javascript
+    // Distribuição regional da legislação de mobilidade urbana
+    GET /api/v1/geographic/analysis?level=region&metric=density
+    ```
+    
+    ### Geração de Citations
+    ```javascript
+    // Citation ABNT para documento específico
+    GET /api/v1/citations/generate?document_id=LEI_SP_2023_001&format=abnt
+    ```
+
+  version: "4.0.0-week6"
+  contact:
+    name: Equipe de Desenvolvimento Monitor Legislativo
+    email: api-suporte@monitor-legislativo.br
+    url: https://monitor-legislativo-unified-production.up.railway.app
+    x-whatsapp: "+55 11 9999-9999"
+    x-linkedin: "https://linkedin.com/company/monitor-legislativo"
+  license:
+    name: Licença Acadêmica Brasileira
+    url: https://monitor-legislativo.br/licenca-academica
+    x-spdx-id: "CC-BY-NC-SA-4.0"
+  termsOfService: https://monitor-legislativo.br/termos-de-uso
+  x-logo:
+    url: "https://monitor-legislativo.br/assets/logo-api.png"
+    altText: "Monitor Legislativo API"
+
+servers:
+  - url: https://monitor-legislativo-unified-production.up.railway.app/api/v1
+    description: Servidor de Produção (Railway)
+    x-environment: production
+    x-region: "South America (São Paulo)"
+  - url: https://staging.monitor-legislativo.br/api/v1  
+    description: Servidor de Homologação
+    x-environment: staging
+  - url: http://localhost:3838/api/v1
+    description: Servidor de Desenvolvimento Local
+    x-environment: development
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        Chave de API para autenticação. Obtenha sua chave através do registro acadêmico.
+        
+        **Formato**: `ml_v4_{tier}_{random_string}`
+        
+        **Exemplo**: `ml_v4_academic_abc123def456ghi789`
+    
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT para sessões autenticadas (opcional)
+
+  schemas:
+    # Documento Legislativo
+    DocumentoLegislativo:
+      type: object
+      required:
+        - id
+        - titulo
+        - estado
+        - tipo_documento
+        - data_publicacao
+      properties:
+        id:
+          type: string
+          description: Identificador único do documento
+          example: "LEI_SP_2023_001"
+          pattern: "^[A-Z0-9_]+$"
+        titulo:
+          type: string
+          description: Título completo do documento
+          example: "Lei Municipal que regulamenta o transporte público urbano"
+          maxLength: 500
+        ementa:
+          type: string
+          description: Resumo ou ementa do documento
+          example: "Estabelece diretrizes para o sistema de transporte público municipal, definindo critérios de qualidade e acessibilidade."
+          maxLength: 2000
+        conteudo:
+          type: string
+          description: Texto completo do documento (quando disponível)
+          example: "Art. 1º - Fica estabelecido o sistema municipal de transporte público..."
+        estado:
+          type: string
+          description: Unidade Federativa (código UF)
+          example: "SP"
+          enum: ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]
+        municipio:
+          type: string
+          description: Nome do município
+          example: "São Paulo"
+          maxLength: 100
+        tipo_documento:
+          type: string
+          description: Tipo do documento legislativo
+          example: "Lei"
+          enum: ["Lei", "Decreto", "Portaria", "Resolução", "Medida Provisória", "Instrução Normativa", "Ordem de Serviço", "Circular", "Ato", "Deliberação"]
+        data_publicacao:
+          type: string
+          format: date
+          description: Data de publicação do documento
+          example: "2023-03-15"
+        numero:
+          type: string
+          description: Número do documento
+          example: "LEI-2023-001"
+          maxLength: 50
+        ano:
+          type: integer
+          description: Ano de publicação
+          example: 2023
+          minimum: 1988
+          maximum: 2024
+        orgao_expedidor:
+          type: string
+          description: Órgão que expediu o documento
+          example: "Prefeitura Municipal de São Paulo"
+          maxLength: 200
+        url_original:
+          type: string
+          format: uri
+          description: URL do documento original
+          example: "https://diariooficial.prefeitura.sp.gov.br/2023/lei-001"
+        observacoes:
+          type: string
+          description: Observações adicionais
+          maxLength: 1000
+        created_at:
+          type: string
+          format: date-time
+          description: Data de criação no sistema
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: Data de última atualização
+          readOnly: true
+
+    # Análise Geográfica
+    AnaliseGeografica:
+      type: object
+      properties:
+        regiao:
+          type: string
+          description: Nome da região geográfica
+          example: "Sudeste"
+        total_documentos:
+          type: integer
+          description: Total de documentos na região
+          example: 45230
+          minimum: 0
+        municipios_ativos:
+          type: integer
+          description: Número de municípios com legislação
+          example: 645
+          minimum: 0
+        tipos_documentos:
+          type: integer
+          description: Número de tipos diferentes de documentos
+          example: 8
+          minimum: 0
+        densidade_legislativa:
+          type: number
+          format: float
+          description: Documentos por 100 mil habitantes
+          example: 68.5
+          minimum: 0
+        percentual_nacional:
+          type: number
+          format: float
+          description: Percentual em relação ao total nacional
+          example: 33.7
+          minimum: 0
+          maximum: 100
+        primeiro_documento:
+          type: string
+          format: date
+          description: Data do documento mais antigo
+          example: "1988-10-05"
+        ultimo_documento:
+          type: string
+          format: date
+          description: Data do documento mais recente
+          example: "2024-01-15"
+
+    # Citação Acadêmica
+    CitacaoAcademica:
+      type: object
+      properties:
+        citacao:
+          type: string
+          description: Texto da citação formatada
+          example: "SÃO PAULO. Prefeitura Municipal. Lei Municipal sobre Transporte Público. São Paulo: Prefeitura Municipal de São Paulo, 15 mar. 2023. LEI-2023-001. Disponível em: https://exemplo.com/documento/LEI_SP_2023_001. Acesso em: 15 jan. 2024."
+        formato:
+          type: string
+          description: Formato da citação
+          example: "abnt"
+          enum: ["abnt", "apa", "chicago", "vancouver", "bibtex", "ris"]
+        nome_formato:
+          type: string
+          description: Nome completo do formato
+          example: "ABNT (NBR 6023)"
+        document_id:
+          type: string
+          description: ID do documento citado
+          example: "LEI_SP_2023_001"
+        gerado_em:
+          type: string
+          format: date-time
+          description: Timestamp da geração
+          readOnly: true
+
+    # Resposta de Erro
+    RespostaErro:
+      type: object
+      required:
+        - error
+        - message
+        - code
+        - timestamp
+      properties:
+        error:
+          type: boolean
+          example: true
+          description: Indica que houve erro
+        message:
+          type: string
+          description: Mensagem de erro em português
+          example: "Parâmetros inválidos"
+        code:
+          oneOf:
+            - type: integer
+              description: Código HTTP de erro
+              example: 400
+            - type: string
+              description: Código de erro específico
+              example: "INVALID_PARAMETERS"
+        details:
+          oneOf:
+            - type: string
+              description: Detalhes adicionais sobre o erro
+            - type: array
+              items:
+                type: string
+              description: Lista de erros específicos
+              example: ["Estado inválido", "Ano deve estar entre 1988 e 2024"]
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp do erro
+          example: "2024-01-15T10:30:00Z"
+        debug:
+          type: string
+          description: Informações de debug (apenas em modo desenvolvimento)
+
+    # Resposta de Sucesso
+    RespostaSucesso:
+      type: object
+      required:
+        - error
+        - message
+        - data
+        - timestamp
+      properties:
+        error:
+          type: boolean
+          example: false
+          description: Indica que não houve erro
+        message:
+          type: string
+          description: Mensagem de sucesso em português
+          example: "Dados recuperados com sucesso"
+        data:
+          type: object
+          description: Dados da resposta (varia por endpoint)
+        meta:
+          type: object
+          description: Metadados sobre a resposta
+          properties:
+            total:
+              type: integer
+              description: Total de registros disponíveis
+              example: 134567
+            returned:
+              type: integer
+              description: Número de registros retornados
+              example: 50
+            limit:
+              type: integer
+              description: Limite aplicado
+              example: 50
+            offset:
+              type: integer
+              description: Offset aplicado
+              example: 0
+            has_more:
+              type: boolean
+              description: Indica se há mais resultados
+              example: true
+            next_offset:
+              type: integer
+              description: Próximo offset para paginação
+              example: 50
+              nullable: true
+            source:
+              type: string
+              description: Fonte dos dados
+              example: "database"
+              enum: ["database", "fallback", "cache"]
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp da resposta
+          example: "2024-01-15T10:30:00Z"
+
+    # Metadados de Paginação
+    MetadodosPaginacao:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total de registros disponíveis
+          example: 134567
+        returned:
+          type: integer
+          description: Registros retornados nesta página
+          example: 50
+        limit:
+          type: integer
+          description: Limite de registros por página
+          example: 50
+        offset:
+          type: integer
+          description: Offset da página atual
+          example: 0
+        page:
+          type: integer
+          description: Número da página atual
+          example: 1
+        total_pages:
+          type: integer
+          description: Total de páginas
+          example: 2692
+        has_more:
+          type: boolean
+          description: Indica se há mais páginas
+          example: true
+        next_page_url:
+          type: string
+          format: uri
+          description: URL da próxima página
+          example: "/api/v1/legislation/search?limit=50&offset=50"
+          nullable: true
+        prev_page_url:
+          type: string
+          format: uri
+          description: URL da página anterior
+          nullable: true
+
+  responses:
+    # Respostas Padrão de Erro
+    BadRequestError:
+      description: Requisição inválida - parâmetros incorretos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RespostaErro'
+          examples:
+            parametros_invalidos:
+              summary: Parâmetros inválidos
+              value:
+                error: true
+                message: "Parâmetros inválidos"
+                code: 400
+                details: ["Estado inválido. Use códigos UF válidos (ex: SP, RJ, MG)", "Ano deve estar entre 1988 e 2024"]
+                timestamp: "2024-01-15T10:30:00Z"
+            
+            query_obrigatoria:
+              summary: Query obrigatória não fornecida
+              value:
+                error: true
+                message: "Parâmetro 'q' é obrigatório para busca"
+                code: 400
+                timestamp: "2024-01-15T10:30:00Z"
+
+    UnauthorizedError:
+      description: Não autorizado - API key ausente ou inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RespostaErro'
+          examples:
+            api_key_ausente:
+              summary: API key não fornecida
+              value:
+                error: true
+                message: "API key é obrigatória"
+                code: 401
+                details: "Forneça a API key no header X-API-Key ou como parâmetro api_key"
+                timestamp: "2024-01-15T10:30:00Z"
+            
+            api_key_invalida:
+              summary: API key inválida
+              value:
+                error: true
+                message: "API key não encontrada ou inativa"
+                code: "KEY_NOT_FOUND"
+                timestamp: "2024-01-15T10:30:00Z"
+
+    ForbiddenError:
+      description: Acesso proibido - endpoint não permitido para este nível de acesso
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RespostaErro'
+          examples:
+            endpoint_nao_permitido:
+              summary: Endpoint não permitido para tier
+              value:
+                error: true
+                message: "Endpoint não permitido para este nível de acesso"
+                code: "ENDPOINT_NOT_ALLOWED"
+                tier: "demo"
+                allowed_endpoints: ["legislation/search", "legislation/types", "geographic/analysis"]
+                timestamp: "2024-01-15T10:30:00Z"
+
+    NotFoundError:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RespostaErro'
+          examples:
+            documento_nao_encontrado:
+              summary: Documento não encontrado
+              value:
+                error: true
+                message: "Documento não encontrado"
+                code: 404
+                timestamp: "2024-01-15T10:30:00Z"
+
+    RateLimitError:
+      description: Limite de requisições excedido
+      headers:
+        Retry-After:
+          description: Segundos para tentar novamente
+          schema:
+            type: integer
+        X-RateLimit-Limit:
+          description: Limite de requisições por hora
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          description: Requisições restantes na janela atual
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          description: Timestamp do reset da janela
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RespostaErro'
+          examples:
+            limite_excedido:
+              summary: Limite de requisições por hora excedido
+              value:
+                error: true
+                message: "Limite de requisições excedido"
+                code: "RATE_LIMIT_EXCEEDED"
+                limit: 100
+                remaining: 0
+                reset_at: "2024-01-15T11:00:00Z"
+                retry_after: 1800
+                timestamp: "2024-01-15T10:30:00Z"
+            
+            burst_excedido:
+              summary: Limite de burst excedido
+              value:
+                error: true
+                message: "Muitas requisições muito rápidas"
+                code: "BURST_LIMIT_EXCEEDED"
+                burst_limit: 10
+                retry_after: 60
+                timestamp: "2024-01-15T10:30:00Z"
+
+    ServerError:
+      description: Erro interno do servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RespostaErro'
+          examples:
+            erro_interno:
+              summary: Erro interno
+              value:
+                error: true
+                message: "Erro interno do servidor"
+                code: 500
+                details: "Erro temporário. Tente novamente em alguns minutos."
+                timestamp: "2024-01-15T10:30:00Z"
+
+tags:
+  - name: system
+    description: 🏥 Endpoints do sistema
+    externalDocs:
+      description: Documentação de saúde do sistema
+      url: https://monitor-legislativo.br/docs/system-health
+      
+  - name: legislation
+    description: 📜 Documentos legislativos
+    externalDocs:
+      description: Guia de busca legislativa
+      url: https://monitor-legislativo.br/docs/legislation-guide
+      
+  - name: geographic
+    description: 🗺️ Análise geográfica
+    externalDocs:
+      description: Tutorial de análise geográfica
+      url: https://monitor-legislativo.br/docs/geographic-analysis
+      
+  - name: citations
+    description: 📚 Geração de citações
+    externalDocs:
+      description: Manual de citações ABNT
+      url: https://monitor-legislativo.br/docs/citations-abnt
+      
+  - name: export
+    description: 📊 Exportação de dados
+    externalDocs:
+      description: Guia de exportação para pesquisa
+      url: https://monitor-legislativo.br/docs/export-guide
+      
+  - name: auth
+    description: 🔐 Autenticação e autorização
+    externalDocs:
+      description: Guia de autenticação
+      url: https://monitor-legislativo.br/docs/auth-guide
+
+paths:
+  # ENDPOINTS DO SISTEMA
+  /health:
+    get:
+      tags: [system]
+      summary: Verificação de saúde do sistema
+      description: |
+        Endpoint público para verificar se a API está funcionando corretamente.
+        Não requer autenticação e pode ser usado para monitoramento.
+      operationId: checkHealth
+      security: []  # Public endpoint
+      responses:
+        '200':
+          description: Sistema funcionando normalmente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: "healthy"
+                          version:
+                            type: string
+                            example: "4.0.0-week6"
+                          database:
+                            type: string
+                            example: "connected"
+                            enum: ["connected", "error", "unavailable"]
+                          uptime:
+                            type: string
+                            example: "2 days, 5 hours"
+                          environment:
+                            type: string
+                            example: "production"
+              examples:
+                healthy:
+                  summary: Sistema saudável
+                  value:
+                    error: false
+                    message: "Monitor Legislativo API está operacional"
+                    data:
+                      status: "healthy"
+                      version: "4.0.0-week6"
+                      database: "connected"
+                      uptime: "running"
+                      environment: "production"
+                    timestamp: "2024-01-15T10:30:00Z"
+        '503':
+          description: Sistema com problemas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaErro'
+
+  # ENDPOINTS DE LEGISLAÇÃO
+  /legislation/search:
+    get:
+      tags: [legislation]
+      summary: Busca avançada de documentos legislativos
+      description: |
+        Busca documentos legislativos com filtros avançados e suporte a texto completo.
+        Suporta busca por texto, filtros geográficos, temporais e por tipo de documento.
+        
+        ## Exemplos de Uso
+        
+        ### Busca básica por texto:
+        ```
+        GET /legislation/search?q=transporte público
+        ```
+        
+        ### Busca com filtros geográficos:
+        ```
+        GET /legislation/search?estado=SP&municipio=São Paulo&q=mobilidade urbana
+        ```
+        
+        ### Busca temporal:
+        ```
+        GET /legislation/search?year_start=2020&year_end=2024&tipo=lei
+        ```
+      operationId: searchLegislation
+      parameters:
+        - name: q
+          in: query
+          description: |
+            Texto de busca. Será pesquisado nos títulos e ementas dos documentos.
+            Suporta termos múltiplos e busca fuzzy em português.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 200
+          example: "transporte público urbano"
+          
+        - name: estado
+          in: query
+          description: |
+            Código da Unidade Federativa (UF) brasileira.
+            Use códigos padrão IBGE de 2 letras.
+          schema:
+            type: string
+            enum: ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]
+          example: "SP"
+          
+        - name: ano
+          in: query
+          description: Ano específico de publicação do documento
+          schema:
+            type: integer
+            minimum: 1988
+            maximum: 2024
+          example: 2023
+          
+        - name: year_start
+          in: query
+          description: Ano inicial para filtro de período
+          schema:
+            type: integer
+            minimum: 1988
+            maximum: 2024
+          example: 2020
+          
+        - name: year_end
+          in: query
+          description: Ano final para filtro de período
+          schema:
+            type: integer
+            minimum: 1988
+            maximum: 2024
+          example: 2024
+          
+        - name: tipo
+          in: query
+          description: Tipo de documento legislativo
+          schema:
+            type: string
+            enum: ["lei", "decreto", "portaria", "resolucao", "medida_provisoria", "instrucao_normativa", "ordem_servico", "circular", "ato", "deliberacao"]
+          example: "lei"
+          
+        - name: municipio
+          in: query
+          description: Nome do município (busca parcial, case-insensitive)
+          schema:
+            type: string
+            maxLength: 100
+          example: "São Paulo"
+          
+        - name: limit
+          in: query
+          description: Número máximo de resultados por página
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          example: 50
+          
+        - name: offset
+          in: query
+          description: Número de resultados para pular (paginação)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          example: 0
+          
+        - name: format
+          in: query
+          description: Formato da resposta
+          schema:
+            type: string
+            enum: ["json", "xml"]
+            default: "json"
+          example: "json"
+          
+        - name: fields
+          in: query
+          description: |
+            Campos específicos para retornar (separados por vírgula).
+            Use para responses mais leves selecionando apenas os campos necessários.
+          schema:
+            type: string
+          example: "id,titulo,estado,municipio,data_publicacao"
+          
+      responses:
+        '200':
+          description: Documentos encontrados com sucesso
+          headers:
+            X-RateLimit-Limit:
+              description: Limite de requisições por hora
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              description: Requisições restantes
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/DocumentoLegislativo'
+                      meta:
+                        allOf:
+                          - $ref: '#/components/schemas/MetadodosPaginacao'
+                          - type: object
+                            properties:
+                              filters:
+                                type: object
+                                description: Filtros aplicados na busca
+                                properties:
+                                  query:
+                                    type: string
+                                    nullable: true
+                                  estado:
+                                    type: string
+                                    nullable: true
+                                  ano:
+                                    type: integer
+                                    nullable: true
+                                  tipo:
+                                    type: string
+                                    nullable: true
+                              performance:
+                                type: object
+                                properties:
+                                  processing_time_seconds:
+                                    type: number
+                                    format: float
+                                    example: 0.245
+                                  source:
+                                    type: string
+                                    example: "database"
+              examples:
+                busca_textual:
+                  summary: Busca por texto com resultados
+                  value:
+                    error: false
+                    message: "Encontrados 25 documentos"
+                    data:
+                      - id: "LEI_SP_2023_001"
+                        titulo: "Lei Municipal sobre Transporte Público Urbano"
+                        ementa: "Regulamenta o sistema de transporte público municipal e estabelece diretrizes para sua operação."
+                        estado: "SP"
+                        municipio: "São Paulo"
+                        tipo_documento: "Lei"
+                        data_publicacao: "2023-03-15"
+                        numero: "LEI-2023-001"
+                        ano: 2023
+                        orgao_expedidor: "Prefeitura Municipal de São Paulo"
+                        url_original: "https://diariooficial.prefeitura.sp.gov.br/2023/lei-001"
+                      - id: "DECRETO_RJ_2023_045"
+                        titulo: "Decreto sobre Mobilidade Urbana Sustentável"
+                        ementa: "Institui políticas de mobilidade urbana sustentável no município."
+                        estado: "RJ"
+                        municipio: "Rio de Janeiro"
+                        tipo_documento: "Decreto"
+                        data_publicacao: "2023-04-20"
+                        numero: "DECRETO-2023-045"
+                        ano: 2023
+                        orgao_expedidor: "Prefeitura Municipal do Rio de Janeiro"
+                    meta:
+                      total: 134567
+                      returned: 25
+                      limit: 50
+                      offset: 0
+                      has_more: true
+                      next_offset: 50
+                      filters:
+                        query: "transporte público"
+                        estado: null
+                        ano: null
+                        tipo: null
+                      performance:
+                        processing_time_seconds: 0.245
+                        source: "database"
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+                busca_sem_resultados:
+                  summary: Busca sem resultados
+                  value:
+                    error: false
+                    message: "Nenhum documento encontrado com os critérios especificados"
+                    data: []
+                    meta:
+                      total: 0
+                      returned: 0
+                      limit: 50
+                      offset: 0
+                      has_more: false
+                      filters:
+                        query: "termo muito específico"
+                        estado: "AC"
+                        ano: 1990
+                        tipo: null
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+            application/xml:
+              schema:
+                type: string
+                format: xml
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <documentos>
+                  <documento id="LEI_SP_2023_001">
+                    <titulo>Lei Municipal sobre Transporte Público Urbano</titulo>
+                    <ementa>Regulamenta o sistema de transporte público municipal</ementa>
+                    <estado>SP</estado>
+                    <municipio>São Paulo</municipio>
+                    <tipo_documento>Lei</tipo_documento>
+                    <data_publicacao>2023-03-15</data_publicacao>
+                  </documento>
+                </documentos>
+                
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /legislation/{document_id}:
+    get:
+      tags: [legislation]
+      summary: Buscar documento específico por ID
+      description: |
+        Retorna os detalhes completos de um documento legislativo específico.
+        Inclui metadados, conteúdo completo (quando disponível) e informações de rastreabilidade.
+      operationId: getDocumentById
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          description: |
+            Identificador único do documento. 
+            Formato típico: `{TIPO}_{UF}_{ANO}_{NUMERO}`
+          schema:
+            type: string
+            pattern: "^[A-Z0-9_-]+$"
+            minLength: 5
+            maxLength: 100
+          example: "LEI_SP_2023_001"
+          
+      responses:
+        '200':
+          description: Documento encontrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DocumentoLegislativo'
+                      meta:
+                        type: object
+                        properties:
+                          document_id:
+                            type: string
+                          source:
+                            type: string
+                            example: "database"
+              examples:
+                documento_completo:
+                  summary: Documento com detalhes completos
+                  value:
+                    error: false
+                    message: "Documento encontrado"
+                    data:
+                      id: "LEI_SP_2023_001"
+                      titulo: "Lei Municipal que regulamenta o transporte público urbano"
+                      ementa: "Estabelece diretrizes para o sistema de transporte público municipal, definindo critérios de qualidade, acessibilidade e sustentabilidade ambiental."
+                      conteudo: "Art. 1º - Fica estabelecido o sistema municipal de transporte público, destinado a garantir a mobilidade urbana sustentável e acessível a todos os cidadãos..."
+                      estado: "SP"
+                      municipio: "São Paulo"
+                      tipo_documento: "Lei"
+                      data_publicacao: "2023-03-15"
+                      numero: "LEI-2023-001"
+                      ano: 2023
+                      orgao_expedidor: "Prefeitura Municipal de São Paulo"
+                      url_original: "https://diariooficial.prefeitura.sp.gov.br/2023/lei-001"
+                      observacoes: "Lei regulamentada pelo Decreto 2023-002"
+                      created_at: "2023-03-15T08:00:00Z"
+                      updated_at: "2023-03-16T14:30:00Z"
+                    meta:
+                      document_id: "LEI_SP_2023_001"
+                      source: "database"
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /legislation/types:
+    get:
+      tags: [legislation]
+      summary: Tipos de documentos disponíveis
+      description: |
+        Lista todos os tipos de documentos legislativos disponíveis na base,
+        com estatísticas de quantidade e período de cobertura.
+      operationId: getDocumentTypes
+      responses:
+        '200':
+          description: Tipos de documentos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            tipo:
+                              type: string
+                              example: "lei"
+                            nome_completo:
+                              type: string
+                              example: "Lei"
+                            quantidade:
+                              type: integer
+                              example: 45000
+                            data_mais_antiga:
+                              type: string
+                              format: date
+                              example: "1988-10-05"
+                            data_mais_recente:
+                              type: string
+                              format: date
+                              example: "2024-01-15"
+
+  /legislation/states:
+    get:
+      tags: [legislation]
+      summary: Estatísticas por estado
+      description: |
+        Retorna estatísticas de documentos legislativos por estado brasileiro,
+        incluindo quantidade, municípios cobertos e densidade legislativa.
+      operationId: getStateStatistics
+      responses:
+        '200':
+          description: Estatísticas por estado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            estado:
+                              type: string
+                              example: "SP"
+                            nome_estado:
+                              type: string
+                              example: "São Paulo"
+                            total_documentos:
+                              type: integer
+                              example: 25000
+                            municipios_com_legislacao:
+                              type: integer
+                              example: 450
+                            legislacao_mais_antiga:
+                              type: string
+                              format: date
+                            legislacao_mais_recente:
+                              type: string
+                              format: date
+                            percentual_total:
+                              type: number
+                              format: float
+                              example: 18.5
+
+  # ENDPOINTS GEOGRÁFICOS
+  /geographic/analysis:
+    get:
+      tags: [geographic]
+      summary: Análise geográfica de documentos legislativos
+      description: |
+        Fornece análise geográfica dos documentos legislativos com diferentes níveis
+        de granularidade (estado, região, município) e métricas variadas.
+        
+        ## Níveis de Análise
+        - **state**: Análise por estado (UF)
+        - **region**: Análise por região (Norte, Nordeste, Centro-Oeste, Sudeste, Sul)
+        - **municipality**: Análise municipal (limitada por estado para performance)
+        
+        ## Métricas Disponíveis
+        - **count**: Contagem absoluta de documentos
+        - **density**: Densidade legislativa (docs per capita)
+        - **distribution**: Distribuição percentual
+        - **temporal**: Análise temporal
+      operationId: getGeographicAnalysis
+      parameters:
+        - name: level
+          in: query
+          description: Nível de análise geográfica
+          required: true
+          schema:
+            type: string
+            enum: ["state", "region", "municipality"]
+            default: "state"
+          example: "state"
+          
+        - name: metric
+          in: query
+          description: Métrica de análise
+          schema:
+            type: string
+            enum: ["count", "density", "distribution", "temporal"]
+            default: "count"
+          example: "count"
+          
+        - name: estado
+          in: query
+          description: |
+            Filtro por estado (obrigatório para análise municipal).
+            Use códigos UF padrão IBGE.
+          schema:
+            type: string
+            enum: ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]
+          example: "SP"
+          
+        - name: year_start
+          in: query
+          description: Ano inicial para análise temporal
+          schema:
+            type: integer
+            minimum: 1988
+            maximum: 2024
+          example: 2018
+          
+        - name: year_end
+          in: query
+          description: Ano final para análise temporal
+          schema:
+            type: integer
+            minimum: 1988
+            maximum: 2024
+          example: 2024
+          
+        - name: format
+          in: query
+          description: Formato de saída (JSON ou GeoJSON para mapas)
+          schema:
+            type: string
+            enum: ["json", "geojson"]
+            default: "json"
+          example: "json"
+          
+      responses:
+        '200':
+          description: Análise geográfica realizada com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AnaliseGeografica'
+                      meta:
+                        type: object
+                        properties:
+                          level:
+                            type: string
+                          metric:
+                            type: string
+                          total_records:
+                            type: integer
+                          filters:
+                            type: object
+              examples:
+                analise_por_estado:
+                  summary: Análise por estado brasileiro
+                  value:
+                    error: false
+                    message: "Análise geográfica por state"
+                    data:
+                      - regiao: "SP"
+                        nome_estado: "São Paulo"
+                        total_documentos: 25000
+                        municipios_ativos: 450
+                        tipos_documentos: 8
+                        densidade_legislativa: 53.6
+                        percentual_nacional: 18.5
+                        primeiro_documento: "1988-10-05"
+                        ultimo_documento: "2024-01-15"
+                      - regiao: "RJ"
+                        nome_estado: "Rio de Janeiro"
+                        total_documentos: 18000
+                        municipios_ativos: 92
+                        tipos_documentos: 7
+                        densidade_legislativa: 103.2
+                        percentual_nacional: 13.4
+                        primeiro_documento: "1988-11-12"
+                        ultimo_documento: "2024-01-10"
+                    meta:
+                      level: "state"
+                      metric: "count"
+                      total_records: 27
+                      filters:
+                        estado: null
+                        year_start: null
+                        year_end: null
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+            application/geo+json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: "FeatureCollection"
+                  features:
+                    type: array
+                    items:
+                      type: object
+              example:
+                type: "FeatureCollection"
+                features:
+                  - type: "Feature"
+                    properties:
+                      estado: "SP"
+                      nome_estado: "São Paulo"
+                      total_documentos: 25000
+                      densidade_legislativa: 53.6
+                    geometry:
+                      type: "MultiPolygon"
+                      coordinates: []
+                      
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /geographic/ibge:
+    get:
+      tags: [geographic]
+      summary: Integração com dados IBGE
+      description: |
+        Fornece dados geográficos e demográficos do IBGE integrados com
+        a legislação de transporte, permitindo análises socioeconômicas.
+      operationId: getIbgeIntegration
+      parameters:
+        - name: data_type
+          in: query
+          description: Tipo de dados IBGE
+          schema:
+            type: string
+            enum: ["population", "area", "gdp", "demographics"]
+            default: "population"
+          example: "population"
+          
+        - name: level
+          in: query
+          description: Nível geográfico
+          schema:
+            type: string
+            enum: ["state", "municipality", "region"]
+            default: "state"
+          example: "state"
+          
+        - name: codigo_ibge
+          in: query
+          description: Código IBGE específico (opcional)
+          schema:
+            type: string
+            pattern: "^[0-9]{1,7}$"
+          example: "3550308"
+          
+      responses:
+        '200':
+          description: Dados IBGE integrados
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            codigo_ibge:
+                              type: integer
+                              example: 35
+                            estado:
+                              type: string
+                              example: "SP"
+                            nome_estado:
+                              type: string
+                              example: "São Paulo"
+                            populacao_2023:
+                              type: integer
+                              example: 46649132
+                            area_km2:
+                              type: number
+                              format: float
+                              example: 248219.0
+                            densidade_demografica:
+                              type: number
+                              format: float
+                              example: 188.0
+                            pib_milhoes_reais:
+                              type: number
+                              format: float
+                              example: 2719000.0
+
+  # ENDPOINTS DE CITAÇÕES
+  /citations/generate:
+    get:
+      tags: [citations]
+      summary: Gerar citação acadêmica para documento
+      description: |
+        Gera citações acadêmicas em múltiplos formatos para documentos legislativos,
+        seguindo padrões brasileiros (ABNT) e internacionais (APA, Chicago, etc.).
+        
+        ## Formatos Suportados
+        
+        ### ABNT (NBR 6023) - Padrão Brasileiro
+        Formato oficial para citações no Brasil, usado em trabalhos acadêmicos,
+        teses e dissertações.
+        
+        ### APA (7ª Edição)
+        Padrão internacional amplamente usado em ciências sociais e psicologia.
+        
+        ### Chicago Manual of Style
+        Formato usado em história, literatura e artes.
+        
+        ### Vancouver
+        Padrão para ciências médicas e da saúde.
+        
+        ### BibTeX
+        Formato para LaTeX, usado em publicações científicas.
+        
+        ### RIS
+        Formato padrão para gerenciadores de referência (Mendeley, Zotero, etc.).
+      operationId: generateCitation
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          description: |
+            ID do documento para citação.
+            Deve ser um identificador válido existente na base de dados.
+          schema:
+            type: string
+            minLength: 5
+            maxLength: 100
+          example: "LEI_SP_2023_001"
+          
+        - name: format
+          in: query
+          description: Formato de citação desejado
+          schema:
+            type: string
+            enum: ["abnt", "apa", "chicago", "vancouver", "bibtex", "ris"]
+            default: "abnt"
+          example: "abnt"
+          
+        - name: access_date
+          in: query
+          description: |
+            Data de acesso ao documento (formato YYYY-MM-DD).
+            Se não fornecida, usa a data atual.
+          schema:
+            type: string
+            format: date
+          example: "2024-01-15"
+          
+        - name: all_formats
+          in: query
+          description: |
+            Se verdadeiro, retorna citações em todos os formatos disponíveis.
+            Útil para comparação ou quando não se sabe qual formato usar.
+          schema:
+            type: boolean
+            default: false
+          example: false
+          
+      responses:
+        '200':
+          description: Citação gerada com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        oneOf:
+                          - $ref: '#/components/schemas/CitacaoAcademica'
+                          - type: object
+                            description: Objeto com múltiplas citações quando all_formats=true
+                            additionalProperties:
+                              $ref: '#/components/schemas/CitacaoAcademica'
+                      meta:
+                        type: object
+                        properties:
+                          document_id:
+                            type: string
+                          format_requested:
+                            type: string
+                          total_formats:
+                            type: integer
+                            description: Presente quando all_formats=true
+                          access_date:
+                            type: string
+                            format: date
+              examples:
+                citacao_abnt:
+                  summary: Citação ABNT individual
+                  value:
+                    error: false
+                    message: "Citação gerada com sucesso"
+                    data:
+                      citacao: "SÃO PAULO. Prefeitura Municipal. Lei Municipal que regulamenta o transporte público urbano. São Paulo: Prefeitura Municipal de São Paulo, 15 mar. 2023. LEI-2023-001. Disponível em: https://diariooficial.prefeitura.sp.gov.br/2023/lei-001. Acesso em: 15 jan. 2024."
+                      formato: "abnt"
+                      nome_formato: "ABNT (NBR 6023)"
+                      document_id: "LEI_SP_2023_001"
+                      gerado_em: "2024-01-15T10:30:00Z"
+                    meta:
+                      document_id: "LEI_SP_2023_001"
+                      format_requested: "abnt"
+                      access_date: "2024-01-15"
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+                todos_formatos:
+                  summary: Todos os formatos de citação
+                  value:
+                    error: false
+                    message: "Citações geradas em todos os formatos"
+                    data:
+                      abnt:
+                        citacao: "SÃO PAULO. Prefeitura Municipal. Lei Municipal que regulamenta o transporte público urbano. São Paulo: Prefeitura Municipal de São Paulo, 15 mar. 2023. LEI-2023-001. Disponível em: https://diariooficial.prefeitura.sp.gov.br/2023/lei-001. Acesso em: 15 jan. 2024."
+                        formato: "abnt"
+                        nome_formato: "ABNT (NBR 6023)"
+                        document_id: "LEI_SP_2023_001"
+                        gerado_em: "2024-01-15T10:30:00Z"
+                      apa:
+                        citacao: "Prefeitura Municipal de São Paulo. (2023). Lei Municipal que regulamenta o transporte público urbano. São Paulo: Prefeitura Municipal de São Paulo. Recuperado de https://diariooficial.prefeitura.sp.gov.br/2023/lei-001"
+                        formato: "apa"
+                        nome_formato: "APA (7ª Edição)"
+                        document_id: "LEI_SP_2023_001"
+                        gerado_em: "2024-01-15T10:30:00Z"
+                      bibtex:
+                        citacao: "@misc{prefeitura2023lei,\n  author = {Prefeitura Municipal de São Paulo},\n  title = {Lei Municipal que regulamenta o transporte público urbano},\n  year = {2023},\n  publisher = {Prefeitura Municipal de São Paulo},\n  address = {São Paulo},\n  url = {https://diariooficial.prefeitura.sp.gov.br/2023/lei-001},\n  note = {Acessado em 15 jan. 2024}\n}"
+                        formato: "bibtex"
+                        nome_formato: "BibTeX"
+                        document_id: "LEI_SP_2023_001"
+                        gerado_em: "2024-01-15T10:30:00Z"
+                    meta:
+                      document_id: "LEI_SP_2023_001"
+                      total_formats: 6
+                      access_date: "2024-01-15"
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /citations/batch:
+    post:
+      tags: [citations]
+      summary: Geração de citações em lote
+      description: |
+        Gera citações para múltiplos documentos simultaneamente.
+        Útil para bibliografias extensas ou análises que referenciam muitos documentos.
+        
+        **Limite**: Máximo 100 documentos por requisição.
+      operationId: generateBatchCitations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document_ids
+              properties:
+                document_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  maxItems: 100
+                  description: Lista de IDs dos documentos
+                  example: ["LEI_SP_2023_001", "DECRETO_RJ_2023_045", "PORTARIA_MG_2023_020"]
+                format:
+                  type: string
+                  enum: ["abnt", "apa", "chicago", "vancouver", "bibtex", "ris"]
+                  default: "abnt"
+                  description: Formato de citação para todos os documentos
+                access_date:
+                  type: string
+                  format: date
+                  description: Data de acesso (padrão: hoje)
+                  example: "2024-01-15"
+            examples:
+              lote_abnt:
+                summary: Lote de citações ABNT
+                value:
+                  document_ids: ["LEI_SP_2023_001", "DECRETO_RJ_2023_045", "PORTARIA_MG_2023_020"]
+                  format: "abnt"
+                  access_date: "2024-01-15"
+                  
+      responses:
+        '200':
+          description: Citações geradas em lote
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          citations:
+                            type: object
+                            additionalProperties:
+                              $ref: '#/components/schemas/CitacaoAcademica'
+                            description: Citações organizadas por document_id
+                          errors:
+                            type: object
+                            additionalProperties:
+                              type: string
+                            description: Erros organizados por document_id
+                      meta:
+                        type: object
+                        properties:
+                          total_requested:
+                            type: integer
+                          successful_citations:
+                            type: integer
+                          failed_citations:
+                            type: integer
+                          format:
+                            type: string
+                          access_date:
+                            type: string
+              examples:
+                lote_sucesso:
+                  summary: Lote processado com sucesso
+                  value:
+                    error: false
+                    message: "Processados 3 documentos"
+                    data:
+                      citations:
+                        LEI_SP_2023_001:
+                          citacao: "SÃO PAULO. Prefeitura Municipal. Lei Municipal que regulamenta o transporte público urbano..."
+                          formato: "abnt"
+                          nome_formato: "ABNT (NBR 6023)"
+                          document_id: "LEI_SP_2023_001"
+                          gerado_em: "2024-01-15T10:30:00Z"
+                        DECRETO_RJ_2023_045:
+                          citacao: "RIO DE JANEIRO. Prefeitura Municipal. Decreto sobre Mobilidade Urbana Sustentável..."
+                          formato: "abnt"
+                          nome_formato: "ABNT (NBR 6023)"
+                          document_id: "DECRETO_RJ_2023_045"
+                          gerado_em: "2024-01-15T10:30:00Z"
+                      errors:
+                        PORTARIA_MG_2023_020: "Documento não encontrado"
+                    meta:
+                      total_requested: 3
+                      successful_citations: 2
+                      failed_citations: 1
+                      format: "abnt"
+                      access_date: "2024-01-15"
+                    timestamp: "2024-01-15T10:30:00Z"
+
+  /citations/formats:
+    get:
+      tags: [citations]
+      summary: Formatos de citação disponíveis
+      description: |
+        Lista todos os formatos de citação suportados pela API,
+        com descrições detalhadas de cada um.
+      operationId: getCitationFormats
+      responses:
+        '200':
+          description: Formatos de citação disponíveis
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            description:
+                              type: string
+                      meta:
+                        type: object
+                        properties:
+                          total_formats:
+                            type: integer
+                          default_format:
+                            type: string
+              example:
+                error: false
+                message: "Formatos de citação disponíveis"
+                data:
+                  abnt:
+                    name: "ABNT (NBR 6023)"
+                    description: "Associação Brasileira de Normas Técnicas - Padrão brasileiro para citações"
+                  apa:
+                    name: "APA (7ª Edição)"
+                    description: "American Psychological Association Style"
+                  chicago:
+                    name: "Chicago Manual of Style"
+                    description: "Chicago style for academic citations"
+                  vancouver:
+                    name: "Vancouver Style"
+                    description: "International Committee of Medical Journal Editors"
+                  bibtex:
+                    name: "BibTeX"
+                    description: "LaTeX bibliography format"
+                  ris:
+                    name: "RIS (Research Information Systems)"
+                    description: "Reference manager format"
+                meta:
+                  total_formats: 6
+                  default_format: "abnt"
+                timestamp: "2024-01-15T10:30:00Z"
+
+  # ENDPOINTS DE EXPORTAÇÃO
+  /export/data:
+    get:
+      tags: [export]
+      summary: Exportar dados em diversos formatos
+      description: |
+        Exporta documentos legislativos em múltiplos formatos acadêmicos.
+        Suporta filtros avançados e seleção de campos específicos para otimizar
+        o tamanho e conteúdo das exportações.
+        
+        ## Formatos Suportados
+        
+        ### CSV
+        - Compatível com Excel, R, Python
+        - Ideal para análises estatísticas
+        - Limite: 50.000 registros
+        
+        ### JSON
+        - Formato estruturado para APIs
+        - Preserva hierarquia de dados
+        - Limite: 25.000 registros
+        
+        ### Excel (.xlsx)
+        - Formato nativo Microsoft Excel
+        - Suporta formatação avançada
+        - Limite: 100.000 registros
+        
+        ### BibTeX
+        - Para LaTeX e gerenciadores de referência
+        - Ideal para bibliografias acadêmicas
+        - Limite: 10.000 registros
+        
+        ### RIS
+        - Formato padrão para Mendeley, Zotero
+        - Intercâmbio entre gerenciadores
+        - Limite: 10.000 registros
+        
+        ## Seleção de Campos
+        
+        ### Predefinidas
+        - **basic**: id, titulo, estado, municipio, data_publicacao
+        - **detailed**: Todos os campos principais
+        - **citation**: Campos necessários para citações
+        - **research**: Campos para análise acadêmica
+        
+        ### Customizada
+        Use o parâmetro `fields` com nomes separados por vírgula.
+      operationId: exportData
+      parameters:
+        - name: format
+          in: query
+          required: true
+          description: Formato de exportação
+          schema:
+            type: string
+            enum: ["csv", "json", "excel", "bibtex", "ris", "xml"]
+          example: "csv"
+          
+        - name: estado
+          in: query
+          description: Filtrar por estado
+          schema:
+            type: string
+            enum: ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]
+          example: "SP"
+          
+        - name: ano
+          in: query
+          description: Filtrar por ano específico
+          schema:
+            type: integer
+            minimum: 1988
+            maximum: 2024
+          example: 2023
+          
+        - name: tipo
+          in: query
+          description: Filtrar por tipo de documento
+          schema:
+            type: string
+            enum: ["lei", "decreto", "portaria", "resolucao", "medida_provisoria", "instrucao_normativa", "ordem_servico", "circular", "ato", "deliberacao"]
+          example: "lei"
+          
+        - name: year_start
+          in: query
+          description: Ano inicial para período
+          schema:
+            type: integer
+            minimum: 1988
+            maximum: 2024
+          example: 2020
+          
+        - name: year_end
+          in: query
+          description: Ano final para período
+          schema:
+            type: integer
+            minimum: 1988
+            maximum: 2024
+          example: 2024
+          
+        - name: fields
+          in: query
+          description: |
+            Seleção de campos para exportação.
+            
+            **Opções predefinidas:**
+            - `basic`: Campos básicos (id, titulo, estado, municipio, data_publicacao)
+            - `detailed`: Todos os campos disponíveis
+            - `citation`: Campos para citação (id, titulo, estado, municipio, orgao_expedidor, etc.)
+            - `research`: Campos para pesquisa (inclui timestamps)
+            
+            **Seleção customizada:**
+            Lista de campos separados por vírgula: `id,titulo,estado,ano`
+          schema:
+            type: string
+            default: "detailed"
+          examples:
+            predefinido:
+              value: "basic"
+              summary: "Campos básicos"
+            customizado:
+              value: "id,titulo,estado,municipio,ano,tipo_documento"
+              summary: "Campos específicos"
+              
+        - name: filename
+          in: query
+          description: |
+            Nome personalizado para o arquivo (sem extensão).
+            Se não fornecido, será gerado automaticamente com timestamp.
+          schema:
+            type: string
+            pattern: "^[a-zA-Z0-9_-]+$"
+            maxLength: 50
+          example: "legislacao_transporte_sp_2023"
+          
+        - name: async
+          in: query
+          description: |
+            Executar exportação em segundo plano (para grandes volumes).
+            Quando true, retorna job_id para monitoramento.
+          schema:
+            type: boolean
+            default: false
+          example: false
+          
+      responses:
+        '200':
+          description: Exportação realizada com sucesso
+          headers:
+            Content-Disposition:
+              description: Nome do arquivo para download
+              schema:
+                type: string
+              example: 'attachment; filename="legislacao_export_20240115.csv"'
+            Content-Type:
+              description: Tipo MIME do arquivo
+              schema:
+                type: string
+              examples:
+                csv:
+                  value: "text/csv"
+                json:
+                  value: "application/json"
+                excel:
+                  value: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                bibtex:
+                  value: "application/x-bibtex"
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: csv
+              example: |
+                id,titulo,estado,municipio,data_publicacao
+                LEI_SP_2023_001,"Lei Municipal sobre Transporte Público",SP,"São Paulo",2023-03-15
+                DECRETO_RJ_2023_045,"Decreto sobre Mobilidade Urbana",RJ,"Rio de Janeiro",2023-04-20
+                
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/DocumentoLegislativo'
+                      meta:
+                        type: object
+                        properties:
+                          format:
+                            type: string
+                          record_count:
+                            type: integer
+                          export_time:
+                            type: number
+                            format: float
+                          filters:
+                            type: object
+                          filename:
+                            type: string
+              
+            application/x-bibtex:
+              schema:
+                type: string
+                format: bibtex
+              example: |
+                @misc{prefeitura2023lei,
+                  author = {Prefeitura Municipal de São Paulo},
+                  title = {Lei Municipal sobre Transporte Público},
+                  year = {2023},
+                  publisher = {Prefeitura Municipal de São Paulo},
+                  address = {São Paulo},
+                  url = {https://diariooficial.prefeitura.sp.gov.br/2023/lei-001},
+                  note = {Acessado em 15 jan. 2024}
+                }
+                
+            application/x-research-info-systems:
+              schema:
+                type: string
+                format: ris
+              example: |
+                TY  - LEGAL
+                AU  - Prefeitura Municipal de São Paulo
+                TI  - Lei Municipal sobre Transporte Público
+                PY  - 2023
+                PB  - Prefeitura Municipal de São Paulo
+                CY  - São Paulo
+                UR  - https://diariooficial.prefeitura.sp.gov.br/2023/lei-001
+                ER  -
+
+        '202':
+          description: Exportação iniciada em segundo plano (quando async=true)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          job_id:
+                            type: string
+                            example: "export_20240115_143052_7891"
+                          status:
+                            type: string
+                            example: "queued"
+                          estimated_time_minutes:
+                            type: integer
+                            example: 5
+                          check_status_url:
+                            type: string
+                            example: "/api/v1/export/status/export_20240115_143052_7891"
+              example:
+                error: false
+                message: "Exportação iniciada em segundo plano"
+                data:
+                  job_id: "export_20240115_143052_7891"
+                  status: "queued"
+                  estimated_time_minutes: 5
+                  check_status_url: "/api/v1/export/status/export_20240115_143052_7891"
+                timestamp: "2024-01-15T10:30:00Z"
+
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Nenhum documento encontrado com os filtros especificados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespostaErro'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /export/formats:
+    get:
+      tags: [export]
+      summary: Formatos de exportação disponíveis
+      description: |
+        Lista todos os formatos de exportação suportados,
+        com informações sobre limites, tipos MIME e capacidades.
+      operationId: getExportFormats
+      responses:
+        '200':
+          description: Formatos de exportação disponíveis
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            description:
+                              type: string
+                            mime_type:
+                              type: string
+                            extension:
+                              type: string
+                            max_records:
+                              type: integer
+                            supports_streaming:
+                              type: boolean
+                      meta:
+                        type: object
+                        properties:
+                          total_formats:
+                            type: integer
+                          field_mappings:
+                            type: array
+                            items:
+                              type: string
+
+  /export/status/{job_id}:
+    get:
+      tags: [export]
+      summary: Status de exportação assíncrona
+      description: |
+        Verifica o status de uma exportação executada em segundo plano.
+        Use o job_id retornado na exportação assíncrona.
+      operationId: getExportStatus
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: ID do job de exportação
+          schema:
+            type: string
+            pattern: "^export_[0-9]{8}_[0-9]{6}_[0-9]{4}$"
+          example: "export_20240115_143052_7891"
+          
+      responses:
+        '200':
+          description: Status do job de exportação
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          job_id:
+                            type: string
+                          status:
+                            type: string
+                            enum: ["queued", "processing", "completed", "failed"]
+                          created_at:
+                            type: string
+                            format: date-time
+                          record_count:
+                            type: integer
+                          file_path:
+                            type: string
+                            nullable: true
+                          error_message:
+                            type: string
+                            nullable: true
+                          progress_percentage:
+                            type: integer
+                            minimum: 0
+                            maximum: 100
+              examples:
+                job_processando:
+                  summary: Job em processamento
+                  value:
+                    error: false
+                    message: "Status do job de exportação"
+                    data:
+                      job_id: "export_20240115_143052_7891"
+                      status: "processing"
+                      created_at: "2024-01-15T10:30:00Z"
+                      record_count: 15000
+                      file_path: null
+                      progress_percentage: 65
+                    timestamp: "2024-01-15T10:35:00Z"
+                    
+                job_concluido:
+                  summary: Job concluído
+                  value:
+                    error: false
+                    message: "Job concluído com sucesso"
+                    data:
+                      job_id: "export_20240115_143052_7891"
+                      status: "completed"
+                      created_at: "2024-01-15T10:30:00Z"
+                      record_count: 25000
+                      file_path: "/api/v1/export/download/export_20240115_143052_7891"
+                      progress_percentage: 100
+                    timestamp: "2024-01-15T10:40:00Z"
+                    
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ENDPOINT DE AUTENTICAÇÃO E INFORMAÇÕES
+  /auth/validate:
+    get:
+      tags: [auth]
+      summary: Validar API key
+      description: |
+        Valida a API key atual e retorna informações sobre limites,
+        uso atual e configurações da conta.
+      operationId: validateApiKey
+      responses:
+        '200':
+          description: API key válida
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespostaSucesso'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          valid:
+                            type: boolean
+                            example: true
+                          tier:
+                            type: string
+                            example: "academic"
+                          tier_name:
+                            type: string
+                            example: "Pesquisa Acadêmica"
+                          limits:
+                            type: object
+                            properties:
+                              requests_per_hour:
+                                type: integer
+                              requests_per_day:
+                                type: integer
+                              max_results_per_request:
+                                type: integer
+                              concurrent_requests:
+                                type: integer
+                          usage:
+                            type: object
+                            properties:
+                              current_hour:
+                                type: integer
+                              current_day:
+                                type: integer
+                              remaining_hour:
+                                type: integer
+                              remaining_day:
+                                type: integer
+                          expires_at:
+                            type: string
+                            format: date-time
+                            nullable: true
+                          user_info:
+                            type: object
+                            properties:
+                              email:
+                                type: string
+                              institution:
+                                type: string
+                                nullable: true
+                              country:
+                                type: string
+                              account_status:
+                                type: string
+              example:
+                error: false
+                message: "API key válida"
+                data:
+                  valid: true
+                  tier: "academic"
+                  tier_name: "Pesquisa Acadêmica"
+                  limits:
+                    requests_per_hour: 1000
+                    requests_per_day: 5000
+                    max_results_per_request: 1000
+                    concurrent_requests: 10
+                  usage:
+                    current_hour: 45
+                    current_day: 234
+                    remaining_hour: 955
+                    remaining_day: 4766
+                  expires_at: "2025-01-15T10:30:00Z"
+                  user_info:
+                    email: "pesquisador@usp.br"
+                    institution: "Universidade de São Paulo"
+                    country: "Brasil"
+                    account_status: "active"
+                timestamp: "2024-01-15T10:30:00Z"
+                
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+externalDocs:
+  description: 📖 Documentação Completa da API
+  url: https://monitor-legislativo.br/docs

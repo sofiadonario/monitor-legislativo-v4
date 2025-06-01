@@ -1,0 +1,110 @@
+# Production Dockerfile for Monitor Legislativo v4
+# Multi-stage build for optimized production deployment
+
+# Build stage
+FROM rocker/r-ver:4.3.0 AS builder
+
+LABEL maintainer="Monitor Legislativo Team"
+LABEL description="Production-ready R Shiny application for Brazilian legislative data analysis"
+LABEL version="4.0.0"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libcurl4-gnutls-dev \
+    libssl-dev \
+    libxml2-dev \
+    libgdal-dev \
+    libproj-dev \
+    libgeos-dev \
+    libudunits2-dev \
+    libv8-dev \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libjq-dev \
+    libpq-dev \
+    redis-server \
+    nginx \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package requirements first for better caching
+COPY renv.lock .
+COPY .Rprofile .
+
+# Install renv and restore packages
+RUN R -e "install.packages('renv')"
+RUN R -e "renv::restore()"
+
+# Copy application code
+COPY . .
+
+# Install additional production packages
+RUN R -e "install.packages(c('DT', 'plotly', 'httpuv', 'promises', 'future', 'RestRserve'))"
+
+# Precompile and optimize R code
+RUN R -e "source('R/utils.R'); precompile_packages()"
+
+# Production stage
+FROM rocker/r-ver:4.3.0
+
+# Install only runtime system dependencies
+RUN apt-get update && apt-get install -y \
+    libcurl4-gnutls-dev \
+    libssl-dev \
+    libxml2-dev \
+    libgdal-dev \
+    libproj-dev \
+    libgeos-dev \
+    libudunits2-dev \
+    libv8-dev \
+    libprotobuf-dev \
+    libjq-dev \
+    libpq-dev \
+    redis-server \
+    nginx \
+    supervisor \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user for security
+RUN useradd -r -s /bin/false -m -d /var/lib/shiny-server shiny
+
+# Set working directory
+WORKDIR /app
+
+# Copy built application from builder stage
+COPY --from=builder /usr/local/lib/R /usr/local/lib/R
+COPY --from=builder /app /app
+
+# Copy configuration files
+COPY config/nginx.conf /etc/nginx/nginx.conf
+COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY config/redis.conf /etc/redis/redis.conf
+
+# Create necessary directories and set permissions
+RUN mkdir -p /var/log/shiny-server /var/lib/shiny-server /var/log/supervisor \
+    && chown -R shiny:shiny /app /var/log/shiny-server /var/lib/shiny-server \
+    && chmod -R 755 /app
+
+# Set environment variables for production
+ENV R_CONFIG_ACTIVE=production
+ENV SHINY_HOST=0.0.0.0
+ENV SHINY_PORT=3838
+ENV API_PORT=8080
+ENV REDIS_HOST=localhost
+ENV REDIS_PORT=6379
+ENV LOG_LEVEL=INFO
+ENV WORKERS=4
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3838/ || exit 1
+
+# Expose ports
+EXPOSE 3838 8080 80
+
+# Start services with supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

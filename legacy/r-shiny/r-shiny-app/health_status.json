@@ -1,0 +1,7 @@
+{
+  "status": "healthy",
+  "timestamp": "2025-06-29 12:16:38.496246",
+  "version": "1.0.0-minimal",
+  "r_version": "R version 4.5.1 (2025-06-13)",
+  "message": "R Shiny server simulation ready"
+}

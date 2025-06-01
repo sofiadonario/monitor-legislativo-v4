@@ -1,0 +1,15 @@
+{
+  "execution_date": "2025-07-14T16:43:53.105337",
+  "execution_time": "0:05:18.872522",
+  "total_documents": 1,
+  "unique_terms": 86,
+  "files_generated": {
+    "csv": "data/processed/lexml_complete_dataset_20250714_164353.csv",
+    "json": "data/processed/lexml_complete_dataset_20250714_164353.json"
+  },
+  "scraper_stats": {
+    "total_found": 0,
+    "total_collected": 0,
+    "pages_processed": 84,
+    "errors": 0,
+    "start_time": 

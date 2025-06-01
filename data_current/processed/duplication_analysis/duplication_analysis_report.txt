@@ -1,0 +1,121 @@
+===============================================================================
+MACKMONITOR LEGISLATIVE DATASET - DATA DUPLICATION ANALYSIS REPORT
+===============================================================================
+Generated: 2025-08-01 12:36:38.351814 
+Analysis performed by: Claude Code (Senior Data Scientist)
+Analysis scope: Brazilian Legislative Documents Dataset
+
+EXECUTIVE SUMMARY
+=================
+Dataset analyzed: 156773 records
+Data sources: 1 
+Analysis criteria: 5 
+Average duplication rate: 53.76 %
+Highest duplication rate: 60.42 % ( content )
+
+KEY FINDINGS:
+
+
+DETAILED DUPLICATION ANALYSIS
+=============================
+
+ URN :
+  Columns analyzed: urn 
+  Total records: 133757 
+  Unique groups: 100779 
+  Duplicated groups: 32976 
+  Duplicated records: 65954 
+  Duplication rate: 49.31 %
+  Sample duplicates:
+    - 4 copies of: urn:lex:br;justica.trabalho;regiao.1:tribunal.regional.traba ...
+    - 2 copies of: urn:lex:br:agencia.nacional.energia.eletrica:resolucao:1998- ...
+    - 2 copies of: urn:lex:br:agencia.nacional.energia.eletrica:resolucao:1998- ...
+
+ TITLE :
+  Columns analyzed: titulo 
+  Total records: 156773 
+  Unique groups: 113522 
+  Duplicated groups: 43251 
+  Duplicated records: 86502 
+  Duplication rate: 55.18 %
+  Sample duplicates:
+    - 2 copies of: "A dona da boca, a vendedora e a mula<U+201D> ...
+    - 2 copies of: "Aestradapara o terror" ...
+    - 2 copies of: "Apag<U+00E3>o a<U+00E9>reo" ...
+
+ TITLE + TYPE :
+  Columns analyzed: titulo, tipo 
+  Total records: 156773 
+  Unique groups: 113522 
+  Duplicated groups: 43251 
+  Duplicated records: 86502 
+  Duplication rate: 55.18 %
+  Sample duplicates:
+    - 2 copies of: "A dona da boca, a vendedora e a mula<U+201D> ...
+    - 2 copies of: "Aestradapara o terror" ...
+    - 2 copies of: "Apag<U+00E3>o a<U+00E9>reo" ...
+
+ URN + TITLE :
+  Columns analyzed: urn, titulo 
+  Total records: 133757 
+  Unique groups: 101161 
+  Duplicated groups: 32596 
+  Duplicated records: 65192 
+  Duplication rate: 48.74 %
+  Sample duplicates:
+    - 2 copies of: urn:lex:br:camara.superior.recursos.fiscais;pleno:acordao:20 ...
+    - 2 copies of: urn:lex:br:conselho.administrativo.recursos.fiscais:acordao: ...
+    - 2 copies of: urn:lex:br:conselho.administrativo.recursos.fiscais:acordao: ...
+
+ EXACT CONTENT :
+  Columns analyzed: content_hash 
+  Total records: 156773 
+  Unique groups: 104612 
+  Duplicated groups: 42559 
+  Duplicated records: 94720 
+  Duplication rate: 60.42 %
+  Sample duplicates:
+    - 156 copies of: de1abac0e89b8687f2e474157a3652e1 ...
+    - 143 copies of: 209cac6e425bfff8c6369b7465310246 ...
+    - 139 copies of: e0a01d454ef7709fec662e12f94801a4 ...
+
+
+TEMPORAL ANALYSIS
+=================
+Collection patterns show variation in duplication rates over time.
+Highest duplication detected on: 2025-07-22 with ratio: 1.56 
+Publication year analysis shows varying patterns across decades.
+
+
+SOURCE ANALYSIS
+===============
+Analysis of 1 data sources:
+
+ main_dataset :
+  Records: 156773 
+  URN duplication rate: 35.72 %
+  Title duplication rate: 27.59 %
+  URN completeness: 85.32 %
+
+
+RECOMMENDations FOR DEDUPLICATION
+==================================
+Based on the analysis, the following actions are recommended:
+
+IMMEDIATE ACTIONS:
+1. URN Standardization - Implement URN validation and normalization
+2. Collection Process Review - Examine data collection methodology
+3. Database Constraints - Add unique constraints where appropriate
+4. Data Quality Monitoring - Implement ongoing duplicate detection
+
+MEDIUM-TERM ACTIONS:
+1. Fuzzy Matching Implementation - For semantic duplicate detection
+2. Master Data Management - Establish authoritative record sources
+3. Data Lineage Tracking - Track data provenance and collection history
+4. Automated Quality Checks - Implement pre-import validation
+
+LONG-TERM STRATEGY:
+1. Data Governance Framework - Establish data quality standards
+2. Integration Architecture - Design systems to prevent duplicates
+3. Legal Document Ontology - Develop structured metadata standards
+4. Performance Optimization - Balance deduplication with query performance

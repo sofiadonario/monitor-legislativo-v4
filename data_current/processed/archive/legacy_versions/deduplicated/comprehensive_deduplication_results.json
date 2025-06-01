@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-08-01T13:05:48.808926",
+  "files_processed": [],
+  "total_original_rows": 268028,
+  "total_deduplicated_rows": 134014,
+  "duplication_patterns": {},
+  "errors": [],
+  "unified_dataset": {
+    "files_processed": 21,
+    "total_original_rows": 268028,
+    "categories_found": [
+      "Unknown",
+      "Jurisprudência",
+      "Legislação",
+      "Proposições",
+      "Doutrina",
+      "Outros"
+    ],
+    "transport_modes_found": [
+      "Unknown",
+      "Geral"
+    ],
+    "original_rows": 268028,
+    "deduplicated_rows": 134014,
+    "duplicates_removed": 134014,
+    "reduction_percentage": 50.0,
+    "duplication_stats": {
+      "single_documents": 0,
+      "duplicate_groups": 134014,
+      "max_duplicates_in_group": 2,
+      "categories_merged": 0,
+      "transport_categories_merged": 0
+    },
+    "output_csv": "data_current/processed/deduplicated/lexml_unified_deduplicated.csv"
+  },
+  "overall_reduction_percentage": 50.0,
+  "total_duplicates_removed": 134014
+}

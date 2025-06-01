@@ -1,0 +1,307 @@
+# Prometheus Configuration for Monitor Legislativo v4
+# Monitors application metrics, infrastructure, and external services
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'monitor-legislativo'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Rules for alerting
+rule_files:
+  - "rules/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+
+  # Monitor Legislativo Application
+  - job_name: 'monitor-legislativo-app'
+    static_configs:
+      - targets: ['app:9091']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+    basic_auth:
+      username: 'prometheus'
+      password: 'monitoring_password'
+
+  # RestRserve API Metrics
+  - job_name: 'monitor-legislativo-api'
+    static_configs:
+      - targets: ['app:8080']
+    scrape_interval: 15s
+    metrics_path: '/api/v1/metrics'
+    params:
+      format: ['prometheus']
+
+  # PostgreSQL Database
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+
+  # Redis Cache
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+
+  # Node Exporter (System Metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # Docker Container Metrics
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Nginx Metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+    scrape_interval: 30s
+
+  # External API Health Checks
+  - job_name: 'external-apis'
+    static_configs:
+      - targets: 
+        - 'dadosabertos.camara.leg.br'
+        - 'legis.senado.leg.br'
+        - 'www.lexml.gov.br'
+        - 'servicodados.ibge.gov.br'
+    scrape_interval: 60s
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # SSL Certificate Monitoring
+  - job_name: 'ssl-certificates'
+    static_configs:
+      - targets:
+        - 'monitor-legislativo.com:443'
+    scrape_interval: 3600s  # Check every hour
+    metrics_path: '/probe'
+    params:
+      module: [ssl_expire]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # AI Services Monitoring
+  - job_name: 'ai-services'
+    static_configs:
+      - targets: ['app:9092']
+    scrape_interval: 60s
+    metrics_path: '/ai/metrics'
+    honor_labels: true
+
+  # Knowledge Graph Metrics
+  - job_name: 'knowledge-graph'
+    static_configs:
+      - targets: ['app:9093']
+    scrape_interval: 300s  # Every 5 minutes
+    metrics_path: '/kg/metrics'
+
+  # Semantic Search Metrics
+  - job_name: 'semantic-search'
+    static_configs:
+      - targets: ['app:9094']
+    scrape_interval: 120s
+    metrics_path: '/semantic/metrics'
+
+  # Recommendation Engine Metrics
+  - job_name: 'recommendations'
+    static_configs:
+      - targets: ['app:9095']
+    scrape_interval: 300s
+    metrics_path: '/recommendations/metrics'
+
+  # Data Pipeline Metrics
+  - job_name: 'data-pipeline'
+    static_configs:
+      - targets: ['app:9096']
+    scrape_interval: 300s
+    metrics_path: '/pipeline/metrics'
+
+  # Batch Operations Metrics
+  - job_name: 'batch-operations'
+    static_configs:
+      - targets: ['app:9097']
+    scrape_interval: 300s
+    metrics_path: '/batch/metrics'
+
+  # User Analytics Metrics
+  - job_name: 'user-analytics'
+    static_configs:
+      - targets: ['app:9098']
+    scrape_interval: 600s  # Every 10 minutes
+    metrics_path: '/analytics/metrics'
+
+# Recording rules for performance optimization
+recording_rules:
+  - name: monitor_legislativo.rules
+    rules:
+      # Request rate calculations
+      - record: ml:request_rate_5m
+        expr: rate(http_requests_total[5m])
+      
+      # Error rate calculations
+      - record: ml:error_rate_5m
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])
+      
+      # Response time percentiles
+      - record: ml:response_time_p95_5m
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+      
+      - record: ml:response_time_p99_5m
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))
+      
+      # Database connection pool usage
+      - record: ml:db_pool_usage_5m
+        expr: avg_over_time(database_connections_active[5m]) / avg_over_time(database_connections_max[5m])
+      
+      # Cache hit rate
+      - record: ml:cache_hit_rate_5m
+        expr: rate(cache_requests_total{result="hit"}[5m]) / rate(cache_requests_total[5m])
+      
+      # AI service availability
+      - record: ml:ai_service_availability_5m
+        expr: avg_over_time(ai_service_up[5m])
+      
+      # Search performance
+      - record: ml:search_performance_5m
+        expr: rate(search_requests_total[5m])
+      
+      # Knowledge graph size growth
+      - record: ml:kg_growth_rate_1h
+        expr: increase(knowledge_graph_entities_total[1h])
+
+# Alerting rules
+alerting_rules:
+  - name: monitor_legislativo.alerts
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: ml:error_rate_5m > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+      
+      # High response time
+      - alert: HighResponseTime
+        expr: ml:response_time_p95_5m > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s for the last 5 minutes"
+      
+      # Database connection pool exhaustion
+      - alert: DatabasePoolExhaustion
+        expr: ml:db_pool_usage_5m > 0.9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database connection pool usage is {{ $value | humanizePercentage }}"
+      
+      # Low cache hit rate
+      - alert: LowCacheHitRate
+        expr: ml:cache_hit_rate_5m < 0.7
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+      
+      # AI service down
+      - alert: AIServiceDown
+        expr: ml:ai_service_availability_5m < 0.8
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AI service availability low"
+          description: "AI service availability is {{ $value | humanizePercentage }}"
+      
+      # Disk space low
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk space is {{ $value | humanizePercentage }} full"
+      
+      # Memory usage high
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+      
+      # External API down
+      - alert: ExternalAPIDown
+        expr: probe_success == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "External API {{ $labels.instance }} is down"
+          description: "External API {{ $labels.instance }} has been down for more than 5 minutes"
+      
+      # SSL certificate expiring
+      - alert: SSLCertificateExpiring
+        expr: probe_ssl_earliest_cert_expiry - time() < 7 * 24 * 3600
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSL certificate for {{ $labels.instance }} expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}"
+
+# Global configuration for recording and alerting rules
+global_recording_rules:
+  evaluation_interval: 30s
+
+global_alerting_rules:
+  evaluation_interval: 30s

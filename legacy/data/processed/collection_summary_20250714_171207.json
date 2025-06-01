@@ -1,0 +1,21 @@
+{
+  "execution_info": {
+    "timestamp": "2025-07-14T17:12:08.548418",
+    "execution_time": "0:04:26.427122",
+    "terms_processed": 86,
+    "total_documents": 1,
+    "files_generated": {
+      "csv": "data/processed/lexml_complete_dataset_20250714_171207.csv",
+      "json": "data/processed/lexml_complete_dataset_20250714_171207.json"
+    }
+  },
+  "collection_stats": {
+    "documents_by_term": {
+      "licenciamento": 1
+    },
+    "documents_by_type": {
+      "": 1
+    },
+    "year_range": {}
+  }
+}

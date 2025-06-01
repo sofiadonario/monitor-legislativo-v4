@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-07-15T16:13:47.158587",
+  "deployment_package": {
+    "core_components": 6,
+    "files_generated": [
+      "requirements.txt",
+      "install.sh",
+      ".env.example",
+      "Dockerfile",
+      "docker-compose.yml",
+      "api.py",
+      "README.md"
+    ],
+    "directories_created": [
+      "data/raw",
+      "data/processed",
+      "data/external",
+      "data/models",
+      "data/reports",
+      "logs",
+      "exports",
+      "tests",
+      "docs"
+    ]
+  },
+  "system_capabilities": {
+    "analysis_missions": 5,
+    "ml_models": 3,
+    "api_endpoints": 8,
+    "visualization_types": 6,
+    "data_sources": 5
+  },
+  "deployment_options": [
+    "Local installation with virtual environment",
+    "Docker container deployment",
+    "Docker Compose multi-service setup",
+    "API-only deployment",
+    "Dashboard-only deployment"
+  ]
+}
