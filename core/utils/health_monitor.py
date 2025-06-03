@@ -13,7 +13,7 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 
 from .circuit_breaker import circuit_manager
-from .smart_cache import smart_cache
+from .smart_cache import cached as smart_cache
 from .session_factory import SessionFactory
 
 

@@ -294,7 +294,7 @@ async def clear_cache(source: Optional[str] = None):
     Clear cache for specific source or all sources
     """
     try:
-        from core.utils.smart_cache import smart_cache
+        from core.utils.smart_cache import cached as smart_cache
         
         if source:
             if source not in monitoring_dashboard.sources_config:

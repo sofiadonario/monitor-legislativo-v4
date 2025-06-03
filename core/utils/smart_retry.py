@@ -340,7 +340,7 @@ class SmartRetry:
     
     async def _try_cached_fallback(self, source: str, *args, **kwargs) -> Optional[Any]:
         """Try to return cached result as fallback"""
-        from .smart_cache import smart_cache
+        from .smart_cache import cached as smart_cache
         
         # Generate cache key from arguments
         cache_key = f"fallback_{source}_{hash(str(args) + str(sorted(kwargs.items())))}"

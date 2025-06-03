@@ -50,6 +50,22 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1/monitoring", tags=["monitoring"])
 
+# Include GraphQL routes
+try:
+    from web.api.graphql_routes import router as graphql_router
+    app.include_router(graphql_router, prefix="/api/v1")
+    logging.info("GraphQL endpoint enabled at /api/v1/graphql")
+except ImportError as e:
+    logging.warning(f"GraphQL not available: {e}")
+
+# Include WebSocket routes
+try:
+    from web.api.websocket_routes import router as websocket_router
+    app.include_router(websocket_router, prefix="/api/v1")
+    logging.info("WebSocket endpoint enabled at /api/v1/ws")
+except ImportError as e:
+    logging.warning(f"WebSocket not available: {e}")
+
 # Serve static files
 # app.mount("/static", StaticFiles(directory="web/frontend/static"), name="static")
 

@@ -15,7 +15,7 @@ import logging
 
 from .health_monitor import health_monitor, HealthStatus
 from .circuit_breaker import circuit_manager
-from .smart_cache import smart_cache
+from .smart_cache import cached as smart_cache
 
 
 class SourceType(Enum):

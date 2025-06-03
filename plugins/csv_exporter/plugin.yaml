@@ -1,0 +1,23 @@
+name: csv_exporter
+version: 1.0.0
+author: Sofia Pereira Medeiros Donario & Lucas Ramos Guimarães
+description: Exports legislative data to CSV format with customizable fields
+type: exporter
+requires: []
+config_schema:
+  export_directory:
+    type: string
+    description: Directory for exported files
+    default: data/exports
+  delimiter:
+    type: string
+    description: CSV delimiter character
+    default: ","
+  include_headers:
+    type: boolean
+    description: Include column headers
+    default: true
+  encoding:
+    type: string
+    description: File encoding
+    default: utf-8

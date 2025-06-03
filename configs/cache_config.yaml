@@ -1,0 +1,132 @@
+# Cache Configuration for Monitor Legislativo v4
+# Developed by: Sofia Pereira Medeiros Donario & Lucas Ramos Guimarães
+# Organization: MackIntegridade
+# Financing: MackPesquisa
+
+# Memory Cache Configuration
+memory:
+  default_ttl: 300  # 5 minutes
+  max_items: 10000
+  eviction_policy: lru  # least recently used
+
+# Redis Cache Configuration
+redis:
+  # Development configuration
+  development:
+    host: localhost
+    port: 6379
+    db: 0
+    password: null
+    max_connections: 50
+    decode_responses: false
+  
+  # Production configuration
+  production:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT}
+    db: ${REDIS_DB}
+    password: ${REDIS_PASSWORD}
+    max_connections: 100
+    cluster_mode: false
+    decode_responses: false
+
+# CDN Configuration
+cdn:
+  # Cloudflare configuration
+  cloudflare:
+    enabled: false
+    zone_id: ${CLOUDFLARE_ZONE_ID}
+    api_key: ${CLOUDFLARE_API_KEY}
+    email: ${CLOUDFLARE_EMAIL}
+    
+  # Fastly configuration
+  fastly:
+    enabled: false
+    service_id: ${FASTLY_SERVICE_ID}
+    api_key: ${FASTLY_API_KEY}
+
+# Cache Rules
+cache_rules:
+  # API responses
+  - pattern: "api:search:*"
+    ttl: 900  # 15 minutes
+    layers: [memory, redis]
+    
+  - pattern: "api:proposition:*"
+    ttl: 3600  # 1 hour
+    layers: [memory, redis]
+    
+  - pattern: "api:analytics:*"
+    ttl: 1800  # 30 minutes
+    layers: [memory, redis]
+    
+  # Static content
+  - pattern: "static:*"
+    ttl: 86400  # 24 hours
+    layers: [cdn]
+    
+  # Export files
+  - pattern: "export:*"
+    ttl: 3600  # 1 hour
+    layers: [redis, cdn]
+
+# Cache warming configuration
+warming:
+  enabled: true
+  interval: 3600  # 1 hour
+  categories:
+    search:
+      queries:
+        - "política pública"
+        - "saúde"
+        - "educação"
+        - "meio ambiente"
+        - "reforma tributária"
+        - "segurança pública"
+        - "economia"
+        - "infraestrutura"
+    static:
+      assets:
+        - path: "css/main.css"
+          type: "text/css"
+        - path: "js/app.js"
+          type: "application/javascript"
+        - path: "images/logo.png"
+          type: "image/png"
+
+# Performance settings
+performance:
+  # Batch operations
+  batch_size: 100
+  batch_timeout: 1000  # milliseconds
+  
+  # Connection pooling
+  pool_size: 50
+  pool_timeout: 5000  # milliseconds
+  
+  # Circuit breaker
+  failure_threshold: 5
+  recovery_timeout: 30000  # milliseconds
+
+# Monitoring
+monitoring:
+  # Metrics collection
+  collect_metrics: true
+  metrics_interval: 60  # seconds
+  
+  # Alerting thresholds
+  alerts:
+    - metric: cache_hit_rate
+      threshold: 0.7  # 70%
+      comparison: less_than
+      severity: warning
+      
+    - metric: redis_memory_usage
+      threshold: 0.9  # 90%
+      comparison: greater_than
+      severity: critical
+      
+    - metric: cdn_error_rate
+      threshold: 0.05  # 5%
+      comparison: greater_than
+      severity: warning

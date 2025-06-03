@@ -15,7 +15,7 @@ from urllib3.util.retry import Retry
 
 from ..config.config import APIConfig
 from ..models.models import SearchResult, Proposition
-from ..utils.smart_cache import smart_cache
+from ..utils.smart_cache import cached as smart_cache
 from ..utils.circuit_breaker import circuit_manager, CircuitBreakerError
 from ..utils.monitoring import metrics_collector
 

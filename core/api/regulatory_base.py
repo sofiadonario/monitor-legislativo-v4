@@ -11,7 +11,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 from ..utils.session_factory import SessionFactory, fetch_with_retry
 from ..utils.circuit_breaker import circuit_manager
-from ..utils.smart_cache import smart_cache
+from ..utils.smart_cache import cached as smart_cache
 
 from .base_service import BaseAPIService
 from ..models.models import (

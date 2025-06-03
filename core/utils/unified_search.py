@@ -12,7 +12,7 @@ import json
 import logging
 
 from ..models.models import SearchResult, Proposition, DataSource
-from .smart_cache import smart_cache
+from .smart_cache import cached as smart_cache
 from .monitoring_dashboard import monitoring_dashboard
 
 
