@@ -19,6 +19,11 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+
+from core.security.key_rotation_service import get_key_rotation_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -137,11 +142,15 @@ class JWTManager:
     
     def __init__(self, app=None):
         self.app = app
-        self.algorithm = 'HS256'
+        self.algorithm = 'RS256'  # Changed to asymmetric signing
         self.access_token_expires = timedelta(hours=1)  # Reduced from 24h to 1h for security
         self.refresh_token_expires = timedelta(days=7)  # Reduced from 30d to 7d for security
-        self.secret_key = None
+        self.secret_key = None  # Legacy HS256 support
         self.blacklist = None
+        self._key_rotation_service = None
+        self._signing_key_id = None
+        self._private_key = None
+        self._public_key = None
         
         if app:
             self.init_app(app)
@@ -168,13 +177,17 @@ class JWTManager:
         if refresh_expires:
             self.refresh_token_expires = timedelta(seconds=refresh_expires)
         
-        # Algorithm
-        self.algorithm = app.config.get('JWT_ALGORITHM', 'HS256')
+        # Algorithm (default to RS256 for new apps)
+        self.algorithm = app.config.get('JWT_ALGORITHM', 'RS256')
+        
+        # Initialize key rotation service for RS256
+        if self.algorithm == 'RS256':
+            self._init_key_rotation()
         
         # Initialize token blacklist
         self._init_blacklist(app)
         
-        logger.info("JWT Manager initialized with blacklist support")
+        logger.info(f"JWT Manager initialized with {self.algorithm} algorithm and blacklist support")
     
     def _init_blacklist(self, app):
         """Initialize token blacklist with Redis if available."""
@@ -192,6 +205,43 @@ class JWTManager:
         
         self.blacklist = TokenBlacklist(redis_client)
     
+    def _init_key_rotation(self):
+        """Initialize key rotation service for RS256 signing."""
+        self._key_rotation_service = get_key_rotation_service()
+        
+        # Get or generate JWT signing key
+        self._signing_key_id = self._key_rotation_service.get_active_key_id('jwt_signing')
+        if not self._signing_key_id:
+            # Generate initial signing key
+            self._signing_key_id, _ = self._key_rotation_service.generate_key('jwt_signing')
+            logger.info("Generated initial JWT signing key pair")
+        
+        # Load private and public keys
+        self._load_signing_keys()
+    
+    def _load_signing_keys(self):
+        """Load private and public keys for JWT signing."""
+        # Get private key
+        private_key_pem = self._key_rotation_service.get_key(self._signing_key_id)
+        if not private_key_pem:
+            raise ValueError("Failed to load JWT signing private key")
+        
+        self._private_key = serialization.load_pem_private_key(
+            private_key_pem,
+            password=None,
+            backend=default_backend()
+        )
+        
+        # Get public key
+        public_key_pem = self._key_rotation_service.get_public_key(self._signing_key_id)
+        if not public_key_pem:
+            raise ValueError("Failed to load JWT signing public key")
+        
+        self._public_key = serialization.load_pem_public_key(
+            public_key_pem,
+            backend=default_backend()
+        )
+    
     def create_access_token(self, identity: str, additional_claims: Dict[str, Any] = None) -> str:
         """Create an access token"""
         now = datetime.now(timezone.utc)
@@ -206,8 +256,18 @@ class JWTManager:
         if additional_claims:
             payload.update(additional_claims)
         
-        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
-        logger.debug(f"Access token created for user: {identity}")
+        # Add key ID for RS256 to support key rotation
+        if self.algorithm == 'RS256' and self._signing_key_id:
+            payload['kid'] = self._signing_key_id
+        
+        # Encode with appropriate key
+        if self.algorithm == 'RS256' and self._private_key:
+            token = jwt.encode(payload, self._private_key, algorithm=self.algorithm)
+        else:
+            # Fallback to HS256
+            token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        
+        logger.debug(f"Access token created for user: {identity} using {self.algorithm}")
         
         return token
     
@@ -218,23 +278,67 @@ class JWTManager:
             'sub': identity,
             'iat': now,
             'exp': now + self.refresh_token_expires,
-            'type': 'refresh'
+            'type': 'refresh',
+            'jti': secrets.token_urlsafe(16)  # Unique token ID for rotation tracking
         }
         
-        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
-        logger.debug(f"Refresh token created for user: {identity}")
+        # Add key ID for RS256
+        if self.algorithm == 'RS256' and self._signing_key_id:
+            payload['kid'] = self._signing_key_id
+        
+        # Encode with appropriate key
+        if self.algorithm == 'RS256' and self._private_key:
+            token = jwt.encode(payload, self._private_key, algorithm=self.algorithm)
+        else:
+            token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        
+        logger.debug(f"Refresh token created for user: {identity} with jti: {payload['jti']}")
         
         return token
     
     def decode_token(self, token: str) -> Dict[str, Any]:
-        """Decode and validate a token"""
+        """Decode and validate a token with key rotation support"""
         try:
-            payload = jwt.decode(
-                token,
-                self.secret_key,
-                algorithms=[self.algorithm],
-                options={'verify_exp': True}
-            )
+            # For RS256, we need to handle key rotation
+            if self.algorithm == 'RS256':
+                # First, decode without verification to get the header
+                unverified = jwt.decode(token, options={"verify_signature": False})
+                kid = unverified.get('kid')
+                
+                if kid:
+                    # Token has key ID, use appropriate key
+                    if kid == self._signing_key_id:
+                        # Current key
+                        verify_key = self._public_key
+                    else:
+                        # Older key during rotation period
+                        public_key_pem = self._key_rotation_service.get_public_key(kid)
+                        if public_key_pem:
+                            verify_key = serialization.load_pem_public_key(
+                                public_key_pem,
+                                backend=default_backend()
+                            )
+                        else:
+                            raise ValueError(f"Unknown key ID: {kid}")
+                else:
+                    # No key ID, use current key
+                    verify_key = self._public_key
+                
+                payload = jwt.decode(
+                    token,
+                    verify_key,
+                    algorithms=[self.algorithm],
+                    options={'verify_exp': True}
+                )
+            else:
+                # HS256 mode
+                payload = jwt.decode(
+                    token,
+                    self.secret_key,
+                    algorithms=[self.algorithm],
+                    options={'verify_exp': True}
+                )
+            
             return payload
             
         except jwt.ExpiredSignatureError:

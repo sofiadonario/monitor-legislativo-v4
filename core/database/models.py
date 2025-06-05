@@ -459,3 +459,25 @@ class OptimizedQueries:
             'click_through_rate': (analytics.total_clicks / analytics.total_searches * 100) if analytics.total_searches else 0,
             'top_queries': [{'query': q.normalized_query, 'count': q.frequency} for q in top_queries]
         }
+
+
+class KeyRotationLog(Base):
+    """Audit trail for cryptographic key operations"""
+    __tablename__ = 'key_rotation_logs'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key_id = Column(String(255), nullable=False, index=True)
+    key_type = Column(String(50), nullable=False, index=True)
+    operation = Column(String(50), nullable=False)  # generate, rotate, compromise, cleanup
+    timestamp = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, index=True)
+    details = Column(JSON)  # Additional operation details
+    performed_by = Column(String(100), nullable=False)  # User or 'system'
+    
+    # Composite index for audit queries
+    __table_args__ = (
+        Index('idx_key_rotation_type_time', 'key_type', 'timestamp'),
+        Index('idx_key_rotation_operation', 'operation', 'timestamp'),
+    )
+    
+    def __repr__(self):
+        return f"<KeyRotationLog(key_id={self.key_id}, operation={self.operation}, timestamp={self.timestamp})>"

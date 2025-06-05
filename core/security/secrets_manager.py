@@ -11,6 +11,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import logging
 
+from core.security.key_rotation_service import get_key_rotation_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,15 +23,37 @@ class SecretsManager:
         """Initialize secrets manager with master key.
         
         Args:
-            master_key: Master encryption key. If not provided, uses environment variable.
+            master_key: Master encryption key. If not provided, uses key rotation service.
         """
-        self.master_key = master_key or os.getenv('MASTER_KEY')
-        if not self.master_key:
-            raise ValueError("Master key not provided. Set MASTER_KEY environment variable.")
-        
         self._secrets_file = Path('data/.secrets.enc')
         self._salt_file = Path('data/.salt')
         self._cache: Dict[str, Any] = {}
+        
+        # Get key rotation service
+        self._key_rotation_service = get_key_rotation_service()
+        
+        if master_key:
+            # Legacy mode: explicit master key provided
+            self.master_key = master_key
+            self._use_key_rotation = False
+        else:
+            # New mode: use key rotation service
+            self._use_key_rotation = True
+            # Get or generate master key from rotation service
+            master_key_id = self._key_rotation_service.get_active_key_id('master')
+            if not master_key_id:
+                # Generate initial master key
+                master_key_id, _ = self._key_rotation_service.generate_key('master')
+                logger.info("Generated initial master key via rotation service")
+            
+            # Get key material
+            key_material = self._key_rotation_service.get_key(master_key_id)
+            if not key_material:
+                raise ValueError("Failed to get master key from rotation service")
+            
+            self.master_key = key_material.decode('utf-8')
+            self._master_key_id = master_key_id
+        
         self._fernet = self._create_fernet(self.master_key)
     
     def _get_or_create_salt(self) -> bytes:
