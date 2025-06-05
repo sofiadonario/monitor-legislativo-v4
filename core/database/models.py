@@ -481,3 +481,40 @@ class KeyRotationLog(Base):
     
     def __repr__(self):
         return f"<KeyRotationLog(key_id={self.key_id}, operation={self.operation}, timestamp={self.timestamp})>"
+
+
+class SecurityEvent(Base):
+    """Security event log for SIEM integration and threat analysis"""
+    __tablename__ = 'security_events'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    event_id = Column(String(100), unique=True, nullable=False, index=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    event_type = Column(String(50), nullable=False, index=True)
+    threat_level = Column(Integer, nullable=False, index=True)  # 1-5 scale
+    user_id = Column(String(50), ForeignKey('users.id'), nullable=True, index=True)
+    ip_address = Column(String(45), nullable=True, index=True)  # IPv6 ready
+    user_agent = Column(Text, nullable=True)
+    endpoint = Column(String(255), nullable=True, index=True)
+    method = Column(String(10), nullable=True)
+    status_code = Column(Integer, nullable=True)
+    details = Column(Text, nullable=True)  # JSON string
+    geo_location = Column(Text, nullable=True)  # JSON string
+    risk_score = Column(Float, nullable=False, default=0.0, index=True)
+    indicators = Column(Text, nullable=True)  # JSON array
+    raw_data = Column(Text, nullable=True)  # For forensics
+    
+    # Relationships
+    user = relationship("User", backref="security_events")
+    
+    # Composite indexes for security queries
+    __table_args__ = (
+        Index('idx_security_event_type_time', 'event_type', 'timestamp'),
+        Index('idx_security_event_user_time', 'user_id', 'timestamp'),
+        Index('idx_security_event_ip_time', 'ip_address', 'timestamp'),
+        Index('idx_security_event_threat', 'threat_level', 'timestamp'),
+        Index('idx_security_event_risk', 'risk_score', 'timestamp'),
+    )
+    
+    def __repr__(self):
+        return f"<SecurityEvent(event_id={self.event_id}, type={self.event_type}, threat={self.threat_level})>"
