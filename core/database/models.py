@@ -358,19 +358,22 @@ class DatabaseOptimizer:
 
 # Query optimization helpers
 class OptimizedQueries:
-    """Pre-optimized database queries"""
+    """Pre-optimized database queries with aggressive eager loading"""
     
     @staticmethod
     def search_propositions(session: Session, query: str, filters: Dict[str, Any] = None, 
                           limit: int = 25, offset: int = 0) -> List[Proposition]:
-        """Optimized proposition search with filters"""
+        """Optimized proposition search with filters and eager loading"""
         
-        # Start with base query including joins for better performance
+        from sqlalchemy.orm import joinedload, selectinload, contains_eager
+        
+        # CRITICAL: Eliminate N+1 queries with aggressive eager loading
         base_query = session.query(Proposition).options(
             # Eager load relationships to avoid N+1 queries
-            # joinedload(Proposition.authors),
-            # joinedload(Proposition.keywords),
-            # joinedload(Proposition.source)
+            joinedload(Proposition.source),               # Small, always needed
+            selectinload(Proposition.authors),            # Medium collection
+            selectinload(Proposition.keywords),           # Medium collection  
+            selectinload(Proposition.search_logs)         # Large collection, load separately
         )
         
         # Apply text search
@@ -410,13 +413,19 @@ class OptimizedQueries:
     
     @staticmethod
     def get_trending_propositions(session: Session, days: int = 7, limit: int = 10) -> List[Proposition]:
-        """Get trending propositions based on recent activity"""
+        """Get trending propositions based on recent activity with eager loading"""
+        
+        from sqlalchemy.orm import joinedload, selectinload
         
         cutoff_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         cutoff_date = cutoff_date.replace(day=cutoff_date.day - days)
         
-        # Get propositions with most clicks in the period
-        trending = session.query(Proposition).join(SearchLog).filter(
+        # Get propositions with most clicks in the period - OPTIMIZED with eager loading
+        trending = session.query(Proposition).options(
+            joinedload(Proposition.source),      # Always needed for display
+            selectinload(Proposition.authors),   # For trending display
+            selectinload(Proposition.keywords)   # For trending context
+        ).join(SearchLog).filter(
             SearchLog.clicked_proposition_id == Proposition.id,
             SearchLog.timestamp >= cutoff_date
         ).group_by(Proposition.id).order_by(
