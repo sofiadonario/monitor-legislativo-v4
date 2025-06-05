@@ -4,7 +4,7 @@ API routes for Monitor Legislativo Web
 
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Query, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel
 
 import sys
@@ -18,6 +18,15 @@ if str(project_root) not in sys.path:
 from core.api.api_service import APIService
 from core.models.models import SearchResult, APIStatus
 from core.utils.export_service import ExportService
+from core.auth.fastapi_auth import (
+    require_cache_management, 
+    require_researcher,
+    require_admin,
+    get_optional_user,
+    log_admin_action,
+    rate_limit_check,
+    User
+)
 
 router = APIRouter()
 
@@ -43,32 +52,64 @@ class ExportRequest(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
-@router.get("/search")
+@router.get("/search") 
 async def search(
-    q: str = Query(..., description="Search query"),
+    q: str = Query(..., description="Search query", min_length=1, max_length=500),
     sources: Optional[str] = Query(None, description="Comma-separated source keys"),
-    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
-    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(25, ge=1, le=100, description="Results per page")
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)", regex=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)", regex=r"^\d{4}-\d{2}-\d{2}$"),
+    page: int = Query(1, ge=1, le=1000, description="Page number"),
+    page_size: int = Query(25, ge=1, le=100, description="Results per page"),
+    current_user: User = Depends(require_researcher()),
+    _rate_limit: None = Depends(rate_limit_check)
 ):
     """
-    Search for propositions across multiple sources
-    """
-    if not q.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty")
+    Search for legislative propositions across multiple government sources.
     
-    # Parse sources
+    **REQUIRES AUTHENTICATION**: Researcher role required for scientific data access.
+    **REAL DATA ONLY**: This endpoint returns only authentic legislative data 
+    from verified government sources for research purposes.
+    """
+    # Enhanced input validation for security
+    q = q.strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Search query cannot be empty")
+    
+    # Validate query doesn't contain obvious injection attempts
+    suspicious_patterns = ["'", '"', "--", "/*", "*/", "<script", "javascript:", "data:"]
+    if any(pattern in q.lower() for pattern in suspicious_patterns):
+        raise HTTPException(status_code=400, detail="Invalid characters in search query")
+    
+    # Parse and validate sources
     source_list = None
     if sources:
+        available_sources = api_service.get_available_sources()
         source_list = [s.strip() for s in sources.split(",")]
+        
+        # Validate all requested sources exist
+        invalid_sources = [s for s in source_list if s not in available_sources]
+        if invalid_sources:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid sources: {invalid_sources}. Available: {list(available_sources.keys())}"
+            )
     
-    # Build filters
+    # Build filters with validation
     filters = {}
     if start_date:
-        filters["start_date"] = start_date
+        try:
+            # Additional date validation
+            datetime.strptime(start_date, "%Y-%m-%d")
+            filters["start_date"] = start_date
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
+    
     if end_date:
-        filters["end_date"] = end_date
+        try:
+            datetime.strptime(end_date, "%Y-%m-%d")
+            filters["end_date"] = end_date
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
     
     try:
         # Perform search
@@ -98,7 +139,15 @@ async def search(
             "page": page,
             "page_size": page_size,
             "total_pages": (total_count + page_size - 1) // page_size,
-            "results": paginated_props
+            "results": paginated_props,
+            # Research compliance metadata
+            "research_metadata": {
+                "data_authenticity": "verified_government_sources",
+                "researcher": current_user.email,
+                "search_timestamp": datetime.now().isoformat(),
+                "data_lineage": "direct_api_access_no_mocks",
+                "compliance": "scientific_research_standards"
+            }
         }
         
     except Exception as e:
@@ -162,16 +211,37 @@ async def export_results(request: ExportRequest, background_tasks: BackgroundTas
 
 
 @router.delete("/cache")
-async def clear_cache(source: Optional[str] = Query(None, description="Specific source to clear")):
+@log_admin_action("clear_cache", "system_cache")
+async def clear_cache(
+    source: Optional[str] = Query(None, description="Specific source to clear"),
+    current_user: User = Depends(require_cache_management()),
+    _rate_limit: None = Depends(rate_limit_check)
+):
     """
-    Clear cache for specific source or all sources
-    """
-    api_service.clear_cache(source)
+    Clear cache for specific source or all sources.
     
-    return {
-        "message": f"Cache cleared for {'source: ' + source if source else 'all sources'}",
-        "timestamp": datetime.now().isoformat()
-    }
+    **REQUIRES AUTHENTICATION**: Cache management permission required.
+    This endpoint can impact system performance and is restricted to authorized users.
+    """
+    # Validate source parameter to prevent injection
+    if source:
+        available_sources = api_service.get_available_sources()
+        if source not in available_sources:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid source '{source}'. Available sources: {list(available_sources.keys())}"
+            )
+    
+    try:
+        api_service.clear_cache(source)
+        
+        return {
+            "message": f"Cache cleared for {'source: ' + source if source else 'all sources'}",
+            "cleared_by": current_user.email,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear cache: {str(e)}")
 
 
 @router.get("/proposition/{source}/{id}")

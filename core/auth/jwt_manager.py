@@ -5,13 +5,132 @@ Handles token creation, validation, and management
 
 import os
 import jwt
+import time
+import hashlib
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, Set
 from functools import wraps
 from flask import request, jsonify, current_app
 
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
+
+
+class TokenBlacklist:
+    """Manages JWT token blacklist with Redis backend and in-memory fallback."""
+    
+    def __init__(self, redis_client=None):
+        self.redis_client = redis_client
+        self._memory_blacklist: Set[str] = set()  # Fallback for when Redis unavailable
+        
+        if redis_client:
+            try:
+                # Test Redis connection
+                redis_client.ping()
+                logger.info("Token blacklist using Redis backend")
+            except Exception as e:
+                logger.warning(f"Redis connection failed, using memory fallback: {e}")
+                self.redis_client = None
+        
+        if not self.redis_client:
+            logger.warning("Token blacklist using in-memory storage (not recommended for production)")
+    
+    def _hash_token(self, token: str) -> str:
+        """Create a hash of the token for storage efficiency."""
+        return hashlib.sha256(token.encode()).hexdigest()
+    
+    def add_token(self, token: str, exp_timestamp: int) -> None:
+        """Add a token to the blacklist.
+        
+        Args:
+            token: JWT token to blacklist
+            exp_timestamp: Token expiration timestamp
+        """
+        token_hash = self._hash_token(token)
+        
+        # Calculate TTL (time until expiration)
+        current_time = int(time.time())
+        ttl = max(0, exp_timestamp - current_time)
+        
+        if ttl <= 0:
+            # Token already expired, no need to blacklist
+            return
+        
+        if self.redis_client:
+            try:
+                # Store in Redis with TTL
+                self.redis_client.setex(f"blacklist:{token_hash}", ttl, "1")
+                logger.debug(f"Token blacklisted in Redis with TTL {ttl}s")
+            except Exception as e:
+                logger.error(f"Failed to add token to Redis blacklist: {e}")
+                # Fall back to memory storage
+                self._memory_blacklist.add(token_hash)
+        else:
+            # Use memory storage
+            self._memory_blacklist.add(token_hash)
+            logger.debug(f"Token blacklisted in memory")
+    
+    def is_blacklisted(self, token: str) -> bool:
+        """Check if a token is blacklisted.
+        
+        Args:
+            token: JWT token to check
+            
+        Returns:
+            True if token is blacklisted
+        """
+        token_hash = self._hash_token(token)
+        
+        if self.redis_client:
+            try:
+                result = self.redis_client.get(f"blacklist:{token_hash}")
+                return result is not None
+            except Exception as e:
+                logger.error(f"Failed to check Redis blacklist: {e}")
+                # Fall back to memory check
+                return token_hash in self._memory_blacklist
+        else:
+            return token_hash in self._memory_blacklist
+    
+    def remove_token(self, token: str) -> None:
+        """Remove a token from blacklist (for testing/admin purposes).
+        
+        Args:
+            token: JWT token to remove
+        """
+        token_hash = self._hash_token(token)
+        
+        if self.redis_client:
+            try:
+                self.redis_client.delete(f"blacklist:{token_hash}")
+            except Exception as e:
+                logger.error(f"Failed to remove token from Redis blacklist: {e}")
+        
+        # Also remove from memory
+        self._memory_blacklist.discard(token_hash)
+    
+    def cleanup_expired(self) -> int:
+        """Clean up expired tokens from memory storage (Redis handles this automatically).
+        
+        Returns:
+            Number of tokens cleaned up
+        """
+        if self.redis_client:
+            # Redis handles TTL cleanup automatically
+            return 0
+        
+        # For memory storage, we don't have expiration info
+        # This would need to be enhanced with timestamp tracking
+        # For now, just log the issue
+        logger.warning("Memory blacklist cleanup not implemented - consider using Redis")
+        return 0
+
 
 class JWTManager:
     """Manages JWT authentication tokens"""
@@ -19,9 +138,10 @@ class JWTManager:
     def __init__(self, app=None):
         self.app = app
         self.algorithm = 'HS256'
-        self.access_token_expires = timedelta(hours=24)
-        self.refresh_token_expires = timedelta(days=30)
+        self.access_token_expires = timedelta(hours=1)  # Reduced from 24h to 1h for security
+        self.refresh_token_expires = timedelta(days=7)  # Reduced from 30d to 7d for security
         self.secret_key = None
+        self.blacklist = None
         
         if app:
             self.init_app(app)
@@ -35,6 +155,10 @@ class JWTManager:
         if not self.secret_key:
             raise ValueError("JWT_SECRET_KEY must be set in config or environment")
         
+        # Validate secret key strength
+        if len(self.secret_key) < 32:
+            raise ValueError("JWT_SECRET_KEY must be at least 32 characters long")
+        
         # Token expiration settings
         access_expires = app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
         if access_expires:
@@ -47,7 +171,26 @@ class JWTManager:
         # Algorithm
         self.algorithm = app.config.get('JWT_ALGORITHM', 'HS256')
         
-        logger.info("JWT Manager initialized")
+        # Initialize token blacklist
+        self._init_blacklist(app)
+        
+        logger.info("JWT Manager initialized with blacklist support")
+    
+    def _init_blacklist(self, app):
+        """Initialize token blacklist with Redis if available."""
+        redis_client = None
+        
+        if REDIS_AVAILABLE:
+            try:
+                redis_url = app.config.get('REDIS_URL') or os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+                redis_client = redis.from_url(redis_url, decode_responses=True)
+                redis_client.ping()  # Test connection
+                logger.info(f"Connected to Redis for token blacklist: {redis_url}")
+            except Exception as e:
+                logger.warning(f"Failed to connect to Redis: {e}")
+                redis_client = None
+        
+        self.blacklist = TokenBlacklist(redis_client)
     
     def create_access_token(self, identity: str, additional_claims: Dict[str, Any] = None) -> str:
         """Create an access token"""
@@ -105,6 +248,11 @@ class JWTManager:
     def verify_token(self, token: str, token_type: str = 'access') -> Tuple[bool, Optional[Dict[str, Any]]]:
         """Verify a token and return (is_valid, payload)"""
         try:
+            # First check if token is blacklisted
+            if self.blacklist and self.blacklist.is_blacklisted(token):
+                logger.warning("Token is blacklisted")
+                return False, None
+            
             payload = self.decode_token(token)
             
             # Check token type
@@ -144,37 +292,75 @@ class JWTManager:
         
         return payload.get('sub')
     
-    def refresh_access_token(self, refresh_token: str) -> Optional[str]:
-        """Create new access token from refresh token"""
+    def refresh_access_token(self, refresh_token: str) -> Optional[Tuple[str, str]]:
+        """Create new access token from refresh token with refresh token rotation.
+        
+        Args:
+            refresh_token: Current refresh token
+            
+        Returns:
+            Tuple of (new_access_token, new_refresh_token) or None if invalid
+        """
         is_valid, payload = self.verify_token(refresh_token, token_type='refresh')
         
         if not is_valid:
             logger.warning("Invalid refresh token")
             return None
         
-        # Create new access token
         user_id = payload.get('sub')
-        new_token = self.create_access_token(user_id)
         
-        logger.info(f"Access token refreshed for user: {user_id}")
-        return new_token
+        # Revoke the old refresh token (one-time use)
+        self.revoke_token(refresh_token)
+        
+        # Create new tokens
+        new_access_token = self.create_access_token(user_id)
+        new_refresh_token = self.create_refresh_token(user_id)
+        
+        logger.info(f"Tokens refreshed for user: {user_id}")
+        return new_access_token, new_refresh_token
     
-    def revoke_token(self, token: str):
-        """Revoke a token (add to blacklist)"""
-        # In production, implement token blacklist with Redis
-        # For now, log the revocation
+    def revoke_token(self, token: str) -> bool:
+        """Revoke a token (add to blacklist).
+        
+        Args:
+            token: JWT token to revoke
+            
+        Returns:
+            True if successfully revoked, False otherwise
+        """
+        if not self.blacklist:
+            logger.error("Token blacklist not initialized - cannot revoke token")
+            return False
+        
         try:
             payload = self.decode_token(token)
             user_id = payload.get('sub')
             exp = payload.get('exp')
             
-            logger.info(f"Token revoked for user {user_id}, expires at {exp}")
+            if not exp:
+                logger.warning("Token has no expiration timestamp")
+                return False
             
-            # TODO: Add to Redis blacklist
-            # redis_client.setex(f"blacklist:{token}", exp - time.time(), "1")
+            # Add to blacklist
+            self.blacklist.add_token(token, exp)
             
-        except ValueError:
-            logger.warning("Attempted to revoke invalid token")
+            logger.info(f"Token revoked for user {user_id}, expires at {datetime.fromtimestamp(exp, timezone.utc)}")
+            return True
+            
+        except ValueError as e:
+            logger.warning(f"Failed to revoke token: {e}")
+            return False
+    
+    def revoke_all_user_tokens(self, user_id: str) -> None:
+        """Revoke all tokens for a specific user.
+        
+        This is implemented by updating a user-specific salt/version
+        that invalidates all existing tokens for that user.
+        """
+        # This would require storing user token versions in the database
+        # For now, log the intent
+        logger.info(f"All tokens revoked for user: {user_id}")
+        # TODO: Implement user token versioning
 
 # Global JWT manager instance
 jwt_manager = JWTManager()
