@@ -18,6 +18,7 @@ if str(project_root) not in sys.path:
 from core.api.api_service import APIService
 from core.models.models import SearchResult, APIStatus
 from core.utils.export_service import ExportService
+from core.auth.decorators import require_auth
 
 router = APIRouter()
 
@@ -162,6 +163,7 @@ async def export_results(request: ExportRequest, background_tasks: BackgroundTas
 
 
 @router.delete("/cache")
+@require_auth(roles=["admin"])
 async def clear_cache(source: Optional[str] = Query(None, description="Specific source to clear")):
     """
     Clear cache for specific source or all sources

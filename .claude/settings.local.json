@@ -37,7 +37,11 @@
       "Bash(pip3:*)",
       "Bash(virtualenv:*)",
       "Bash(pkill:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(docker:*)",
+      "Bash(touch:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)"
     ]
   },
   "enableAllProjectMcpServers": false

@@ -5,6 +5,8 @@ FastAPI-based web service
 
 import logging
 from fastapi import FastAPI, HTTPException
+from web.middleware.security_headers import setup_security_headers
+from web.middleware.rate_limit_middleware import RateLimitMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -37,13 +39,47 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# Configure CORS
+# Setup security headers
+setup_security_headers(app)
+
+# Add rate limiting middleware
+app.add_middleware(RateLimitMiddleware)
+
+# Configure CORS for production
+config = Config()
+cors_origins = [
+    "https://localhost:3000",  # React frontend (production)
+    "https://monitor-legislativo.mackenzie.br",  # Production domain
+    "https://api.monitor-legislativo.mackenzie.br",  # API domain
+    "https://admin.monitor-legislativo.mackenzie.br"  # Admin interface
+]
+
+# Add development origins in development mode
+if config.get('environment', 'production') == 'development':
+    cors_origins.extend([
+        "http://localhost:3000",  # React development
+        "http://localhost:8080",  # Alternative port
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8080"
+    ])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language", 
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "X-API-Key",
+        "X-Request-ID"
+    ],
+    expose_headers=["X-Request-ID", "X-API-Version"],
+    max_age=600  # 10 minutes
 )
 
 # Include API routes

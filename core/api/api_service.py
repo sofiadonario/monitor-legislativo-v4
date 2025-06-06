@@ -20,7 +20,7 @@ from .regulatory_agencies import (
 )
 from ..models.models import SearchResult, APIStatus, DataSource
 from ..config.config import Config
-from ..utils.smart_cache import cached as smart_cache
+from ..utils.smart_cache import cached as smart_cache\nfrom ..utils.smart_cache import cached
 
 
 class APIService:
@@ -85,8 +85,7 @@ class APIService:
                 )
                 self.logger.info(f"Initialized {key.upper()} service")
     
-    async def search_all(self, query: str, filters: Dict[str, Any], 
-                        sources: Optional[List[str]] = None) -> List[SearchResult]:
+    @cached(ttl=300, key_prefix="search_all")\n    \1
         """
         Search across all enabled sources
         
