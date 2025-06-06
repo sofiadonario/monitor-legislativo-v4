@@ -1,0 +1,94 @@
+# Transport-Related Search Terms for LexML
+
+## General Transport Terms
+"transporte de carga"
+"transporte rodoviário de carga"
+"logística de carga"
+"frete"
+"fretamento"
+"caminhão"
+"caminhões"
+"veículos pesados"
+"veículos de carga"
+"veículos comerciais"
+"transporte de mercadorias"
+"modal rodoviário"
+
+## Fuels and Energy
+"gás natural veicular"
+"biometano"
+"diesel"
+"biodiesel"
+"diesel verde"
+"combustível sustentável"
+"hidrogênio"
+"etanol"
+"SAF"
+
+## Energy Efficiency and Emissions
+"eficiência energética"
+"emissões"
+"descarbonização"
+"gases de efeito estufa"
+"rotulagem veicular"
+"consumo de combustível"
+
+## Technology and Innovation
+"tecnologias assistivas"
+"veículos autônomos"
+"telemetria"
+"rastreamento"
+"motorização"
+"conversão"
+
+## Infrastructure
+"postos de abastecimento"
+"infraestrutura"
+"combustíveis alternativos"
+"terminais de carga"
+"centros de distribuição"
+"armazéns"
+
+## Regulation
+"CONTRAN"
+"ANTT"
+"registro transportador"
+"habilitação"
+"licenciamento"
+"RNTRC"
+"segurança veicular"
+
+## Incentives and Taxation
+"IPI"
+"ICMS"
+"incentivo fiscal"
+"isenção"
+"benefício tributário"
+"financiamento"
+
+## Rota 2030 and Paten
+"Rota 2030"
+"Paten"
+"mobilidade e logística"
+"transição energética"
+"desenvolvimento sustentável"
+"P&D"
+
+## Machinery and Equipment
+"máquinas agrícolas"
+"implementos rodoviários"
+"reboque"
+"semi-reboque"
+"carreta"
+"bitrem"
+"rodotrem"
+"equipamentos de transporte"
+
+## Operations and Services
+"transportador autônomo"
+"empresa de transporte"
+"operador logístico"
+"embarcador"
+"terceirização"
+"contrato de frete"
+"tabela de frete"
