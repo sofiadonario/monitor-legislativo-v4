@@ -22,27 +22,72 @@ PATTERNS = {
     'document_id': re.compile(r'^[a-zA-Z0-9_-]+$')
 }
 
-# SQL injection patterns to block
+# Comprehensive SQL injection patterns to block (case-insensitive)
 SQL_INJECTION_PATTERNS = [
-    r"(\b(union|select|insert|update|delete|drop|create|alter|exec|execute)\b)",
-    r"(--|\||;|\/\*|\*\/|@@|@)",
-    r"(xp_|sp_|exec\s*\()",
-    r"(cast\s*\(|convert\s*\()",
-    r"(script\s*:)",
-    r"(javascript\s*:)",
-    r"(onload\s*=|onerror\s*=|onclick\s*=)"
+    # Basic SQL keywords
+    r"(?i)\b(union|select|insert|update|delete|drop|create|alter|exec|execute|grant|revoke)\b",
+    # Advanced SQL keywords  
+    r"(?i)\b(declare|cursor|procedure|function|trigger|view|index|table|database|schema)\b",
+    # SQL comments and terminators
+    r"(--|#|\/\*|\*\/|;)",
+    # SQL operators and special chars
+    r"(\|\||&&|@@|@)",
+    # Extended stored procedures
+    r"(?i)(xp_|sp_|fn_|sys\.)",
+    # SQL functions that can be dangerous
+    r"(?i)\b(cast\s*\(|convert\s*\(|char\s*\(|ascii\s*\(|substring\s*\(|waitfor\s+delay|benchmark\s*\()",
+    # Time-based injection patterns
+    r"(?i)(sleep\s*\(|pg_sleep\s*\(|waitfor\s+time)",
+    # Union-based injection variations
+    r"(?i)(union\s+all\s+select|union\s+distinct\s+select)",
+    # Information schema queries
+    r"(?i)(information_schema|sysobjects|syscolumns|pg_tables)",
+    # Boolean-based blind injection
+    r"(?i)(\s+and\s+\d+=\d+|\s+or\s+\d+=\d+)",
+    # Script injection (mixed with SQL)
+    r"(?i)(script\s*:|javascript\s*:|vbscript\s*:)",
+    # Event handlers
+    r"(?i)(on\w+\s*=)"
 ]
 
-# XSS patterns to block
+# Comprehensive XSS patterns to block (case-insensitive)
 XSS_PATTERNS = [
-    r"<script[^>]*>.*?</script>",
-    r"javascript:",
-    r"on\w+\s*=",
-    r"<iframe[^>]*>",
-    r"<object[^>]*>",
-    r"<embed[^>]*>",
-    r"<img[^>]*onerror[^>]*>",
-    r"<svg[^>]*onload[^>]*>"
+    # Script tags (various forms)
+    r"(?i)<script[^>]*>.*?</script>",
+    r"(?i)<script[^>]*/>",
+    r"(?i)<script[^>]*>",
+    # JavaScript protocols
+    r"(?i)javascript\s*:",
+    r"(?i)vbscript\s*:",
+    r"(?i)data\s*:.*?base64",
+    r"(?i)data\s*:.*?javascript",
+    # Event handlers
+    r"(?i)on\w+\s*=",
+    r"(?i)(onload|onerror|onclick|onmouseover|onfocus|onblur|onchange|onsubmit)\s*=",
+    # Dangerous HTML tags
+    r"(?i)<iframe[^>]*>",
+    r"(?i)<object[^>]*>",
+    r"(?i)<embed[^>]*>",
+    r"(?i)<applet[^>]*>",
+    r"(?i)<meta[^>]*http-equiv",
+    r"(?i)<link[^>]*>",
+    # SVG with scripts
+    r"(?i)<svg[^>]*>.*?<script",
+    r"(?i)<svg[^>]*onload",
+    # Form and input manipulation
+    r"(?i)<form[^>]*>",
+    r"(?i)<input[^>]*>",
+    # CSS injection
+    r"(?i)expression\s*\(",
+    r"(?i)@import",
+    r"(?i)style\s*=.*?javascript",
+    # URL schemes that can execute code
+    r"(?i)(chrome|opera|safari|firefox|edge|about|file|ftp|gopher|ldap|mailto|news|telnet|wais|prospero):",
+    # Encoded characters that could bypass filters
+    r"&#x?\d+;",
+    r"%[0-9a-fA-F]{2}",
+    r"\\u[0-9a-fA-F]{4}",
+    r"\\x[0-9a-fA-F]{2}"
 ]
 
 def sanitize_input(value: str, max_length: int = 1000) -> str:
@@ -78,9 +123,11 @@ def sanitize_input(value: str, max_length: int = 1000) -> str:
     # HTML escape special characters
     value = html.escape(value)
     
-    # Remove dangerous patterns
+    # Check for dangerous patterns and reject if found
+    # (Don't just remove - reject completely for security)
     for pattern in SQL_INJECTION_PATTERNS + XSS_PATTERNS:
-        value = re.sub(pattern, '', value, flags=re.IGNORECASE)
+        if re.search(pattern, value, flags=re.IGNORECASE):
+            raise ValueError(f"Input contains potentially dangerous content: blocked pattern detected")
     
     # Remove control characters except newlines and tabs
     value = ''.join(char for char in value if ord(char) >= 32 or char in '\n\t')
@@ -163,6 +210,88 @@ def validate_search_query(query: str, min_length: int = 3, max_length: int = 500
     query = ' '.join(query.split())
     
     return query
+
+
+def validate_legislative_search_query(query: str) -> str:
+    """
+    Validate search query specifically for legislative data (scientific research).
+    
+    This function ensures queries are legitimate legislative searches only,
+    maintaining scientific research integrity by preventing any injection attacks.
+    
+    Args:
+        query: Legislative search query
+        
+    Returns:
+        Validated and sanitized query
+        
+    Raises:
+        ValueError: If query contains dangerous patterns or is invalid
+    """
+    if not query or not query.strip():
+        raise ValueError("Legislative search query cannot be empty")
+    
+    query = query.strip()
+    
+    # Length validation for scientific research (reasonable query lengths)
+    if len(query) < 2:
+        raise ValueError("Legislative search query too short (minimum 2 characters)")
+    if len(query) > 500:
+        raise ValueError("Legislative search query too long (maximum 500 characters)")
+    
+    # Enhanced validation for legislative content
+    # Allow: letters, numbers, spaces, basic punctuation, Brazilian Portuguese chars
+    allowed_pattern = r'^[a-zA-ZÀ-ÿ0-9\s\.,\-_\(\)\/]+$'
+    if not re.match(allowed_pattern, query):
+        raise ValueError("Query contains invalid characters for legislative search")
+    
+    # Apply standard sanitization (will raise error if dangerous patterns found)
+    query = sanitize_input(query, max_length=500)
+    
+    # Remove excessive whitespace
+    query = ' '.join(query.split())
+    
+    # Final validation for minimum meaningful content
+    if len(query.replace(' ', '')) < 2:
+        raise ValueError("Query must contain meaningful search terms")
+    
+    return query
+
+
+def validate_source_list(sources: list, available_sources: dict) -> list:
+    """
+    Validate that all requested sources are legitimate government data sources.
+    
+    Critical for scientific research - ensures only authentic data sources are used.
+    
+    Args:
+        sources: List of requested source identifiers
+        available_sources: Dict of available legitimate sources
+        
+    Returns:
+        Validated source list
+        
+    Raises:
+        ValueError: If any source is invalid or unauthorized
+    """
+    if not sources:
+        return []
+    
+    validated_sources = []
+    for source in sources:
+        source = source.strip()
+        
+        # Validate source format
+        if not re.match(r'^[a-zA-Z0-9_-]+$', source):
+            raise ValueError(f"Invalid source identifier format: {source}")
+        
+        # Ensure source exists in authorized list
+        if source not in available_sources:
+            raise ValueError(f"Unauthorized or non-existent source: {source}")
+        
+        validated_sources.append(source)
+    
+    return validated_sources
 
 def validate_filters(filters: Dict[str, Any]) -> Dict[str, Any]:
     """

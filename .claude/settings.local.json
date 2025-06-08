@@ -41,7 +41,9 @@
       "Bash(docker:*)",
       "Bash(touch:*)",
       "Bash(git push:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(git config:*)",
+      "Bash(git checkout:*)"
     ]
   },
   "enableAllProjectMcpServers": false

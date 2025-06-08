@@ -3,12 +3,15 @@
 import os
 import json
 import base64
+import secrets
 from typing import Any, Dict, Optional
 from pathlib import Path
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import logging
+
+from core.security.key_rotation_service import get_key_rotation_service
 
 logger = logging.getLogger(__name__)
 
@@ -20,24 +23,79 @@ class SecretsManager:
         """Initialize secrets manager with master key.
         
         Args:
-            master_key: Master encryption key. If not provided, uses environment variable.
+            master_key: Master encryption key. If not provided, uses key rotation service.
         """
-        self.master_key = master_key or os.getenv('MASTER_KEY')
-        if not self.master_key:
-            raise ValueError("Master key not provided. Set MASTER_KEY environment variable.")
+        self._secrets_file = Path('data/.secrets.enc')
+        self._salt_file = Path('data/.salt')
+        self._cache: Dict[str, Any] = {}
+        
+        # Get key rotation service
+        self._key_rotation_service = get_key_rotation_service()
+        
+        if master_key:
+            # Legacy mode: explicit master key provided
+            self.master_key = master_key
+            self._use_key_rotation = False
+        else:
+            # New mode: use key rotation service
+            self._use_key_rotation = True
+            # Get or generate master key from rotation service
+            master_key_id = self._key_rotation_service.get_active_key_id('master')
+            if not master_key_id:
+                # Generate initial master key
+                master_key_id, _ = self._key_rotation_service.generate_key('master')
+                logger.info("Generated initial master key via rotation service")
+            
+            # Get key material
+            key_material = self._key_rotation_service.get_key(master_key_id)
+            if not key_material:
+                raise ValueError("Failed to get master key from rotation service")
+            
+            self.master_key = key_material.decode('utf-8')
+            self._master_key_id = master_key_id
         
         self._fernet = self._create_fernet(self.master_key)
-        self._secrets_file = Path('data/.secrets.enc')
-        self._cache: Dict[str, Any] = {}
     
+    def _get_or_create_salt(self) -> bytes:
+        """Get existing salt or create a new cryptographically secure one."""
+        if self._salt_file.exists():
+            try:
+                with open(self._salt_file, 'rb') as f:
+                    salt = f.read()
+                if len(salt) == 32:  # Verify salt is correct length
+                    return salt
+                logger.warning("Invalid salt length found, generating new salt")
+            except Exception as e:
+                logger.error(f"Failed to read salt file: {e}")
+        
+        # Generate cryptographically secure random salt
+        salt = secrets.token_bytes(32)
+        
+        # Ensure directory exists with proper permissions
+        self._salt_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        
+        # Save salt with restrictive permissions
+        try:
+            with open(self._salt_file, 'wb') as f:
+                f.write(salt)
+            os.chmod(self._salt_file, 0o600)
+            logger.info("New cryptographic salt generated and stored securely")
+        except Exception as e:
+            logger.error(f"Failed to save salt: {e}")
+            raise
+        
+        return salt
+
     def _create_fernet(self, master_key: str) -> Fernet:
-        """Create Fernet cipher from master key."""
-        # Derive a proper key from the master key
+        """Create Fernet cipher from master key with secure salt."""
+        salt = self._get_or_create_salt()
+        
+        # Use 600,000 iterations (2024 OWASP recommendation)
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
-            salt=b'legislativo-salt',  # In production, use a random salt
-            iterations=100000,
+            salt=salt,
+            iterations=600000,  # Increased from 100k to meet 2024 standards
         )
         key = base64.urlsafe_b64encode(kdf.derive(master_key.encode()))
         return Fernet(key)
@@ -103,13 +161,41 @@ class SecretsManager:
         
         return value
     
+    def _validate_secret_input(self, key: str, value: Any) -> None:
+        """Validate secret key and value inputs."""
+        if not key or not isinstance(key, str):
+            raise ValueError("Secret key must be a non-empty string")
+        
+        if len(key) > 255:
+            raise ValueError("Secret key must be 255 characters or less")
+        
+        # Validate key format (alphanumeric + underscores only)
+        if not key.replace('_', '').replace('-', '').isalnum():
+            raise ValueError("Secret key must contain only alphanumeric characters, underscores, and hyphens")
+        
+        if value is None:
+            raise ValueError("Secret value cannot be None")
+        
+        # Serialize to check size
+        try:
+            serialized = json.dumps(value)
+            if len(serialized.encode('utf-8')) > 10 * 1024 * 1024:  # 10MB limit
+                raise ValueError("Secret value too large (max 10MB)")
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Secret value must be JSON serializable: {e}")
+
     def set_secret(self, key: str, value: Any) -> None:
-        """Set a secret value.
+        """Set a secret value with validation.
         
         Args:
-            key: Secret key
-            value: Secret value
+            key: Secret key (alphanumeric + underscores/hyphens, max 255 chars)
+            value: Secret value (JSON serializable, max 10MB)
+            
+        Raises:
+            ValueError: If key or value validation fails
         """
+        self._validate_secret_input(key, value)
+        
         secrets = self._load_secrets()
         secrets[key] = value
         self._save_secrets(secrets)
@@ -147,26 +233,69 @@ class SecretsManager:
         secrets = self._load_secrets()
         return list(secrets.keys())
     
+    def _validate_master_key_strength(self, key: str) -> None:
+        """Validate master key meets security requirements."""
+        if not key or not isinstance(key, str):
+            raise ValueError("Master key must be a non-empty string")
+        
+        if len(key) < 32:
+            raise ValueError("Master key must be at least 32 characters long")
+        
+        # Check for basic complexity
+        has_upper = any(c.isupper() for c in key)
+        has_lower = any(c.islower() for c in key)
+        has_digit = any(c.isdigit() for c in key)
+        has_special = any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in key)
+        
+        complexity_count = sum([has_upper, has_lower, has_digit, has_special])
+        if complexity_count < 3:
+            raise ValueError("Master key must contain at least 3 of: uppercase, lowercase, digits, special characters")
+
     def rotate_master_key(self, new_master_key: str) -> None:
-        """Rotate the master encryption key.
+        """Rotate the master encryption key with validation.
         
         Args:
-            new_master_key: New master key
+            new_master_key: New master key (min 32 chars, complex)
+            
+        Raises:
+            ValueError: If new master key doesn't meet security requirements
         """
+        self._validate_master_key_strength(new_master_key)
+        
         # Load all secrets with current key
         secrets = self._load_secrets()
         
-        # Create new cipher
-        self._fernet = self._create_fernet(new_master_key)
-        self.master_key = new_master_key
+        # Generate new salt for the new key
+        old_salt_file = self._salt_file
+        backup_salt_file = self._salt_file.with_suffix('.backup')
         
-        # Re-encrypt with new key
-        self._save_secrets(secrets)
-        
-        # Clear cache
-        self._cache.clear()
-        
-        logger.info("Master key rotated successfully")
+        try:
+            # Backup current salt
+            if old_salt_file.exists():
+                old_salt_file.rename(backup_salt_file)
+            
+            # Create new cipher with new key and new salt
+            self._fernet = self._create_fernet(new_master_key)
+            self.master_key = new_master_key
+            
+            # Re-encrypt with new key
+            self._save_secrets(secrets)
+            
+            # Remove backup salt after successful rotation
+            if backup_salt_file.exists():
+                backup_salt_file.unlink()
+            
+            # Clear cache
+            self._cache.clear()
+            
+            logger.info("Master key rotated successfully with new salt")
+            
+        except Exception as e:
+            # Restore old salt on failure
+            if backup_salt_file.exists():
+                backup_salt_file.rename(old_salt_file)
+            logger.error(f"Master key rotation failed: {e}")
+            raise
 
 
 class VaultSecretsManager(SecretsManager):

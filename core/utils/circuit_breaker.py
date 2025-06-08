@@ -186,15 +186,17 @@ class CircuitBreakerManager:
         return self.breakers[name]
     
     def call_with_breaker(self, name: str, func: Callable, *args, **kwargs) -> Any:
-        """Execute function with circuit breaker protection"""
+        """Execute synchronous function with circuit breaker protection"""
         breaker = self.get_breaker(name)
-        # Check if function is async
+        
         if asyncio.iscoroutinefunction(func):
-            # Return the coroutine for async functions
-            return breaker.execute(func, *args, **kwargs)
-        else:
-            # Execute sync functions directly
-            return breaker.execute_sync(func, *args, **kwargs)
+            raise TypeError(
+                f"Async function {func.__name__} passed to sync call_with_breaker. "
+                f"Use async_call_with_breaker instead."
+            )
+        
+        # Execute sync functions only
+        return breaker.execute_sync(func, *args, **kwargs)
     
     def get_all_stats(self) -> Dict[str, Dict[str, Any]]:
         """Get statistics for all circuit breakers"""
@@ -205,8 +207,8 @@ class CircuitBreakerManager:
         for breaker in self.breakers.values():
             breaker.reset()
     
-    async def call_with_breaker(self, name: str, func: Callable, *args, **kwargs) -> Any:
-        """Execute function with named circuit breaker"""
+    async def async_call_with_breaker(self, name: str, func: Callable, *args, **kwargs) -> Any:
+        """Execute async function with named circuit breaker"""
         breaker = self.get_breaker(name)
         return await breaker.execute(func, *args, **kwargs)
 

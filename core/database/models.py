@@ -358,19 +358,22 @@ class DatabaseOptimizer:
 
 # Query optimization helpers
 class OptimizedQueries:
-    """Pre-optimized database queries"""
+    """Pre-optimized database queries with aggressive eager loading"""
     
     @staticmethod
     def search_propositions(session: Session, query: str, filters: Dict[str, Any] = None, 
                           limit: int = 25, offset: int = 0) -> List[Proposition]:
-        """Optimized proposition search with filters"""
+        """Optimized proposition search with filters and eager loading"""
         
-        # Start with base query including joins for better performance
+        from sqlalchemy.orm import joinedload, selectinload, contains_eager
+        
+        # CRITICAL: Eliminate N+1 queries with aggressive eager loading
         base_query = session.query(Proposition).options(
             # Eager load relationships to avoid N+1 queries
-            # joinedload(Proposition.authors),
-            # joinedload(Proposition.keywords),
-            # joinedload(Proposition.source)
+            joinedload(Proposition.source),               # Small, always needed
+            selectinload(Proposition.authors),            # Medium collection
+            selectinload(Proposition.keywords),           # Medium collection  
+            selectinload(Proposition.search_logs)         # Large collection, load separately
         )
         
         # Apply text search
@@ -410,13 +413,19 @@ class OptimizedQueries:
     
     @staticmethod
     def get_trending_propositions(session: Session, days: int = 7, limit: int = 10) -> List[Proposition]:
-        """Get trending propositions based on recent activity"""
+        """Get trending propositions based on recent activity with eager loading"""
+        
+        from sqlalchemy.orm import joinedload, selectinload
         
         cutoff_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         cutoff_date = cutoff_date.replace(day=cutoff_date.day - days)
         
-        # Get propositions with most clicks in the period
-        trending = session.query(Proposition).join(SearchLog).filter(
+        # Get propositions with most clicks in the period - OPTIMIZED with eager loading
+        trending = session.query(Proposition).options(
+            joinedload(Proposition.source),      # Always needed for display
+            selectinload(Proposition.authors),   # For trending display
+            selectinload(Proposition.keywords)   # For trending context
+        ).join(SearchLog).filter(
             SearchLog.clicked_proposition_id == Proposition.id,
             SearchLog.timestamp >= cutoff_date
         ).group_by(Proposition.id).order_by(
@@ -459,3 +468,62 @@ class OptimizedQueries:
             'click_through_rate': (analytics.total_clicks / analytics.total_searches * 100) if analytics.total_searches else 0,
             'top_queries': [{'query': q.normalized_query, 'count': q.frequency} for q in top_queries]
         }
+
+
+class KeyRotationLog(Base):
+    """Audit trail for cryptographic key operations"""
+    __tablename__ = 'key_rotation_logs'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key_id = Column(String(255), nullable=False, index=True)
+    key_type = Column(String(50), nullable=False, index=True)
+    operation = Column(String(50), nullable=False)  # generate, rotate, compromise, cleanup
+    timestamp = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, index=True)
+    details = Column(JSON)  # Additional operation details
+    performed_by = Column(String(100), nullable=False)  # User or 'system'
+    
+    # Composite index for audit queries
+    __table_args__ = (
+        Index('idx_key_rotation_type_time', 'key_type', 'timestamp'),
+        Index('idx_key_rotation_operation', 'operation', 'timestamp'),
+    )
+    
+    def __repr__(self):
+        return f"<KeyRotationLog(key_id={self.key_id}, operation={self.operation}, timestamp={self.timestamp})>"
+
+
+class SecurityEvent(Base):
+    """Security event log for SIEM integration and threat analysis"""
+    __tablename__ = 'security_events'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    event_id = Column(String(100), unique=True, nullable=False, index=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    event_type = Column(String(50), nullable=False, index=True)
+    threat_level = Column(Integer, nullable=False, index=True)  # 1-5 scale
+    user_id = Column(String(50), ForeignKey('users.id'), nullable=True, index=True)
+    ip_address = Column(String(45), nullable=True, index=True)  # IPv6 ready
+    user_agent = Column(Text, nullable=True)
+    endpoint = Column(String(255), nullable=True, index=True)
+    method = Column(String(10), nullable=True)
+    status_code = Column(Integer, nullable=True)
+    details = Column(Text, nullable=True)  # JSON string
+    geo_location = Column(Text, nullable=True)  # JSON string
+    risk_score = Column(Float, nullable=False, default=0.0, index=True)
+    indicators = Column(Text, nullable=True)  # JSON array
+    raw_data = Column(Text, nullable=True)  # For forensics
+    
+    # Relationships
+    user = relationship("User", backref="security_events")
+    
+    # Composite indexes for security queries
+    __table_args__ = (
+        Index('idx_security_event_type_time', 'event_type', 'timestamp'),
+        Index('idx_security_event_user_time', 'user_id', 'timestamp'),
+        Index('idx_security_event_ip_time', 'ip_address', 'timestamp'),
+        Index('idx_security_event_threat', 'threat_level', 'timestamp'),
+        Index('idx_security_event_risk', 'risk_score', 'timestamp'),
+    )
+    
+    def __repr__(self):
+        return f"<SecurityEvent(event_id={self.event_id}, type={self.event_type}, threat={self.threat_level})>"
