@@ -49,7 +49,8 @@
       "Bash(rg:*)",
       "Bash(openssl rand:*)",
       "Bash(./deploy-security-fixes.sh:*)",
-      "Bash(./scripts/pre-deploy-check.sh:*)"
+      "Bash(./scripts/pre-deploy-check.sh:*)",
+      "Bash(./scripts/deploy-production.sh:*)"
     ]
   },
   "enableAllProjectMcpServers": false
