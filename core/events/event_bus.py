@@ -96,7 +96,7 @@ class EventHandler:
         self.error_count = 0
         
     async def handle(self, event: Event) -> Any:
-        """Execute handler if event matches criteria"""
+        """Execute handler if event matches criteria - DEADLOCK PROTECTED"""
         # Check event type
         if event.type not in self.event_types:
             return None
@@ -111,7 +111,10 @@ class EventHandler:
             if asyncio.iscoroutinefunction(self.handler):
                 return await self.handler(event)
             else:
-                return self.handler(event)
+                # CRITICAL FIX: Run sync handlers in thread pool to prevent deadlocks
+                # Sync handlers can't block the event loop or cause async/sync mixing issues
+                loop = asyncio.get_running_loop()
+                return await loop.run_in_executor(None, self.handler, event)
         except Exception as e:
             self.error_count += 1
             logger.error(f"Event handler error: {e}", exc_info=True)

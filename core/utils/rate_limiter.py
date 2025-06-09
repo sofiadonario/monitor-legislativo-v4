@@ -243,10 +243,10 @@ class RedisRateLimiter:
     def check_rate_limit(self, key: str) -> RateLimitResult:
         """Check rate limit using Redis"""
         if not self._is_available():
-            # Fallback: allow request but log warning
-            logger.warning("Redis unavailable, allowing request")
+            # SECURITY FIX: Redis unavailable = DENY requests (was allowing all)
+            logger.error("CRITICAL: Redis unavailable, DENYING request for security")
             return RateLimitResult(
-                allowed=True,
+                allowed=False,
                 remaining=0,
                 reset_time=int(time.time() + 60)
             )
@@ -310,11 +310,12 @@ class RedisRateLimiter:
             
         except Exception as e:
             logger.error(f"Redis rate limit error: {e}")
-            # Fallback: allow request
+            # SECURITY FIX: Redis errors = DENY requests (was allowing all)
             return RateLimitResult(
-                allowed=True,
+                allowed=False,
                 remaining=0,
-                reset_time=int(time.time() + 60)
+                reset_time=int(time.time() + 60),
+                retry_after=60
             )
 
 class QuotaManager:

@@ -18,7 +18,7 @@ Your AWS root account should only be used for:
 ### 1.2 Create New User
 1. Click **"Users"** in the left sidebar
 2. Click **"Add users"**
-3. Enter username: `monitor-legislativo-admin`
+3. Enter username: `mackmonitor`
 4. Select access type: **"Programmatic access"** ✅
 5. Optionally also select **"AWS Management Console access"** if you want web access
 

@@ -360,7 +360,10 @@ class IntelligentCache:
         cache_level: CacheLevel = CacheLevel.L2_WARM,
         version: int = 1
     ) -> Any:
-        """Get value from cache or compute and cache it."""
+        """Get value from cache or compute and cache it - STAMPEDE PROTECTED."""
+        
+        cache_key = self._generate_cache_key(namespace, key, version)
+        lock_key = f"{cache_key}:lock"
         
         # Try to get from cache first
         value = self.get(key, namespace, version)
@@ -368,18 +371,59 @@ class IntelligentCache:
         if value is not None:
             return value
         
-        # Cache miss - compute value
+        # CRITICAL FIX: Cache stampede protection using Redis locks
+        # Prevent multiple requests from computing the same expensive value
         try:
-            computed_value = factory_func()
+            # Acquire distributed lock with 30-second timeout
+            lock_acquired = self.redis_client.set(
+                lock_key, 
+                "locked", 
+                nx=True,  # Only set if not exists
+                ex=30     # Expire in 30 seconds (prevent deadlock)
+            )
             
-            # Cache the computed value
-            self.set(key, computed_value, ttl, namespace, cache_level, version)
+            if lock_acquired:
+                # We got the lock - check cache again (double-check locking pattern)
+                value = self.get(key, namespace, version)
+                if value is not None:
+                    # Another request computed it while we were waiting
+                    self.redis_client.delete(lock_key)  # Release lock
+                    return value
+                
+                try:
+                    # Compute the value (we're the only one doing this)
+                    computed_value = factory_func()
+                    
+                    # Cache the computed value
+                    self.set(key, computed_value, ttl, namespace, cache_level, version)
+                    
+                    return computed_value
+                    
+                finally:
+                    # Always release the lock
+                    self.redis_client.delete(lock_key)
             
-            return computed_value
+            else:
+                # Another request is computing - wait a bit and retry
+                time.sleep(0.1 + (time.time() % 0.1))  # Random jitter 0.1-0.2s
+                
+                # Check cache again (other request might have finished)
+                value = self.get(key, namespace, version)
+                if value is not None:
+                    return value
+                
+                # If still no value, fall back to computing (lock might be stale)
+                logger.warning(f"Cache lock timeout for key {cache_key}, falling back to direct computation")
+                computed_value = factory_func()
+                self.set(key, computed_value, ttl, namespace, cache_level, version)
+                return computed_value
             
         except Exception as e:
-            logger.error(f"Factory function failed for cache key {key}: {e}")
-            raise
+            logger.error(f"Cache stampede protection failed for key {cache_key}: {e}")
+            # Fallback to direct computation
+            computed_value = factory_func()
+            self.set(key, computed_value, ttl, namespace, cache_level, version)
+            return computed_value
     
     async def aget_or_set(
         self,
@@ -390,7 +434,10 @@ class IntelligentCache:
         cache_level: CacheLevel = CacheLevel.L2_WARM,
         version: int = 1
     ) -> Any:
-        """Async version of get_or_set."""
+        """Async version of get_or_set - STAMPEDE PROTECTED."""
+        
+        cache_key = self._generate_cache_key(namespace, key, version)
+        lock_key = f"{cache_key}:lock"
         
         # Try to get from cache first
         value = await self.aget(key, namespace, version)
@@ -398,18 +445,59 @@ class IntelligentCache:
         if value is not None:
             return value
         
-        # Cache miss - compute value
+        # CRITICAL FIX: Async cache stampede protection using Redis locks
+        # Prevent multiple async requests from computing the same expensive value
         try:
-            computed_value = await async_factory_func()
+            # Acquire distributed lock with 30-second timeout
+            lock_acquired = await self.async_redis_client.set(
+                lock_key, 
+                "locked", 
+                nx=True,  # Only set if not exists
+                ex=30     # Expire in 30 seconds (prevent deadlock)
+            )
             
-            # Cache the computed value
-            await self.aset(key, computed_value, ttl, namespace, cache_level, version)
+            if lock_acquired:
+                # We got the lock - check cache again (double-check locking pattern)
+                value = await self.aget(key, namespace, version)
+                if value is not None:
+                    # Another request computed it while we were waiting
+                    await self.async_redis_client.delete(lock_key)  # Release lock
+                    return value
+                
+                try:
+                    # Compute the value (we're the only one doing this)
+                    computed_value = await async_factory_func()
+                    
+                    # Cache the computed value
+                    await self.aset(key, computed_value, ttl, namespace, cache_level, version)
+                    
+                    return computed_value
+                    
+                finally:
+                    # Always release the lock
+                    await self.async_redis_client.delete(lock_key)
             
-            return computed_value
+            else:
+                # Another request is computing - wait a bit and retry
+                await asyncio.sleep(0.1 + (time.time() % 0.1))  # Random jitter 0.1-0.2s
+                
+                # Check cache again (other request might have finished)
+                value = await self.aget(key, namespace, version)
+                if value is not None:
+                    return value
+                
+                # If still no value, fall back to computing (lock might be stale)
+                logger.warning(f"Async cache lock timeout for key {cache_key}, falling back to direct computation")
+                computed_value = await async_factory_func()
+                await self.aset(key, computed_value, ttl, namespace, cache_level, version)
+                return computed_value
             
         except Exception as e:
-            logger.error(f"Async factory function failed for cache key {key}: {e}")
-            raise
+            logger.error(f"Async cache stampede protection failed for key {cache_key}: {e}")
+            # Fallback to direct computation
+            computed_value = await async_factory_func()
+            await self.aset(key, computed_value, ttl, namespace, cache_level, version)
+            return computed_value
     
     async def aget(self, key: str, namespace: str = "default", version: int = 1) -> Optional[Any]:
         """Async get value from cache."""

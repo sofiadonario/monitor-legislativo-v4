@@ -20,7 +20,7 @@ from .regulatory_agencies import (
 )
 from ..models.models import SearchResult, APIStatus, DataSource
 from ..config.config import Config
-from ..utils.smart_cache import cached as smart_cache\nfrom ..utils.smart_cache import cached
+from ..utils.smart_cache import cached as smart_cache
 
 
 class APIService:

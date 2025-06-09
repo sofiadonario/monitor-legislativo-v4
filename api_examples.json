@@ -1,0 +1,42 @@
+{
+  "working_examples": {
+    "simple_search": {
+      "url": "https://www.lexml.gov.br/busca/SRU?operation=searchRetrieve&version=1.1&query=urn any transporte&maximumRecords=50",
+      "description": "Basic search for 'transporte' in any field"
+    },
+    "federal_laws": {
+      "url": "https://www.lexml.gov.br/busca/SRU?operation=searchRetrieve&version=1.1&query=autoridade=Federal and tipoDocumento=Lei&maximumRecords=100",
+      "description": "Search for federal laws only"
+    },
+    "date_range": {
+      "url": "https://www.lexml.gov.br/busca/SRU?operation=searchRetrieve&version=1.1&query=date >= 2020 and date <= 2024&maximumRecords=50",
+      "description": "Search by date range"
+    },
+    "complex_query": {
+      "url": "https://www.lexml.gov.br/busca/SRU?operation=searchRetrieve&version=1.1&query=subject any transporte and subject any carga and autoridade=Federal",
+      "description": "Complex search with multiple conditions"
+    }
+  },
+  "cql_operators": {
+    "any": "Contains word",
+    "all": "Contains all words", 
+    "=": "Exact match",
+    ">=": "Greater than or equal",
+    "<=": "Less than or equal"
+  },
+  "available_fields": {
+    "urn": "Document identifier",
+    "date": "Publication date",
+    "subject": "Document subject",
+    "tipoDocumento": "Document type (Lei, Decreto, etc.)",
+    "autoridade": "Authority level (Federal, Estadual, Municipal)",
+    "localidade": "Location/jurisdiction",
+    "title": "Document title"
+  },
+  "response_format": "XML with Dublin Core metadata",
+  "known_issues": {
+    "500_errors": "API frequently returns 500 Internal Server Error",
+    "timeout": "Some queries timeout after 30 seconds",
+    "encoding": "Responses use ISO-8859-1 encoding, not UTF-8"
+  }
+}

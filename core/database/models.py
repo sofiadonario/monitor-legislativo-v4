@@ -296,21 +296,39 @@ class DatabaseOptimizer:
             logger.error(f"Error getting index stats: {e}")
             return {}
     
-    def optimize_search_vectors(self):
-        """Update search vectors for all propositions"""
+    def optimize_search_vectors(self, batch_size: int = 1000):
+        """Update search vectors for all propositions - PERFORMANCE FIXED: O(N) instead of O(N²)"""
         try:
-            propositions = self.session.query(Proposition).all()
+            from sqlalchemy.orm import selectinload
             
-            for prop in propositions:
-                # Create search vector from title, summary, and keywords
-                search_parts = [prop.title, prop.summary or '']
-                if prop.keywords:
-                    search_parts.extend([kw.term for kw in prop.keywords])
+            # Get total count for progress tracking
+            total_count = self.session.query(Proposition).count()
+            updated_count = 0
+            
+            # CRITICAL FIX: Process in batches with eager loading to prevent O(N²) death spiral
+            for offset in range(0, total_count, batch_size):
+                # Load batch with keywords eager loaded (prevents N+1 keyword queries)
+                batch = self.session.query(Proposition).options(
+                    selectinload(Proposition.keywords)  # FIXED: Eager load keywords to avoid N+1
+                ).offset(offset).limit(batch_size).all()
                 
-                prop.search_vector = ' '.join(search_parts).lower()
+                for prop in batch:
+                    # Create search vector from title, summary, and pre-loaded keywords
+                    search_parts = [prop.title, prop.summary or '']
+                    if prop.keywords:
+                        # Keywords are already loaded, no additional query
+                        search_parts.extend([kw.term for kw in prop.keywords])
+                    
+                    prop.search_vector = ' '.join(search_parts).lower()
+                
+                # Commit each batch to prevent massive transaction locks
+                self.session.commit()
+                updated_count += len(batch)
+                
+                if updated_count % 5000 == 0:  # Progress log every 5k records
+                    logger.info(f"Updated search vectors: {updated_count}/{total_count} propositions")
             
-            self.session.commit()
-            logger.info(f"Updated search vectors for {len(propositions)} propositions")
+            logger.info(f"PERFORMANCE FIX: Updated search vectors for {updated_count} propositions in batches (O(N) instead of O(N²))")
             
         except Exception as e:
             logger.error(f"Error updating search vectors: {e}")
@@ -367,13 +385,14 @@ class OptimizedQueries:
         
         from sqlalchemy.orm import joinedload, selectinload, contains_eager
         
-        # CRITICAL: Eliminate N+1 queries with aggressive eager loading
+        # PERFORMANCE FIX: Optimized eager loading strategy (FIXED N+1 DEATH TRAP)
         base_query = session.query(Proposition).options(
-            # Eager load relationships to avoid N+1 queries
-            joinedload(Proposition.source),               # Small, always needed
-            selectinload(Proposition.authors),            # Medium collection
-            selectinload(Proposition.keywords),           # Medium collection  
-            selectinload(Proposition.search_logs)         # Large collection, load separately
+            # Core relationships - always needed
+            joinedload(Proposition.source),               # Small reference table
+            selectinload(Proposition.authors),            # Limited authors per proposition
+            selectinload(Proposition.keywords),           # Limited keywords per proposition
+            # FIXED: NEVER load search_logs - they're massive and rarely needed
+            # selectinload(Proposition.search_logs)       # REMOVED: Was causing massive N+1 queries
         )
         
         # Apply text search

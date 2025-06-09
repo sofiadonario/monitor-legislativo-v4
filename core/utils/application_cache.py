@@ -12,6 +12,7 @@ import hashlib
 import json
 import logging
 import time
+import threading
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union, Callable
@@ -68,7 +69,7 @@ class CacheEntry:
 
 
 class MemoryCache:
-    """High-performance in-memory cache"""
+    """High-performance in-memory cache - MEMORY LEAK FIXED"""
     
     def __init__(self, max_size: int = 1000, max_memory_mb: int = 100):
         self.max_size = max_size
@@ -76,6 +77,12 @@ class MemoryCache:
         self.cache: Dict[str, CacheEntry] = {}
         self.current_memory = 0
         self.lock = Lock()
+        
+        # CRITICAL FIX: Add background cleanup to prevent memory leak from expired entries
+        self._cleanup_interval = 60  # Clean up every 60 seconds
+        self._cleanup_thread = None
+        self._shutdown_event = threading.Event()
+        self._start_cleanup_thread()
         
         # Attribution
         self.project_attribution = {
@@ -185,6 +192,46 @@ class MemoryCache:
             return len(pickle.dumps(value))
         except Exception:
             return len(str(value).encode('utf-8'))
+    
+    def _start_cleanup_thread(self):
+        """Start background thread for cleaning up expired entries - MEMORY LEAK FIX"""
+        def cleanup_worker():
+            while not self._shutdown_event.wait(self._cleanup_interval):
+                try:
+                    self._cleanup_expired_entries()
+                except Exception as e:
+                    logger.error(f"Memory cache cleanup error: {e}")
+        
+        self._cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
+        self._cleanup_thread.start()
+        logger.info("Memory cache cleanup thread started")
+    
+    def _cleanup_expired_entries(self):
+        """Remove all expired entries from cache - PREVENTS MEMORY LEAK"""
+        with self.lock:
+            expired_keys = []
+            now = datetime.now()
+            
+            for key, entry in self.cache.items():
+                if entry.is_expired():
+                    expired_keys.append(key)
+            
+            # Remove expired entries
+            removed_count = 0
+            for key in expired_keys:
+                self._remove_entry(key)
+                removed_count += 1
+            
+            if removed_count > 0:
+                logger.debug(f"Cleaned up {removed_count} expired cache entries, "
+                           f"memory freed: {removed_count * 1024} bytes approx")
+    
+    def shutdown(self):
+        """Shutdown cache and cleanup resources"""
+        self._shutdown_event.set()
+        if self._cleanup_thread and self._cleanup_thread.is_alive():
+            self._cleanup_thread.join(timeout=5)
+        logger.info("Memory cache shutdown completed")
 
 
 class RedisCache:

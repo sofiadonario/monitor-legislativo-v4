@@ -22,16 +22,21 @@ PATTERNS = {
     'document_id': re.compile(r'^[a-zA-Z0-9_-]+$')
 }
 
-# Comprehensive SQL injection patterns to block (case-insensitive)
+# COMPREHENSIVE SQL injection patterns to block (case-insensitive)
+# UPDATED: Enhanced to prevent bypass techniques
 SQL_INJECTION_PATTERNS = [
-    # Basic SQL keywords
+    # Basic SQL keywords (with bypass protection)
     r"(?i)\b(union|select|insert|update|delete|drop|create|alter|exec|execute|grant|revoke)\b",
+    r"(?i)u\s*n\s*i\s*o\s*n",  # Spaced bypass
+    r"(?i)s\s*e\s*l\s*e\s*c\s*t",  # Spaced bypass
     # Advanced SQL keywords  
     r"(?i)\b(declare|cursor|procedure|function|trigger|view|index|table|database|schema)\b",
     # SQL comments and terminators
     r"(--|#|\/\*|\*\/|;)",
+    r"\/\*.*?\*\/",  # Block comment patterns
     # SQL operators and special chars
     r"(\|\||&&|@@|@)",
+    r"(\+\+|--|\|\|)",  # Additional operators
     # Extended stored procedures
     r"(?i)(xp_|sp_|fn_|sys\.)",
     # SQL functions that can be dangerous
@@ -44,10 +49,21 @@ SQL_INJECTION_PATTERNS = [
     r"(?i)(information_schema|sysobjects|syscolumns|pg_tables)",
     # Boolean-based blind injection
     r"(?i)(\s+and\s+\d+=\d+|\s+or\s+\d+=\d+)",
+    r"(?i)(\s+and\s+\w+\s*=\s*\w+|\s+or\s+\w+\s*=\s*\w+)",
     # Script injection (mixed with SQL)
     r"(?i)(script\s*:|javascript\s*:|vbscript\s*:)",
     # Event handlers
-    r"(?i)(on\w+\s*=)"
+    r"(?i)(on\w+\s*=)",
+    # Additional SQL injection patterns
+    r"(?i)\b(load_file|into\s+outfile|into\s+dumpfile)\b",
+    r"(?i)\b(group\s+by|order\s+by|having|limit)\b.*[\'\"]",
+    r"(?i)(0x[0-9a-f]+)",  # Hex encoding
+    r"(?i)(char\(\d+\))",  # Character function
+    r"[\'\"][^\'\"]*[\'\"].*[\'\"]",  # Quote manipulation
+    # Unicode and encoding bypasses
+    r"(%[0-9a-f]{2}){3,}",  # URL encoded patterns
+    r"(\\x[0-9a-f]{2}){3,}",  # Hex encoded patterns
+    r"(&#x?[0-9a-f]+;){3,}",  # HTML entity patterns
 ]
 
 # Comprehensive XSS patterns to block (case-insensitive)

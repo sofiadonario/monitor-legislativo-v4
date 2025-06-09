@@ -1,0 +1,407 @@
+# ===============================================================
+# PRODUCTION ALERTS CONFIGURATION
+# Monitor Legislativo v4 - Brazilian Government Transport System
+# ===============================================================
+#
+# This file defines comprehensive alerting rules for production
+# monitoring, including security events, performance issues,
+# and government API compliance monitoring.
+#
+
+groups:
+  # ============================================
+  # CRITICAL SYSTEM ALERTS
+  # ============================================
+  - name: system_critical
+    interval: 30s
+    rules:
+      - alert: ApplicationDown
+        expr: up{job="monitor_legislativo"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: monitor_legislativo_v4
+        annotations:
+          summary: "Monitor Legislativo application is down"
+          description: "The main application has been down for more than 1 minute"
+          runbook: "https://docs.monitor-legislativo.gov.br/runbooks/application-down"
+          
+      - alert: DatabaseConnectionFailure
+        expr: postgres_up{instance="monitor-db"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connection failure"
+          description: "Cannot connect to PostgreSQL database for {{ $value }} minutes"
+          
+      - alert: RedisConnectionFailure
+        expr: redis_up{instance="monitor-redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis connection failure"
+          description: "Cannot connect to Redis cache for {{ $value }} minutes"
+
+  # ============================================
+  # PERFORMANCE ALERTS
+  # ============================================
+  - name: performance_monitoring
+    interval: 1m
+    rules:
+      - alert: HighResponseTime
+        expr: avg_over_time(http_request_duration_seconds[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High API response time"
+          description: "Average response time is {{ $value }}s over 5 minutes"
+          
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} over 5 minutes"
+          
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+          
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% for more than 10 minutes"
+          
+      - alert: DiskSpaceRunningOut
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Disk space running low"
+          description: "Disk usage is {{ $value | humanizePercentage }}"
+
+  # ============================================
+  # GOVERNMENT API MONITORING
+  # ============================================
+  - name: government_apis
+    interval: 2m
+    rules:
+      - alert: ANTTAPIDown
+        expr: government_api_up{api_name="antt"} == 0
+        for: 5m
+        labels:
+          severity: high
+          service: government_api
+          api: antt
+        annotations:
+          summary: "ANTT API is not responding"
+          description: "ANTT government API has been unreachable for {{ $value }} minutes"
+          impact: "Transport regulatory data updates stopped"
+          
+      - alert: DOUAPIDown
+        expr: government_api_up{api_name="dou"} == 0
+        for: 5m
+        labels:
+          severity: high
+          service: government_api
+          api: dou
+        annotations:
+          summary: "DOU API is not responding"
+          description: "Diário Oficial da União API has been unreachable for {{ $value }} minutes"
+          impact: "Official publication monitoring stopped"
+          
+      - alert: CamaraAPIDown
+        expr: government_api_up{api_name="camara"} == 0
+        for: 10m
+        labels:
+          severity: medium
+          service: government_api
+          api: camara
+        annotations:
+          summary: "Câmara dos Deputados API issues"
+          description: "Câmara API has been unreachable for {{ $value }} minutes"
+          
+      - alert: SenadoAPIDown
+        expr: government_api_up{api_name="senado"} == 0
+        for: 10m
+        labels:
+          severity: medium
+          service: government_api
+          api: senado
+        annotations:
+          summary: "Senado Federal API issues"
+          description: "Senado API has been unreachable for {{ $value }} minutes"
+          
+      - alert: GovernmentAPIRateLimitWarning
+        expr: government_api_rate_limit_remaining / government_api_rate_limit_total < 0.2
+        for: 1m
+        labels:
+          severity: warning
+          service: government_api
+        annotations:
+          summary: "Government API rate limit warning"
+          description: "{{ $labels.api_name }} API rate limit at {{ $value | humanizePercentage }} remaining"
+          action: "Reduce scraping frequency automatically"
+
+  # ============================================
+  # SECURITY ALERTS
+  # ============================================
+  - name: security_monitoring
+    interval: 30s
+    rules:
+      - alert: SecurityEventDetected
+        expr: increase(security_events_total[1m]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Multiple security events detected"
+          description: "{{ $value }} security events in the last minute"
+          
+      - alert: FailedLoginAttempts
+        expr: increase(failed_login_attempts_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: high
+          service: authentication
+        annotations:
+          summary: "High number of failed login attempts"
+          description: "{{ $value }} failed login attempts in 5 minutes from {{ $labels.source_ip }}"
+          
+      - alert: SuspiciousAPIUsage
+        expr: rate(http_requests_total{endpoint=~"/api/.*"}[5m]) > 100
+        for: 3m
+        labels:
+          severity: warning
+          service: api_security
+        annotations:
+          summary: "Suspicious API usage pattern"
+          description: "High API request rate: {{ $value }} requests/second"
+          
+      - alert: RateLimitViolation
+        expr: increase(rate_limit_violations_total[1m]) > 3
+        for: 1m
+        labels:
+          severity: warning
+          service: rate_limiting
+        annotations:
+          summary: "Rate limit violations detected"
+          description: "{{ $value }} rate limit violations from {{ $labels.client_ip }}"
+
+  # ============================================
+  # DATA QUALITY ALERTS
+  # ============================================
+  - name: data_quality
+    interval: 5m
+    rules:
+      - alert: NoRecentDocuments
+        expr: time() - max(document_last_created_timestamp) > 3600
+        for: 10m
+        labels:
+          severity: warning
+          service: data_pipeline
+        annotations:
+          summary: "No new documents processed recently"
+          description: "No documents have been processed in the last hour"
+          
+      - alert: DataExtractionFailure
+        expr: increase(extraction_failures_total[10m]) > 5
+        for: 5m
+        labels:
+          severity: high
+          service: data_extraction
+        annotations:
+          summary: "Multiple data extraction failures"
+          description: "{{ $value }} extraction failures in the last 10 minutes"
+          
+      - alert: TransportDataGap
+        expr: time() - max(transport_regulation_last_update) > 7200
+        for: 30m
+        labels:
+          severity: high
+          service: transport_monitoring
+        annotations:
+          summary: "Transport regulation data gap"
+          description: "No transport regulation updates for over 2 hours"
+          impact: "Critical for policy monitoring"
+
+  # ============================================
+  # BUSINESS LOGIC ALERTS
+  # ============================================
+  - name: business_monitoring
+    interval: 10m
+    rules:
+      - alert: LegislationProcessingBacklog
+        expr: legislation_processing_queue_size > 1000
+        for: 15m
+        labels:
+          severity: warning
+          service: processing
+        annotations:
+          summary: "Large legislation processing backlog"
+          description: "{{ $value }} items in processing queue"
+          
+      - alert: GeolocationServiceFailure
+        expr: geolocation_success_rate < 0.8
+        for: 10m
+        labels:
+          severity: medium
+          service: geolocation
+        annotations:
+          summary: "Geolocation service degraded"
+          description: "Success rate is {{ $value | humanizePercentage }}"
+          
+      - alert: EmailNotificationFailure
+        expr: increase(email_notification_failures_total[1h]) > 10
+        for: 5m
+        labels:
+          severity: medium
+          service: notifications
+        annotations:
+          summary: "Email notification failures"
+          description: "{{ $value }} email notifications failed in the last hour"
+
+  # ============================================
+  # COMPLIANCE ALERTS
+  # ============================================
+  - name: compliance_monitoring
+    interval: 15m
+    rules:
+      - alert: LGPDDataRetentionViolation
+        expr: documents_older_than_retention_policy > 0
+        for: 1h
+        labels:
+          severity: high
+          service: compliance
+        annotations:
+          summary: "LGPD data retention policy violation"
+          description: "{{ $value }} documents exceed retention policy"
+          
+      - alert: AuditLogGap
+        expr: time() - max(audit_log_last_entry) > 1800
+        for: 10m
+        labels:
+          severity: high
+          service: audit
+        annotations:
+          summary: "Audit log gap detected"
+          description: "No audit log entries for 30 minutes"
+          
+      - alert: GovernmentAPIComplianceIssue
+        expr: government_api_compliance_score < 0.95
+        for: 1h
+        labels:
+          severity: medium
+          service: compliance
+        annotations:
+          summary: "Government API compliance issue"
+          description: "Compliance score is {{ $value | humanizePercentage }}"
+
+# ===============================================================
+# NOTIFICATION CONFIGURATION
+# ===============================================================
+notification_policies:
+  - match:
+      severity: critical
+    destinations:
+      - webhook: "https://hooks.slack.com/services/XXXXX/CRITICAL"
+      - email: "devops-critical@exemplo.gov.br"
+      - pagerduty: "monitor-legislativo-critical"
+    escalation:
+      - after: 5m
+        email: "cto@exemplo.gov.br"
+      - after: 15m
+        phone: "+5511999999999"
+        
+  - match:
+      severity: high
+    destinations:
+      - webhook: "https://hooks.slack.com/services/XXXXX/HIGH"
+      - email: "devops-high@exemplo.gov.br"
+    escalation:
+      - after: 30m
+        email: "team-lead@exemplo.gov.br"
+        
+  - match:
+      severity: warning
+    destinations:
+      - webhook: "https://hooks.slack.com/services/XXXXX/WARNING"
+      - email: "devops-warnings@exemplo.gov.br"
+    throttling:
+      group_wait: 10s
+      group_interval: 5m
+      repeat_interval: 1h
+      
+  - match:
+      service: government_api
+    destinations:
+      - webhook: "https://hooks.slack.com/services/XXXXX/GOV_API"
+      - email: "data-team@exemplo.gov.br"
+    additional_context:
+      documentation: "https://docs.monitor-legislativo.gov.br/api-status"
+      escalation_procedure: "Contact government API support if issues persist > 1 hour"
+
+# ===============================================================
+# MAINTENANCE WINDOWS
+# ===============================================================
+maintenance_windows:
+  - name: "weekly_maintenance"
+    start: "Sunday 02:00"
+    duration: "2h"
+    timezone: "America/Sao_Paulo"
+    suspend_alerts:
+      - ApplicationDown
+      - DatabaseConnectionFailure
+      
+  - name: "government_api_maintenance"
+    start: "Daily 01:00"
+    duration: "30m"
+    timezone: "America/Sao_Paulo"
+    suspend_alerts:
+      - ANTTAPIDown
+      - DOUAPIDown
+      - CamaraAPIDown
+      - SenadoAPIDown
+
+# ===============================================================
+# ALERT DEPENDENCIES
+# ===============================================================
+alert_dependencies:
+  - parent: ApplicationDown
+    children:
+      - HighResponseTime
+      - HighErrorRate
+      - NoRecentDocuments
+      
+  - parent: DatabaseConnectionFailure
+    children:
+      - NoRecentDocuments
+      - LegislationProcessingBacklog
+      
+  - parent: RedisConnectionFailure
+    children:
+      - HighResponseTime
+      - RateLimitViolation
