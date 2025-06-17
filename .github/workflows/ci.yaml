@@ -54,21 +54,21 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          if [ -f deps.txt ]; then pip install -r deps.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
       - name: Lint with flake8
         run: |
           python -m venv venv
           source venv/bin/activate
-          if [ -f deps.txt ]; then pip install -r deps.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
       - name: Run Python tests
         run: |
           python -m venv venv
           source venv/bin/activate
-          if [ -f deps.txt ]; then pip install -r deps.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
           pytest --cov=core --cov=web --cov=desktop --cov-report=xml --cov-report=term-missing --cov-fail-under=85
         env:
@@ -140,7 +140,7 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          if [ -f deps.txt ]; then pip install -r deps.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
           npm ci
 
@@ -184,7 +184,7 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          if [ -f deps.txt ]; then pip install -r deps.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
           pip install pytest-integration
 
@@ -192,7 +192,7 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          if [ -f deps.txt ]; then pip install -r deps.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
           pytest tests/integration/ -v --tb=short
         env:
@@ -216,7 +216,7 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          if [ -f deps.txt ]; then pip install -r deps.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
       - name: Validate citation formats

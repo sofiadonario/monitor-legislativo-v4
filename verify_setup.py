@@ -24,7 +24,7 @@ print(f"PORT environment variable: {port}")
 def verify_deployment_files():
     """Verify essential files for Railway deployment exist"""
     print("🔍 Verifying essential deployment files...")
-    required_files = ["minimal_app.py", "railway.json", "deps.txt"]
+    required_files = ["minimal_app.py", "railway.json", "requirements.txt"]
     
     missing_files = []
     for f in required_files:

@@ -34,7 +34,7 @@ A comprehensive legislative monitoring system for Brazilian government APIs.
 
 2. **Install dependencies:**
     ```bash
-    pip install -r deps.txt
+    pip install -r requirements.txt
     ```
 
 3. **Run the application:**

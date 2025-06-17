@@ -10,7 +10,9 @@
 - [x] **Clean repository structure**
 - [x] **Remove unnecessary documentation files** 
 - [x] **Fixed remote repository URL** (`monitor-legislativo-v4`)
-- [x] **Optimized `deps.txt`** (uvicorn + FastAPI)
+- [x] **Optimized `requirements.txt`** (uvicorn + FastAPI)
+- [x] **`nixpacks.toml`** configured to use `venv` and `requirements.txt`
+- [x] **`railway.json`** has correct `startCommand` pointing to `.venv/bin/python`
 - [x] **Created proper WSGI entry point** (`wsgi.py`)
 - [x] **Railway configuration** (`railway.json`, `Procfile`)
 
