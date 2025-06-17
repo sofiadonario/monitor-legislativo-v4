@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { mockLegislativeData } from '../data/mock-legislative-data';
 import '../styles/components/Dashboard.css';
 import '../styles/accessibility.css';
@@ -7,9 +7,9 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 
 // Lazy load heavy components
-const OptimizedMap = lazy(() => import('./OptimizedMap'));
-const Sidebar = lazy(() => import('./Sidebar'));
-const ExportPanel = lazy(() => import('./ExportPanel'));
+const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.default })));
+const Sidebar = lazy(() => import('./Sidebar').then(module => ({ default: module.default })));
+const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.default })));
 
 // Dashboard state interface
 interface DashboardState {

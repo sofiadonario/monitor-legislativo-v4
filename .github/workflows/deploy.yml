@@ -36,8 +36,9 @@ jobs:
       run: npm run build
       env:
         # Use GitHub Pages base URL
-        VITE_BASE_URL: /monitor_legislativo_v4/
+        VITE_BASE_URL: /monitor-legislativo-v4/
         VITE_API_URL: ${{ secrets.API_URL }}
+        NODE_ENV: production
         
     - name: Setup Pages
       uses: actions/configure-pages@v4
