@@ -12,8 +12,8 @@ fastapi==0.104.1
 # Uvicorn - ASGI server (preferred for FastAPI async support)
 uvicorn[standard]==0.24.0
 
-# Gunicorn - WSGI server with uvicorn workers (Railway auto-detection)
-gunicorn==21.2.0
+# NOTE: Removed gunicorn - Railway kept trying to use it
+# Using uvicorn directly for simpler deployment
 
 # Python Multipart - Handle file uploads and form data
 # WHY: Required for export functionality and form handling
