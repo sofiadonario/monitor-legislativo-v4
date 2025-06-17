@@ -1,0 +1,6 @@
+/* Dashboard Layout */
+.dashboard {
+  display: flex;
+  height: 100vh;
+  position: relative;
+} 

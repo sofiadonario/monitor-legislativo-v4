@@ -1,0 +1,203 @@
+# Brazilian Legislative Monitor - API Configuration
+# All URLs and endpoints for REAL government data sources
+
+apis:
+  # FEDERAL LEVEL APIS
+  federal:
+    camara:
+      name: "Câmara dos Deputados"
+      base_url: "https://dadosabertos.camara.leg.br/api/v2"
+      rate_limit: 60  # requests per minute
+      docs: "https://dadosabertos.camara.leg.br/swagger/api.html"
+      endpoints:
+        proposicoes: "/proposicoes"
+        deputados: "/deputados"
+        votacoes: "/votacoes"
+        eventos: "/eventos"
+        orgaos: "/orgaos"
+      
+    senado:
+      name: "Senado Federal"
+      base_url: "https://legis.senado.leg.br/dadosabertos"
+      rate_limit: null
+      docs: "https://legis.senado.leg.br/dadosabertos/docs/"
+      endpoints:
+        materias: "/materia/pesquisa/lista"
+        senadores: "/senador/lista"
+        materia_detalhes: "/materia"
+        
+    dou:
+      name: "Diário Oficial da União"
+      base_url: "https://www.in.gov.br/dados-abertos"
+      docs: "https://www.in.gov.br/servicos/dados-abertos"
+      endpoints:
+        search: "/search"
+        documents: "/documents"
+        
+    lexml:
+      name: "LexML Brasil"
+      base_url: "https://www.lexml.gov.br/api/v1"
+      docs: "https://www.lexml.gov.br/developers"
+      endpoints:
+        search: "/search"
+        document: "/document"
+        authorities: "/authorities"
+        
+    planalto:
+      name: "Presidência da República"
+      base_url: "https://www.planalto.gov.br"
+      endpoints:
+        ccivil: "/ccivil_03"
+        legislacao: "/legislacao"
+
+  # STATE LEVEL APIS (Updated with working endpoints)
+  states:
+    # States with confirmed working APIs
+    SP:
+      name: "Assembleia Legislativa de São Paulo"
+      base_url: "https://www.al.sp.gov.br"
+      api_url: "https://www.al.sp.gov.br/repositorio"
+      status: "active"
+      docs: "https://www.al.sp.gov.br/dados-abertos/"
+      endpoints:
+        normas: "/normas"
+        projetos: "/projetos"
+      rate_limit: 100
+      last_verified: "2024-12-10"
+      
+    MG:
+      name: "Assembleia Legislativa de Minas Gerais"
+      base_url: "https://www.almg.gov.br"
+      api_url: "https://dadosabertos.almg.gov.br/ws"
+      status: "active"
+      docs: "https://dadosabertos.almg.gov.br/"
+      endpoints:
+        proposicoes: "/proposicoes"
+        deputados: "/deputados"
+      rate_limit: 60
+      last_verified: "2024-12-10"
+      
+    SC:
+      name: "Assembleia Legislativa de Santa Catarina"
+      base_url: "https://www.alesc.sc.gov.br"
+      api_url: "https://transparencia.alesc.sc.gov.br/api"
+      status: "active"
+      docs: "https://transparencia.alesc.sc.gov.br/"
+      endpoints:
+        proposicoes: "/proposicoes"
+      rate_limit: 30
+      last_verified: "2024-12-10"
+      
+    # States with limited or non-functional APIs (fallback to LexML)
+    RJ:
+      name: "Assembleia Legislativa do Rio de Janeiro"
+      base_url: "https://www.alerj.rj.gov.br"
+      status: "limited"
+      fallback_method: "lexml"
+      note: "No public API, use LexML for data"
+      last_verified: "2024-12-10"
+        
+    RS:
+      name: "Assembleia Legislativa do Rio Grande do Sul"
+      base_url: "https://www.al.rs.gov.br"
+      status: "limited"
+      fallback_method: "lexml"
+      note: "Limited API access, use LexML for data"
+      last_verified: "2024-12-10"
+      
+    PR:
+      name: "Assembleia Legislativa do Paraná"
+      base_url: "https://www.alep.pr.gov.br"
+      status: "limited"
+      fallback_method: "lexml"
+      note: "No public API documented, use LexML"
+      last_verified: "2024-12-10"
+      
+    BA:
+      name: "Assembleia Legislativa da Bahia"
+      base_url: "https://www.al.ba.gov.br"
+      status: "limited"
+      fallback_method: "lexml"
+      note: "No public API available, use LexML"
+      last_verified: "2024-12-10"
+      
+    GO:
+      name: "Assembleia Legislativa de Goiás"
+      base_url: "https://www.al.go.leg.br"
+      status: "limited"
+      fallback_method: "lexml"
+      note: "API under development, use LexML"
+      last_verified: "2024-12-10"
+      
+    PE:
+      name: "Assembleia Legislativa de Pernambuco"
+      base_url: "https://www.alepe.pe.gov.br"
+      status: "limited"
+      fallback_method: "lexml"
+      note: "No public API, use LexML for data"
+      last_verified: "2024-12-10"
+      
+    CE:
+      name: "Assembleia Legislativa do Ceará"
+      base_url: "https://www.al.ce.gov.br"
+      status: "limited"
+      fallback_method: "lexml"
+      note: "No public API, use LexML for data"
+      last_verified: "2024-12-10"
+
+  # MUNICIPAL APIS (Major cities with open data)
+  municipalities:
+    sao_paulo:
+      name: "Câmara Municipal de São Paulo"
+      base_url: "https://www.saopaulo.sp.leg.br"
+      endpoints:
+        proposicoes: "/dados-abertos/proposicoes"
+        
+    rio_de_janeiro:
+      name: "Câmara Municipal do Rio de Janeiro"
+      base_url: "http://www.camara.rj.gov.br"
+      
+    belo_horizonte:
+      name: "Câmara Municipal de Belo Horizonte"
+      base_url: "https://www.cmbh.mg.gov.br"
+      
+    brasilia:
+      name: "Câmara Legislativa do Distrito Federal"
+      base_url: "https://www.cl.df.gov.br"
+
+# Geographic data sources (IBGE official)
+geographic:
+  ibge:
+    base_url: "https://servicodados.ibge.gov.br/api/v3"
+    endpoints:
+      estados: "/localidades/estados"
+      municipios: "/localidades/municipios"
+      regioes: "/localidades/regioes"
+      
+  geobr:
+    # R package geobr for official Brazilian boundaries
+    year: 2022  # Most recent year available
+    
+# Application settings
+app:
+  name: "Monitor Legislativo Acadêmico"
+  version: "1.0.0"
+  update_frequency: "daily"
+  cache_duration: 24  # hours
+  max_results_per_query: 1000
+  
+# Database configuration
+database:
+  type: "SQLite"
+  file: "data/legislative.db"
+  
+# Logging configuration
+logging:
+  level: "INFO"
+  file: "data/app.log"
+  
+# Academic citation templates
+citations:
+  app: "Monitor Legislativo Acadêmico. Dados legislativos do Brasil. Consultado em {date}. Disponível em: {url}"
+  camara: "BRASIL. Câmara dos Deputados. {title}. {type} nº {number}, de {date}. Brasília: Câmara dos Deputados, {year}."
+  senado: "BRASIL. Senado Federal. {title}. {type} nº {number}, de {date}. Brasília: Senado Federal, {year}."

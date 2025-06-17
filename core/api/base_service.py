@@ -1,38 +1,22 @@
 """
 Base service class for all API integrations
-Enhanced with transport guide robust error handling patterns
-
-SPRINT 9 - TASK 9.1: Enhanced Error Handling System Implementation
-✅ BaseGovAPI class matching transport guide patterns
-✅ Comprehensive retry logic with exponential backoff
-✅ Rate limiting with respectful API usage
-✅ Detailed request/response logging
-✅ Error categorization and reporting
-✅ Circuit breaker integration enhancement
-✅ Response validation and sanitization
-✅ Memory-efficient caching system
 """
 
 import logging
 import time
 import asyncio
 import aiohttp
-import hashlib
-import json
-import validators
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional, Union, Tuple
+from typing import List, Dict, Any, Optional, Union
 from functools import wraps
-from contextlib import asynccontextmanager
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from ..config.config import APIConfig
 from ..models.models import SearchResult, Proposition
-from ..utils.smart_cache import cached as smart_cache
-from ..utils.circuit_breaker import circuit_manager, CircuitBreakerError, CircuitBreakerOpenError
+from ..utils.smart_cache import smart_cache
+from ..utils.circuit_breaker import circuit_manager, CircuitBreakerError
 from ..utils.monitoring import metrics_collector
 
 

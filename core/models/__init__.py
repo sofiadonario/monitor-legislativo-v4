@@ -11,6 +11,20 @@ from .models import (
     APIStatus
 )
 
+from .frbroo_document import (
+    FRBROOLevel,
+    LegislativeEventType,
+    TemporalControl,
+    ControlledVocabularyTag,
+    LegislativeEvent,
+    LexMLIdentifier,
+    F1Work,
+    F2Expression,
+    F3Manifestation,
+    F5Item,
+    FRBROODocument
+)
+
 __all__ = [
     "PropositionType",
     "PropositionStatus",
@@ -19,5 +33,17 @@ __all__ = [
     "Proposition",
     "SearchFilters",
     "SearchResult",
-    "APIStatus"
+    "APIStatus",
+    # FRBROO models
+    "FRBROOLevel",
+    "LegislativeEventType",
+    "TemporalControl",
+    "ControlledVocabularyTag",
+    "LegislativeEvent",
+    "LexMLIdentifier",
+    "F1Work",
+    "F2Expression",
+    "F3Manifestation",
+    "F5Item",
+    "FRBROODocument"
 ]

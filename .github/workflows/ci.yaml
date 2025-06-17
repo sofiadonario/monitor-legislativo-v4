@@ -1,0 +1,273 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18.19.0'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Security scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog Secret Scanner
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  # Python linting and testing
+  python-quality:
+    name: Python Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest pytest-cov pytest-asyncio
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Lint with Ruff
+        run: |
+          ruff check . --output-format=github
+          ruff format --check .
+
+      - name: Run Python tests
+        run: |
+          pytest --cov=core --cov=web --cov=desktop --cov-report=xml --cov-report=term-missing --cov-fail-under=85
+        env:
+          PYTHONPATH: .
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: true
+
+  # TypeScript/React linting and testing
+  frontend-quality:
+    name: Frontend Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint TypeScript/React
+        run: npm run lint
+
+      - name: Run TypeScript type checking
+        run: npx tsc --noEmit
+
+      - name: Run Jest tests
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: true
+
+  # Build verification
+  build-verification:
+    name: Build All Services
+    runs-on: ubuntu-latest
+    needs: [security, python-quality, frontend-quality]
+    strategy:
+      matrix:
+        service: [web, desktop]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          npm ci
+
+      - name: Build React application
+        run: npm run build
+
+      - name: Build Docker image for ${{ matrix.service }}
+        run: |
+          if [ -f ${{ matrix.service }}/Dockerfile ]; then
+            docker build -t monitor-legislativo-${{ matrix.service }}:test ${{ matrix.service }}/
+          else
+            echo "Dockerfile not found for ${{ matrix.service }}, skipping Docker build"
+          fi
+
+  # Integration tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [build-verification]
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest-integration
+
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ -v --tb=short
+        env:
+          REDIS_URL: redis://localhost:6379
+          TEST_MODE: true
+
+  # Academic compliance validation
+  academic-compliance:
+    name: Academic Standards Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Validate citation formats
+        run: |
+          python -c "
+          from core.utils.enhanced_citation_generator import FRBROOCitationGenerator
+          from core.utils.citationFormatter import ABNTCitationFormatter
+          print('✅ Citation formatters import successfully')
+          "
+
+      - name: Validate LGPD compliance placeholders
+        run: |
+          if grep -r "LGPD" . --exclude-dir=.git --exclude-dir=node_modules; then
+            echo "✅ LGPD compliance mentioned in codebase"
+          else
+            echo "⚠️ LGPD compliance not found - academic institutions require this"
+            exit 1
+          fi
+
+      - name: Check for accessibility features
+        run: |
+          if grep -r "aria-" src/ --include="*.tsx" --include="*.jsx"; then
+            echo "✅ Accessibility attributes found"
+          else
+            echo "⚠️ Limited accessibility implementation detected"
+          fi
+
+# Branch protection rules enforcement
+branch-protection:
+  name: Enforce Branch Protection
+  if: github.event_name == 'pull_request'
+  runs-on: ubuntu-latest
+  needs: [security, python-quality, frontend-quality, build-verification, integration-tests, academic-compliance]
+  steps:
+    - name: Require all checks to pass
+      run: echo "✅ All quality gates passed - ready for merge"
+
+# Deployment readiness
+deployment-readiness:
+  name: Deployment Readiness Check
+  if: github.ref == 'refs/heads/main'
+  runs-on: ubuntu-latest
+  needs: [security, python-quality, frontend-quality, build-verification, integration-tests, academic-compliance]
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check deployment readiness
+      run: |
+        echo "🔍 Checking deployment readiness..."
+        
+        # Check for critical security issues
+        if grep -r "allow_origins=\[" . --exclude-dir=.git --exclude-dir=node_modules; then
+          echo "❌ Wildcard CORS origins detected - not safe for production"
+          exit 1
+        fi
+        
+        # Check for production environment variables
+        if [ ! -f .env.production.example ]; then
+          echo "⚠️ No production environment example found"
+        fi
+        
+        # Check for Docker configurations
+        if [ -f web/Dockerfile ] && [ -f desktop/Dockerfile ]; then
+          echo "✅ Docker configurations found for main services"
+        else
+          echo "⚠️ Missing Docker configurations for some services"
+        fi
+        
+        echo "✅ Deployment readiness check completed"

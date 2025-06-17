@@ -1,0 +1,113 @@
+{
+  "stress_test_results": [
+    {
+      "concurrent_users": 1,
+      "summary": {
+        "total_requests": 10,
+        "successful_requests": 7,
+        "failed_requests": 3,
+        "success_rate": 70.0,
+        "requests_per_second": 0.08
+      },
+      "response_times": {
+        "average": 0.31,
+        "minimum": 0.05,
+        "maximum": 1.08,
+        "p50_median": 0.17,
+        "p95": 1.08,
+        "p99": 1.08
+      }
+    },
+    {
+      "concurrent_users": 3,
+      "summary": {
+        "total_requests": 30,
+        "successful_requests": 26,
+        "failed_requests": 4,
+        "success_rate": 86.67,
+        "requests_per_second": 0.21
+      },
+      "response_times": {
+        "average": 4.13,
+        "minimum": 0.15,
+        "maximum": 25.81,
+        "p50_median": 0.58,
+        "p95": 12.48,
+        "p99": 25.81
+      }
+    },
+    {
+      "concurrent_users": 5,
+      "summary": {
+        "total_requests": 49,
+        "successful_requests": 40,
+        "failed_requests": 9,
+        "success_rate": 81.63,
+        "requests_per_second": 0.27
+      },
+      "response_times": {
+        "average": 2.55,
+        "minimum": 0.05,
+        "maximum": 12.84,
+        "p50_median": 0.41,
+        "p95": 12.35,
+        "p99": 12.84
+      }
+    },
+    {
+      "concurrent_users": 10,
+      "summary": {
+        "total_requests": 100,
+        "successful_requests": 80,
+        "failed_requests": 20,
+        "success_rate": 80.0,
+        "requests_per_second": 0.55
+      },
+      "response_times": {
+        "average": 3.1,
+        "minimum": 0.04,
+        "maximum": 23.95,
+        "p50_median": 0.53,
+        "p95": 12.55,
+        "p99": 23.95
+      }
+    },
+    {
+      "concurrent_users": 15,
+      "summary": {
+        "total_requests": 149,
+        "successful_requests": 120,
+        "failed_requests": 29,
+        "success_rate": 80.54,
+        "requests_per_second": 0.76
+      },
+      "response_times": {
+        "average": 4.5,
+        "minimum": 0.04,
+        "maximum": 27.74,
+        "p50_median": 0.64,
+        "p95": 24.15,
+        "p99": 27.55
+      }
+    },
+    {
+      "concurrent_users": 20,
+      "summary": {
+        "total_requests": 200,
+        "successful_requests": 163,
+        "failed_requests": 37,
+        "success_rate": 81.5,
+        "requests_per_second": 1.17
+      },
+      "response_times": {
+        "average": 3.33,
+        "minimum": 0.04,
+        "maximum": 29.63,
+        "p50_median": 0.63,
+        "p95": 14.95,
+        "p99": 20.46
+      }
+    }
+  ],
+  "timestamp": "2025-05-28T22:13:24.530293"
+}

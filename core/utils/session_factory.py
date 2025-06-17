@@ -39,13 +39,10 @@ class SessionFactory:
                 # Configure connector
                 connector = aiohttp.TCPConnector(
                     ssl=ssl_context,
-                    limit=500,  # FIXED: Increased total pool size from 100 to 500
-                    limit_per_host=100,  # FIXED: Increased per-host from 30 to 100 (for government APIs)
+                    limit=100,  # Total pool size
+                    limit_per_host=30,  # Per host
                     ttl_dns_cache=300,  # DNS cache TTL
                     use_dns_cache=True,
-                    enable_cleanup_closed=True,  # ADDED: Clean up closed connections
-                    keepalive_timeout=30,  # ADDED: Keep connections alive for reuse
-                    limit_per_host_default=100  # ADDED: Default per-host limit
                 )
                 
                 # Default headers with User-Agent rotation

@@ -1,0 +1,55 @@
+/* Sidebar Styles */
+.sidebar {
+  background: white;
+  border-right: 1px solid #e0e0e0;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  position: relative;
+  overflow-y: auto;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar.open {
+  width: 350px;
+  min-width: 350px;
+}
+
+.sidebar.closed {
+  width: 60px;
+  min-width: 60px;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #2196F3;
+  color: white;
+}
+
+.sidebar-header h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-content {
+  padding: 20px;
+} 

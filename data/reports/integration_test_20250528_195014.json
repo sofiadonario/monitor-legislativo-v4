@@ -1,0 +1,577 @@
+{
+  "test_info": {
+    "timestamp": "2025-05-28T19:50:14.167533",
+    "duration_seconds": 244.22,
+    "test_type": "full_integration"
+  },
+  "overall": {
+    "health": "healthy",
+    "success_rate": 92.86,
+    "total_sources": 14,
+    "working_sources": 13,
+    "failed_sources": 1
+  },
+  "source_tests": {
+    "camara": {
+      "success": true,
+      "response_time": 4.761163711547852,
+      "result_count": 0,
+      "message": "No results found (service working, 4.76s)"
+    },
+    "senado": {
+      "success": true,
+      "response_time": 1.2703614234924316,
+      "result_count": 0,
+      "message": "No results found (service working, 1.27s)"
+    },
+    "planalto": {
+      "success": false,
+      "response_time": 30.0,
+      "result_count": 0,
+      "message": "Timeout after 30 seconds"
+    },
+    "aneel": {
+      "success": true,
+      "response_time": 0.3688623905181885,
+      "result_count": 0,
+      "message": "No results found (service working, 0.37s)"
+    },
+    "anatel": {
+      "success": true,
+      "response_time": 0.44371461868286133,
+      "result_count": 0,
+      "message": "No results found (service working, 0.44s)"
+    },
+    "anvisa": {
+      "success": true,
+      "response_time": 13.189285039901733,
+      "result_count": 0,
+      "message": "No results found (service working, 13.19s)"
+    },
+    "ans": {
+      "success": true,
+      "response_time": 0.20183968544006348,
+      "result_count": 0,
+      "message": "No results found (service working, 0.20s)"
+    },
+    "ana": {
+      "success": true,
+      "response_time": 0.18001627922058105,
+      "result_count": 0,
+      "message": "No results found (service working, 0.18s)"
+    },
+    "ancine": {
+      "success": true,
+      "response_time": 0.17273426055908203,
+      "result_count": 0,
+      "message": "No results found (service working, 0.17s)"
+    },
+    "antt": {
+      "success": true,
+      "response_time": 0.1674211025238037,
+      "result_count": 0,
+      "message": "No results found (service working, 0.17s)"
+    },
+    "antaq": {
+      "success": true,
+      "response_time": 0.17874598503112793,
+      "result_count": 0,
+      "message": "No results found (service working, 0.18s)"
+    },
+    "anac": {
+      "success": true,
+      "response_time": 0.591275691986084,
+      "result_count": 0,
+      "message": "No results found (service working, 0.59s)"
+    },
+    "anp": {
+      "success": true,
+      "response_time": 0.1742260456085205,
+      "result_count": 0,
+      "message": "No results found (service working, 0.17s)"
+    },
+    "anm": {
+      "success": true,
+      "response_time": 0.16350936889648438,
+      "result_count": 0,
+      "message": "No results found (service working, 0.16s)"
+    }
+  },
+  "search_tests": {
+    "energia": {
+      "success": true,
+      "response_time": 35.45337247848511,
+      "total_results": 0,
+      "working_sources": 0,
+      "total_sources": 14,
+      "message": "0 results from 0/14 sources"
+    },
+    "sa\u00fade": {
+      "success": true,
+      "response_time": 39.38924813270569,
+      "total_results": 0,
+      "working_sources": 0,
+      "total_sources": 14,
+      "message": "0 results from 0/14 sources"
+    },
+    "educa\u00e7\u00e3o": {
+      "success": true,
+      "response_time": 35.49149513244629,
+      "total_results": 0,
+      "working_sources": 0,
+      "total_sources": 14,
+      "message": "0 results from 0/14 sources"
+    },
+    "meio ambiente": {
+      "success": true,
+      "response_time": 36.18350124359131,
+      "total_results": 0,
+      "working_sources": 0,
+      "total_sources": 14,
+      "message": "0 results from 0/14 sources"
+    },
+    "seguran\u00e7a": {
+      "success": true,
+      "response_time": 35.67148518562317,
+      "total_results": 0,
+      "working_sources": 0,
+      "total_sources": 14,
+      "message": "0 results from 0/14 sources"
+    }
+  },
+  "health_checks": {
+    "total_services": 14,
+    "healthy_services": 11,
+    "unhealthy_services": 3,
+    "services": {
+      "C\u00e2mara dos Deputados": {
+        "healthy": true,
+        "response_time": 9.886075,
+        "error_message": null
+      },
+      "Senado Federal": {
+        "healthy": true,
+        "response_time": 9.969553,
+        "error_message": null
+      },
+      "Di\u00e1rio Oficial da Uni\u00e3o": {
+        "healthy": false,
+        "response_time": 10.105959,
+        "error_message": null
+      },
+      "ANEEL - Ag\u00eancia Nacional de Energia El\u00e9trica": {
+        "healthy": true,
+        "response_time": 0.31929,
+        "error_message": null
+      },
+      "ANATEL - Ag\u00eancia Nacional de Telecomunica\u00e7\u00f5es": {
+        "healthy": true,
+        "response_time": 0.472099,
+        "error_message": null
+      },
+      "ANVISA - Ag\u00eancia Nacional de Vigil\u00e2ncia Sanit\u00e1ria": {
+        "healthy": false,
+        "response_time": 0.144177,
+        "error_message": null
+      },
+      "ANS - Ag\u00eancia Nacional de Sa\u00fade Suplementar": {
+        "healthy": true,
+        "response_time": 0.387045,
+        "error_message": null
+      },
+      "ANA - Ag\u00eancia Nacional de \u00c1guas": {
+        "healthy": true,
+        "response_time": 5.643335,
+        "error_message": null
+      },
+      "ANCINE - Ag\u00eancia Nacional do Cinema": {
+        "healthy": true,
+        "response_time": 0.397428,
+        "error_message": null
+      },
+      "ANTT - Ag\u00eancia Nacional de Transportes Terrestres": {
+        "healthy": true,
+        "response_time": 0.511503,
+        "error_message": null
+      },
+      "ANTAQ - Ag\u00eancia Nacional de Transportes Aquavi\u00e1rios": {
+        "healthy": false,
+        "response_time": 0.207027,
+        "error_message": null
+      },
+      "ANAC - Ag\u00eancia Nacional de Avia\u00e7\u00e3o Civil": {
+        "healthy": true,
+        "response_time": 0.720184,
+        "error_message": null
+      },
+      "ANP - Ag\u00eancia Nacional do Petr\u00f3leo": {
+        "healthy": true,
+        "response_time": 0.463923,
+        "error_message": null
+      },
+      "ANM - Ag\u00eancia Nacional de Minera\u00e7\u00e3o": {
+        "healthy": true,
+        "response_time": 0.502749,
+        "error_message": null
+      }
+    }
+  },
+  "circuit_breakers": {
+    "camara_sync": {
+      "name": "camara_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "camara_async": {
+      "name": "camara_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "senado_sync": {
+      "name": "senado_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "senado_async": {
+      "name": "senado_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "planalto_sync": {
+      "name": "planalto_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "planalto_async": {
+      "name": "planalto_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "aneel_sync": {
+      "name": "aneel_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "aneel_async": {
+      "name": "aneel_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anatel_sync": {
+      "name": "anatel_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anatel_async": {
+      "name": "anatel_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anvisa_sync": {
+      "name": "anvisa_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anvisa_async": {
+      "name": "anvisa_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "ans_sync": {
+      "name": "ans_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "ans_async": {
+      "name": "ans_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "ana_sync": {
+      "name": "ana_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "ana_async": {
+      "name": "ana_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "ancine_sync": {
+      "name": "ancine_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "ancine_async": {
+      "name": "ancine_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "antt_sync": {
+      "name": "antt_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "antt_async": {
+      "name": "antt_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "antaq_sync": {
+      "name": "antaq_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "antaq_async": {
+      "name": "antaq_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anac_sync": {
+      "name": "anac_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anac_async": {
+      "name": "anac_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anp_sync": {
+      "name": "anp_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anp_async": {
+      "name": "anp_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anm_sync": {
+      "name": "anm_sync",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    },
+    "anm_async": {
+      "name": "anm_async",
+      "state": "closed",
+      "total_calls": 0,
+      "total_successes": 0,
+      "total_failures": 0,
+      "success_rate": 0,
+      "failure_count": 0,
+      "success_count": 0,
+      "last_failure_time": null,
+      "last_success_time": null
+    }
+  },
+  "monitoring": {
+    "summary": {
+      "total_sources": 0,
+      "healthy_sources": 0,
+      "degraded_sources": 0,
+      "down_sources": 0,
+      "overall_health": "degraded"
+    },
+    "recent_activity": {
+      "total_calls_last_hour": 0,
+      "failed_calls_last_hour": 0,
+      "success_rate_last_hour": 0
+    },
+    "sources": {},
+    "timestamp": "2025-05-28T19:50:14.167522"
+  },
+  "recommendations": [
+    "Consider disabling or fixing these failing sources: planalto",
+    "These sources are slow (>10s): planalto, anvisa"
+  ]
+}

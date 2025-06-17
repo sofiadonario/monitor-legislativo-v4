@@ -1,0 +1,1097 @@
+{
+  "test_info": {
+    "duration_seconds": 180.15,
+    "concurrent_users": 5,
+    "timestamp": "2025-05-28T20:28:09.117529"
+  },
+  "summary": {
+    "total_requests": 75,
+    "successful_requests": 65,
+    "failed_requests": 10,
+    "success_rate": 86.67,
+    "requests_per_second": 0.42
+  },
+  "response_times": {
+    "average": 2.86,
+    "minimum": 0.05,
+    "maximum": 12.76,
+    "p50_median": 0.56,
+    "p95": 12.05,
+    "p99": 12.76
+  },
+  "errors": {
+    "timeout": 10
+  },
+  "source_performance": {
+    "aneel": {
+      "requests": 10,
+      "successes": 9,
+      "total_time": 8.792038202285767,
+      "success_rate": 90.0,
+      "avg_response_time": 0.9768931335873074
+    },
+    "anac": {
+      "requests": 10,
+      "successes": 10,
+      "total_time": 17.95472812652588,
+      "success_rate": 100.0,
+      "avg_response_time": 1.7954728126525878
+    },
+    "anatel": {
+      "requests": 6,
+      "successes": 6,
+      "total_time": 16.17434573173523,
+      "success_rate": 100.0,
+      "avg_response_time": 2.695724288622538
+    },
+    "anp": {
+      "requests": 9,
+      "successes": 8,
+      "total_time": 56.234901428222656,
+      "success_rate": 88.88888888888889,
+      "avg_response_time": 7.029362678527832
+    },
+    "ans": {
+      "requests": 11,
+      "successes": 11,
+      "total_time": 50.749475955963135,
+      "success_rate": 100.0,
+      "avg_response_time": 4.613588723269376
+    },
+    "camara": {
+      "requests": 13,
+      "successes": 12,
+      "total_time": 80.9963698387146,
+      "success_rate": 92.3076923076923,
+      "avg_response_time": 6.74969748655955
+    },
+    "anm": {
+      "requests": 16,
+      "successes": 16,
+      "total_time": 34.94659495353699,
+      "success_rate": 100.0,
+      "avg_response_time": 2.1841621845960617
+    },
+    "ana": {
+      "requests": 13,
+      "successes": 10,
+      "total_time": 8.649280071258545,
+      "success_rate": 76.92307692307693,
+      "avg_response_time": 0.8649280071258545
+    },
+    "antaq": {
+      "requests": 11,
+      "successes": 11,
+      "total_time": 26.804627895355225,
+      "success_rate": 100.0,
+      "avg_response_time": 2.436784354123202
+    },
+    "antt": {
+      "requests": 12,
+      "successes": 10,
+      "total_time": 11.345315933227539,
+      "success_rate": 83.33333333333334,
+      "avg_response_time": 1.134531593322754
+    },
+    "ancine": {
+      "requests": 8,
+      "successes": 7,
+      "total_time": 7.106738805770874,
+      "success_rate": 87.5,
+      "avg_response_time": 1.0152484008244105
+    },
+    "senado": {
+      "requests": 9,
+      "successes": 8,
+      "total_time": 10.698902130126953,
+      "success_rate": 88.88888888888889,
+      "avg_response_time": 1.3373627662658691
+    },
+    "anvisa": {
+      "requests": 7,
+      "successes": 7,
+      "total_time": 85.53284215927124,
+      "success_rate": 100.0,
+      "avg_response_time": 12.218977451324463
+    },
+    "planalto": {
+      "requests": 10,
+      "successes": 0,
+      "total_time": 0,
+      "success_rate": 0.0,
+      "avg_response_time": 0
+    }
+  },
+  "raw_results": [
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:25:11.412245",
+      "query": "transporte",
+      "sources": [
+        "aneel"
+      ],
+      "response_time": 0.28034234046936035,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:25:14.184557",
+      "query": "agricultura",
+      "sources": [
+        "anac",
+        "aneel"
+      ],
+      "response_time": 0.637702465057373,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:25:18.455240",
+      "query": "direitos humanos",
+      "sources": [
+        "anatel",
+        "anp",
+        "ans"
+      ],
+      "response_time": 8.410354852676392,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:25:18.477298",
+      "query": "meio ambiente",
+      "sources": [
+        "camara",
+        "anm"
+      ],
+      "response_time": 6.1314544677734375,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:25:19.938978",
+      "query": "sa\u00fade p\u00fablica",
+      "sources": [
+        "camara",
+        "aneel"
+      ],
+      "response_time": 6.154117822647095,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:25:20.735243",
+      "query": "seguran\u00e7a p\u00fablica",
+      "sources": [
+        "anatel",
+        "ana"
+      ],
+      "response_time": 0.4121873378753662,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:25:21.874071",
+      "query": "direitos humanos",
+      "sources": [
+        "antaq",
+        "aneel",
+        "antt"
+      ],
+      "response_time": 0.09000992774963379,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:25:23.890862",
+      "query": "tecnologia",
+      "sources": [
+        "ancine",
+        "ana"
+      ],
+      "response_time": 0.17144250869750977,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:25:25.619796",
+      "query": "educa\u00e7\u00e3o",
+      "sources": [
+        "ana",
+        "senado",
+        "anm"
+      ],
+      "response_time": 0.6755845546722412,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:25:25.690510",
+      "query": "sa\u00fade p\u00fablica",
+      "sources": [
+        "anvisa",
+        "anm"
+      ],
+      "response_time": 12.048662424087524,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:25:27.073980",
+      "query": "habita\u00e7\u00e3o",
+      "sources": [
+        "aneel",
+        "ana",
+        "antaq"
+      ],
+      "response_time": 0.08980441093444824,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:25:27.132349",
+      "query": "transporte",
+      "sources": [
+        "antt",
+        "anm",
+        "ana"
+      ],
+      "response_time": 0.059072017669677734,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:25:27.254141",
+      "query": "transporte",
+      "sources": [
+        "antaq",
+        "camara"
+      ],
+      "response_time": 6.359084844589233,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:25:28.926244",
+      "query": "infraestrutura",
+      "sources": [
+        "anp",
+        "antt",
+        "aneel"
+      ],
+      "response_time": 0.17906832695007324,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:25:29.291969",
+      "query": "direitos humanos",
+      "sources": [
+        "ana"
+      ],
+      "response_time": 0.05272388458251953,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:25:30.845213",
+      "query": "agricultura",
+      "sources": [
+        "antaq"
+      ],
+      "response_time": 0.05299210548400879,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:25:33.321065",
+      "query": "seguran\u00e7a p\u00fablica",
+      "sources": [
+        "aneel"
+      ],
+      "response_time": 0.4031250476837158,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:25:38.306835",
+      "query": "direitos humanos",
+      "sources": [
+        "anp",
+        "ans",
+        "antaq"
+      ],
+      "response_time": 3.4429709911346436,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:25:39.312868",
+      "query": "meio ambiente",
+      "sources": [
+        "anm",
+        "senado"
+      ],
+      "response_time": 1.370401382446289,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:25:41.389997",
+      "query": "infraestrutura",
+      "sources": [
+        "anvisa",
+        "camara"
+      ],
+      "response_time": 11.969796895980835,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:25:44.241652",
+      "query": "tecnologia",
+      "sources": [
+        "senado",
+        "anm",
+        "ana"
+      ],
+      "response_time": 0.7208905220031738,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:25:45.682350",
+      "query": "habita\u00e7\u00e3o",
+      "sources": [
+        "planalto",
+        "antt",
+        "aneel"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:25:47.478147",
+      "query": "sa\u00fade p\u00fablica",
+      "sources": [
+        "antt"
+      ],
+      "response_time": 0.04636788368225098,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:25:47.530002",
+      "query": "agricultura",
+      "sources": [
+        "anm",
+        "aneel",
+        "ancine"
+      ],
+      "response_time": 0.17157530784606934,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:25:50.087792",
+      "query": "agricultura",
+      "sources": [
+        "antaq",
+        "camara",
+        "antt"
+      ],
+      "response_time": 6.15710973739624,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:25:51.307153",
+      "query": "economia",
+      "sources": [
+        "antaq",
+        "anatel"
+      ],
+      "response_time": 0.4194178581237793,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:25:52.153646",
+      "query": "infraestrutura",
+      "sources": [
+        "anm"
+      ],
+      "response_time": 0.04580068588256836,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:25:56.947563",
+      "query": "agricultura",
+      "sources": [
+        "ancine"
+      ],
+      "response_time": 0.0626370906829834,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:25:57.768853",
+      "query": "habita\u00e7\u00e3o",
+      "sources": [
+        "ancine",
+        "planalto"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:25:59.510214",
+      "query": "educa\u00e7\u00e3o",
+      "sources": [
+        "antaq"
+      ],
+      "response_time": 0.04515480995178223,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:26:01.217565",
+      "query": "agricultura",
+      "sources": [
+        "anac",
+        "senado"
+      ],
+      "response_time": 1.1589999198913574,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:26:01.831787",
+      "query": "infraestrutura",
+      "sources": [
+        "anm"
+      ],
+      "response_time": 0.05228424072265625,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:26:07.355256",
+      "query": "energia renov\u00e1vel",
+      "sources": [
+        "anvisa"
+      ],
+      "response_time": 12.449447631835938,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:26:09.652358",
+      "query": "sa\u00fade p\u00fablica",
+      "sources": [
+        "planalto"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:26:12.838357",
+      "query": "meio ambiente",
+      "sources": [
+        "antaq",
+        "camara"
+      ],
+      "response_time": 6.333979845046997,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:26:20.468557",
+      "query": "seguran\u00e7a p\u00fablica",
+      "sources": [
+        "ana",
+        "camara"
+      ],
+      "response_time": 6.260920524597168,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:26:23.725204",
+      "query": "tecnologia",
+      "sources": [
+        "planalto",
+        "antt",
+        "ana"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:26:26.427609",
+      "query": "energia renov\u00e1vel",
+      "sources": [
+        "anvisa",
+        "anp",
+        "anm"
+      ],
+      "response_time": 12.251041412353516,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:26:26.827206",
+      "query": "direitos humanos",
+      "sources": [
+        "ancine",
+        "antt"
+      ],
+      "response_time": 0.19375920295715332,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:26:28.541643",
+      "query": "economia",
+      "sources": [
+        "anatel",
+        "anm"
+      ],
+      "response_time": 0.4326364994049072,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:26:28.961956",
+      "query": "agricultura",
+      "sources": [
+        "anac"
+      ],
+      "response_time": 0.5224144458770752,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:26:32.330858",
+      "query": "seguran\u00e7a p\u00fablica",
+      "sources": [
+        "ans"
+      ],
+      "response_time": 0.2462902069091797,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:26:34.229421",
+      "query": "infraestrutura",
+      "sources": [
+        "ana",
+        "planalto",
+        "anp"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:26:36.372882",
+      "query": "infraestrutura",
+      "sources": [
+        "antaq",
+        "antt",
+        "senado"
+      ],
+      "response_time": 3.2304670810699463,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:26:37.269645",
+      "query": "educa\u00e7\u00e3o",
+      "sources": [
+        "anp",
+        "ans",
+        "anvisa"
+      ],
+      "response_time": 12.755266189575195,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:26:39.306382",
+      "query": "meio ambiente",
+      "sources": [
+        "aneel"
+      ],
+      "response_time": 0.786292552947998,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:26:39.933667",
+      "query": "habita\u00e7\u00e3o",
+      "sources": [
+        "senado",
+        "antt"
+      ],
+      "response_time": 1.1585116386413574,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:26:40.695744",
+      "query": "habita\u00e7\u00e3o",
+      "sources": [
+        "antt"
+      ],
+      "response_time": 0.053528547286987305,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:26:41.030489",
+      "query": "educa\u00e7\u00e3o",
+      "sources": [
+        "planalto",
+        "camara"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:26:42.211065",
+      "query": "agricultura",
+      "sources": [
+        "anp",
+        "anm"
+      ],
+      "response_time": 0.04782891273498535,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:26:42.594069",
+      "query": "agricultura",
+      "sources": [
+        "ans",
+        "camara",
+        "anp"
+      ],
+      "response_time": 7.094723701477051,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:26:44.825945",
+      "query": "energia renov\u00e1vel",
+      "sources": [
+        "anac",
+        "antaq"
+      ],
+      "response_time": 0.5836362838745117,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:26:44.837749",
+      "query": "seguran\u00e7a p\u00fablica",
+      "sources": [
+        "anac"
+      ],
+      "response_time": 0.431485652923584,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 1,
+      "timestamp": "2025-05-28 20:26:46.828325",
+      "query": "sa\u00fade p\u00fablica",
+      "sources": [
+        "ans",
+        "ancine",
+        "anm"
+      ],
+      "response_time": 0.1822526454925537,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:26:47.151794",
+      "query": "seguran\u00e7a p\u00fablica",
+      "sources": [
+        "anac",
+        "senado"
+      ],
+      "response_time": 1.2417335510253906,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:26:50.067637",
+      "query": "transporte",
+      "sources": [
+        "anac",
+        "ans",
+        "camara"
+      ],
+      "response_time": 6.178341865539551,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:26:53.306718",
+      "query": "direitos humanos",
+      "sources": [
+        "ana"
+      ],
+      "response_time": 0.04575657844543457,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:27:08.561595",
+      "query": "transporte",
+      "sources": [
+        "anvisa",
+        "ans",
+        "anp"
+      ],
+      "response_time": 12.0536470413208,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:27:12.149010",
+      "query": "tecnologia",
+      "sources": [
+        "senado",
+        "planalto"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:27:19.023906",
+      "query": "sa\u00fade p\u00fablica",
+      "sources": [
+        "planalto"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:27:19.359329",
+      "query": "sa\u00fade p\u00fablica",
+      "sources": [
+        "planalto",
+        "ana"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 2,
+      "timestamp": "2025-05-28 20:27:19.432246",
+      "query": "habita\u00e7\u00e3o",
+      "sources": [
+        "camara"
+      ],
+      "response_time": 6.130491018295288,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:27:20.364954",
+      "query": "direitos humanos",
+      "sources": [
+        "anac",
+        "camara",
+        "anatel"
+      ],
+      "response_time": 6.064238786697388,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:27:21.589318",
+      "query": "seguran\u00e7a p\u00fablica",
+      "sources": [
+        "senado"
+      ],
+      "response_time": 1.1423134803771973,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:27:21.799579",
+      "query": "agricultura",
+      "sources": [
+        "antt"
+      ],
+      "response_time": 0.17742156982421875,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:27:24.571109",
+      "query": "economia",
+      "sources": [
+        "ans",
+        "ancine"
+      ],
+      "response_time": 0.16296172142028809,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:27:25.463278",
+      "query": "energia renov\u00e1vel",
+      "sources": [
+        "anm",
+        "ana",
+        "ans"
+      ],
+      "response_time": 0.16089773178100586,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:27:25.605691",
+      "query": "direitos humanos",
+      "sources": [
+        "anm"
+      ],
+      "response_time": 0.16070175170898438,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 3,
+      "timestamp": "2025-05-28 20:27:27.291191",
+      "query": "habita\u00e7\u00e3o",
+      "sources": [
+        "anatel",
+        "anm"
+      ],
+      "response_time": 0.43551039695739746,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:27:28.694464",
+      "query": "agricultura",
+      "sources": [
+        "ans"
+      ],
+      "response_time": 0.06176900863647461,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:27:44.474773",
+      "query": "direitos humanos",
+      "sources": [
+        "anvisa"
+      ],
+      "response_time": 12.004980564117432,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 4,
+      "timestamp": "2025-05-28 20:27:47.205951",
+      "query": "transporte",
+      "sources": [
+        "anac"
+      ],
+      "response_time": 0.57271409034729,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:27:58.023887",
+      "query": "economia",
+      "sources": [
+        "planalto"
+      ],
+      "response_time": 30.0,
+      "result_count": 0,
+      "success": false,
+      "error": "timeout"
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:28:05.612383",
+      "query": "habita\u00e7\u00e3o",
+      "sources": [
+        "ancine",
+        "camara"
+      ],
+      "response_time": 6.162110328674316,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "user_id": 0,
+      "timestamp": "2025-05-28 20:28:09.117268",
+      "query": "transporte",
+      "sources": [
+        "anac"
+      ],
+      "response_time": 0.5634610652923584,
+      "result_count": 0,
+      "success": true,
+      "error": null
+    }
+  ]
+}

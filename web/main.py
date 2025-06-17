@@ -5,8 +5,6 @@ FastAPI-based web service
 
 import logging
 from fastapi import FastAPI, HTTPException
-from web.middleware.security_headers import setup_security_headers
-from web.middleware.rate_limit_middleware import RateLimitMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -23,12 +21,12 @@ if str(project_root) not in sys.path:
 from web.api.routes import router as api_router
 from web.api.monitoring_routes import router as monitoring_router
 from core.config.config import Config
+from core.api.cache_interceptor import CacheInterceptor
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configure centralized logging
+from core.config.logging_config import setup_logging, get_logger
+setup_logging()
+logger = get_logger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
@@ -39,68 +37,29 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# Setup security headers
-setup_security_headers(app)
-
-# Add rate limiting middleware
-app.add_middleware(RateLimitMiddleware)
-
-# Configure CORS for production
+# Configure CORS with secure settings
 config = Config()
-cors_origins = [
-    "https://localhost:3000",  # React frontend (production)
-    "https://monitor-legislativo.mackenzie.br",  # Production domain
-    "https://api.monitor-legislativo.mackenzie.br",  # API domain
-    "https://admin.monitor-legislativo.mackenzie.br"  # Admin interface
-]
-
-# Add development origins in development mode
-if config.get('environment', 'production') == 'development':
-    cors_origins.extend([
-        "http://localhost:3000",  # React development
-        "http://localhost:8080",  # Alternative port
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8080"
-    ])
+allowed_origins = config.get("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=allowed_origins,  # Specific origins only
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=[
-        "Accept",
-        "Accept-Language", 
-        "Content-Language",
-        "Content-Type",
-        "Authorization",
-        "X-Requested-With",
-        "X-API-Key",
-        "X-Request-ID"
-    ],
-    expose_headers=["X-Request-ID", "X-API-Version"],
-    max_age=600  # 10 minutes
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    expose_headers=["Content-Disposition", "X-Cache", "X-Cache-Time"],
+    max_age=3600
+)
+
+# Add cache interceptor middleware
+app.add_middleware(
+    CacheInterceptor,
+    exclude_paths=["/api/health", "/api/docs", "/api/redoc", "/api/v1/monitoring"]
 )
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1/monitoring", tags=["monitoring"])
-
-# Include GraphQL routes
-try:
-    from web.api.graphql_routes import router as graphql_router
-    app.include_router(graphql_router, prefix="/api/v1")
-    logging.info("GraphQL endpoint enabled at /api/v1/graphql")
-except ImportError as e:
-    logging.warning(f"GraphQL not available: {e}")
-
-# Include WebSocket routes
-try:
-    from web.api.websocket_routes import router as websocket_router
-    app.include_router(websocket_router, prefix="/api/v1")
-    logging.info("WebSocket endpoint enabled at /api/v1/ws")
-except ImportError as e:
-    logging.warning(f"WebSocket not available: {e}")
 
 # Serve static files
 # app.mount("/static", StaticFiles(directory="web/frontend/static"), name="static")
@@ -120,37 +79,21 @@ async def root():
                 margin: 50px auto;
                 padding: 20px;
             }
-            h1 { color: #e1001e; }
+            h1 { color: #003366; }
             .info { 
                 background-color: #f0f0f0; 
                 padding: 20px;
                 border-radius: 8px;
                 margin: 20px 0;
             }
-            .attribution {
-                background-color: #fff;
-                border-left: 4px solid #e1001e;
-                padding: 15px;
-                margin: 15px 0;
-                border-radius: 4px;
-            }
-            .attribution p {
-                margin: 5px 0;
-                color: #333;
-            }
-            a { color: #e1001e; }
+            a { color: #0066CC; }
         </style>
     </head>
     <body>
-        <h1>Monitor Legislativo - MackIntegridade</h1>
+        <h1>Monitor de Políticas Públicas MackIntegridade</h1>
         <div class="info">
             <h2>API v4.0.0</h2>
             <p>Sistema integrado de monitoramento legislativo brasileiro.</p>
-            <div class="attribution">
-                <p><strong>Desenvolvido por:</strong> Sofia Pereira Medeiros Donario &amp; Lucas Ramos Guimarães</p>
-                <p><strong>Organização:</strong> MackIntegridade - Integridade e Monitoramento de Políticas Públicas</p>
-                <p><strong>Financiamento:</strong> MackPesquisa - Instituto de Pesquisa Mackenzie</p>
-            </div>
             <p>
                 <strong>Documentação:</strong><br>
                 <a href="/api/docs">Swagger UI</a> | 

@@ -11,7 +11,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 from ..utils.session_factory import SessionFactory, fetch_with_retry
 from ..utils.circuit_breaker import circuit_manager
-from ..utils.smart_cache import cached as smart_cache
+from ..utils.smart_cache import smart_cache
 
 from .base_service import BaseAPIService
 from ..models.models import (
@@ -39,45 +39,81 @@ class RegulatoryAgencyService(BaseAPIService):
         }
     
     async def search(self, query: str, filters: Dict[str, Any]) -> SearchResult:
-        """Search for documents in the regulatory agency"""
+        """Search for documents in the regulatory agency with fallback strategies"""
         start_time = datetime.now()
         
-        # Check cache first
-        cache_key = self._get_cache_key(query, filters)
-        cached_result = await smart_cache.get(cache_key, source=self.data_source.name.lower())
-        if cached_result:
-            self.logger.info(f"Returning cached results for query: {query}")
-            return cached_result
+        # Import fallback manager
+        from ..utils.fallback_manager import fallback_manager
         
         try:
-            # Most regulatory agencies don't have APIs, so we scrape their websites
-            propositions = await self._search_website(query, filters)
-            
-            result = SearchResult(
+            # Use fallback manager for resilient search
+            result, attempts = await fallback_manager.execute_with_fallback(
+                source_id=self.data_source.name.lower(),
                 query=query,
-                filters=filters,
-                propositions=propositions,
-                total_count=len(propositions),
-                source=self.data_source,
-                search_time=(datetime.now() - start_time).total_seconds()
+                filters=filters
             )
             
-            if propositions:
-                await smart_cache.set(cache_key, result, source=self.data_source.name.lower())
-            
-            return result
-            
+            if result:
+                # Update search time
+                result.search_time = (datetime.now() - start_time).total_seconds()
+                
+                # Add fallback metadata
+                if len(attempts) > 1:
+                    successful_strategy = next((a for a in attempts if a.success), None)
+                    if successful_strategy:
+                        if successful_strategy.data_quality == 'stale':
+                            result.error = "Warning: Data may be outdated due to source issues"
+                        elif successful_strategy.strategy.value != 'primary':
+                            result.error = f"Notice: Data retrieved using {successful_strategy.strategy.value} strategy"
+                
+                self.logger.info(f"Search successful for {self.agency_name} using {len(attempts)} strategies")
+                return result
+            else:
+                # All strategies failed
+                self.logger.error(f"All fallback strategies failed for {self.agency_name}")
+                return SearchResult(
+                    query=query,
+                    filters=filters,
+                    propositions=[],
+                    total_count=0,
+                    source=self.data_source,
+                    error=f"All fallback strategies failed. Queued for manual intervention.",
+                    search_time=(datetime.now() - start_time).total_seconds()
+                )
+                
         except Exception as e:
-            self.logger.error(f"Search failed for {self.agency_name}: {str(e)}")
-            return SearchResult(
-                query=query,
-                filters=filters,
-                propositions=[],
-                total_count=0,
-                source=self.data_source,
-                error=f"Search failed: {str(e)}",
-                search_time=(datetime.now() - start_time).total_seconds()
-            )
+            self.logger.error(f"Fallback search failed for {self.agency_name}: {str(e)}")
+            
+            # Fallback to original method
+            try:
+                propositions = await self._search_website(query, filters)
+                
+                result = SearchResult(
+                    query=query,
+                    filters=filters,
+                    propositions=propositions,
+                    total_count=len(propositions),
+                    source=self.data_source,
+                    search_time=(datetime.now() - start_time).total_seconds()
+                )
+                
+                if propositions:
+                    cache_key = self._get_cache_key(query, filters)
+                    await smart_cache.set(cache_key, result, source=self.data_source.name.lower())
+                
+                return result
+                
+            except Exception as fallback_error:
+                self.logger.error(f"Even fallback search failed for {self.agency_name}: {str(fallback_error)}")
+                return SearchResult(
+                    query=query,
+                    filters=filters,
+                    propositions=[],
+                    total_count=0,
+                    source=self.data_source,
+                    error=f"Search failed: {str(fallback_error)}",
+                    search_time=(datetime.now() - start_time).total_seconds()
+                )
     
     async def _search_website(self, query: str, filters: Dict[str, Any]) -> List[Proposition]:
         """Search the agency website - to be implemented by subclasses"""

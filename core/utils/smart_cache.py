@@ -1,486 +1,446 @@
 """
-Smart Caching System for Legislative Monitor
-Multi-layer caching with Redis and in-memory support
+Smart Cache Implementation with adaptive TTL
+Implements recommendations from technical analysis
 """
 
+import os
 import json
 import time
 import hashlib
-from typing import Any, Optional, Dict, Set, Callable, Union
-from functools import wraps
-from dataclasses import dataclass, asdict
+import asyncio
 from datetime import datetime, timedelta
-import threading
+from typing import Any, Optional, Dict, Set
 import logging
+from dataclasses import dataclass, asdict
+from collections import defaultdict
 
-try:
-    import redis
-    REDIS_AVAILABLE = True
-except ImportError:
-    REDIS_AVAILABLE = False
-
-logger = logging.getLogger(__name__)
 
 @dataclass
-class CacheConfig:
-    """Configuration for cache TTL settings"""
-    default_ttl: int = 3600  # 1 hour
-    api_response_ttl: int = 900  # 15 minutes
-    search_results_ttl: int = 1800  # 30 minutes
-    metadata_ttl: int = 7200  # 2 hours
-    user_data_ttl: int = 300  # 5 minutes
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    redis_db: int = 0
-    max_memory_items: int = 1000
+class CacheStats:
+    """Cache statistics for monitoring"""
+    hits: int = 0
+    misses: int = 0
+    sets: int = 0
+    evictions: int = 0
+    size_bytes: int = 0
+    last_access: Optional[float] = None
+    
+    @property
+    def hit_rate(self) -> float:
+        total = self.hits + self.misses
+        return (self.hits / total * 100) if total > 0 else 0
 
-class CacheKeyBuilder:
-    """Generates consistent cache keys"""
-    
-    @staticmethod
-    def build_key(prefix: str, *args, **kwargs) -> str:
-        """Build a cache key from prefix and parameters"""
-        key_parts = [prefix]
-        
-        # Add positional arguments
-        for arg in args:
-            if isinstance(arg, (dict, list)):
-                key_parts.append(hashlib.md5(json.dumps(arg, sort_keys=True).encode()).hexdigest()[:8])
-            else:
-                key_parts.append(str(arg))
-        
-        # Add keyword arguments
-        if kwargs:
-            sorted_kwargs = sorted(kwargs.items())
-            kwargs_str = json.dumps(sorted_kwargs, sort_keys=True)
-            key_parts.append(hashlib.md5(kwargs_str.encode()).hexdigest()[:8])
-        
-        return ":".join(key_parts)
-    
-    @staticmethod
-    def api_key(service: str, endpoint: str, params: Dict = None) -> str:
-        """Generate key for API responses"""
-        return CacheKeyBuilder.build_key("api", service, endpoint, **(params or {}))
-    
-    @staticmethod
-    def search_key(query: str, filters: Dict = None) -> str:
-        """Generate key for search results"""
-        return CacheKeyBuilder.build_key("search", query, **(filters or {}))
 
-class BaseCache:
-    """Base cache interface"""
+@dataclass
+class CacheEntry:
+    """Cache entry with metadata"""
+    key: str
+    value: Any
+    created_at: float
+    accessed_at: float
+    access_count: int
+    ttl: int
+    source: str  # Which API/service created this entry
     
-    def get(self, key: str) -> Optional[Any]:
-        raise NotImplementedError
+    @property
+    def is_expired(self) -> bool:
+        return time.time() - self.created_at > self.ttl
     
-    def set(self, key: str, value: Any, ttl: int = None) -> bool:
-        raise NotImplementedError
+    @property
+    def age_seconds(self) -> float:
+        return time.time() - self.created_at
     
-    def delete(self, key: str) -> bool:
-        raise NotImplementedError
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON serialization"""
+        return {
+            'key': self.key,
+            'value': self.value,
+            'created_at': self.created_at,
+            'accessed_at': self.accessed_at,
+            'access_count': self.access_count,
+            'ttl': self.ttl,
+            'source': self.source
+        }
     
-    def exists(self, key: str) -> bool:
-        raise NotImplementedError
-    
-    def clear(self) -> bool:
-        raise NotImplementedError
+    @classmethod
+    def from_dict(cls, data: dict) -> 'CacheEntry':
+        """Create from dictionary"""
+        return cls(**data)
 
-class MemoryCache(BaseCache):
-    """In-memory cache with TTL support"""
-    
-    def __init__(self, max_items: int = 1000):
-        self._cache: Dict[str, Dict] = {}
-        self._max_items = max_items
-        self._lock = threading.RLock()
-    
-    def _cleanup_expired(self):
-        """Remove expired items"""
-        now = time.time()
-        expired_keys = []
-        
-        for key, data in self._cache.items():
-            if data.get('expires_at', 0) <= now:
-                expired_keys.append(key)
-        
-        for key in expired_keys:
-            del self._cache[key]
-    
-    def _ensure_capacity(self):
-        """Ensure cache doesn't exceed max items (LRU eviction)"""
-        if len(self._cache) >= self._max_items:
-            # Sort by last access time and remove oldest
-            sorted_items = sorted(
-                self._cache.items(),
-                key=lambda x: x[1].get('accessed_at', 0)
-            )
-            
-            # Remove oldest 20% of items
-            items_to_remove = max(1, len(sorted_items) // 5)
-            for key, _ in sorted_items[:items_to_remove]:
-                del self._cache[key]
-    
-    def get(self, key: str) -> Optional[Any]:
-        with self._lock:
-            self._cleanup_expired()
-            
-            if key not in self._cache:
-                return None
-            
-            data = self._cache[key]
-            now = time.time()
-            
-            if data.get('expires_at', 0) <= now:
-                del self._cache[key]
-                return None
-            
-            # Update access time for LRU
-            data['accessed_at'] = now
-            return data['value']
-    
-    def set(self, key: str, value: Any, ttl: int = None) -> bool:
-        with self._lock:
-            self._cleanup_expired()
-            self._ensure_capacity()
-            
-            now = time.time()
-            expires_at = now + ttl if ttl else now + 3600  # Default 1 hour
-            
-            self._cache[key] = {
-                'value': value,
-                'created_at': now,
-                'accessed_at': now,
-                'expires_at': expires_at
-            }
-            return True
-    
-    def delete(self, key: str) -> bool:
-        with self._lock:
-            return self._cache.pop(key, None) is not None
-    
-    def exists(self, key: str) -> bool:
-        return self.get(key) is not None
-    
-    def clear(self) -> bool:
-        with self._lock:
-            self._cache.clear()
-            return True
-
-class RedisCache(BaseCache):
-    """Redis-based cache"""
-    
-    def __init__(self, config: CacheConfig):
-        self._config = config
-        self._redis = None
-        self._connect()
-    
-    def _connect(self):
-        """Connect to Redis"""
-        if not REDIS_AVAILABLE:
-            logger.warning("Redis not available, falling back to memory cache")
-            return
-        
-        try:
-            self._redis = redis.Redis(
-                host=self._config.redis_host,
-                port=self._config.redis_port,
-                db=self._config.redis_db,
-                decode_responses=True,
-                socket_timeout=5,
-                socket_connect_timeout=5
-            )
-            # Test connection
-            self._redis.ping()
-            logger.info("Connected to Redis cache")
-        except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
-            self._redis = None
-    
-    def _is_available(self) -> bool:
-        """Check if Redis is available"""
-        if not self._redis:
-            return False
-        
-        try:
-            self._redis.ping()
-            return True
-        except:
-            return False
-    
-    def get(self, key: str) -> Optional[Any]:
-        if not self._is_available():
-            return None
-        
-        try:
-            value = self._redis.get(key)
-            if value is None:
-                return None
-            return json.loads(value)
-        except Exception as e:
-            logger.error(f"Redis get error: {e}")
-            return None
-    
-    def set(self, key: str, value: Any, ttl: int = None) -> bool:
-        if not self._is_available():
-            return False
-        
-        try:
-            serialized = json.dumps(value, default=str)
-            return self._redis.setex(
-                key, 
-                ttl or self._config.default_ttl, 
-                serialized
-            )
-        except Exception as e:
-            logger.error(f"Redis set error: {e}")
-            return False
-    
-    def delete(self, key: str) -> bool:
-        if not self._is_available():
-            return False
-        
-        try:
-            return bool(self._redis.delete(key))
-        except Exception as e:
-            logger.error(f"Redis delete error: {e}")
-            return False
-    
-    def exists(self, key: str) -> bool:
-        if not self._is_available():
-            return False
-        
-        try:
-            return bool(self._redis.exists(key))
-        except Exception as e:
-            logger.error(f"Redis exists error: {e}")
-            return False
-    
-    def clear(self) -> bool:
-        if not self._is_available():
-            return False
-        
-        try:
-            return self._redis.flushdb()
-        except Exception as e:
-            logger.error(f"Redis clear error: {e}")
-            return False
-
-class MultiLayerCache:
-    """Multi-layer cache with automatic promotion"""
-    
-    def __init__(self, config: CacheConfig):
-        self.config = config
-        self.memory_cache = MemoryCache(config.max_memory_items)
-        self.redis_cache = RedisCache(config) if REDIS_AVAILABLE else None
-        self._promotion_threshold = 3  # Promote to memory after 3 hits
-        self._hit_counts: Dict[str, int] = {}
-        self._lock = threading.RLock()
-    
-    def get(self, key: str) -> Optional[Any]:
-        # Try memory cache first
-        value = self.memory_cache.get(key)
-        if value is not None:
-            return value
-        
-        # Try Redis cache
-        if self.redis_cache:
-            value = self.redis_cache.get(key)
-            if value is not None:
-                # Track hits for promotion
-                with self._lock:
-                    self._hit_counts[key] = self._hit_counts.get(key, 0) + 1
-                    
-                    # Promote to memory cache if frequently accessed
-                    if self._hit_counts[key] >= self._promotion_threshold:
-                        self.memory_cache.set(key, value, self.config.default_ttl)
-                        del self._hit_counts[key]
-                
-                return value
-        
-        return None
-    
-    def set(self, key: str, value: Any, ttl: int = None) -> bool:
-        ttl = ttl or self.config.default_ttl
-        
-        # Store in both layers
-        memory_success = self.memory_cache.set(key, value, ttl)
-        redis_success = True
-        
-        if self.redis_cache:
-            redis_success = self.redis_cache.set(key, value, ttl)
-        
-        return memory_success or redis_success
-    
-    def delete(self, key: str) -> bool:
-        memory_success = self.memory_cache.delete(key)
-        redis_success = True
-        
-        if self.redis_cache:
-            redis_success = self.redis_cache.delete(key)
-        
-        # Clean up hit tracking
-        with self._lock:
-            self._hit_counts.pop(key, None)
-        
-        return memory_success or redis_success
-    
-    def exists(self, key: str) -> bool:
-        return (self.memory_cache.exists(key) or 
-                (self.redis_cache and self.redis_cache.exists(key)))
-    
-    def clear(self) -> bool:
-        memory_success = self.memory_cache.clear()
-        redis_success = True
-        
-        if self.redis_cache:
-            redis_success = self.redis_cache.clear()
-        
-        with self._lock:
-            self._hit_counts.clear()
-        
-        return memory_success and redis_success
 
 class SmartCache:
-    """Main cache class with invalidation rules"""
+    """
+    Smart cache with adaptive TTL based on access patterns
+    Features:
+    - Access pattern analysis for adaptive TTL
+    - LRU eviction with frequency consideration
+    - Per-source statistics
+    - Async-safe operations
+    - Memory and disk persistence
+    """
     
-    def __init__(self, config: CacheConfig = None):
-        self.config = config or CacheConfig()
-        self.cache = MultiLayerCache(self.config)
-        self.invalidation_patterns: Dict[str, Set[str]] = {}
-        self._lock = threading.RLock()
-    
-    def get(self, key: str) -> Optional[Any]:
-        """Get value from cache"""
-        return self.cache.get(key)
-    
-    def set(self, key: str, value: Any, ttl: int = None, tags: Set[str] = None) -> bool:
-        """Set value in cache with optional tags for invalidation"""
-        success = self.cache.set(key, value, ttl)
+    def __init__(self, 
+                 cache_dir: Optional[str] = None,
+                 max_memory_items: int = 500,
+                 max_disk_size_mb: int = 200,
+                 default_ttl: int = 3600):
         
-        if success and tags:
-            with self._lock:
-                for tag in tags:
-                    if tag not in self.invalidation_patterns:
-                        self.invalidation_patterns[tag] = set()
-                    self.invalidation_patterns[tag].add(key)
+        self.cache_dir = cache_dir or os.path.expanduser("~/.monitor_legislativo/smart_cache")
+        self.max_memory_items = max_memory_items
+        self.max_disk_size_mb = max_disk_size_mb
+        self.default_ttl = default_ttl
         
-        return success
-    
-    def delete(self, key: str) -> bool:
-        """Delete specific key"""
-        return self.cache.delete(key)
-    
-    def invalidate_by_pattern(self, pattern: str) -> int:
-        """Invalidate all keys matching pattern"""
-        invalidated = 0
+        self.logger = logging.getLogger(__name__)
         
-        with self._lock:
-            if pattern in self.invalidation_patterns:
-                keys_to_delete = self.invalidation_patterns[pattern].copy()
+        # Create cache directory
+        os.makedirs(self.cache_dir, exist_ok=True)
+        
+        # In-memory cache
+        self._memory_cache: Dict[str, CacheEntry] = {}
+        self._access_lock = asyncio.Lock()
+        
+        # Statistics
+        self._stats = CacheStats()
+        self._source_stats: Dict[str, CacheStats] = defaultdict(CacheStats)
+        
+        # Access pattern tracking for adaptive TTL
+        self._access_patterns: Dict[str, list] = defaultdict(list)
+        self._ttl_adjustments: Dict[str, float] = {}  # Key -> TTL multiplier
+    
+    async def get(self, key: str, source: str = "unknown") -> Optional[Any]:
+        """Get item from cache with access pattern tracking"""
+        async with self._access_lock:
+            # Check memory cache first
+            if key in self._memory_cache:
+                entry = self._memory_cache[key]
                 
-                for key in keys_to_delete:
-                    if self.cache.delete(key):
-                        invalidated += 1
+                if entry.is_expired:
+                    # Expired, remove from memory
+                    del self._memory_cache[key]
+                    self._stats.misses += 1
+                    self._source_stats[source].misses += 1
+                else:
+                    # Hit - update access info
+                    entry.accessed_at = time.time()
+                    entry.access_count += 1
+                    
+                    self._update_access_pattern(key, source)
+                    self._stats.hits += 1
+                    self._stats.last_access = time.time()
+                    self._source_stats[source].hits += 1
+                    self._source_stats[source].last_access = time.time()
+                    
+                    self.logger.debug(f"Cache hit (memory): {key}")
+                    return entry.value
+            
+            # Check disk cache
+            entry = await self._load_from_disk(key)
+            if entry and not entry.is_expired:
+                # Move to memory cache
+                await self._add_to_memory(entry)
                 
-                # Clean up pattern
-                del self.invalidation_patterns[pattern]
-        
-        return invalidated
+                # Update access info
+                entry.accessed_at = time.time()
+                entry.access_count += 1
+                
+                self._update_access_pattern(key, source)
+                self._stats.hits += 1
+                self._stats.last_access = time.time()
+                self._source_stats[source].hits += 1
+                self._source_stats[source].last_access = time.time()
+                
+                self.logger.debug(f"Cache hit (disk): {key}")
+                return entry.value
+            
+            # Miss
+            self._stats.misses += 1
+            self._source_stats[source].misses += 1
+            self.logger.debug(f"Cache miss: {key}")
+            return None
     
-    def invalidate_by_prefix(self, prefix: str) -> int:
-        """Invalidate all cached API responses for a service"""
-        # This is a simplified implementation
-        # In production, you'd want to track keys by prefix more efficiently
-        logger.info(f"Invalidating cache entries with prefix: {prefix}")
-        return 0
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None, source: str = "unknown"):
+        """Set item in cache with smart TTL adjustment"""
+        async with self._access_lock:
+            # Calculate adaptive TTL
+            if ttl is None:
+                ttl = self._calculate_adaptive_ttl(key, source)
+            
+            entry = CacheEntry(
+                key=key,
+                value=value,
+                created_at=time.time(),
+                accessed_at=time.time(),
+                access_count=1,
+                ttl=ttl,
+                source=source
+            )
+            
+            # Add to memory cache
+            await self._add_to_memory(entry)
+            
+            # Save to disk asynchronously
+            asyncio.create_task(self._save_to_disk(entry))
+            
+            self._stats.sets += 1
+            self._source_stats[source].sets += 1
+            
+            self.logger.debug(f"Cached: {key} (TTL: {ttl}s)")
+    
+    async def clear_pattern(self, pattern: str, source: str = None):
+        """Clear cache entries matching pattern"""
+        async with self._access_lock:
+            # Clear from memory
+            keys_to_remove = []
+            for key in self._memory_cache:
+                if pattern.replace('*', '') in key:
+                    if source is None or self._memory_cache[key].source == source:
+                        keys_to_remove.append(key)
+            
+            for key in keys_to_remove:
+                del self._memory_cache[key]
+            
+            # Clear from disk
+            await self._clear_disk_pattern(pattern, source)
+            
+            self.logger.info(f"Cleared cache pattern: {pattern} (source: {source})")
+    
+    async def clear_expired(self):
+        """Remove expired entries from cache"""
+        async with self._access_lock:
+            current_time = time.time()
+            
+            # Clear from memory
+            expired_keys = []
+            for key, entry in self._memory_cache.items():
+                if entry.is_expired:
+                    expired_keys.append(key)
+            
+            for key in expired_keys:
+                del self._memory_cache[key]
+                self._stats.evictions += 1
+            
+            # Clear from disk
+            await self._clear_expired_disk()
+            
+            if expired_keys:
+                self.logger.info(f"Cleared {len(expired_keys)} expired entries")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get cache statistics"""
+        """Get comprehensive cache statistics"""
         return {
-            'memory_cache_size': len(self.cache.memory_cache._cache),
-            'redis_available': self.cache.redis_cache is not None,
-            'invalidation_patterns': len(self.invalidation_patterns),
-            'config': asdict(self.config)
+            'global': asdict(self._stats),
+            'by_source': {source: asdict(stats) for source, stats in self._source_stats.items()},
+            'memory_usage': {
+                'items': len(self._memory_cache),
+                'max_items': self.max_memory_items,
+                'utilization': len(self._memory_cache) / self.max_memory_items * 100
+            },
+            'ttl_adjustments': dict(self._ttl_adjustments),
+            'top_accessed': self._get_top_accessed_keys(10)
         }
-
-# Global cache instance
-_cache_instance: Optional[SmartCache] = None
-
-def get_cache() -> SmartCache:
-    """Get global cache instance"""
-    global _cache_instance
-    if _cache_instance is None:
-        _cache_instance = SmartCache()
-    return _cache_instance
-
-def init_cache(config: CacheConfig = None) -> SmartCache:
-    """Initialize global cache with config"""
-    global _cache_instance
-    _cache_instance = SmartCache(config)
-    return _cache_instance
-
-# Decorators for easy caching
-
-def cached(ttl: int = None, key_prefix: str = None, tags: Set[str] = None):
-    """Decorator to cache function results"""
-    def decorator(func: Callable) -> Callable:
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            cache = get_cache()
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """Perform cache health check"""
+        try:
+            # Test memory operations
+            test_key = "__health_check__"
+            await self.set(test_key, "test", ttl=1)
+            result = await self.get(test_key)
             
-            # Build cache key
-            prefix = key_prefix or f"func:{func.__name__}"
-            key = CacheKeyBuilder.build_key(prefix, *args, **kwargs)
+            # Clean up
+            if test_key in self._memory_cache:
+                del self._memory_cache[test_key]
             
-            # Try to get from cache
-            result = cache.get(key)
-            if result is not None:
-                return result
+            # Check disk space
+            disk_usage = await self._get_disk_usage()
             
-            # Execute function and cache result
-            result = func(*args, **kwargs)
-            cache.set(key, result, ttl, tags)
-            
-            return result
+            return {
+                'status': 'healthy' if result == "test" else 'degraded',
+                'memory_cache': len(self._memory_cache),
+                'disk_usage_mb': disk_usage,
+                'hit_rate': self._stats.hit_rate,
+                'last_access': self._stats.last_access
+            }
+        except Exception as e:
+            return {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+    
+    def _calculate_adaptive_ttl(self, key: str, source: str) -> int:
+        """Calculate adaptive TTL based on access patterns"""
+        base_ttl = self.default_ttl
         
-        # Add cache control methods to function
-        wrapper.cache_key = lambda *args, **kwargs: CacheKeyBuilder.build_key(
-            key_prefix or f"func:{func.__name__}", *args, **kwargs
-        )
-        wrapper.invalidate = lambda *args, **kwargs: get_cache().delete(
-            wrapper.cache_key(*args, **kwargs)
-        )
+        # Source-specific TTL adjustments
+        source_multipliers = {
+            'camara': 0.5,    # Frequently updated
+            'senado': 0.5,    # Frequently updated  
+            'planalto': 1.0,  # Medium update frequency
+            'anvisa': 2.0,    # Less frequent updates
+            'aneel': 2.0,     # Regulatory consultations change slowly
+            'anatel': 2.0,
+        }
         
-        return wrapper
-    return decorator
+        multiplier = source_multipliers.get(source.lower(), 1.0)
+        
+        # Apply learned TTL adjustments
+        if key in self._ttl_adjustments:
+            multiplier *= self._ttl_adjustments[key]
+        
+        # Access pattern influence
+        access_pattern = self._access_patterns.get(key, [])
+        if len(access_pattern) > 1:
+            # If frequently accessed, cache longer
+            recent_accesses = [a for a in access_pattern if time.time() - a < 3600]
+            if len(recent_accesses) > 3:
+                multiplier *= 1.5
+        
+        return int(base_ttl * multiplier)
+    
+    def _update_access_pattern(self, key: str, source: str):
+        """Update access pattern for adaptive TTL learning"""
+        current_time = time.time()
+        
+        # Keep only recent access times (last 24 hours)
+        self._access_patterns[key] = [
+            t for t in self._access_patterns[key] 
+            if current_time - t < 86400
+        ]
+        self._access_patterns[key].append(current_time)
+        
+        # Learn TTL adjustments based on access patterns
+        accesses = self._access_patterns[key]
+        if len(accesses) >= 5:
+            # Calculate average time between accesses
+            intervals = [accesses[i] - accesses[i-1] for i in range(1, len(accesses))]
+            avg_interval = sum(intervals) / len(intervals)
+            
+            # Adjust TTL multiplier based on access frequency
+            if avg_interval < 300:  # Very frequent (< 5 min)
+                self._ttl_adjustments[key] = 0.5
+            elif avg_interval < 1800:  # Frequent (< 30 min)
+                self._ttl_adjustments[key] = 0.8
+            elif avg_interval > 7200:  # Infrequent (> 2 hours)
+                self._ttl_adjustments[key] = 2.0
+    
+    async def _add_to_memory(self, entry: CacheEntry):
+        """Add entry to memory cache with LRU eviction"""
+        # Check if we need to evict
+        if len(self._memory_cache) >= self.max_memory_items:
+            await self._evict_lru()
+        
+        self._memory_cache[entry.key] = entry
+    
+    async def _evict_lru(self):
+        """Evict least recently used item considering access frequency"""
+        if not self._memory_cache:
+            return
+        
+        # Score = recency * frequency (higher is better)
+        current_time = time.time()
+        scores = {}
+        
+        for key, entry in self._memory_cache.items():
+            recency = 1 / (current_time - entry.accessed_at + 1)
+            frequency = entry.access_count
+            scores[key] = recency * frequency
+        
+        # Remove item with lowest score
+        lru_key = min(scores, key=scores.get)
+        del self._memory_cache[lru_key]
+        self._stats.evictions += 1
+    
+    async def _save_to_disk(self, entry: CacheEntry):
+        """Save entry to disk"""
+        try:
+            cache_file = self._get_cache_file_path(entry.key)
+            with open(cache_file, 'w') as f:
+                json.dump(entry.to_dict(), f)
+        except Exception as e:
+            self.logger.error(f"Error saving to disk: {e}")
+    
+    async def _load_from_disk(self, key: str) -> Optional[CacheEntry]:
+        """Load entry from disk"""
+        try:
+            cache_file = self._get_cache_file_path(key)
+            if os.path.exists(cache_file):
+                with open(cache_file, 'r') as f:
+                    data = json.load(f)
+                return CacheEntry.from_dict(data)
+        except Exception as e:
+            self.logger.error(f"Error loading from disk: {e}")
+            # Remove corrupted file
+            try:
+                os.remove(cache_file)
+            except:
+                pass
+        return None
+    
+    async def _clear_disk_pattern(self, pattern: str, source: Optional[str]):
+        """Clear disk cache entries matching pattern"""
+        import glob
+        
+        cache_pattern = os.path.join(self.cache_dir, "*.cache")
+        for cache_file in glob.glob(cache_pattern):
+            try:
+                with open(cache_file, 'r') as f:
+                    data = json.load(f)
+                
+                if pattern.replace('*', '') in data.get('key', ''):
+                    if source is None or data.get('source') == source:
+                        os.remove(cache_file)
+            except:
+                # Remove corrupted files
+                try:
+                    os.remove(cache_file)
+                except:
+                    pass
+    
+    async def _clear_expired_disk(self):
+        """Clear expired entries from disk"""
+        import glob
+        
+        current_time = time.time()
+        cache_pattern = os.path.join(self.cache_dir, "*.cache")
+        
+        for cache_file in glob.glob(cache_pattern):
+            try:
+                with open(cache_file, 'r') as f:
+                    data = json.load(f)
+                
+                if current_time - data.get('created_at', 0) > data.get('ttl', 3600):
+                    os.remove(cache_file)
+            except:
+                # Remove corrupted files
+                try:
+                    os.remove(cache_file)
+                except:
+                    pass
+    
+    async def _get_disk_usage(self) -> float:
+        """Get disk cache usage in MB"""
+        total_size = 0
+        for filename in os.listdir(self.cache_dir):
+            if filename.endswith('.cache'):
+                filepath = os.path.join(self.cache_dir, filename)
+                try:
+                    total_size += os.path.getsize(filepath)
+                except:
+                    pass
+        
+        return total_size / (1024 * 1024)
+    
+    def _get_cache_file_path(self, key: str) -> str:
+        """Get file path for cache key"""
+        safe_key = hashlib.md5(key.encode()).hexdigest()
+        return os.path.join(self.cache_dir, f"{safe_key}.cache")
+    
+    def _get_top_accessed_keys(self, limit: int) -> list:
+        """Get most frequently accessed keys"""
+        items = [(key, entry.access_count) for key, entry in self._memory_cache.items()]
+        items.sort(key=lambda x: x[1], reverse=True)
+        return items[:limit]
 
-def cached_api_response(service: str, ttl: int = None):
-    """Decorator specifically for API responses"""
-    def decorator(func: Callable) -> Callable:
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            cache = get_cache()
-            
-            # Extract endpoint from function name or kwargs
-            endpoint = kwargs.get('endpoint', func.__name__)
-            params = {k: v for k, v in kwargs.items() if k != 'endpoint'}
-            
-            key = CacheKeyBuilder.api_key(service, endpoint, params)
-            
-            # Try cache first
-            result = cache.get(key)
-            if result is not None:
-                logger.debug(f"Cache hit for {service}:{endpoint}")
-                return result
-            
-            # Execute API call and cache result
-            result = func(*args, **kwargs)
-            cache_ttl = ttl or cache.config.api_response_ttl
-            tags = {f"api:{service}", f"service:{service}"}
-            
-            cache.set(key, result, cache_ttl, tags)
-            logger.debug(f"Cached {service}:{endpoint} for {cache_ttl}s")
-            
-            return result
-        
-        return wrapper
-    return decorator
+
+# Global smart cache instance
+smart_cache = SmartCache()
