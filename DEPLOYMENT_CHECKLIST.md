@@ -10,7 +10,7 @@
 - [x] **Clean repository structure**
 - [x] **Remove unnecessary documentation files** 
 - [x] **Fixed remote repository URL** (`monitor-legislativo-v4`)
-- [x] **Optimized requirements.txt** (gunicorn + uvicorn)
+- [x] **Optimized requirements.txt** (uvicorn + FastAPI)
 - [x] **Created proper WSGI entry point** (`wsgi.py`)
 - [x] **Railway configuration** (`railway.json`, `Procfile`)
 
@@ -37,7 +37,7 @@ DEBUG=false
 
 ### 2.3 Verify Deployment
 - [ ] Build completes successfully
-- [ ] Container starts without "gunicorn not found" error
+- [ ] Container starts successfully with uvicorn
 - [ ] Health check passes: `https://your-app.railway.app/health`
 - [ ] API docs accessible: `https://your-app.railway.app/api/docs`
 
@@ -117,10 +117,10 @@ DEBUG=false
 
 ### Common Issues & Solutions
 
-**"Container failed to start - gunicorn not found"**
-- ✅ **SOLVED**: Added `gunicorn==21.2.0` to requirements.txt
-- ✅ **SOLVED**: Created proper `wsgi.py` entry point
-- ✅ **SOLVED**: Using `uvicorn.workers.UvicornWorker`
+**"Container failed to start - server not found"**
+- ✅ **SOLVED**: Using uvicorn directly via Procfile
+- ✅ **SOLVED**: Created minimal_app.py entry point
+- ✅ **SOLVED**: Railway detects Procfile correctly
 
 **"Database connection failed"**
 - Check Supabase connection string format

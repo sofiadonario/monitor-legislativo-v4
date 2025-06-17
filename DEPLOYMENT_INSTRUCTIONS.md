@@ -46,7 +46,7 @@ git push -u origin main
 
 4. **Wait for Deployment**:
    - Railway will automatically detect the Procfile
-   - It will use: `gunicorn wsgi:application --bind 0.0.0.0:$PORT --worker-class uvicorn.workers.UvicornWorker`
+   - It will use: `python -m uvicorn minimal_app:app --host 0.0.0.0 --port $PORT`
    - Deployment should complete in 2-3 minutes
 
 5. **Get Your API URL**:
@@ -120,7 +120,7 @@ https://your-railway-url/api/docs
 
 ## 🎯 Expected Results
 
-✅ **Railway Deployment**: No more "gunicorn not found" errors  
+✅ **Railway Deployment**: Clean uvicorn-based deployment  
 ✅ **Total Cost**: $7/month (Railway only)  
 ✅ **Performance**: 70%+ cache hit rate  
 ✅ **Availability**: 99%+ uptime  
@@ -132,7 +132,7 @@ https://your-railway-url/api/docs
 **Railway Build Fails**:
 - Check build logs in Railway dashboard
 - Verify all environment variables are set
-- Ensure requirements.txt has both gunicorn and uvicorn
+- Ensure requirements.txt has uvicorn and all dependencies
 
 **Frontend Not Loading**:
 - Check GitHub Actions logs
