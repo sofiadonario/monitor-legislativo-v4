@@ -21,12 +21,23 @@ port = os.getenv("PORT", "NOT_SET")
 print(f"PORT environment variable: {port}")
 
 # Check required files exist
-required_files = ["minimal_app.py", "Procfile", "railway.json", "requirements.txt"]
-for file in required_files:
-    if os.path.exists(file):
-        print(f"✅ {file} exists")
+def verify_deployment_files():
+    """Verify essential files for Railway deployment exist"""
+    print("🔍 Verifying essential deployment files...")
+    required_files = ["minimal_app.py", "railway.json", "deps.txt"]
+    
+    missing_files = []
+    for f in required_files:
+        if os.path.exists(f):
+            print(f"✅ {f} exists")
+        else:
+            print(f"❌ {f} missing")
+            missing_files.append(f)
+
+    if missing_files:
+        print(f"❌ The following files are missing: {', '.join(missing_files)}")
     else:
-        print(f"❌ {file} missing")
+        print("✅ All required files exist")
 
 # Check if we can import required packages
 try:

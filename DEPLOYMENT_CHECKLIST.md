@@ -10,7 +10,7 @@
 - [x] **Clean repository structure**
 - [x] **Remove unnecessary documentation files** 
 - [x] **Fixed remote repository URL** (`monitor-legislativo-v4`)
-- [x] **Optimized requirements.txt** (uvicorn + FastAPI)
+- [x] **Optimized `deps.txt`** (uvicorn + FastAPI)
 - [x] **Created proper WSGI entry point** (`wsgi.py`)
 - [x] **Railway configuration** (`railway.json`, `Procfile`)
 

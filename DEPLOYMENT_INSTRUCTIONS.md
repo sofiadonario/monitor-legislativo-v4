@@ -152,3 +152,20 @@ https://your-railway-url/api/docs
 - **Free Services**: GitHub Pages, Supabase, Upstash all on free tiers
 
 Good luck with your deployment! 🚀
+
+#### 2. Configure Build and Start Commands
+
+- **Builder**: `NIXPACKS`
+- **Install Command**: `python -m venv .venv && .venv/bin/pip install -r deps.txt`
+- **Start Command**: `.venv/bin/python -m uvicorn minimal_app:app --host 0.0.0.0 --port $PORT`
+
+##### Key Files for Railway
+
+- **`minimal_app.py`**: A minimal FastAPI application for health checks and basic routing.
+- **`deps.txt`**: Contains all Python dependencies.
+- **`nixpacks.toml`**: Explicitly tells Railway how to build the application, preventing it from using `gunicorn`.
+- **`railway.json`**: Defines the start command and health check path, ensuring `uvicorn` is used.
+
+---
+
+### Step-by-Step Deployment Guide

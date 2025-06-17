@@ -21,8 +21,8 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy requirements first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY deps.txt .
+RUN pip install --no-cache-dir -r deps.txt
 
 # Production stage
 FROM python:3.11-slim as production
@@ -47,7 +47,7 @@ WORKDIR /app
 RUN chown appuser:appuser /app
 
 # Copy application code
-COPY --chown=appuser:appuser . .
+COPY --chown=appuser:appuser ./web /app/web
 
 # Switch to non-root user
 USER appuser

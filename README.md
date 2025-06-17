@@ -26,13 +26,19 @@ A comprehensive legislative monitoring system for Brazilian government APIs.
 - Git
 
 ### Local Development
-```bash
-# Clone and setup
-git clone <repository-url>
-cd monitor_legislativo_v4
-pip install -r requirements.txt
-npm install
+1. **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/monitor_legislativo_v4.git
+    cd monitor_legislativo_v4
+    ```
 
+2. **Install dependencies:**
+    ```bash
+    pip install -r deps.txt
+    ```
+
+3. **Run the application:**
+```bash
 # Start development servers
 python launch.py  # Backend on :8000
 npm run dev      # Frontend on :5173

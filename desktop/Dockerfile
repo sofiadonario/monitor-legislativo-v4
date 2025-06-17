@@ -34,7 +34,8 @@ COPY requirements*.txt ./
 COPY desktop/requirements*.txt ./desktop/ 2>/dev/null || true
 
 # Install Python dependencies
-RUN pip install --user -r requirements.txt && \
+COPY deps.txt .
+RUN pip install --user -r deps.txt && \
     ([ -f desktop/requirements.txt ] && pip install --user -r desktop/requirements.txt || true)
 
 # Stage 3: Production
