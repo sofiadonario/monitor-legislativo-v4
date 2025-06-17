@@ -10,6 +10,3 @@ cmds = ["pip install -r requirements.txt"]
 
 [phases.build]
 cmds = ["python -m pip install uvicorn[standard]"]
-
-[start]
-cmd = "python -m uvicorn minimal_app:app --host 0.0.0.0 --port $PORT"
