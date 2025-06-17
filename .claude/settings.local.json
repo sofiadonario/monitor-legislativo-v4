@@ -30,7 +30,9 @@
       "Bash(touch:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git submodule:*)"
+      "Bash(git submodule:*)",
+      "Bash(git remote remove:*)",
+      "Bash(git remote add:*)"
     ]
   },
   "enableAllProjectMcpServers": false

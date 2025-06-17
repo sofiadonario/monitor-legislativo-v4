@@ -1,8 +1,9 @@
 """
-WSGI entry point for gunicorn deployment
-Railway Ultra-Budget Academic Deployment
+WSGI/ASGI entry point for Railway deployment
+Ultra-Budget Academic Deployment - Monitor Legislativo v4
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -13,9 +14,11 @@ sys.path.insert(0, str(project_root))
 # Import the FastAPI app
 from web.main import app
 
-# Expose the app for gunicorn
+# Expose the app for gunicorn (this is what Railway calls)
 application = app
 
 if __name__ == "__main__":
+    # Fallback for direct execution
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

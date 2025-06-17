@@ -6,19 +6,13 @@
 # CORE WEB FRAMEWORK - REQUIRED FOR BASIC FUNCTIONALITY
 # =============================================================================
 
-# FastAPI - Modern Python web framework
-# WHY: Automatic API documentation, high performance, built-in validation
-# VERSION: Use 0.104.x for stability with Railway deployment
+# FastAPI - Modern Python web framework for async APIs
 fastapi==0.104.1
 
-# Uvicorn - ASGI server to run FastAPI
-# WHY: Required to serve your API on Railway
-# VERSION: Standard includes all optimizations for production
+# Uvicorn - ASGI server (preferred for FastAPI async support)
 uvicorn[standard]==0.24.0
 
-# Gunicorn - WSGI server (Railway fallback)
-# WHY: Railway sometimes defaults to gunicorn
-# VERSION: Latest stable for production
+# Gunicorn - WSGI server with uvicorn workers (Railway auto-detection)
 gunicorn==21.2.0
 
 # Python Multipart - Handle file uploads and form data
