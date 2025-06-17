@@ -11,8 +11,8 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# Import the FastAPI app
-from web.main import app
+# Import the minimal FastAPI app (guaranteed to work)
+from minimal_app import app
 
 # Expose the app for gunicorn (this is what Railway calls)
 application = app

@@ -1,1 +1,1 @@
-web: python -m gunicorn wsgi:application --bind 0.0.0.0:$PORT --worker-class uvicorn.workers.UvicornWorker --workers 1 --timeout 120 --max-requests 1000 --preload
+web: python -m uvicorn minimal_app:app --host 0.0.0.0 --port $PORT --workers 1

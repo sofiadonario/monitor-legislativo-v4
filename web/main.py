@@ -117,7 +117,10 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "version": "4.0.0"}
+    try:
+        return {"status": "healthy", "version": "4.0.0", "timestamp": "2025-06-17"}
+    except Exception as e:
+        return {"status": "error", "error": str(e), "version": "4.0.0"}
 
 def main():
     """Main entry point for web application"""
