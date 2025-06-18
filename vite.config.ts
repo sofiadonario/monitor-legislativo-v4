@@ -26,8 +26,8 @@ export default defineConfig({
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
       }
     },
-    // Disable aggressive minification for debugging
-    minify: 'esbuild',
+    // Disable minification completely for GUARANTEED working deployment
+    minify: false,
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
     // Enable CSS code splitting
