@@ -1,0 +1,357 @@
+/* Optimized Map Component Styles */
+
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #f8f9fa;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.map-svg {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.map-state {
+  fill: #e0e0e0;
+  stroke: #ffffff;
+  stroke-width: 1;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.map-state:hover {
+  fill: #bbdefb;
+  stroke: #2196F3;
+  stroke-width: 2;
+  filter: drop-shadow(0 2px 4px rgba(33, 150, 243, 0.3));
+}
+
+.map-state.highlighted {
+  fill: #2196F3;
+  stroke: #1976D2;
+  stroke-width: 2;
+  animation: pulse 2s infinite;
+}
+
+.map-state.selected {
+  fill: #1976D2;
+  stroke: #0D47A1;
+  stroke-width: 3;
+  filter: drop-shadow(0 4px 8px rgba(13, 71, 161, 0.4));
+}
+
+.map-state:focus {
+  outline: none;
+  stroke: #ff9800;
+  stroke-width: 3;
+  fill: #fff3e0;
+}
+
+/* State labels */
+.state-label {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  fill: #333;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.map-state.highlighted + .state-label,
+.map-state.selected + .state-label {
+  fill: white;
+  font-weight: 700;
+}
+
+/* Map controls */
+.map-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+}
+
+.map-control-button {
+  width: 40px;
+  height: 40px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #666;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.map-control-button:hover {
+  background: #f5f5f5;
+  color: #2196F3;
+  border-color: #2196F3;
+}
+
+.map-control-button:focus {
+  outline: 2px solid #2196F3;
+  outline-offset: 2px;
+}
+
+.map-control-button:active {
+  transform: scale(0.95);
+}
+
+/* Map legend */
+.map-legend {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 0.75rem;
+  max-width: 200px;
+}
+
+.map-legend h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.8rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  border: 1px solid #ddd;
+}
+
+.legend-text {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+/* Loading state */
+.map-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Error state */
+.map-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #d32f2f;
+  text-align: center;
+  padding: 2rem;
+}
+
+.map-error-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.map-error-message {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.map-error-button {
+  padding: 0.5rem 1rem;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Tooltip */
+.map-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  pointer-events: none;
+  z-index: 1000;
+  transform: translate(-50%, -100%);
+  margin-top: -8px;
+  white-space: nowrap;
+}
+
+.map-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .map-controls {
+    top: 5px;
+    right: 5px;
+    gap: 4px;
+  }
+  
+  .map-control-button {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  
+  .map-legend {
+    bottom: 5px;
+    left: 5px;
+    padding: 8px;
+    max-width: 150px;
+  }
+  
+  .state-label {
+    font-size: 9px;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .map-state,
+  .map-control-button,
+  .map-svg {
+    transition: none;
+  }
+  
+  .map-state.highlighted {
+    animation: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .map-state {
+    stroke-width: 2;
+  }
+  
+  .map-state:hover,
+  .map-state.highlighted,
+  .map-state.selected {
+    stroke-width: 3;
+  }
+  
+  .map-legend,
+  .map-tooltip {
+    border: 2px solid #000;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .map-container {
+    background: #1a1a1a;
+  }
+  
+  .map-state {
+    fill: #404040;
+    stroke: #666;
+  }
+  
+  .map-state:hover {
+    fill: #1976D2;
+  }
+  
+  .state-label {
+    fill: #ccc;
+  }
+  
+  .map-legend {
+    background: #2a2a2a;
+    color: white;
+  }
+  
+  .legend-text {
+    color: #ccc;
+  }
+  
+  .map-control-button {
+    background: #2a2a2a;
+    border-color: #555;
+    color: #ccc;
+  }
+  
+  .map-control-button:hover {
+    background: #333;
+    color: #64B5F6;
+    border-color: #64B5F6;
+  }
+}
+
+/* Print styles */
+@media print {
+  .map-controls,
+  .map-tooltip {
+    display: none;
+  }
+  
+  .map-container {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .map-state {
+    fill: #f0f0f0;
+    stroke: #000;
+  }
+  
+  .map-state.highlighted,
+  .map-state.selected {
+    fill: #d0d0d0;
+  }
+  
+  .state-label {
+    fill: #000;
+  }
+}
