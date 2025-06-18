@@ -32,14 +32,10 @@ export class LegislativeDataService {
       const data = await apiClient.get<any[]>('/documents', params);
       return this.transformApiResponse(data);
     } catch (error) {
-      console.error('Failed to fetch from API, falling back to mock data:', error);
+      console.warn('API not available, falling back to mock data:', error);
       
-      // Fallback to mock data if API fails in development
-      if (isDevelopment) {
-        return this.filterMockData(mockLegislativeData, filters);
-      }
-      
-      throw error;
+      // Always fallback to mock data if API fails (for academic/demo purposes)
+      return this.filterMockData(mockLegislativeData, filters);
     }
   }
   
@@ -56,13 +52,10 @@ export class LegislativeDataService {
         return null;
       }
       
-      console.error('Failed to fetch document from API:', error);
+      console.warn('API not available, falling back to mock data:', error);
       
-      if (isDevelopment) {
-        return mockLegislativeData.find(doc => doc.id === id) || null;
-      }
-      
-      throw error;
+      // Always fallback to mock data if API fails (for academic/demo purposes)
+      return mockLegislativeData.find(doc => doc.id === id) || null;
     }
   }
   
@@ -80,18 +73,15 @@ export class LegislativeDataService {
       const data = await apiClient.get<any[]>('/documents/search', { q: searchTerm });
       return this.transformApiResponse(data);
     } catch (error) {
-      console.error('Search API failed:', error);
+      console.warn('Search API not available, falling back to mock data:', error);
       
-      if (isDevelopment) {
-        const lowerSearchTerm = searchTerm.toLowerCase();
-        return mockLegislativeData.filter(doc => 
-          doc.title.toLowerCase().includes(lowerSearchTerm) ||
-          doc.summary.toLowerCase().includes(lowerSearchTerm) ||
-          doc.keywords.some(keyword => keyword.toLowerCase().includes(lowerSearchTerm))
-        );
-      }
-      
-      throw error;
+      // Always fallback to mock data search if API fails
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      return mockLegislativeData.filter(doc => 
+        doc.title.toLowerCase().includes(lowerSearchTerm) ||
+        doc.summary.toLowerCase().includes(lowerSearchTerm) ||
+        doc.keywords.some(keyword => keyword.toLowerCase().includes(lowerSearchTerm))
+      );
     }
   }
   
