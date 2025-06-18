@@ -1,4 +1,4 @@
-import { j as jsxRuntimeExports } from "./index-B7i3lUh2.js";
+import { j as jsxRuntimeExports } from "./index-BvirpK-b.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
 import "./react-vendor-D_QSeeZk.js";
 const DataVisualization = ({ documents }) => {
@@ -733,5 +733,6 @@ const TabbedSidebar = ({
   );
 };
 export {
-  TabbedSidebar
+  TabbedSidebar,
+  TabbedSidebar as default
 };

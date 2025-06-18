@@ -1,4 +1,4 @@
-import { j as jsxRuntimeExports } from "./index-B7i3lUh2.js";
+import { j as jsxRuntimeExports } from "./index-BvirpK-b.js";
 import { r as reactExports, M as MapContainer, T as TileLayer, G as GeoJSON, u as useMap, R as React } from "./leaflet-vendor-HKOewaEh.js";
 import "./react-vendor-D_QSeeZk.js";
 const brazilStatesData = {
@@ -893,5 +893,6 @@ const OptimizedMap = reactExports.memo(({
 });
 OptimizedMap.displayName = "OptimizedMap";
 export {
-  OptimizedMap
+  OptimizedMap,
+  OptimizedMap as default
 };

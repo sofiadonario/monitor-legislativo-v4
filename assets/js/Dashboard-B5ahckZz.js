@@ -1,8 +1,8 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-DqW0E1q-.js","assets/js/index-B7i3lUh2.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-CuWVk-Hd.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-Bwtbm432.js","assets/css/TabbedSidebar-Abd64lRR.css","assets/js/ExportPanel-BzR39aOH.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-CZJxMZc-.js","assets/js/index-BvirpK-b.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-CuWVk-Hd.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-nCdbuDxL.js","assets/css/TabbedSidebar-Abd64lRR.css","assets/js/ExportPanel-CJeNH-Yx.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-B7i3lUh2.js";
+import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-BvirpK-b.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
 import "./react-vendor-D_QSeeZk.js";
 function parseURN(urn) {
@@ -407,19 +407,19 @@ const _LegislativeDataService = class _LegislativeDataService {
     return _LegislativeDataService.instance;
   }
   async getLocalCsvData() {
-    if (this.csvDataCache) {
+    if (this.csvDataCache && this.csvDataCache.length > 0) {
       console.log("Using cached CSV data.");
       return { documents: this.csvDataCache, usingFallback: true };
     }
     try {
       console.log("Attempting to load CSV legislative data...");
       const csvDocs = await loadCSVLegislativeData();
-      if (csvDocs.length > 0) {
+      if (csvDocs && Array.isArray(csvDocs) && csvDocs.length > 0) {
         console.log(`Loaded ${csvDocs.length} documents from CSV`);
         this.csvDataCache = csvDocs;
         return { documents: csvDocs, usingFallback: true };
       }
-      throw new Error("CSV file was loaded but contained no documents.");
+      throw new Error("CSV file was loaded but contained no documents or invalid data.");
     } catch (error) {
       console.error("Critical error: Failed to load or parse CSV data.", error);
       return { documents: [], usingFallback: true };
@@ -531,9 +531,9 @@ const useKeyboardNavigation = (onEscape, onEnter) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 };
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-DqW0E1q-.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0).then((module) => ({ default: module.OptimizedMap })));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-Bwtbm432.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0).then((module) => ({ default: module.TabbedSidebar })));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-BzR39aOH.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0).then((module) => ({ default: module.ExportPanel })));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-CZJxMZc-.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-nCdbuDxL.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-CJeNH-Yx.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,
@@ -608,16 +608,24 @@ const Dashboard = () => {
   const toggleSidebar = reactExports.useCallback(() => dispatch({ type: "TOGGLE_SIDEBAR" }), []);
   const toggleExportPanel = reactExports.useCallback(() => dispatch({ type: "TOGGLE_EXPORT_PANEL" }), []);
   const filteredDocuments = reactExports.useMemo(() => {
+    if (!documents || !Array.isArray(documents)) {
+      return [];
+    }
     return documents.filter((doc) => {
+      if (!doc) return false;
       if (selectedState && doc.state !== selectedState) return false;
       if (selectedMunicipality && doc.municipality !== selectedMunicipality) return false;
       return true;
     });
   }, [documents, selectedState, selectedMunicipality]);
-  const highlightedStates = reactExports.useMemo(
-    () => [...new Set(filteredDocuments.map((doc) => doc.state).filter(Boolean))],
-    [filteredDocuments]
-  );
+  const highlightedStates = reactExports.useMemo(() => {
+    if (!filteredDocuments || !Array.isArray(filteredDocuments)) {
+      return [];
+    }
+    return [...new Set(
+      filteredDocuments.map((doc) => doc == null ? void 0 : doc.state).filter((state2) => Boolean(state2))
+    )];
+  }, [filteredDocuments]);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "dashboard", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading sidebar..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx(
       TabbedSidebar,
@@ -626,7 +634,7 @@ const Dashboard = () => {
         onToggle: toggleSidebar,
         filters,
         onFiltersChange,
-        documents,
+        documents: documents || [],
         selectedState,
         onClearSelection: handleClearSelection
       }
@@ -669,9 +677,9 @@ const Dashboard = () => {
           {
             selectedState,
             selectedMunicipality,
-            documents: filteredDocuments,
+            documents: filteredDocuments || [],
             onLocationClick: handleLocationClick,
-            highlightedLocations: highlightedStates
+            highlightedLocations: highlightedStates || []
           }
         ) })
       ] }),
@@ -693,7 +701,7 @@ const Dashboard = () => {
         id: "export-panel",
         isOpen: exportPanelOpen,
         onClose: toggleExportPanel,
-        documents: filteredDocuments
+        documents: filteredDocuments || []
       }
     ) })
   ] });
