@@ -144,6 +144,21 @@ const LoadingSpinner = ({
 };
 const App = () => {
   const [showSpinner, setShowSpinner] = reactExports.useState(false);
+  const [apiStatus, setApiStatus] = reactExports.useState("Not tested");
+  const [isTestingApi, setIsTestingApi] = reactExports.useState(false);
+  const testBackendApi = async () => {
+    setIsTestingApi(true);
+    setApiStatus("Testing...");
+    try {
+      const response = await fetch("https://monitor-legislativo-v4-production.up.railway.app/health");
+      const data = await response.json();
+      setApiStatus(`✅ API Working! Status: ${data.status}`);
+    } catch (error) {
+      setApiStatus(`❌ API Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setIsTestingApi(false);
+    }
+  };
   return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorBoundary, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "App", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { style: {
       padding: "2rem",
@@ -170,27 +185,58 @@ const App = () => {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Step 1: ErrorBoundary added ✅" }) }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Step 2: LoadingSpinner added ✅" }) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { margin: "2rem 0" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => setShowSpinner(!showSpinner),
-          style: {
-            padding: "0.5rem 1rem",
-            margin: "0.5rem",
-            backgroundColor: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer"
-          },
-          children: [
-            showSpinner ? "Hide" : "Show",
-            " Loading Spinner"
-          ]
-        }
-      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Step 3: API connectivity test ✅" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "2rem 0" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => setShowSpinner(!showSpinner),
+            style: {
+              padding: "0.5rem 1rem",
+              margin: "0.5rem",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer"
+            },
+            children: [
+              showSpinner ? "Hide" : "Show",
+              " Loading Spinner"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: testBackendApi,
+            disabled: isTestingApi,
+            style: {
+              padding: "0.5rem 1rem",
+              margin: "0.5rem",
+              backgroundColor: isTestingApi ? "#6c757d" : "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: isTestingApi ? "not-allowed" : "pointer"
+            },
+            children: isTestingApi ? "Testing..." : "Test Railway API"
+          }
+        )
+      ] }),
       showSpinner && /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Testing spinner component..." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Next: Adding more components gradually..." })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        margin: "1rem 0",
+        padding: "1rem",
+        backgroundColor: "#f8f9fa",
+        borderRadius: "4px",
+        border: "1px solid #dee2e6"
+      }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "API Status:" }),
+        " ",
+        apiStatus
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Next: Adding Dashboard component with Suspense..." })
     ] })
   ] }) });
 };
