@@ -6,12 +6,26 @@ Monitor Legislativo v4 - Ultra-Budget Academic Deployment
 import os
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 # Create minimal FastAPI app
 app = FastAPI(
     title="Monitor Legislativo v4 API",
     description="Brazilian Legislative Monitoring System",
     version="4.0.0"
+)
+
+# Add CORS middleware to allow GitHub Pages requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://sofiadonario.github.io",
+        "http://localhost:3000",
+        "http://localhost:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
 )
 
 @app.get("/")
