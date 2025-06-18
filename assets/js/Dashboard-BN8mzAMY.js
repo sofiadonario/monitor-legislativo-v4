@@ -1,8 +1,8 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-Bb2TqXnZ.js","assets/js/index-r9-NnPse.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-BRNB9qE6.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-CfvG1GWg.js","assets/css/TabbedSidebar-BhCJpDZh.css","assets/js/ExportPanel-B10-QXom.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/BudgetRealtimeStatus-DJshAX2Q.js","assets/css/BudgetRealtimeStatus-CIH_vEBZ.css"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-BwrgEkVn.js","assets/js/index-B_2E3y_G.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-BRNB9qE6.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-_-weWqxm.js","assets/css/TabbedSidebar-J7subkN4.css","assets/js/ExportPanel-E1DJ8KPt.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/BudgetRealtimeStatus-DWQhAfni.js","assets/css/BudgetRealtimeStatus-CIH_vEBZ.css"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-r9-NnPse.js";
+import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-B_2E3y_G.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
 const mockLegislativeData = [
   {
@@ -436,13 +436,17 @@ let csvDataCache = null;
 const csvLegislativeData = [];
 (async () => {
   try {
-    console.log("Loading full CSV dataset...");
+    console.log("🔥 FORCE LOADING FULL CSV DATASET (889 rows)...");
     csvDataCache = await loadCSVLegislativeData();
-    csvLegislativeData.length = 0;
-    csvLegislativeData.push(...csvDataCache);
-    console.log(`Successfully loaded ${csvDataCache.length} documents from CSV`);
+    if (csvDataCache && csvDataCache.length > 0) {
+      csvLegislativeData.length = 0;
+      csvLegislativeData.push(...csvDataCache);
+      console.log(`✅ SUCCESS: Loaded ${csvDataCache.length} documents from CSV`);
+    } else {
+      console.error("❌ CSV loading failed - no data returned");
+    }
   } catch (error) {
-    console.warn("Failed to load CSV data on module import:", error);
+    console.error("❌ CRITICAL: Failed to load CSV data on module import:", error);
   }
 })();
 function getCSVData() {
@@ -742,10 +746,10 @@ const useKeyboardNavigation = (onEscape, onEnter) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 };
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-Bb2TqXnZ.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0).then((module) => ({ default: module.OptimizedMap })));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-CfvG1GWg.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0).then((module) => ({ default: module.TabbedSidebar })));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-B10-QXom.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0).then((module) => ({ default: module.ExportPanel })));
-const BudgetRealtimeStatus = reactExports.lazy(() => __vitePreload(() => import("./BudgetRealtimeStatus-DJshAX2Q.js"), true ? __vite__mapDeps([11,1,2,3,4,12]) : void 0).then((module) => ({ default: module.BudgetRealtimeStatus })));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-BwrgEkVn.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0).then((module) => ({ default: module.OptimizedMap })));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-_-weWqxm.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0).then((module) => ({ default: module.TabbedSidebar })));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-E1DJ8KPt.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0).then((module) => ({ default: module.ExportPanel })));
+const BudgetRealtimeStatus = reactExports.lazy(() => __vitePreload(() => import("./BudgetRealtimeStatus-DWQhAfni.js"), true ? __vite__mapDeps([11,1,2,3,4,12]) : void 0).then((module) => ({ default: module.BudgetRealtimeStatus })));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,
@@ -908,9 +912,12 @@ const Dashboard = () => {
       /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => window.location.reload(), children: "Retry" })
     ] });
   }
-  const isDemoMode = false;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `dashboard ${""}`, children: [
-    isDemoMode,
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "dashboard demo-mode", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `demo-banner ${"hide"}`, role: "alert", "aria-live": "polite", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "demo-icon", "aria-hidden": "true", children: "⚠️" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "RESEARCH MODE" }),
+      " - Brazilian Transport Legislation Database"
+    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       "a",
       {

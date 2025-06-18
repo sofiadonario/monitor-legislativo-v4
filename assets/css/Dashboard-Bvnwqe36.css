@@ -87,29 +87,37 @@
 .toolbar-left .subtitle {
   margin: 0.2rem 0 0 0;
   font-size: 0.8rem;
-  color: #666;
+  color: #000 !important;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Demo Mode Banner */
+/* Demo Mode Banner - Always present for stability */
 .demo-banner {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f97316 100%);
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
   color: white;
   padding: 0.75rem 1rem;
   text-align: center;
   font-weight: 700;
   font-size: 0.9rem;
   z-index: 9999;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
-  animation: demo-pulse 3s ease-in-out infinite;
-  border-bottom: 3px solid #991b1b;
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
+  border-bottom: 3px solid #1e40af;
+  transition: opacity 0.3s ease;
+}
+
+.demo-banner.show {
+  opacity: 1;
+}
+
+.demo-banner.hide {
+  opacity: 0.9;
 }
 
 @keyframes demo-pulse {
