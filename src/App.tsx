@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
+
+// Lazy load Dashboard component
+const Dashboard = lazy(() => import('./components/Dashboard'));
 
 const App: React.FC = () => {
   const [showSpinner, setShowSpinner] = useState(false);
   const [apiStatus, setApiStatus] = useState<string>('Not tested');
   const [isTestingApi, setIsTestingApi] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
 
   const testBackendApi = async () => {
     setIsTestingApi(true);
@@ -48,6 +52,7 @@ const App: React.FC = () => {
           <p><strong>Step 1: ErrorBoundary added ✅</strong></p>
           <p><strong>Step 2: LoadingSpinner added ✅</strong></p>
           <p><strong>Step 3: API connectivity test ✅</strong></p>
+          <p><strong>Step 4: Suspense + Lazy Loading ✅</strong></p>
           
           <div style={{ margin: '2rem 0' }}>
             <button 
@@ -80,6 +85,21 @@ const App: React.FC = () => {
             >
               {isTestingApi ? 'Testing...' : 'Test Railway API'}
             </button>
+
+            <button 
+              onClick={() => setShowDashboard(!showDashboard)}
+              style={{ 
+                padding: '0.5rem 1rem', 
+                margin: '0.5rem',
+                backgroundColor: '#6f42c1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              {showDashboard ? 'Hide' : 'Show'} Dashboard
+            </button>
           </div>
           
           {showSpinner && <LoadingSpinner message="Testing spinner component..." />}
@@ -94,7 +114,22 @@ const App: React.FC = () => {
             <strong>API Status:</strong> {apiStatus}
           </div>
           
-          <p>Next: Adding Dashboard component with Suspense...</p>
+          {showDashboard && (
+            <div style={{ 
+              margin: '2rem 0', 
+              padding: '1rem', 
+              border: '2px solid #6f42c1',
+              borderRadius: '8px',
+              backgroundColor: '#f8f9ff'
+            }}>
+              <h3>🚀 Step 5: Dashboard with Suspense</h3>
+              <Suspense fallback={<LoadingSpinner message="Loading Dashboard component..." />}>
+                <Dashboard />
+              </Suspense>
+            </div>
+          )}
+          
+          <p><strong>✅ REBUILD COMPLETE!</strong> All components working!</p>
         </main>
       </div>
     </ErrorBoundary>
