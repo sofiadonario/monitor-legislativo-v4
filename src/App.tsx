@@ -150,17 +150,104 @@ const App: React.FC = () => {
           
           <p><strong>✅ REBUILD COMPLETE!</strong> All components working!</p>
           
-          {/* Add some content to make scrolling useful */}
-          <div style={{ height: '100vh', padding: '2rem', backgroundColor: '#f8f9fa', marginTop: '2rem' }}>
-            <h3>📜 Extended Content Area</h3>
-            <p>This is additional content to demonstrate the scroll functionality.</p>
-            <p>Scroll down to see the floating scroll buttons appear!</p>
-            <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ textAlign: 'center', fontSize: '1.2rem', color: '#6c757d' }}>
-                <p>🚀 Your app is fully functional!</p>
-                <p>Frontend ↔️ Backend communication working</p>
-                <p>Scroll buttons will appear when you scroll down</p>
+          {/* Add LOTS of content to make scrolling obvious */}
+          <div style={{ padding: '2rem', backgroundColor: '#f8f9fa', marginTop: '2rem' }}>
+            <h3>📜 Extended Content Area - SCROLL DOWN TO SEE NAVIGATION BUTTONS!</h3>
+            <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#007bff' }}>
+              👇 SCROLL DOWN NOW! The floating navigation buttons will appear after you scroll 300px down! 👇
+            </p>
+            
+            {/* Section 1 */}
+            <div style={{ height: '100vh', backgroundColor: '#e7f3ff', padding: '2rem', margin: '1rem 0', borderRadius: '8px' }}>
+              <h4>🔍 Section 1: Monitor Legislativo Features</h4>
+              <p>This Brazilian Legislative Monitoring System provides comprehensive tracking of transport legislation across all 27 states.</p>
+              <p>Key features include:</p>
+              <ul style={{ fontSize: '1.1rem', lineHeight: '2' }}>
+                <li>📊 Real-time legislative document tracking</li>
+                <li>🗺️ Interactive map visualization</li>
+                <li>🔍 Advanced search and filtering</li>
+                <li>📈 Export functionality for research</li>
+                <li>♿ Full accessibility compliance</li>
+              </ul>
+              <p style={{ marginTop: '2rem', fontSize: '1.1rem' }}>
+                Keep scrolling to see more content and watch for the floating navigation buttons!
+              </p>
+            </div>
+
+            {/* Section 2 */}
+            <div style={{ height: '100vh', backgroundColor: '#fff7e6', padding: '2rem', margin: '1rem 0', borderRadius: '8px' }}>
+              <h4>🏛️ Section 2: State Coverage</h4>
+              <p>Our system monitors legislation from all Brazilian states:</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '2rem' }}>
+                <div>Acre, Alagoas, Amapá, Amazonas, Bahia, Ceará, Distrito Federal, Espírito Santo, Goiás</div>
+                <div>Maranhão, Mato Grosso, Mato Grosso do Sul, Minas Gerais, Pará, Paraíba, Paraná, Pernambuco, Piauí</div>
+                <div>Rio de Janeiro, Rio Grande do Norte, Rio Grande do Sul, Rondônia, Roraima, Santa Catarina, São Paulo, Sergipe, Tocantins</div>
               </div>
+              <p style={{ marginTop: '2rem', fontSize: '1.2rem', color: '#ff6b35' }}>
+                🎯 By now you should see the floating scroll buttons appear on the right side! 🎯
+              </p>
+            </div>
+
+            {/* Section 3 */}
+            <div style={{ height: '100vh', backgroundColor: '#f0fff4', padding: '2rem', margin: '1rem 0', borderRadius: '8px' }}>
+              <h4>📚 Section 3: Document Types</h4>
+              <p>We track various types of legislative documents:</p>
+              <ul style={{ fontSize: '1.1rem', lineHeight: '2', marginTop: '2rem' }}>
+                <li>📜 Laws (Leis)</li>
+                <li>📋 Decrees (Decretos)</li>
+                <li>📝 Administrative Orders (Portarias)</li>
+                <li>⚖️ Resolutions (Resoluções)</li>
+                <li>📊 Normative Instructions (Instruções Normativas)</li>
+                <li>🏗️ Bill Projects (Projetos de Lei)</li>
+                <li>⚡ Provisional Measures (Medidas Provisórias)</li>
+              </ul>
+              <p style={{ marginTop: '2rem', fontSize: '1.2rem', color: '#28a745' }}>
+                ✅ The scroll buttons should be visible now! Use them to navigate quickly! ✅
+              </p>
+            </div>
+
+            {/* Section 4 */}
+            <div style={{ height: '100vh', backgroundColor: '#fce4ec', padding: '2rem', margin: '1rem 0', borderRadius: '8px' }}>
+              <h4>🚀 Section 4: Technical Architecture</h4>
+              <p>Built with modern web technologies:</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem', marginTop: '2rem' }}>
+                <div>
+                  <h5>Frontend</h5>
+                  <ul>
+                    <li>React 18</li>
+                    <li>TypeScript</li>
+                    <li>Vite</li>
+                    <li>Leaflet Maps</li>
+                  </ul>
+                </div>
+                <div>
+                  <h5>Backend</h5>
+                  <ul>
+                    <li>FastAPI</li>
+                    <li>Python 3.11</li>
+                    <li>Supabase PostgreSQL</li>
+                    <li>Upstash Redis</li>
+                  </ul>
+                </div>
+              </div>
+              <p style={{ marginTop: '2rem', fontSize: '1.2rem', color: '#e91e63' }}>
+                🎪 This is getting long! The scroll buttons should definitely be showing now! 🎪
+              </p>
+            </div>
+
+            {/* Final Section */}
+            <div style={{ height: '50vh', backgroundColor: '#f3e5f5', padding: '2rem', margin: '1rem 0', borderRadius: '8px', textAlign: 'center' }}>
+              <h4>🎉 Final Section: You Made It!</h4>
+              <p style={{ fontSize: '1.5rem', color: '#9c27b0' }}>
+                Congratulations! You've scrolled through all the content.
+              </p>
+              <p style={{ fontSize: '1.2rem', marginTop: '2rem' }}>
+                Use the floating scroll buttons to quickly navigate:
+              </p>
+              <p style={{ fontSize: '1.1rem' }}>
+                ⬆️ Blue button: Scroll to top<br/>
+                ⬇️ Green button: Scroll to bottom
+              </p>
             </div>
           </div>
         </main>
