@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBudgetRealtime } from '../hooks/useBudgetRealtime';
-import { LegislativeDocument } from '../types/types';
+import { LegislativeDocument } from '../types';
 import '../styles/components/BudgetRealtimeStatus.css';
 
 interface RecentUpdate {

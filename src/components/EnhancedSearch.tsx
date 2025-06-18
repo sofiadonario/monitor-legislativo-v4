@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { SearchFilters, LegislativeDocument, DocumentType } from '../types/types';
+import { SearchFilters, LegislativeDocument, DocumentType } from '../types';
 import '../styles/components/EnhancedSearch.css';
 
 interface EnhancedSearchProps {

@@ -1,6 +1,6 @@
 // Budget-friendly real-time updates using polling and localStorage
 // No additional server costs - uses existing API endpoints
-import { LegislativeDocument } from '../types/types';
+import { LegislativeDocument } from '../types';
 import { legislativeDataService } from './legislativeDataService';
 import { BrowserEventEmitter } from '../utils/browserEventEmitter';
 

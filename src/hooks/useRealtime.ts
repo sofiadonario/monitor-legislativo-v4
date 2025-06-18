@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import realtimeService, { RealtimeUpdate } from '../services/realtimeService';
-import { LegislativeDocument } from '../types/types';
+import { LegislativeDocument } from '../types';
 
 interface UseRealtimeOptions {
   autoConnect?: boolean;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SearchFilters, LegislativeDocument } from '../types/types';
+import { SearchFilters, LegislativeDocument } from '../types';
 import { DataVisualization } from './DataVisualization';
 import { EnhancedSearch } from './EnhancedSearch';
 import '../styles/components/TabbedSidebar.css';

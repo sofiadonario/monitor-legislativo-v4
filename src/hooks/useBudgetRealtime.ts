@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import budgetRealtimeService from '../services/budgetRealtimeService';
-import { LegislativeDocument } from '../types/types';
+import { LegislativeDocument } from '../types';
 
 interface UseBudgetRealtimeOptions {
   autoStart?: boolean;

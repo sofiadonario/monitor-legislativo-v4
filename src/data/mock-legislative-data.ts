@@ -13,7 +13,8 @@ export const mockLegislativeData: LegislativeDocument[] = [
     keywords: ['transporte', 'rodoviário', 'modernização', 'tecnologia'],
     source: 'Diário Oficial da União',
     citation: 'BRASIL. Lei nº 14.000, de 15 de maio de 2020. Diário Oficial da União, Brasília, DF, 16 maio 2020.',
-    url: 'https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14000.htm'
+    url: 'https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14000.htm',
+    status: 'sancionado'
   },
   {
     id: '2',
@@ -27,7 +28,8 @@ export const mockLegislativeData: LegislativeDocument[] = [
     keywords: ['veículos autônomos', 'regulamentação', 'segurança', 'tecnologia'],
     source: 'Diário Oficial do Estado de São Paulo',
     citation: 'SÃO PAULO. Decreto nº 65.500, de 22 de março de 2021. Diário Oficial do Estado, São Paulo, SP, 23 mar. 2021.',
-    url: 'https://www.al.sp.gov.br/repositorio/legislacao/decreto/2021/decreto-65500-22.03.2021.html'
+    url: 'https://www.al.sp.gov.br/repositorio/legislacao/decreto/2021/decreto-65500-22.03.2021.html',
+    status: 'sancionado'
   },
   {
     id: '3',
@@ -40,7 +42,8 @@ export const mockLegislativeData: LegislativeDocument[] = [
     keywords: ['ANTT', 'transportadores', 'cadastro', 'regulamentação'],
     source: 'Diário Oficial da União',
     citation: 'AGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Portaria nº 3.200, de 8 de julho de 2021. Diário Oficial da União, Brasília, DF, 9 jul. 2021.',
-    url: 'https://www.antt.gov.br/portarias/2021/portaria3200.html'
+    url: 'https://www.antt.gov.br/portarias/2021/portaria3200.html',
+    status: 'sancionado'
   },
   {
     id: '4',
@@ -53,7 +56,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     municipality: 'Rio de Janeiro',
     keywords: ['sustentabilidade', 'incentivos fiscais', 'tecnologias limpas'],
     source: 'Diário Oficial do Estado do Rio de Janeiro',
-    citation: 'RIO DE JANEIRO. Lei nº 9.100, de 30 de novembro de 2020. Diário Oficial do Estado, Rio de Janeiro, RJ, 1 dez. 2020.'
+    citation: 'RIO DE JANEIRO. Lei nº 9.100, de 30 de novembro de 2020. Diário Oficial do Estado, Rio de Janeiro, RJ, 1 dez. 2020.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '5',
@@ -64,7 +69,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     summary: 'Define novas normas de segurança para o transporte rodoviário, incluindo equipamentos obrigatórios e procedimentos de fiscalização.',
     keywords: ['CONTRAN', 'segurança', 'fiscalização', 'equipamentos'],
     source: 'Diário Oficial da União',
-    citation: 'CONSELHO NACIONAL DE TRÂNSITO. Resolução nº 800, de 15 de setembro de 2021. Diário Oficial da União, Brasília, DF, 16 set. 2021.'
+    citation: 'CONSELHO NACIONAL DE TRÂNSITO. Resolução nº 800, de 15 de setembro de 2021. Diário Oficial da União, Brasília, DF, 16 set. 2021.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '6',
@@ -75,7 +82,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     summary: 'Institui o Marco Legal do Transporte Digital, regulamentando plataformas de transporte e estabelecendo direitos dos usuários.',
     keywords: ['marco legal', 'transporte digital', 'plataformas', 'direitos dos usuários'],
     source: 'Diário Oficial da União',
-    citation: 'BRASIL. Medida Provisória nº 1.050, de 12 de abril de 2021. Diário Oficial da União, Brasília, DF, 13 abr. 2021.'
+    citation: 'BRASIL. Medida Provisória nº 1.050, de 12 de abril de 2021. Diário Oficial da União, Brasília, DF, 13 abr. 2021.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '7',
@@ -88,7 +97,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     municipality: 'Belo Horizonte',
     keywords: ['corredores', 'rodovias estaduais', 'cargas'],
     source: 'Diário Oficial do Estado de Minas Gerais',
-    citation: 'MINAS GERAIS. Lei nº 23.500, de 20 de dezembro de 2019. Diário Oficial do Estado, Belo Horizonte, MG, 21 dez. 2019.'
+    citation: 'MINAS GERAIS. Lei nº 23.500, de 20 de dezembro de 2019. Diário Oficial do Estado, Belo Horizonte, MG, 21 dez. 2019.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '8',
@@ -99,7 +110,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     summary: 'Institui a Política Nacional de Logística de Transportes, integrando modais e otimizando a infraestrutura nacional.',
     keywords: ['política nacional', 'logística', 'modais', 'infraestrutura'],
     source: 'Diário Oficial da União',
-    citation: 'BRASIL. Decreto nº 10.800, de 5 de agosto de 2021. Diário Oficial da União, Brasília, DF, 6 ago. 2021.'
+    citation: 'BRASIL. Decreto nº 10.800, de 5 de agosto de 2021. Diário Oficial da União, Brasília, DF, 6 ago. 2021.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '9',
@@ -110,7 +123,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     summary: 'Estabelece novos padrões para manutenção preventiva de rodovias federais, priorizando a segurança do transporte de cargas.',
     keywords: ['DNIT', 'manutenção', 'rodovias federais', 'segurança'],
     source: 'Diário Oficial da União',
-    citation: 'DEPARTAMENTO NACIONAL DE INFRAESTRUTURA DE TRANSPORTES. Portaria nº 1.500, de 18 de outubro de 2020. Diário Oficial da União, Brasília, DF, 19 out. 2020.'
+    citation: 'DEPARTAMENTO NACIONAL DE INFRAESTRUTURA DE TRANSPORTES. Portaria nº 1.500, de 18 de outubro de 2020. Diário Oficial da União, Brasília, DF, 19 out. 2020.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '10',
@@ -123,7 +138,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     municipality: 'Porto Alegre',
     keywords: ['intermodal', 'ferrovias', 'hidrovias', 'integração'],
     source: 'Diário Oficial do Estado do Rio Grande do Sul',
-    citation: 'RIO GRANDE DO SUL. Lei nº 15.200, de 25 de junho de 2018. Diário Oficial do Estado, Porto Alegre, RS, 26 jun. 2018.'
+    citation: 'RIO GRANDE DO SUL. Lei nº 15.200, de 25 de junho de 2018. Diário Oficial do Estado, Porto Alegre, RS, 26 jun. 2018.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '11',
@@ -134,7 +151,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     summary: 'Atualiza as normas para transporte rodoviário de produtos perigosos, incluindo novas classificações e equipamentos de segurança.',
     keywords: ['produtos perigosos', 'segurança', 'classificações', 'equipamentos'],
     source: 'Diário Oficial da União',
-    citation: 'AGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Resolução nº 5.850, de 30 de janeiro de 2021. Diário Oficial da União, Brasília, DF, 31 jan. 2021.'
+    citation: 'AGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Resolução nº 5.850, de 30 de janeiro de 2021. Diário Oficial da União, Brasília, DF, 31 jan. 2021.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '12',
@@ -147,7 +166,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     municipality: 'Curitiba',
     keywords: ['pedágio eletrônico', 'rodovias estaduais', 'implementação'],
     source: 'Diário Oficial do Estado do Paraná',
-    citation: 'PARANÁ. Decreto nº 8.900, de 14 de agosto de 2020. Diário Oficial do Estado, Curitiba, PR, 15 ago. 2020.'
+    citation: 'PARANÁ. Decreto nº 8.900, de 14 de agosto de 2020. Diário Oficial do Estado, Curitiba, PR, 15 ago. 2020.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '13',
@@ -158,7 +179,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     summary: 'Moderniza o marco legal da cabotagem, facilitando o transporte marítimo de cargas entre portos brasileiros.',
     keywords: ['cabotagem', 'transporte marítimo', 'portos', 'marco legal'],
     source: 'Diário Oficial da União',
-    citation: 'BRASIL. Lei nº 13.950, de 8 de novembro de 2019. Diário Oficial da União, Brasília, DF, 11 nov. 2019.'
+    citation: 'BRASIL. Lei nº 13.950, de 8 de novembro de 2019. Diário Oficial da União, Brasília, DF, 11 nov. 2019.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '14',
@@ -169,7 +192,9 @@ export const mockLegislativeData: LegislativeDocument[] = [
     summary: 'Institui o Sistema Nacional de Planejamento Logístico, integrando dados de transporte e facilitando a tomada de decisões.',
     keywords: ['planejamento logístico', 'sistema nacional', 'dados', 'tomada de decisões'],
     source: 'Diário Oficial da União',
-    citation: 'MINISTÉRIO DA INFRAESTRUTURA. Portaria nº 2.100, de 20 de maio de 2021. Diário Oficial da União, Brasília, DF, 21 maio 2021.'
+    citation: 'MINISTÉRIO DA INFRAESTRUTURA. Portaria nº 2.100, de 20 de maio de 2021. Diário Oficial da União, Brasília, DF, 21 maio 2021.',
+    url: '',
+    status: 'sancionado'
   },
   {
     id: '15',

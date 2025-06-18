@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRealtime } from '../hooks/useRealtime';
-import { LegislativeDocument } from '../types/types';
+import { LegislativeDocument } from '../types';
 import '../styles/components/RealtimeNotifications.css';
 
 interface Notification {

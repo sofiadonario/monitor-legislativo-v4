@@ -1,4 +1,4 @@
-import { LegislativeDocument, SearchFilters } from '../types/types';
+import { LegislativeDocument, SearchFilters } from '../types';
 import { mockLegislativeData } from '../data/mock-legislative-data';
 import apiClient, { ApiError } from './apiClient';
 

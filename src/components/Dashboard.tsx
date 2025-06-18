@@ -2,14 +2,14 @@ import React, { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, use
 import { legislativeDataService } from '../services/legislativeDataService';
 import '../styles/components/Dashboard.css';
 import '../styles/accessibility.css';
-import { ExportOptions, LegislativeDocument, SearchFilters } from '../types/index';
+import { ExportOptions, LegislativeDocument, SearchFilters } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 
 // Lazy load heavy components
-const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.default })));
+const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.OptimizedMap })));
 const TabbedSidebar = lazy(() => import('./TabbedSidebar').then(module => ({ default: module.TabbedSidebar })));
-const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.default })));
+const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.ExportPanel })));
 const BudgetRealtimeStatus = lazy(() => import('./BudgetRealtimeStatus').then(module => ({ default: module.BudgetRealtimeStatus })));
 
 // Dashboard state interface

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { LegislativeDocument, DocumentType } from '../types/types';
+import { LegislativeDocument, DocumentType } from '../types';
 import '../styles/components/DataVisualization.css';
 
 interface DataVisualizationProps {

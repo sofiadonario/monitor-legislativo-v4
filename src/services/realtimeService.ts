@@ -1,5 +1,5 @@
 // Real-time updates service for new legislation notifications
-import { LegislativeDocument } from '../types/types';
+import { LegislativeDocument } from '../types';
 import { BrowserEventEmitter } from '../utils/browserEventEmitter';
 
 export interface RealtimeUpdate {

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { LegislativeDocument } from '../types/types';
+import { LegislativeDocument } from '../types';
 import '../styles/components/DocumentComparison.css';
 
 interface DocumentComparisonProps {
