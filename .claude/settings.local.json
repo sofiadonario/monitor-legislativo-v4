@@ -34,7 +34,13 @@
       "Bash(git remote remove:*)",
       "Bash(git remote add:*)",
       "Bash(git push:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(npm install)",
+      "Bash(timeout 30s npm install --package-lock-only)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm cache clean:*)"
     ]
   },
   "enableAllProjectMcpServers": false
