@@ -12,6 +12,12 @@
   flex-direction: column;
 }
 
+/* Adjust sidebar when demo banner is present */
+.demo-mode .tabbed-sidebar {
+  top: 60px;
+  height: calc(100vh - 60px);
+}
+
 .tabbed-sidebar.open {
   width: 400px;
   transform: translateX(0);

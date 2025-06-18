@@ -1,5 +1,6 @@
 import { LegislativeDocument, SearchFilters } from '../types';
 import { mockLegislativeData } from '../data/mock-legislative-data';
+import { csvLegislativeData, loadCSVLegislativeData } from '../data/csv-legislative-data';
 import apiClient, { ApiError } from './apiClient';
 
 // Check if we're in development/testing mode
@@ -9,6 +10,7 @@ const useMockData = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
 export class LegislativeDataService {
   private static instance: LegislativeDataService;
+  private csvDataCache: LegislativeDocument[] | null = null;
   
   private constructor() {}
   
@@ -19,11 +21,35 @@ export class LegislativeDataService {
     return LegislativeDataService.instance;
   }
   
+  private async getFallbackData(): Promise<LegislativeDocument[]> {
+    // Try to load CSV data first, then fall back to mock data
+    if (!this.csvDataCache) {
+      try {
+        console.log('Loading CSV legislative data from LexML...');
+        this.csvDataCache = await loadCSVLegislativeData();
+        if (this.csvDataCache.length > 0) {
+          console.log(`Loaded ${this.csvDataCache.length} documents from CSV`);
+          return this.csvDataCache;
+        }
+      } catch (error) {
+        console.warn('Failed to load CSV data, using embedded CSV samples:', error);
+      }
+      
+      // Use embedded CSV samples if loading fails
+      this.csvDataCache = csvLegislativeData;
+    }
+    
+    // Combine CSV data with mock data for richer demo experience
+    const combinedData = [...this.csvDataCache, ...mockLegislativeData];
+    return combinedData;
+  }
+  
   async fetchDocuments(filters?: SearchFilters): Promise<LegislativeDocument[]> {
     if (useMockData) {
-      // Use mock data for development/testing
-      console.log('Using mock data for development/testing');
-      return this.filterMockData(mockLegislativeData, filters);
+      // Use CSV + mock data for demo mode
+      console.log('Demo mode: Using CSV + mock data for demonstration');
+      const fallbackData = await this.getFallbackData();
+      return this.filterMockData(fallbackData, filters);
     }
     
     try {
@@ -32,16 +58,18 @@ export class LegislativeDataService {
       const data = await apiClient.get<any[]>('/documents', params);
       return this.transformApiResponse(data);
     } catch (error) {
-      console.warn('API not available, falling back to mock data:', error);
+      console.warn('API not available, falling back to CSV + mock data:', error);
       
-      // Always fallback to mock data if API fails (for academic/demo purposes)
-      return this.filterMockData(mockLegislativeData, filters);
+      // Fallback to CSV + mock data if API fails (for academic/demo purposes)
+      const fallbackData = await this.getFallbackData();
+      return this.filterMockData(fallbackData, filters);
     }
   }
   
   async fetchDocumentById(id: string): Promise<LegislativeDocument | null> {
     if (useMockData) {
-      return mockLegislativeData.find(doc => doc.id === id) || null;
+      const fallbackData = await this.getFallbackData();
+      return fallbackData.find(doc => doc.id === id) || null;
     }
     
     try {
@@ -52,17 +80,19 @@ export class LegislativeDataService {
         return null;
       }
       
-      console.warn('API not available, falling back to mock data:', error);
+      console.warn('API not available, falling back to CSV + mock data:', error);
       
-      // Always fallback to mock data if API fails (for academic/demo purposes)
-      return mockLegislativeData.find(doc => doc.id === id) || null;
+      // Fallback to CSV + mock data if API fails (for academic/demo purposes)
+      const fallbackData = await this.getFallbackData();
+      return fallbackData.find(doc => doc.id === id) || null;
     }
   }
   
   async searchDocuments(searchTerm: string): Promise<LegislativeDocument[]> {
     if (useMockData) {
+      const fallbackData = await this.getFallbackData();
       const lowerSearchTerm = searchTerm.toLowerCase();
-      return mockLegislativeData.filter(doc => 
+      return fallbackData.filter(doc => 
         doc.title.toLowerCase().includes(lowerSearchTerm) ||
         doc.summary.toLowerCase().includes(lowerSearchTerm) ||
         doc.keywords.some(keyword => keyword.toLowerCase().includes(lowerSearchTerm))
@@ -73,11 +103,12 @@ export class LegislativeDataService {
       const data = await apiClient.get<any[]>('/documents/search', { q: searchTerm });
       return this.transformApiResponse(data);
     } catch (error) {
-      console.warn('Search API not available, falling back to mock data:', error);
+      console.warn('Search API not available, falling back to CSV + mock data:', error);
       
-      // Always fallback to mock data search if API fails
+      // Fallback to CSV + mock data search if API fails
+      const fallbackData = await this.getFallbackData();
       const lowerSearchTerm = searchTerm.toLowerCase();
-      return mockLegislativeData.filter(doc => 
+      return fallbackData.filter(doc => 
         doc.title.toLowerCase().includes(lowerSearchTerm) ||
         doc.summary.toLowerCase().includes(lowerSearchTerm) ||
         doc.keywords.some(keyword => keyword.toLowerCase().includes(lowerSearchTerm))

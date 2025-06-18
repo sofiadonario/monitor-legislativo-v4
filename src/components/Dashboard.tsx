@@ -236,8 +236,18 @@ const Dashboard: React.FC = () => {
     );
   }
   
+  const isDemoMode = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  
   return (
-    <div className="dashboard">
+    <div className={`dashboard ${isDemoMode ? 'demo-mode' : ''}`}>
+      {/* Demo Mode Banner */}
+      {isDemoMode && (
+        <div className="demo-banner" role="alert" aria-live="polite">
+          <span className="demo-icon" aria-hidden="true">⚠️</span>
+          <strong>DEMO MODE</strong> - Using sample legislative data from LexML for demonstration purposes
+        </div>
+      )}
+      
       {/* Skip to main content link for keyboard navigation */}
       <a 
         ref={skipLinkRef}
@@ -270,7 +280,7 @@ const Dashboard: React.FC = () => {
       <main 
         id="main-content"
         ref={mainContentRef}
-        className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}
+        className="main-content"
         tabIndex={-1}
         role="main"
         aria-label="Main content area"
@@ -282,12 +292,6 @@ const Dashboard: React.FC = () => {
             <p className="subtitle" id="page-description">
               Academic research platform for transport legislation analysis
             </p>
-            {import.meta.env.VITE_USE_MOCK_DATA === 'true' && (
-              <div className="demo-notice" role="alert" aria-live="polite">
-                <span className="demo-icon" aria-hidden="true">🚧</span>
-                <strong>DEMO MODE</strong> - Using sample data for demonstration purposes
-              </div>
-            )}
           </div>
           
           {/* Real-time status */}
