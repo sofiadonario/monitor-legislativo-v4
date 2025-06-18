@@ -3,8 +3,6 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 permissions:
   contents: read
@@ -35,16 +33,14 @@ jobs:
     - name: Build application
       run: npm run build
       env:
-        # Use GitHub Pages base URL
-        VITE_BASE_URL: /monitor-legislativo-v4/
-        VITE_API_URL: https://monitor-legislativo-v4-production.up.railway.app
         NODE_ENV: production
+        VITE_API_URL: https://monitor-legislativo-v4-production.up.railway.app
         
     - name: Setup Pages
-      uses: actions/configure-pages@v4
+      uses: actions/configure-pages@v3
       
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v1
+      uses: actions/upload-pages-artifact@v3
       with:
         path: './dist'
 
@@ -54,7 +50,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    if: github.ref == 'refs/heads/main'
+    
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v1
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
