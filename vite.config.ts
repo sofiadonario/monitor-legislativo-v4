@@ -1,10 +1,16 @@
-import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   base: process.env.NODE_ENV === 'production' ? '/monitor-legislativo-v4/' : '/',
+  envDir: './',
+  resolve: {
+    alias: {
+      'rollup': '@rollup/wasm-node'
+    }
+  },
   server: {
     port: 3000,
     open: true
@@ -37,6 +43,6 @@ export default defineConfig({
   },
   // Enable build optimizations
   optimizeDeps: {
-    include: ['react', 'react-dom', 'leaflet', 'react-leaflet']
+    include: ['react', 'react-dom', 'leaflet', 'react-leaflet', '@rollup/wasm-node']
   }
 })

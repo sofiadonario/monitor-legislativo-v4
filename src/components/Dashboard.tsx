@@ -1,10 +1,10 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { legislativeDataService } from '../services/legislativeDataService';
-import '../styles/components/Dashboard.css';
 import '../styles/accessibility.css';
+import '../styles/components/Dashboard.css';
 import { ExportOptions, LegislativeDocument, SearchFilters } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
-import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 
 // Lazy load heavy components
 const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.OptimizedMap })));
@@ -87,6 +87,7 @@ const Dashboard: React.FC = () => {
   const [documents, setDocuments] = useState<LegislativeDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
   
   const { sidebarOpen, exportPanelOpen, selectedState, selectedMunicipality, filters } = state;
   
@@ -104,8 +105,9 @@ const Dashboard: React.FC = () => {
       setError(null);
       
       try {
-        const docs = await legislativeDataService.fetchDocuments(filters);
+        const { documents: docs, usingFallback } = await legislativeDataService.fetchDocuments(filters);
         setDocuments(docs);
+        setUsingFallbackData(usingFallback);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load documents');
         console.error('Error loading documents:', err);
@@ -245,6 +247,11 @@ const Dashboard: React.FC = () => {
   
   return (
     <div className="dashboard demo-mode">
+      {usingFallbackData && (
+        <div className="fallback-warning-banner" role="alert">
+          <strong>Warning:</strong> Could not load the complete dataset. Displaying limited mock data. Please verify the CSV data file.
+        </div>
+      )}
       {/* Demo Mode Banner - Always present for layout stability */}
       <div className={`demo-banner ${isDemoMode ? 'show' : 'hide'}`} role="alert" aria-live="polite">
         <span className="demo-icon" aria-hidden="true">⚠️</span>
@@ -400,6 +407,7 @@ const Dashboard: React.FC = () => {
       {exportPanelOpen && (
         <Suspense fallback={<LoadingSpinner message="Loading export panel..." />}>
           <ExportPanel
+            id="export-panel"
             isOpen={exportPanelOpen}
             onClose={toggleExportPanel}
             documents={filteredDocuments}

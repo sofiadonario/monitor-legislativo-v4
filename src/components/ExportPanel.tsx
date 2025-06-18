@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import '../styles/components/ExportPanel.css';
 import { ExportOptions, LegislativeDocument } from '../types';
 import { exportToBibTeX } from '../utils/academicExports';
-import { exportToCSV, exportToHTML, exportToXML } from '../utils/exportHelpers';
-import { exportMapToPNG, exportMapWithMetadata, isMapExportSupported } from '../utils/mapExport';
-import { localCache, cacheUtils } from '../utils/localCache';
 import { fetchJSON } from '../utils/cachedFetch';
+import { exportToCSV, exportToHTML, exportToXML } from '../utils/exportHelpers';
+import { cacheUtils, localCache } from '../utils/localCache';
+import { exportMapToPNG, exportMapWithMetadata, isMapExportSupported } from '../utils/mapExport';
 
 type ExportFormat = 'csv' | 'xml' | 'html' | 'bibtex' | 'png';
 
@@ -13,12 +13,14 @@ interface ExportPanelProps {
   isOpen: boolean;
   onClose: () => void;
   documents: LegislativeDocument[];
+  id?: string;
 }
 
 const ExportPanel: React.FC<ExportPanelProps> = ({
   isOpen,
   onClose,
-  documents
+  documents,
+  id
 }) => {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('csv');
   const [includeMap, setIncludeMap] = useState(false);
@@ -145,10 +147,10 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="export-panel-overlay">
+    <div id={id} className="export-panel-overlay" role="dialog" aria-modal="true" aria-labelledby="export-panel-title">
       <div className="export-panel">
         <div className="export-header">
-          <h2>Exportar Dados</h2>
+          <h2 id="export-panel-title">Exportar Dados</h2>
           <button className="close-btn" onClick={onClose} aria-label="Fechar">
             ✕
           </button>

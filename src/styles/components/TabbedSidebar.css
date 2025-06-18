@@ -26,10 +26,12 @@
 .tabbed-sidebar.closed {
   width: 50px;
   transform: translateX(0);
-  overflow: hidden;
+  overflow: visible;
 }
 
-.tabbed-sidebar.closed .sidebar-content {
+.tabbed-sidebar.closed .sidebar-content,
+.tabbed-sidebar.closed .sidebar-tabs,
+.tabbed-sidebar.closed .sidebar-header h2 {
   display: none;
 }
 
@@ -89,16 +91,25 @@
 
 .sidebar-toggle {
   background: none;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
   font-size: 1.25rem;
   color: #6c757d;
   cursor: pointer;
   padding: 0.25rem;
-  transition: color 0.2s;
+  transition: all 0.2s;
+  position: relative;
 }
 
 .sidebar-toggle:hover {
   color: #495057;
+  background-color: #e9ecef;
+}
+
+.sidebar-toggle:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
 }
 
 /* Sidebar Tabs */

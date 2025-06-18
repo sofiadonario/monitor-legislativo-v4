@@ -87,7 +87,7 @@
 .toolbar-left .subtitle {
   margin: 0.2rem 0 0 0;
   font-size: 0.8rem;
-  color: #000 !important;
+  color: #6c757d;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -117,7 +117,8 @@
 }
 
 .demo-banner.hide {
-  opacity: 0.9;
+  opacity: 0;
+  pointer-events: none;
 }
 
 @keyframes demo-pulse {
@@ -159,6 +160,26 @@
   padding-top: 60px;
 }
 
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 40px; /* Stabilize height */
+  min-width: 220px; /* Prevent shrinking when loading */
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+  background-color: #e9ecef;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
 
 .toolbar-status {
   grid-area: status;

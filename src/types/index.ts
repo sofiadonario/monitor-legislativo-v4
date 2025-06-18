@@ -74,10 +74,12 @@ export interface MapLocation {
 }
 
 export interface ExportOptions {
-  format: 'csv' | 'json' | 'pdf';
-  fields: string[];
-  includeImages: boolean;
-  includeMetadata: boolean;
+  format: 'csv' | 'xml' | 'html' | 'bibtex' | 'png' | 'json' | 'pdf';
+  includeMap?: boolean;
+  includeMetadata?: boolean;
+  dateRange?: { from: string; to: string };
+  fields?: string[];
+  includeImages?: boolean;
 }
 
 export interface LocationData {

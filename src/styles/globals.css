@@ -28,64 +28,6 @@ html, body {
 
 /* Main Content styles moved to Dashboard.css to avoid conflicts */
 
-/* Toolbar */
-.toolbar {
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-}
-
-.toolbar-left h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1976D2;
-  margin: 0;
-}
-
-.subtitle {
-  font-size: 0.9rem;
-  color: #666;
-  margin: 0;
-}
-
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.export-btn {
-  background: #4CAF50;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.export-btn:hover {
-  background: #45a049;
-}
-
-.stats {
-  display: flex;
-  gap: 15px;
-}
-
-.stat-item {
-  font-size: 0.9rem;
-  color: #666;
-  font-weight: 500;
-}
-
 /* Map Wrapper */
 .map-wrapper {
   flex: 1;
