@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/SimpleDashboard-C4HuspVc.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-BGKu4a_F.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/SimpleDashboard-C0RzFaS0.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-BGKu4a_F.js"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -217,7 +217,7 @@ const LoadingSpinner = ({
     /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "loading-message", children: message })
   ] });
 };
-const SimpleDashboard = reactExports.lazy(() => __vitePreload(() => import("./SimpleDashboard-C4HuspVc.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
+const SimpleDashboard = reactExports.lazy(() => __vitePreload(() => import("./SimpleDashboard-C0RzFaS0.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
 const App = () => {
   const [showSpinner, setShowSpinner] = reactExports.useState(false);
   const [apiStatus, setApiStatus] = reactExports.useState("Not tested");
@@ -362,15 +362,81 @@ const App = () => {
           /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "✅ REBUILD COMPLETE!" }),
           " All components working!"
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "100vh", padding: "2rem", backgroundColor: "#f8f9fa", marginTop: "2rem" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { children: "📜 Extended Content Area" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "This is additional content to demonstrate the scroll functionality." }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Scroll down to see the floating scroll buttons appear!" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", fontSize: "1.2rem", color: "#6c757d" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "🚀 Your app is fully functional!" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Frontend ↔️ Backend communication working" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Scroll buttons will appear when you scroll down" })
-          ] }) })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "2rem", backgroundColor: "#f8f9fa", marginTop: "2rem" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { children: "📜 Extended Content Area - SCROLL DOWN TO SEE NAVIGATION BUTTONS!" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontSize: "1.2rem", fontWeight: "bold", color: "#007bff" }, children: "👇 SCROLL DOWN NOW! The floating navigation buttons will appear after you scroll 300px down! 👇" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "100vh", backgroundColor: "#e7f3ff", padding: "2rem", margin: "1rem 0", borderRadius: "8px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { children: "🔍 Section 1: Monitor Legislativo Features" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "This Brazilian Legislative Monitoring System provides comprehensive tracking of transport legislation across all 27 states." }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Key features include:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { style: { fontSize: "1.1rem", lineHeight: "2" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "📊 Real-time legislative document tracking" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "🗺️ Interactive map visualization" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "🔍 Advanced search and filtering" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "📈 Export functionality for research" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "♿ Full accessibility compliance" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { marginTop: "2rem", fontSize: "1.1rem" }, children: "Keep scrolling to see more content and watch for the floating navigation buttons!" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "100vh", backgroundColor: "#fff7e6", padding: "2rem", margin: "1rem 0", borderRadius: "8px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { children: "🏛️ Section 2: State Coverage" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Our system monitors legislation from all Brazilian states:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginTop: "2rem" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Acre, Alagoas, Amapá, Amazonas, Bahia, Ceará, Distrito Federal, Espírito Santo, Goiás" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Maranhão, Mato Grosso, Mato Grosso do Sul, Minas Gerais, Pará, Paraíba, Paraná, Pernambuco, Piauí" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Rio de Janeiro, Rio Grande do Norte, Rio Grande do Sul, Rondônia, Roraima, Santa Catarina, São Paulo, Sergipe, Tocantins" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { marginTop: "2rem", fontSize: "1.2rem", color: "#ff6b35" }, children: "🎯 By now you should see the floating scroll buttons appear on the right side! 🎯" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "100vh", backgroundColor: "#f0fff4", padding: "2rem", margin: "1rem 0", borderRadius: "8px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { children: "📚 Section 3: Document Types" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "We track various types of legislative documents:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { style: { fontSize: "1.1rem", lineHeight: "2", marginTop: "2rem" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "📜 Laws (Leis)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "📋 Decrees (Decretos)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "📝 Administrative Orders (Portarias)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "⚖️ Resolutions (Resoluções)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "📊 Normative Instructions (Instruções Normativas)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "🏗️ Bill Projects (Projetos de Lei)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "⚡ Provisional Measures (Medidas Provisórias)" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { marginTop: "2rem", fontSize: "1.2rem", color: "#28a745" }, children: "✅ The scroll buttons should be visible now! Use them to navigate quickly! ✅" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "100vh", backgroundColor: "#fce4ec", padding: "2rem", margin: "1rem 0", borderRadius: "8px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { children: "🚀 Section 4: Technical Architecture" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Built with modern web technologies:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2rem", marginTop: "2rem" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h5", { children: "Frontend" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "React 18" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "TypeScript" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "Vite" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "Leaflet Maps" })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h5", { children: "Backend" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "FastAPI" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "Python 3.11" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "Supabase PostgreSQL" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "Upstash Redis" })
+                ] })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { marginTop: "2rem", fontSize: "1.2rem", color: "#e91e63" }, children: "🎪 This is getting long! The scroll buttons should definitely be showing now! 🎪" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "50vh", backgroundColor: "#f3e5f5", padding: "2rem", margin: "1rem 0", borderRadius: "8px", textAlign: "center" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { children: "🎉 Final Section: You Made It!" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontSize: "1.5rem", color: "#9c27b0" }, children: "Congratulations! You've scrolled through all the content." }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontSize: "1.2rem", marginTop: "2rem" }, children: "Use the floating scroll buttons to quickly navigate:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { fontSize: "1.1rem" }, children: [
+              "⬆️ Blue button: Scroll to top",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+              "⬇️ Green button: Scroll to bottom"
+            ] })
+          ] })
         ] })
       ] })
     ] }),

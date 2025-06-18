@@ -1,4 +1,4 @@
-import { j as jsxRuntimeExports } from "./index-BksYCpfR.js";
+import { j as jsxRuntimeExports } from "./index-D_RUjsys.js";
 import "./react-vendor-D_QSeeZk.js";
 import "./leaflet-vendor-BGKu4a_F.js";
 const SimpleDashboard = () => {
