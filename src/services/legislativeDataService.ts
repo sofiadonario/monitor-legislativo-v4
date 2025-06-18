@@ -2,8 +2,8 @@ import { loadCSVLegislativeData } from '../data/csv-legislative-data';
 import { LegislativeDocument, SearchFilters } from '../types';
 import apiClient from './apiClient';
 
-// Force CSV-only mode - no mock data
-const forceCSVOnly = true;
+// Check environment variables for data source configuration
+const forceCSVOnly = import.meta.env.VITE_FORCE_CSV_ONLY === 'true';
 
 export class LegislativeDataService {
   private static instance: LegislativeDataService;

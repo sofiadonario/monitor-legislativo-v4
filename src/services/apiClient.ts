@@ -189,8 +189,9 @@ export class ApiError extends Error {
 
 // Create singleton instance
 const apiClient = new ApiClient({
-  baseUrl: import.meta.env.VITE_API_URL || 'https://monitor-legislativo-v4-production.up.railway.app',
+  baseUrl: import.meta.env.VITE_API_BASE_URL || 'https://monitor-legislativo-v4-production.up.railway.app',
   version: import.meta.env.VITE_API_VERSION || 'v1',
+  timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
   cacheEnabled: import.meta.env.VITE_CACHE_ENABLED !== 'false',
   cacheTTL: Number(import.meta.env.VITE_CACHE_TTL) || 300000
 });
