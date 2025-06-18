@@ -1,8 +1,8 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-DvX74671.js","assets/js/index-qm63FlG-.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-CpfVDpBa.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-TYlDJxM2.js","assets/css/TabbedSidebar-DBx0Wajg.css","assets/js/ExportPanel-Cf67NJm4.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/BudgetRealtimeStatus-B4QFuRDo.js","assets/css/BudgetRealtimeStatus-CIH_vEBZ.css"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-Dlh89suy.js","assets/js/index-CQfHVbgx.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-BRNB9qE6.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-C0IdUuE4.js","assets/css/TabbedSidebar-lVmDPkS2.css","assets/js/ExportPanel-P-urm9mk.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/BudgetRealtimeStatus-BN4EAsw8.js","assets/css/BudgetRealtimeStatus-CIH_vEBZ.css"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-qm63FlG-.js";
+import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-CQfHVbgx.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
 const mockLegislativeData = [
   {
@@ -214,6 +214,265 @@ const mockLegislativeData = [
     citation: "BAHIA. Lei nº 14.800, de 28 de fevereiro de 2021. Diário Oficial do Estado, Salvador, BA, 1 mar. 2021."
   }
 ];
+function parseURN(urn) {
+  const parts = urn.split(":");
+  let state;
+  let municipality;
+  let type = "lei";
+  let number;
+  let date;
+  if (parts.length > 2) {
+    const locationPart = parts[2];
+    if (locationPart && locationPart !== "br") {
+      const locationParts = locationPart.split(";");
+      if (locationParts.length > 0) {
+        const mainLocation = locationParts[0];
+        if (mainLocation.includes(".")) {
+          const [stateCode, municipalityCode] = mainLocation.split(".");
+          state = normalizeStateName(stateCode);
+          if (municipalityCode) {
+            municipality = normalizeMunicipalityName(municipalityCode);
+          }
+        } else {
+          state = normalizeStateName(mainLocation);
+        }
+      }
+    }
+  }
+  if (parts.length > 3) {
+    const typePart = parts[3];
+    if (typePart.includes(":")) {
+      type = typePart.split(":")[0];
+    } else {
+      type = typePart;
+    }
+    type = normalizeDocumentType(type);
+  }
+  if (parts.length > 4) {
+    const lastPart = parts[parts.length - 1];
+    const datePart = parts[parts.length - 2];
+    if (datePart && datePart.match(/\d{4}-\d{2}-\d{2}/)) {
+      try {
+        date = new Date(datePart);
+      } catch (e) {
+        date = /* @__PURE__ */ new Date();
+      }
+    }
+    if (lastPart && lastPart.match(/\d+/)) {
+      number = lastPart.replace(/[^\d]/g, "");
+    }
+  }
+  return { state, municipality, type, number, date };
+}
+function normalizeStateName(stateCode) {
+  const stateMap = {
+    "sao.paulo": "SP",
+    "rio.de.janeiro": "RJ",
+    "minas.gerais": "MG",
+    "rio.grande.sul": "RS",
+    "parana": "PR",
+    "bahia": "BA",
+    "distrito.federal": "DF",
+    "espirito.santo": "ES",
+    "goias": "GO",
+    "santa.catarina": "SC",
+    "ceara": "CE",
+    "pernambuco": "PE",
+    "para": "PA",
+    "maranhao": "MA",
+    "paraiba": "PB",
+    "alagoas": "AL",
+    "sergipe": "SE",
+    "rondonia": "RO",
+    "acre": "AC",
+    "amazonas": "AM",
+    "roraima": "RR",
+    "amapa": "AP",
+    "tocantins": "TO",
+    "mato.grosso": "MT",
+    "mato.grosso.sul": "MS",
+    "piauí": "PI"
+  };
+  return stateMap[stateCode] || stateCode.toUpperCase();
+}
+function normalizeMunicipalityName(municipalityCode) {
+  return municipalityCode.split(".").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
+function normalizeDocumentType(type) {
+  const typeMap = {
+    "lei": "lei",
+    "decreto": "decreto",
+    "decreto.lei": "decreto_lei",
+    "medida.provisoria": "medida_provisoria",
+    "portaria": "portaria",
+    "resolucao": "resolucao",
+    "acordao": "acordao",
+    "instrucao.normativa": "instrucao_normativa",
+    "emenda.constitucional": "emenda_constitucional"
+  };
+  return typeMap[type] || type;
+}
+function generateKeywords(searchTerm, title) {
+  const keywords = /* @__PURE__ */ new Set();
+  keywords.add(searchTerm.toLowerCase());
+  const titleWords = title.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((word) => word.length > 3);
+  titleWords.forEach((word) => keywords.add(word));
+  const transportTerms = [
+    "transporte",
+    "rodoviário",
+    "carga",
+    "logística",
+    "frete",
+    "fretamento",
+    "caminhão",
+    "veículo",
+    "rodovia",
+    "tráfego"
+  ];
+  transportTerms.forEach((term) => {
+    if (title.toLowerCase().includes(term)) {
+      keywords.add(term);
+    }
+  });
+  return Array.from(keywords).slice(0, 8);
+}
+function generateCitation(doc, urn) {
+  var _a, _b;
+  const year = doc.date ? doc.date.getFullYear() : (/* @__PURE__ */ new Date()).getFullYear();
+  const state = doc.state || "BRASIL";
+  if (doc.type === "lei" && doc.number) {
+    return `${state}. Lei nº ${doc.number}, de ${((_a = doc.date) == null ? void 0 : _a.toLocaleDateString("pt-BR")) || "data não informada"}. Disponível em: ${doc.url}. Acesso em: ${(/* @__PURE__ */ new Date()).toLocaleDateString("pt-BR")}.`;
+  } else if (doc.type === "decreto" && doc.number) {
+    return `${state}. Decreto nº ${doc.number}, de ${((_b = doc.date) == null ? void 0 : _b.toLocaleDateString("pt-BR")) || "data não informada"}. Disponível em: ${doc.url}. Acesso em: ${(/* @__PURE__ */ new Date()).toLocaleDateString("pt-BR")}.`;
+  } else {
+    return `${doc.title}. ${state}, ${year}. Disponível em: ${doc.url}. Acesso em: ${(/* @__PURE__ */ new Date()).toLocaleDateString("pt-BR")}.`;
+  }
+}
+function parseCSVData(csvContent) {
+  const lines = csvContent.split("\n");
+  const headers = lines[0].split(",").map((h) => h.trim().replace(/["']/g, ""));
+  const documents = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const values = line.split(",").map((v) => v.trim().replace(/["']/g, ""));
+    if (values.length < headers.length) continue;
+    const row = {
+      search_term: values[0] || "",
+      date_searched: values[1] || "",
+      url: values[2] || "",
+      title: values[3] || "",
+      urn: values[4] || ""
+    };
+    if (!row.title || !row.url || !row.urn) continue;
+    const urnData = parseURN(row.urn);
+    const doc = {
+      id: row.urn.replace(/[^\w]/g, "_"),
+      title: row.title,
+      summary: `Documento relacionado a ${row.search_term}. ${row.title}`,
+      type: urnData.type,
+      number: urnData.number,
+      date: urnData.date || new Date(row.date_searched),
+      keywords: generateKeywords(row.search_term, row.title),
+      state: urnData.state,
+      municipality: urnData.municipality,
+      url: row.url,
+      status: "sancionado",
+      source: "LexML - Rede de Informação Legislativa e Jurídica",
+      citation: "",
+      urn: row.urn
+    };
+    doc.citation = generateCitation(doc);
+    documents.push(doc);
+  }
+  return documents;
+}
+async function loadCSVLegislativeData() {
+  try {
+    const response = await fetch("/lexml_transport_results_20250606_123100.csv");
+    const csvContent = await response.text();
+    return parseCSVData(csvContent);
+  } catch (error) {
+    console.warn("Failed to load CSV data:", error);
+    return [];
+  }
+}
+const csvLegislativeData = [
+  // This will be populated with a subset of the CSV data for immediate use
+  {
+    id: "mpv_833_2018",
+    title: "MPV 833/2018",
+    summary: "Medida Provisória relacionada a transporte de carga",
+    type: "medida_provisoria",
+    number: "833/2018",
+    date: /* @__PURE__ */ new Date("2018-05-27"),
+    keywords: ["transporte", "carga", "medida provisória"],
+    url: "https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833",
+    status: "sancionado",
+    source: "LexML - Rede de Informação Legislativa e Jurídica",
+    citation: "BRASIL. Medida Provisória nº 833, de 27 de maio de 2018. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833.",
+    urn: "urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833"
+  },
+  {
+    id: "decreto_77789_1976",
+    title: "Decreto nº 77.789, de 9 de Junho de 1976",
+    summary: "Decreto federal relacionado a transporte rodoviário de carga",
+    type: "decreto",
+    number: "77.789/1976",
+    date: /* @__PURE__ */ new Date("1976-06-09"),
+    keywords: ["transporte", "rodoviário", "carga", "decreto"],
+    url: "https://www.lexml.gov.br/urn/urn:lex:br:federal:decreto:1976-06-09;77789",
+    status: "sancionado",
+    source: "LexML - Rede de Informação Legislativa e Jurídica",
+    citation: "BRASIL. Decreto nº 77.789, de 9 de junho de 1976. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br:federal:decreto:1976-06-09;77789.",
+    urn: "urn:lex:br:federal:decreto:1976-06-09;77789"
+  },
+  {
+    id: "lei_2708_mg_2008",
+    title: "Lei n° 2708, de 05 de Dezembro de 2008",
+    summary: "Lei municipal de Itabirito-MG relacionada a logística de carga",
+    type: "lei",
+    number: "2708/2008",
+    date: /* @__PURE__ */ new Date("2008-12-05"),
+    keywords: ["logística", "carga", "municipal"],
+    state: "MG",
+    municipality: "Itabirito",
+    url: "https://www.lexml.gov.br/urn/urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708",
+    status: "sancionado",
+    source: "LexML - Rede de Informação Legislativa e Jurídica",
+    citation: "MG. Lei nº 2708, de 05 de dezembro de 2008. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708.",
+    urn: "urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708"
+  },
+  {
+    id: "decreto_60491_sp_2014",
+    title: "Decreto nº 60.491, de 26/05/2014",
+    summary: "Decreto estadual de São Paulo relacionado a logística de carga",
+    type: "decreto",
+    number: "60.491/2014",
+    date: /* @__PURE__ */ new Date("2014-05-26"),
+    keywords: ["logística", "carga", "estadual"],
+    state: "SP",
+    url: "https://www.lexml.gov.br/urn/urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491",
+    status: "sancionado",
+    source: "LexML - Rede de Informação Legislativa e Jurídica",
+    citation: "SP. Decreto nº 60.491, de 26 de maio de 2014. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491.",
+    urn: "urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491"
+  },
+  {
+    id: "mpv_1050_2021",
+    title: "MPV 1050/2021",
+    summary: "Medida Provisória relacionada a caminhão e transporte",
+    type: "medida_provisoria",
+    number: "1050/2021",
+    date: /* @__PURE__ */ new Date("2021-05-19"),
+    keywords: ["caminhão", "transporte", "medida provisória"],
+    url: "https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2021-05-19;1050",
+    status: "sancionado",
+    source: "LexML - Rede de Informação Legislativa e Jurídica",
+    citation: "BRASIL. Medida Provisória nº 1050, de 19 de maio de 2021. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2021-05-19;1050.",
+    urn: "urn:lex:br:congresso.nacional:medida.provisoria;mpv:2021-05-19;1050"
+  }
+];
 class ApiClient {
   constructor(config) {
     __publicField(this, "config");
@@ -354,6 +613,7 @@ const apiClient = new ApiClient({
 });
 const _LegislativeDataService = class _LegislativeDataService {
   constructor() {
+    __publicField(this, "csvDataCache", null);
   }
   static getInstance() {
     if (!_LegislativeDataService.instance) {
@@ -361,14 +621,32 @@ const _LegislativeDataService = class _LegislativeDataService {
     }
     return _LegislativeDataService.instance;
   }
+  async getFallbackData() {
+    if (!this.csvDataCache) {
+      try {
+        console.log("Loading CSV legislative data from LexML...");
+        this.csvDataCache = await loadCSVLegislativeData();
+        if (this.csvDataCache.length > 0) {
+          console.log(`Loaded ${this.csvDataCache.length} documents from CSV`);
+          return this.csvDataCache;
+        }
+      } catch (error) {
+        console.warn("Failed to load CSV data, using embedded CSV samples:", error);
+      }
+      this.csvDataCache = csvLegislativeData;
+    }
+    const combinedData = [...this.csvDataCache, ...mockLegislativeData];
+    return combinedData;
+  }
   async fetchDocuments(filters) {
     try {
       const params = this.buildQueryParams(filters);
       const data = await apiClient.get("/documents", params);
       return this.transformApiResponse(data);
     } catch (error) {
-      console.warn("API not available, falling back to mock data:", error);
-      return this.filterMockData(mockLegislativeData, filters);
+      console.warn("API not available, falling back to CSV + mock data:", error);
+      const fallbackData = await this.getFallbackData();
+      return this.filterMockData(fallbackData, filters);
     }
   }
   async fetchDocumentById(id) {
@@ -379,8 +657,9 @@ const _LegislativeDataService = class _LegislativeDataService {
       if (error instanceof ApiError && error.statusCode === 404) {
         return null;
       }
-      console.warn("API not available, falling back to mock data:", error);
-      return mockLegislativeData.find((doc) => doc.id === id) || null;
+      console.warn("API not available, falling back to CSV + mock data:", error);
+      const fallbackData = await this.getFallbackData();
+      return fallbackData.find((doc) => doc.id === id) || null;
     }
   }
   async searchDocuments(searchTerm) {
@@ -388,9 +667,10 @@ const _LegislativeDataService = class _LegislativeDataService {
       const data = await apiClient.get("/documents/search", { q: searchTerm });
       return this.transformApiResponse(data);
     } catch (error) {
-      console.warn("Search API not available, falling back to mock data:", error);
+      console.warn("Search API not available, falling back to CSV + mock data:", error);
+      const fallbackData = await this.getFallbackData();
       const lowerSearchTerm = searchTerm.toLowerCase();
-      return mockLegislativeData.filter(
+      return fallbackData.filter(
         (doc) => doc.title.toLowerCase().includes(lowerSearchTerm) || doc.summary.toLowerCase().includes(lowerSearchTerm) || doc.keywords.some((keyword) => keyword.toLowerCase().includes(lowerSearchTerm))
       );
     }
@@ -479,10 +759,10 @@ const useKeyboardNavigation = (onEscape, onEnter) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 };
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-DvX74671.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0).then((module) => ({ default: module.OptimizedMap })));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-TYlDJxM2.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0).then((module) => ({ default: module.TabbedSidebar })));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-Cf67NJm4.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0).then((module) => ({ default: module.ExportPanel })));
-const BudgetRealtimeStatus = reactExports.lazy(() => __vitePreload(() => import("./BudgetRealtimeStatus-B4QFuRDo.js"), true ? __vite__mapDeps([11,1,2,3,4,12]) : void 0).then((module) => ({ default: module.BudgetRealtimeStatus })));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-Dlh89suy.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0).then((module) => ({ default: module.OptimizedMap })));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-C0IdUuE4.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0).then((module) => ({ default: module.TabbedSidebar })));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-P-urm9mk.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0).then((module) => ({ default: module.ExportPanel })));
+const BudgetRealtimeStatus = reactExports.lazy(() => __vitePreload(() => import("./BudgetRealtimeStatus-BN4EAsw8.js"), true ? __vite__mapDeps([11,1,2,3,4,12]) : void 0).then((module) => ({ default: module.BudgetRealtimeStatus })));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,
@@ -641,7 +921,9 @@ const Dashboard = () => {
       /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => window.location.reload(), children: "Retry" })
     ] });
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "dashboard", children: [
+  const isDemoMode = false;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `dashboard ${""}`, children: [
+    isDemoMode,
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       "a",
       {
@@ -675,7 +957,7 @@ const Dashboard = () => {
       {
         id: "main-content",
         ref: mainContentRef,
-        className: `main-content ${sidebarOpen ? "with-sidebar" : "full-width"}`,
+        className: "main-content",
         tabIndex: -1,
         role: "main",
         "aria-label": "Main content area",
@@ -683,8 +965,7 @@ const Dashboard = () => {
           /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "toolbar", role: "banner", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "toolbar-left", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { id: "page-title", children: "Brazilian Transport Legislation Monitor" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "subtitle", id: "page-description", children: "Academic research platform for transport legislation analysis" }),
-              false
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "subtitle", id: "page-description", children: "Academic research platform for transport legislation analysis" })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: null, children: /* @__PURE__ */ jsxRuntimeExports.jsx(BudgetRealtimeStatus, {}) }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "toolbar-right", children: [
