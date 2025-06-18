@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-import { j as jsxRuntimeExports } from "./index-CtiVrz8G.js";
+import { j as jsxRuntimeExports } from "./index-B7i3lUh2.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
 import { g as getDefaultExportFromCjs } from "./react-vendor-D_QSeeZk.js";
 import { r as requirePapaparse_min, h as html2canvas } from "./utils-C418i17z.js";
@@ -1006,20 +1006,20 @@ const ExportPanel = ({
           return true;
         });
       }
-      let exportContent;
+      let exportContent = null;
       let filename;
       switch (exportFormat) {
         case "csv":
-          exportToCSV(filteredDocuments, options);
+          exportContent = exportToCSV(filteredDocuments, options);
           break;
         case "xml":
-          exportToXML(filteredDocuments, options);
+          exportContent = exportToXML(filteredDocuments, options);
           break;
         case "html":
-          exportToHTML(filteredDocuments, options);
+          exportContent = exportToHTML(filteredDocuments, options);
           break;
         case "bibtex":
-          exportToBibTeX(filteredDocuments);
+          exportContent = exportToBibTeX(filteredDocuments);
           break;
         case "png":
           if (includeMetadata) {
@@ -1037,8 +1037,14 @@ const ExportPanel = ({
           }
           break;
       }
+      if (exportContent) {
+        const filename2 = `monitor-legislativo-${exportFormat}-${Date.now()}.${exportFormat}`;
+        downloadFile2(exportContent, filename2);
+      }
+      setExportStatus("ready");
     } catch (error) {
       console.error("Export failed:", error);
+      setExportStatus("idle");
       alert("Erro ao exportar dados. Tente novamente.");
     }
   };
