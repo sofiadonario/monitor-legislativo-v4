@@ -133,7 +133,17 @@ class ErrorBoundary extends reactExports.Component {
     return this.props.children;
   }
 }
+const LoadingSpinner = ({
+  message = "Loading legislation data...",
+  size = "medium"
+}) => {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `loading-spinner ${size}`, role: "status", "aria-live": "polite", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "spinner-animation", "aria-hidden": "true" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "loading-message", children: message })
+  ] });
+};
 const App = () => {
+  const [showSpinner, setShowSpinner] = reactExports.useState(false);
   return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorBoundary, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "App", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { style: {
       padding: "2rem",
@@ -159,7 +169,28 @@ const App = () => {
         /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "✅ Cache: Upstash Redis" })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Step 1: ErrorBoundary added ✅" }) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Next: Adding components gradually..." })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Step 2: LoadingSpinner added ✅" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { margin: "2rem 0" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: () => setShowSpinner(!showSpinner),
+          style: {
+            padding: "0.5rem 1rem",
+            margin: "0.5rem",
+            backgroundColor: "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer"
+          },
+          children: [
+            showSpinner ? "Hide" : "Show",
+            " Loading Spinner"
+          ]
+        }
+      ) }),
+      showSpinner && /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Testing spinner component..." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Next: Adding more components gradually..." })
     ] })
   ] }) });
 };
