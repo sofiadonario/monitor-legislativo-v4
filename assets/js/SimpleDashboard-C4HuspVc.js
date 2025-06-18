@@ -1,6 +1,6 @@
-import { j as jsxRuntimeExports } from "./index-Bfz9uBie.js";
+import { j as jsxRuntimeExports } from "./index-BksYCpfR.js";
 import "./react-vendor-D_QSeeZk.js";
-import "./leaflet-vendor-CapjgQv2.js";
+import "./leaflet-vendor-BGKu4a_F.js";
 const SimpleDashboard = () => {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
     padding: "2rem",
