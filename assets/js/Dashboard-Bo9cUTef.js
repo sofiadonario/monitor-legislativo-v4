@@ -1,8 +1,8 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-CZJxMZc-.js","assets/js/index-BvirpK-b.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-CuWVk-Hd.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-nCdbuDxL.js","assets/css/TabbedSidebar-Abd64lRR.css","assets/js/ExportPanel-CJeNH-Yx.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-CiQQ6ygr.js","assets/js/index-uu8gppCp.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-CuWVk-Hd.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-Cgq-6gkN.js","assets/css/TabbedSidebar-Abd64lRR.css","assets/js/ExportPanel-DILCiZXy.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-BvirpK-b.js";
+import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-uu8gppCp.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
 import "./react-vendor-D_QSeeZk.js";
 function parseURN(urn) {
@@ -390,9 +390,10 @@ class ApiError extends Error {
     this.name = "ApiError";
   }
 }
-new ApiClient({
+const apiClient = new ApiClient({
   baseUrl: "https://monitor-legislativo-v4-production.up.railway.app",
   version: "v1",
+  timeout: Number(void 0) || 3e4,
   cacheEnabled: true,
   cacheTTL: Number(void 0) || 3e5
 });
@@ -426,8 +427,14 @@ const _LegislativeDataService = class _LegislativeDataService {
     }
   }
   async fetchDocuments(filters) {
-    {
-      console.log("Force CSV-only mode. Using local CSV file exclusively.");
+    try {
+      console.log("Attempting to fetch documents from API...");
+      const params = this.buildQueryParams(filters);
+      const data = await apiClient.get("/documents", params);
+      console.log(`Successfully fetched ${data.length} documents from API.`);
+      return { documents: this.transformApiResponse(data), usingFallback: false };
+    } catch (error) {
+      console.warn("API fetch failed, falling back to local CSV data:", error);
       const localData = await this.getLocalCsvData();
       return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
     }
@@ -531,9 +538,9 @@ const useKeyboardNavigation = (onEscape, onEnter) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 };
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-CZJxMZc-.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-nCdbuDxL.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-CJeNH-Yx.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-CiQQ6ygr.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-Cgq-6gkN.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-DILCiZXy.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,

@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/Dashboard-B5ahckZz.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/js/react-vendor-D_QSeeZk.js","assets/css/Dashboard-B6rCoLed.css"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/Dashboard-Bo9cUTef.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/js/react-vendor-D_QSeeZk.js","assets/css/Dashboard-B6rCoLed.css"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -217,7 +217,7 @@ const LoadingSpinner = ({
     /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "loading-message", children: message })
   ] });
 };
-const Dashboard = reactExports.lazy(() => __vitePreload(() => import("./Dashboard-B5ahckZz.js"), true ? __vite__mapDeps([0,1,2,3]) : void 0));
+const Dashboard = reactExports.lazy(() => __vitePreload(() => import("./Dashboard-Bo9cUTef.js"), true ? __vite__mapDeps([0,1,2,3]) : void 0));
 const App = () => {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorBoundary, { children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "App", children: /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading Dashboard..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx(Dashboard, {}) }) }) });
 };
