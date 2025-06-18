@@ -1,4 +1,4 @@
-import { j as jsxRuntimeExports } from "./index-CA4qco_5.js";
+import { j as jsxRuntimeExports } from "./index-m_XgFlqP.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
 import "./react-vendor-D_QSeeZk.js";
 const DataVisualization = ({ documents }) => {
