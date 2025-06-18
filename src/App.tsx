@@ -4,6 +4,23 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 
 const App: React.FC = () => {
   const [showSpinner, setShowSpinner] = useState(false);
+  const [apiStatus, setApiStatus] = useState<string>('Not tested');
+  const [isTestingApi, setIsTestingApi] = useState(false);
+
+  const testBackendApi = async () => {
+    setIsTestingApi(true);
+    setApiStatus('Testing...');
+    
+    try {
+      const response = await fetch('https://monitor-legislativo-v4-production.up.railway.app/health');
+      const data = await response.json();
+      setApiStatus(`✅ API Working! Status: ${data.status}`);
+    } catch (error) {
+      setApiStatus(`❌ API Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsTestingApi(false);
+    }
+  };
 
   return (
     <ErrorBoundary>
@@ -30,6 +47,7 @@ const App: React.FC = () => {
           </ul>
           <p><strong>Step 1: ErrorBoundary added ✅</strong></p>
           <p><strong>Step 2: LoadingSpinner added ✅</strong></p>
+          <p><strong>Step 3: API connectivity test ✅</strong></p>
           
           <div style={{ margin: '2rem 0' }}>
             <button 
@@ -46,11 +64,37 @@ const App: React.FC = () => {
             >
               {showSpinner ? 'Hide' : 'Show'} Loading Spinner
             </button>
+            
+            <button 
+              onClick={testBackendApi}
+              disabled={isTestingApi}
+              style={{ 
+                padding: '0.5rem 1rem', 
+                margin: '0.5rem',
+                backgroundColor: isTestingApi ? '#6c757d' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: isTestingApi ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {isTestingApi ? 'Testing...' : 'Test Railway API'}
+            </button>
           </div>
           
           {showSpinner && <LoadingSpinner message="Testing spinner component..." />}
           
-          <p>Next: Adding more components gradually...</p>
+          <div style={{ 
+            margin: '1rem 0', 
+            padding: '1rem', 
+            backgroundColor: '#f8f9fa', 
+            borderRadius: '4px',
+            border: '1px solid #dee2e6'
+          }}>
+            <strong>API Status:</strong> {apiStatus}
+          </div>
+          
+          <p>Next: Adding Dashboard component with Suspense...</p>
         </main>
       </div>
     </ErrorBoundary>
