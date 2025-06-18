@@ -189,29 +189,26 @@ function generateKeywords(searchTerm: string, title: string): string[] {
   return Array.from(keywords).slice(0, 8); // Limit to 8 keywords
 }
 
-// Parse CSV line handling commas within quotes
+// A more robust CSV parser
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
-  
+
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-    
-    if (char === '"') {
+
+    if (char === '"' && line[i - 1] !== '\\\\') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
-      result.push(current.trim());
+      result.push(current.trim().replace(/^"|"$/g, ''));
       current = '';
     } else {
       current += char;
     }
   }
-  
-  // Add the last field
-  result.push(current.trim());
-  
-  return result.map(field => field.replace(/^["']|["']$/g, '')); // Remove surrounding quotes
+  result.push(current.trim().replace(/^"|"$/g, ''));
+  return result;
 }
 
 // Generate academic citation
@@ -230,72 +227,87 @@ function generateCitation(doc: Partial<LegislativeDocument>, urn: string): strin
 
 // Parse CSV content into LegislativeDocument array
 export function parseCSVData(csvContent: string): LegislativeDocument[] {
-  const lines = csvContent.split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().replace(/["']/g, ''));
-  
+  const lines = csvContent.split('\\n').filter(line => line.trim() !== '');
+  if (lines.length < 2) {
+    console.warn('CSV content has no data rows.');
+    return [];
+  }
+
+  const headers = parseCSVLine(lines[0]).map(h => h.trim().replace(/['"]+/g, ''));
+  console.log('CSV Headers:', headers); // Debugging headers
+
   const documents: LegislativeDocument[] = [];
   
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i];
     if (!line) continue;
-    
-    // Improved CSV parsing to handle commas within quotes
+
     const values = parseCSVLine(line);
     
-    if (values.length < 5) continue; // Need at least 5 columns
-    
+    // Basic validation
+    if (values.length !== headers.length) {
+      console.warn(`Skipping malformed CSV row ${i + 1}: Expected ${headers.length} fields, but found ${values.length}. Line: "${line}"`);
+      continue;
+    }
+
     const row: CSVRow = {
       search_term: values[0] || '',
       date_searched: values[1] || '',
       url: values[2] || '',
-      title: values[3] || '',
+      title: values[3] || 'No Title Provided',
       urn: values[4] || ''
     };
+
+    if (!row.urn) {
+      console.warn(`Skipping row ${i + 1} due to missing URN.`);
+      continue;
+    }
+
+    const { state, municipality, type, number, date, chamber } = parseURN(row.urn);
     
-    if (!row.title || !row.url || !row.urn) continue;
-    
-    // Parse URN for metadata
-    const urnData = parseURN(row.urn);
-    
-    // Create document
-    const doc: LegislativeDocument = {
-      id: row.urn.replace(/[^\w]/g, '_'),
+    // More robust date handling
+    const docDate = date || new Date(); // Fallback to current date if parsing fails
+
+    documents.push({
+      id: row.urn,
       title: row.title,
-      summary: `Documento relacionado a ${row.search_term}. ${row.title}`,
-      type: urnData.type,
-      number: urnData.number,
-      date: urnData.date || new Date(row.date_searched),
+      summary: `Document retrieved on ${row.date_searched} for search term "${row.search_term}".`,
+      type: type || 'lei',
+      date: docDate.toISOString(),
       keywords: generateKeywords(row.search_term, row.title),
-      state: urnData.state,
-      municipality: urnData.municipality,
+      state: state || 'Federal',
+      municipality: municipality,
       url: row.url,
       status: 'sancionado',
-      source: 'LexML - Rede de Informação Legislativa e Jurídica',
-      citation: '',
-      chamber: urnData.chamber,
-      urn: row.urn
-    };
-    
-    // Generate citation
-    doc.citation = generateCitation(doc, row.urn);
-    
-    documents.push(doc);
+      chamber: chamber || 'Unknown',
+      number: number,
+      source: 'LexML',
+      citation: generateCitation({ title: row.title, url: row.url, date: docDate, state, type, number }, row.urn)
+    });
   }
-  
+
+  console.log(`Successfully parsed ${documents.length} documents from CSV.`);
   return documents;
 }
 
-// Load and parse CSV data
+// Load and parse the main CSV data file for transport legislation
 export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
+  const CSV_URL = '/lexml_transport_results_20250606_123100.csv';
+  console.log(`Fetching CSV data from: ${CSV_URL}`);
+
   try {
-    // In a real application, this would be loaded from a public URL or API
-    // For now, we'll need to import the CSV content
-    const response = await fetch('/lexml_transport_results_20250606_123100.csv');
+    const response = await fetch(CSV_URL);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+    }
     const csvContent = await response.text();
+    if (!csvContent) {
+      throw new Error('CSV file is empty or could not be read.');
+    }
     return parseCSVData(csvContent);
   } catch (error) {
-    console.warn('Failed to load CSV data:', error);
-    return [];
+    console.error('Error loading or parsing CSV legislative data:', error);
+    throw error; // Re-throw to be caught by the service
   }
 }
 
@@ -321,8 +333,3 @@ export const csvLegislativeData: LegislativeDocument[] = [];
     console.error('❌ CRITICAL: Failed to load CSV data on module import:', error);
   }
 })();
-
-// Get CSV data synchronously (returns cached data)
-export function getCSVData(): LegislativeDocument[] {
-  return csvDataCache || csvLegislativeData;
-}

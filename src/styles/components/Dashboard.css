@@ -84,14 +84,17 @@
   text-overflow: ellipsis;
 }
 
-.toolbar-left .subtitle {
+.toolbar-left .toolbar-subtitle {
   margin: 0.2rem 0 0 0;
-  font-size: 0.8rem;
-  color: #6c757d;
+  font-size: 0.9rem;
+  color: #495057 !important;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 500;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* Demo Mode Banner - Always present for stability */

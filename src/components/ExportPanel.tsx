@@ -106,21 +106,21 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
         });
       }
 
-      let exportContent: string;
+      let exportContent: string | Blob | null = null;
       let filename: string;
 
       switch (exportFormat) {
         case 'csv':
-          exportToCSV(filteredDocuments, options);
+          exportContent = exportToCSV(filteredDocuments, options);
           break;
         case 'xml':
-          exportToXML(filteredDocuments, options);
+          exportContent = exportToXML(filteredDocuments, options);
           break;
         case 'html':
-          exportToHTML(filteredDocuments, options);
+          exportContent = exportToHTML(filteredDocuments, options);
           break;
         case 'bibtex':
-          exportToBibTeX(filteredDocuments);
+          exportContent = exportToBibTeX(filteredDocuments);
           break;
         case 'png':
           if (includeMetadata) {
@@ -138,8 +138,17 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
           }
           break;
       }
+      
+      if (exportContent) {
+        const filename = `monitor-legislativo-${exportFormat}-${Date.now()}.${exportFormat}`;
+        downloadFile(exportContent, filename);
+      }
+      
+      setExportStatus('ready');
+
     } catch (error) {
       console.error('Export failed:', error);
+      setExportStatus('idle');
       alert('Erro ao exportar dados. Tente novamente.');
     }
   };
