@@ -61,6 +61,7 @@ export interface SearchFilters {
   documentTypes: DocumentType[];
   states: string[];
   municipalities: string[];
+  chambers: string[];
   keywords: string[];
   dateFrom?: Date;
   dateTo?: Date;

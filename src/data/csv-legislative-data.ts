@@ -16,6 +16,7 @@ function parseURN(urn: string): {
   type: string;
   number?: string;
   date?: Date;
+  chamber?: string;
 } {
   // Example URN: urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491
   const parts = urn.split(':');
@@ -25,10 +26,30 @@ function parseURN(urn: string): {
   let type = 'lei'; // default
   let number: string | undefined;
   let date: Date | undefined;
+  let chamber: string | undefined;
   
-  // Extract location info (state/municipality)
+  // Extract chamber and location info
   if (parts.length > 2) {
     const locationPart = parts[2];
+    
+    // Extract legislative chamber/authority
+    if (locationPart.includes('congresso.nacional')) {
+      chamber = 'Congresso Nacional';
+    } else if (locationPart.includes('camara.leg.br') || locationPart.includes('camara.municipal')) {
+      chamber = 'Câmara dos Deputados';
+    } else if (locationPart.includes('senado.leg.br')) {
+      chamber = 'Senado Federal';
+    } else if (locationPart.includes('federal') || locationPart === 'br') {
+      chamber = 'DOU/Planalto';
+    } else if (locationPart.includes('estadual')) {
+      chamber = 'Governo Estadual';
+    } else if (locationPart.includes('municipal')) {
+      chamber = 'Governo Municipal';
+    } else if (locationPart.includes('tribunal')) {
+      chamber = 'Poder Judiciário';
+    }
+    
+    // Extract location info (state/municipality)
     if (locationPart && locationPart !== 'br') {
       const locationParts = locationPart.split(';');
       if (locationParts.length > 0) {
@@ -76,7 +97,7 @@ function parseURN(urn: string): {
     }
   }
   
-  return { state, municipality, type, number, date };
+  return { state, municipality, type, number, date, chamber };
 }
 
 // Normalize state names from URN codes
@@ -168,6 +189,31 @@ function generateKeywords(searchTerm: string, title: string): string[] {
   return Array.from(keywords).slice(0, 8); // Limit to 8 keywords
 }
 
+// Parse CSV line handling commas within quotes
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add the last field
+  result.push(current.trim());
+  
+  return result.map(field => field.replace(/^["']|["']$/g, '')); // Remove surrounding quotes
+}
+
 // Generate academic citation
 function generateCitation(doc: Partial<LegislativeDocument>, urn: string): string {
   const year = doc.date ? doc.date.getFullYear() : new Date().getFullYear();
@@ -193,10 +239,10 @@ export function parseCSVData(csvContent: string): LegislativeDocument[] {
     const line = lines[i].trim();
     if (!line) continue;
     
-    // Simple CSV parsing (could be improved for more complex cases)
-    const values = line.split(',').map(v => v.trim().replace(/["']/g, ''));
+    // Improved CSV parsing to handle commas within quotes
+    const values = parseCSVLine(line);
     
-    if (values.length < headers.length) continue;
+    if (values.length < 5) continue; // Need at least 5 columns
     
     const row: CSVRow = {
       search_term: values[0] || '',
@@ -226,6 +272,7 @@ export function parseCSVData(csvContent: string): LegislativeDocument[] {
       status: 'sancionado',
       source: 'LexML - Rede de Informação Legislativa e Jurídica',
       citation: '',
+      chamber: urnData.chamber,
       urn: row.urn
     };
     
@@ -252,80 +299,26 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
   }
 }
 
-// Export a synchronous version using embedded data
-export const csvLegislativeData: LegislativeDocument[] = [
-  // This will be populated with a subset of the CSV data for immediate use
-  {
-    id: 'mpv_833_2018',
-    title: 'MPV 833/2018',
-    summary: 'Medida Provisória relacionada a transporte de carga',
-    type: 'medida_provisoria',
-    number: '833/2018',
-    date: new Date('2018-05-27'),
-    keywords: ['transporte', 'carga', 'medida provisória'],
-    url: 'https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833',
-    status: 'sancionado',
-    source: 'LexML - Rede de Informação Legislativa e Jurídica',
-    citation: 'BRASIL. Medida Provisória nº 833, de 27 de maio de 2018. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833.',
-    urn: 'urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833'
-  },
-  {
-    id: 'decreto_77789_1976',
-    title: 'Decreto nº 77.789, de 9 de Junho de 1976',
-    summary: 'Decreto federal relacionado a transporte rodoviário de carga',
-    type: 'decreto',
-    number: '77.789/1976',
-    date: new Date('1976-06-09'),
-    keywords: ['transporte', 'rodoviário', 'carga', 'decreto'],
-    url: 'https://www.lexml.gov.br/urn/urn:lex:br:federal:decreto:1976-06-09;77789',
-    status: 'sancionado',
-    source: 'LexML - Rede de Informação Legislativa e Jurídica',
-    citation: 'BRASIL. Decreto nº 77.789, de 9 de junho de 1976. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br:federal:decreto:1976-06-09;77789.',
-    urn: 'urn:lex:br:federal:decreto:1976-06-09;77789'
-  },
-  {
-    id: 'lei_2708_mg_2008',
-    title: 'Lei n° 2708, de 05 de Dezembro de 2008',
-    summary: 'Lei municipal de Itabirito-MG relacionada a logística de carga',
-    type: 'lei',
-    number: '2708/2008',
-    date: new Date('2008-12-05'),
-    keywords: ['logística', 'carga', 'municipal'],
-    state: 'MG',
-    municipality: 'Itabirito',
-    url: 'https://www.lexml.gov.br/urn/urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708',
-    status: 'sancionado',
-    source: 'LexML - Rede de Informação Legislativa e Jurídica',
-    citation: 'MG. Lei nº 2708, de 05 de dezembro de 2008. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708.',
-    urn: 'urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708'
-  },
-  {
-    id: 'decreto_60491_sp_2014',
-    title: 'Decreto nº 60.491, de 26/05/2014',
-    summary: 'Decreto estadual de São Paulo relacionado a logística de carga',
-    type: 'decreto',
-    number: '60.491/2014',
-    date: new Date('2014-05-26'),
-    keywords: ['logística', 'carga', 'estadual'],
-    state: 'SP',
-    url: 'https://www.lexml.gov.br/urn/urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491',
-    status: 'sancionado',
-    source: 'LexML - Rede de Informação Legislativa e Jurídica',
-    citation: 'SP. Decreto nº 60.491, de 26 de maio de 2014. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491.',
-    urn: 'urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491'
-  },
-  {
-    id: 'mpv_1050_2021',
-    title: 'MPV 1050/2021',
-    summary: 'Medida Provisória relacionada a caminhão e transporte',
-    type: 'medida_provisoria',
-    number: '1050/2021',
-    date: new Date('2021-05-19'),
-    keywords: ['caminhão', 'transporte', 'medida provisória'],
-    url: 'https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2021-05-19;1050',
-    status: 'sancionado',
-    source: 'LexML - Rede de Informação Legislativa e Jurídica',
-    citation: 'BRASIL. Medida Provisória nº 1050, de 19 de maio de 2021. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2021-05-19;1050.',
-    urn: 'urn:lex:br:congresso.nacional:medida.provisoria;mpv:2021-05-19;1050'
+// Global variable to store loaded CSV data
+let csvDataCache: LegislativeDocument[] | null = null;
+
+// Export a synchronous version that provides immediate fallback
+export const csvLegislativeData: LegislativeDocument[] = [];
+
+// Load CSV data immediately when module is imported
+(async () => {
+  try {
+    console.log('Loading full CSV dataset...');
+    csvDataCache = await loadCSVLegislativeData();
+    csvLegislativeData.length = 0; // Clear array
+    csvLegislativeData.push(...csvDataCache); // Add all loaded data
+    console.log(`Successfully loaded ${csvDataCache.length} documents from CSV`);
+  } catch (error) {
+    console.warn('Failed to load CSV data on module import:', error);
   }
-];
+})();
+
+// Get CSV data synchronously (returns cached data)
+export function getCSVData(): LegislativeDocument[] {
+  return csvDataCache || csvLegislativeData;
+}

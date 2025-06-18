@@ -48,17 +48,19 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
   const facets = useMemo(() => {
     const typeCounts = new Map<DocumentType, number>();
     const stateCounts = new Map<string, number>();
+    const chamberCounts = new Map<string, number>();
     const keywordCounts = new Map<string, number>();
 
     documents.forEach(doc => {
       typeCounts.set(doc.type, (typeCounts.get(doc.type) || 0) + 1);
       if (doc.state) stateCounts.set(doc.state, (stateCounts.get(doc.state) || 0) + 1);
+      if (doc.chamber) chamberCounts.set(doc.chamber, (chamberCounts.get(doc.chamber) || 0) + 1);
       doc.keywords.forEach(keyword => {
         keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1);
       });
     });
 
-    return { typeCounts, stateCounts, keywordCounts };
+    return { typeCounts, stateCounts, chamberCounts, keywordCounts };
   }, [documents]);
 
   // Generate search suggestions
@@ -164,6 +166,14 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
       : [...filters.states, state];
     
     onFiltersChange({ ...filters, states: newStates });
+  };
+
+  const handleChamberChange = (chamber: string) => {
+    const newChambers = filters.chambers.includes(chamber)
+      ? filters.chambers.filter(c => c !== chamber)
+      : [...filters.chambers, chamber];
+    
+    onFiltersChange({ ...filters, chambers: newChambers });
   };
 
   const handleKeywordToggle = (keyword: string) => {
@@ -326,6 +336,27 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
             </div>
           </div>
 
+          {/* Legislative Chambers */}
+          <div className="filter-section">
+            <h4>Origem Legislativa</h4>
+            <div className="checkbox-group">
+              {Array.from(facets.chamberCounts.entries())
+                .sort((a, b) => b[1] - a[1])
+                .map(([chamber, count]) => (
+                  <label key={chamber} className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      checked={filters.chambers.includes(chamber)}
+                      onChange={() => handleChamberChange(chamber)}
+                    />
+                    <span className="checkbox-label">
+                      {chamber} ({count})
+                    </span>
+                  </label>
+                ))}
+            </div>
+          </div>
+
           {/* States */}
           <div className="filter-section">
             <h4>Estados</h4>
@@ -379,6 +410,13 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
               <span key={state} className="filter-tag">
                 {state}
                 <button onClick={() => handleStateChange(state)}>×</button>
+              </span>
+            ))}
+            
+            {filters.chambers.map(chamber => (
+              <span key={chamber} className="filter-tag">
+                {chamber}
+                <button onClick={() => handleChamberChange(chamber)}>×</button>
               </span>
             ))}
             

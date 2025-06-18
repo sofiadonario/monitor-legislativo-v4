@@ -31,11 +31,16 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
   const filteredDocuments = documents.filter(doc => {
     if (filters.searchTerm && 
         !doc.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) &&
-        !doc.summary.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
+        !doc.summary.toLowerCase().includes(filters.searchTerm.toLowerCase()) &&
+        !doc.keywords.some(keyword => keyword.toLowerCase().includes(filters.searchTerm.toLowerCase()))) {
       return false;
     }
     
     if (filters.documentTypes.length > 0 && !filters.documentTypes.includes(doc.type)) {
+      return false;
+    }
+    
+    if (filters.chambers.length > 0 && doc.chamber && !filters.chambers.includes(doc.chamber)) {
       return false;
     }
     
@@ -110,12 +115,15 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
                   <p>{filteredDocuments.length} documentos encontrados</p>
                 </div>
 
-                {/* Document List */}
+                {/* Document List - Show ALL matching documents */}
                 <div className="document-list">
-                  {filteredDocuments.slice(0, 10).map(doc => (
+                  {filteredDocuments.map(doc => (
                     <div key={doc.id} className="document-item">
                       <h4>{doc.title}</h4>
                       <p className="document-type">{doc.type}</p>
+                      {doc.chamber && (
+                        <p className="document-chamber">Origem: {doc.chamber}</p>
+                      )}
                       <p className="document-date">
                         {typeof doc.date === 'string' ? new Date(doc.date).toLocaleDateString() : doc.date.toLocaleDateString()}
                       </p>
@@ -124,11 +132,6 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
                       )}
                     </div>
                   ))}
-                  {filteredDocuments.length > 10 && (
-                    <p className="more-results">
-                      +{filteredDocuments.length - 10} documentos adicionais
-                    </p>
-                  )}
                 </div>
               </div>
             )}

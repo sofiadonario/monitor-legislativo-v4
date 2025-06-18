@@ -43,6 +43,7 @@ const initialState: DashboardState = {
     documentTypes: [],
     states: [],
     municipalities: [],
+    chambers: [],
     keywords: [],
     dateFrom: undefined,
     dateTo: undefined
@@ -198,6 +199,10 @@ const Dashboard: React.FC = () => {
         return false;
       }
       
+      if (filters.chambers.length > 0 && doc.chamber && !filters.chambers.includes(doc.chamber)) {
+        return false;
+      }
+      
       if (filters.dateFrom) {
         const docDate = typeof doc.date === 'string' ? new Date(doc.date) : doc.date;
         if (docDate < filters.dateFrom) return false;
@@ -265,6 +270,13 @@ const Dashboard: React.FC = () => {
       {/* Live region for announcements */}
       <div aria-live="polite" aria-atomic="true" className="sr-only" id="announcements" />
       
+      {/* Sidebar backdrop */}
+      <div 
+        className={`sidebar-backdrop ${sidebarOpen ? 'show' : ''}`}
+        onClick={() => dispatch({ type: 'SET_SIDEBAR_OPEN', payload: false })}
+        aria-hidden="true"
+      />
+      
       <Suspense fallback={<LoadingSpinner message="Loading sidebar..." />}>
         <TabbedSidebar
           isOpen={sidebarOpen}
@@ -286,7 +298,7 @@ const Dashboard: React.FC = () => {
         aria-label="Main content area"
       >
         {/* Top toolbar */}
-        <header className="toolbar" role="banner">
+        <header className="toolbar" role="banner" style={{ gridArea: 'toolbar' }}>
           <div className="toolbar-left">
             <h1 id="page-title">Brazilian Transport Legislation Monitor</h1>
             <p className="subtitle" id="page-description">
@@ -295,11 +307,31 @@ const Dashboard: React.FC = () => {
           </div>
           
           {/* Real-time status */}
-          <Suspense fallback={null}>
-            <BudgetRealtimeStatus />
-          </Suspense>
+          <div className="toolbar-status">
+            <Suspense fallback={null}>
+              <BudgetRealtimeStatus />
+            </Suspense>
+          </div>
           
-          <div className="toolbar-right">
+          {/* Export and stats */}
+          <div className="toolbar-export">
+            <div className="stats" role="status" aria-live="polite">
+              {isLoading ? (
+                <span className="stat-item">Loading...</span>
+              ) : (
+                <>
+                  <span className="stat-item" aria-label={`${filteredDocuments.length} documents found`}>
+                    <span aria-hidden="true">📄</span>
+                    <span>{filteredDocuments.length} docs</span>
+                  </span>
+                  <span className="stat-item" aria-label={`${highlightedStates.length} states with documents`}>
+                    <span aria-hidden="true">🗺️</span>
+                    <span>{highlightedStates.length} estados</span>
+                  </span>
+                </>
+              )}
+            </div>
+            
             <button 
               className="export-btn"
               onClick={toggleExportPanel}
@@ -309,25 +341,8 @@ const Dashboard: React.FC = () => {
               type="button"
             >
               <span aria-hidden="true">📊</span>
-              <span>Exportar</span>
+              <span>Export</span>
             </button>
-            
-            <div className="stats" role="status" aria-live="polite">
-              {isLoading ? (
-                <span className="stat-item">Loading...</span>
-              ) : (
-                <>
-                  <span className="stat-item" aria-label={`${filteredDocuments.length} documents found`}>
-                    <span aria-hidden="true">📄</span>
-                    <span>{filteredDocuments.length} documentos</span>
-                  </span>
-                  <span className="stat-item" aria-label={`${highlightedStates.length} states with documents`}>
-                    <span aria-hidden="true">🗺️</span>
-                    <span>{highlightedStates.length} estados</span>
-                  </span>
-                </>
-              )}
-            </div>
           </div>
         </header>
         
@@ -336,6 +351,7 @@ const Dashboard: React.FC = () => {
           className="map-wrapper" 
           aria-labelledby="map-heading"
           role="region"
+          style={{ gridArea: 'content' }}
         >
           <h2 id="map-heading" className="sr-only">
             Interactive map of Brazilian states with legislative documents
@@ -358,6 +374,7 @@ const Dashboard: React.FC = () => {
             role="complementary"
             aria-labelledby="location-info-heading"
             aria-live="polite"
+            style={{ gridArea: 'info' }}
           >
             <div className="info-content">
               <h3 id="location-info-heading">

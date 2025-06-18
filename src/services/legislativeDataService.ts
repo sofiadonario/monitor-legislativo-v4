@@ -1,6 +1,6 @@
 import { LegislativeDocument, SearchFilters } from '../types';
 import { mockLegislativeData } from '../data/mock-legislative-data';
-import { csvLegislativeData, loadCSVLegislativeData } from '../data/csv-legislative-data';
+import { csvLegislativeData, loadCSVLegislativeData, getCSVData } from '../data/csv-legislative-data';
 import apiClient, { ApiError } from './apiClient';
 
 // Check if we're in development/testing mode
@@ -22,26 +22,33 @@ export class LegislativeDataService {
   }
   
   private async getFallbackData(): Promise<LegislativeDocument[]> {
-    // Try to load CSV data first, then fall back to mock data
+    // Get full CSV data (889 rows) - this is loaded automatically when module imports
+    const csvData = getCSVData();
+    
+    if (csvData.length > 0) {
+      console.log(`Using ${csvData.length} documents from CSV dataset`);
+      // Combine CSV data with mock data for even richer demo experience
+      const combinedData = [...csvData, ...mockLegislativeData];
+      return combinedData;
+    }
+    
+    // If CSV data not available, try to load it
     if (!this.csvDataCache) {
       try {
-        console.log('Loading CSV legislative data from LexML...');
+        console.log('Attempting to load CSV legislative data...');
         this.csvDataCache = await loadCSVLegislativeData();
         if (this.csvDataCache.length > 0) {
           console.log(`Loaded ${this.csvDataCache.length} documents from CSV`);
-          return this.csvDataCache;
+          // Combine with mock data
+          return [...this.csvDataCache, ...mockLegislativeData];
         }
       } catch (error) {
-        console.warn('Failed to load CSV data, using embedded CSV samples:', error);
+        console.warn('Failed to load CSV data, using mock data only:', error);
       }
-      
-      // Use embedded CSV samples if loading fails
-      this.csvDataCache = csvLegislativeData;
     }
     
-    // Combine CSV data with mock data for richer demo experience
-    const combinedData = [...this.csvDataCache, ...mockLegislativeData];
-    return combinedData;
+    // Final fallback to mock data only
+    return mockLegislativeData;
   }
   
   async fetchDocuments(filters?: SearchFilters): Promise<LegislativeDocument[]> {
@@ -139,6 +146,10 @@ export class LegislativeDataService {
         return false;
       }
       
+      if (filters.chambers.length > 0 && doc.chamber && !filters.chambers.includes(doc.chamber)) {
+        return false;
+      }
+      
       if (filters.dateFrom && new Date(doc.date) < filters.dateFrom) {
         return false;
       }
@@ -160,6 +171,7 @@ export class LegislativeDataService {
     if (filters.documentTypes.length > 0) params.types = filters.documentTypes.join(',');
     if (filters.states.length > 0) params.states = filters.states.join(',');
     if (filters.municipalities.length > 0) params.municipalities = filters.municipalities.join(',');
+    if (filters.chambers.length > 0) params.chambers = filters.chambers.join(',');
     if (filters.dateFrom) params.date_from = filters.dateFrom.toISOString();
     if (filters.dateTo) params.date_to = filters.dateTo.toISOString();
     if (filters.keywords.length > 0) params.keywords = filters.keywords.join(',');
