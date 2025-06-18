@@ -1,4 +1,4 @@
-import { j as jsxRuntimeExports } from "./index-CQfHVbgx.js";
+import { j as jsxRuntimeExports } from "./index-r9-NnPse.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
 import "./react-vendor-D_QSeeZk.js";
 const DataVisualization = ({ documents }) => {
@@ -303,15 +303,17 @@ const EnhancedSearch = ({
   const facets = reactExports.useMemo(() => {
     const typeCounts = /* @__PURE__ */ new Map();
     const stateCounts = /* @__PURE__ */ new Map();
+    const chamberCounts = /* @__PURE__ */ new Map();
     const keywordCounts = /* @__PURE__ */ new Map();
     documents.forEach((doc) => {
       typeCounts.set(doc.type, (typeCounts.get(doc.type) || 0) + 1);
       if (doc.state) stateCounts.set(doc.state, (stateCounts.get(doc.state) || 0) + 1);
+      if (doc.chamber) chamberCounts.set(doc.chamber, (chamberCounts.get(doc.chamber) || 0) + 1);
       doc.keywords.forEach((keyword) => {
         keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1);
       });
     });
-    return { typeCounts, stateCounts, keywordCounts };
+    return { typeCounts, stateCounts, chamberCounts, keywordCounts };
   }, [documents]);
   const suggestions = reactExports.useMemo(() => {
     if (!filters.searchTerm || filters.searchTerm.length < 2) return [];
@@ -383,6 +385,10 @@ const EnhancedSearch = ({
   const handleStateChange = (state) => {
     const newStates = filters.states.includes(state) ? filters.states.filter((s) => s !== state) : [...filters.states, state];
     onFiltersChange({ ...filters, states: newStates });
+  };
+  const handleChamberChange = (chamber) => {
+    const newChambers = filters.chambers.includes(chamber) ? filters.chambers.filter((c) => c !== chamber) : [...filters.chambers, chamber];
+    onFiltersChange({ ...filters, chambers: newChambers });
   };
   const handleKeywordToggle = (keyword) => {
     const newKeywords = filters.keywords.includes(keyword) ? filters.keywords.filter((k) => k !== keyword) : [...filters.keywords, keyword];
@@ -531,6 +537,25 @@ const EnhancedSearch = ({
         ] }, type)) })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "filter-section", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { children: "Origem Legislativa" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "checkbox-group", children: Array.from(facets.chamberCounts.entries()).sort((a, b) => b[1] - a[1]).map(([chamber, count]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "checkbox-item", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              type: "checkbox",
+              checked: filters.chambers.includes(chamber),
+              onChange: () => handleChamberChange(chamber)
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "checkbox-label", children: [
+            chamber,
+            " (",
+            count,
+            ")"
+          ] })
+        ] }, chamber)) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "filter-section", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { children: "Estados" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "states-grid", children: BRAZILIAN_STATES.map((state) => {
           const count = facets.stateCounts.get(state) || 0;
@@ -574,6 +599,10 @@ const EnhancedSearch = ({
           state,
           /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => handleStateChange(state), children: "×" })
         ] }, state)),
+        filters.chambers.map((chamber) => /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "filter-tag", children: [
+          chamber,
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => handleChamberChange(chamber), children: "×" })
+        ] }, chamber)),
         filters.keywords.map((keyword) => /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "filter-tag", children: [
           keyword,
           /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => handleKeywordToggle(keyword), children: "×" })
@@ -600,10 +629,13 @@ const TabbedSidebar = ({
 }) => {
   const [activeTab, setActiveTab] = reactExports.useState("search");
   const filteredDocuments = documents.filter((doc) => {
-    if (filters.searchTerm && !doc.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) && !doc.summary.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
+    if (filters.searchTerm && !doc.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) && !doc.summary.toLowerCase().includes(filters.searchTerm.toLowerCase()) && !doc.keywords.some((keyword) => keyword.toLowerCase().includes(filters.searchTerm.toLowerCase()))) {
       return false;
     }
     if (filters.documentTypes.length > 0 && !filters.documentTypes.includes(doc.type)) {
+      return false;
+    }
+    if (filters.chambers.length > 0 && doc.chamber && !filters.chambers.includes(doc.chamber)) {
       return false;
     }
     if (filters.dateFrom) {
@@ -679,22 +711,19 @@ const TabbedSidebar = ({
                   " documentos encontrados"
                 ] })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "document-list", children: [
-                filteredDocuments.slice(0, 10).map((doc) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "document-item", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { children: doc.title }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "document-type", children: doc.type }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "document-date", children: typeof doc.date === "string" ? new Date(doc.date).toLocaleDateString() : doc.date.toLocaleDateString() }),
-                  doc.state && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "document-location", children: [
-                    "Estado: ",
-                    doc.state
-                  ] })
-                ] }, doc.id)),
-                filteredDocuments.length > 10 && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "more-results", children: [
-                  "+",
-                  filteredDocuments.length - 10,
-                  " documentos adicionais"
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "document-list", children: filteredDocuments.map((doc) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "document-item", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { children: doc.title }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "document-type", children: doc.type }),
+                doc.chamber && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "document-chamber", children: [
+                  "Origem: ",
+                  doc.chamber
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "document-date", children: typeof doc.date === "string" ? new Date(doc.date).toLocaleDateString() : doc.date.toLocaleDateString() }),
+                doc.state && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "document-location", children: [
+                  "Estado: ",
+                  doc.state
                 ] })
-              ] })
+              ] }, doc.id)) })
             ] }),
             activeTab === "analytics" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "analytics-tab", children: /* @__PURE__ */ jsxRuntimeExports.jsx(DataVisualization, { documents: filteredDocuments }) })
           ] })

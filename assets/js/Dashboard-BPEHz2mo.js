@@ -1,8 +1,8 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-Dlh89suy.js","assets/js/index-CQfHVbgx.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-BRNB9qE6.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-C0IdUuE4.js","assets/css/TabbedSidebar-lVmDPkS2.css","assets/js/ExportPanel-P-urm9mk.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/BudgetRealtimeStatus-BN4EAsw8.js","assets/css/BudgetRealtimeStatus-CIH_vEBZ.css"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-Bb2TqXnZ.js","assets/js/index-r9-NnPse.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-BRNB9qE6.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-CfvG1GWg.js","assets/css/TabbedSidebar-BhCJpDZh.css","assets/js/ExportPanel-B10-QXom.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/BudgetRealtimeStatus-DJshAX2Q.js","assets/css/BudgetRealtimeStatus-CIH_vEBZ.css"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-CQfHVbgx.js";
+import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-r9-NnPse.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
 const mockLegislativeData = [
   {
@@ -221,8 +221,24 @@ function parseURN(urn) {
   let type = "lei";
   let number;
   let date;
+  let chamber;
   if (parts.length > 2) {
     const locationPart = parts[2];
+    if (locationPart.includes("congresso.nacional")) {
+      chamber = "Congresso Nacional";
+    } else if (locationPart.includes("camara.leg.br") || locationPart.includes("camara.municipal")) {
+      chamber = "Câmara dos Deputados";
+    } else if (locationPart.includes("senado.leg.br")) {
+      chamber = "Senado Federal";
+    } else if (locationPart.includes("federal") || locationPart === "br") {
+      chamber = "DOU/Planalto";
+    } else if (locationPart.includes("estadual")) {
+      chamber = "Governo Estadual";
+    } else if (locationPart.includes("municipal")) {
+      chamber = "Governo Municipal";
+    } else if (locationPart.includes("tribunal")) {
+      chamber = "Poder Judiciário";
+    }
     if (locationPart && locationPart !== "br") {
       const locationParts = locationPart.split(";");
       if (locationParts.length > 0) {
@@ -262,7 +278,7 @@ function parseURN(urn) {
       number = lastPart.replace(/[^\d]/g, "");
     }
   }
-  return { state, municipality, type, number, date };
+  return { state, municipality, type, number, date, chamber };
 }
 function normalizeStateName(stateCode) {
   const stateMap = {
@@ -336,6 +352,24 @@ function generateKeywords(searchTerm, title) {
   });
   return Array.from(keywords).slice(0, 8);
 }
+function parseCSVLine(line) {
+  const result = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result.map((field) => field.replace(/^["']|["']$/g, ""));
+}
 function generateCitation(doc, urn) {
   var _a, _b;
   const year = doc.date ? doc.date.getFullYear() : (/* @__PURE__ */ new Date()).getFullYear();
@@ -350,13 +384,13 @@ function generateCitation(doc, urn) {
 }
 function parseCSVData(csvContent) {
   const lines = csvContent.split("\n");
-  const headers = lines[0].split(",").map((h) => h.trim().replace(/["']/g, ""));
+  lines[0].split(",").map((h) => h.trim().replace(/["']/g, ""));
   const documents = [];
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    const values = line.split(",").map((v) => v.trim().replace(/["']/g, ""));
-    if (values.length < headers.length) continue;
+    const values = parseCSVLine(line);
+    if (values.length < 5) continue;
     const row = {
       search_term: values[0] || "",
       date_searched: values[1] || "",
@@ -380,6 +414,7 @@ function parseCSVData(csvContent) {
       status: "sancionado",
       source: "LexML - Rede de Informação Legislativa e Jurídica",
       citation: "",
+      chamber: urnData.chamber,
       urn: row.urn
     };
     doc.citation = generateCitation(doc);
@@ -397,82 +432,22 @@ async function loadCSVLegislativeData() {
     return [];
   }
 }
-const csvLegislativeData = [
-  // This will be populated with a subset of the CSV data for immediate use
-  {
-    id: "mpv_833_2018",
-    title: "MPV 833/2018",
-    summary: "Medida Provisória relacionada a transporte de carga",
-    type: "medida_provisoria",
-    number: "833/2018",
-    date: /* @__PURE__ */ new Date("2018-05-27"),
-    keywords: ["transporte", "carga", "medida provisória"],
-    url: "https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833",
-    status: "sancionado",
-    source: "LexML - Rede de Informação Legislativa e Jurídica",
-    citation: "BRASIL. Medida Provisória nº 833, de 27 de maio de 2018. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833.",
-    urn: "urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833"
-  },
-  {
-    id: "decreto_77789_1976",
-    title: "Decreto nº 77.789, de 9 de Junho de 1976",
-    summary: "Decreto federal relacionado a transporte rodoviário de carga",
-    type: "decreto",
-    number: "77.789/1976",
-    date: /* @__PURE__ */ new Date("1976-06-09"),
-    keywords: ["transporte", "rodoviário", "carga", "decreto"],
-    url: "https://www.lexml.gov.br/urn/urn:lex:br:federal:decreto:1976-06-09;77789",
-    status: "sancionado",
-    source: "LexML - Rede de Informação Legislativa e Jurídica",
-    citation: "BRASIL. Decreto nº 77.789, de 9 de junho de 1976. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br:federal:decreto:1976-06-09;77789.",
-    urn: "urn:lex:br:federal:decreto:1976-06-09;77789"
-  },
-  {
-    id: "lei_2708_mg_2008",
-    title: "Lei n° 2708, de 05 de Dezembro de 2008",
-    summary: "Lei municipal de Itabirito-MG relacionada a logística de carga",
-    type: "lei",
-    number: "2708/2008",
-    date: /* @__PURE__ */ new Date("2008-12-05"),
-    keywords: ["logística", "carga", "municipal"],
-    state: "MG",
-    municipality: "Itabirito",
-    url: "https://www.lexml.gov.br/urn/urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708",
-    status: "sancionado",
-    source: "LexML - Rede de Informação Legislativa e Jurídica",
-    citation: "MG. Lei nº 2708, de 05 de dezembro de 2008. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708.",
-    urn: "urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708"
-  },
-  {
-    id: "decreto_60491_sp_2014",
-    title: "Decreto nº 60.491, de 26/05/2014",
-    summary: "Decreto estadual de São Paulo relacionado a logística de carga",
-    type: "decreto",
-    number: "60.491/2014",
-    date: /* @__PURE__ */ new Date("2014-05-26"),
-    keywords: ["logística", "carga", "estadual"],
-    state: "SP",
-    url: "https://www.lexml.gov.br/urn/urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491",
-    status: "sancionado",
-    source: "LexML - Rede de Informação Legislativa e Jurídica",
-    citation: "SP. Decreto nº 60.491, de 26 de maio de 2014. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491.",
-    urn: "urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491"
-  },
-  {
-    id: "mpv_1050_2021",
-    title: "MPV 1050/2021",
-    summary: "Medida Provisória relacionada a caminhão e transporte",
-    type: "medida_provisoria",
-    number: "1050/2021",
-    date: /* @__PURE__ */ new Date("2021-05-19"),
-    keywords: ["caminhão", "transporte", "medida provisória"],
-    url: "https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2021-05-19;1050",
-    status: "sancionado",
-    source: "LexML - Rede de Informação Legislativa e Jurídica",
-    citation: "BRASIL. Medida Provisória nº 1050, de 19 de maio de 2021. Disponível em: https://www.lexml.gov.br/urn/urn:lex:br:congresso.nacional:medida.provisoria;mpv:2021-05-19;1050.",
-    urn: "urn:lex:br:congresso.nacional:medida.provisoria;mpv:2021-05-19;1050"
+let csvDataCache = null;
+const csvLegislativeData = [];
+(async () => {
+  try {
+    console.log("Loading full CSV dataset...");
+    csvDataCache = await loadCSVLegislativeData();
+    csvLegislativeData.length = 0;
+    csvLegislativeData.push(...csvDataCache);
+    console.log(`Successfully loaded ${csvDataCache.length} documents from CSV`);
+  } catch (error) {
+    console.warn("Failed to load CSV data on module import:", error);
   }
-];
+})();
+function getCSVData() {
+  return csvDataCache || csvLegislativeData;
+}
 class ApiClient {
   constructor(config) {
     __publicField(this, "config");
@@ -622,21 +597,25 @@ const _LegislativeDataService = class _LegislativeDataService {
     return _LegislativeDataService.instance;
   }
   async getFallbackData() {
+    const csvData = getCSVData();
+    if (csvData.length > 0) {
+      console.log(`Using ${csvData.length} documents from CSV dataset`);
+      const combinedData = [...csvData, ...mockLegislativeData];
+      return combinedData;
+    }
     if (!this.csvDataCache) {
       try {
-        console.log("Loading CSV legislative data from LexML...");
+        console.log("Attempting to load CSV legislative data...");
         this.csvDataCache = await loadCSVLegislativeData();
         if (this.csvDataCache.length > 0) {
           console.log(`Loaded ${this.csvDataCache.length} documents from CSV`);
-          return this.csvDataCache;
+          return [...this.csvDataCache, ...mockLegislativeData];
         }
       } catch (error) {
-        console.warn("Failed to load CSV data, using embedded CSV samples:", error);
+        console.warn("Failed to load CSV data, using mock data only:", error);
       }
-      this.csvDataCache = csvLegislativeData;
     }
-    const combinedData = [...this.csvDataCache, ...mockLegislativeData];
-    return combinedData;
+    return mockLegislativeData;
   }
   async fetchDocuments(filters) {
     try {
@@ -690,6 +669,9 @@ const _LegislativeDataService = class _LegislativeDataService {
       if (filters.municipalities.length > 0 && doc.municipality && !filters.municipalities.includes(doc.municipality)) {
         return false;
       }
+      if (filters.chambers.length > 0 && doc.chamber && !filters.chambers.includes(doc.chamber)) {
+        return false;
+      }
       if (filters.dateFrom && new Date(doc.date) < filters.dateFrom) {
         return false;
       }
@@ -706,6 +688,7 @@ const _LegislativeDataService = class _LegislativeDataService {
     if (filters.documentTypes.length > 0) params.types = filters.documentTypes.join(",");
     if (filters.states.length > 0) params.states = filters.states.join(",");
     if (filters.municipalities.length > 0) params.municipalities = filters.municipalities.join(",");
+    if (filters.chambers.length > 0) params.chambers = filters.chambers.join(",");
     if (filters.dateFrom) params.date_from = filters.dateFrom.toISOString();
     if (filters.dateTo) params.date_to = filters.dateTo.toISOString();
     if (filters.keywords.length > 0) params.keywords = filters.keywords.join(",");
@@ -759,10 +742,10 @@ const useKeyboardNavigation = (onEscape, onEnter) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 };
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-Dlh89suy.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0).then((module) => ({ default: module.OptimizedMap })));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-C0IdUuE4.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0).then((module) => ({ default: module.TabbedSidebar })));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-P-urm9mk.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0).then((module) => ({ default: module.ExportPanel })));
-const BudgetRealtimeStatus = reactExports.lazy(() => __vitePreload(() => import("./BudgetRealtimeStatus-BN4EAsw8.js"), true ? __vite__mapDeps([11,1,2,3,4,12]) : void 0).then((module) => ({ default: module.BudgetRealtimeStatus })));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-Bb2TqXnZ.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0).then((module) => ({ default: module.OptimizedMap })));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-CfvG1GWg.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0).then((module) => ({ default: module.TabbedSidebar })));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-B10-QXom.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0).then((module) => ({ default: module.ExportPanel })));
+const BudgetRealtimeStatus = reactExports.lazy(() => __vitePreload(() => import("./BudgetRealtimeStatus-DJshAX2Q.js"), true ? __vite__mapDeps([11,1,2,3,4,12]) : void 0).then((module) => ({ default: module.BudgetRealtimeStatus })));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,
@@ -773,6 +756,7 @@ const initialState = {
     documentTypes: [],
     states: [],
     municipalities: [],
+    chambers: [],
     keywords: [],
     dateFrom: void 0,
     dateTo: void 0
@@ -893,6 +877,9 @@ const Dashboard = () => {
       if (filters.documentTypes.length > 0 && !filters.documentTypes.includes(doc.type)) {
         return false;
       }
+      if (filters.chambers.length > 0 && doc.chamber && !filters.chambers.includes(doc.chamber)) {
+        return false;
+      }
       if (filters.dateFrom) {
         const docDate = typeof doc.date === "string" ? new Date(doc.date) : doc.date;
         if (docDate < filters.dateFrom) return false;
@@ -940,6 +927,14 @@ const Dashboard = () => {
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "aria-live": "polite", "aria-atomic": "true", className: "sr-only", id: "announcements" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: `sidebar-backdrop ${sidebarOpen ? "show" : ""}`,
+        onClick: () => dispatch({ type: "SET_SIDEBAR_OPEN", payload: false }),
+        "aria-hidden": "true"
+      }
+    ),
     /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading sidebar..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx(
       TabbedSidebar,
       {
@@ -962,13 +957,29 @@ const Dashboard = () => {
         role: "main",
         "aria-label": "Main content area",
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "toolbar", role: "banner", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "toolbar", role: "banner", style: { gridArea: "toolbar" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "toolbar-left", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { id: "page-title", children: "Brazilian Transport Legislation Monitor" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "subtitle", id: "page-description", children: "Academic research platform for transport legislation analysis" })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: null, children: /* @__PURE__ */ jsxRuntimeExports.jsx(BudgetRealtimeStatus, {}) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "toolbar-right", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "toolbar-status", children: /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: null, children: /* @__PURE__ */ jsxRuntimeExports.jsx(BudgetRealtimeStatus, {}) }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "toolbar-export", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "stats", role: "status", "aria-live": "polite", children: isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "stat-item", children: "Loading..." }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "stat-item", "aria-label": `${filteredDocuments.length} documents found`, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { "aria-hidden": "true", children: "📄" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                    filteredDocuments.length,
+                    " docs"
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "stat-item", "aria-label": `${highlightedStates.length} states with documents`, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { "aria-hidden": "true", children: "🗺️" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                    highlightedStates.length,
+                    " estados"
+                  ] })
+                ] })
+              ] }) }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs(
                 "button",
                 {
@@ -980,26 +991,10 @@ const Dashboard = () => {
                   type: "button",
                   children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsx("span", { "aria-hidden": "true", children: "📊" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Exportar" })
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Export" })
                   ]
                 }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "stats", role: "status", "aria-live": "polite", children: isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "stat-item", children: "Loading..." }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "stat-item", "aria-label": `${filteredDocuments.length} documents found`, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { "aria-hidden": "true", children: "📄" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                    filteredDocuments.length,
-                    " documentos"
-                  ] })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "stat-item", "aria-label": `${highlightedStates.length} states with documents`, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { "aria-hidden": "true", children: "🗺️" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                    highlightedStates.length,
-                    " estados"
-                  ] })
-                ] })
-              ] }) })
+              )
             ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -1008,6 +1003,7 @@ const Dashboard = () => {
               className: "map-wrapper",
               "aria-labelledby": "map-heading",
               role: "region",
+              style: { gridArea: "content" },
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { id: "map-heading", className: "sr-only", children: "Interactive map of Brazilian states with legislative documents" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading map..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -1030,6 +1026,7 @@ const Dashboard = () => {
               role: "complementary",
               "aria-labelledby": "location-info-heading",
               "aria-live": "polite",
+              style: { gridArea: "info" },
               children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "info-content", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { id: "location-info-heading", children: [
                   selectedState && !selectedMunicipality && `Estado: ${selectedState}`,
