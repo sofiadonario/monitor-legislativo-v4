@@ -11,7 +11,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
     // Optimization for CDN delivery
     rollupOptions: {
       output: {
@@ -26,18 +26,8 @@ export default defineConfig({
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
       }
     },
-    // Enable minification and compression
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info']
-      },
-      format: {
-        comments: false
-      }
-    },
+    // Disable aggressive minification for debugging
+    minify: 'esbuild',
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
     // Enable CSS code splitting
