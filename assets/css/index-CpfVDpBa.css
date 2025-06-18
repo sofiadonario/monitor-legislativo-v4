@@ -735,8 +735,8 @@ html, body {
   line-height: 1.6;
 }
 #root {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow: auto;
 }
 /* Sidebar Styles */
 .sidebar {
