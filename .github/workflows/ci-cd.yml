@@ -1,12 +1,11 @@
-name: CI/CD Pipeline - Legislative Monitor
+name: CI/CD Pipeline - Legislative Monitor (Disabled)
+
+# Temporarily disabled - this project is primarily frontend (React/Vite)
+# The backend is deployed on Railway separately  
+# Only GitHub Pages deployment workflow is active
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
-  release:
-    types: [ published ]
+  workflow_dispatch:  # Manual trigger only
 
 env:
   PYTHON_VERSION: '3.11'

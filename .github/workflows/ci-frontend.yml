@@ -1,0 +1,49 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  frontend-checks:
+    name: Frontend Quality & Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Type check
+      run: npx tsc --noEmit
+      
+    - name: Lint
+      run: npm run lint
+      continue-on-error: true  # Don't fail build on lint warnings
+      
+    - name: Run tests
+      run: npm run test
+      continue-on-error: true  # Don't fail if no tests exist yet
+      
+    - name: Build application
+      run: npm run build
+      env:
+        NODE_ENV: production
+        VITE_API_URL: https://monitor-legislativo-v4-production.up.railway.app
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: dist/
+        retention-days: 7

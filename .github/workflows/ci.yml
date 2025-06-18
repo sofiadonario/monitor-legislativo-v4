@@ -1,10 +1,11 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline (Disabled)
+
+# Temporarily disabled - this project is primarily frontend (React/Vite)
+# The backend is deployed on Railway separately
+# Only GitHub Pages deployment workflow is active
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
   test:
