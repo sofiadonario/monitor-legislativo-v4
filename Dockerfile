@@ -30,7 +30,7 @@ COPY . .
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Expose the port the app will run on
-EXPOSE 8000
+EXPOSE 8080
 
 # Command to run the application
-CMD ["uvicorn", "minimal_app:app", "--host", "0.0.0.0", "--port", "8000"] 
+CMD ["uvicorn", "minimal_app:app", "--host", "0.0.0.0", "--port", "8080"] 
