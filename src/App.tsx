@@ -2,8 +2,8 @@ import React, { useState, Suspense, lazy } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 
-// Lazy load SIMPLE Dashboard component (safe version)
-const SimpleDashboard = lazy(() => import('./components/SimpleDashboard'));
+// Lazy load full Dashboard component with all features
+const Dashboard = lazy(() => import('./components/Dashboard'));
 
 const App: React.FC = () => {
   const [showSpinner, setShowSpinner] = useState(false);
@@ -141,9 +141,9 @@ const App: React.FC = () => {
               borderRadius: '8px',
               backgroundColor: '#f8f9ff'
             }}>
-              <h3>🚀 Step 5: Simple Dashboard with Suspense</h3>
+              <h3>🚀 Step 5: Full Dashboard with Advanced Features</h3>
               <Suspense fallback={<LoadingSpinner message="Loading Dashboard component..." />}>
-                <SimpleDashboard />
+                <Dashboard />
               </Suspense>
             </div>
           )}

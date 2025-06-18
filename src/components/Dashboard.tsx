@@ -1,15 +1,16 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { mockLegislativeData } from '../data/mock-legislative-data';
+import { legislativeDataService } from '../services/legislativeDataService';
 import '../styles/components/Dashboard.css';
 import '../styles/accessibility.css';
-import { ExportOptions, LegislativeDocument, SearchFilters } from '../types';
+import { ExportOptions, LegislativeDocument, SearchFilters } from '../types/index';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 
 // Lazy load heavy components
 const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.default })));
-const Sidebar = lazy(() => import('./Sidebar').then(module => ({ default: module.default })));
+const TabbedSidebar = lazy(() => import('./TabbedSidebar').then(module => ({ default: module.TabbedSidebar })));
 const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.default })));
+const BudgetRealtimeStatus = lazy(() => import('./BudgetRealtimeStatus').then(module => ({ default: module.BudgetRealtimeStatus })));
 
 // Dashboard state interface
 interface DashboardState {
@@ -82,7 +83,9 @@ const dashboardReducer = (state: DashboardState, action: DashboardAction): Dashb
 
 const Dashboard: React.FC = () => {
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
-  const [documents] = useState<LegislativeDocument[]>(mockLegislativeData);
+  const [documents, setDocuments] = useState<LegislativeDocument[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const { sidebarOpen, exportPanelOpen, selectedState, selectedMunicipality, filters } = state;
   
@@ -92,6 +95,26 @@ const Dashboard: React.FC = () => {
   
   // Keyboard navigation
   useKeyboardNavigation();
+  
+  // Load documents on mount and when filters change
+  useEffect(() => {
+    const loadDocuments = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const docs = await legislativeDataService.fetchDocuments(filters);
+        setDocuments(docs);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load documents');
+        console.error('Error loading documents:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDocuments();
+  }, [filters]);
 
   // Handle responsive behavior
   useEffect(() => {
@@ -175,12 +198,14 @@ const Dashboard: React.FC = () => {
         return false;
       }
       
-      if (filters.dateFrom && doc.date < filters.dateFrom) {
-        return false;
+      if (filters.dateFrom) {
+        const docDate = typeof doc.date === 'string' ? new Date(doc.date) : doc.date;
+        if (docDate < filters.dateFrom) return false;
       }
       
-      if (filters.dateTo && doc.date > filters.dateTo) {
-        return false;
+      if (filters.dateTo) {
+        const docDate = typeof doc.date === 'string' ? new Date(doc.date) : doc.date;
+        if (docDate > filters.dateTo) return false;
       }
       
       if (selectedState && doc.state !== selectedState) {
@@ -201,6 +226,16 @@ const Dashboard: React.FC = () => {
     [filteredDocuments]
   );
 
+  if (error) {
+    return (
+      <div className="dashboard-error" role="alert">
+        <h2>Error Loading Data</h2>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    );
+  }
+  
   return (
     <div className="dashboard">
       {/* Skip to main content link for keyboard navigation */}
@@ -221,12 +256,12 @@ const Dashboard: React.FC = () => {
       <div aria-live="polite" aria-atomic="true" className="sr-only" id="announcements" />
       
       <Suspense fallback={<LoadingSpinner message="Loading sidebar..." />}>
-        <Sidebar
+        <TabbedSidebar
           isOpen={sidebarOpen}
           onToggle={toggleSidebar}
           filters={filters}
           onFiltersChange={(newFilters) => dispatch({ type: 'UPDATE_FILTERS', payload: newFilters })}
-          documents={filteredDocuments}
+          documents={documents}
           selectedState={selectedState}
           onClearSelection={handleClearSelection}
         />
@@ -249,6 +284,11 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
           
+          {/* Real-time status */}
+          <Suspense fallback={null}>
+            <BudgetRealtimeStatus />
+          </Suspense>
+          
           <div className="toolbar-right">
             <button 
               className="export-btn"
@@ -263,14 +303,20 @@ const Dashboard: React.FC = () => {
             </button>
             
             <div className="stats" role="status" aria-live="polite">
-              <span className="stat-item" aria-label={`${filteredDocuments.length} documents found`}>
-                <span aria-hidden="true">📄</span>
-                <span>{filteredDocuments.length} documentos</span>
-              </span>
-              <span className="stat-item" aria-label={`${highlightedStates.length} states with documents`}>
-                <span aria-hidden="true">🗺️</span>
-                <span>{highlightedStates.length} estados</span>
-              </span>
+              {isLoading ? (
+                <span className="stat-item">Loading...</span>
+              ) : (
+                <>
+                  <span className="stat-item" aria-label={`${filteredDocuments.length} documents found`}>
+                    <span aria-hidden="true">📄</span>
+                    <span>{filteredDocuments.length} documentos</span>
+                  </span>
+                  <span className="stat-item" aria-label={`${highlightedStates.length} states with documents`}>
+                    <span aria-hidden="true">🗺️</span>
+                    <span>{highlightedStates.length} estados</span>
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </header>
