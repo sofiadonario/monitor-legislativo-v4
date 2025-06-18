@@ -10,6 +10,25 @@ const App: React.FC = () => {
   const [apiStatus, setApiStatus] = useState<string>('Not tested');
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  // Handle scroll visibility
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollButton(window.scrollY > 300);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const scrollToBottom = () => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  };
 
   const testBackendApi = async () => {
     setIsTestingApi(true);
@@ -130,8 +149,95 @@ const App: React.FC = () => {
           )}
           
           <p><strong>✅ REBUILD COMPLETE!</strong> All components working!</p>
+          
+          {/* Add some content to make scrolling useful */}
+          <div style={{ height: '100vh', padding: '2rem', backgroundColor: '#f8f9fa', marginTop: '2rem' }}>
+            <h3>📜 Extended Content Area</h3>
+            <p>This is additional content to demonstrate the scroll functionality.</p>
+            <p>Scroll down to see the floating scroll buttons appear!</p>
+            <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ textAlign: 'center', fontSize: '1.2rem', color: '#6c757d' }}>
+                <p>🚀 Your app is fully functional!</p>
+                <p>Frontend ↔️ Backend communication working</p>
+                <p>Scroll buttons will appear when you scroll down</p>
+              </div>
+            </div>
+          </div>
         </main>
       </div>
+
+      {/* Floating Scroll Buttons */}
+      {showScrollButton && (
+        <div style={{
+          position: 'fixed',
+          right: '20px',
+          bottom: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          zIndex: 1000
+        }}>
+          <button
+            onClick={scrollToTop}
+            style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: '50%',
+              border: 'none',
+              backgroundColor: '#007bff',
+              color: 'white',
+              fontSize: '20px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#0056b3';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = '#007bff';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            title="Scroll to top"
+          >
+            ⬆️
+          </button>
+          
+          <button
+            onClick={scrollToBottom}
+            style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: '50%',
+              border: 'none',
+              backgroundColor: '#28a745',
+              color: 'white',
+              fontSize: '20px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#1e7e34';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = '#28a745';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            title="Scroll to bottom"
+          >
+            ⬇️
+          </button>
+        </div>
+      )}
     </ErrorBoundary>
   );
 };
