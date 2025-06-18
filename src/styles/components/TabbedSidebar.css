@@ -24,9 +24,22 @@
 }
 
 .tabbed-sidebar.closed {
-  width: 0px;
-  transform: translateX(-100%);
+  width: 50px;
+  transform: translateX(0);
   overflow: hidden;
+}
+
+.tabbed-sidebar.closed .sidebar-content {
+  display: none;
+}
+
+.tabbed-sidebar.closed .sidebar-header {
+  padding: 0.5rem;
+  justify-content: center;
+}
+
+.tabbed-sidebar.closed .sidebar-header h2 {
+  display: none;
 }
 
 /* Sidebar backdrop overlay */

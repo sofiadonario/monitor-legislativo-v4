@@ -305,16 +305,20 @@ let csvDataCache: LegislativeDocument[] | null = null;
 // Export a synchronous version that provides immediate fallback
 export const csvLegislativeData: LegislativeDocument[] = [];
 
-// Load CSV data immediately when module is imported
+// Force load CSV data immediately when module is imported
 (async () => {
   try {
-    console.log('Loading full CSV dataset...');
+    console.log('🔥 FORCE LOADING FULL CSV DATASET (889 rows)...');
     csvDataCache = await loadCSVLegislativeData();
-    csvLegislativeData.length = 0; // Clear array
-    csvLegislativeData.push(...csvDataCache); // Add all loaded data
-    console.log(`Successfully loaded ${csvDataCache.length} documents from CSV`);
+    if (csvDataCache && csvDataCache.length > 0) {
+      csvLegislativeData.length = 0; // Clear array
+      csvLegislativeData.push(...csvDataCache); // Add all loaded data
+      console.log(`✅ SUCCESS: Loaded ${csvDataCache.length} documents from CSV`);
+    } else {
+      console.error('❌ CSV loading failed - no data returned');
+    }
   } catch (error) {
-    console.warn('Failed to load CSV data on module import:', error);
+    console.error('❌ CRITICAL: Failed to load CSV data on module import:', error);
   }
 })();
 

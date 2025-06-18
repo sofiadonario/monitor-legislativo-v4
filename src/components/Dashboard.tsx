@@ -244,14 +244,12 @@ const Dashboard: React.FC = () => {
   const isDemoMode = import.meta.env.VITE_USE_MOCK_DATA === 'true';
   
   return (
-    <div className={`dashboard ${isDemoMode ? 'demo-mode' : ''}`}>
-      {/* Demo Mode Banner */}
-      {isDemoMode && (
-        <div className="demo-banner" role="alert" aria-live="polite">
-          <span className="demo-icon" aria-hidden="true">⚠️</span>
-          <strong>DEMO MODE</strong> - Using sample legislative data from LexML for demonstration purposes
-        </div>
-      )}
+    <div className="dashboard demo-mode">
+      {/* Demo Mode Banner - Always present for layout stability */}
+      <div className={`demo-banner ${isDemoMode ? 'show' : 'hide'}`} role="alert" aria-live="polite">
+        <span className="demo-icon" aria-hidden="true">⚠️</span>
+        <strong>RESEARCH MODE</strong> - Brazilian Transport Legislation Database
+      </div>
       
       {/* Skip to main content link for keyboard navigation */}
       <a 
