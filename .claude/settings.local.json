@@ -40,7 +40,8 @@
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm cache clean:*)"
+      "Bash(npm cache clean:*)",
+      "Bash(git merge:*)"
     ]
   },
   "enableAllProjectMcpServers": false
