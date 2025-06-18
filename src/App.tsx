@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LoadingSpinner } from './components/LoadingSpinner';
 
 const App: React.FC = () => {
+  const [showSpinner, setShowSpinner] = useState(false);
+
   return (
     <ErrorBoundary>
       <div className="App">
@@ -26,7 +29,28 @@ const App: React.FC = () => {
             <li>✅ Cache: Upstash Redis</li>
           </ul>
           <p><strong>Step 1: ErrorBoundary added ✅</strong></p>
-          <p>Next: Adding components gradually...</p>
+          <p><strong>Step 2: LoadingSpinner added ✅</strong></p>
+          
+          <div style={{ margin: '2rem 0' }}>
+            <button 
+              onClick={() => setShowSpinner(!showSpinner)}
+              style={{ 
+                padding: '0.5rem 1rem', 
+                margin: '0.5rem',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              {showSpinner ? 'Hide' : 'Show'} Loading Spinner
+            </button>
+          </div>
+          
+          {showSpinner && <LoadingSpinner message="Testing spinner component..." />}
+          
+          <p>Next: Adding more components gradually...</p>
         </main>
       </div>
     </ErrorBoundary>
