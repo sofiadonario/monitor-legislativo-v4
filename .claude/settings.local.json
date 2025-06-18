@@ -40,7 +40,10 @@
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm cache clean:*)"
+      "Bash(npm cache clean:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 15s npm run dev)",
+      "Bash(git checkout:*)"
     ]
   },
   "enableAllProjectMcpServers": false

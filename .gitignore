@@ -37,6 +37,7 @@ pyvenv.cfg
 .env.local
 .env.production
 .env.staging
+.env.development
 
 # IDE
 .vscode/

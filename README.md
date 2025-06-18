@@ -34,15 +34,37 @@ A comprehensive legislative monitoring system for Brazilian government APIs.
 
 2. **Install dependencies:**
     ```bash
+    # Backend dependencies
     pip install -r requirements.txt
+    
+    # Frontend dependencies
+    npm install
     ```
 
-3. **Run the application:**
+3. **Configure environment:**
+    ```bash
+    # Copy environment example
+    cp .env.example .env
+    
+    # For development with mock data (default)
+    cp .env.development .env.development.local
+    ```
+
+4. **Run the application:**
 ```bash
 # Start development servers
 python launch.py  # Backend on :8000
 npm run dev      # Frontend on :5173
 ```
+
+### Data Service Architecture
+
+The application uses a flexible data service layer that supports both mock data (for development/testing) and real API integration:
+
+- **Development Mode**: Uses mock data by default (controlled by `VITE_USE_MOCK_DATA` in `.env.development`)
+- **Production Mode**: Connects to the real API with automatic fallback and caching
+- **API Client**: Includes retry logic, caching, and error handling
+- **Type Safety**: Full TypeScript support for all data operations
 
 ### Production Deployment
 Follow the deployment checklist:
