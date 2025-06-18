@@ -19,7 +19,7 @@ export class LegislativeDataService {
   }
   
   private async getLocalCsvData(): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
-    if (this.csvDataCache) {
+    if (this.csvDataCache && this.csvDataCache.length > 0) {
       console.log('Using cached CSV data.');
       return { documents: this.csvDataCache, usingFallback: true };
     }
@@ -27,13 +27,13 @@ export class LegislativeDataService {
     try {
       console.log('Attempting to load CSV legislative data...');
       const csvDocs = await loadCSVLegislativeData();
-      if (csvDocs.length > 0) {
+      if (csvDocs && Array.isArray(csvDocs) && csvDocs.length > 0) {
         console.log(`Loaded ${csvDocs.length} documents from CSV`);
         this.csvDataCache = csvDocs;
         return { documents: csvDocs, usingFallback: true };
       }
       // If CSV is empty, it's a failure condition
-      throw new Error('CSV file was loaded but contained no documents.');
+      throw new Error('CSV file was loaded but contained no documents or invalid data.');
     } catch (error) {
       console.error('Critical error: Failed to load or parse CSV data.', error);
       // Return empty array and let the UI handle the error state

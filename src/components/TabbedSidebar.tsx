@@ -147,3 +147,5 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
     </aside>
   );
 };
+
+export default TabbedSidebar;

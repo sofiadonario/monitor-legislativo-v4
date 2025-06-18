@@ -217,3 +217,5 @@ export const OptimizedMap = memo<MapProps>(({
 });
 
 OptimizedMap.displayName = 'OptimizedMap';
+
+export default OptimizedMap;

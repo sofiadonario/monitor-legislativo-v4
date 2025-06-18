@@ -7,9 +7,9 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 
 // Lazy load heavy components
-const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.OptimizedMap })));
-const TabbedSidebar = lazy(() => import('./TabbedSidebar').then(module => ({ default: module.TabbedSidebar })));
-const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.ExportPanel })));
+const OptimizedMap = lazy(() => import('./OptimizedMap'));
+const TabbedSidebar = lazy(() => import('./TabbedSidebar'));
+const ExportPanel = lazy(() => import('./ExportPanel'));
 
 // Dashboard state interface
 interface DashboardState {
@@ -103,17 +103,26 @@ const Dashboard: React.FC = () => {
   const toggleExportPanel = useCallback(() => dispatch({ type: 'TOGGLE_EXPORT_PANEL' }), []);
 
   const filteredDocuments = useMemo(() => {
+    if (!documents || !Array.isArray(documents)) {
+      return [];
+    }
     return documents.filter(doc => {
+      if (!doc) return false;
       if (selectedState && doc.state !== selectedState) return false;
       if (selectedMunicipality && doc.municipality !== selectedMunicipality) return false;
       return true;
     });
   }, [documents, selectedState, selectedMunicipality]);
 
-  const highlightedStates = useMemo(() => 
-    [...new Set(filteredDocuments.map(doc => doc.state).filter(Boolean as (value: string | undefined) => value is string))],
-    [filteredDocuments]
-  );
+  const highlightedStates = useMemo(() => {
+    if (!filteredDocuments || !Array.isArray(filteredDocuments)) {
+      return [];
+    }
+    return [...new Set(filteredDocuments
+      .map(doc => doc?.state)
+      .filter((state): state is string => Boolean(state))
+    )];
+  }, [filteredDocuments]);
 
   return (
     <div className="dashboard">
@@ -123,7 +132,7 @@ const Dashboard: React.FC = () => {
           onToggle={toggleSidebar}
           filters={filters}
           onFiltersChange={onFiltersChange}
-          documents={documents}
+          documents={documents || []}
           selectedState={selectedState}
           onClearSelection={handleClearSelection}
         />
@@ -167,9 +176,9 @@ const Dashboard: React.FC = () => {
             <OptimizedMap
               selectedState={selectedState}
               selectedMunicipality={selectedMunicipality}
-              documents={filteredDocuments}
+              documents={filteredDocuments || []}
               onLocationClick={handleLocationClick}
-              highlightedLocations={highlightedStates}
+              highlightedLocations={highlightedStates || []}
             />
           </Suspense>
         </section>
@@ -194,7 +203,7 @@ const Dashboard: React.FC = () => {
           id="export-panel"
           isOpen={exportPanelOpen}
           onClose={toggleExportPanel}
-          documents={filteredDocuments}
+          documents={filteredDocuments || []}
         />
       </Suspense>
     </div>
