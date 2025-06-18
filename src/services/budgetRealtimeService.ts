@@ -2,7 +2,7 @@
 // No additional server costs - uses existing API endpoints
 import { LegislativeDocument } from '../types/types';
 import { legislativeDataService } from './legislativeDataService';
-import { EventEmitter } from 'events';
+import { BrowserEventEmitter } from '../utils/browserEventEmitter';
 
 interface StoredUpdate {
   documentId: string;
@@ -10,9 +10,9 @@ interface StoredUpdate {
   type: 'new' | 'updated';
 }
 
-class BudgetRealtimeService extends EventEmitter {
+class BudgetRealtimeService extends BrowserEventEmitter {
   private pollingInterval: number = 60000; // 1 minute - to stay within free tier limits
-  private pollingTimer?: NodeJS.Timeout;
+  private pollingTimer?: number;
   private isPolling: boolean = false;
   private lastCheckTimestamp: number;
   private seenDocumentIds: Set<string>;

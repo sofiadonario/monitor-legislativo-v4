@@ -1,6 +1,6 @@
 // Real-time updates service for new legislation notifications
 import { LegislativeDocument } from '../types/types';
-import { EventEmitter } from 'events';
+import { BrowserEventEmitter } from '../utils/browserEventEmitter';
 
 export interface RealtimeUpdate {
   type: 'new_document' | 'document_updated' | 'document_deleted' | 'system_message';
@@ -17,12 +17,12 @@ export interface RealtimeConfig {
   enableWebSocket?: boolean;
 }
 
-class RealtimeService extends EventEmitter {
+class RealtimeService extends BrowserEventEmitter {
   private config: Required<RealtimeConfig>;
   private eventSource?: EventSource;
   private websocket?: WebSocket;
   private reconnectAttempts: number = 0;
-  private reconnectTimer?: NodeJS.Timeout;
+  private reconnectTimer?: number;
   private isConnected: boolean = false;
   private lastEventId?: string;
   private updateQueue: RealtimeUpdate[] = [];
