@@ -37,7 +37,7 @@ jobs:
       env:
         # Use GitHub Pages base URL
         VITE_BASE_URL: /monitor-legislativo-v4/
-        VITE_API_URL: ${{ secrets.API_URL }}
+        VITE_API_URL: https://monitor-legislativo-v4-production.up.railway.app
         NODE_ENV: production
         
     - name: Setup Pages

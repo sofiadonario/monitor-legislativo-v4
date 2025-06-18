@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { localCache, cacheUtils } from './localCache';
+import { buildApiUrl, API_CONFIG, CORS_CONFIG } from '../config/api';
 
 interface FetchOptions extends RequestInit {
   cache?: 'default' | 'no-store' | 'reload' | 'no-cache' | 'force-cache' | 'only-if-cached';
@@ -41,13 +42,26 @@ class CachedFetch {
     const {
       ttl,
       retry = 3,
-      timeout = 30000,
+      timeout = API_CONFIG.timeout,
       fallbackToCache = true,
       ...fetchOptions
     } = options;
 
+    // Build full URL if it's a relative path
+    const fullUrl = url.startsWith('http') ? url : buildApiUrl(url);
+
+    // Merge with default headers and CORS config
+    const finalOptions = {
+      ...CORS_CONFIG,
+      ...fetchOptions,
+      headers: {
+        ...API_CONFIG.headers,
+        ...fetchOptions.headers
+      }
+    };
+
     // Generate cache key
-    const cacheKey = this.generateCacheKey(url, fetchOptions);
+    const cacheKey = this.generateCacheKey(fullUrl, finalOptions);
 
     // Check if request is already pending (dedupe)
     const pending = this.pendingRequests.get(cacheKey);
@@ -56,12 +70,12 @@ class CachedFetch {
     }
 
     // Try cache first for GET requests
-    if (!fetchOptions.method || fetchOptions.method === 'GET') {
+    if (!finalOptions.method || finalOptions.method === 'GET') {
       const cached = localCache.get<T>(cacheKey);
       if (cached !== null) {
         // Check if we have X-Cache header support
         if ('headers' in cached && (cached as any).headers?.['X-Cache']) {
-          console.log(`Cache HIT: ${url}`);
+          console.log(`Cache HIT: ${fullUrl}`);
         }
         return cached;
       }
@@ -77,8 +91,8 @@ class CachedFetch {
     }, timeout);
 
     // Create fetch promise
-    const fetchPromise = this.fetchWithRetry(url, {
-      ...fetchOptions,
+    const fetchPromise = this.fetchWithRetry(fullUrl, {
+      ...finalOptions,
       signal: abortController.signal
     }, retry)
       .then(async response => {
@@ -88,14 +102,14 @@ class CachedFetch {
         const cacheStatus = response.headers.get('X-Cache') || 'MISS';
         const cacheTime = response.headers.get('X-Cache-Time');
         
-        console.log(`API ${cacheStatus}: ${url}`);
+        console.log(`API ${cacheStatus}: ${fullUrl}`);
 
         // Parse response
         const data = await response.json();
 
         // Cache successful responses
-        if (response.ok && (!fetchOptions.method || fetchOptions.method === 'GET')) {
-          const cacheTTL = ttl || this.getTTLForURL(url);
+        if (response.ok && (!finalOptions.method || finalOptions.method === 'GET')) {
+          const cacheTTL = ttl || this.getTTLForURL(fullUrl);
           localCache.set(cacheKey, data, cacheTTL);
           
           // Also set stale cache for fallback
@@ -108,18 +122,18 @@ class CachedFetch {
         clearTimeout(timeoutId);
         
         // Try fallback to cache if enabled
-        if (fallbackToCache && (!fetchOptions.method || fetchOptions.method === 'GET')) {
+        if (fallbackToCache && (!finalOptions.method || finalOptions.method === 'GET')) {
           // Try regular cache first
           const cached = localCache.get<T>(cacheKey);
           if (cached !== null) {
-            console.warn(`Using cached data due to error: ${url}`);
+            console.warn(`Using cached data due to error: ${fullUrl}`);
             return cached;
           }
 
           // Try stale cache
           const stale = localCache.get<T>(`stale_${cacheKey}`);
           if (stale !== null) {
-            console.warn(`Using stale cache due to error: ${url}`);
+            console.warn(`Using stale cache due to error: ${fullUrl}`);
             return stale;
           }
         }
@@ -323,8 +337,9 @@ export function useCachedFetch<T = any>(url: string | null, options?: FetchOptio
 export const warmCache = async () => {
   const commonEndpoints = [
     '/api/v1/sources',
-    '/api/v1/geography/states',
-    '/api/v1/document-types'
+    '/api/v1/geography/states', 
+    '/api/v1/document-types',
+    '/health' // Health check
   ];
 
   await prefetchURLs(commonEndpoints);
