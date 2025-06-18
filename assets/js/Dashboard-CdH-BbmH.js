@@ -1,219 +1,34 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-BwrgEkVn.js","assets/js/index-B_2E3y_G.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-BRNB9qE6.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-_-weWqxm.js","assets/css/TabbedSidebar-J7subkN4.css","assets/js/ExportPanel-E1DJ8KPt.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/BudgetRealtimeStatus-DWQhAfni.js","assets/css/BudgetRealtimeStatus-CIH_vEBZ.css"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-9t3wWkzS.js","assets/js/index-CtiVrz8G.js","assets/js/react-vendor-D_QSeeZk.js","assets/js/leaflet-vendor-HKOewaEh.js","assets/css/index-CuWVk-Hd.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-DfZTdi62.js","assets/css/TabbedSidebar-Abd64lRR.css","assets/js/ExportPanel-D7vbNNiQ.js","assets/js/utils-C418i17z.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/BudgetRealtimeStatus-BzXIIDGI.js","assets/css/BudgetRealtimeStatus-CIH_vEBZ.css"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-B_2E3y_G.js";
+import { j as jsxRuntimeExports, L as LoadingSpinner, _ as __vitePreload } from "./index-CtiVrz8G.js";
 import { r as reactExports } from "./leaflet-vendor-HKOewaEh.js";
-const mockLegislativeData = [
-  {
-    id: "1",
-    title: "Lei Federal nº 14.000/2020 - Modernização do Transporte Rodoviário",
-    type: "lei",
-    number: "14.000/2020",
-    date: "2020-05-15",
-    summary: "Estabelece diretrizes para a modernização do transporte rodoviário de cargas, incluindo implementação de tecnologias digitais e sistemas de rastreamento.",
-    state: "SP",
-    municipality: "São Paulo",
-    keywords: ["transporte", "rodoviário", "modernização", "tecnologia"],
-    source: "Diário Oficial da União",
-    citation: "BRASIL. Lei nº 14.000, de 15 de maio de 2020. Diário Oficial da União, Brasília, DF, 16 maio 2020.",
-    url: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14000.htm",
-    status: "sancionado"
-  },
-  {
-    id: "2",
-    title: "Decreto Estadual SP nº 65.500/2021 - Regulamentação de Veículos Autônomos",
-    type: "decreto",
-    number: "65.500/2021",
-    date: "2021-03-22",
-    summary: "Regulamenta a circulação de veículos autônomos em vias estaduais de São Paulo, estabelecendo critérios de segurança e licenciamento.",
-    state: "SP",
-    municipality: "São Paulo",
-    keywords: ["veículos autônomos", "regulamentação", "segurança", "tecnologia"],
-    source: "Diário Oficial do Estado de São Paulo",
-    citation: "SÃO PAULO. Decreto nº 65.500, de 22 de março de 2021. Diário Oficial do Estado, São Paulo, SP, 23 mar. 2021.",
-    url: "https://www.al.sp.gov.br/repositorio/legislacao/decreto/2021/decreto-65500-22.03.2021.html",
-    status: "sancionado"
-  },
-  {
-    id: "3",
-    title: "Portaria ANTT nº 3.200/2021 - Cadastro Nacional de Transportadores",
-    type: "portaria",
-    number: "3.200/2021",
-    date: "2021-07-08",
-    summary: "Institui o Cadastro Nacional de Transportadores de Cargas, unificando registros e facilitando o controle regulatório do setor.",
-    state: "DF",
-    keywords: ["ANTT", "transportadores", "cadastro", "regulamentação"],
-    source: "Diário Oficial da União",
-    citation: "AGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Portaria nº 3.200, de 8 de julho de 2021. Diário Oficial da União, Brasília, DF, 9 jul. 2021.",
-    url: "https://www.antt.gov.br/portarias/2021/portaria3200.html",
-    status: "sancionado"
-  },
-  {
-    id: "4",
-    title: "Lei Estadual RJ nº 9.100/2020 - Transporte Sustentável",
-    type: "lei",
-    number: "9.100/2020",
-    date: "2020-11-30",
-    summary: "Estabelece incentivos fiscais para empresas de transporte que adotem tecnologias limpas e sustentáveis no estado do Rio de Janeiro.",
-    state: "RJ",
-    municipality: "Rio de Janeiro",
-    keywords: ["sustentabilidade", "incentivos fiscais", "tecnologias limpas"],
-    source: "Diário Oficial do Estado do Rio de Janeiro",
-    citation: "RIO DE JANEIRO. Lei nº 9.100, de 30 de novembro de 2020. Diário Oficial do Estado, Rio de Janeiro, RJ, 1 dez. 2020.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "5",
-    title: "Resolução CONTRAN nº 800/2021 - Segurança em Rodovias",
-    type: "resolucao",
-    number: "800/2021",
-    date: "2021-09-15",
-    summary: "Define novas normas de segurança para o transporte rodoviário, incluindo equipamentos obrigatórios e procedimentos de fiscalização.",
-    keywords: ["CONTRAN", "segurança", "fiscalização", "equipamentos"],
-    source: "Diário Oficial da União",
-    citation: "CONSELHO NACIONAL DE TRÂNSITO. Resolução nº 800, de 15 de setembro de 2021. Diário Oficial da União, Brasília, DF, 16 set. 2021.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "6",
-    title: "Medida Provisória nº 1.050/2021 - Marco do Transporte Digital",
-    type: "medida_provisoria",
-    number: "1.050/2021",
-    date: "2021-04-12",
-    summary: "Institui o Marco Legal do Transporte Digital, regulamentando plataformas de transporte e estabelecendo direitos dos usuários.",
-    keywords: ["marco legal", "transporte digital", "plataformas", "direitos dos usuários"],
-    source: "Diário Oficial da União",
-    citation: "BRASIL. Medida Provisória nº 1.050, de 12 de abril de 2021. Diário Oficial da União, Brasília, DF, 13 abr. 2021.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "7",
-    title: "Lei Estadual MG nº 23.500/2019 - Corredores de Transporte",
-    type: "lei",
-    number: "23.500/2019",
-    date: "2019-12-20",
-    summary: "Autoriza a criação de corredores exclusivos de transporte de cargas em rodovias estaduais de Minas Gerais.",
-    state: "MG",
-    municipality: "Belo Horizonte",
-    keywords: ["corredores", "rodovias estaduais", "cargas"],
-    source: "Diário Oficial do Estado de Minas Gerais",
-    citation: "MINAS GERAIS. Lei nº 23.500, de 20 de dezembro de 2019. Diário Oficial do Estado, Belo Horizonte, MG, 21 dez. 2019.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "8",
-    title: "Decreto Federal nº 10.800/2021 - Política Nacional de Logística",
-    type: "decreto",
-    number: "10.800/2021",
-    date: "2021-08-05",
-    summary: "Institui a Política Nacional de Logística de Transportes, integrando modais e otimizando a infraestrutura nacional.",
-    keywords: ["política nacional", "logística", "modais", "infraestrutura"],
-    source: "Diário Oficial da União",
-    citation: "BRASIL. Decreto nº 10.800, de 5 de agosto de 2021. Diário Oficial da União, Brasília, DF, 6 ago. 2021.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "9",
-    title: "Portaria DNIT nº 1.500/2020 - Manutenção de Rodovias",
-    type: "portaria",
-    number: "1.500/2020",
-    date: "2020-10-18",
-    summary: "Estabelece novos padrões para manutenção preventiva de rodovias federais, priorizando a segurança do transporte de cargas.",
-    keywords: ["DNIT", "manutenção", "rodovias federais", "segurança"],
-    source: "Diário Oficial da União",
-    citation: "DEPARTAMENTO NACIONAL DE INFRAESTRUTURA DE TRANSPORTES. Portaria nº 1.500, de 18 de outubro de 2020. Diário Oficial da União, Brasília, DF, 19 out. 2020.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "10",
-    title: "Lei Estadual RS nº 15.200/2018 - Transporte Intermodal",
-    type: "lei",
-    number: "15.200/2018",
-    date: "2018-06-25",
-    summary: "Promove a integração entre modais de transporte no Rio Grande do Sul, incentivando o uso de ferrovias e hidrovias.",
-    state: "RS",
-    municipality: "Porto Alegre",
-    keywords: ["intermodal", "ferrovias", "hidrovias", "integração"],
-    source: "Diário Oficial do Estado do Rio Grande do Sul",
-    citation: "RIO GRANDE DO SUL. Lei nº 15.200, de 25 de junho de 2018. Diário Oficial do Estado, Porto Alegre, RS, 26 jun. 2018.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "11",
-    title: "Resolução ANTT nº 5.850/2021 - Transporte de Produtos Perigosos",
-    type: "resolucao",
-    number: "5.850/2021",
-    date: "2021-01-30",
-    summary: "Atualiza as normas para transporte rodoviário de produtos perigosos, incluindo novas classificações e equipamentos de segurança.",
-    keywords: ["produtos perigosos", "segurança", "classificações", "equipamentos"],
-    source: "Diário Oficial da União",
-    citation: "AGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Resolução nº 5.850, de 30 de janeiro de 2021. Diário Oficial da União, Brasília, DF, 31 jan. 2021.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "12",
-    title: "Decreto Estadual PR nº 8.900/2020 - Pedágios Eletrônicos",
-    type: "decreto",
-    number: "8.900/2020",
-    date: "2020-08-14",
-    summary: "Regulamenta a implementação de sistemas de pedágio eletrônico em rodovias estaduais do Paraná.",
-    state: "PR",
-    municipality: "Curitiba",
-    keywords: ["pedágio eletrônico", "rodovias estaduais", "implementação"],
-    source: "Diário Oficial do Estado do Paraná",
-    citation: "PARANÁ. Decreto nº 8.900, de 14 de agosto de 2020. Diário Oficial do Estado, Curitiba, PR, 15 ago. 2020.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "13",
-    title: "Lei Federal nº 13.950/2019 - Cabotagem de Cargas",
-    type: "lei",
-    number: "13.950/2019",
-    date: "2019-11-08",
-    summary: "Moderniza o marco legal da cabotagem, facilitando o transporte marítimo de cargas entre portos brasileiros.",
-    keywords: ["cabotagem", "transporte marítimo", "portos", "marco legal"],
-    source: "Diário Oficial da União",
-    citation: "BRASIL. Lei nº 13.950, de 8 de novembro de 2019. Diário Oficial da União, Brasília, DF, 11 nov. 2019.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "14",
-    title: "Portaria MT nº 2.100/2021 - Planejamento Logístico",
-    type: "portaria",
-    number: "2.100/2021",
-    date: "2021-05-20",
-    summary: "Institui o Sistema Nacional de Planejamento Logístico, integrando dados de transporte e facilitando a tomada de decisões.",
-    keywords: ["planejamento logístico", "sistema nacional", "dados", "tomada de decisões"],
-    source: "Diário Oficial da União",
-    citation: "MINISTÉRIO DA INFRAESTRUTURA. Portaria nº 2.100, de 20 de maio de 2021. Diário Oficial da União, Brasília, DF, 21 maio 2021.",
-    url: "",
-    status: "sancionado"
-  },
-  {
-    id: "15",
-    title: "Lei Estadual BA nº 14.800/2021 - Corredores Logísticos",
-    type: "lei",
-    number: "14.800/2021",
-    date: "2021-02-28",
-    summary: "Cria corredores logísticos estratégicos na Bahia, conectando portos e centros de produção agrícola.",
-    state: "BA",
-    municipality: "Salvador",
-    keywords: ["corredores logísticos", "portos", "agricultura", "conexão"],
-    source: "Diário Oficial do Estado da Bahia",
-    citation: "BAHIA. Lei nº 14.800, de 28 de fevereiro de 2021. Diário Oficial do Estado, Salvador, BA, 1 mar. 2021."
-  }
-];
+const useKeyboardNavigation = (onEscape, onEnter) => {
+  const onEscapeRef = reactExports.useRef(onEscape);
+  const onEnterRef = reactExports.useRef(onEnter);
+  reactExports.useEffect(() => {
+    onEscapeRef.current = onEscape;
+    onEnterRef.current = onEnter;
+  });
+  const handleKeyDown = reactExports.useCallback((event) => {
+    var _a, _b;
+    switch (event.key) {
+      case "Escape":
+        (_a = onEscapeRef.current) == null ? void 0 : _a.call(onEscapeRef);
+        break;
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        (_b = onEnterRef.current) == null ? void 0 : _b.call(onEnterRef);
+        break;
+    }
+  }, []);
+  reactExports.useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+};
 function parseURN(urn) {
   const parts = urn.split(":");
   let state;
@@ -452,6 +267,216 @@ const csvLegislativeData = [];
 function getCSVData() {
   return csvDataCache || csvLegislativeData;
 }
+const mockLegislativeData = [
+  {
+    id: "1",
+    title: "Lei Federal nº 14.000/2020 - Modernização do Transporte Rodoviário",
+    type: "lei",
+    number: "14.000/2020",
+    date: "2020-05-15",
+    summary: "Estabelece diretrizes para a modernização do transporte rodoviário de cargas, incluindo implementação de tecnologias digitais e sistemas de rastreamento.",
+    state: "SP",
+    municipality: "São Paulo",
+    keywords: ["transporte", "rodoviário", "modernização", "tecnologia"],
+    source: "Diário Oficial da União",
+    citation: "BRASIL. Lei nº 14.000, de 15 de maio de 2020. Diário Oficial da União, Brasília, DF, 16 maio 2020.",
+    url: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14000.htm",
+    status: "sancionado"
+  },
+  {
+    id: "2",
+    title: "Decreto Estadual SP nº 65.500/2021 - Regulamentação de Veículos Autônomos",
+    type: "decreto",
+    number: "65.500/2021",
+    date: "2021-03-22",
+    summary: "Regulamenta a circulação de veículos autônomos em vias estaduais de São Paulo, estabelecendo critérios de segurança e licenciamento.",
+    state: "SP",
+    municipality: "São Paulo",
+    keywords: ["veículos autônomos", "regulamentação", "segurança", "tecnologia"],
+    source: "Diário Oficial do Estado de São Paulo",
+    citation: "SÃO PAULO. Decreto nº 65.500, de 22 de março de 2021. Diário Oficial do Estado, São Paulo, SP, 23 mar. 2021.",
+    url: "https://www.al.sp.gov.br/repositorio/legislacao/decreto/2021/decreto-65500-22.03.2021.html",
+    status: "sancionado"
+  },
+  {
+    id: "3",
+    title: "Portaria ANTT nº 3.200/2021 - Cadastro Nacional de Transportadores",
+    type: "portaria",
+    number: "3.200/2021",
+    date: "2021-07-08",
+    summary: "Institui o Cadastro Nacional de Transportadores de Cargas, unificando registros e facilitando o controle regulatório do setor.",
+    state: "DF",
+    keywords: ["ANTT", "transportadores", "cadastro", "regulamentação"],
+    source: "Diário Oficial da União",
+    citation: "AGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Portaria nº 3.200, de 8 de julho de 2021. Diário Oficial da União, Brasília, DF, 9 jul. 2021.",
+    url: "https://www.antt.gov.br/portarias/2021/portaria3200.html",
+    status: "sancionado"
+  },
+  {
+    id: "4",
+    title: "Lei Estadual RJ nº 9.100/2020 - Transporte Sustentável",
+    type: "lei",
+    number: "9.100/2020",
+    date: "2020-11-30",
+    summary: "Estabelece incentivos fiscais para empresas de transporte que adotem tecnologias limpas e sustentáveis no estado do Rio de Janeiro.",
+    state: "RJ",
+    municipality: "Rio de Janeiro",
+    keywords: ["sustentabilidade", "incentivos fiscais", "tecnologias limpas"],
+    source: "Diário Oficial do Estado do Rio de Janeiro",
+    citation: "RIO DE JANEIRO. Lei nº 9.100, de 30 de novembro de 2020. Diário Oficial do Estado, Rio de Janeiro, RJ, 1 dez. 2020.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "5",
+    title: "Resolução CONTRAN nº 800/2021 - Segurança em Rodovias",
+    type: "resolucao",
+    number: "800/2021",
+    date: "2021-09-15",
+    summary: "Define novas normas de segurança para o transporte rodoviário, incluindo equipamentos obrigatórios e procedimentos de fiscalização.",
+    keywords: ["CONTRAN", "segurança", "fiscalização", "equipamentos"],
+    source: "Diário Oficial da União",
+    citation: "CONSELHO NACIONAL DE TRÂNSITO. Resolução nº 800, de 15 de setembro de 2021. Diário Oficial da União, Brasília, DF, 16 set. 2021.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "6",
+    title: "Medida Provisória nº 1.050/2021 - Marco do Transporte Digital",
+    type: "medida_provisoria",
+    number: "1.050/2021",
+    date: "2021-04-12",
+    summary: "Institui o Marco Legal do Transporte Digital, regulamentando plataformas de transporte e estabelecendo direitos dos usuários.",
+    keywords: ["marco legal", "transporte digital", "plataformas", "direitos dos usuários"],
+    source: "Diário Oficial da União",
+    citation: "BRASIL. Medida Provisória nº 1.050, de 12 de abril de 2021. Diário Oficial da União, Brasília, DF, 13 abr. 2021.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "7",
+    title: "Lei Estadual MG nº 23.500/2019 - Corredores de Transporte",
+    type: "lei",
+    number: "23.500/2019",
+    date: "2019-12-20",
+    summary: "Autoriza a criação de corredores exclusivos de transporte de cargas em rodovias estaduais de Minas Gerais.",
+    state: "MG",
+    municipality: "Belo Horizonte",
+    keywords: ["corredores", "rodovias estaduais", "cargas"],
+    source: "Diário Oficial do Estado de Minas Gerais",
+    citation: "MINAS GERAIS. Lei nº 23.500, de 20 de dezembro de 2019. Diário Oficial do Estado, Belo Horizonte, MG, 21 dez. 2019.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "8",
+    title: "Decreto Federal nº 10.800/2021 - Política Nacional de Logística",
+    type: "decreto",
+    number: "10.800/2021",
+    date: "2021-08-05",
+    summary: "Institui a Política Nacional de Logística de Transportes, integrando modais e otimizando a infraestrutura nacional.",
+    keywords: ["política nacional", "logística", "modais", "infraestrutura"],
+    source: "Diário Oficial da União",
+    citation: "BRASIL. Decreto nº 10.800, de 5 de agosto de 2021. Diário Oficial da União, Brasília, DF, 6 ago. 2021.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "9",
+    title: "Portaria DNIT nº 1.500/2020 - Manutenção de Rodovias",
+    type: "portaria",
+    number: "1.500/2020",
+    date: "2020-10-18",
+    summary: "Estabelece novos padrões para manutenção preventiva de rodovias federais, priorizando a segurança do transporte de cargas.",
+    keywords: ["DNIT", "manutenção", "rodovias federais", "segurança"],
+    source: "Diário Oficial da União",
+    citation: "DEPARTAMENTO NACIONAL DE INFRAESTRUTURA DE TRANSPORTES. Portaria nº 1.500, de 18 de outubro de 2020. Diário Oficial da União, Brasília, DF, 19 out. 2020.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "10",
+    title: "Lei Estadual RS nº 15.200/2018 - Transporte Intermodal",
+    type: "lei",
+    number: "15.200/2018",
+    date: "2018-06-25",
+    summary: "Promove a integração entre modais de transporte no Rio Grande do Sul, incentivando o uso de ferrovias e hidrovias.",
+    state: "RS",
+    municipality: "Porto Alegre",
+    keywords: ["intermodal", "ferrovias", "hidrovias", "integração"],
+    source: "Diário Oficial do Estado do Rio Grande do Sul",
+    citation: "RIO GRANDE DO SUL. Lei nº 15.200, de 25 de junho de 2018. Diário Oficial do Estado, Porto Alegre, RS, 26 jun. 2018.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "11",
+    title: "Resolução ANTT nº 5.850/2021 - Transporte de Produtos Perigosos",
+    type: "resolucao",
+    number: "5.850/2021",
+    date: "2021-01-30",
+    summary: "Atualiza as normas para transporte rodoviário de produtos perigosos, incluindo novas classificações e equipamentos de segurança.",
+    keywords: ["produtos perigosos", "segurança", "classificações", "equipamentos"],
+    source: "Diário Oficial da União",
+    citation: "AGÊNCIA NACIONAL DE TRANSPORTES TERRESTRES. Resolução nº 5.850, de 30 de janeiro de 2021. Diário Oficial da União, Brasília, DF, 31 jan. 2021.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "12",
+    title: "Decreto Estadual PR nº 8.900/2020 - Pedágios Eletrônicos",
+    type: "decreto",
+    number: "8.900/2020",
+    date: "2020-08-14",
+    summary: "Regulamenta a implementação de sistemas de pedágio eletrônico em rodovias estaduais do Paraná.",
+    state: "PR",
+    municipality: "Curitiba",
+    keywords: ["pedágio eletrônico", "rodovias estaduais", "implementação"],
+    source: "Diário Oficial do Estado do Paraná",
+    citation: "PARANÁ. Decreto nº 8.900, de 14 de agosto de 2020. Diário Oficial do Estado, Curitiba, PR, 15 ago. 2020.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "13",
+    title: "Lei Federal nº 13.950/2019 - Cabotagem de Cargas",
+    type: "lei",
+    number: "13.950/2019",
+    date: "2019-11-08",
+    summary: "Moderniza o marco legal da cabotagem, facilitando o transporte marítimo de cargas entre portos brasileiros.",
+    keywords: ["cabotagem", "transporte marítimo", "portos", "marco legal"],
+    source: "Diário Oficial da União",
+    citation: "BRASIL. Lei nº 13.950, de 8 de novembro de 2019. Diário Oficial da União, Brasília, DF, 11 nov. 2019.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "14",
+    title: "Portaria MT nº 2.100/2021 - Planejamento Logístico",
+    type: "portaria",
+    number: "2.100/2021",
+    date: "2021-05-20",
+    summary: "Institui o Sistema Nacional de Planejamento Logístico, integrando dados de transporte e facilitando a tomada de decisões.",
+    keywords: ["planejamento logístico", "sistema nacional", "dados", "tomada de decisões"],
+    source: "Diário Oficial da União",
+    citation: "MINISTÉRIO DA INFRAESTRUTURA. Portaria nº 2.100, de 20 de maio de 2021. Diário Oficial da União, Brasília, DF, 21 maio 2021.",
+    url: "",
+    status: "sancionado"
+  },
+  {
+    id: "15",
+    title: "Lei Estadual BA nº 14.800/2021 - Corredores Logísticos",
+    type: "lei",
+    number: "14.800/2021",
+    date: "2021-02-28",
+    summary: "Cria corredores logísticos estratégicos na Bahia, conectando portos e centros de produção agrícola.",
+    state: "BA",
+    municipality: "Salvador",
+    keywords: ["corredores logísticos", "portos", "agricultura", "conexão"],
+    source: "Diário Oficial do Estado da Bahia",
+    citation: "BAHIA. Lei nº 14.800, de 28 de fevereiro de 2021. Diário Oficial do Estado, Salvador, BA, 1 mar. 2021."
+  }
+];
 class ApiClient {
   constructor(config) {
     __publicField(this, "config");
@@ -605,7 +630,7 @@ const _LegislativeDataService = class _LegislativeDataService {
     if (csvData.length > 0) {
       console.log(`Using ${csvData.length} documents from CSV dataset`);
       const combinedData = [...csvData, ...mockLegislativeData];
-      return combinedData;
+      return { documents: combinedData, usingFallback: true };
     }
     if (!this.csvDataCache) {
       try {
@@ -613,23 +638,23 @@ const _LegislativeDataService = class _LegislativeDataService {
         this.csvDataCache = await loadCSVLegislativeData();
         if (this.csvDataCache.length > 0) {
           console.log(`Loaded ${this.csvDataCache.length} documents from CSV`);
-          return [...this.csvDataCache, ...mockLegislativeData];
+          return { documents: [...this.csvDataCache, ...mockLegislativeData], usingFallback: true };
         }
       } catch (error) {
         console.warn("Failed to load CSV data, using mock data only:", error);
       }
     }
-    return mockLegislativeData;
+    return { documents: mockLegislativeData, usingFallback: true };
   }
   async fetchDocuments(filters) {
     try {
       const params = this.buildQueryParams(filters);
       const data = await apiClient.get("/documents", params);
-      return this.transformApiResponse(data);
+      return { documents: this.transformApiResponse(data), usingFallback: false };
     } catch (error) {
       console.warn("API not available, falling back to CSV + mock data:", error);
       const fallbackData = await this.getFallbackData();
-      return this.filterMockData(fallbackData, filters);
+      return { documents: this.filterMockData(fallbackData.documents, filters), usingFallback: true };
     }
   }
   async fetchDocumentById(id) {
@@ -642,7 +667,7 @@ const _LegislativeDataService = class _LegislativeDataService {
       }
       console.warn("API not available, falling back to CSV + mock data:", error);
       const fallbackData = await this.getFallbackData();
-      return fallbackData.find((doc) => doc.id === id) || null;
+      return fallbackData.documents.find((doc) => doc.id === id) || null;
     }
   }
   async searchDocuments(searchTerm) {
@@ -653,7 +678,7 @@ const _LegislativeDataService = class _LegislativeDataService {
       console.warn("Search API not available, falling back to CSV + mock data:", error);
       const fallbackData = await this.getFallbackData();
       const lowerSearchTerm = searchTerm.toLowerCase();
-      return fallbackData.filter(
+      return fallbackData.documents.filter(
         (doc) => doc.title.toLowerCase().includes(lowerSearchTerm) || doc.summary.toLowerCase().includes(lowerSearchTerm) || doc.keywords.some((keyword) => keyword.toLowerCase().includes(lowerSearchTerm))
       );
     }
@@ -721,35 +746,10 @@ const _LegislativeDataService = class _LegislativeDataService {
 __publicField(_LegislativeDataService, "instance");
 let LegislativeDataService = _LegislativeDataService;
 const legislativeDataService = LegislativeDataService.getInstance();
-const useKeyboardNavigation = (onEscape, onEnter) => {
-  const onEscapeRef = reactExports.useRef(onEscape);
-  const onEnterRef = reactExports.useRef(onEnter);
-  reactExports.useEffect(() => {
-    onEscapeRef.current = onEscape;
-    onEnterRef.current = onEnter;
-  });
-  const handleKeyDown = reactExports.useCallback((event) => {
-    var _a, _b;
-    switch (event.key) {
-      case "Escape":
-        (_a = onEscapeRef.current) == null ? void 0 : _a.call(onEscapeRef);
-        break;
-      case "Enter":
-      case " ":
-        event.preventDefault();
-        (_b = onEnterRef.current) == null ? void 0 : _b.call(onEnterRef);
-        break;
-    }
-  }, []);
-  reactExports.useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
-};
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-BwrgEkVn.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0).then((module) => ({ default: module.OptimizedMap })));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-_-weWqxm.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0).then((module) => ({ default: module.TabbedSidebar })));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-E1DJ8KPt.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0).then((module) => ({ default: module.ExportPanel })));
-const BudgetRealtimeStatus = reactExports.lazy(() => __vitePreload(() => import("./BudgetRealtimeStatus-DWQhAfni.js"), true ? __vite__mapDeps([11,1,2,3,4,12]) : void 0).then((module) => ({ default: module.BudgetRealtimeStatus })));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-9t3wWkzS.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0).then((module) => ({ default: module.OptimizedMap })));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-DfZTdi62.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0).then((module) => ({ default: module.TabbedSidebar })));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-D7vbNNiQ.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10]) : void 0).then((module) => ({ default: module.ExportPanel })));
+const BudgetRealtimeStatus = reactExports.lazy(() => __vitePreload(() => import("./BudgetRealtimeStatus-BzXIIDGI.js"), true ? __vite__mapDeps([11,1,2,3,4,12]) : void 0).then((module) => ({ default: module.BudgetRealtimeStatus })));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,
@@ -801,6 +801,7 @@ const Dashboard = () => {
   const [documents, setDocuments] = reactExports.useState([]);
   const [isLoading, setIsLoading] = reactExports.useState(true);
   const [error, setError] = reactExports.useState(null);
+  const [usingFallbackData, setUsingFallbackData] = reactExports.useState(false);
   const { sidebarOpen, exportPanelOpen, selectedState, selectedMunicipality, filters } = state;
   const mainContentRef = reactExports.useRef(null);
   const skipLinkRef = reactExports.useRef(null);
@@ -810,8 +811,9 @@ const Dashboard = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const docs = await legislativeDataService.fetchDocuments(filters);
+        const { documents: docs, usingFallback } = await legislativeDataService.fetchDocuments(filters);
         setDocuments(docs);
+        setUsingFallbackData(usingFallback);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load documents");
         console.error("Error loading documents:", err);
@@ -913,6 +915,10 @@ const Dashboard = () => {
     ] });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "dashboard demo-mode", children: [
+    usingFallbackData && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "fallback-warning-banner", role: "alert", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Warning:" }),
+      " Could not load the complete dataset. Displaying limited mock data. Please verify the CSV data file."
+    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `demo-banner ${"hide"}`, role: "alert", "aria-live": "polite", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "demo-icon", "aria-hidden": "true", children: "⚠️" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "RESEARCH MODE" }),
@@ -1065,6 +1071,7 @@ const Dashboard = () => {
     exportPanelOpen && /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading export panel..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx(
       ExportPanel,
       {
+        id: "export-panel",
         isOpen: exportPanelOpen,
         onClose: toggleExportPanel,
         documents: filteredDocuments
