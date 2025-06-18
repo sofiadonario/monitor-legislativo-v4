@@ -283,17 +283,10 @@ const Dashboard: React.FC = () => {
               Academic research platform for transport legislation analysis
             </p>
             {import.meta.env.VITE_USE_MOCK_DATA === 'true' && (
-              <p className="demo-notice" style={{ 
-                fontSize: '0.75rem', 
-                color: '#856404', 
-                backgroundColor: '#fff3cd', 
-                padding: '0.25rem 0.5rem', 
-                borderRadius: '0.25rem',
-                margin: '0.25rem 0 0 0',
-                display: 'inline-block'
-              }}>
-                📊 Demo Mode: Using sample data for demonstration
-              </p>
+              <div className="demo-notice" role="alert" aria-live="polite">
+                <span className="demo-icon" aria-hidden="true">🚧</span>
+                <strong>DEMO MODE</strong> - Using sample data for demonstration purposes
+              </div>
             )}
           </div>
           
