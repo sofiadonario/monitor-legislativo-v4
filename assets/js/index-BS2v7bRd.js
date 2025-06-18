@@ -1,4 +1,8 @@
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 import { r as requireReact, a as requireReactDom, g as getDefaultExportFromCjs } from "./react-vendor-D_QSeeZk.js";
+import { r as reactExports } from "./leaflet-vendor-CapjgQv2.js";
 (function polyfill() {
   const relList = document.createElement("link").relList;
   if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -90,8 +94,47 @@ function requireClient() {
 }
 var clientExports = requireClient();
 const ReactDOM = /* @__PURE__ */ getDefaultExportFromCjs(clientExports);
+class ErrorBoundary extends reactExports.Component {
+  constructor(props) {
+    super(props);
+    __publicField(this, "reportError", (error, errorInfo) => {
+      const errorReport = {
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        userAgent: navigator.userAgent,
+        url: window.location.href
+      };
+      console.log("Error report:", errorReport);
+    });
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    this.setState({ error, errorInfo });
+    console.error("Error caught by boundary:", error, errorInfo);
+    this.reportError(error, errorInfo);
+  }
+  render() {
+    var _a;
+    if (this.state.hasError) {
+      return this.props.fallback || /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "error-boundary", role: "alert", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { children: "Academic Research Platform Error" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("details", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("summary", { children: "Error Details" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("pre", { children: (_a = this.state.error) == null ? void 0 : _a.stack })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => window.location.reload(), children: "Reload Application" })
+      ] });
+    }
+    return this.props.children;
+  }
+}
 const App = () => {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "App", children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorBoundary, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "App", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { style: {
       padding: "2rem",
       textAlign: "center",
@@ -115,9 +158,10 @@ const App = () => {
         /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "✅ Database: Supabase" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "✅ Cache: Upstash Redis" })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "YOU'RE NOT GETTING FIRED! 🚀" }) })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Step 1: ErrorBoundary added ✅" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Next: Adding components gradually..." })
     ] })
-  ] });
+  ] }) });
 };
 const rootElement = document.getElementById("root");
 if (!rootElement) {
