@@ -77,6 +77,19 @@ beautifulsoup4==4.12.2
 lxml==4.9.3
 
 # =============================================================================
+# CACHING - REDIS FOR MULTI-TIER PERFORMANCE
+# =============================================================================
+
+# Redis - High-performance in-memory cache 
+# WHY: Caches LexML API responses for faster academic research
+# VERSION: 5.0.x supports async operations and connection pooling
+redis==5.0.1
+
+# Async Redis support for async/await patterns
+# WHY: Integrates with FastAPI's async architecture
+redis[hiredis]==5.0.1
+
+# =============================================================================
 # DATA PROCESSING - HANDLES SEARCH RESULTS
 # =============================================================================
 

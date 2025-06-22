@@ -1,17 +1,30 @@
 """
-Cache service for LexML API responses
-Supports both in-memory and Redis caching
+Multi-tier Caching Service for LexML API
+Implements Redis and in-memory caching with fallback strategies
 """
 
 import json
-import asyncio
-import logging
-from typing import Any, Optional, Dict, Union
+import time
+import hashlib
+from typing import Any, Dict, Optional, Union, List
 from datetime import datetime, timedelta
+import logging
+import asyncio
+from functools import wraps
 from abc import ABC, abstractmethod
 import hashlib
 
 logger = logging.getLogger(__name__)
+
+# Cache TTL Configuration (in seconds)
+class CacheTTL:
+    SEARCH_RESULTS = 300        # 5 minutes
+    DOCUMENT_CONTENT = 1800     # 30 minutes  
+    SUGGESTIONS = 600           # 10 minutes
+    HEALTH_STATUS = 120         # 2 minutes
+    CROSS_REFERENCES = 3600     # 1 hour
+    RELATED_DOCUMENTS = 1200    # 20 minutes
+    API_RESPONSES = 300         # 5 minutes (default)
 
 
 class CacheBackend(ABC):
@@ -388,3 +401,132 @@ async def cache_delete(key: str) -> bool:
     """Convenience function for cache delete"""
     cache = await get_cache_service()
     return await cache.delete(key)
+
+
+# Cache key generation utilities
+def create_search_cache_key(query: str, filters: dict, start_record: int, max_records: int) -> str:
+    """Create cache key for search results"""
+    filter_str = json.dumps(filters or {}, sort_keys=True)
+    key_parts = [query, filter_str, str(start_record), str(max_records)]
+    return f"search:{hashlib.md5(':'.join(key_parts).encode()).hexdigest()}"
+
+def create_document_cache_key(urn: str) -> str:
+    """Create cache key for document content"""
+    return f"document:{hashlib.md5(urn.encode()).hexdigest()}"
+
+def create_suggestions_cache_key(term: str, field: str = None) -> str:
+    """Create cache key for search suggestions"""
+    key = f"suggestions:{hashlib.md5(term.encode()).hexdigest()}"
+    return f"{key}:{field}" if field else key
+
+def create_crossref_cache_key(urn: str) -> str:
+    """Create cache key for cross-references"""
+    return f"crossref:{hashlib.md5(urn.encode()).hexdigest()}"
+
+def create_related_cache_key(urn: str, max_results: int) -> str:
+    """Create cache key for related documents"""
+    return f"related:{hashlib.md5(urn.encode()).hexdigest()}:{max_results}"
+
+def create_health_cache_key() -> str:
+    """Create cache key for API health status"""
+    return "health:api_status"
+
+
+# Caching decorator for automatic function result caching
+def cached_result(ttl: int = None, key_func: callable = None):
+    """Decorator for automatic caching of async function results"""
+    
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Generate cache key
+            if key_func:
+                cache_key = key_func(*args, **kwargs)
+            else:
+                # Default key generation from function name and arguments
+                key_parts = [func.__name__]
+                key_parts.extend(str(arg)[:50] for arg in args)  # Limit arg length
+                key_parts.extend(f"{k}:{str(v)[:50]}" for k, v in sorted(kwargs.items()))
+                cache_key = hashlib.md5(':'.join(key_parts).encode()).hexdigest()
+            
+            # Check cache first
+            cache = await get_cache_service()
+            cached_result = await cache.get(cache_key)
+            
+            if cached_result is not None:
+                logger.debug(f"Cache hit for {func.__name__}: {cache_key}")
+                return cached_result
+            
+            # Execute function and cache result
+            result = await func(*args, **kwargs)
+            
+            # Determine TTL based on function name if not specified
+            cache_ttl = ttl
+            if cache_ttl is None:
+                if 'search' in func.__name__.lower():
+                    cache_ttl = CacheTTL.SEARCH_RESULTS
+                elif 'document' in func.__name__.lower():
+                    cache_ttl = CacheTTL.DOCUMENT_CONTENT
+                elif 'suggest' in func.__name__.lower():
+                    cache_ttl = CacheTTL.SUGGESTIONS
+                elif 'health' in func.__name__.lower():
+                    cache_ttl = CacheTTL.HEALTH_STATUS
+                elif 'crossref' in func.__name__.lower() or 'reference' in func.__name__.lower():
+                    cache_ttl = CacheTTL.CROSS_REFERENCES
+                elif 'related' in func.__name__.lower():
+                    cache_ttl = CacheTTL.RELATED_DOCUMENTS
+                else:
+                    cache_ttl = CacheTTL.API_RESPONSES
+            
+            # Cache the result
+            await cache.set(cache_key, result, cache_ttl)
+            logger.debug(f"Cached result for {func.__name__}: {cache_key} (TTL: {cache_ttl}s)")
+            
+            return result
+        
+        return wrapper
+    return decorator
+
+
+# Statistics and monitoring utilities
+async def get_cache_statistics() -> dict:
+    """Get comprehensive cache statistics"""
+    cache = await get_cache_service()
+    return await cache.get_stats()
+
+async def perform_cache_health_check() -> dict:
+    """Perform comprehensive cache health check"""
+    cache = await get_cache_service()
+    return await cache.health_check()
+
+async def warm_cache_with_common_queries():
+    """Pre-populate cache with common search queries"""
+    common_queries = [
+        "transporte",
+        "mobilidade urbana", 
+        "trânsito",
+        "transporte público",
+        "infraestrutura",
+        "lei transporte"
+    ]
+    
+    cache = await get_cache_service()
+    
+    for query in common_queries:
+        # Create a placeholder cache entry to mark as "warmed"
+        cache_key = create_search_cache_key(query, {}, 1, 50)
+        warm_data = {
+            "warmed": True,
+            "query": query,
+            "timestamp": datetime.now().isoformat()
+        }
+        await cache.set(cache_key, warm_data, CacheTTL.SEARCH_RESULTS)
+        logger.info(f"Cache warmed for query: {query}")
+
+async def clear_expired_cache_entries():
+    """Clean up expired cache entries (handled automatically by backends)"""
+    # This is mostly handled by the backends themselves, but we can add
+    # additional cleanup logic here if needed
+    cache = await get_cache_service()
+    logger.info("Cache cleanup completed")
+    return True

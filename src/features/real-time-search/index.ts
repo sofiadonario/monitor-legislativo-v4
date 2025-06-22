@@ -13,12 +13,14 @@ export { default as SearchResults } from './components/SearchResults';
 export { default as DataSourceIndicator } from './components/DataSourceIndicator';
 export { default as DocumentViewer } from './components/DocumentViewer';
 export { default as CQLQueryBuilder } from './components/CQLQueryBuilder';
+export { default as CacheStatusIndicator } from './components/CacheStatusIndicator';
 
 // Hooks
 export { useLexMLSearch } from './hooks/useLexMLSearch';
 
 // Services
 export { LexMLAPIService, lexmlAPI, searchLexML, getSuggestions, getDocumentContent, getAPIHealth } from './services/LexMLAPIService';
+export { cacheService, getCachedSearchResults, setCachedSearchResults, getCachedDocument, setCachedDocument } from './services/CacheService';
 
 // Types
 export type {

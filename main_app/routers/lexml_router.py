@@ -17,7 +17,11 @@ try:
     )
     from ..services.lexml_client import LexMLClient, LexMLAPIError
     from ..services.cql_builder import CQLQueryBuilder
-    from ..services.cache_service import CacheService
+    from ..services.cache_service import (
+        CacheService, get_cache_statistics, perform_cache_health_check,
+        warm_cache_with_common_queries, create_search_cache_key,
+        create_document_cache_key, cached_result, CacheTTL
+    )
 except ImportError:
     # Fallback for development
     import sys
@@ -30,7 +34,11 @@ except ImportError:
     )
     from services.lexml_client import LexMLClient, LexMLAPIError
     from services.cql_builder import CQLQueryBuilder
-    from services.cache_service import CacheService
+    from services.cache_service import (
+        CacheService, get_cache_statistics, perform_cache_health_check,
+        warm_cache_with_common_queries, create_search_cache_key,
+        create_document_cache_key, cached_result, CacheTTL
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -383,6 +391,81 @@ async def get_api_stats(
         raise HTTPException(
             status_code=500,
             detail=f"Stats retrieval error: {str(e)}"
+        )
+
+
+# Cache Management Endpoints
+@router.get("/cache/stats")
+async def get_cache_stats() -> dict:
+    """
+    Get comprehensive cache statistics and performance metrics
+    """
+    try:
+        stats = await get_cache_statistics()
+        health = await perform_cache_health_check()
+        
+        return {
+            "cache_statistics": stats,
+            "cache_health": health,
+            "cache_configuration": {
+                "search_results_ttl": CacheTTL.SEARCH_RESULTS,
+                "document_content_ttl": CacheTTL.DOCUMENT_CONTENT,
+                "suggestions_ttl": CacheTTL.SUGGESTIONS,
+                "health_status_ttl": CacheTTL.HEALTH_STATUS,
+                "cross_references_ttl": CacheTTL.CROSS_REFERENCES,
+                "related_documents_ttl": CacheTTL.RELATED_DOCUMENTS
+            },
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Cache stats error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Cache statistics error: {str(e)}"
+        )
+
+
+@router.post("/cache/warm")
+async def warm_cache(background_tasks: BackgroundTasks) -> dict:
+    """
+    Pre-populate cache with common search queries
+    """
+    try:
+        background_tasks.add_task(warm_cache_with_common_queries)
+        
+        return {
+            "message": "Cache warming initiated",
+            "status": "warming",
+            "initiated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Cache warming error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Cache warming error: {str(e)}"
+        )
+
+
+@router.get("/cache/health")
+async def check_cache_health() -> dict:
+    """
+    Perform comprehensive cache health check
+    """
+    try:
+        health = await perform_cache_health_check()
+        
+        return {
+            "cache_health": health,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Cache health check error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Cache health check error: {str(e)}"
         )
 
 

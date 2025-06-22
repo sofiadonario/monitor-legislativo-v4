@@ -11,6 +11,7 @@ import LexMLFilters from './LexMLFilters';
 import SearchResults from './SearchResults';
 import DataSourceIndicator from './DataSourceIndicator';
 import DocumentViewer from './DocumentViewer';
+import CacheStatusIndicator from './CacheStatusIndicator';
 
 interface LexMLSearchContainerProps {
   className?: string;
@@ -98,9 +99,12 @@ export const LexMLSearchContainer: React.FC<LexMLSearchContainerProps> = ({
                 <span className="text-sm font-medium text-gray-700">
                   API Status: {apiHealth.is_healthy ? 'Healthy' : 'Unavailable'}
                 </span>
-                <div className="text-xs text-gray-500">
-                  Response time: {apiHealth.response_time_ms.toFixed(0)}ms | 
-                  Success rate: {apiHealth.success_rate.toFixed(1)}%
+                <div className="flex items-center gap-4">
+                  <div className="text-xs text-gray-500">
+                    Response time: {apiHealth.response_time_ms.toFixed(0)}ms | 
+                    Success rate: {apiHealth.success_rate.toFixed(1)}%
+                  </div>
+                  <CacheStatusIndicator showDetails={true} />
                 </div>
               </div>
             </div>

@@ -12,6 +12,15 @@ import {
   SearchFilters,
   DataSource
 } from '../types/lexml-api.types';
+import { 
+  cacheService, 
+  getCachedSearchResults, 
+  setCachedSearchResults,
+  getCachedDocument,
+  setCachedDocument,
+  getCachedSuggestions,
+  setCachedSuggestions
+} from './CacheService';
 
 export class LexMLAPIService {
   private baseURL: string;
@@ -29,9 +38,22 @@ export class LexMLAPIService {
   }
 
   /**
-   * Search LexML documents with live API integration
+   * Search LexML documents with live API integration and caching
    */
   async searchDocuments(request: Partial<LexMLSearchRequest>): Promise<LexMLSearchResponse> {
+    // Check cache first
+    const query = request.query || request.cql_query || '';
+    const startRecord = request.start_record || 1;
+    const maxRecords = request.max_records || 50;
+    
+    const cachedResult = getCachedSearchResults(query, request.filters, startRecord, maxRecords);
+    if (cachedResult) {
+      return {
+        ...cachedResult,
+        cache_hit: true,
+        search_time_ms: 0 // Cached response is instant
+      };
+    }
     const searchParams = new URLSearchParams();
     
     // Add query parameters
@@ -115,13 +137,18 @@ export class LexMLAPIService {
       const result: LexMLSearchResponse = await response.json();
       
       // Add frontend-specific enhancements
-      return {
+      const enhancedResult = {
         ...result,
         // Ensure we have proper defaults
         total_found: result.total_found || result.documents.length,
         cache_hit: result.cache_hit || false,
         api_status: result.api_status || 'unknown'
       };
+      
+      // Cache the successful result
+      setCachedSearchResults(query, request.filters, startRecord, maxRecords, enhancedResult);
+      
+      return enhancedResult;
       
     } catch (error) {
       console.error('LexML search error:', error);
@@ -141,11 +168,17 @@ export class LexMLAPIService {
   }
 
   /**
-   * Get search suggestions for auto-complete with LexML taxonomy integration
+   * Get search suggestions for auto-complete with LexML taxonomy integration and caching
    */
   async getSuggestions(term: string, maxSuggestions: number = 10): Promise<SearchSuggestion[]> {
     if (term.length < 2) {
       return [];
+    }
+    
+    // Check cache first
+    const cachedSuggestions = getCachedSuggestions(term);
+    if (cachedSuggestions) {
+      return cachedSuggestions.slice(0, maxSuggestions);
     }
     
     try {
@@ -164,7 +197,12 @@ export class LexMLAPIService {
       }
       
       const result = await response.json();
-      return result.suggestions || [];
+      const suggestions = result.suggestions || [];
+      
+      // Cache the successful result
+      setCachedSuggestions(term, suggestions);
+      
+      return suggestions;
       
     } catch (error) {
       console.error('Suggestions error:', error);
@@ -336,9 +374,18 @@ export class LexMLAPIService {
   }
 
   /**
-   * Get full document content by URN
+   * Get full document content by URN with caching
    */
   async getDocumentContent(urn: string): Promise<DocumentContentResponse | null> {
+    // Check cache first
+    const cachedDocument = getCachedDocument(urn);
+    if (cachedDocument) {
+      return {
+        ...cachedDocument,
+        cached: true
+      };
+    }
+    
     try {
       const response = await fetch(
         `${this.baseURL}/api/lexml/document/${encodeURIComponent(urn)}`,
@@ -357,7 +404,12 @@ export class LexMLAPIService {
         throw new Error(`Document retrieval failed: ${response.status}`);
       }
       
-      return await response.json();
+      const document = await response.json();
+      
+      // Cache the successful result
+      setCachedDocument(urn, document);
+      
+      return document;
       
     } catch (error) {
       console.error('Document content error:', error);
@@ -496,7 +548,7 @@ export class LexMLAPIService {
   }
 
   /**
-   * Find cross-references within document content
+   * Find cross-references within document content with caching
    */
   async findCrossReferences(documentUrn: string): Promise<{ 
     references: Array<{
@@ -512,6 +564,13 @@ export class LexMLAPIService {
       relationship: 'amends' | 'revokes' | 'references' | 'implements';
     }>;
   }> {
+    // Check cache first
+    const cacheKey = cacheService.createCrossReferencesKey(documentUrn);
+    const cachedRefs = cacheService.get(cacheKey);
+    if (cachedRefs) {
+      return cachedRefs;
+    }
+    
     try {
       const response = await fetch(
         `${this.baseURL}/api/lexml/document/${encodeURIComponent(documentUrn)}/references`,
@@ -527,13 +586,23 @@ export class LexMLAPIService {
         throw new Error(`Cross-reference discovery failed: ${response.status}`);
       }
       
-      return await response.json();
+      const references = await response.json();
+      
+      // Cache the successful result
+      cacheService.set(cacheKey, references);
+      
+      return references;
       
     } catch (error) {
       console.error('Cross-reference discovery error:', error);
       
       // Fallback to local pattern matching if API is unavailable
-      return this.extractLocalCrossReferences(documentUrn);
+      const fallbackRefs = await this.extractLocalCrossReferences(documentUrn);
+      
+      // Cache the fallback result with shorter TTL
+      cacheService.set(cacheKey, fallbackRefs, 10 * 60 * 1000); // 10 minutes
+      
+      return fallbackRefs;
     }
   }
 
@@ -646,9 +715,19 @@ export class LexMLAPIService {
   }
 
   /**
-   * Get related documents based on content similarity and citations
+   * Get related documents based on content similarity and citations with caching
    */
   async getRelatedDocuments(documentUrn: string, maxResults: number = 10): Promise<LexMLSearchResponse> {
+    // Check cache first
+    const cacheKey = cacheService.createRelatedDocumentsKey(documentUrn, maxResults);
+    const cachedRelated = cacheService.get<LexMLSearchResponse>(cacheKey);
+    if (cachedRelated) {
+      return {
+        ...cachedRelated,
+        cache_hit: true
+      };
+    }
+    
     try {
       const response = await fetch(
         `${this.baseURL}/api/lexml/document/${encodeURIComponent(documentUrn)}/related?max_results=${maxResults}`,
@@ -664,13 +743,23 @@ export class LexMLAPIService {
         throw new Error(`Related documents failed: ${response.status}`);
       }
       
-      return await response.json();
+      const relatedDocs = await response.json();
+      
+      // Cache the successful result
+      cacheService.set(cacheKey, relatedDocs);
+      
+      return relatedDocs;
       
     } catch (error) {
       console.error('Related documents error:', error);
       
       // Fallback to simple subject-based search
-      return this.findSimilarDocumentsBySubject(documentUrn, maxResults);
+      const fallbackRelated = await this.findSimilarDocumentsBySubject(documentUrn, maxResults);
+      
+      // Cache the fallback result with shorter TTL
+      cacheService.set(cacheKey, fallbackRelated, 10 * 60 * 1000); // 10 minutes
+      
+      return fallbackRelated;
     }
   }
 
