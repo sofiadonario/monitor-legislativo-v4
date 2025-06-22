@@ -233,8 +233,14 @@ export function parseCSVData(csvContent: string): LegislativeDocument[] {
     return [];
   }
 
+  // Clean any BOM from the first line as well (belt and suspenders approach)
+  if (lines[0]) {
+    lines[0] = lines[0].replace(/^\uFEFF/, '');
+  }
+  
   const headers = parseCSVLine(lines[0]).map(h => h.trim().replace(/['"]+/g, ''));
   console.log('CSV Headers:', headers); // Debugging headers
+  console.log('First line raw:', lines[0].substring(0, 50)); // Show first 50 chars of header line
 
   const documents: LegislativeDocument[] = [];
   
@@ -312,10 +318,17 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
       return realLegislativeData;
     }
     
-    const csvContent = await response.text();
+    let csvContent = await response.text();
     if (!csvContent) {
       throw new Error('CSV file is empty or could not be read.');
     }
+    
+    // Remove UTF-8 BOM if present
+    csvContent = csvContent.replace(/^\uFEFF/, '');
+    
+    // Debug logging
+    console.log('CSV content first 100 chars:', csvContent.substring(0, 100));
+    
     const parsedData = parseCSVData(csvContent);
     if (parsedData.length === 0) {
       throw new Error('CSV file contains no valid legislative documents.');
