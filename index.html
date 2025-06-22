@@ -15,14 +15,12 @@
       font-src 'self' https: data:;
       connect-src 'self' https://dadosabertos.camara.leg.br https://legis.senado.leg.br https://www.lexml.gov.br https://servicodados.ibge.gov.br https://monitor-legislativo-v4-production.up.railway.app;
       object-src 'none';
-      frame-ancestors 'none';
       base-uri 'self';
       form-action 'self';
       upgrade-insecure-requests;
     ">
     
     <!-- SECURITY: Additional security headers -->
-    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     
@@ -39,7 +37,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
+          navigator.serviceWorker.register('/monitor-legislativo-v4/service-worker.js')
             .then(registration => {
               console.log('ServiceWorker registered:', registration.scope);
               
