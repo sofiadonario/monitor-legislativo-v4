@@ -22,8 +22,8 @@ class SearchRequest(BaseModel):
     """Search request model"""
     query: str = Field(..., min_length=1, max_length=500, description="Search query")
     sources: Optional[List[str]] = Field(None, description="Data sources to search")
-    start_date: Optional[str] = Field(None, regex="^\d{4}-\d{2}-\d{2}$", description="Start date (YYYY-MM-DD)")
-    end_date: Optional[str] = Field(None, regex="^\d{4}-\d{2}-\d{2}$", description="End date (YYYY-MM-DD)")
+    start_date: Optional[str] = Field(None, pattern="^\d{4}-\d{2}-\d{2}$", description="Start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, pattern="^\d{4}-\d{2}-\d{2}$", description="End date (YYYY-MM-DD)")
     page: int = Field(1, ge=1, description="Page number")
     page_size: int = Field(20, ge=1, le=100, description="Results per page")
 
