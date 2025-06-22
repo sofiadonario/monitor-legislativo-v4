@@ -26,8 +26,8 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Qu
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from ...core.utils.health_dashboard import HealthMonitoringDashboard, HealthMetrics, SystemOverview
-from ...core.utils.health_monitor import HealthStatus
+from core.utils.health_dashboard import HealthMonitoringDashboard, HealthMetrics, SystemOverview
+from core.utils.health_monitor import HealthStatus
 
 
 logger = logging.getLogger(__name__)
