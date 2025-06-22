@@ -136,6 +136,7 @@ class ControlledVocabularyTransportSearcher:
     async def initialize_vocabularies(self):
         """Initialize SKOS vocabulary manager and load vocabularies."""
         if not self.use_vocabularies:
+            logger.info("Vocabulary use is disabled for this searcher.")
             return
         
         logger.info("Initializing SKOS vocabulary manager...")

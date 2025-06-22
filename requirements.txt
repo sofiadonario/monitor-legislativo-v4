@@ -85,6 +85,11 @@ python-dateutil==2.8.2
 # VERSION: 2.5.x works with FastAPI 0.104.x
 pydantic==2.5.2
 
+# TQDM - Progress bar for long-running operations
+# WHY: Visual feedback for data processing and academic exports
+# VERSION: 4.66.1 is stable and widely used
+tqdm==4.66.1
+
 # =============================================================================
 # EXPORT FUNCTIONALITY - CREATES FILES FOR DOWNLOAD
 # =============================================================================

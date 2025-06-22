@@ -1,3 +1,5 @@
+# This file makes the 'lexml' directory a Python package.
+
 """
 LexML Integration Module
 

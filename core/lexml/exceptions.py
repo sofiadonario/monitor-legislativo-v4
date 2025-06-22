@@ -1,67 +1,39 @@
 """
-LexML Integration Exceptions
+Custom Exceptions for LexML Services
+====================================
 
-Custom exceptions for LexML integration module providing
-clear error handling and debugging information.
+Defines specialized exception types for handling errors related to
+LexML integration, vocabulary management, and URN parsing.
 """
 
-
 class LexMLError(Exception):
-    """Base exception for LexML integration errors"""
-    pass
-
+    """Base exception class for all LexML-related errors."""
+    def __init__(self, message="An unspecified error occurred in the LexML service."):
+        self.message = message
+        super().__init__(self.message)
 
 class VocabularyError(LexMLError):
-    """Exception for SKOS vocabulary related errors"""
-    
-    def __init__(self, message: str, vocabulary_name: str = None, url: str = None):
-        super().__init__(message)
-        self.vocabulary_name = vocabulary_name
-        self.url = url
-        
-    def __str__(self):
-        base_msg = super().__str__()
-        if self.vocabulary_name:
-            base_msg += f" (Vocabulary: {self.vocabulary_name})"
-        if self.url:
-            base_msg += f" (URL: {self.url})"
-        return base_msg
-
+    """Exception raised for errors in vocabulary loading, parsing, or processing."""
+    def __init__(self, message="An error occurred with a SKOS vocabulary.", vocab_name: str = None):
+        self.vocab_name = vocab_name
+        full_message = f"Vocabulary '{vocab_name}': {message}" if vocab_name else message
+        super().__init__(full_message)
 
 class URNError(LexMLError):
-    """Exception for LexML URN parsing and validation errors"""
-    
-    def __init__(self, message: str, urn: str = None, component: str = None):
-        super().__init__(message)
+    """Exception raised for errors related to URN parsing or validation."""
+    def __init__(self, message="Invalid or malformed LexML URN.", urn: str = None):
         self.urn = urn
-        self.component = component
-        
-    def __str__(self):
-        base_msg = super().__str__()
-        if self.urn:
-            base_msg += f" (URN: {self.urn})"
-        if self.component:
-            base_msg += f" (Component: {self.component})"
-        return base_msg
+        full_message = f"URN '{urn}': {message}" if urn else message
+        super().__init__(full_message)
 
-
-class CacheError(LexMLError):
-    """Exception for vocabulary caching errors"""
-    pass
-
+class ConfigError(LexMLError):
+    """Exception raised for configuration-related errors."""
+    def __init__(self, message="A configuration error occurred."):
+        super().__init__(message)
 
 class NetworkError(LexMLError):
-    """Exception for network-related errors during vocabulary loading"""
-    
-    def __init__(self, message: str, url: str = None, status_code: int = None):
-        super().__init__(message)
+    """Exception for network-related issues when fetching resources."""
+    def __init__(self, message="A network error occurred.", url: str = None):
         self.url = url
-        self.status_code = status_code
-        
-    def __str__(self):
-        base_msg = super().__str__()
-        if self.status_code:
-            base_msg += f" (HTTP {self.status_code})"
-        if self.url:
-            base_msg += f" (URL: {self.url})"
-        return base_msg
+        full_message = f"URL '{url}': {message}" if url else message
+        super().__init__(full_message)

@@ -1,201 +1,80 @@
 """
-LexML Brasil Configuration
-=========================
+LexML Vocabulary and API Configuration
+======================================
 
-Configuration settings for LexML Brasil integration including
-SKOS vocabulary endpoints, caching settings, and academic standards.
+Centralized configuration for LexML-related services, including:
+- SKOS vocabulary endpoints and local file paths
+- Cache settings for vocabularies
+- API settings for the enhanced LexML search
 """
 
 import os
-from pathlib import Path
-from typing import Dict, List
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
-# LexML Brasil Official Endpoints
-LEXML_BASE_URL = "https://www.lexml.gov.br"
-SKOS_VOCABULARIES_URL = f"{LEXML_BASE_URL}/vocabularios"
-LEXML_SEARCH_URL = f"{LEXML_BASE_URL}/busca/SRU"
-LEXML_OAI_PMH_URL = f"{LEXML_BASE_URL}/oai"
+# Base path for local vocabulary files (can be overridden by environment variables)
+# Assumes a 'vocabularies' directory at the project root
+VOCABULARY_BASE_PATH = os.environ.get(
+    "VOCABULARY_PATH", 
+    os.path.join(os.path.dirname(__file__), "..", "..", "vocabularies")
+)
 
-# SKOS Vocabulary Endpoints
-VOCABULARY_ENDPOINTS = {
-    # Basic Vocabularies (Seção 5.4)
-    'natureza_conteudo': f"{SKOS_VOCABULARIES_URL}/natureza-conteudo.skos",
-    'lingua': f"{SKOS_VOCABULARIES_URL}/lingua.skos", 
-    'evento': f"{SKOS_VOCABULARIES_URL}/evento.skos",
+@dataclass
+class VocabularyConfig:
+    """Configuration for a single SKOS vocabulary."""
+    name: str
+    url: Optional[str] = None  # Remote URL for fetching the vocabulary
+    local_file: Optional[str] = None  # Local file name (relative to VOCABULARY_BASE_PATH)
+    format: str = "xml"  # RDF/XML, turtle, etc.
+    description: Optional[str] = None
+
+@dataclass
+class LexMLConfig:
+    """Main configuration for LexML services."""
     
-    # Specific Vocabularies (Seção 5.5)
-    'localidade': f"{SKOS_VOCABULARIES_URL}/localidade.skos",
-    'autoridade': f"{SKOS_VOCABULARIES_URL}/autoridade.skos",
-    'tipo_documento': f"{SKOS_VOCABULARIES_URL}/tipo-documento.skos",
+    # Path to the SQLite database for caching vocabularies
+    database_path: str = os.path.join(VOCABULARY_BASE_PATH, "lexml_vocab.db")
     
-    # Transport-Specific Extensions
-    'transport_terms': f"{SKOS_VOCABULARIES_URL}/transport-terms.skos",
-    'regulatory_agencies': f"{SKOS_VOCABULARIES_URL}/regulatory-agencies.skos"
-}
+    # Timeout for fetching remote vocabularies (in seconds)
+    fetch_timeout: int = 60
+    
+    # List of vocabularies to be loaded and managed
+    vocabularies: Dict[str, VocabularyConfig] = field(default_factory=lambda: {
+        # Core Vocabularies from LexML Brasil
+        "autoridade": VocabularyConfig(
+            name="autoridade",
+            url="http://projeto.lexml.gov.br/vocabulario/autoridade.rdf",
+            local_file="autoridade.rdf",
+            description="Vocabulário de Autoridades do LexML Brasil."
+        ),
+        "evento": VocabularyConfig(
+            name="evento",
+            url="http://projeto.lexml.gov.br/vocabulario/evento.rdf",
+            local_file="evento.rdf",
+            description="Vocabulário de Eventos Legislativos."
+        ),
+        "tipo_documento": VocabularyConfig(
+            name="tipo_documento",
+            url="http://projeto.lexml.gov.br/vocabulario/tipo_documento.rdf",
+            local_file="tipo_documento.rdf",
+            description="Vocabulário de Tipos de Documento."
+        ),
+        
+        # Domain-Specific Vocabularies
+        "transport_terms": VocabularyConfig(
+            name="transport_terms",
+            local_file="transport_terms.rdf",  # Assuming a custom, local vocabulary
+            description="Vocabulário controlado para o domínio de transportes."
+        ),
+        "regulatory_agencies": VocabularyConfig(
+            name="regulatory_agencies",
+            local_file="regulatory_agencies.rdf",
+            description="Vocabulário para agências reguladoras brasileiras."
+        ),
+    })
 
-# Controlled Vocabulary Categories
-BASIC_VOCABULARIES = [
-    'natureza_conteudo',
-    'lingua', 
-    'evento'
-]
+    # User-Agent for making HTTP requests to LexML services
+    user_agent: str = "MonitorLegislativoV4/1.0 (Academic Research; mailto:user@example.com)"
 
-SPECIFIC_VOCABULARIES = [
-    'localidade',
-    'autoridade', 
-    'tipo_documento'
-]
-
-TRANSPORT_VOCABULARIES = [
-    'transport_terms',
-    'regulatory_agencies'
-]
-
-# Cache Configuration
-CACHE_DIR = Path.home() / '.lexml_cache'
-CACHE_DIR.mkdir(exist_ok=True)
-
-CACHE_SETTINGS = {
-    'vocabulary_ttl': 86400,  # 24 hours
-    'search_results_ttl': 3600,  # 1 hour
-    'max_cache_size': 100 * 1024 * 1024,  # 100MB
-    'cleanup_interval': 7200  # 2 hours
-}
-
-# Database Configuration
-DATABASE_PATH = CACHE_DIR / 'lexml_vocabularies.db'
-
-# HTTP Configuration
-HTTP_SETTINGS = {
-    'timeout': 30,
-    'max_retries': 3,
-    'retry_delay': 1,
-    'user_agent': 'Academic-Transport-Legislation-Monitor/1.0 (LexML Integration)',
-    'headers': {
-        'Accept': 'application/rdf+xml, text/turtle, application/json',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-        'Cache-Control': 'max-age=3600'
-    }
-}
-
-# SKOS Processing Configuration
-SKOS_SETTINGS = {
-    'supported_formats': ['rdf+xml', 'turtle', 'json-ld'],
-    'preferred_format': 'rdf+xml',
-    'namespace_prefixes': {
-        'skos': 'http://www.w3.org/2004/02/skos/core#',
-        'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-        'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
-        'lexml': 'http://www.lexml.gov.br/vocabularios/',
-        'dc': 'http://purl.org/dc/elements/1.1/'
-    }
-}
-
-# FRBROO Configuration
-FRBROO_SETTINGS = {
-    'work_types': ['F1_Work', 'F14_Individual_Work', 'F15_Complex_Work'],
-    'expression_types': ['F2_Expression', 'F22_Self_Contained_Expression'],
-    'manifestation_types': ['F3_Manifestation_Product_Type', 'F4_Manifestation_Singleton'],
-    'item_types': ['F5_Item']
-}
-
-# Academic Citation Configuration
-CITATION_STANDARDS = {
-    'abnt': {
-        'standard': 'ABNT NBR 6023:2018',
-        'format': 'brazilian',
-        'date_format': '%d de %B de %Y'
-    },
-    'apa': {
-        'standard': 'APA 7th Edition',
-        'format': 'american',
-        'date_format': '%Y, %B %d'
-    },
-    'bibtex': {
-        'standard': 'BibTeX',
-        'format': 'latex',
-        'entry_types': ['legislation', 'misc', 'techreport']
-    },
-    'skos_rdf': {
-        'standard': 'W3C SKOS',
-        'format': 'rdf+xml',
-        'namespace': 'http://www.w3.org/2004/02/skos/core#'
-    }
-}
-
-# Transport-Specific Configuration
-TRANSPORT_CONFIG = {
-    'regulatory_agencies': [
-        'ANTT',  # Agência Nacional de Transportes Terrestres
-        'CONTRAN',  # Conselho Nacional de Trânsito
-        'DNIT',  # Departamento Nacional de Infraestrutura de Transportes
-        'ANTAQ',  # Agência Nacional de Transportes Aquaviários
-        'ANAC'   # Agência Nacional de Aviação Civil
-    ],
-    'transport_programs': [
-        'Rota 2030',
-        'PATEN',
-        'Marco Legal do Saneamento',
-        'Novo Marco Legal do Gás',
-        'Marco Legal das Ferrovias'
-    ],
-    'priority_terms': [
-        'transporte de carga',
-        'mobilidade urbana',
-        'combustível sustentável',
-        'descarbonização',
-        'veículos elétricos',
-        'infraestrutura de transportes'
-    ]
-}
-
-# Error Handling Configuration
-ERROR_HANDLING = {
-    'max_vocabulary_load_attempts': 3,
-    'fallback_to_cache': True,
-    'graceful_degradation': True,
-    'error_reporting': True,
-    'log_level': 'INFO'
-}
-
-# Academic Compliance Settings
-ACADEMIC_COMPLIANCE = {
-    'require_source_attribution': True,
-    'enforce_citation_standards': True,
-    'validate_controlled_vocabularies': True,
-    'temporal_precision_required': True,
-    'frbroo_compliance_required': True
-}
-
-# Performance Configuration
-PERFORMANCE_SETTINGS = {
-    'vocabulary_preload': True,
-    'concurrent_vocabulary_loading': True,
-    'search_result_pagination': 50,
-    'max_concurrent_requests': 5,
-    'connection_pool_size': 10
-}
-
-# Development and Testing Configuration
-DEVELOPMENT_CONFIG = {
-    'debug_mode': os.getenv('LEXML_DEBUG', 'False').lower() == 'true',
-    'test_mode': os.getenv('LEXML_TEST_MODE', 'False').lower() == 'true',
-    'mock_vocabularies': os.getenv('LEXML_MOCK_VOCABULARIES', 'False').lower() == 'true',
-    'verbose_logging': os.getenv('LEXML_VERBOSE', 'False').lower() == 'true'
-}
-
-def get_vocabulary_url(vocabulary_name: str) -> str:
-    """Get the SKOS vocabulary URL for a given vocabulary name."""
-    return VOCABULARY_ENDPOINTS.get(vocabulary_name)
-
-def get_cache_path(vocabulary_name: str) -> Path:
-    """Get the cache file path for a vocabulary."""
-    return CACHE_DIR / f"{vocabulary_name}.cache"
-
-def get_all_vocabularies() -> List[str]:
-    """Get list of all available vocabulary names."""
-    return list(VOCABULARY_ENDPOINTS.keys())
-
-def is_transport_vocabulary(vocabulary_name: str) -> bool:
-    """Check if a vocabulary is transport-specific."""
-    return vocabulary_name in TRANSPORT_VOCABULARIES
+# Instantiate a default config object for easy import
+default_lexml_config = LexMLConfig()
