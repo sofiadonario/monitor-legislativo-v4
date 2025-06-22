@@ -140,3 +140,22 @@ TRANSPORT_CONFIG: Dict[str, Any] = {
         "ANAC",   # Agência Nacional de Aviação Civil
     ]
 }
+
+# Citation style mappings (basic defaults)
+CITATION_STANDARDS: Dict[str, Any] = {
+    "abnt": {
+        "standard": "ABNT NBR 6023:2018",
+        "format": "brazilian",
+        "date_format": "%d/%m/%Y",
+    },
+    "apa": {
+        "standard": "APA 7th Edition",
+        "format": "american",
+        "date_format": "%Y, %B %d",
+    },
+    "bibtex": {
+        "standard": "BibTeX",
+        "format": "latex",
+        "entry_types": ["legislation", "misc", "techreport"],
+    },
+}
