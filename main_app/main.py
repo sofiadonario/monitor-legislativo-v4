@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from . import gateway_router
 
+# Version 1.0.1 - Fixed Pydantic v2 compatibility (regex -> pattern)
 app = FastAPI(title="Monitor Legislativo - Unified Service")
 
 app.include_router(gateway_router.router)
