@@ -1,6 +1,7 @@
 import { loadCSVLegislativeData } from '../data/csv-legislative-data';
 import { LegislativeDocument, SearchFilters, DocumentType, DocumentStatus } from '../types';
 import apiClient from './apiClient';
+import { getApiBaseUrl } from '../config/api';
 
 // Check environment variables for data source configuration
 const forceCSVOnly = import.meta.env.VITE_FORCE_CSV_ONLY === 'true';
@@ -16,6 +17,33 @@ export class LegislativeDataService {
       LegislativeDataService.instance = new LegislativeDataService();
     }
     return LegislativeDataService.instance;
+  }
+  
+  private async testBackendConnectivity(): Promise<{ available: boolean; reason?: string }> {
+    try {
+      // Quick health check with short timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const baseUrl = getApiBaseUrl();
+      
+      const response = await fetch(`${baseUrl}/health`, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        return { available: true };
+      } else {
+        return { available: false, reason: `HTTP ${response.status}` };
+      }
+    } catch (error) {
+      console.log(`Backend connectivity check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return { available: false, reason: 'Connection failed' };
+    }
   }
   
   private async getLocalCsvData(): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
@@ -55,32 +83,44 @@ export class LegislativeDataService {
     
     try {
       console.log('🔬 Connecting to LexML Enhanced Research Engine...');
-      const params = this.buildQueryParams(filters);
       
-      // Add LexML-specific parameters for vocabulary enhancement
-      const enhancedParams = {
-        ...params,
-        sources: 'lexml,camara,senado,planalto',  // Prioritize LexML
-        vocabulary_enhanced: 'true',
-        academic_mode: 'true'
-      };
+      // Quick connectivity test first
+      const healthCheck = await this.testBackendConnectivity();
       
-      const response = await apiClient.get<any>('/search', enhancedParams);
-      const documents = this.transformSearchResponse(response);
-      
-      if (documents.length === 0) {
-        console.warn('🔄 Enhanced API returned no results, falling back to embedded real data');
+      if (healthCheck.available) {
+        console.log('✅ Backend connectivity confirmed, proceeding with enhanced search...');
+        
+        const params = this.buildQueryParams(filters);
+        
+        // Add LexML-specific parameters for vocabulary enhancement
+        const enhancedParams = {
+          ...params,
+          sources: 'lexml,camara,senado,planalto',  // Prioritize LexML
+          vocabulary_enhanced: 'true',
+          academic_mode: 'true'
+        };
+        
+        const response = await apiClient.get<any>('/search', enhancedParams);
+        const documents = this.transformSearchResponse(response);
+        
+        if (documents.length === 0) {
+          console.warn('🔄 Enhanced API returned no results, falling back to embedded real data');
+          const localData = await this.getLocalCsvData();
+          return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
+        }
+        
+        // Log vocabulary enhancement information
+        if (response.metadata?.vocabulary_expansion) {
+          console.log(`📚 Vocabulary enhanced search: '${response.metadata.vocabulary_expansion.original_term}' → ${response.metadata.vocabulary_expansion.expansion_count} terms`);
+        }
+        
+        console.log(`✅ Successfully fetched ${documents.length} documents from LexML Enhanced API`);
+        return { documents: documents, usingFallback: false };
+      } else {
+        console.warn('⚠️ Backend not available, using embedded real data immediately');
         const localData = await this.getLocalCsvData();
         return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
       }
-      
-      // Log vocabulary enhancement information
-      if (response.metadata?.vocabulary_expansion) {
-        console.log(`📚 Vocabulary enhanced search: '${response.metadata.vocabulary_expansion.original_term}' → ${response.metadata.vocabulary_expansion.expansion_count} terms`);
-      }
-      
-      console.log(`✅ Successfully fetched ${documents.length} documents from LexML Enhanced API`);
-      return { documents: documents, usingFallback: false };
     } catch (error) {
       console.warn('⚠️ Enhanced API fetch failed, attempting fallback to embedded real data:', error);
       try {
