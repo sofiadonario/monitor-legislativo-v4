@@ -42,6 +42,7 @@ class PropositionStatus(Enum):
 
 class DataSource(Enum):
     """Data sources for propositions"""
+    LEXML = "LexML Brasil - Sistema de Informação Legislativa"
     CAMARA = "Câmara dos Deputados"
     SENADO = "Senado Federal"
     PLANALTO = "Diário Oficial da União"

@@ -74,17 +74,34 @@ async def search(
         filters["end_date"] = end_date
     
     try:
-        # Perform search
+        # Perform enhanced search with LexML priority
         results = await api_service.search_all(q, filters, source_list)
         
-        # Aggregate results
+        # Aggregate results with enhanced metadata
         all_propositions = []
         total_count = 0
+        vocabulary_metadata = {}
+        lexml_enhanced = False
         
         for result in results:
+            # Track LexML enhancement
+            if result.source and result.source.value == "LexML Brasil - Sistema de Informação Legislativa":
+                lexml_enhanced = True
+                if result.metadata:
+                    vocabulary_metadata = result.metadata.get('vocabulary_expansion', {})
+            
             for prop in result.propositions:
                 prop_dict = prop.to_dict()
                 prop_dict["_source"] = result.source.value if result.source else "Unknown"
+                
+                # Add enhanced metadata for academic research
+                if result.metadata:
+                    prop_dict["_enhanced"] = {
+                        "vocabulary_expanded": result.metadata.get('search_enhanced', False),
+                        "academic_ready": result.metadata.get('academic_ready', False),
+                        "source_priority": "primary" if result.source and "LexML" in result.source.value else "secondary"
+                    }
+                
                 all_propositions.append(prop_dict)
             total_count += result.total_count
         
@@ -93,7 +110,7 @@ async def search(
         end_idx = start_idx + page_size
         paginated_props = all_propositions[start_idx:end_idx]
         
-        return {
+        response_data = {
             "query": q,
             "filters": filters,
             "sources": source_list or list(api_service.get_available_sources().keys()),
@@ -101,8 +118,18 @@ async def search(
             "page": page,
             "page_size": page_size,
             "total_pages": (total_count + page_size - 1) // page_size,
-            "results": paginated_props
+            "results": paginated_props,
+            "enhanced_search": lexml_enhanced
         }
+        
+        # Add vocabulary expansion metadata if available
+        if vocabulary_metadata:
+            response_data["metadata"] = {
+                "vocabulary_expansion": vocabulary_metadata,
+                "research_engine": "LexML Enhanced Search with SKOS Vocabularies"
+            }
+        
+        return response_data
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
@@ -326,3 +353,62 @@ async def get_proposition_details(source: str, id: str):
     """
     # TODO: Implement proposition details endpoint
     raise HTTPException(status_code=501, detail="Not implemented yet")
+
+
+@router.get("/vocabulary/status")
+async def get_vocabulary_status():
+    """
+    Get status of LexML vocabulary system
+    """
+    try:
+        lexml_service = api_service.services.get("lexml")
+        if not lexml_service:
+            return {
+                "status": "not_available",
+                "message": "LexML service not initialized"
+            }
+        
+        # Get vocabulary statistics
+        vocab_stats = lexml_service.get_vocabulary_stats()
+        
+        return {
+            "status": "active" if lexml_service.initialized else "initializing",
+            "vocabulary_stats": vocab_stats,
+            "research_engine": "LexML Enhanced Search with SKOS Vocabularies",
+            "features": {
+                "vocabulary_expansion": True,
+                "academic_citations": True,
+                "transport_specialization": True,
+                "multi_source_aggregation": True
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+@router.get("/vocabulary/expand/{term}")
+async def expand_vocabulary_term(term: str):
+    """
+    Get vocabulary expansion for a search term
+    """
+    try:
+        lexml_service = api_service.services.get("lexml")
+        if not lexml_service or not lexml_service.initialized:
+            raise HTTPException(status_code=503, detail="LexML vocabulary service not available")
+        
+        # Expand the term using vocabularies
+        expanded_terms = await lexml_service._expand_search_terms(term)
+        
+        return {
+            "original_term": term,
+            "expanded_terms": expanded_terms,
+            "expansion_count": len(expanded_terms),
+            "academic_enhancement": True
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Term expansion failed: {str(e)}")

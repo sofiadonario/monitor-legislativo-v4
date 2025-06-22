@@ -54,27 +54,41 @@ export class LegislativeDataService {
     }
     
     try {
-      console.log('Attempting to fetch documents from real government APIs...');
+      console.log('🔬 Connecting to LexML Enhanced Research Engine...');
       const params = this.buildQueryParams(filters);
-      const response = await apiClient.get<any>('/search', params);
+      
+      // Add LexML-specific parameters for vocabulary enhancement
+      const enhancedParams = {
+        ...params,
+        sources: 'lexml,camara,senado,planalto',  // Prioritize LexML
+        vocabulary_enhanced: 'true',
+        academic_mode: 'true'
+      };
+      
+      const response = await apiClient.get<any>('/search', enhancedParams);
       const documents = this.transformSearchResponse(response);
       
       if (documents.length === 0) {
-        console.warn('API returned no results, falling back to real CSV data');
+        console.warn('🔄 Enhanced API returned no results, falling back to embedded real data');
         const localData = await this.getLocalCsvData();
         return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
       }
       
-      console.log(`Successfully fetched ${documents.length} real documents from API.`);
+      // Log vocabulary enhancement information
+      if (response.metadata?.vocabulary_expansion) {
+        console.log(`📚 Vocabulary enhanced search: '${response.metadata.vocabulary_expansion.original_term}' → ${response.metadata.vocabulary_expansion.expansion_count} terms`);
+      }
+      
+      console.log(`✅ Successfully fetched ${documents.length} documents from LexML Enhanced API`);
       return { documents: documents, usingFallback: false };
     } catch (error) {
-      console.warn('API fetch failed, attempting fallback to real CSV data:', error);
+      console.warn('⚠️ Enhanced API fetch failed, attempting fallback to embedded real data:', error);
       try {
         const localData = await this.getLocalCsvData();
         return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
       } catch (csvError) {
-        console.error('Both API and CSV data sources failed:', { apiError: error, csvError });
-        throw new Error('Unable to load legislative data from any real source (API or CSV). Please check data availability.');
+        console.error('❌ Both Enhanced API and embedded data sources failed:', { apiError: error, csvError });
+        throw new Error('Unable to load legislative data from any real source (Enhanced API or embedded data). Please check data availability.');
       }
     }
   }

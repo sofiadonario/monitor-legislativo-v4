@@ -18,6 +18,7 @@ from .regulatory_agencies import (
     ANVISAService, ANSService, ANAService, ANCINEService,
     ANTTService, ANTAQService, ANACService, ANPService, ANMService
 )
+from .lexml_service import LexMLSearchService
 from ..models.models import SearchResult, APIStatus, DataSource
 from ..config.config import Config
 from ..utils.smart_cache import smart_cache
@@ -62,6 +63,10 @@ class APIService:
                 self.cache_manager
             )
         
+        # LexML Enhanced Search Service (Primary for Transport Research)
+        self.services["lexml"] = LexMLSearchService(config)
+        self.logger.info("Initialized LexML Enhanced Search Service as primary research engine")
+        
         # Regulatory agencies - all 11 agencies
         regulatory_services = {
             "aneel": ANEELService,
@@ -88,18 +93,19 @@ class APIService:
     async def search_all(self, query: str, filters: Dict[str, Any], 
                         sources: Optional[List[str]] = None) -> List[SearchResult]:
         """
-        Search across all enabled sources
+        Search across all enabled sources with LexML as primary research engine
         
         Args:
             query: Search query
             filters: Search filters
-            sources: List of source keys to search (None = all enabled)
+            sources: List of source keys to search (None = prioritized list)
         
         Returns:
             List of SearchResult objects from each source
         """
         if not sources:
-            sources = list(self.services.keys())
+            # Prioritize LexML for comprehensive academic research
+            sources = ["lexml"] + [s for s in self.services.keys() if s != "lexml"]
         
         # Filter to only requested and available sources
         sources = [s for s in sources if s in self.services]
@@ -108,27 +114,54 @@ class APIService:
             self.logger.warning("No valid sources specified for search")
             return []
         
-        # Create search tasks for each source
-        tasks = []
-        for source_key in sources:
-            service = self.services[source_key]
-            task = asyncio.create_task(
-                self._search_with_timeout(service, query, filters, source_key)
-            )
-            tasks.append(task)
+        # Prioritize LexML search if it's requested
+        results = []
         
-        # Execute all searches in parallel
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # Execute LexML search first if available
+        if "lexml" in sources and "lexml" in self.services:
+            self.logger.info("Executing primary LexML enhanced search...")
+            try:
+                lexml_result = await self._search_with_timeout(
+                    self.services["lexml"], query, filters, "lexml"
+                )
+                if isinstance(lexml_result, SearchResult):
+                    results.append(lexml_result)
+                    self.logger.info(f"LexML search returned {lexml_result.total_count} documents")
+                
+                # If LexML returns substantial results, prioritize it
+                if lexml_result.total_count > 10:
+                    self.logger.info("LexML returned substantial results, prioritizing academic data")
+                    # Still search other sources but LexML is primary
+                    sources = [s for s in sources if s != "lexml"]
+                    
+            except Exception as e:
+                self.logger.error(f"LexML search failed: {e}")
         
-        # Filter out exceptions and empty results
-        valid_results = []
-        for result in results:
-            if isinstance(result, SearchResult):
-                valid_results.append(result)
-            elif isinstance(result, Exception):
-                self.logger.error(f"Search error: {str(result)}")
+        # Search remaining sources in parallel
+        if sources:
+            tasks = []
+            for source_key in sources:
+                if source_key == "lexml":  # Skip if already processed
+                    continue
+                service = self.services[source_key]
+                task = asyncio.create_task(
+                    self._search_with_timeout(service, query, filters, source_key)
+                )
+                tasks.append(task)
+            
+            if tasks:
+                # Execute remaining searches in parallel
+                additional_results = await asyncio.gather(*tasks, return_exceptions=True)
+                
+                # Filter out exceptions and empty results
+                for result in additional_results:
+                    if isinstance(result, SearchResult):
+                        results.append(result)
+                    elif isinstance(result, Exception):
+                        self.logger.error(f"Search error: {str(result)}")
         
-        return valid_results
+        self.logger.info(f"Total search completed: {len(results)} sources returned data")
+        return results
     
     async def _search_with_timeout(self, service, query: str, 
                                   filters: Dict[str, Any], source_key: str) -> SearchResult:
