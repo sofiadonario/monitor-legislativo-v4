@@ -280,17 +280,32 @@ class SKOSVocabularyManager:
         """
         Parse SKOS vocabulary data into concepts and metadata.
         
-        Note: This is a simplified parser. In production, use rdflib for full SKOS support.
+        Supports both RDF/XML and our custom transport vocabularies.
         """
         concepts = {}
         
-        # For now, create mock concepts based on our transport terms
-        # In production, this would parse actual SKOS RDF/XML
-        
-        if vocabulary_name in ['transport_terms', 'regulatory_agencies']:
-            concepts = self._generate_transport_concepts(vocabulary_name)
-        else:
-            concepts = self._generate_basic_concepts(vocabulary_name)
+        # Try to parse as RDF/XML first
+        try:
+            # Parse XML
+            root = ET.fromstring(skos_data)
+            
+            # Check if it's RDF/XML format
+            if root.tag.endswith('RDF') or 'rdf' in root.tag:
+                concepts = self._parse_skos_rdf_xml(root, vocabulary_name)
+            else:
+                # Try other XML formats or fallback to custom vocabularies
+                if vocabulary_name in ['transport_terms', 'regulatory_agencies']:
+                    concepts = self._generate_transport_concepts(vocabulary_name)
+                else:
+                    concepts = self._generate_basic_concepts(vocabulary_name)
+                    
+        except ET.ParseError:
+            # Not valid XML, use our custom vocabularies
+            logger.debug(f"Not valid XML for {vocabulary_name}, using custom vocabulary generation")
+            if vocabulary_name in ['transport_terms', 'regulatory_agencies']:
+                concepts = self._generate_transport_concepts(vocabulary_name)
+            else:
+                concepts = self._generate_basic_concepts(vocabulary_name)
         
         # Create metadata
         metadata = VocabularyMetadata(
@@ -305,6 +320,97 @@ class SKOSVocabularyManager:
         )
         
         return concepts, metadata
+    
+    def _parse_skos_rdf_xml(self, root: ET.Element, vocabulary_name: str) -> Dict[str, SKOSConcept]:
+        """
+        Parse SKOS concepts from RDF/XML format.
+        
+        Args:
+            root: XML root element
+            vocabulary_name: Name of the vocabulary being parsed
+            
+        Returns:
+            Dictionary of URI -> SKOSConcept mappings
+        """
+        concepts = {}
+        
+        # Define namespaces
+        namespaces = {
+            'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+            'skos': 'http://www.w3.org/2004/02/skos/core#',
+            'dc': 'http://purl.org/dc/elements/1.1/',
+            'dcterms': 'http://purl.org/dc/terms/',
+            'rdfs': 'http://www.w3.org/2000/01/rdf-schema#'
+        }
+        
+        # Find all SKOS concepts
+        for concept_elem in root.findall('.//skos:Concept', namespaces):
+            # Get concept URI
+            uri = concept_elem.get('{http://www.w3.org/1999/02/22-rdf-syntax-ns#}about')
+            if not uri:
+                continue
+            
+            # Extract labels
+            pref_label = ""
+            alt_labels = []
+            
+            # Preferred label
+            pref_label_elem = concept_elem.find('skos:prefLabel', namespaces)
+            if pref_label_elem is not None and pref_label_elem.text:
+                pref_label = pref_label_elem.text.strip()
+            
+            # Alternative labels
+            for alt_label_elem in concept_elem.findall('skos:altLabel', namespaces):
+                if alt_label_elem.text:
+                    alt_labels.append(alt_label_elem.text.strip())
+            
+            # Definition
+            definition = ""
+            definition_elem = concept_elem.find('skos:definition', namespaces)
+            if definition_elem is not None and definition_elem.text:
+                definition = definition_elem.text.strip()
+            
+            # Hierarchical relationships
+            broader = []
+            narrower = []
+            related = []
+            
+            # Broader concepts
+            for broader_elem in concept_elem.findall('skos:broader', namespaces):
+                broader_uri = broader_elem.get('{http://www.w3.org/1999/02/22-rdf-syntax-ns#}resource')
+                if broader_uri:
+                    broader.append(broader_uri)
+            
+            # Narrower concepts
+            for narrower_elem in concept_elem.findall('skos:narrower', namespaces):
+                narrower_uri = narrower_elem.get('{http://www.w3.org/1999/02/22-rdf-syntax-ns#}resource')
+                if narrower_uri:
+                    narrower.append(narrower_uri)
+            
+            # Related concepts
+            for related_elem in concept_elem.findall('skos:related', namespaces):
+                related_uri = related_elem.get('{http://www.w3.org/1999/02/22-rdf-syntax-ns#}resource')
+                if related_uri:
+                    related.append(related_uri)
+            
+            # Create concept
+            concept = SKOSConcept(
+                uri=uri,
+                pref_label=pref_label,
+                alt_labels=alt_labels,
+                definition=definition,
+                broader=broader,
+                narrower=narrower,
+                related=related,
+                vocabulary=vocabulary_name,
+                created=datetime.now(),
+                modified=datetime.now()
+            )
+            
+            concepts[uri] = concept
+        
+        logger.info(f"Parsed {len(concepts)} SKOS concepts from RDF/XML")
+        return concepts
     
     def _generate_transport_concepts(self, vocabulary_name: str) -> Dict[str, SKOSConcept]:
         """Generate transport-specific SKOS concepts."""
