@@ -48,8 +48,13 @@ asyncpg==0.29.0
 sqlalchemy[asyncio]==2.0.23
 
 # =============================================================================
-# HTTP REQUESTS - TALKS TO GOVERNMENT APIS
+# HTTP REQUESTS - TALKS TO GOVERNMENT APIS + LEXML BRASIL
 # =============================================================================
+
+# HTTPX - Modern async HTTP client for LexML Brasil API
+# WHY: Better async performance than aiohttp, perfect for LexML SRU protocol
+# VERSION: 0.25.x supports HTTP/2 and has excellent async support
+httpx==0.25.2
 
 # AIOHTTP - Async HTTP client for API calls
 # WHY: Calls Câmara, Senado, regulatory agencies faster

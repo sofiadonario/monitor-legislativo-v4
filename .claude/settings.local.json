@@ -54,7 +54,11 @@
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(npm run deploy:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(git checkout:*)",
+      "WebFetch(domain:www.lexml.gov.br)",
+      "WebFetch(domain:www12.senado.leg.br)",
+      "WebFetch(domain:github.com)"
     ]
   },
   "enableAllProjectMcpServers": false
