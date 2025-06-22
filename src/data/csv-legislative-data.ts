@@ -298,28 +298,21 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
   try {
     const response = await fetch(CSV_URL);
     if (!response.ok) {
-      console.warn(`CSV file not found at ${CSV_URL}, falling back to mock data`);
-      // Return mock data instead of throwing error
-      const { mockLegislativeData } = await import('./mock-legislative-data');
-      console.log(`Using mock data with ${mockLegislativeData.length} documents`);
-      return mockLegislativeData;
+      throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}. CSV file must be available for data loading.`);
     }
     const csvContent = await response.text();
     if (!csvContent) {
       throw new Error('CSV file is empty or could not be read.');
     }
-    return parseCSVData(csvContent);
-  } catch (error) {
-    console.error('Error loading CSV legislative data, falling back to mock data:', error);
-    // Always provide fallback to mock data
-    try {
-      const { mockLegislativeData } = await import('./mock-legislative-data');
-      console.log(`Fallback: Using mock data with ${mockLegislativeData.length} documents`);
-      return mockLegislativeData;
-    } catch (mockError) {
-      console.error('Critical error: Even mock data failed to load:', mockError);
-      throw new Error('Could not load any data source (CSV or mock data)');
+    const parsedData = parseCSVData(csvContent);
+    if (parsedData.length === 0) {
+      throw new Error('CSV file contains no valid legislative documents.');
     }
+    return parsedData;
+  } catch (error) {
+    console.error('Error loading CSV legislative data:', error);
+    // NO MOCK FALLBACK - academic integrity requires real data only
+    throw new Error(`Unable to load legislative data: ${error instanceof Error ? error.message : 'Unknown error'}. Please ensure CSV data source is available.`);
   }
 }
 
@@ -329,28 +322,23 @@ let csvDataCache: LegislativeDocument[] | null = null;
 // Export a synchronous version that provides immediate fallback
 export const csvLegislativeData: LegislativeDocument[] = [];
 
-// Force load data immediately when module is imported
+// Force load CSV data immediately when module is imported
 (async () => {
   try {
-    console.log('🔥 LOADING LEGISLATIVE DATA...');
+    console.log('🔥 LOADING REAL LEGISLATIVE DATA...');
     csvDataCache = await loadCSVLegislativeData();
     if (csvDataCache && csvDataCache.length > 0) {
       csvLegislativeData.length = 0; // Clear array
       csvLegislativeData.push(...csvDataCache); // Add all loaded data
-      console.log(`✅ SUCCESS: Loaded ${csvDataCache.length} documents`);
+      console.log(`✅ SUCCESS: Loaded ${csvDataCache.length} real documents from CSV`);
     } else {
-      console.error('❌ Data loading failed - no data returned');
+      console.error('❌ Data loading failed - no data returned from CSV');
     }
   } catch (error) {
-    console.error('❌ CRITICAL: Failed to load data on module import:', error);
-    // Emergency fallback - directly import mock data
-    try {
-      const { mockLegislativeData } = await import('./mock-legislative-data');
-      csvLegislativeData.length = 0;
-      csvLegislativeData.push(...mockLegislativeData);
-      console.log(`🚨 EMERGENCY FALLBACK: Using ${mockLegislativeData.length} mock documents`);
-    } catch (emergencyError) {
-      console.error('💥 TOTAL FAILURE: Even emergency fallback failed:', emergencyError);
-    }
+    console.error('❌ CRITICAL: Failed to load CSV data on module import:', error);
+    console.error('🚨 NO MOCK FALLBACK: Academic integrity requires real data sources only');
+    console.error('📋 Action required: Provide valid CSV data file or ensure API connectivity');
+    // NO MOCK FALLBACK - leave array empty to force proper error handling in UI
+    csvLegislativeData.length = 0;
   }
 })();

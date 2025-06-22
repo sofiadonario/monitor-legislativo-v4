@@ -4,9 +4,12 @@
 **ABSOLUTELY NO MOCK DATA, MOCK FUNCTIONS, OR PLACEHOLDER IMPLEMENTATIONS**
 - This is a production academic research platform - ALL code must be functional
 - Never use mock implementations, test stubs, or placeholder functions
-- If an API is unavailable, use the existing fallback CSV data mechanisms
-- All features must work with real data from Brazilian government APIs
-- Mock data exists ONLY in `/src/data/mock-legislative-data.ts` as a fallback
+- If an API is unavailable, use ONLY real CSV data from actual government sources
+- All features must work with real data from Brazilian government APIs or real CSV datasets
+- NO EXCEPTIONS: Mock data is strictly forbidden in production code
+- Fallbacks must use real historical data, not fabricated examples
+- Any data used must be verifiable and academically sound
+- If real data is unavailable, the system should gracefully indicate the limitation rather than show fake data
 
 ## Project Overview
 Monitor Legislativo v4 is an academic research platform for monitoring Brazilian legislative data with a focus on transport-related legislation. The system operates on a strict $7-16/month budget using free and low-cost hosting services.

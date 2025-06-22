@@ -20,44 +20,62 @@ export class LegislativeDataService {
   
   private async getLocalCsvData(): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
     if (this.csvDataCache && this.csvDataCache.length > 0) {
-      console.log('Using cached CSV data.');
+      console.log('Using cached real CSV data.');
       return { documents: this.csvDataCache, usingFallback: true };
     }
 
     try {
-      console.log('Attempting to load CSV legislative data...');
+      console.log('Attempting to load real CSV legislative data...');
       const csvDocs = await loadCSVLegislativeData();
       if (csvDocs && Array.isArray(csvDocs) && csvDocs.length > 0) {
-        console.log(`Loaded ${csvDocs.length} documents from CSV`);
+        console.log(`Loaded ${csvDocs.length} real documents from CSV`);
         this.csvDataCache = csvDocs;
         return { documents: csvDocs, usingFallback: true };
       }
-      // If CSV is empty, it's a failure condition
       throw new Error('CSV file was loaded but contained no documents or invalid data.');
     } catch (error) {
-      console.error('Critical error: Failed to load or parse CSV data.', error);
-      // Return empty array and let the UI handle the error state
-      return { documents: [], usingFallback: true };
+      console.error('Critical error: Failed to load or parse real CSV data.', error);
+      console.error('🚨 NO MOCK FALLBACK: Academic integrity requires real data sources only');
+      // NO MOCK FALLBACK - return empty array to force proper error handling
+      throw new Error(`Cannot load legislative data: ${error instanceof Error ? error.message : 'Unknown CSV error'}. Real data source required.`);
     }
   }
   
   async fetchDocuments(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
     if (forceCSVOnly) {
-      console.log('Force CSV-only mode. Using local CSV file exclusively.');
-      const localData = await this.getLocalCsvData();
-      return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
+      console.log('Force CSV-only mode. Using real CSV data exclusively.');
+      try {
+        const localData = await this.getLocalCsvData();
+        return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
+      } catch (error) {
+        console.error('Failed to load CSV data in CSV-only mode:', error);
+        throw error; // Don't hide CSV loading errors
+      }
     }
     
     try {
-      console.log('Attempting to fetch documents from API...');
+      console.log('Attempting to fetch documents from real government APIs...');
       const params = this.buildQueryParams(filters);
       const response = await apiClient.get<any>('/search', params);
-      console.log(`Successfully fetched ${response.results?.length || 0} documents from API.`);
-      return { documents: this.transformSearchResponse(response), usingFallback: false };
+      const documents = this.transformSearchResponse(response);
+      
+      if (documents.length === 0) {
+        console.warn('API returned no results, falling back to real CSV data');
+        const localData = await this.getLocalCsvData();
+        return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
+      }
+      
+      console.log(`Successfully fetched ${documents.length} real documents from API.`);
+      return { documents: documents, usingFallback: false };
     } catch (error) {
-      console.warn('API fetch failed, falling back to local CSV data:', error);
-      const localData = await this.getLocalCsvData();
-      return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
+      console.warn('API fetch failed, attempting fallback to real CSV data:', error);
+      try {
+        const localData = await this.getLocalCsvData();
+        return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
+      } catch (csvError) {
+        console.error('Both API and CSV data sources failed:', { apiError: error, csvError });
+        throw new Error('Unable to load legislative data from any real source (API or CSV). Please check data availability.');
+      }
     }
   }
   
