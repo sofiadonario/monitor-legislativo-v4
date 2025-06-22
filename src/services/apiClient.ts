@@ -1,5 +1,6 @@
 // API Client with caching and error handling
 import { SearchFilters } from '../types/types';
+import { getApiBaseUrl, API_CONFIG } from '../config/api';
 
 interface CacheEntry<T> {
   data: T;
@@ -189,9 +190,9 @@ export class ApiError extends Error {
 
 // Create singleton instance
 const apiClient = new ApiClient({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'https://monitor-legislativo-v4-production.up.railway.app',
-  version: import.meta.env.VITE_API_VERSION || 'v1',
-  timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
+  baseUrl: getApiBaseUrl(),
+  version: 'v1',
+  timeout: API_CONFIG.timeout,
   cacheEnabled: import.meta.env.VITE_CACHE_ENABLED !== 'false',
   cacheTTL: Number(import.meta.env.VITE_CACHE_TTL) || 300000
 });

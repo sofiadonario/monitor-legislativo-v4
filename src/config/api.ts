@@ -29,18 +29,14 @@ export const API_ENDPOINTS = {
   
   // Data endpoints
   search: '/api/v1/search',
-  proposals: '/api/v1/proposals', 
   sources: '/api/v1/sources',
-  geography: '/api/v1/geography',
-  documentTypes: '/api/v1/document-types',
   
-  // Export endpoints
+  // Export endpoints (coming soon)
   export: '/api/v1/export',
   exportCSV: '/api/v1/export/csv',
   exportXLSX: '/api/v1/export/xlsx',
   
   // Cache management
-  cacheStats: '/api/v1/cache/stats',
   cacheClear: '/api/v1/cache/clear'
 };
 

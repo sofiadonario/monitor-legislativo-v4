@@ -1,5 +1,5 @@
 import { loadCSVLegislativeData } from '../data/csv-legislative-data';
-import { LegislativeDocument, SearchFilters } from '../types';
+import { LegislativeDocument, SearchFilters, DocumentType, DocumentStatus } from '../types';
 import apiClient from './apiClient';
 
 // Check environment variables for data source configuration
@@ -51,9 +51,9 @@ export class LegislativeDataService {
     try {
       console.log('Attempting to fetch documents from API...');
       const params = this.buildQueryParams(filters);
-      const data = await apiClient.get<any[]>('/documents', params);
-      console.log(`Successfully fetched ${data.length} documents from API.`);
-      return { documents: this.transformApiResponse(data), usingFallback: false };
+      const response = await apiClient.get<any>('/search', params);
+      console.log(`Successfully fetched ${response.results?.length || 0} documents from API.`);
+      return { documents: this.transformSearchResponse(response), usingFallback: false };
     } catch (error) {
       console.warn('API fetch failed, falling back to local CSV data:', error);
       const localData = await this.getLocalCsvData();
@@ -120,36 +120,76 @@ export class LegislativeDataService {
     
     const params: Record<string, string> = {};
     
-    if (filters.searchTerm) params.search = filters.searchTerm;
-    if (filters.documentTypes.length > 0) params.types = filters.documentTypes.join(',');
+    if (filters.searchTerm) params.q = filters.searchTerm;
     if (filters.states.length > 0) params.states = filters.states.join(',');
-    if (filters.municipalities.length > 0) params.municipalities = filters.municipalities.join(',');
-    if (filters.chambers.length > 0) params.chambers = filters.chambers.join(',');
-    if (filters.dateFrom) params.date_from = filters.dateFrom.toISOString();
-    if (filters.dateTo) params.date_to = filters.dateTo.toISOString();
-    if (filters.keywords.length > 0) params.keywords = filters.keywords.join(',');
+    if (filters.dateFrom) params.start_date = this.formatDate(filters.dateFrom);
+    if (filters.dateTo) params.end_date = this.formatDate(filters.dateTo);
+    
+    // Add default sources (can be made configurable later)
+    params.sources = 'CAMARA,SENADO,PLANALTO';
     
     return params;
   }
   
-  private transformApiResponse(data: any[]): LegislativeDocument[] {
-    return data.map(item => this.transformApiDocument(item));
+  private formatDate(date: Date): string {
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
   }
   
-  private transformApiDocument(item: any): LegislativeDocument {
+  private transformSearchResponse(response: any): LegislativeDocument[] {
+    if (!response.results || !Array.isArray(response.results)) {
+      return [];
+    }
+    return response.results.map((item: any) => this.transformProposition(item));
+  }
+  
+  private transformProposition(prop: any): LegislativeDocument {
+    // Map backend Proposition to frontend LegislativeDocument
+    const documentTypeMap: Record<string, DocumentType> = {
+      'PL': 'projeto_lei',
+      'PLP': 'projeto_lei',
+      'PEC': 'projeto_lei',
+      'MPV': 'medida_provisoria',
+      'PLV': 'projeto_lei',
+      'PDL': 'decreto',
+      'PRC': 'resolucao',
+      'DECRETO': 'decreto',
+      'PORTARIA': 'portaria',
+      'RESOLUCAO': 'resolucao',
+      'INSTRUCAO_NORMATIVA': 'instrucao_normativa',
+      'LEI': 'lei'
+    };
+    
+    const statusMap: Record<string, DocumentStatus> = {
+      'ACTIVE': 'em_tramitacao',
+      'APPROVED': 'aprovado',
+      'REJECTED': 'rejeitado',
+      'ARCHIVED': 'arquivado',
+      'WITHDRAWN': 'arquivado',
+      'PUBLISHED': 'sancionado'
+    };
+    
+    // Extract state from authors if available
+    let state = '';
+    if (prop.authors && Array.isArray(prop.authors) && prop.authors.length > 0) {
+      state = prop.authors[0].state || '';
+    }
+    
     return {
-      id: item.id || item._id,
-      title: item.title,
-      summary: item.summary || item.description,
-      type: item.type || item.document_type,
-      date: new Date(item.date || item.created_at),
-      keywords: item.keywords || item.tags || [],
-      state: item.state || item.estado,
-      municipality: item.municipality || item.municipio,
-      url: item.url || item.link,
-      status: item.status || 'em_tramitacao',
-      author: item.author || item.autor,
-      chamber: item.chamber || item.camara
+      id: prop.id,
+      title: prop.title,
+      summary: prop.summary || '',
+      type: documentTypeMap[prop.type] || 'projeto_lei',
+      date: prop.publication_date || prop.date || new Date().toISOString(),
+      keywords: prop.keywords || [],
+      state: state,
+      municipality: prop.municipality || '',
+      url: prop.url || '',
+      status: statusMap[prop.status] || 'em_tramitacao',
+      author: prop.authors?.[0]?.name || '',
+      chamber: prop.source === 'CAMARA' ? 'Câmara dos Deputados' : prop.source === 'SENADO' ? 'Senado Federal' : '',
+      number: prop.number,
+      source: prop.source,
+      citation: prop.citation
     };
   }
 }

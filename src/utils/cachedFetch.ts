@@ -17,17 +17,13 @@ interface FetchOptions extends RequestInit {
 
 interface CacheConfig {
   '/api/v1/search': { ttl: 900000, priority: 'high' };  // 15 minutes
-  '/api/v1/proposals': { ttl: 7200000, priority: 'high' };  // 2 hours
   '/api/v1/sources': { ttl: 86400000, priority: 'low' };  // 24 hours
-  '/api/v1/geography': { ttl: 2592000000, priority: 'low' };  // 30 days
   '/api/v1/export': { ttl: 1800000, priority: 'medium' };  // 30 minutes
 }
 
 const CACHE_CONFIG: Partial<CacheConfig> = {
   '/api/v1/search': { ttl: 900000, priority: 'high' },
-  '/api/v1/proposals': { ttl: 7200000, priority: 'high' },
   '/api/v1/sources': { ttl: 86400000, priority: 'low' },
-  '/api/v1/geography': { ttl: 2592000000, priority: 'low' },
   '/api/v1/export': { ttl: 1800000, priority: 'medium' }
 };
 
@@ -337,8 +333,6 @@ export function useCachedFetch<T = any>(url: string | null, options?: FetchOptio
 export const warmCache = async () => {
   const commonEndpoints = [
     '/api/v1/sources',
-    '/api/v1/geography/states', 
-    '/api/v1/document-types',
     '/health' // Health check
   ];
 

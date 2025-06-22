@@ -5,7 +5,10 @@ API routes for Monitor Legislativo Web
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+import io
+import csv
 
 import sys
 from pathlib import Path
@@ -159,6 +162,148 @@ async def export_results(request: ExportRequest, background_tasks: BackgroundTas
         "format": request.format,
         "result_count": len(request.results)
     }
+
+
+@router.post("/export/csv")
+async def export_csv(request: ExportRequest):
+    """
+    Export search results to CSV format
+    """
+    try:
+        from fastapi.responses import StreamingResponse
+        import io
+        import csv
+        
+        # Create CSV in memory
+        output = io.StringIO()
+        fieldnames = [
+            'ID', 'Título', 'Resumo', 'Tipo', 'Data', 'Estado', 
+            'Município', 'URL', 'Status', 'Autor', 'Câmara', 'Fonte'
+        ]
+        
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        
+        for result in request.results:
+            writer.writerow({
+                'ID': result.get('id', ''),
+                'Título': result.get('title', ''),
+                'Resumo': result.get('summary', '')[:500],
+                'Tipo': result.get('type', ''),
+                'Data': result.get('date', ''),
+                'Estado': result.get('state', ''),
+                'Município': result.get('municipality', ''),
+                'URL': result.get('url', ''),
+                'Status': result.get('status', ''),
+                'Autor': result.get('author', ''),
+                'Câmara': result.get('chamber', ''),
+                'Fonte': result.get('_source', '')
+            })
+        
+        output.seek(0)
+        
+        return StreamingResponse(
+            io.BytesIO(output.getvalue().encode('utf-8')),
+            media_type='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename=monitor_legislativo_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            }
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"CSV export failed: {str(e)}")
+
+
+@router.post("/export/xlsx")
+async def export_xlsx(request: ExportRequest):
+    """
+    Export search results to Excel format
+    """
+    try:
+        from fastapi.responses import StreamingResponse
+        import io
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        
+        # Create workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Resultados da Busca"
+        
+        # Header style
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="003366", end_color="003366", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+        
+        # Add headers
+        headers = [
+            'ID', 'Título', 'Resumo', 'Tipo', 'Data', 'Estado', 
+            'Município', 'URL', 'Status', 'Autor', 'Câmara', 'Fonte'
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+        
+        # Add data
+        for row, result in enumerate(request.results, 2):
+            ws.cell(row=row, column=1, value=result.get('id', ''))
+            ws.cell(row=row, column=2, value=result.get('title', ''))
+            ws.cell(row=row, column=3, value=result.get('summary', '')[:500])
+            ws.cell(row=row, column=4, value=result.get('type', ''))
+            ws.cell(row=row, column=5, value=result.get('date', ''))
+            ws.cell(row=row, column=6, value=result.get('state', ''))
+            ws.cell(row=row, column=7, value=result.get('municipality', ''))
+            ws.cell(row=row, column=8, value=result.get('url', ''))
+            ws.cell(row=row, column=9, value=result.get('status', ''))
+            ws.cell(row=row, column=10, value=result.get('author', ''))
+            ws.cell(row=row, column=11, value=result.get('chamber', ''))
+            ws.cell(row=row, column=12, value=result.get('_source', ''))
+        
+        # Adjust column widths
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column].width = adjusted_width
+        
+        # Add metadata sheet
+        ws_meta = wb.create_sheet("Metadados")
+        ws_meta.cell(row=1, column=1, value="Data de Exportação")
+        ws_meta.cell(row=1, column=2, value=datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        ws_meta.cell(row=2, column=1, value="Total de Resultados")
+        ws_meta.cell(row=2, column=2, value=len(request.results))
+        
+        if request.metadata:
+            row = 3
+            for key, value in request.metadata.items():
+                ws_meta.cell(row=row, column=1, value=key)
+                ws_meta.cell(row=row, column=2, value=str(value))
+                row += 1
+        
+        # Save to memory
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        return StreamingResponse(
+            output,
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={
+                'Content-Disposition': f'attachment; filename=monitor_legislativo_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+            }
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Excel export failed: {str(e)}")
 
 
 @router.delete("/cache")
