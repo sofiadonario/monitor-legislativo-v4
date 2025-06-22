@@ -386,7 +386,8 @@ class ControlledVocabularyTransportSearcher:
         # Event filter (optional)
         event_filter = ''
         if events:
-            event_filter = f' AND ({" OR ".join([f"evento any "{event}"" for event in events])})'
+            event_parts = [f'evento any "{event}"' for event in events]
+            event_filter = f' AND ({" OR ".join(event_parts)})'
         
         # Date range filter
         date_filter = ' OR '.join([f'date any "{year}"' for year in range(2015, 2026)])

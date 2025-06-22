@@ -22,10 +22,27 @@ import sys
 # Add parent directories to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from core.lexml.vocabulary_manager import SKOSVocabularyManager
-from transport_research.enhanced_lexml_search import ControlledVocabularyTransportSearcher
+try:
+    from core.lexml.vocabulary_manager import SKOSVocabularyManager
+    VOCABULARY_AVAILABLE = True
+except ImportError:
+    print("Warning: SKOS Vocabulary Manager not available - using simplified mode")
+    VOCABULARY_AVAILABLE = False
+
+try:
+    from transport_research.enhanced_lexml_search import ControlledVocabularyTransportSearcher
+    ENHANCED_SEARCH_AVAILABLE = True
+except ImportError:
+    print("Warning: Enhanced LexML Search not available - using simplified mode")
+    ENHANCED_SEARCH_AVAILABLE = False
+
 from core.models.models import SearchResult, DataSource, Proposition
-from core.config.config import Config
+try:
+    from core.config.config import Config
+except ImportError:
+    # Simple fallback config
+    class Config:
+        pass
 
 logger = logging.getLogger(__name__)
 
@@ -60,44 +77,57 @@ class LexMLSearchService:
         try:
             logger.info("Initializing LexML vocabulary system...")
             
-            # Initialize vocabulary manager
-            async with SKOSVocabularyManager() as vocab_manager:
-                self.vocabulary_manager = vocab_manager
-                
-                # Load essential vocabularies for transport research
-                essential_vocabs = [
-                    'transport_terms', 'regulatory_agencies', 
-                    'autoridade', 'evento', 'tipo_documento'
-                ]
-                
-                loaded_count = 0
-                for vocab_name in essential_vocabs:
-                    try:
-                        metadata = await vocab_manager.load_vocabulary(vocab_name)
-                        if metadata:
-                            loaded_count += 1
-                            logger.info(f"Loaded {vocab_name}: {metadata.concept_count} concepts")
-                    except Exception as e:
-                        logger.warning(f"Could not load vocabulary {vocab_name}: {e}")
-                
-                logger.info(f"Vocabulary initialization complete: {loaded_count}/{len(essential_vocabs)} vocabularies loaded")
-            
-            # Initialize enhanced searcher
-            self.enhanced_searcher = ControlledVocabularyTransportSearcher(
-                output_dir=None,  # Use in-memory results
-                resume=False,
-                use_vocabularies=True
-            )
-            
-            await self.enhanced_searcher.initialize_vocabularies()
+            if VOCABULARY_AVAILABLE and ENHANCED_SEARCH_AVAILABLE:
+                # Full initialization with vocabulary support
+                try:
+                    # Initialize vocabulary manager
+                    async with SKOSVocabularyManager() as vocab_manager:
+                        self.vocabulary_manager = vocab_manager
+                        
+                        # Load essential vocabularies for transport research
+                        essential_vocabs = [
+                            'transport_terms', 'regulatory_agencies', 
+                            'autoridade', 'evento', 'tipo_documento'
+                        ]
+                        
+                        loaded_count = 0
+                        for vocab_name in essential_vocabs:
+                            try:
+                                metadata = await vocab_manager.load_vocabulary(vocab_name)
+                                if metadata:
+                                    loaded_count += 1
+                                    logger.info(f"Loaded {vocab_name}: {metadata.concept_count} concepts")
+                            except Exception as e:
+                                logger.warning(f"Could not load vocabulary {vocab_name}: {e}")
+                        
+                        logger.info(f"Vocabulary initialization complete: {loaded_count}/{len(essential_vocabs)} vocabularies loaded")
+                    
+                    # Initialize enhanced searcher
+                    self.enhanced_searcher = ControlledVocabularyTransportSearcher(
+                        output_dir=None,  # Use in-memory results
+                        resume=False,
+                        use_vocabularies=True
+                    )
+                    
+                    await self.enhanced_searcher.initialize_vocabularies()
+                    
+                except Exception as e:
+                    logger.warning(f"Advanced features failed to initialize: {e}")
+                    logger.info("Falling back to simplified mode")
+            else:
+                logger.info("Running in simplified mode - advanced vocabulary features disabled")
             
             self.initialized = True
-            logger.info("LexML Search Service fully initialized")
+            logger.info("LexML Search Service initialized (mode: %s)", 
+                       "full" if VOCABULARY_AVAILABLE and ENHANCED_SEARCH_AVAILABLE else "simplified")
             return True
             
         except Exception as e:
             logger.error(f"Failed to initialize LexML Search Service: {e}")
-            return False
+            # Initialize in simplified mode
+            self.initialized = True
+            logger.info("LexML Search Service initialized in emergency fallback mode")
+            return True
     
     async def search(self, query: str, filters: Dict[str, Any] = None) -> SearchResult:
         """
@@ -164,23 +194,26 @@ class LexMLSearchService:
     
     async def _expand_search_terms(self, query: str) -> List[str]:
         """Expand search terms using SKOS vocabularies."""
-        if not self.enhanced_searcher:
-            return [query]
+        expanded_terms = [query]
         
         try:
-            # Use the enhanced searcher's vocabulary expansion
-            expanded = await self.enhanced_searcher.expand_search_term(query)
+            if ENHANCED_SEARCH_AVAILABLE and self.enhanced_searcher:
+                # Use the enhanced searcher's vocabulary expansion
+                expanded = await self.enhanced_searcher.expand_search_term(query)
+                expanded_terms.extend(expanded)
             
-            # Add transport-specific expansions
+            # Add transport-specific expansions (works in both modes)
             transport_expansions = self._get_transport_specific_expansions(query)
-            expanded.extend(transport_expansions)
+            expanded_terms.extend(transport_expansions)
             
             # Remove duplicates and return
-            return list(set(term.strip() for term in expanded if term.strip()))
+            return list(set(term.strip() for term in expanded_terms if term.strip()))
             
         except Exception as e:
             logger.warning(f"Term expansion failed for '{query}': {e}")
-            return [query]
+            # Return basic expansion even if advanced features fail
+            basic_expansions = self._get_transport_specific_expansions(query)
+            return list(set([query] + basic_expansions))
     
     def _get_transport_specific_expansions(self, query: str) -> List[str]:
         """Get transport-specific term expansions."""
@@ -258,41 +291,71 @@ class LexMLSearchService:
         all_results = []
         
         try:
-            # Create temporary enhanced searcher for this query
-            temp_searcher = ControlledVocabularyTransportSearcher(
-                output_dir=None,
-                resume=False,
-                use_vocabularies=True
-            )
-            
-            await temp_searcher.initialize_vocabularies()
-            
-            # Execute search for each expanded term
-            for term in params['search_terms'][:10]:  # Limit to prevent overload
-                try:
-                    # Use the enhanced searcher's search method
-                    temp_searcher.results = {
-                        'lei': [], 'decreto': [], 'portaria': [], 'resolucao': [],
-                        'medida_provisoria': [], 'projeto_lei': [], 
-                        'instrucao_normativa': [], 'outros': []
-                    }
-                    
-                    await temp_searcher.search_enhanced_term(
-                        original_term=term,
-                        expanded_terms=[term],  # Already expanded
-                        pbar=None
-                    )
-                    
-                    # Collect results from all categories
-                    for category_results in temp_searcher.results.values():
-                        all_results.extend(category_results)
-                    
-                except Exception as e:
-                    logger.warning(f"Search failed for term '{term}': {e}")
-                    continue
+            if ENHANCED_SEARCH_AVAILABLE:
+                # Full enhanced search mode
+                temp_searcher = ControlledVocabularyTransportSearcher(
+                    output_dir=None,
+                    resume=False,
+                    use_vocabularies=True
+                )
                 
-                # Prevent overwhelming the APIs
-                await asyncio.sleep(0.5)
+                await temp_searcher.initialize_vocabularies()
+                
+                # Execute search for each expanded term
+                for term in params['search_terms'][:10]:  # Limit to prevent overload
+                    try:
+                        # Use the enhanced searcher's search method
+                        temp_searcher.results = {
+                            'lei': [], 'decreto': [], 'portaria': [], 'resolucao': [],
+                            'medida_provisoria': [], 'projeto_lei': [], 
+                            'instrucao_normativa': [], 'outros': []
+                        }
+                        
+                        await temp_searcher.search_enhanced_term(
+                            original_term=term,
+                            expanded_terms=[term],  # Already expanded
+                            pbar=None
+                        )
+                        
+                        # Collect results from all categories
+                        for category_results in temp_searcher.results.values():
+                            all_results.extend(category_results)
+                        
+                    except Exception as e:
+                        logger.warning(f"Search failed for term '{term}': {e}")
+                        continue
+                    
+                    # Prevent overwhelming the APIs
+                    await asyncio.sleep(0.5)
+            else:
+                # Simplified mode - return from embedded data
+                logger.info("Using simplified search mode with embedded data")
+                try:
+                    sys.path.append(str(Path(__file__).parent.parent.parent / 'src' / 'data'))
+                    from real_legislative_data import realLegislativeData
+                except ImportError:
+                    logger.warning("Could not load embedded data, returning empty results")
+                    return []
+                
+                # Filter results based on search terms
+                for term in params['search_terms'][:5]:
+                    term_lower = term.lower()
+                    for doc in realLegislativeData:
+                        if (term_lower in doc.get('title', '').lower() or
+                            term_lower in doc.get('summary', '').lower() or
+                            any(term_lower in keyword.lower() for keyword in doc.get('keywords', []))):
+                            # Convert to the expected format
+                            result = {
+                                'urn': doc.get('id', ''),
+                                'titulo': doc.get('title', ''),
+                                'descricao': doc.get('summary', ''),
+                                'tipo_documento': doc.get('type', ''),
+                                'data': doc.get('date', ''),
+                                'autoridade': doc.get('chamber', ''),
+                                'localidade': doc.get('state', ''),
+                                'termo_busca': term
+                            }
+                            all_results.append(result)
             
             # Remove duplicates based on URN
             unique_results = []
@@ -306,11 +369,12 @@ class LexMLSearchService:
                 elif not urn:
                     unique_results.append(result)
             
-            logger.info(f"Enhanced search retrieved {len(unique_results)} unique documents")
+            logger.info(f"Search retrieved {len(unique_results)} unique documents (mode: %s)", 
+                       "enhanced" if ENHANCED_SEARCH_AVAILABLE else "simplified")
             return unique_results
             
         except Exception as e:
-            logger.error(f"Enhanced search execution failed: {e}")
+            logger.error(f"Search execution failed: {e}")
             return []
     
     def _transform_to_propositions(self, raw_results: List[Dict], original_query: str, expanded_terms: List[str]) -> List[Proposition]:
@@ -477,6 +541,14 @@ class LexMLSearchService:
     
     def get_vocabulary_stats(self) -> Dict[str, Any]:
         """Get vocabulary statistics."""
+        if not VOCABULARY_AVAILABLE:
+            return {
+                'status': 'simplified_mode',
+                'mode': 'basic_transport_expansion',
+                'features_available': ['basic_term_expansion', 'embedded_data_search'],
+                'advanced_features': 'disabled'
+            }
+        
         if not self.vocabulary_manager:
             return {'status': 'not_initialized'}
         
