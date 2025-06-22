@@ -8,6 +8,14 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+# Import our API routes
+try:
+    from web.api.routes import router as api_router
+    ROUTES_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import API routes: {e}")
+    ROUTES_AVAILABLE = False
+
 # Create minimal FastAPI app
 app = FastAPI(
     title="Monitor Legislativo v4 API",
@@ -51,6 +59,13 @@ async def health_check():
 async def docs_redirect():
     """Redirect to docs"""
     return {"message": "API documentation available at /docs"}
+
+# Include API routes if available
+if ROUTES_AVAILABLE:
+    app.include_router(api_router, prefix="/api/v1")
+    print("✅ API routes included successfully")
+else:
+    print("⚠️ Running in minimal mode without API routes")
 
 if __name__ == "__main__":
     import uvicorn

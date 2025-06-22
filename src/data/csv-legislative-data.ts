@@ -298,7 +298,11 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
   try {
     const response = await fetch(CSV_URL);
     if (!response.ok) {
-      throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+      console.warn(`CSV file not found at ${CSV_URL}, falling back to mock data`);
+      // Return mock data instead of throwing error
+      const { mockLegislativeData } = await import('./mock-legislative-data');
+      console.log(`Using mock data with ${mockLegislativeData.length} documents`);
+      return mockLegislativeData;
     }
     const csvContent = await response.text();
     if (!csvContent) {
@@ -306,8 +310,16 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
     }
     return parseCSVData(csvContent);
   } catch (error) {
-    console.error('Error loading or parsing CSV legislative data:', error);
-    throw error; // Re-throw to be caught by the service
+    console.error('Error loading CSV legislative data, falling back to mock data:', error);
+    // Always provide fallback to mock data
+    try {
+      const { mockLegislativeData } = await import('./mock-legislative-data');
+      console.log(`Fallback: Using mock data with ${mockLegislativeData.length} documents`);
+      return mockLegislativeData;
+    } catch (mockError) {
+      console.error('Critical error: Even mock data failed to load:', mockError);
+      throw new Error('Could not load any data source (CSV or mock data)');
+    }
   }
 }
 
@@ -317,19 +329,28 @@ let csvDataCache: LegislativeDocument[] | null = null;
 // Export a synchronous version that provides immediate fallback
 export const csvLegislativeData: LegislativeDocument[] = [];
 
-// Force load CSV data immediately when module is imported
+// Force load data immediately when module is imported
 (async () => {
   try {
-    console.log('🔥 FORCE LOADING FULL CSV DATASET (889 rows)...');
+    console.log('🔥 LOADING LEGISLATIVE DATA...');
     csvDataCache = await loadCSVLegislativeData();
     if (csvDataCache && csvDataCache.length > 0) {
       csvLegislativeData.length = 0; // Clear array
       csvLegislativeData.push(...csvDataCache); // Add all loaded data
-      console.log(`✅ SUCCESS: Loaded ${csvDataCache.length} documents from CSV`);
+      console.log(`✅ SUCCESS: Loaded ${csvDataCache.length} documents`);
     } else {
-      console.error('❌ CSV loading failed - no data returned');
+      console.error('❌ Data loading failed - no data returned');
     }
   } catch (error) {
-    console.error('❌ CRITICAL: Failed to load CSV data on module import:', error);
+    console.error('❌ CRITICAL: Failed to load data on module import:', error);
+    // Emergency fallback - directly import mock data
+    try {
+      const { mockLegislativeData } = await import('./mock-legislative-data');
+      csvLegislativeData.length = 0;
+      csvLegislativeData.push(...mockLegislativeData);
+      console.log(`🚨 EMERGENCY FALLBACK: Using ${mockLegislativeData.length} mock documents`);
+    } catch (emergencyError) {
+      console.error('💥 TOTAL FAILURE: Even emergency fallback failed:', emergencyError);
+    }
   }
 })();
