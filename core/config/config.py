@@ -154,3 +154,15 @@ class Config:
     def get_enabled_apis(cls) -> Dict[str, APIConfig]:
         """Get only enabled API configurations"""
         return {k: v for k, v in cls.get_all_apis().items() if v.enabled}
+
+
+# Helper functions for backward compatibility
+def get_all_sources() -> List[str]:
+    """Get list of all configured API sources."""
+    return list(Config.get_all_apis().keys())
+
+
+def get_source_config(source: str) -> APIConfig:
+    """Get configuration for a specific API source."""
+    all_apis = Config.get_all_apis()
+    return all_apis.get(source)
