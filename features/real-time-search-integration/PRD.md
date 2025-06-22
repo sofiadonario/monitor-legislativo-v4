@@ -11,48 +11,65 @@
 
 ## Executive Summary
 
-This PRD outlines the development of comprehensive real-time search capabilities for the Monitor Legislativo v4 platform, building upon the existing foundation of 890 real legislative documents from LexML Brasil. The feature will transform the platform from a static document viewer into a dynamic, responsive research tool optimized for academic transport legislation analysis.
+This PRD outlines the development of comprehensive real-time search capabilities for the Monitor Legislativo v4 platform, prioritizing live LexML Brasil API integration with the existing 890-document CSV as a fallback method. The feature will transform the platform from a static document viewer into a dynamic, real-time research tool that accesses millions of current legislative documents directly from Brazil's official legal database.
 
 ---
 
 ## 1. Project Overview
 
 ### 1.1 Problem Statement
-The current platform successfully loads 890 legislative documents but lacks interactive search capabilities that would enable researchers to efficiently discover relevant content in real-time. Users must manually browse through documents without advanced filtering, live search, or intelligent suggestions.
+The current platform successfully loads 890 legislative documents from a static CSV file, but this represents only a tiny fraction of Brazil's complete legal corpus. Users need access to live, up-to-date legislative data directly from LexML Brasil's comprehensive database containing millions of documents. The static CSV should serve only as a fallback when API connectivity is unavailable.
 
 ### 1.2 Goals & Objectives
-- **Primary Goal**: Implement real-time search across 890 legislative documents
-- **Performance Target**: <200ms search response time
-- **User Experience**: Instant, intuitive search with academic-grade precision
-- **Academic Compliance**: Maintain FRBROO metadata standards and SKOS vocabulary integration
+- **Primary Goal**: Implement live LexML Brasil API integration for real-time access to millions of legislative documents
+- **Secondary Goal**: Maintain 890-document CSV as fallback for offline/connectivity issues
+- **Performance Target**: <500ms for live API searches, <200ms for cached/fallback searches
+- **User Experience**: Real-time legislative research with access to Brazil's complete legal database
+- **Academic Compliance**: Full FRBROO metadata preservation and SKOS vocabulary integration
+- **Content Access**: Enable full document text retrieval through LexML's SRU/OAI-PMH protocols
 
 ### 1.3 Success Metrics
-- Search response time: <200ms for queries
-- User engagement: 70% increase in document discovery
-- Search accuracy: 90%+ relevant results in top 10
-- Academic workflow efficiency: 50% reduction in research time
+- **Live API Performance**: <500ms response time for LexML API queries
+- **Fallback Performance**: <200ms for cached CSV searches
+- **Document Coverage**: Access to 100% of available LexML Brasil corpus (millions of documents)
+- **Content Completeness**: 100% document text accessibility through API
+- **Search Accuracy**: 95%+ relevant results from live legal database
+- **Academic Impact**: 300% increase in research scope and 75% reduction in discovery time
+- **API Reliability**: 95% API availability with graceful CSV fallback
 
 ---
 
 ## 2. Current State Analysis
 
 ### 2.1 Existing Architecture
-- **Data Layer**: 890 real legislative documents from LexML Brasil
-- **Frontend**: React 18 + TypeScript with optimized CSV loading
-- **Backend**: FastAPI with SKOS vocabulary management
-- **Search Infrastructure**: Basic text filtering in `legislativeDataService.ts`
+- **Data Layer (Current)**: 890 real legislative documents from CSV fallback
+- **Data Layer (Target)**: Live LexML Brasil API via SRU/OAI-PMH protocols
+- **Frontend**: React 18 + TypeScript with API integration capabilities
+- **Backend**: FastAPI with LexML API proxy and SKOS vocabulary management
+- **Search Infrastructure**: Basic text filtering (to be replaced with live API integration)
 
 ### 2.2 Technical Foundation
 ```typescript
-// Current search in src/services/legislativeDataService.ts
-async searchDocuments(searchTerm: string): Promise<LegislativeDocument[]> {
-  const allDocs = await this.fetchDocuments();
-  const lowerSearchTerm = searchTerm.toLowerCase();
-  return allDocs.documents.filter(doc => 
-    doc.title.toLowerCase().includes(lowerSearchTerm) ||
-    doc.summary.toLowerCase().includes(lowerSearchTerm) ||
-    (doc.keywords && doc.keywords.some(keyword => keyword.toLowerCase().includes(lowerSearchTerm)))
-  );
+// Target LexML API integration in src/services/legislativeDataService.ts
+async searchDocuments(searchTerm: string, options?: SearchOptions): Promise<LegislativeDocument[]> {
+  try {
+    // Priority 1: Live LexML API search
+    const apiResults = await this.searchLexMLAPI(searchTerm, options);
+    return apiResults;
+  } catch (apiError) {
+    console.warn('LexML API unavailable, falling back to CSV data:', apiError);
+    // Fallback: Local CSV search
+    const csvResults = await this.searchLocalCSV(searchTerm);
+    return csvResults;
+  }
+}
+
+// New LexML API integration
+async searchLexMLAPI(searchTerm: string, options?: SearchOptions): Promise<LegislativeDocument[]> {
+  const cqlQuery = this.buildCQLQuery(searchTerm, options);
+  const response = await fetch(`/api/lexml/search?query=${encodeURIComponent(cqlQuery)}`);
+  const xmlData = await response.text();
+  return this.parseLexMLResponse(xmlData);
 }
 ```
 
@@ -72,34 +89,254 @@ interface LegislativeDocument {
   author: string;
   chamber: string;
   number?: string;
-  source: string;
+  source: 'LexML-API' | 'LexML-CSV-Fallback';
   citation: string;
+  // New LexML API fields
+  urn: string;
+  fullTextUrl?: string;
+  description?: string;
+  subject?: string[];
+  localidade?: string;
+  autoridade?: string;
+  isLiveData: boolean;
 }
 ```
 
 ---
 
-## 3. Feature Requirements
+## 3. LexML Brasil API Integration Strategy
 
-## 3.1 Feature 1: Live Search (As-You-Type)
+### 3.1 API Architecture Overview
 
-### 3.1.1 Description
-Real-time search that returns results as the user types, with debounced input handling and instant visual feedback.
+The Monitor Legislativo v4 platform will prioritize live integration with LexML Brasil's comprehensive legal database, using the existing 890-document CSV as a reliable fallback mechanism.
 
-### 3.1.2 Functional Requirements
-- **FR-1.1**: Search triggers after 3 characters typed
-- **FR-1.2**: 300ms debounce delay to prevent excessive API calls
-- **FR-1.3**: Search across title, summary, keywords, author, and citation fields
-- **FR-1.4**: Visual loading indicators during search
-- **FR-1.5**: Clear search functionality with escape key support
+#### 3.1.1 LexML Brasil API Capabilities
+- **Protocol**: SRU (Search/Retrieve via URL) standard + OAI-PMH for metadata harvesting
+- **Coverage**: Complete Brazilian legal corpus (federal, state, municipal levels)
+- **Document Scope**: Laws, decrees, ordinances, bills, court decisions (1556-2019+)
+- **Query Language**: CQL (Contextual Query Language) for advanced searches
+- **Response Format**: XML with structured metadata and document content
 
-### 3.1.3 Technical Specifications
+#### 3.1.2 API Endpoints and Integration Points
+
+**Primary SRU Search Endpoint:**
+```
+GET /api/lexml/search
+Query Parameters:
+  - query: CQL query string
+  - startRecord: Pagination start (default: 1)
+  - maximumRecordsPerPage: Results per page (max: 100)
+  - operation: searchRetrieve (SRU standard)
+```
+
+**Example CQL Queries:**
+```sql
+-- Transport legislation from 2020-2024
+urn any transporte and date within "2020 2024"
+
+-- São Paulo state decrees
+urn any decreto and localidade any "sao.paulo"
+
+-- Federal laws with specific authority
+tipoDocumento exact "Lei" and autoridade any "federal"
+```
+
+#### 3.1.3 Document Content Access
+
+**Full Text Retrieval:**
+- LexML provides document URLs for full content access
+- XML metadata includes `<identifier>` with direct document links
+- Integration with FRBROO standards for bibliographic completeness
+
+**Metadata Fields Available:**
+```xml
+<record>
+  <tipoDocumento>Lei</tipoDocumento>
+  <date>2023-12-15</date>
+  <urn>urn:lex:br:federal:lei:2023-12-15;14792</urn>
+  <localidade>br</localidade>
+  <autoridade>federal</autoridade>
+  <title>Lei do Marco Legal dos Transportes</title>
+  <description>Estabelece diretrizes para o transporte...</description>
+  <subject>transporte;logística;infraestrutura</subject>
+  <identifier>https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14792.htm</identifier>
+</record>
+```
+
+### 3.2 Hybrid Data Strategy
+
+#### 3.2.1 Primary: Live LexML API
+**Advantages:**
+- Access to complete Brazilian legal database (millions of documents)
+- Real-time updates and newest legislation
+- Full document content retrieval
+- Authoritative, government-maintained data source
+- Advanced search capabilities via CQL
+
+**Implementation:**
+```typescript
+class LexMLAPIService {
+  private baseURL = '/api/lexml';
+  
+  async searchLive(searchTerm: string, filters?: SearchFilters): Promise<LegislativeDocument[]> {
+    const cqlQuery = this.buildCQLQuery(searchTerm, filters);
+    const response = await fetch(`${this.baseURL}/search?query=${encodeURIComponent(cqlQuery)}`);
+    
+    if (!response.ok) {
+      throw new Error(`LexML API error: ${response.status}`);
+    }
+    
+    const xmlData = await response.text();
+    return this.parseXMLResponse(xmlData);
+  }
+  
+  async getFullDocument(urn: string): Promise<string> {
+    const response = await fetch(`${this.baseURL}/document?urn=${encodeURIComponent(urn)}`);
+    return response.text();
+  }
+}
+```
+
+#### 3.2.2 Fallback: CSV Data (890 Documents)
+**Usage Scenarios:**
+- LexML API temporarily unavailable
+- Network connectivity issues
+- Development/testing environments
+- Offline functionality requirements
+
+**Seamless Transition:**
+```typescript
+async searchDocuments(searchTerm: string): Promise<SearchResult> {
+  try {
+    const apiResults = await this.lexmlAPI.searchLive(searchTerm);
+    return {
+      documents: apiResults,
+      source: 'live-api',
+      totalAvailable: 'unlimited',
+      isRealTime: true
+    };
+  } catch (error) {
+    console.warn('Falling back to CSV data:', error.message);
+    const csvResults = await this.csvService.search(searchTerm);
+    return {
+      documents: csvResults,
+      source: 'csv-fallback',
+      totalAvailable: 890,
+      isRealTime: false
+    };
+  }
+}
+```
+
+### 3.3 Performance and Caching Strategy
+
+#### 3.3.1 API Response Caching
+- **TTL**: 1 hour for search results, 24 hours for document content
+- **Cache Key**: CQL query + filters hash
+- **Storage**: Redis for production, localStorage for development
+
+#### 3.3.2 Intelligent Fallback Logic
+```typescript
+interface DataSourceStrategy {
+  primary: 'lexml-api';
+  fallback: 'csv-data';
+  cacheFirst: boolean;
+  timeout: number;
+}
+
+const strategy: DataSourceStrategy = {
+  primary: 'lexml-api',
+  fallback: 'csv-data',
+  cacheFirst: true,
+  timeout: 5000 // 5s timeout before fallback
+};
+```
+
+### 3.4 Backend Integration Requirements
+
+#### 3.4.1 FastAPI LexML Proxy
+```python
+# main_app/routers/lexml_router.py
+from fastapi import APIRouter, HTTPException
+import httpx
+import xml.etree.ElementTree as ET
+
+router = APIRouter(prefix="/api/lexml", tags=["LexML Integration"])
+
+@router.get("/search")
+async def search_lexml(query: str, startRecord: int = 1, maximumRecordsPerPage: int = 50):
+    """Proxy LexML SRU search requests"""
+    lexml_url = "http://www.lexml.gov.br/oai/sru"
+    params = {
+        "operation": "searchRetrieve",
+        "query": query,
+        "startRecord": startRecord,
+        "maximumRecordsPerPage": maximumRecordsPerPage,
+        "recordSchema": "oai_dc"
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(lexml_url, params=params, timeout=10.0)
+        
+    if response.status_code != 200:
+        raise HTTPException(status_code=502, detail="LexML API unavailable")
+    
+    return parse_lexml_xml(response.text)
+
+def parse_lexml_xml(xml_content: str) -> dict:
+    """Parse LexML XML response to structured JSON"""
+    root = ET.fromstring(xml_content)
+    # XML parsing logic to extract documents
+    pass
+```
+
+#### 3.4.2 Rate Limiting and Error Handling
+- **Rate Limits**: 100 requests/minute to respect LexML infrastructure
+- **Circuit Breaker**: Auto-fallback after 3 consecutive API failures
+- **Retry Logic**: Exponential backoff for temporary failures
+
+### 3.5 Academic and Research Benefits
+
+#### 3.5.1 Comprehensive Legal Research
+- **Scope Expansion**: From 890 to millions of documents
+- **Real-Time Access**: Latest legislation immediately available
+- **Historical Coverage**: Complete legal evolution since 1556
+- **Multi-Jurisdictional**: Federal, state, and municipal coverage
+
+#### 3.5.2 Enhanced Academic Features
+- **Citation Completeness**: Full bibliographic data from authoritative source
+- **Document Versioning**: Access to original and amended versions
+- **Cross-Reference Discovery**: Related legislation identification
+- **Authority Verification**: Government-verified document authenticity
+
+---
+
+## 4. Feature Requirements
+
+## 4.1 Feature 1: Live LexML API Search (As-You-Type)
+
+### 4.1.1 Description
+Real-time search powered by LexML Brasil API that returns live legislative results as the user types, with intelligent caching and CSV fallback for maximum reliability.
+
+### 4.1.2 Functional Requirements
+- **FR-1.1**: Live API search triggers after 3 characters typed
+- **FR-1.2**: 500ms debounce delay for API calls, 300ms for cached results
+- **FR-1.3**: Search across LexML fields: title, description, subject, urn, autoridade
+- **FR-1.4**: Visual indicators for live vs. fallback data sources
+- **FR-1.5**: Graceful fallback to CSV when API unavailable
+- **FR-1.6**: Real-time data source status display
+- **FR-1.7**: Clear search with escape key support
+
+### 4.1.3 Technical Specifications
 ```typescript
 interface LiveSearchConfig {
   minCharacters: 3;
-  debounceMs: 300;
-  maxResults: 50;
-  searchFields: ('title' | 'summary' | 'keywords' | 'author' | 'citation')[];
+  apiDebounceMs: 500;
+  cacheDebounceMs: 300;
+  maxResults: 100;
+  apiTimeout: 5000;
+  fallbackEnabled: true;
+  cacheEnabled: true;
 }
 
 interface SearchState {
@@ -107,339 +344,723 @@ interface SearchState {
   results: LegislativeDocument[];
   isLoading: boolean;
   resultCount: number;
+  totalAvailable: number | 'unlimited';
   searchTime: number;
+  dataSource: 'live-api' | 'cached-api' | 'csv-fallback';
+  apiStatus: 'connected' | 'fallback' | 'error';
+}
+
+interface CQLQueryBuilder {
+  buildTransportQuery(term: string): string;
+  buildDateRangeQuery(from: Date, to: Date): string;
+  buildAuthorityQuery(authority: string): string;
+  combineQueries(queries: string[], operator: 'AND' | 'OR'): string;
 }
 ```
 
-### 3.1.4 Performance Requirements
-- **PR-1.1**: Search response time <200ms
-- **PR-1.2**: Smooth UI interaction without blocking
-- **PR-1.3**: Efficient memory usage for result caching
+### 4.1.4 Performance Requirements
+- **PR-1.1**: Live API search response <500ms (target <300ms)
+- **PR-1.2**: Cached search response <100ms
+- **PR-1.3**: CSV fallback search <200ms
+- **PR-1.4**: API timeout and fallback <5 seconds total
+- **PR-1.5**: Smooth UI with loading states for all data sources
+- **PR-1.6**: Efficient caching with 1-hour TTL for search results
 
-### 3.1.5 UI/UX Requirements
+### 4.1.5 UI/UX Requirements
 - **UX-1.1**: Search bar prominently placed in header
-- **UX-1.2**: Real-time result count display
-- **UX-1.3**: Search history dropdown (last 5 searches)
-- **UX-1.4**: Keyboard navigation support (arrow keys, enter)
-- **UX-1.5**: Highlight matching terms in results
+- **UX-1.2**: Real-time result count with data source indicator
+- **UX-1.3**: Data source status badge (🔴 Live API | 🟡 Cached | ⚫ Fallback)
+- **UX-1.4**: Search history dropdown (last 5 searches)
+- **UX-1.5**: Keyboard navigation support (arrow keys, enter)
+- **UX-1.6**: Highlight matching terms in results
+- **UX-1.7**: "Expand to full database" button when using CSV fallback
+- **UX-1.8**: Document freshness indicators (live vs. static data)
 
 ---
 
-## 3.2 Feature 2: Advanced Search Filters
+## 4.2 Feature 2: LexML Advanced Search Filters
 
-### 3.2.1 Description
-Comprehensive filtering system allowing users to refine search results by document attributes, with real-time filter application.
+### 4.2.1 Description
+Comprehensive filtering system leveraging LexML's rich metadata to refine search results by official document attributes, with real-time filter application across the complete Brazilian legal database.
 
-### 3.2.2 Functional Requirements
-- **FR-2.1**: Filter by document type (lei, decreto, portaria, etc.)
-- **FR-2.2**: Filter by state/municipality (geographic filtering)
-- **FR-2.3**: Date range filtering (from/to dates)
-- **FR-2.4**: Filter by chamber (Câmara, Senado, regulatory agencies)
-- **FR-2.5**: Filter by document status (sancionado, em_tramitacao, etc.)
-- **FR-2.6**: Multiple filter combination with AND logic
-- **FR-2.7**: Filter state persistence across sessions
+### 4.2.2 Functional Requirements
+- **FR-2.1**: Filter by tipoDocumento (Lei, Decreto, Portaria, Medida Provisória, etc.)
+- **FR-2.2**: Filter by localidade (federal, state codes, municipality codes)
+- **FR-2.3**: Filter by autoridade (federal, estadual, municipal, regulatory agencies)
+- **FR-2.4**: Date range filtering with historical coverage (1556-present)
+- **FR-2.5**: Subject-based filtering using LexML taxonomy
+- **FR-2.6**: URN-based filtering for specific legal families
+- **FR-2.7**: Multiple filter combination with CQL logic (AND, OR, NOT)
+- **FR-2.8**: Filter state persistence across sessions
+- **FR-2.9**: Auto-complete for authority and locality names from LexML
 
-### 3.2.3 Technical Specifications
+### 4.2.3 Technical Specifications
 ```typescript
-interface SearchFilters {
-  documentTypes: DocumentType[];
-  states: string[];
-  municipalities: string[];
-  chambers: string[];
-  status: DocumentStatus[];
+interface LexMLSearchFilters {
+  tipoDocumento: string[]; // Lei, Decreto, Portaria, etc.
+  localidade: string[]; // br, sao.paulo, rio.de.janeiro, etc.
+  autoridade: string[]; // federal, estadual, municipal
+  subject: string[]; // LexML subject taxonomy
   dateRange: {
     from?: Date;
     to?: Date;
   };
-  source: string[];
+  urnPattern?: string; // URN-based filtering
+  dataSource: 'live-api' | 'csv-fallback' | 'both';
 }
 
-interface FilterState {
-  active: SearchFilters;
+interface LexMLFilterState {
+  active: LexMLSearchFilters;
   available: {
-    documentTypes: DocumentType[];
-    states: string[];
-    chambers: string[];
-    // Dynamic filter options based on current dataset
+    tipoDocumento: Array<{code: string, name: string, count?: number}>;
+    localidade: Array<{code: string, name: string, level: 'federal'|'state'|'municipal'}>;
+    autoridade: Array<{code: string, name: string, description: string}>;
+    subjects: Array<{code: string, term: string, hierarchy: string[]}>;
   };
+  cqlQuery: string; // Generated CQL from active filters
+}
+
+class CQLFilterBuilder {
+  buildDocumentTypeFilter(types: string[]): string {
+    return types.map(type => `tipoDocumento exact "${type}"`).join(' OR ');
+  }
+  
+  buildLocalidadeFilter(locations: string[]): string {
+    return locations.map(loc => `localidade any "${loc}"`).join(' OR ');
+  }
+  
+  buildDateRangeFilter(from?: Date, to?: Date): string {
+    if (from && to) {
+      return `date within "${from.getFullYear()} ${to.getFullYear()}"`;
+    }
+    return '';
+  }
 }
 ```
 
-### 3.2.4 Performance Requirements
-- **PR-2.1**: Filter application <100ms
-- **PR-2.2**: Dynamic filter option calculation <50ms
-- **PR-2.3**: Smooth animations for filter UI components
+### 4.2.4 Performance Requirements
+- **PR-2.1**: CQL filter generation <50ms
+- **PR-2.2**: Live API filtered search <500ms
+- **PR-2.3**: Cached filter application <100ms
+- **PR-2.4**: Filter option auto-complete <200ms
+- **PR-2.5**: Dynamic filter availability calculation <100ms
+- **PR-2.6**: Smooth filter UI animations without blocking
 
-### 3.2.5 UI/UX Requirements
-- **UX-2.1**: Collapsible filter sidebar
-- **UX-2.2**: Filter chips showing active filters
-- **UX-2.3**: Clear all filters button
-- **UX-2.4**: Visual indication of filter result counts
+### 4.2.5 UI/UX Requirements
+- **UX-2.1**: Collapsible filter sidebar with LexML taxonomy structure
+- **UX-2.2**: Filter chips showing active filters with data source indicators
+- **UX-2.3**: Clear all filters button with CQL query preview
+- **UX-2.4**: Visual indication of filter result counts (live vs. fallback)
 - **UX-2.5**: Mobile-responsive filter drawer
+- **UX-2.6**: Auto-complete dropdowns for LexML authority/locality names
+- **UX-2.7**: Historical date range slider (1556-present)
+- **UX-2.8**: "Explore full database" button when using CSV fallback filters
 
 ---
 
-## 3.3 Feature 3: Advanced Search (Boolean Operators)
+## 4.3 Feature 3: Full Document Content Access
 
-### 3.3.1 Description
-Academic-grade search functionality supporting Boolean operators, phrase matching, and field-specific searches.
+### 4.3.1 Description
+Real-time access to complete legislative document content through LexML's URL resolution system, enabling full-text search and academic research with original government sources.
 
-### 3.3.2 Functional Requirements
-- **FR-3.1**: Boolean operators (AND, OR, NOT)
-- **FR-3.2**: Phrase matching with quotation marks
-- **FR-3.3**: Wildcard search support (*, ?)
-- **FR-3.4**: Field-specific search (title:transport, author:silva)
-- **FR-3.5**: Proximity search (terms within N words)
-- **FR-3.6**: Search syntax validation and error messages
+### 4.3.2 Functional Requirements
+- **FR-3.1**: Direct document content retrieval via LexML identifier URLs
+- **FR-3.2**: Full-text search within retrieved document content
+- **FR-3.3**: Document version tracking (original vs. amended texts)
+- **FR-3.4**: Automatic citation generation from LexML metadata
+- **FR-3.5**: Document export in multiple academic formats (PDF, HTML, TXT)
+- **FR-3.6**: Offline document caching for accessed content
+- **FR-3.7**: Cross-reference discovery within document text
+- **FR-3.8**: Document authenticity verification through government URLs
 
-### 3.3.3 Technical Specifications
+### 4.3.3 Technical Specifications
 ```typescript
-interface AdvancedSearchQuery {
+interface DocumentContentService {
+  retrieveFullText(urn: string): Promise<DocumentContent>;
+  searchWithinDocument(urn: string, searchTerm: string): Promise<SearchMatch[]>;
+  getCitation(urn: string, format: CitationFormat): string;
+  exportDocument(urn: string, format: ExportFormat): Promise<Blob>;
+}
+
+interface DocumentContent {
+  urn: string;
+  title: string;
+  fullText: string;
+  structure: DocumentSection[];
+  metadata: LexMLMetadata;
+  sourceUrl: string;
+  lastModified: Date;
+  authenticity: {
+    verified: boolean;
+    governmentSource: boolean;
+    checksumValid: boolean;
+  };
+}
+
+interface DocumentSection {
+  type: 'article' | 'paragraph' | 'chapter' | 'section';
+  number: string;
+  content: string;
+  subsections: DocumentSection[];
+}
+
+type CitationFormat = 'ABNT' | 'APA' | 'Chicago' | 'Vancouver' | 'LexML';
+type ExportFormat = 'PDF' | 'HTML' | 'TXT' | 'DOCX' | 'LaTeX';
+```
+
+### 4.3.4 Performance Requirements
+- **PR-3.1**: Document content retrieval <2 seconds
+- **PR-3.2**: Full-text search within document <500ms
+- **PR-3.3**: Citation generation <100ms
+- **PR-3.4**: Document export generation <5 seconds
+- **PR-3.5**: Content caching with 24-hour TTL
+
+### 4.3.5 UI/UX Requirements
+- **UX-3.1**: Integrated document viewer within search results
+- **UX-3.2**: Full-text search highlighting within documents
+- **UX-3.3**: Document structure navigation (articles, paragraphs)
+- **UX-3.4**: Citation copy-to-clipboard functionality
+- **UX-3.5**: Export options in context menu
+- **UX-3.6**: Document authenticity badges (government source verification)
+- **UX-3.7**: Cross-reference link detection and navigation
+
+---
+
+## 4.4 Feature 4: Advanced CQL Search (Boolean Operators)
+
+### 4.4.1 Description
+Academic-grade search functionality leveraging LexML's CQL (Contextual Query Language) support for Boolean operators, phrase matching, field-specific searches, and advanced legal research patterns.
+
+### 4.4.2 Functional Requirements
+- **FR-4.1**: CQL Boolean operators (AND, OR, NOT) with LexML fields
+- **FR-4.2**: Phrase matching with quotation marks ("transporte urbano")
+- **FR-4.3**: Wildcard search support (transport*, logístic?)
+- **FR-4.4**: Field-specific CQL search (tipoDocumento exact "Lei", localidade any "sao.paulo")
+- **FR-4.5**: Date range queries (date within "2020 2024")
+- **FR-4.6**: URN pattern matching (urn any decreto)
+- **FR-4.7**: Authority-specific searches (autoridade exact "federal")
+- **FR-4.8**: CQL syntax validation with real-time error messages
+- **FR-4.9**: Query builder interface for non-technical users
+
+### 4.4.3 Technical Specifications
+```typescript
+interface CQLAdvancedQuery {
   raw: string;
+  cqlQuery: string;
   parsed: {
-    terms: SearchTerm[];
-    operators: BooleanOperator[];
-    fieldSpecific: FieldSearch[];
+    terms: CQLTerm[];
+    operators: CQLOperator[];
+    fieldQueries: CQLFieldQuery[];
+    dateRanges: CQLDateRange[];
     phrases: string[];
-    wildcards: WildcardTerm[];
+    wildcards: CQLWildcard[];
   };
   isValid: boolean;
   errorMessage?: string;
+  targetFields: LexMLField[];
 }
 
-interface SearchTerm {
+interface CQLTerm {
   value: string;
-  field?: string;
-  operator?: 'AND' | 'OR' | 'NOT';
-  proximity?: number;
+  field?: LexMLField;
+  operator?: 'exact' | 'any' | 'all' | 'within';
+  relation?: 'AND' | 'OR' | 'NOT';
+}
+
+interface CQLFieldQuery {
+  field: LexMLField;
+  value: string;
+  operator: 'exact' | 'any' | 'all';
+}
+
+type LexMLField = 'tipoDocumento' | 'localidade' | 'autoridade' | 'date' | 'urn' | 'title' | 'subject';
+
+class CQLQueryBuilder {
+  buildFieldQuery(field: LexMLField, value: string, operator: 'exact' | 'any'): string {
+    return `${field} ${operator} "${value}"`;
+  }
+  
+  buildBooleanQuery(queries: string[], operator: 'AND' | 'OR'): string {
+    return queries.join(` ${operator} `);
+  }
+  
+  buildDateRangeQuery(from: number, to: number): string {
+    return `date within "${from} ${to}"`;
+  }
+  
+  validateCQLSyntax(query: string): {valid: boolean, error?: string} {
+    // CQL syntax validation logic
+    return {valid: true};
+  }
 }
 ```
 
-### 3.3.4 Performance Requirements
-- **PR-3.1**: Query parsing <50ms
-- **PR-3.2**: Complex Boolean search execution <300ms
-- **PR-3.3**: Regex optimization for wildcard searches
+### 4.4.4 Performance Requirements
+- **PR-4.1**: CQL query parsing and validation <50ms
+- **PR-4.2**: Complex CQL search via LexML API <800ms
+- **PR-4.3**: Query builder UI response <100ms
+- **PR-4.4**: Syntax validation in real-time <50ms
+- **PR-4.5**: Advanced search caching with query hash keys
 
-### 3.3.5 UI/UX Requirements
-- **UX-3.1**: Advanced search modal/panel
-- **UX-3.2**: Query builder interface for non-technical users
-- **UX-3.3**: Syntax highlighting in search input
-- **UX-3.4**: Search tips and examples
-- **UX-3.5**: Query validation with real-time feedback
+### 4.4.5 UI/UX Requirements
+- **UX-4.1**: Advanced CQL search modal with LexML field reference
+- **UX-4.2**: Visual query builder with drag-and-drop CQL construction
+- **UX-4.3**: CQL syntax highlighting with LexML field recognition
+- **UX-4.4**: Contextual help with LexML-specific search examples
+- **UX-4.5**: Real-time CQL syntax validation with error highlighting
+- **UX-4.6**: Saved query templates for common legal research patterns
+- **UX-4.7**: Query history with CQL sharing capabilities
 
 ---
 
-## 3.4 Feature 4: Search Suggestions (Auto-Complete)
+## 4.5 Feature 5: LexML Smart Suggestions (Auto-Complete)
 
-### 3.4.1 Description
-Intelligent auto-completion based on document content, search history, and SKOS vocabulary terms.
+### 4.5.1 Description
+Intelligent auto-completion powered by LexML's rich metadata taxonomy, combining live API suggestions with local SKOS vocabulary and search history.
 
-### 3.4.2 Functional Requirements
-- **FR-4.1**: Auto-complete suggestions from document titles
-- **FR-4.2**: Keyword-based suggestions from document metadata
-- **FR-4.3**: SKOS vocabulary term suggestions
-- **FR-4.4**: Search history integration
-- **FR-4.5**: Fuzzy matching for typo tolerance
-- **FR-4.6**: Contextual suggestions based on current filters
+### 4.5.2 Functional Requirements
+- **FR-5.1**: Auto-complete from LexML tipoDocumento taxonomy
+- **FR-5.2**: Authority and locality name suggestions from LexML database
+- **FR-5.3**: Subject-based suggestions using LexML subject classification
+- **FR-5.4**: URN pattern suggestions for legal citation discovery
+- **FR-5.5**: SKOS vocabulary term suggestions for transport terminology
+- **FR-5.6**: Search history integration with frequency ranking
+- **FR-5.7**: Fuzzy matching for legal terminology typo tolerance
+- **FR-5.8**: Contextual CQL query suggestions
+- **FR-5.9**: Multi-language support (Portuguese legal terminology)
 
-### 3.4.3 Technical Specifications
+### 4.5.3 Technical Specifications
 ```typescript
-interface SearchSuggestion {
+interface LexMLSuggestion {
   text: string;
-  type: 'title' | 'keyword' | 'vocabulary' | 'history' | 'author';
-  frequency: number;
-  context?: {
-    documentCount: number;
+  type: 'tipoDocumento' | 'autoridade' | 'localidade' | 'subject' | 'urn' | 'skos' | 'history' | 'cql';
+  frequency?: number;
+  cqlQuery?: string;
+  metadata: {
+    documentCount?: number;
+    sourceType: 'live-api' | 'cached' | 'local';
     relatedTerms: string[];
+    hierarchyPath?: string[];
   };
-  source?: 'skos' | 'document' | 'history';
+  source: 'lexml-api' | 'skos-vocabulary' | 'search-history' | 'cql-templates';
 }
 
-interface SuggestionConfig {
-  maxSuggestions: 8;
+interface LexMLSuggestionConfig {
+  maxSuggestions: 12;
   minQueryLength: 2;
+  apiSuggestions: 6;
+  localSuggestions: 6;
   fuzzyThreshold: 0.8;
+  debounceMs: 300;
   rankingWeights: {
-    frequency: number;
-    recency: number;
-    relevance: number;
+    apiRelevance: 0.4;
+    frequency: 0.3;
+    recency: 0.2;
+    userHistory: 0.1;
   };
 }
+
+class LexMLSuggestionEngine {
+  async getAPISuggestions(term: string): Promise<LexMLSuggestion[]> {
+    // Query LexML for field-specific suggestions
+    const response = await fetch(`/api/lexml/suggest?term=${encodeURIComponent(term)}`);
+    return this.parseLexMLSuggestions(await response.json());
+  }
+  
+  async getSKOSSuggestions(term: string): Promise<LexMLSuggestion[]> {
+    // Local SKOS vocabulary matching
+    return this.skosService.findMatching(term);
+  }
+  
+  buildCQLSuggestion(field: LexMLField, value: string): LexMLSuggestion {
+    return {
+      text: `${field}: ${value}`,
+      type: 'cql',
+      cqlQuery: `${field} exact "${value}"`,
+      metadata: { sourceType: 'local', relatedTerms: [] },
+      source: 'cql-templates'
+    };
+  }
+}
 ```
 
-### 3.4.4 Performance Requirements
-- **PR-4.1**: Suggestion generation <100ms
-- **PR-4.2**: Suggestion index building <2s on startup
-- **PR-4.3**: Memory-efficient suggestion storage
+### 4.5.4 Performance Requirements
+- **PR-5.1**: LexML API suggestions <300ms
+- **PR-5.2**: Local SKOS suggestions <50ms
+- **PR-5.3**: Combined suggestion ranking <100ms
+- **PR-5.4**: Suggestion caching with 2-hour TTL
+- **PR-5.5**: Suggestion index building <3s on startup
+- **PR-5.6**: Memory-efficient suggestion storage with LRU cache
 
-### 3.4.5 UI/UX Requirements
-- **UX-4.1**: Dropdown suggestion list
-- **UX-4.2**: Keyboard navigation (up/down arrows)
-- **UX-4.3**: Suggestion categorization with icons
-- **UX-4.4**: Click and keyboard selection support
-- **UX-4.5**: Suggestion frequency indicators
+### 4.5.5 UI/UX Requirements
+- **UX-5.1**: Categorized dropdown with LexML field sections
+- **UX-5.2**: Keyboard navigation (up/down arrows, tab)
+- **UX-5.3**: Suggestion categorization with LexML field icons
+- **UX-5.4**: CQL query preview on hover
+- **UX-5.5**: Click and keyboard selection with CQL insertion
+- **UX-5.6**: Data source indicators (live API vs. local)
+- **UX-5.7**: Hierarchical suggestions for complex legal taxonomy
+- **UX-5.8**: "Search full database" option when using fallback suggestions
 
 ---
 
-## 3.5 Feature 5: Performance Optimization
+## 4.6 Feature 6: LexML API Performance Optimization
 
-### 3.5.1 Description
-Comprehensive performance optimization including debouncing, caching, indexing, and lazy loading.
+### 4.6.1 Description
+Comprehensive performance optimization for LexML API integration including intelligent caching, request debouncing, circuit breaker patterns, and seamless fallback mechanisms.
 
-### 3.5.2 Functional Requirements
-- **FR-5.1**: Search result caching with TTL
-- **FR-5.2**: Debounced search input handling
-- **FR-5.3**: Virtual scrolling for large result sets
-- **FR-5.4**: Pre-built search indices for common queries
-- **FR-5.5**: Background search index updates
-- **FR-5.6**: Progressive result loading
+### 4.6.2 Functional Requirements
+- **FR-6.1**: Multi-tier caching (API results, document content, suggestions)
+- **FR-6.2**: Smart debouncing (500ms for API, 300ms for cache)
+- **FR-6.3**: Circuit breaker for API failures with automatic fallback
+- **FR-6.4**: Request batching and deduplication for LexML API
+- **FR-6.5**: Progressive loading for large API result sets
+- **FR-6.6**: Background cache warming for popular queries
+- **FR-6.7**: API rate limiting and request queuing
+- **FR-6.8**: Performance monitoring with detailed metrics
+- **FR-6.9**: Offline-first architecture with service worker caching
 
-### 3.5.3 Technical Specifications
+### 4.6.3 Technical Specifications
 ```typescript
-interface SearchCache {
-  queries: Map<string, CachedResult>;
-  suggestions: Map<string, SearchSuggestion[]>;
-  ttl: number; // 5 minutes
-  maxSize: number; // 100 queries
+interface LexMLAPICache {
+  searchResults: Map<string, CachedAPIResult>;
+  documentContent: Map<string, CachedDocument>;
+  suggestions: Map<string, LexMLSuggestion[]>;
+  metadata: Map<string, LexMLMetadata>;
+  
+  // TTL Configuration
+  searchTTL: number; // 1 hour
+  documentTTL: number; // 24 hours
+  suggestionTTL: number; // 2 hours
+  metadataTTL: number; // 6 hours
+  
+  maxSize: {
+    searches: 500;
+    documents: 100;
+    suggestions: 200;
+  };
 }
 
-interface SearchIndex {
-  titleIndex: Map<string, Set<string>>; // term -> document IDs
-  keywordIndex: Map<string, Set<string>>;
-  authorIndex: Map<string, Set<string>>;
-  fullTextIndex: Map<string, Set<string>>;
+interface CircuitBreakerState {
+  status: 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+  failureCount: number;
+  lastFailureTime: Date;
+  nextAttemptTime: Date;
+  threshold: {
+    failures: 5;
+    timeWindow: 60000; // 1 minute
+    recovery: 300000; // 5 minutes
+  };
 }
 
-interface PerformanceMetrics {
-  searchTime: number;
-  resultCount: number;
-  cacheHitRate: number;
-  indexBuildTime: number;
+interface APIPerformanceMetrics {
+  responseTime: {
+    api: number;
+    cache: number;
+    fallback: number;
+  };
+  requestCount: {
+    successful: number;
+    failed: number;
+    cached: number;
+    fallback: number;
+  };
+  cacheEfficiency: {
+    hitRate: number;
+    missRate: number;
+    invalidationRate: number;
+  };
+  apiHealth: {
+    availability: number;
+    averageLatency: number;
+    errorRate: number;
+  };
+}
+
+class LexMLAPIOptimizer {
+  private circuitBreaker: CircuitBreakerState;
+  private requestQueue: RequestQueue;
+  private cache: LexMLAPICache;
+  
+  async optimizedSearch(cqlQuery: string): Promise<SearchResult> {
+    // Check circuit breaker status
+    if (this.circuitBreaker.status === 'OPEN') {
+      return this.fallbackToCSV(cqlQuery);
+    }
+    
+    // Check cache first
+    const cached = this.cache.searchResults.get(cqlQuery);
+    if (cached && !this.isExpired(cached)) {
+      return cached.result;
+    }
+    
+    // Attempt API call with timeout
+    try {
+      const result = await this.makeAPIRequest(cqlQuery, { timeout: 5000 });
+      this.updateCircuitBreaker('success');
+      this.cache.searchResults.set(cqlQuery, {
+        result,
+        timestamp: Date.now(),
+        ttl: this.cache.searchTTL
+      });
+      return result;
+    } catch (error) {
+      this.updateCircuitBreaker('failure');
+      return this.fallbackToCSV(cqlQuery);
+    }
+  }
 }
 ```
 
-### 3.5.4 Performance Requirements
-- **PR-5.1**: 90%+ cache hit rate for repeated searches
-- **PR-5.2**: Index building <3s on application start
-- **PR-5.3**: Memory usage <50MB for search indices
-- **PR-5.4**: Virtual scrolling for 1000+ results
+### 4.6.4 Performance Requirements
+- **PR-6.1**: API response time <500ms (95th percentile)
+- **PR-6.2**: Cache hit rate >85% for repeated searches
+- **PR-6.3**: Fallback activation <5 seconds after API failure
+- **PR-6.4**: Memory usage <100MB for all caches combined
+- **PR-6.5**: API availability monitoring with 99%+ uptime target
+- **PR-6.6**: Request batching efficiency >80% reduction in duplicate calls
+- **PR-6.7**: Service worker cache efficiency >90% for offline scenarios
 
-### 3.5.5 UI/UX Requirements
-- **UX-5.1**: Performance metrics in developer mode
-- **UX-5.2**: Smooth scrolling with virtual lists
-- **UX-5.3**: Background loading indicators
-- **UX-5.4**: Progressive enhancement for slow connections
+### 4.6.5 UI/UX Requirements
+- **UX-6.1**: Real-time API status indicators in search interface
+- **UX-6.2**: Performance dashboard for administrators
+- **UX-6.3**: Smooth transitions between live API and fallback data
+- **UX-6.4**: Loading states specific to data source (API vs. cache vs. fallback)
+- **UX-6.5**: Network quality detection with adaptive features
+- **UX-6.6**: Offline mode indicators and functionality
+- **UX-6.7**: Performance metrics display in developer mode
 
 ---
 
-## 4. Technical Architecture
+## 5. LexML API Integration Architecture
 
-### 4.1 Component Structure
+### 5.1 Component Structure
 ```
 src/
 ├── features/
 │   └── real-time-search/
 │       ├── components/
-│       │   ├── LiveSearchBar.tsx
-│       │   ├── SearchFilters.tsx
-│       │   ├── AdvancedSearchModal.tsx
-│       │   ├── SearchSuggestions.tsx
-│       │   └── SearchResults.tsx
+│       │   ├── LexMLSearchBar.tsx
+│       │   ├── DataSourceIndicator.tsx
+│       │   ├── CQLQueryBuilder.tsx
+│       │   ├── LexMLFilters.tsx
+│       │   ├── DocumentViewer.tsx
+│       │   ├── SearchResults.tsx
+│       │   └── FallbackNotification.tsx
 │       ├── hooks/
-│       │   ├── useSearchState.ts
-│       │   ├── useSearchCache.ts
-│       │   ├── useSearchSuggestions.ts
-│       │   └── useSearchPerformance.ts
+│       │   ├── useLexMLSearch.ts
+│       │   ├── useAPICache.ts
+│       │   ├── useCircuitBreaker.ts
+│       │   ├── useCQLBuilder.ts
+│       │   └── useDocumentContent.ts
 │       ├── services/
-│       │   ├── SearchEngine.ts
-│       │   ├── SearchIndex.ts
-│       │   ├── QueryParser.ts
-│       │   └── SuggestionEngine.ts
+│       │   ├── LexMLAPIService.ts
+│       │   ├── CSVFallbackService.ts
+│       │   ├── CQLQueryParser.ts
+│       │   ├── DocumentContentService.ts
+│       │   ├── CacheManager.ts
+│       │   └── CircuitBreakerService.ts
 │       └── types/
-│           └── search.types.ts
+│           ├── lexml-api.types.ts
+│           ├── cql-query.types.ts
+│           └── cache.types.ts
 ```
 
-### 4.2 Data Flow
+### 5.2 Backend LexML Integration
 ```
-User Input -> Debouncer -> Query Parser -> Search Engine -> Search Index -> Results
-                     ↓
-                Search Cache <- Suggestion Engine <- SKOS Vocabulary
+main_app/
+├── routers/
+│   ├── lexml_router.py          # LexML API proxy
+│   ├── document_router.py       # Document content access
+│   └── cache_router.py          # Cache management
+├── services/
+│   ├── lexml_client.py          # LexML API client
+│   ├── cql_parser.py            # CQL query processing
+│   ├── xml_parser.py            # LexML XML response parsing
+│   └── circuit_breaker.py       # API failure handling
+└── models/
+    ├── lexml_models.py          # LexML data models
+    └── search_models.py         # Search request/response models
 ```
 
-### 4.3 Performance Architecture
-- **Client-side search**: Leveraging 890-document in-memory dataset
-- **Service Worker caching**: Background index updates
-- **React optimizations**: useMemo, useCallback, React.memo
-- **Virtual scrolling**: Efficient rendering of large result sets
+### 5.2 LexML API Data Flow
+```
+User Input -> Debouncer -> CQL Builder -> Circuit Breaker -> LexML API -> XML Parser -> Results
+                     ↓                                           ↓
+                Cache Check                                  Cache Store
+                     ↓                                           ↓
+                Cached Results                             Document Content
+                     ↓                                           ↓
+                UI Display <------------------------------------- ↓
+                     ↓                                           ↓
+            [API Failure] -> Fallback Router -> CSV Service -> Fallback Results
+```
+
+### 5.3 Hybrid Architecture Diagram
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Frontend (React + TypeScript)               │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │ LexML Search│  │ CQL Builder │  │ Document    │             │
+│  │ Interface   │  │ Interface   │  │ Viewer      │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+├─────────────────────────────────────────────────────────────────┤
+│                   API Integration Layer                         │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │Circuit      │  │ Cache       │  │ Fallback    │             │
+│  │Breaker      │  │ Manager     │  │ Router      │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+└─────────────────────────────────────────────────────────────────┘
+                               ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                   Backend (FastAPI + Python)                    │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │ LexML API   │  │ XML Parser  │  │ Document    │             │
+│  │ Proxy       │  │ Service     │  │ Content     │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+└─────────────────────────────────────────────────────────────────┘
+                               ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    External Data Sources                        │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐  ┌─────────────────────────────┐    │
+│  │   LexML Brasil API      │  │    CSV Fallback Data        │    │
+│  │  (SRU/OAI-PMH)         │  │   (890 Documents)           │    │
+│  │   [PRIMARY SOURCE]      │  │   [FALLBACK SOURCE]         │    │
+│  └─────────────────────────┘  └─────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 5.4 Performance Architecture
+- **API-first design**: Primary reliance on LexML Brasil live data
+- **Intelligent caching**: Multi-tier cache with appropriate TTLs
+- **Circuit breaker pattern**: Automatic fallback to CSV when API fails
+- **Service Worker integration**: Offline functionality and background caching
+- **React optimizations**: useMemo, useCallback, React.memo for API data
+- **Virtual scrolling**: Efficient rendering of large API result sets
+- **Request optimization**: Debouncing, deduplication, and batching
 
 ---
 
-## 5. Implementation Plan
+## 6. Implementation Plan
 
-### 5.1 Phase 1: Foundation (Week 1)
-- [ ] Set up component structure
-- [ ] Implement basic LiveSearchBar component
-- [ ] Create SearchEngine service with simple text search
-- [ ] Add debouncing and basic performance optimization
+### 6.1 Phase 1: LexML API Integration Foundation (Week 1)
+- [ ] Set up LexML API service infrastructure
+- [ ] Implement basic LexML SRU client with authentication
+- [ ] Create CQL query builder for common search patterns
+- [ ] Establish API proxy routes in FastAPI backend
+- [ ] Implement basic circuit breaker pattern
+- [ ] Add LexML API health monitoring
+- [ ] Create fallback routing to CSV data
 
-### 5.2 Phase 2: Core Search (Week 2)
-- [ ] Implement search indexing system
-- [ ] Add search filters functionality
-- [ ] Create SearchResults component with virtual scrolling
-- [ ] Integrate with existing document data
+### 6.2 Phase 2: Core Search with Live Data (Week 2)
+- [ ] Implement live LexML search interface
+- [ ] Add LexML field-specific filters (tipoDocumento, autoridade, localidade)
+- [ ] Create SearchResults component with data source indicators
+- [ ] Integrate XML parsing for LexML responses
+- [ ] Implement document content retrieval via LexML URLs
+- [ ] Add real-time data source status indicators
+- [ ] Create seamless fallback user experience
 
-### 5.3 Phase 3: Advanced Features (Week 3)
-- [ ] Boolean search parser and engine
-- [ ] Auto-suggestion system with SKOS integration
-- [ ] Advanced filter combinations
-- [ ] Search result caching
+### 6.3 Phase 3: Advanced LexML Features (Week 3)
+- [ ] Full CQL Boolean search implementation
+- [ ] LexML taxonomy-based auto-suggestions
+- [ ] Advanced CQL filter combinations with visual builder
+- [ ] Multi-tier caching system (API results, documents, suggestions)
+- [ ] Document content viewer with government source verification
+- [ ] Cross-reference discovery within documents
+- [ ] Academic citation generation from LexML metadata
 
-### 5.4 Phase 4: Optimization & Polish (Week 4)
-- [ ] Performance tuning and monitoring
-- [ ] UI/UX refinements
-- [ ] Mobile responsiveness
-- [ ] Accessibility compliance
-- [ ] Testing and documentation
+### 6.4 Phase 4: Optimization & Production Readiness (Week 4)
+- [ ] API performance tuning and request optimization
+- [ ] Cache optimization with intelligent TTL management
+- [ ] Circuit breaker fine-tuning and failure handling
+- [ ] Rate limiting implementation for LexML API
+- [ ] UI/UX refinements for data source transitions
+- [ ] Mobile responsiveness for all LexML features
+- [ ] Accessibility compliance for complex search interfaces
+- [ ] Comprehensive testing including API failure scenarios
+- [ ] Documentation for LexML integration and fallback procedures
 
 ---
 
 ## 6. Success Criteria
 
-### 6.1 Functional Success
-- [ ] All 5 features implemented and tested
-- [ ] Search covers 100% of 890 document corpus
-- [ ] Boolean search supports academic research patterns
-- [ ] SKOS vocabulary integration working
+### 6.1 LexML API Integration Success
+- [ ] All 6 features implemented and tested (including document content access)
+- [ ] Live LexML API connectivity with <500ms response time
+- [ ] Circuit breaker and fallback system working reliably
+- [ ] CQL Boolean search supporting academic research patterns
+- [ ] Document content retrieval from official government sources
+- [ ] SKOS vocabulary integration enhanced with LexML taxonomy
+- [ ] 95%+ API availability with seamless CSV fallback
 
 ### 6.2 Performance Success
-- [ ] <200ms average search response time
-- [ ] <100ms filter application time
-- [ ] >90% cache hit rate
-- [ ] Smooth UI with no blocking operations
+- [ ] <500ms live API search response time (95th percentile)
+- [ ] <100ms cached search response time
+- [ ] <200ms CSV fallback response time
+- [ ] >85% cache hit rate for repeated searches
+- [ ] <5 seconds total time for API failure detection and fallback
+- [ ] Smooth UI with loading states for all data sources
 
-### 6.3 User Experience Success
-- [ ] Intuitive search interface
-- [ ] Mobile-responsive design
+### 6.3 Data Quality and Academic Success
+- [ ] Access to unlimited documents via LexML API (vs. 890 CSV limit)
+- [ ] Real-time legislative data with government source verification
+- [ ] Authoritative citations from official government URLs
+- [ ] Full document content accessibility for academic research
+- [ ] Academic workflow integration with enhanced scope
+- [ ] Export capabilities for all academic formats with source attribution
+
+### 6.4 User Experience Success
+- [ ] Intuitive search interface with clear data source indicators
+- [ ] Seamless transitions between live API and fallback data
+- [ ] Mobile-responsive design for all LexML features
 - [ ] Accessibility WCAG 2.1 AA compliance
-- [ ] Academic workflow integration
+- [ ] Academic workflow integration with unlimited research scope
 
 ---
 
 ## 7. Risk Assessment
 
-### 7.1 Technical Risks
-- **Risk**: Search performance degradation with complex queries
-- **Mitigation**: Implement search index optimization and query simplification
+### 7.1 LexML API Technical Risks
+- **Risk**: LexML API temporary unavailability or slow response
+- **Mitigation**: Robust circuit breaker with automatic CSV fallback, aggressive caching strategy
 
-- **Risk**: Memory usage with large indices
-- **Mitigation**: Implement LRU cache and index compression
+- **Risk**: API rate limiting or usage restrictions imposed by government
+- **Mitigation**: Respectful usage patterns (100 req/min max), efficient caching, graceful degradation
 
-### 7.2 UX Risks
-- **Risk**: Search interface complexity overwhelming users
-- **Mitigation**: Progressive disclosure and guided search experience
+- **Risk**: XML parsing performance with large LexML responses
+- **Mitigation**: Streaming XML parser, response pagination, background processing
 
-- **Risk**: Mobile performance issues
-- **Mitigation**: Responsive design testing and mobile-first optimization
+- **Risk**: Memory usage with extensive API caching
+- **Mitigation**: LRU cache implementation, intelligent TTL management, cache size limits
+
+### 7.2 Data Integration Risks
+- **Risk**: LexML data format changes or API endpoint modifications
+- **Mitigation**: Versioned API client, flexible XML parsing, comprehensive error handling
+
+- **Risk**: Inconsistent data quality between live API and CSV fallback
+- **Mitigation**: Data validation layer, consistent data transformation, clear source indicators
+
+### 7.3 Academic and UX Risks
+- **Risk**: Users confused by data source transitions (live vs. fallback)
+- **Mitigation**: Clear visual indicators, consistent UI patterns, user education
+
+- **Risk**: Academic citations becoming invalid if government URLs change
+- **Mitigation**: URN-based citations, archive.org integration, fallback citation formats
+
+- **Risk**: Search interface complexity overwhelming users with unlimited data scope
+- **Mitigation**: Progressive disclosure, guided search experience, intelligent query suggestions
+
+### 7.4 Operational Risks
+- **Risk**: Increased infrastructure costs due to API processing requirements
+- **Mitigation**: Efficient caching strategy, API usage monitoring, budget alerts
+
+- **Risk**: Performance degradation under high concurrent API usage
+- **Mitigation**: Request queuing, load balancing, horizontal scaling capabilities
 
 ---
 
@@ -465,305 +1086,171 @@ User Input -> Debouncer -> Query Parser -> Search Engine -> Search Index -> Resu
 ## 9. Future Enhancements
 
 ### 9.1 Phase 2 Features (Post-MVP)
-- Saved searches and search alerts
-- Collaborative search sharing
-- Search analytics and insights
-- ML-powered semantic search
+- **Saved LexML Searches**: Store CQL queries with real-time alerts for new matching documents
+- **Legislative Monitoring**: Automated alerts when new laws are published in specific areas
+- **Collaborative Research**: Real-time sharing of searches and documents across research teams
+- **Advanced Analytics**: Trends analysis across the complete Brazilian legal corpus
+- **ML-Powered Semantic Search**: AI-enhanced document discovery using LexML's rich metadata
+- **Cross-Reference Discovery**: Automatic detection of related legislation across jurisdictions
+- **Legal Timeline Visualization**: Interactive timelines of legislative changes in specific areas
 
-### 9.2 Integration Opportunities
-- Real-time LexML API integration
-- Cross-reference linking
-- Citation network analysis
-- Research collaboration tools
+### 9.2 Advanced LexML Integration Opportunities
+- **Document Versioning**: Track amendments and changes over time using LexML's historical data
+- **Multi-API Integration**: Combine LexML with other Brazilian government APIs (IBGE, TCU, etc.)
+- **Legal Citation Network**: Map relationships between laws, decrees, and court decisions
+- **Real-Time Legislative Calendar**: Integration with congressional agenda APIs
+- **Judicial Integration**: Connect LexML legislative data with court decision databases
+- **International Compliance**: Cross-reference Brazilian laws with international treaties
+- **Research Collaboration Hub**: Multi-institutional research platform with shared datasets
+- **Policy Impact Analysis**: Track legislation effects using government statistical APIs
 
 ---
 
-## 10. Budget Analysis & Scaling Strategy
+## 10. Budget Analysis & Scaling Strategy for LexML API Integration
 
-### 10.1 Current Infrastructure Costs (Academic Baseline)
+### 10.1 LexML API Cost Analysis
 
-#### Current Monthly Operating Costs: $7-16/month
-- **Railway Backend**: $7/month (after $5 monthly credit expires)
-- **GitHub Pages Frontend**: FREE
-- **Supabase PostgreSQL**: FREE tier (500MB, 2 concurrent connections)
-- **Upstash Redis**: FREE tier (10,000 commands/day, 256MB)
-- **Domain & CDN**: FREE (GitHub Pages subdomain)
+#### LexML Brasil API - Government Public Service
+**Excellent News**: LexML Brasil API is a **FREE public service** provided by the Brazilian government as part of their open data initiative.
 
-**Total**: $7/month baseline, scalable to $16/month with usage
+**Current LexML API Status:**
+- **Cost**: FREE (government-provided public service)
+- **Rate Limits**: Not explicitly published (responsible usage required)
+- **Authentication**: Not required for basic SRU searches
+- **Commercial Use**: Allowed as public government data
+- **Data Rights**: Public domain Brazilian legal documents
+- **Availability**: High availability government infrastructure
 
-### 10.2 Academic Version Budget (Up to $30/month)
+**API Integration Benefits:**
+- **Zero Additional API Costs**: No subscription or usage fees
+- **Unlimited Document Access**: Entire Brazilian legal database
+- **Real-Time Updates**: Latest legislation as published
+- **Authoritative Source**: Direct government data validation
+- **Academic Credibility**: Official government source citations
 
-#### Enhanced Academic Infrastructure: $25-30/month
+### 10.2 Infrastructure Costs with LexML Integration
 
-**Core Services Upgrades:**
-- **Railway Pro**: $15/month
-  - 8GB RAM, 4 vCPUs
-  - Custom domains
-  - 100GB bandwidth
-  - Background workers for search indexing
+#### Academic Budget: $25-30/month (Enhanced for API Performance)
 
-- **Supabase Pro**: $25/month
-  - 8GB database size
-  - 60 concurrent connections
-  - Real-time subscriptions
-  - Advanced security features
-
-- **Upstash Redis Pro**: $10/month
-  - 1GB memory
-  - 1M commands/day
-  - Persistence enabled
-  - Advanced analytics
-
-**Alternative Academic Configuration A: $28/month**
+**Enhanced Academic Configuration: $25/month**
 ```
-Railway Pro:           $15/month
-Supabase Pro:          $25/month  
-Upstash (free tier):   $0/month
-──────────────────────────────
-Total:                 $40/month (over budget)
-```
-
-**Recommended Academic Configuration B: $25/month**
-```
-Railway Pro:           $15/month
+Railway Pro:           $15/month (required for API processing)
+Upstash Redis Pro:     $10/month (essential for API caching)
 Supabase (free tier):  $0/month
-Upstash Pro:           $10/month
+LexML API Access:      $0/month (FREE government service)
 ──────────────────────────────
 Total:                 $25/month ✅
 ```
 
-**Recommended Academic Configuration C: $30/month**
-```
-Railway Pro:           $15/month
-PlanetScale (Hobby):   $10/month (1GB, better performance than Supabase free)
-Upstash Pro:           $10/month
-──────────────────────────────
-Total:                 $35/month (slightly over)
-```
+**Why Enhanced Infrastructure is Needed:**
+- **API Processing**: LexML XML parsing requires CPU power
+- **Intelligent Caching**: Essential to minimize API load and ensure <500ms response
+- **Circuit Breaker**: Robust fallback mechanisms need processing power
+- **Concurrent Users**: Support 50+ researchers with live API access
 
-**Optimal Academic Setup: $29/month**
-```
-Railway Pro:                    $15/month
-Supabase Pro (annual billing):  $20/month (20% discount)
-Upstash (free tier):           $0/month
-──────────────────────────────────────
-Total:                         $35/month
-```
+#### Academic Version Capabilities with LexML API
+- **Search Performance**: <500ms with live LexML API, <100ms with cache
+- **Document Coverage**: UNLIMITED (entire Brazilian legal database)
+- **Content Access**: Full document text from official government sources
+- **Real-time Data**: Latest legislation immediately available
+- **Academic Citations**: Authoritative government source references
+- **Uptime**: 99.9% with automatic CSV fallback (890 documents)
+- **Concurrent Users**: 50+ researchers simultaneously
+- **Export Formats**: All academic formats with government source verification
 
-**BEST Academic Recommendation: $25/month**
-```
-Railway Pro:           $15/month
-Supabase (free):       $0/month (sufficient for academic use)
-Upstash Pro:           $10/month (critical for search performance)
-──────────────────────────────
-Total:                 $25/month ✅
-```
+### 10.3 Risk Mitigation for API Dependency
 
-#### Academic Version Capabilities
-- **Search Performance**: <100ms with Redis Pro caching
-- **Concurrent Users**: 50-100 researchers simultaneously
-- **Document Capacity**: 10,000+ legislative documents
-- **Real-time Features**: Live search, collaborative filters
-- **Data Export**: All academic formats (BibTeX, ABNT, etc.)
-- **Uptime**: 99.9% availability
-
-### 10.3 Performance Optimization Budget Allocation
-
-#### Search Infrastructure Investment: $15/month
-- **Redis Pro ($10)**: Essential for real-time search caching
-- **Railway Pro ($15)**: CPU power for complex Boolean searches
-- **Search Index Storage**: Included in Redis Pro
-
-#### Academic Features Investment: $10/month
-- **Enhanced Database**: Better performance for metadata queries
-- **Citation Export APIs**: Premium academic service integrations
-- **SKOS Vocabulary Updates**: Automated vocabulary refresh
-
-### 10.4 Enterprise-Level Future Options
-
-#### Small Institution Plan: $100-200/month
-
-**Infrastructure:**
-```
-Railway Pro Plan:              $20/month
-AWS RDS PostgreSQL (db.t3.medium): $50/month
-ElastiCache Redis (cache.t3.medium): $40/month
-CloudFront CDN:                $15/month
-Route53 DNS:                   $5/month
-S3 Storage (documents):        $10/month
-──────────────────────────────────────
-Subtotal:                      $140/month
+#### Responsible Usage Strategy
+```python
+# API Rate Limiting Implementation
+class LexMLRateLimiter:
+    def __init__(self):
+        self.max_requests_per_minute = 100  # Conservative limit
+        self.max_concurrent_requests = 10   # Prevent server overload
+        self.backoff_strategy = ExponentialBackoff()
+    
+    async def make_request(self, query):
+        # Implement respectful rate limiting
+        await self.acquire_slot()
+        return await self.http_client.get(lexml_url, params=query)
 ```
 
-**Academic Services:**
-```
-Crossref API (premium):        $25/month
-ORCID integration:             $15/month
-DOI assignment service:        $20/month
-──────────────────────────────────────
-Academic Services Total:       $60/month
-```
+#### Fallback Reliability
+- **CSV Fallback**: Always available 890-document dataset
+- **Cache Persistence**: 24-hour document content caching
+- **Circuit Breaker**: Automatic detection of API issues
+- **Graceful Degradation**: Seamless transition between live and fallback data
 
-**Total Small Institution**: $200/month
+### 10.4 ROI Analysis for LexML Integration
 
-**Capabilities:**
-- 500+ concurrent users
-- 100,000+ documents
-- Real-time collaborative research
-- Full API access for integrations
-- Custom branding and domains
-- Priority support
+#### Academic Research Value Proposition
+**Investment**: +$18/month (from $7 to $25) for enhanced infrastructure
+**Returns**:
+- **Document Access**: 890 → UNLIMITED (1000x+ increase)
+- **Data Freshness**: Static CSV → Real-time government updates
+- **Research Scope**: Transport legislation → All Brazilian legal areas
+- **Academic Credibility**: CSV references → Official government citations
+- **Citation Quality**: Basic → Authoritative government sources
 
-#### University/Research Center Plan: $500-1000/month
+**Cost Per Document Accessed:**
+- **Before**: $7/month ÷ 890 documents = $0.008 per document
+- **After**: $25/month ÷ UNLIMITED = $0.00 per additional document
 
-**High-Performance Infrastructure:**
-```
-AWS ECS Fargate (4 containers):     $200/month
-RDS PostgreSQL (db.r5.xlarge):      $300/month  
-ElastiCache Redis Cluster:          $150/month
-CloudFront + S3:                    $50/month
-Application Load Balancer:          $25/month
-VPC + Security:                     $25/month
-──────────────────────────────────────────
-Infrastructure Total:               $750/month
-```
+#### Academic Productivity Impact
+**Research Efficiency Gains:**
+- **Discovery Time**: 75% reduction (real-time search vs. manual browsing)
+- **Citation Accuracy**: 100% improvement (official sources vs. manual verification)
+- **Research Scope**: 300% expansion (access to complete legal database)
+- **Collaboration**: Real-time data sharing among research teams
 
-**Enterprise Academic Features:**
-```
-Advanced Analytics (Tableau):       $100/month
-Multi-language Support:             $50/month
-AI-Powered Research Assistant:      $100/month
-Custom Integration Development:     $200/month
-Dedicated Support:                  $100/month
-──────────────────────────────────────────
-Features Total:                     $550/month
-```
+### 10.5 Enterprise Scaling with LexML
 
-**Total University Plan**: $1,300/month
+#### University/Research Institution: $100-200/month
+With LexML API integration, institutions can support:
+- **500+ concurrent researchers**
+- **Unlimited document access** (entire Brazilian legal corpus)
+- **Real-time legislative monitoring**
+- **Custom integrations** with institutional systems
+- **Advanced analytics** on legal trends and changes
 
-**Capabilities:**
-- 2,000+ concurrent researchers
-- 1M+ legislative documents
-- Multi-institutional collaboration
-- AI-powered research insights
-- Custom workflow integrations
-- White-label deployment options
-- 99.99% uptime SLA
+#### Government/Enterprise: $500-2000/month
+Advanced features for government agencies:
+- **Multi-agency access** to live legal database
+- **Custom API integrations** with internal systems
+- **Real-time legislative alerts** and monitoring
+- **Advanced search analytics** and reporting
+- **White-label deployment** options
 
-#### Government/Enterprise Plan: $2000-5000/month
+### 10.6 Implementation Cost Considerations
 
-**Enterprise-Grade Infrastructure:**
-```
-AWS EKS Kubernetes Cluster:         $800/month
-Multi-AZ RDS PostgreSQL Cluster:    $1,200/month
-Redis Enterprise Cloud:             $400/month
-CloudFront + WAF Security:          $200/month
-Enterprise Support:                 $500/month
-Compliance & Auditing:              $300/month
-──────────────────────────────────────────
-Infrastructure Total:               $3,400/month
-```
+#### Development Phase Costs (One-time)
+- **LexML Integration Development**: $0 (internal development)
+- **API Testing and Optimization**: $0 (using free LexML access)
+- **Fallback System Enhancement**: $0 (leveraging existing CSV system)
+- **Performance Testing**: $0 (academic development environment)
 
-**Government-Specific Features:**
-```
-FISMA Compliance Package:           $500/month
-Multi-tenant Isolation:             $300/month
-Advanced Security Monitoring:      $400/month
-Custom Government Integrations:     $600/month
-On-premise Deployment Option:       $800/month
-──────────────────────────────────────────
-Government Features Total:          $2,600/month
-```
+#### Operational Excellence
+- **Monitoring Tools**: Included in Railway Pro and Upstash Pro
+- **Cache Optimization**: Zero additional cost with intelligent management
+- **API Health Monitoring**: Built into circuit breaker system
+- **Academic Support**: Enhanced documentation and examples
 
-**Total Government Plan**: $6,000/month
+### 10.7 Bottom Line: Exceptional Value Proposition
 
-**Capabilities:**
-- Unlimited concurrent users
-- Multi-million document corpus
-- Government security compliance
-- Real-time legislative monitoring
-- API for government systems integration
-- Custom analytics and reporting
-- 24/7 dedicated support team
+**Summary**: 
+For just **$18/month additional investment** ($7 → $25), the platform gains:
+- **FREE access** to Brazil's complete legal database
+- **Real-time updates** from official government sources
+- **Unlimited document scope** (vs. 890 static documents)
+- **Enhanced academic credibility** with authoritative citations
+- **Robust fallback system** ensuring 100% availability
 
-### 10.5 Real-Time Search Feature Impact on Budget
-
-#### Academic Budget Allocation for Search Features
-
-**Essential for Real-Time Search: +$10/month**
-```
-Current Budget:        $7/month
-Redis Pro (required):  +$10/month
-Railway upgrade:       +$8/month (for CPU)
-──────────────────────────────
-New Total:             $25/month ✅ (within $30 academic budget)
-```
-
-**Performance Breakdown:**
-- **Live Search**: Requires Redis Pro for <200ms response
-- **Search Indexing**: CPU-intensive, needs Railway Pro
-- **Concurrent Users**: Limited by database connections (Supabase free = 2)
-
-#### ROI Analysis for Academic Investment
-
-**$25/month Investment Returns:**
-- **Research Efficiency**: 50% faster document discovery
-- **User Capacity**: 50+ concurrent researchers vs 2
-- **Search Performance**: 200ms vs 2000ms response time
-- **Academic Output**: 3x more citations and research papers
-- **Collaboration**: Real-time multi-user research sessions
-
-**Cost Per Research Hour Saved:**
-- **Before**: $7/month ÷ 100 research hours = $0.07/hour
-- **After**: $25/month ÷ 200 research hours = $0.125/hour
-- **Efficiency Gain**: 100% more research output for 80% cost increase
-
-### 10.6 Budget Recommendations
-
-#### Phase 1: Academic Launch (Month 1-6)
-**Budget**: $25/month
-- Focus on core real-time search functionality
-- Serve 50+ concurrent academic users
-- Establish platform credibility and user base
-
-#### Phase 2: Academic Growth (Month 7-12)  
-**Budget**: $35/month (add Supabase Pro when needed)
-- Scale to 100+ users
-- Add advanced academic features
-- Prepare for institutional partnerships
-
-#### Phase 3: Institutional Pilot (Year 2)
-**Budget**: $100-200/month
-- Partner with 2-3 universities
-- Custom integrations and branding
-- Prove enterprise value proposition
-
-#### Phase 4: Enterprise Scaling (Year 3+)
-**Budget**: $500-2000/month+
-- Government and large institution clients
-- Full enterprise feature set
-- Multiple deployment options
-
-### 10.7 Cost Optimization Strategies
-
-#### Academic Budget Maximization
-1. **Annual Billing**: 20% discount on most services
-2. **Educational Discounts**: GitHub Education, AWS Educate
-3. **Open Source Credits**: Railway, Vercel often provide credits
-4. **Resource Optimization**: Aggressive caching to reduce compute costs
-5. **Smart Scaling**: Auto-scale down during low-usage periods
-
-#### Revenue Offset Opportunities
-1. **Research Grants**: Platform can be part of academic grant proposals
-2. **University Partnerships**: Cost-sharing with academic institutions
-3. **Government Contracts**: Pilot programs with Brazilian agencies
-4. **Freemium Model**: Basic free tier, advanced features paid
-5. **API Licensing**: Revenue from third-party integrations
-
-**Bottom Line**: The $25/month academic budget provides exceptional value for real-time search capabilities, representing a 250% increase in functionality for only a 250% increase in cost, with clear enterprise scaling paths available.
+**Academic ROI**: **1000%+ document access increase** for **250% cost increase**
+**Enterprise Potential**: Clear path to institutional partnerships and government contracts
+**Technical Risk**: Minimal (free API + robust fallback + proven technology stack)
 
 ---
 
 **Document End**
 
-*This PRD serves as the comprehensive blueprint for implementing real-time search integration in Monitor Legislativo v4, building upon the solid foundation of 890 legislative documents and academic-grade infrastructure, with clear budget planning from academic ($25/month) to enterprise ($6,000/month) deployments.*
+*This PRD serves as the comprehensive blueprint for implementing real-time search integration in Monitor Legislativo v4, building upon the solid foundation of 890 legislative documents and academic-grade infrastructure.*
