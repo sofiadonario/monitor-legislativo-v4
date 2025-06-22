@@ -12,7 +12,16 @@
 - If real data is unavailable, the system should gracefully indicate the limitation rather than show fake data
 
 ## Project Overview
-Monitor Legislativo v4 is an academic research platform for monitoring Brazilian legislative data with a focus on transport-related legislation. The system operates on a strict $7-16/month budget using free and low-cost hosting services.
+Monitor Legislativo v4 is a sophisticated academic research platform for monitoring Brazilian legislative data with a focus on transport-related legislation. The system integrates LexML Enhanced Research Engine with SKOS controlled vocabularies to provide vocabulary-aware search across thousands of real government documents. The system operates on a strict $7-16/month budget using free and low-cost hosting services.
+
+## 🔬 LexML Enhanced Research Engine
+**PRIMARY DATA SOURCE**: Advanced academic research capabilities with vocabulary expansion
+- **SKOS Vocabularies**: W3C-compliant controlled vocabularies for transport legislation
+- **Term Expansion**: Automatic expansion of search terms (e.g., "transporte" → 50+ related terms)
+- **Multi-Source Aggregation**: LexML + 11 Brazilian regulatory agencies (ANTT, ANTAQ, ANAC, etc.)
+- **Academic Standards**: FRBROO-compliant metadata with automatic citations
+- **Real-Time Search**: Live access to thousands of legislative documents
+- **Transport Specialization**: Domain-specific vocabulary for Brazilian transport regulation
 
 ## Tech Stack
 ### Frontend
@@ -72,6 +81,23 @@ Monitor Legislativo v4 is an academic research platform for monitoring Brazilian
 - Test files must use `.test.ts` or `.spec.ts` extensions
 - Integration tests for critical paths
 - Never test with mock APIs - use real endpoints or CSV fallbacks
+
+## Data Architecture & Priority
+### Primary Research Engine: LexML Enhanced Search
+1. **LexML API**: Primary source with vocabulary expansion and academic metadata
+2. **Regulatory Agencies**: 11 Brazilian agencies (ANTT, ANTAQ, ANAC, ANEEL, etc.)
+3. **Traditional APIs**: Câmara, Senado, Planalto as secondary sources
+4. **Embedded Real Data**: Final fallback with 5 verified LexML documents
+
+### Search Flow
+```
+User Query → Vocabulary Expansion → LexML Enhanced Search → Multi-Source Aggregation → Academic Enhancement → Results
+```
+
+### API Priority Order
+1. **LexML Service** (`/api/v1/search?sources=lexml`) - Primary research engine
+2. **Multi-Source** (`/api/v1/search`) - Aggregated results from all sources  
+3. **CSV Fallback** - Embedded real data if APIs unavailable
 
 ## Build and Deploy
 ### Frontend
