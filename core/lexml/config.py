@@ -10,7 +10,7 @@ Centralized configuration for LexML-related services, including:
 
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 # Base path for local vocabulary files (can be overridden by environment variables)
 # Assumes a 'vocabularies' directory at the project root
@@ -78,3 +78,65 @@ class LexMLConfig:
 
 # Instantiate a default config object for easy import
 default_lexml_config = LexMLConfig()
+
+# ---------------------------------------------------------------------------
+# Backward-compatibility constants for legacy imports
+# ---------------------------------------------------------------------------
+# Some modules still import module-level constants that existed before this
+# refactor (e.g., VOCABULARY_ENDPOINTS, CACHE_SETTINGS, etc.). To avoid
+# widespread breakage while the codebase transitions to the new dataclass-
+# driven configuration, we expose shim constants that map to the new config.
+
+# Map of vocabulary name → remote URL (if available)
+VOCABULARY_ENDPOINTS: Dict[str, str] = {
+    name: vocab.url or "" for name, vocab in default_lexml_config.vocabularies.items()
+}
+
+# Database path constant
+DATABASE_PATH: str = default_lexml_config.database_path
+
+# Cache configuration (default values)
+CACHE_SETTINGS: Dict[str, Any] = {
+    "vocabulary_ttl": 24 * 60 * 60,  # 24h
+    "search_results_ttl": 60 * 60,   # 1h
+    "max_cache_size": 100 * 1024 * 1024,  # 100 MB
+    "cleanup_interval": 2 * 60 * 60  # 2h
+}
+
+# HTTP request defaults for downloading vocabularies / SRU queries
+HTTP_SETTINGS: Dict[str, Any] = {
+    "timeout": 30,
+    "max_retries": 3,
+    "retry_delay": 1,
+    "user_agent": default_lexml_config.user_agent,
+    "headers": {
+        "Accept": "application/rdf+xml, text/turtle, application/json",
+        "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+        "Cache-Control": "max-age=3600",
+        "User-Agent": default_lexml_config.user_agent,
+    },
+}
+
+# SKOS processing settings
+SKOS_SETTINGS: Dict[str, Any] = {
+    "supported_formats": ["rdf+xml", "turtle", "json-ld"],
+    "preferred_format": "rdf+xml",
+    "namespace_prefixes": {
+        "skos": "http://www.w3.org/2004/02/skos/core#",
+        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+        "lexml": "http://www.lexml.gov.br/vocabularios/",
+        "dc": "http://purl.org/dc/elements/1.1/",
+    },
+}
+
+# Transport-specific settings (used for generating mock concepts etc.)
+TRANSPORT_CONFIG: Dict[str, Any] = {
+    "regulatory_agencies": [
+        "ANTT",  # Agência Nacional de Transportes Terrestres
+        "CONTRAN",  # Conselho Nacional de Trânsito
+        "DNIT",  # Departamento Nacional de Infraestrutura de Transportes
+        "ANTAQ",  # Agência Nacional de Transportes Aquaviários
+        "ANAC",   # Agência Nacional de Aviação Civil
+    ]
+}
