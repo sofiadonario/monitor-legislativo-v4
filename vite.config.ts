@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: process.env.NODE_ENV === 'production' ? '/monitor-legislativo-v4/' : '/',
+  base: '/monitor-legislativo-v4/',
   envDir: './',
   resolve: {
     alias: {

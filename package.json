@@ -31,13 +31,16 @@
     "jest-environment-jsdom": "^29.7.0",
     "terser": "^5.36.0",
     "ts-jest": "^29.1.2",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "gh-pages": "^6.1.1"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build-check": "tsc && vite build",
     "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "echo 'No tests configured yet' && exit 0",
     "test:watch": "jest --watch",
