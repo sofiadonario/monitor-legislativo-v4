@@ -227,7 +227,8 @@ function generateCitation(doc: Partial<LegislativeDocument>, urn: string): strin
 
 // Parse CSV content into LegislativeDocument array
 export function parseCSVData(csvContent: string): LegislativeDocument[] {
-  const lines = csvContent.split(/\\r?\\n/).filter(line => line.trim() !== '');
+  const lines = csvContent.split(/\r?\n/).filter(line => line.trim() !== '');
+  console.log(`CSV split into ${lines.length} lines`); // Debug line count
   if (lines.length < 2) {
     console.warn('CSV content has no data rows.');
     return [];
