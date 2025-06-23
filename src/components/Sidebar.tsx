@@ -94,13 +94,27 @@ const Sidebar: React.FC<SidebarProps> = ({
             {/* Search Section */}
             <div className="search-section">
               <h3>Busca</h3>
-              <input
-                type="text"
-                placeholder="Buscar por título ou resumo..."
-                value={filters.searchTerm}
-                onChange={handleSearchChange}
-                className="search-input"
-              />
+              <div className="search-container">
+                <input
+                  type="text"
+                  placeholder="Buscar por título ou resumo..."
+                  value={filters.searchTerm}
+                  onChange={handleSearchChange}
+                  className="search-input"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      onFiltersChange({ ...filters });
+                    }
+                  }}
+                />
+                <button 
+                  className="search-button"
+                  onClick={() => onFiltersChange({ ...filters })}
+                  aria-label="Buscar"
+                >
+                  🔍
+                </button>
+              </div>
             </div>
             
             {/* Date Filters */}
