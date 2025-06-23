@@ -32,9 +32,41 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [pendingFilters, setPendingFilters] = useState<SearchFilters>(filters);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync pendingFilters with props filters
+  useEffect(() => {
+    setPendingFilters(filters);
+  }, [filters]);
+
+  // Debounced filter update function
+  const debouncedFilterUpdate = useCallback((newFilters: SearchFilters) => {
+    if (filterDebounceRef.current) {
+      clearTimeout(filterDebounceRef.current);
+    }
+
+    filterDebounceRef.current = setTimeout(() => {
+      console.log('🎯 Filter batch: Applying batched filter changes', { 
+        searchTerm: newFilters.searchTerm,
+        filtersCount: Object.keys(newFilters).filter(key => {
+          const value = newFilters[key as keyof SearchFilters];
+          return Array.isArray(value) ? value.length > 0 : !!value;
+        }).length
+      });
+      onFiltersChange(newFilters);
+    }, 300); // 300ms batch delay
+  }, [onFiltersChange]);
+
+  // Batch filter change handler
+  const handleFilterChange = useCallback((updates: Partial<SearchFilters>) => {
+    const newFilters = { ...pendingFilters, ...updates };
+    setPendingFilters(newFilters);
+    debouncedFilterUpdate(newFilters);
+  }, [pendingFilters, debouncedFilterUpdate]);
 
   // Load search history from localStorage
   useEffect(() => {
@@ -42,6 +74,15 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
     if (history) {
       setSearchHistory(JSON.parse(history));
     }
+  }, []);
+
+  // Cleanup debounce timer
+  useEffect(() => {
+    return () => {
+      if (filterDebounceRef.current) {
+        clearTimeout(filterDebounceRef.current);
+      }
+    };
   }, []);
 
   // Generate faceted counts
@@ -65,9 +106,9 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
 
   // Generate search suggestions
   const suggestions = useMemo(() => {
-    if (!filters.searchTerm || filters.searchTerm.length < 2) return [];
+    if (!pendingFilters.searchTerm || pendingFilters.searchTerm.length < 2) return [];
 
-    const term = filters.searchTerm.toLowerCase();
+    const term = pendingFilters.searchTerm.toLowerCase();
     const results: SearchSuggestion[] = [];
 
     // Keywords
@@ -89,18 +130,18 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
 
     // Recent searches
     searchHistory
-      .filter(search => search.toLowerCase().includes(term) && search !== filters.searchTerm)
+      .filter(search => search.toLowerCase().includes(term) && search !== pendingFilters.searchTerm)
       .slice(0, 2)
       .forEach(search => {
         results.push({ text: search, type: 'recent' });
       });
 
     return results;
-  }, [filters.searchTerm, facets, documents, searchHistory]);
+  }, [pendingFilters.searchTerm, facets, documents, searchHistory]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    onFiltersChange({ ...filters, searchTerm: value });
+    handleFilterChange({ searchTerm: value });
     setShowSuggestions(true);
     setSelectedSuggestionIndex(-1);
   };
@@ -117,7 +158,7 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
   };
 
   const selectSuggestion = (suggestion: SearchSuggestion) => {
-    onFiltersChange({ ...filters, searchTerm: suggestion.text });
+    handleFilterChange({ searchTerm: suggestion.text });
     handleSearchSubmit(suggestion.text);
   };
 
@@ -153,47 +194,50 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
   };
 
   const handleDocumentTypeChange = (type: DocumentType) => {
-    const newTypes = filters.documentTypes.includes(type)
-      ? filters.documentTypes.filter(t => t !== type)
-      : [...filters.documentTypes, type];
+    const newTypes = pendingFilters.documentTypes.includes(type)
+      ? pendingFilters.documentTypes.filter(t => t !== type)
+      : [...pendingFilters.documentTypes, type];
     
-    onFiltersChange({ ...filters, documentTypes: newTypes });
+    handleFilterChange({ documentTypes: newTypes });
   };
 
   const handleStateChange = (state: string) => {
-    const newStates = filters.states.includes(state)
-      ? filters.states.filter(s => s !== state)
-      : [...filters.states, state];
+    const newStates = pendingFilters.states.includes(state)
+      ? pendingFilters.states.filter(s => s !== state)
+      : [...pendingFilters.states, state];
     
-    onFiltersChange({ ...filters, states: newStates });
+    handleFilterChange({ states: newStates });
   };
 
   const handleChamberChange = (chamber: string) => {
-    const newChambers = filters.chambers.includes(chamber)
-      ? filters.chambers.filter(c => c !== chamber)
-      : [...filters.chambers, chamber];
+    const newChambers = pendingFilters.chambers.includes(chamber)
+      ? pendingFilters.chambers.filter(c => c !== chamber)
+      : [...pendingFilters.chambers, chamber];
     
-    onFiltersChange({ ...filters, chambers: newChambers });
+    handleFilterChange({ chambers: newChambers });
   };
 
   const handleKeywordToggle = (keyword: string) => {
-    const newKeywords = filters.keywords.includes(keyword)
-      ? filters.keywords.filter(k => k !== keyword)
-      : [...filters.keywords, keyword];
+    const newKeywords = pendingFilters.keywords.includes(keyword)
+      ? pendingFilters.keywords.filter(k => k !== keyword)
+      : [...pendingFilters.keywords, keyword];
     
-    onFiltersChange({ ...filters, keywords: newKeywords });
+    handleFilterChange({ keywords: newKeywords });
   };
 
   const clearFilters = () => {
-    onFiltersChange({
+    const clearedFilters = {
       searchTerm: '',
       documentTypes: [],
       states: [],
       municipalities: [],
+      chambers: [],
       keywords: [],
       dateFrom: undefined,
       dateTo: undefined
-    });
+    };
+    setPendingFilters(clearedFilters);
+    onFiltersChange(clearedFilters);
   };
 
   const hasActiveFilters = filters.documentTypes.length > 0 || 
@@ -226,16 +270,16 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
             ref={searchInputRef}
             type="text"
             placeholder="Digite palavras-chave, título ou autor..."
-            value={filters.searchTerm}
+            value={pendingFilters.searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
-            onFocus={() => filters.searchTerm && setShowSuggestions(true)}
+            onFocus={() => pendingFilters.searchTerm && setShowSuggestions(true)}
             className="search-input"
             aria-label="Buscar documentos"
           />
           <button 
             className="search-button"
-            onClick={() => onFiltersChange({ ...filters })}
+            onClick={() => debouncedFilterUpdate(pendingFilters)}
             aria-label="Buscar"
           >
             🔍
