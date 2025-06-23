@@ -10,35 +10,11 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 
-try:
-    from ..models.lexml_models import (
-        LexMLSearchRequest, LexMLSearchResponse, LexMLDocument, 
-        DocumentType, Autoridade, APIHealthStatus, CQLQuery
-    )
-    from ..services.lexml_client import LexMLClient, LexMLAPIError
-    from ..services.cql_builder import CQLQueryBuilder
-    from ..services.cache_service import (
-        CacheService, get_cache_statistics, perform_cache_health_check,
-        warm_cache_with_common_queries, create_search_cache_key,
-        create_document_cache_key, cached_result, CacheTTL
-    )
-except ImportError:
-    # Fallback for development
-    import sys
-    import os
-    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    
-    from models.lexml_models import (
-        LexMLSearchRequest, LexMLSearchResponse, LexMLDocument, 
-        DocumentType, Autoridade, APIHealthStatus, CQLQuery
-    )
-    from services.lexml_client import LexMLClient, LexMLAPIError
-    from services.cql_builder import CQLQueryBuilder
-    from services.cache_service import (
-        CacheService, get_cache_statistics, perform_cache_health_check,
-        warm_cache_with_common_queries, create_search_cache_key,
-        create_document_cache_key, cached_result, CacheTTL
-    )
+# Use enhanced search service with database integration
+from ..services.simple_search_service import (
+    get_simple_search_service, LexMLSearchResponse, LexMLDocument
+)
+from ..services.database_cache_service import get_database_cache_service
 
 logger = logging.getLogger(__name__)
 
@@ -52,57 +28,54 @@ router = APIRouter(
     }
 )
 
-# Global instances (will be properly injected in production)
-lexml_client: Optional[LexMLClient] = None
-cql_builder = CQLQueryBuilder()
-cache_service: Optional[CacheService] = None
+# Enhanced service dependencies
+async def get_search_service():
+    """Dependency to get enhanced search service"""
+    return await get_simple_search_service()
+
+async def get_cache_service():
+    """Dependency to get database cache service"""
+    return await get_database_cache_service()
 
 
-async def get_lexml_client() -> LexMLClient:
-    """Dependency to get LexML client"""
-    global lexml_client
-    if lexml_client is None:
-        lexml_client = LexMLClient()
-    return lexml_client
-
-
-async def get_cache_service() -> CacheService:
-    """Dependency to get cache service"""
-    global cache_service
-    if cache_service is None:
-        # Will be properly configured with Redis in production
-        cache_service = CacheService()
-    return cache_service
-
-
-@router.get("/health", response_model=APIHealthStatus)
+@router.get("/health")
 async def get_api_health(
-    client: LexMLClient = Depends(get_lexml_client)
-) -> APIHealthStatus:
+    service = Depends(get_search_service),
+    cache_service = Depends(get_cache_service)
+):
     """
-    Check LexML API health status
+    Check enhanced service health status with database integration
     """
     try:
-        async with client:
-            health_status = await client.get_health_status()
-        return health_status
+        search_health = await service.get_health_status()
+        cache_health = await cache_service.get_health_status()
+        
+        return {
+            "search_service": search_health,
+            "cache_service": cache_health,
+            "overall_health": {
+                "is_healthy": search_health.get("is_healthy", False),
+                "database_enabled": cache_health.get("database_available", False),
+                "features_operational": search_health.get("features_enabled", [])
+            }
+        }
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        return APIHealthStatus(
-            is_healthy=False,
-            error_message=str(e)
-        )
+        return {
+            "is_healthy": False,
+            "error_message": str(e)
+        }
 
 
-@router.get("/search", response_model=LexMLSearchResponse)
+@router.get("/search")
 async def search_documents(
     # Query parameters
     q: Optional[str] = Query(None, description="Search query"),
     cql: Optional[str] = Query(None, description="Direct CQL query"),
     
-    # Filters
-    tipo_documento: Optional[List[DocumentType]] = Query(None, description="Document types"),
-    autoridade: Optional[List[Autoridade]] = Query(None, description="Authority levels"),
+    # Filters (simplified)
+    tipo_documento: Optional[List[str]] = Query(None, description="Document types"),
+    autoridade: Optional[List[str]] = Query(None, description="Authority levels"),
     localidade: Optional[List[str]] = Query(None, description="Geographic localities"),
     date_from: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     date_to: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
@@ -117,193 +90,125 @@ async def search_documents(
     use_cache: bool = Query(True, description="Use cached results if available"),
     
     # Dependencies
-    client: LexMLClient = Depends(get_lexml_client),
-    cache: CacheService = Depends(get_cache_service)
-) -> LexMLSearchResponse:
+    service = Depends(get_search_service)
+):
     """
-    Search LexML Brasil legislative database
+    Search legislative database using three-tier fallback system
     
     Supports both simple text search and advanced CQL queries.
-    Results are cached for performance.
+    Uses CSV fallback when APIs are unavailable.
     """
     try:
-        # Parse date filters
-        parsed_date_from = None
-        parsed_date_to = None
+        # Create simple search request object
+        class SimpleSearchRequest:
+            def __init__(self):
+                self.query = q or cql or ""
+                self.cql_query = cql
+                self.start_record = start_record
+                self.max_records = max_records
+                self.filters = {
+                    "tipoDocumento": tipo_documento or [],
+                    "autoridade": autoridade or [],
+                    "localidade": localidade or [],
+                    "date_from": date_from,
+                    "date_to": date_to,
+                    "subject": subject or []
+                }
         
-        if date_from:
-            try:
-                parsed_date_from = datetime.fromisoformat(date_from)
-            except ValueError:
-                raise HTTPException(status_code=400, detail=f"Invalid date_from format: {date_from}")
+        search_request = SimpleSearchRequest()
         
-        if date_to:
-            try:
-                parsed_date_to = datetime.fromisoformat(date_to)
-            except ValueError:
-                raise HTTPException(status_code=400, detail=f"Invalid date_to format: {date_to}")
-        
-        # Build search request
-        search_request = LexMLSearchRequest(
-            query=q,
-            cql_query=cql,
-            filters={
-                "tipoDocumento": tipo_documento or [],
-                "autoridade": autoridade or [],
-                "localidade": localidade or [],
-                "date_from": parsed_date_from,
-                "date_to": parsed_date_to,
-                "subject": subject or [],
-                "search_term": q
-            },
-            start_record=start_record,
-            max_records=max_records,
-            include_content=include_content
-        )
-        
-        # Generate cache key
-        cache_key = f"lexml_search:{hash(str(search_request.dict()))}"
-        
-        # Check cache first (if enabled)
-        if use_cache:
-            cached_result = await cache.get(cache_key)
-            if cached_result:
-                logger.info(f"Cache hit for search: {cache_key}")
-                cached_result.cache_hit = True
-                return cached_result
-        
-        # Perform live search
-        async with client:
-            search_response = await client.search(search_request)
-        
-        # Cache the result
-        if use_cache and search_response.documents:
-            await cache.set(
-                cache_key, 
-                search_response, 
-                ttl=3600  # 1 hour cache
-            )
+        # Perform search using simple service
+        search_response = await service.search(search_request)
         
         logger.info(
-            f"LexML search completed: {len(search_response.documents)} documents, "
-            f"{search_response.search_time_ms:.2f}ms"
+            f"Search completed: {len(search_response.documents)} documents, "
+            f"{search_response.search_time_ms:.2f}ms, source: {search_response.data_source}"
         )
         
-        return search_response
+        # Convert to dict for JSON response
+        return {
+            "documents": [
+                {
+                    "urn": doc.urn,
+                    "title": doc.title,
+                    "description": doc.description,
+                    "url": doc.url,
+                    "metadata": doc.metadata
+                } for doc in search_response.documents
+            ],
+            "total_found": search_response.total_found,
+            "start_record": search_response.start_record,
+            "records_returned": search_response.records_returned,
+            "search_time_ms": search_response.search_time_ms,
+            "data_source": search_response.data_source,
+            "cache_hit": search_response.cache_hit,
+            "api_status": search_response.api_status,
+            "next_start_record": search_response.next_start_record
+        }
         
-    except LexMLAPIError as e:
-        logger.error(f"LexML API error: {e}")
-        raise HTTPException(
-            status_code=502,
-            detail=f"LexML API error: {str(e)}"
-        )
     except Exception as e:
         logger.error(f"Search error: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Internal server error: {str(e)}"
+            detail=f"Search error: {str(e)}"
         )
 
 
 @router.get("/document/{urn:path}")
 async def get_document_content(
     urn: str,
-    use_cache: bool = Query(True, description="Use cached content if available"),
-    client: LexMLClient = Depends(get_lexml_client),
-    cache: CacheService = Depends(get_cache_service)
+    service = Depends(get_search_service)
 ) -> dict:
     """
-    Get full content of a specific document by URN
+    Get document information by URN (simplified implementation)
     """
     try:
-        cache_key = f"lexml_document:{urn}"
-        
-        # Check cache first
-        if use_cache:
-            cached_content = await cache.get(cache_key)
-            if cached_content:
-                logger.info(f"Document cache hit: {urn}")
-                return {
-                    "urn": urn,
-                    "content": cached_content,
-                    "cached": True,
-                    "retrieved_at": datetime.now().isoformat()
-                }
-        
-        # For now, return metadata (full content retrieval would need additional implementation)
-        # In a complete implementation, this would fetch from the document's identifier URL
-        
-        # Search for the document to get its metadata
-        search_request = LexMLSearchRequest(
-            cql_query=f'urn exact "{urn}"',
-            max_records=1
-        )
-        
-        async with client:
-            search_response = await client.search(search_request)
-        
-        if not search_response.documents:
-            raise HTTPException(status_code=404, detail=f"Document not found: {urn}")
-        
-        document = search_response.documents[0]
-        
-        # Cache the document metadata
-        if use_cache:
-            await cache.set(
-                cache_key,
-                document.dict(),
-                ttl=86400  # 24 hour cache for documents
-            )
-        
+        # For now, return basic information about the URN
+        # In a full implementation, this would retrieve the actual document content
         return {
             "urn": urn,
-            "document": document.dict(),
-            "cached": False,
-            "retrieved_at": datetime.now().isoformat()
+            "message": "Document retrieval available via URL",
+            "url": f"https://www.lexml.gov.br/urn/{urn}",
+            "data_source": "csv_fallback",
+            "retrieved_at": datetime.now().isoformat(),
+            "note": "Full document content available at the provided URL"
         }
         
-    except LexMLAPIError as e:
-        logger.error(f"LexML API error for document {urn}: {e}")
-        raise HTTPException(
-            status_code=502,
-            detail=f"LexML API error: {str(e)}"
-        )
     except Exception as e:
         logger.error(f"Document retrieval error for {urn}: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Internal server error: {str(e)}"
+            detail=f"Document error: {str(e)}"
         )
 
 
 @router.get("/suggest")
 async def get_search_suggestions(
     term: str = Query(..., min_length=2, description="Partial search term"),
-    field: Optional[str] = Query(None, description="Specific field to suggest for"),
     max_suggestions: int = Query(10, ge=1, le=20, description="Maximum suggestions to return")
 ) -> dict:
     """
     Get search suggestions for auto-complete
     """
     try:
-        suggestions = cql_builder.build_suggestion_queries(term)
+        # Basic transport-related suggestions
+        transport_suggestions = [
+            "transporte", "transporte de carga", "transporte urbano", "transporte público",
+            "carga", "logística", "mobilidade urbana", "sustentável", "combustível",
+            "licenciamento", "rodovia", "caminhão", "veículo", "ANTT", "ANTAQ", "ANAC"
+        ]
         
-        # Limit results
-        limited_suggestions = suggestions[:max_suggestions]
-        
-        # Get common patterns if no specific suggestions
-        if not limited_suggestions and len(term) >= 3:
-            patterns = cql_builder.get_common_patterns()
-            matching_patterns = {
-                name: query for name, query in patterns.items()
-                if term.lower() in name.lower() or term.lower() in query.lower()
-            }
-            limited_suggestions = list(matching_patterns.values())[:max_suggestions]
+        # Filter suggestions based on the input term
+        term_lower = term.lower()
+        matching_suggestions = [
+            suggestion for suggestion in transport_suggestions
+            if term_lower in suggestion.lower()
+        ]
         
         return {
             "term": term,
-            "suggestions": limited_suggestions,
-            "count": len(limited_suggestions),
+            "suggestions": matching_suggestions[:max_suggestions],
+            "count": len(matching_suggestions[:max_suggestions]),
             "generated_at": datetime.now().isoformat()
         }
         
@@ -315,74 +220,39 @@ async def get_search_suggestions(
         )
 
 
-@router.post("/cql/parse", response_model=CQLQuery)
-async def parse_cql_query(
-    query: str,
-    validate_only: bool = Query(False, description="Only validate, don't execute")
-) -> CQLQuery:
-    """
-    Parse and validate CQL query
-    """
+# Background task to warm up the search service
+@router.on_event("startup")
+async def startup_warmup():
+    """Initialize search service on startup"""
     try:
-        parsed_query = cql_builder.parse_user_query(query)
-        
-        if not parsed_query.is_valid:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid CQL query: {parsed_query.error_message}"
-            )
-        
-        return parsed_query
-        
+        service = await get_simple_search_service()
+        logger.info("Simple Search Service warmed up successfully")
     except Exception as e:
-        logger.error(f"CQL parsing error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"CQL parsing error: {str(e)}"
-        )
+        logger.warning(f"Service warmup failed: {e}")
 
 
-@router.get("/patterns")
-async def get_common_patterns() -> dict:
-    """
-    Get common CQL query patterns for legal research
-    """
-    try:
-        patterns = cql_builder.get_common_patterns()
-        
-        return {
-            "patterns": patterns,
-            "description": "Common CQL patterns for Brazilian legal research",
-            "usage": "Use these patterns as templates for advanced searches",
-            "generated_at": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"Pattern retrieval error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Pattern retrieval error: {str(e)}"
-        )
-
-
+# Enhanced analytics and statistics endpoints
 @router.get("/stats")
 async def get_api_stats(
-    client: LexMLClient = Depends(get_lexml_client)
+    service = Depends(get_search_service),
+    cache_service = Depends(get_cache_service)
 ) -> dict:
     """
-    Get API usage statistics and performance metrics
+    Get comprehensive service statistics with database analytics
     """
     try:
-        async with client:
-            health = await client.get_health_status()
+        search_health = await service.get_health_status()
+        cache_health = await cache_service.get_health_status()
+        
+        # Get analytics summary if database is available
+        analytics_summary = {}
+        if cache_service.db_available:
+            analytics_summary = await cache_service.get_analytics_summary(24)
         
         return {
-            "circuit_breaker": health.circuit_breaker.dict(),
-            "performance": {
-                "response_time_ms": health.response_time_ms,
-                "success_rate": health.success_rate,
-                "is_healthy": health.is_healthy
-            },
+            "service_stats": search_health,
+            "cache_stats": cache_health,
+            "analytics_summary": analytics_summary,
             "generated_at": datetime.now().isoformat()
         }
         
@@ -394,92 +264,61 @@ async def get_api_stats(
         )
 
 
-# Cache Management Endpoints
-@router.get("/cache/stats")
-async def get_cache_stats() -> dict:
+@router.get("/analytics")
+async def get_search_analytics(
+    hours: int = Query(24, ge=1, le=168, description="Hours to analyze (1-168)"),
+    cache_service = Depends(get_cache_service)
+) -> dict:
     """
-    Get comprehensive cache statistics and performance metrics
+    Get detailed search analytics for academic research insights
     """
     try:
-        stats = await get_cache_statistics()
-        health = await perform_cache_health_check()
+        if not cache_service.db_available:
+            return {
+                "error": "Analytics require database connection",
+                "message": "Database integration is not available",
+                "fallback_mode": True
+            }
         
-        return {
-            "cache_statistics": stats,
-            "cache_health": health,
-            "cache_configuration": {
-                "search_results_ttl": CacheTTL.SEARCH_RESULTS,
-                "document_content_ttl": CacheTTL.DOCUMENT_CONTENT,
-                "suggestions_ttl": CacheTTL.SUGGESTIONS,
-                "health_status_ttl": CacheTTL.HEALTH_STATUS,
-                "cross_references_ttl": CacheTTL.CROSS_REFERENCES,
-                "related_documents_ttl": CacheTTL.RELATED_DOCUMENTS
-            },
-            "generated_at": datetime.now().isoformat()
-        }
+        analytics = await cache_service.get_analytics_summary(hours)
+        return analytics
         
     except Exception as e:
-        logger.error(f"Cache stats error: {e}")
+        logger.error(f"Analytics retrieval error: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Cache statistics error: {str(e)}"
+            detail=f"Analytics error: {str(e)}"
         )
 
 
-@router.post("/cache/warm")
-async def warm_cache(background_tasks: BackgroundTasks) -> dict:
+@router.post("/cache/cleanup")
+async def cleanup_cache(
+    background_tasks: BackgroundTasks,
+    cache_service = Depends(get_cache_service)
+) -> dict:
     """
-    Pre-populate cache with common search queries
+    Clean up expired cache entries (runs in background)
     """
     try:
-        background_tasks.add_task(warm_cache_with_common_queries)
+        if not cache_service.db_available:
+            return {
+                "message": "Cache cleanup not available - database not connected",
+                "database_enabled": False
+            }
+        
+        # Run cleanup in background
+        background_tasks.add_task(cache_service.cleanup_expired_entries)
         
         return {
-            "message": "Cache warming initiated",
-            "status": "warming",
+            "message": "Cache cleanup initiated",
+            "status": "running_in_background",
+            "database_enabled": True,
             "initiated_at": datetime.now().isoformat()
         }
         
     except Exception as e:
-        logger.error(f"Cache warming error: {e}")
+        logger.error(f"Cache cleanup error: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Cache warming error: {str(e)}"
+            detail=f"Cache cleanup error: {str(e)}"
         )
-
-
-@router.get("/cache/health")
-async def check_cache_health() -> dict:
-    """
-    Perform comprehensive cache health check
-    """
-    try:
-        health = await perform_cache_health_check()
-        
-        return {
-            "cache_health": health,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"Cache health check error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Cache health check error: {str(e)}"
-        )
-
-
-# Background task to warm up the API connection
-@router.on_event("startup")
-async def startup_warmup():
-    """Warm up LexML API connection on startup"""
-    try:
-        client = await get_lexml_client()
-        async with client:
-            await client.get_health_status()
-        logger.info("LexML API connection warmed up successfully")
-    except Exception as e:
-        logger.warning(f"API warmup failed: {e}")
-
-
-# Error handling is done within endpoints using try/catch blocks

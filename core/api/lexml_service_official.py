@@ -28,9 +28,10 @@ import time
 # Add parent directories to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from .lexml_official_client import LexMLOfficialClient, LexMLDocument, LexMLSearchResponse
+from .lexml_official_client import LexMLOfficialClient
 from ..models.lexml_official_models import (
-    LexMLSearchRequest, CQLQueryBuilder, CircuitBreakerState, APIHealthStatus
+    LexMLSearchRequest, LexMLDocument, LexMLSearchResponse, CQLQueryBuilder, 
+    CircuitBreakerState, APIHealthStatus
 )
 from ..models.models import SearchResult, DataSource, Proposition
 

@@ -21,8 +21,15 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
 from urllib.parse import urlencode, quote
-import aiohttp
 import logging
+try:
+    import aiohttp
+    AIOHTTP_AVAILABLE = True
+except ImportError:
+    AIOHTTP_AVAILABLE = False
+    # Fallback imports for when aiohttp is not available
+    import urllib.request
+    import urllib.error
 from dataclasses import dataclass
 import time
 
@@ -65,7 +72,7 @@ class LexMLOfficialClient:
     Handles official XML schema parsing and proper metadata extraction.
     """
     
-    def __init__(self, session: Optional[aiohttp.ClientSession] = None):
+    def __init__(self, session=None):
         # Official LexML Brasil SRU endpoint
         self.base_url = "https://www.lexml.gov.br/oai/sru"
         self.session = session
@@ -121,12 +128,16 @@ class LexMLOfficialClient:
             logger.info(f"SRU request: {url}")
             
             # Make HTTP request
-            session = await self._get_session()
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
-                if response.status != 200:
-                    raise Exception(f"SRU request failed with status {response.status}")
-                
-                xml_content = await response.text()
+            if AIOHTTP_AVAILABLE:
+                session = await self._get_session()
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                    if response.status != 200:
+                        raise Exception(f"SRU request failed with status {response.status}")
+                    
+                    xml_content = await response.text()
+            else:
+                # Fallback to urllib when aiohttp is not available
+                xml_content = await self._execute_fallback_request(url)
                     
             # Parse SRU response
             documents, total_count, next_position = self._parse_sru_response(xml_content)
@@ -318,8 +329,29 @@ class LexMLOfficialClient:
             self.circuit_open = True
             logger.warning("Circuit breaker opened due to repeated failures")
     
-    async def _get_session(self) -> aiohttp.ClientSession:
+    async def _execute_fallback_request(self, url: str) -> str:
+        """Execute HTTP request using urllib when aiohttp is not available"""
+        def sync_request():
+            try:
+                request = urllib.request.Request(url)
+                request.add_header('User-Agent', 'MonitorLegislativoV4/1.0 (Academic Research; Python/urllib)')
+                request.add_header('Accept', 'application/xml, text/xml')
+                
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    if response.getcode() != 200:
+                        raise Exception(f"HTTP request failed with status {response.getcode()}")
+                    return response.read().decode('utf-8')
+            except urllib.error.URLError as e:
+                raise Exception(f"Network request failed: {e}")
+        
+        # Run in thread pool to make it async
+        return await asyncio.to_thread(sync_request)
+    
+    async def _get_session(self):
         """Get HTTP session (create if not provided)"""
+        if not AIOHTTP_AVAILABLE:
+            raise Exception("aiohttp not available, using fallback method")
+        
         if self.session:
             return self.session
         
@@ -394,5 +426,5 @@ class LexMLOfficialClient:
     
     async def close(self):
         """Close HTTP session if created by this client"""
-        if self.session and not self.session.closed:
+        if AIOHTTP_AVAILABLE and self.session and hasattr(self.session, 'closed') and not self.session.closed:
             await self.session.close()
