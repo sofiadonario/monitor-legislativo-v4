@@ -95,9 +95,7 @@ export class LegislativeDataService {
         // Add LexML-specific parameters for vocabulary enhancement
         const enhancedParams = {
           ...params,
-          sources: 'lexml,camara,senado,planalto',  // Prioritize LexML
-          vocabulary_enhanced: 'true',
-          academic_mode: 'true'
+          sources: 'lexml,camara,senado,planalto'  // Prioritize LexML
         };
         
         const response = await apiClient.get<any>('/search', enhancedParams);
