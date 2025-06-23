@@ -59,7 +59,8 @@
       "WebFetch(domain:www.lexml.gov.br)",
       "WebFetch(domain:www12.senado.leg.br)",
       "WebFetch(domain:github.com)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(rg:*)"
     ]
   },
   "enableAllProjectMcpServers": false

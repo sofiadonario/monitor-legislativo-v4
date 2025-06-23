@@ -89,9 +89,17 @@ class OfficialVocabularyClient:
         """
         self.cache_ttl = cache_ttl
         self.cache_dir = cache_dir or Path.home() / '.lexml_vocab'
-        self.cache_dir.mkdir(exist_ok=True)
         
-        self.db_path = self.cache_dir / 'vocabularies.db'
+        # Try to create cache directory, handle permission errors gracefully
+        try:
+            self.cache_dir.mkdir(exist_ok=True)
+            self.db_path = self.cache_dir / 'vocabularies.db'
+            self.cache_available = True
+        except (PermissionError, OSError) as e:
+            logger.warning(f"Cannot create vocabulary cache directory: {e}, running without cache")
+            self.db_path = None
+            self.cache_available = False
+        
         self.vocabularies: Dict[str, Dict[str, SKOSConcept]] = {}
         self.metadata: Dict[str, VocabularyMetadata] = {}
         
@@ -114,11 +122,22 @@ class OfficialVocabularyClient:
             'lexml': 'http://www.lexml.gov.br/vocabularios/'
         }
         
-        self._initialize_database()
-        logger.info(f"Official Vocabulary Client initialized with cache at {self.db_path}")
+        # Initialize database only if cache is available
+        if self.cache_available:
+            try:
+                self._initialize_database()
+                logger.info(f"Official Vocabulary Client initialized with cache at {self.db_path}")
+            except (sqlite3.Error, PermissionError, OSError) as e:
+                logger.warning(f"Cannot initialize vocabulary database: {e}, running without cache")
+                self.cache_available = False
+                self.db_path = None
+        else:
+            logger.info("Official Vocabulary Client initialized without cache (permission issues)")
     
     def _initialize_database(self):
         """Initialize SQLite database for vocabulary caching"""
+        if not self.cache_available or not self.db_path:
+            return
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS vocabularies (
@@ -214,8 +233,8 @@ class OfficialVocabularyClient:
             Vocabulary metadata if successful, None otherwise
         """
         try:
-            # Check cache first unless force refresh
-            if not force_refresh:
+            # Check cache first unless force refresh (only if cache is available)
+            if not force_refresh and self.cache_available:
                 cached_metadata = self._load_vocabulary_from_cache(vocabulary_name)
                 if cached_metadata and self._is_cache_valid(vocabulary_name):
                     logger.debug(f"Loaded {vocabulary_name} from cache")
@@ -469,10 +488,16 @@ class OfficialVocabularyClient:
                          metadata: VocabularyMetadata, rdf_content: str):
         """Cache vocabulary in SQLite database"""
         
-        # Generate cache hash
-        cache_hash = hashlib.md5(rdf_content.encode()).hexdigest()
+        # Skip caching if not available
+        if not self.cache_available or not self.db_path:
+            logger.debug(f"Cache not available, skipping cache for {vocabulary_name}")
+            return
         
-        with sqlite3.connect(self.db_path) as conn:
+        try:
+            # Generate cache hash
+            cache_hash = hashlib.md5(rdf_content.encode()).hexdigest()
+            
+            with sqlite3.connect(self.db_path) as conn:
             # Cache metadata
             conn.execute("""
                 INSERT OR REPLACE INTO vocabularies 
@@ -501,12 +526,19 @@ class OfficialVocabularyClient:
                 ))
             
             conn.commit()
-        
-        logger.debug(f"Cached vocabulary {vocabulary_name} with {len(concepts)} concepts")
+            logger.debug(f"Cached vocabulary {vocabulary_name} with {len(concepts)} concepts")
+            
+        except (sqlite3.Error, PermissionError, OSError) as e:
+            logger.warning(f"Failed to cache vocabulary {vocabulary_name}: {e}")
+            self.cache_available = False
     
     def _load_vocabulary_from_cache(self, vocabulary_name: str) -> Optional[VocabularyMetadata]:
         """Load vocabulary metadata from cache"""
-        with sqlite3.connect(self.db_path) as conn:
+        if not self.cache_available or not self.db_path:
+            return None
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
             row = conn.execute("""
                 SELECT title, description, version, created, modified, concept_count, source_url
                 FROM vocabularies WHERE name = ?
@@ -528,12 +560,20 @@ class OfficialVocabularyClient:
                     source_url=row[6]
                 )
         
+        except (sqlite3.Error, PermissionError, OSError) as e:
+            logger.warning(f"Failed to load vocabulary {vocabulary_name} from cache: {e}")
+            return None
+        
         return None
     
     def _load_concepts_from_cache(self, vocabulary_name: str) -> Dict[str, SKOSConcept]:
         """Load concepts from cache"""
+        if not self.cache_available or not self.db_path:
+            return {}
+        
         concepts = {}
-        with sqlite3.connect(self.db_path) as conn:
+        try:
+            with sqlite3.connect(self.db_path) as conn:
             rows = conn.execute("""
                 SELECT uri, pref_label, alt_labels, definition, broader, narrower, related, created, modified
                 FROM concepts WHERE vocabulary = ?
@@ -554,11 +594,19 @@ class OfficialVocabularyClient:
                 )
                 concepts[concept.uri] = concept
         
+        except (sqlite3.Error, PermissionError, OSError) as e:
+            logger.warning(f"Failed to load concepts for {vocabulary_name} from cache: {e}")
+            return {}
+        
         return concepts
     
     def _is_cache_valid(self, vocabulary_name: str) -> bool:
         """Check if cached vocabulary is still valid"""
-        with sqlite3.connect(self.db_path) as conn:
+        if not self.cache_available or not self.db_path:
+            return False
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
             row = conn.execute("""
                 SELECT cached_at FROM vocabularies WHERE name = ?
             """, (vocabulary_name,)).fetchone()
@@ -566,6 +614,10 @@ class OfficialVocabularyClient:
             if row:
                 cached_at = datetime.fromisoformat(row[0])
                 return (datetime.now() - cached_at).total_seconds() < self.cache_ttl
+        
+        except (sqlite3.Error, PermissionError, OSError) as e:
+            logger.warning(f"Failed to check cache validity for {vocabulary_name}: {e}")
+            return False
         
         return False
     

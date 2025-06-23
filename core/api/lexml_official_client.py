@@ -26,35 +26,10 @@ import logging
 from dataclasses import dataclass
 import time
 
+# Import the proper models from the models module
+from ..models.lexml_official_models import LexMLDocument, LexMLSearchResponse
+
 logger = logging.getLogger(__name__)
-
-@dataclass
-class LexMLDocument:
-    """Official LexML document structure based on oai_lexml schema"""
-    urn: str
-    title: str
-    autoridade: str
-    evento: str
-    localidade: str
-    data_evento: str
-    tipo_documento: str
-    texto_integral_url: Optional[str] = None
-    resumo: Optional[str] = None
-    palavras_chave: List[str] = None
-    
-    def __post_init__(self):
-        if self.palavras_chave is None:
-            self.palavras_chave = []
-
-@dataclass
-class LexMLSearchResponse:
-    """SRU search response structure"""
-    documents: List[LexMLDocument]
-    total_count: int
-    query: str
-    next_record_position: Optional[int] = None
-    response_time_ms: int = 0
-    source: str = "LexML Brasil"
 
 class LexMLRateLimiter:
     """Rate limiter implementing LexML's 100 requests/minute limit"""
@@ -146,12 +121,12 @@ class LexMLOfficialClient:
             logger.info(f"SRU request: {url}")
             
             # Make HTTP request
-            async with self._get_session() as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
-                    if response.status != 200:
-                        raise Exception(f"SRU request failed with status {response.status}")
-                    
-                    xml_content = await response.text()
+            session = await self._get_session()
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                if response.status != 200:
+                    raise Exception(f"SRU request failed with status {response.status}")
+                
+                xml_content = await response.text()
                     
             # Parse SRU response
             documents, total_count, next_position = self._parse_sru_response(xml_content)
@@ -345,14 +320,15 @@ class LexMLOfficialClient:
         if self.session:
             return self.session
         
-        # Create new session with proper headers
+        # Create new session with proper headers and store it
         headers = {
             'User-Agent': 'MonitorLegislativoV4/1.0 (Academic Research; Python/aiohttp)',
             'Accept': 'application/xml, text/xml',
             'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8'
         }
         
-        return aiohttp.ClientSession(headers=headers)
+        self.session = aiohttp.ClientSession(headers=headers)
+        return self.session
     
     def build_cql_query(self, terms: List[str], autoridade: Optional[str] = None, 
                        evento: Optional[str] = None, date_from: Optional[str] = None,
