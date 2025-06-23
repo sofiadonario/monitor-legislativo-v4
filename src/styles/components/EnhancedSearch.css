@@ -14,15 +14,38 @@
 
 .search-input-container {
   position: relative;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .search-input {
-  width: 100%;
+  flex: 1;
   padding: 0.75rem;
   border: 2px solid #ced4da;
   border-radius: 0.5rem;
   font-size: 0.875rem;
   transition: border-color 0.2s;
+}
+
+.search-button {
+  padding: 0.75rem 1rem;
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.search-button:hover {
+  background-color: #1565c0;
+}
+
+.search-button:active {
+  background-color: #0d47a1;
 }
 
 .search-input:focus {

@@ -233,6 +233,13 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
             className="search-input"
             aria-label="Buscar documentos"
           />
+          <button 
+            className="search-button"
+            onClick={() => onFiltersChange({ ...filters })}
+            aria-label="Buscar"
+          >
+            🔍
+          </button>
           
           {showSuggestions && suggestions.length > 0 && (
             <div ref={suggestionsRef} className="search-suggestions">
