@@ -129,19 +129,19 @@ export class LegislativeDataService {
         
         const response = await apiClient.get<any>('/search', enhancedParams);
         
-        console.log('📡 API Response Details:');
-        console.log('  - Status:', response?.status || 'unknown');
-        console.log('  - Response Keys:', Object.keys(response || {}));
-        console.log('  - Results field exists:', !!response?.results);
-        console.log('  - Results length:', response?.results?.length || 0);
-        console.log('  - Response.data exists:', !!response?.data);
-        console.log('  - Response.documents exists:', !!response?.documents);
-        console.log('  - Response.items exists:', !!response?.items);
-        console.log('  - All response fields:');
-        Object.keys(response || {}).forEach(key => {
-          const value = response[key];
-          console.log(`    ${key}:`, Array.isArray(value) ? `Array(${value.length})` : typeof value);
-        });
+        console.log('📡 API Response Analysis:');
+        console.log('  - Query:', response?.query);
+        console.log('  - Total Count:', response?.total_count);
+        console.log('  - Results Length:', response?.results?.length || 0);
+        console.log('  - Sources:', response?.sources);
+        console.log('  - Enhanced Search:', response?.enhanced_search);
+        console.log('  - Filters Applied:', response?.filters);
+        console.log('  - Metadata:', response?.metadata);
+        
+        if (response?.total_count === 0) {
+          console.warn('🚨 Backend API found 0 results for query:', response?.query);
+          console.log('🔧 This suggests the backend search needs investigation');
+        }
         const documents = this.transformSearchResponse(response);
         
         if (documents.length === 0) {
