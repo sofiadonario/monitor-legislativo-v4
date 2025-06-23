@@ -291,7 +291,7 @@ class LexMLOfficialSearchService:
                         logger.info(f"Tier 3: Loading CSV from {csv_path}")
                         with open(csv_path, 'r', encoding='utf-8-sig') as f:
                             reader = csv.DictReader(f)
-                            realLegislativeData = []
+                            csv_data = []
                             for row in reader:
                                 doc = {
                                     'id': row['urn'],
@@ -304,8 +304,9 @@ class LexMLOfficialSearchService:
                                     'state': 'BR',
                                     'keywords': [row['search_term']]
                                 }
-                                realLegislativeData.append(doc)
-                        logger.info(f"Tier 3: Loaded {len(realLegislativeData)} documents from CSV")
+                                csv_data.append(doc)
+                        realLegislativeData.extend(csv_data)
+                        logger.info(f"Tier 3: Loaded {len(csv_data)} documents from CSV")
                         break
                 else:
                     logger.error("Tier 3: No CSV file found in any location")
@@ -503,6 +504,22 @@ class LexMLOfficialSearchService:
                 'error_details': error
             }
         )
+    
+    def get_vocabulary_stats(self) -> Dict[str, Any]:
+        """Get vocabulary statistics"""
+        if self.vocabulary_manager:
+            return {
+                'status': 'active',
+                'mode': 'enhanced' if self.vocabulary_manager else 'basic',
+                'expansions_available': True,
+                'transport_domain_active': True
+            }
+        return {
+            'status': 'inactive',
+            'mode': 'basic',
+            'expansions_available': False,
+            'transport_domain_active': False
+        }
     
     async def get_health_status(self) -> APIHealthStatus:
         """Get service health status"""
