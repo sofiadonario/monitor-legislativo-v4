@@ -57,8 +57,9 @@ sqlalchemy[asyncio]==2.0.23
 httpx==0.25.2
 
 # AIOHTTP - Async HTTP client for API calls
-# WHY: Calls Câmara, Senado, regulatory agencies faster
-# VERSION: 3.9.x is stable and Railway-compatible
+# WHY: Calls Câmara, Senado, regulatory agencies + LexML Brasil official SRU protocol
+# VERSION: 3.9.x is stable and Railway-compatible 
+# CRITICAL: Required for LexML Brasil integration and SKOS vocabulary loading
 aiohttp==3.9.1
 
 # Requests - Backup HTTP client (simpler, slower)
@@ -148,6 +149,14 @@ prometheus-client==0.19.0
 # WHY: Required for secure connections and password hashing
 # VERSION: 41.x has all security fixes and Railway compatibility
 cryptography==41.0.7
+
+# =============================================================================
+# SKOS VOCABULARY PROCESSING - LEXML BRASIL INTEGRATION
+# =============================================================================
+
+# XML ElementTree support (built into Python, but explicit import for SKOS)
+# WHY: Required for parsing SKOS RDF/XML vocabularies from LexML Brasil
+# NOTE: xml.etree.ElementTree is built-in, no external dependency needed
 
 # =============================================================================
 # PERFORMANCE OPTIMIZATION
