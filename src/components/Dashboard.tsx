@@ -69,28 +69,69 @@ const Dashboard: React.FC = () => {
   const { sidebarOpen, exportPanelOpen, selectedState, selectedMunicipality, filters } = state;
 
   const mainContentRef = useRef<HTMLElement>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   useKeyboardNavigation();
 
   useEffect(() => {
     const loadDocuments = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const { documents: docs, usingFallback } = await legislativeDataService.fetchDocuments(filters);
-        if (docs.length === 0 && usingFallback) {
-          setError('Could not load from API or CSV. Please check data sources.');
+      // Cancel previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Clear existing debounce timer
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+
+      // Set up new debounced request
+      debounceTimeoutRef.current = setTimeout(async () => {
+        console.log('🎯 API Request: Debounced search triggered', { searchTerm: filters.searchTerm });
+        
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+          // Create new abort controller for this request
+          abortControllerRef.current = new AbortController();
+          
+          const { documents: docs, usingFallback } = await legislativeDataService.fetchDocuments(filters);
+          
+          if (docs.length === 0 && usingFallback) {
+            setError('Could not load from API or CSV. Please check data sources.');
+          }
+          setDocuments(docs);
+          setUsingFallbackData(usingFallback);
+          
+          console.log('📊 Request completed', { documentsFound: docs.length, usingFallback });
+        } catch (err) {
+          // Don't show error if request was aborted (user typed more)
+          if (err instanceof Error && err.name === 'AbortError') {
+            console.log('⚡ Request cancelled - user continued typing');
+            return;
+          }
+          
+          const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+          setError(errorMessage);
+          console.error('Error loading documents:', err);
+        } finally {
+          setIsLoading(false);
         }
-        setDocuments(docs);
-        setUsingFallbackData(usingFallback);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-        setError(errorMessage);
-        console.error('Error loading documents:', err);
-      } finally {
-        setIsLoading(false);
+      }, 500); // 500ms debounce delay
+    };
+
+    loadDocuments();
+
+    // Cleanup function
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
-    loadDocuments();
   }, [filters]);
 
   const handleLocationClick = useCallback((type: 'state' | 'municipality', id: string) => {
