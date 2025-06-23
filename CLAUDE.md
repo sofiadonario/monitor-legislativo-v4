@@ -232,6 +232,11 @@ Required environment variables are defined in:
 
 Never commit `.env` files. Use `.env.example` as reference.
 
+## DevOps and Deployment
+
+### Deployment Memory
+- All changes made to main must be adapted to aws deployment too 
+
 ## Remember
 - This is an academic research tool - data integrity is paramount
 - Every feature must support the research mission
