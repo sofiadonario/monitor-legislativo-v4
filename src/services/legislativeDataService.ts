@@ -9,6 +9,7 @@ const forceCSVOnly = import.meta.env.VITE_FORCE_CSV_ONLY === 'true';
 export class LegislativeDataService {
   private static instance: LegislativeDataService;
   private csvDataCache: LegislativeDocument[] | null = null;
+  private requestCache = new Map<string, Promise<{ documents: LegislativeDocument[], usingFallback: boolean }>>();
   
   private constructor() {}
   
@@ -70,6 +71,32 @@ export class LegislativeDataService {
   }
   
   async fetchDocuments(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
+    // Generate cache key from filters
+    const cacheKey = JSON.stringify(filters || {});
+    
+    // Check if identical request is already in progress
+    if (this.requestCache.has(cacheKey)) {
+      console.log('⚡ Request deduped: Using existing pending request');
+      return this.requestCache.get(cacheKey)!;
+    }
+
+    // Create new request
+    const requestPromise = this._performFetch(filters);
+    
+    // Cache the promise
+    this.requestCache.set(cacheKey, requestPromise);
+    console.log(`📊 Active requests: ${this.requestCache.size}`);
+    
+    // Auto-cleanup after completion
+    requestPromise.finally(() => {
+      this.requestCache.delete(cacheKey);
+      console.log(`🧹 Cache cleanup - Active requests: ${this.requestCache.size}`);
+    });
+    
+    return requestPromise;
+  }
+
+  private async _performFetch(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
     if (forceCSVOnly) {
       console.log('Force CSV-only mode. Using real CSV data exclusively.');
       try {
