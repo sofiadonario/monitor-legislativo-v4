@@ -190,6 +190,7 @@ class SearchResult:
     search_time: float = 0.0  # Search duration in seconds
     source: Optional[DataSource] = None
     error: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None  # Additional metadata for enhanced search
     
     @property
     def total_pages(self) -> int:
