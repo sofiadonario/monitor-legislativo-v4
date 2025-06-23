@@ -13,8 +13,13 @@ Parameters:
   
   DomainName:
     Type: String
-    Default: monitor-legislativo.mackenzie.br
-    Description: Domain name for the application
+    Default: www.mackenzie.br
+    Description: Main domain name for Mackenzie University
+  
+  ApplicationPath:
+    Type: String
+    Default: /mackintegridade/energia/transporte
+    Description: Application path within Mackintegridade portal
   
   VpcCidr:
     Type: String

@@ -4,14 +4,14 @@
 **Document Version:** 1.0  
 **Date:** 2025-01-23  
 **Project:** AWS Migration & University Integration  
-**Domain:** monitor-legislativo.mackenzie.br  
+**Domain:** www.mackenzie.br/mackintegridade/energia/transporte  
 
 ---
 
 ## Executive Summary
 
 ### Project Overview
-Migration of Monitor Legislativo v4 from Railway ($7/month) to AWS infrastructure via Mackenzie University's Typo3 system, enabling deployment under the prestigious mackenzie.br domain with enterprise-grade reliability and academic institutional backing.
+Integration of Monitor Legislativo v4 into the Mackintegridade research platform as the Transport vertical under the Energy research area. This positions the legislative monitor within the broader Mackintegridade ecosystem at www.mackenzie.br/mackintegridade/energia/transporte, leveraging university AWS infrastructure and establishing it as a key component of the integrity research initiative.
 
 ### Business Justification
 - **Cost Optimization**: Leverage university AWS credits vs. paid Railway hosting
@@ -55,7 +55,7 @@ Current Architecture (Railway):
 ### AWS Infrastructure Design
 ```
 AWS/Mackenzie Integration:
-├── Domain: monitor-legislativo.mackenzie.br
+├── Domain: www.mackenzie.br/mackintegridade/energia/transporte
 ├── CDN: CloudFront + S3 (React app)
 ├── Compute: ECS Fargate (FastAPI backend)
 ├── Database: RDS PostgreSQL + ElastiCache Redis
@@ -69,7 +69,7 @@ AWS/Mackenzie Integration:
 
 #### 1. Frontend (React/Vite)
 - **Hosting**: S3 + CloudFront CDN
-- **Domain**: monitor-legislativo.mackenzie.br
+- **Domain**: www.mackenzie.br/mackintegridade/energia/transporte
 - **SSL**: AWS Certificate Manager
 - **Performance**: Global edge locations, <1s load time
 
@@ -336,7 +336,7 @@ Week 7-8: Launch Preparation
 - **Week 2**: AWS infrastructure operational
 - **Week 4**: Application successfully migrated and functional
 - **Week 6**: University integration complete and tested
-- **Week 8**: Live on monitor-legislativo.mackenzie.br
+- **Week 8**: Live on www.mackenzie.br/mackintegridade/energia/transporte
 
 ---
 
