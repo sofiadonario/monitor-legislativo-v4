@@ -36,6 +36,8 @@ from .config import (
     VOCABULARY_ENDPOINTS, CACHE_SETTINGS, HTTP_SETTINGS, 
     SKOS_SETTINGS, DATABASE_PATH, TRANSPORT_CONFIG
 )
+from .official_vocabulary_client import OfficialVocabularyClient
+from .skos_processor import SKOSProcessor
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -695,3 +697,41 @@ class SKOSVocabularyManager:
             }
         
         return stats
+    
+    # Enhanced methods using official client
+    async def load_official_vocabularies(self) -> Dict[str, Any]:
+        """Load vocabularies using official LexML client"""
+        try:
+            metadata = await self.official_client.load_all_official_vocabularies()
+            logger.info(f"Loaded {len(metadata)} official vocabularies")
+            return metadata
+        except Exception as e:
+            logger.error(f"Failed to load official vocabularies: {e}")
+            return {}
+    
+    async def expand_query_enhanced(self, query: str, max_expansions: int = 20) -> List[str]:
+        """Enhanced query expansion using SKOS processor"""
+        try:
+            result = await self.skos_processor.expand_query(
+                query=query,
+                max_expansions=max_expansions,
+                include_hierarchy=True,
+                include_transport_domain=True
+            )
+            
+            expanded_terms = [term.term for term in result.expanded_terms]
+            logger.info(f"Enhanced expansion of '{query}': {len(expanded_terms)} terms, confidence: {result.confidence_score:.2f}")
+            return expanded_terms
+            
+        except Exception as e:
+            logger.error(f"Enhanced query expansion failed: {e}")
+            # Fallback to basic expansion
+            return self.expand_term(query)
+    
+    def get_official_vocabulary_stats(self) -> Dict[str, Any]:
+        """Get statistics from official vocabulary client"""
+        try:
+            return self.official_client.get_vocabulary_stats()
+        except Exception as e:
+            logger.error(f"Failed to get official vocabulary stats: {e}")
+            return {'error': str(e)}

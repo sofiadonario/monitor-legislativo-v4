@@ -18,7 +18,7 @@ from .regulatory_agencies import (
     ANVISAService, ANSService, ANAService, ANCINEService,
     ANTTService, ANTAQService, ANACService, ANPService, ANMService
 )
-from .lexml_service import LexMLSearchService
+from .lexml_service_official import LexMLOfficialSearchService as LexMLSearchService
 from ..models.models import SearchResult, APIStatus, DataSource
 from ..config.config import Config
 from ..utils.smart_cache import smart_cache
@@ -63,9 +63,9 @@ class APIService:
                 self.cache_manager
             )
         
-        # LexML Enhanced Search Service (Primary for Transport Research)
+        # LexML Official Search Service (Primary for Transport Research)
         self.services["lexml"] = LexMLSearchService(config)
-        self.logger.info("Initialized LexML Enhanced Search Service as primary research engine")
+        self.logger.info("Initialized LexML Official Search Service with three-tier fallback architecture")
         
         # Regulatory agencies - all 11 agencies
         regulatory_services = {
