@@ -67,15 +67,15 @@ class LexMLOfficialClient:
     
     def __init__(self, session: Optional[aiohttp.ClientSession] = None):
         # Official LexML Brasil SRU endpoint
-        self.base_url = "http://www.lexml.gov.br/oai/sru"
+        self.base_url = "https://www.lexml.gov.br/oai/sru"
         self.session = session
         self.rate_limiter = LexMLRateLimiter()
         
         # Official namespaces from LexML schema
         self.namespaces = {
             'sru': 'http://www.loc.gov/zing/srw/',
-            'lexml': 'http://www.lexml.gov.br/oai_lexml',
-            '': 'http://www.lexml.gov.br/oai_lexml'  # Default namespace
+            'lexml': 'https://www.lexml.gov.br/oai_lexml',
+            '': 'https://www.lexml.gov.br/oai_lexml'  # Default namespace
         }
         
         # Circuit breaker state
@@ -160,7 +160,10 @@ class LexMLOfficialClient:
             Tuple of (documents, total_count, next_record_position)
         """
         try:
-            root = ET.fromstring(xml_content)
+            # Clean XML content to handle HTML entities
+            import html
+            cleaned_xml = html.unescape(xml_content)
+            root = ET.fromstring(cleaned_xml)
             
             # Extract total count from SRU response
             total_count = 0

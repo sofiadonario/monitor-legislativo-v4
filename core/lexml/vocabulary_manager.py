@@ -115,6 +115,8 @@ class SKOSVocabularyManager:
     
     def _initialize_database(self) -> None:
         """Initialize SQLite database for vocabulary caching."""
+        # Ensure database directory exists
+        os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
         with sqlite3.connect(DATABASE_PATH) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS vocabularies (

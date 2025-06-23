@@ -171,7 +171,7 @@ class LexMLDocument:
             url=url,
             status='PUBLISHED',  # LexML documents are published
             source='LEXML_BRASIL',
-            metadata=prop_metadata
+            extra_data=prop_metadata
         )
 
 @dataclass
