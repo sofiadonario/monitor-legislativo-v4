@@ -80,12 +80,13 @@ cd scripts
 
 **Current Phase:** Planning & Documentation  
 **Next Milestone:** AWS Account Setup (Week 1)  
-**Target Go-Live:** March 15, 2025
+**Target Go-Live:** September 15, 2025
 
 ## 👥 Contacts
 
-- **Technical Lead:** Sofia (Senior Engineer)
-- **Mackintegridade Lead:** [TBD]
+- **Technical Lead:** Sofia Donario (Senior Reseacher)
+- **Technical Lead:** Lucas Guimarães (Senior Reseacher)
+- **Mackintegridade Lead:** [Cácia Pimentel]
 - **University IT:** [TBD]
 - **AWS Support:** Enterprise Support Portal
 
@@ -94,7 +95,6 @@ cd scripts
 - [Mackintegridade Portal](https://www.mackenzie.br/mackintegridade)
 - [Monitor Legislativo v4 Repository](https://github.com/sofiadonario/monitor-legislativo-v4)
 - [AWS Best Practices](https://aws.amazon.com/architecture/well-architected/)
-- [Mackenzie IT Guidelines](https://www.mackenzie.br/it-guidelines)
 
 ---
 

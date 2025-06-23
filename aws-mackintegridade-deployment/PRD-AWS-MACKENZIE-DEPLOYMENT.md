@@ -1,4 +1,4 @@
-# Product Requirements Document (PRD)
+## Product Requirements Document (PRD)
 ## Monitor Legislativo v4 - AWS/Mackenzie University Deployment
 
 **Document Version:** 1.0  
@@ -358,6 +358,192 @@ Week 7-8: Launch Preparation
 - **AWS University Program**: Credit allocation and technical support
 - **Domain Management**: mackenzie.br subdomain allocation
 - **Security Review**: University information security approval
+
+---
+
+## Required Access & Permissions
+
+### 🔐 University Account Access Requirements
+
+To successfully implement this deployment, the following access permissions must be granted by Mackenzie University IT department:
+
+#### 1. AWS Account Access
+```yaml
+AWS Console Access:
+  - Account Type: IAM User with programmatic and console access
+  - Account Name: sofia.donario@mackenzie.br (or university ID)
+  - Permission Level: PowerUser or specific managed policies
+  - Required Services:
+    - EC2/ECS (Full Access) - Container deployment
+    - RDS (Full Access) - Database management
+    - S3 (Full Access) - Static hosting and storage
+    - CloudFront (Full Access) - CDN configuration
+    - Route 53 (Full Access) - DNS management
+    - Certificate Manager (Full Access) - SSL certificates
+    - CloudWatch (Full Access) - Monitoring and logs
+    - IAM (Limited) - Service role creation
+    - Secrets Manager (Full Access) - Credential storage
+    - CloudFormation (Full Access) - Infrastructure deployment
+  - MFA: Required (will need MFA device setup)
+  - AWS Credit Allocation: Confirm university credits applied to account
+```
+
+#### 2. Typo3 CMS Access
+```yaml
+Typo3 Backend Access:
+  - URL: https://www.mackenzie.br/typo3/
+  - Username: [University ID or specific Typo3 username]
+  - Role: Editor with following permissions:
+    - Page tree edit rights for /mackintegridade path
+    - Extension installation privileges
+    - TypoScript template modification rights
+    - Content element creation rights
+    - User group: "Mackintegridade Editors"
+  - Additional Access:
+    - SSH access to Typo3 server (for extension deployment)
+    - Database query access (read-only for troubleshooting)
+```
+
+#### 3. Mackintegridade Portal Access
+```yaml
+Mackintegridade Platform:
+  - Admin Portal: https://admin.mackintegridade.mackenzie.br
+  - Role: Project Administrator for "Energia/Transporte"
+  - Permissions:
+    - Create and manage sub-projects
+    - Configure SSO settings
+    - Access analytics dashboard
+    - Manage cross-project data sharing
+    - Configure portal navigation
+```
+
+#### 4. Domain & DNS Management
+```yaml
+DNS Configuration Access:
+  - Domain: www.mackenzie.br
+  - Required Permissions:
+    - Create/modify DNS records for mackenzie.br
+    - Configure subdomain routing for /mackintegridade paths
+    - SSL certificate validation (DNS or email)
+  - Contact: University IT Network Team
+```
+
+#### 5. Git Repository Access
+```yaml
+Version Control:
+  - GitLab/GitHub Organization: @mackenzie-university
+  - Repository: mackintegridade/monitor-legislativo
+  - Permission Level: Developer or Maintainer
+  - Deploy Keys: Need to be generated for CI/CD
+```
+
+#### 6. Monitoring & Analytics
+```yaml
+Monitoring Tools:
+  - Mackintegridade Analytics: View and create dashboards
+  - University Monitoring (Nagios/Zabbix): Read access
+  - Log Management System: Read access for troubleshooting
+```
+
+#### 7. Database Access
+```yaml
+Database Credentials:
+  - PostgreSQL (AWS RDS):
+    - Master user creation rights
+    - Database creation privileges
+    - Security group modification
+  - Redis (ElastiCache):
+    - Cluster creation rights
+    - Configuration modification
+```
+
+#### 8. API & Integration Credentials
+```yaml
+Service Accounts:
+  - Mackintegridade SSO:
+    - Client ID and Secret for OAuth2
+    - Redirect URI configuration rights
+    - Scope management permissions
+  - Email Service (SES/SMTP):
+    - SMTP credentials for notifications
+    - Verified sender domain
+  - External APIs:
+    - LexML API key (if required)
+    - Government API credentials
+```
+
+#### 9. Security & Compliance Access
+```yaml
+Security Tools:
+  - WAF (Web Application Firewall): Rule configuration
+  - Security Scanner: Report access
+  - Compliance Dashboard: View compliance status
+  - Incident Response: Contact list and procedures
+```
+
+#### 10. Development & Testing Resources
+```yaml
+Development Environment:
+  - Staging Typo3 Instance: Full access
+  - AWS Development Account: Sandbox permissions
+  - Test Data Access: Anonymized production data
+  - Load Testing Tools: Permission to run tests
+```
+
+### 📋 Access Request Template
+
+Use this template to request access from University IT:
+
+```
+Subject: Access Request - Monitor Legislativo Mackintegridade Integration
+
+Dear IT Security Team,
+
+I am requesting the following access permissions for the Monitor Legislativo integration project under Mackintegridade (Energy/Transport vertical):
+
+Project: Monitor Legislativo v4
+URL: www.mackenzie.br/mackintegridade/energia/transporte
+Timeline: 8 weeks starting [DATE]
+Sponsor: [Academic Sponsor Name]
+
+Required Access:
+1. AWS Console (PowerUser) - Account: sofia.donario@mackenzie.br
+2. Typo3 CMS Editor - Path: /mackintegridade/energia/transporte
+3. Mackintegridade Admin Portal - Project: energia/transporte
+4. DNS Management - Records for mackenzie.br
+5. Git Repository - mackintegridade/monitor-legislativo
+6. Database Credentials - PostgreSQL and Redis
+7. SSO Configuration - OAuth2 client for Mackintegridade
+8. Monitoring Dashboards - Read access
+
+Justification: Required for deploying and maintaining the legislative monitoring system as part of the Mackintegridade research platform.
+
+Security Compliance: I acknowledge and will comply with all university security policies and data handling procedures.
+
+Thank you for your assistance.
+
+Best regards,
+Sofia Donario
+[Title/Department]
+[Contact Information]
+```
+
+### 🚨 Critical Access Timeline
+
+Request these accesses in the following order:
+
+1. **Week -2**: AWS Account and Mackintegridade Portal (setup time required)
+2. **Week -1**: Typo3 CMS and Git Repository (training may be needed)
+3. **Week 1**: Database and API credentials (after infrastructure is ready)
+4. **Week 2**: Monitoring and analytics access (after deployment begins)
+
+### 📞 Key Contacts for Access Requests
+
+- **AWS Account**: cloud-admin@mackenzie.br
+- **Typo3 Access**: cms-admin@mackenzie.br
+- **Mackintegridade**: platform-admin@mackintegridade.br
+- **Security Review**: security@mackenzie.br
+- **Emergency Support**: it-helpdesk@mackenzie.br (24/7)
 
 ---
 

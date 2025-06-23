@@ -45,25 +45,7 @@
       "Bash(npm run dev:*)",
       "Bash(timeout 15s npm run dev)",
       "Bash(git checkout:*)",
-      "Bash(node:*)",
-      "Bash(git config:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(curl:*)",
-      "Bash(git add:*)",
-      "Bash(npm run build:*)",
-      "Bash(npm run dev:*)",
-      "Bash(npm run deploy:*)",
-      "Bash(npm install)",
-      "Bash(git checkout:*)",
-      "WebFetch(domain:www.lexml.gov.br)",
-      "WebFetch(domain:www12.senado.leg.br)",
-      "WebFetch(domain:github.com)",
-      "Bash(sed:*)",
-      "Bash(rg:*)",
-      "Bash(git pull:*)",
-      "Bash(gh api:*)",
-      "Bash(git reset:*)"
+      "Bash(node:*)"
     ]
   },
   "enableAllProjectMcpServers": false

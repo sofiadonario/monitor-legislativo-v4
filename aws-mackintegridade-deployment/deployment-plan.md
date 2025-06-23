@@ -2,9 +2,11 @@
 ## Monitor Legislativo v4 → Mackintegridade Platform Integration
 ### www.mackenzie.br/mackintegridade/energia/transporte
 
-**Executive Owner:** University IT Director  
-**Technical Lead:** Sofia (Senior Engineer)  
-**Timeline:** 8 weeks (Target: March 15, 2025)  
+**Executive Owner:** Sofia Donario for CEMAPI  
+**Technical Lead:** Sofia Donario (Senior Reseacher)  
+**Technical Lead:** Lucas Guimarães (Senior Reseacher)  
+**Mackintegridade Lead:** [Cácia Pimentel]
+**Timeline:** 8 weeks (Target: September 15, 2025)  
 **Budget:** $0/month (University AWS Credits)
 
 ---
