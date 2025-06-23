@@ -125,7 +125,16 @@ export class LegislativeDataService {
           sources: 'lexml,camara,senado,planalto'  // Prioritize LexML
         };
         
+        console.log('🔍 API Search Parameters:', enhancedParams);
+        
         const response = await apiClient.get<any>('/search', enhancedParams);
+        
+        console.log('📡 API Response:', { 
+          status: response?.status || 'unknown',
+          resultsCount: response?.results?.length || 0,
+          hasResults: !!response?.results,
+          responseKeys: Object.keys(response || {})
+        });
         const documents = this.transformSearchResponse(response);
         
         if (documents.length === 0) {
