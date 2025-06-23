@@ -186,14 +186,20 @@ export class LegislativeDataService {
   }
   
   private buildQueryParams(filters?: SearchFilters): Record<string, string> {
-    if (!filters) return {};
-    
     const params: Record<string, string> = {};
     
-    if (filters.searchTerm) params.q = filters.searchTerm;
-    if (filters.states.length > 0) params.states = filters.states.join(',');
-    if (filters.dateFrom) params.start_date = this.formatDate(filters.dateFrom);
-    if (filters.dateTo) params.end_date = this.formatDate(filters.dateTo);
+    // q parameter is required - use a default if not provided
+    params.q = filters?.searchTerm || 'transporte';
+    
+    if (filters?.states && filters.states.length > 0) {
+      params.states = filters.states.join(',');
+    }
+    if (filters?.dateFrom) {
+      params.start_date = this.formatDate(filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      params.end_date = this.formatDate(filters.dateTo);
+    }
     
     // Add default sources (can be made configurable later)
     params.sources = 'CAMARA,SENADO,PLANALTO';
