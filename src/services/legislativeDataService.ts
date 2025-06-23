@@ -133,7 +133,8 @@ export class LegislativeDataService {
           status: response?.status || 'unknown',
           resultsCount: response?.results?.length || 0,
           hasResults: !!response?.results,
-          responseKeys: Object.keys(response || {})
+          responseKeys: Object.keys(response || {}),
+          fullResponse: response
         });
         const documents = this.transformSearchResponse(response);
         
