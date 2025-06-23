@@ -498,35 +498,35 @@ class OfficialVocabularyClient:
             cache_hash = hashlib.md5(rdf_content.encode()).hexdigest()
             
             with sqlite3.connect(self.db_path) as conn:
-            # Cache metadata
-            conn.execute("""
-                INSERT OR REPLACE INTO vocabularies 
-                (name, title, description, version, created, modified, concept_count, source_url, cached_at, cache_hash)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
-            """, (
-                metadata.name, metadata.title, metadata.description, metadata.version,
-                metadata.created, metadata.modified, metadata.concept_count, 
-                metadata.source_url, cache_hash
-            ))
-            
-            # Clear old concepts
-            conn.execute("DELETE FROM concepts WHERE vocabulary = ?", (vocabulary_name,))
-            
-            # Cache concepts
-            for concept in concepts.values():
+                # Cache metadata
                 conn.execute("""
-                    INSERT INTO concepts
-                    (uri, vocabulary, pref_label, alt_labels, definition, broader, narrower, related, created, modified, cached_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    INSERT OR REPLACE INTO vocabularies 
+                    (name, title, description, version, created, modified, concept_count, source_url, cached_at, cache_hash)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
                 """, (
-                    concept.uri, concept.vocabulary, concept.pref_label,
-                    json.dumps(concept.alt_labels), concept.definition,
-                    json.dumps(concept.broader), json.dumps(concept.narrower), json.dumps(concept.related),
-                    concept.created, concept.modified
+                    metadata.name, metadata.title, metadata.description, metadata.version,
+                    metadata.created, metadata.modified, metadata.concept_count, 
+                    metadata.source_url, cache_hash
                 ))
-            
-            conn.commit()
-            logger.debug(f"Cached vocabulary {vocabulary_name} with {len(concepts)} concepts")
+                
+                # Clear old concepts
+                conn.execute("DELETE FROM concepts WHERE vocabulary = ?", (vocabulary_name,))
+                
+                # Cache concepts
+                for concept in concepts.values():
+                    conn.execute("""
+                        INSERT INTO concepts
+                        (uri, vocabulary, pref_label, alt_labels, definition, broader, narrower, related, created, modified, cached_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """, (
+                        concept.uri, concept.vocabulary, concept.pref_label,
+                        json.dumps(concept.alt_labels), concept.definition,
+                        json.dumps(concept.broader), json.dumps(concept.narrower), json.dumps(concept.related),
+                        concept.created, concept.modified
+                    ))
+                
+                conn.commit()
+                logger.debug(f"Cached vocabulary {vocabulary_name} with {len(concepts)} concepts")
             
         except (sqlite3.Error, PermissionError, OSError) as e:
             logger.warning(f"Failed to cache vocabulary {vocabulary_name}: {e}")
@@ -539,26 +539,26 @@ class OfficialVocabularyClient:
         
         try:
             with sqlite3.connect(self.db_path) as conn:
-            row = conn.execute("""
-                SELECT title, description, version, created, modified, concept_count, source_url
-                FROM vocabularies WHERE name = ?
-            """, (vocabulary_name,)).fetchone()
-            
-            if row:
-                concepts = self._load_concepts_from_cache(vocabulary_name)
-                if concepts:
-                    self.vocabularies[vocabulary_name] = concepts
+                row = conn.execute("""
+                    SELECT title, description, version, created, modified, concept_count, source_url
+                    FROM vocabularies WHERE name = ?
+                """, (vocabulary_name,)).fetchone()
                 
-                return VocabularyMetadata(
-                    name=vocabulary_name,
-                    title=row[0],
-                    description=row[1],
-                    version=row[2],
-                    created=datetime.fromisoformat(row[3]),
-                    modified=datetime.fromisoformat(row[4]),
-                    concept_count=row[5],
-                    source_url=row[6]
-                )
+                if row:
+                    concepts = self._load_concepts_from_cache(vocabulary_name)
+                    if concepts:
+                        self.vocabularies[vocabulary_name] = concepts
+                    
+                    return VocabularyMetadata(
+                        name=vocabulary_name,
+                        title=row[0],
+                        description=row[1],
+                        version=row[2],
+                        created=datetime.fromisoformat(row[3]),
+                        modified=datetime.fromisoformat(row[4]),
+                        concept_count=row[5],
+                        source_url=row[6]
+                    )
         
         except (sqlite3.Error, PermissionError, OSError) as e:
             logger.warning(f"Failed to load vocabulary {vocabulary_name} from cache: {e}")
@@ -574,25 +574,25 @@ class OfficialVocabularyClient:
         concepts = {}
         try:
             with sqlite3.connect(self.db_path) as conn:
-            rows = conn.execute("""
-                SELECT uri, pref_label, alt_labels, definition, broader, narrower, related, created, modified
-                FROM concepts WHERE vocabulary = ?
-            """, (vocabulary_name,)).fetchall()
-            
-            for row in rows:
-                concept = SKOSConcept(
-                    uri=row[0],
-                    pref_label=row[1],
-                    alt_labels=json.loads(row[2]) if row[2] else [],
-                    definition=row[3],
-                    broader=json.loads(row[4]) if row[4] else [],
-                    narrower=json.loads(row[5]) if row[5] else [],
-                    related=json.loads(row[6]) if row[6] else [],
-                    vocabulary=vocabulary_name,
-                    created=datetime.fromisoformat(row[7]),
-                    modified=datetime.fromisoformat(row[8])
-                )
-                concepts[concept.uri] = concept
+                rows = conn.execute("""
+                    SELECT uri, pref_label, alt_labels, definition, broader, narrower, related, created, modified
+                    FROM concepts WHERE vocabulary = ?
+                """, (vocabulary_name,)).fetchall()
+                
+                for row in rows:
+                    concept = SKOSConcept(
+                        uri=row[0],
+                        pref_label=row[1],
+                        alt_labels=json.loads(row[2]) if row[2] else [],
+                        definition=row[3],
+                        broader=json.loads(row[4]) if row[4] else [],
+                        narrower=json.loads(row[5]) if row[5] else [],
+                        related=json.loads(row[6]) if row[6] else [],
+                        vocabulary=vocabulary_name,
+                        created=datetime.fromisoformat(row[7]),
+                        modified=datetime.fromisoformat(row[8])
+                    )
+                    concepts[concept.uri] = concept
         
         except (sqlite3.Error, PermissionError, OSError) as e:
             logger.warning(f"Failed to load concepts for {vocabulary_name} from cache: {e}")
@@ -607,13 +607,13 @@ class OfficialVocabularyClient:
         
         try:
             with sqlite3.connect(self.db_path) as conn:
-            row = conn.execute("""
-                SELECT cached_at FROM vocabularies WHERE name = ?
-            """, (vocabulary_name,)).fetchone()
-            
-            if row:
-                cached_at = datetime.fromisoformat(row[0])
-                return (datetime.now() - cached_at).total_seconds() < self.cache_ttl
+                row = conn.execute("""
+                    SELECT cached_at FROM vocabularies WHERE name = ?
+                """, (vocabulary_name,)).fetchone()
+                
+                if row:
+                    cached_at = datetime.fromisoformat(row[0])
+                    return (datetime.now() - cached_at).total_seconds() < self.cache_ttl
         
         except (sqlite3.Error, PermissionError, OSError) as e:
             logger.warning(f"Failed to check cache validity for {vocabulary_name}: {e}")
