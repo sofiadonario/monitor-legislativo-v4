@@ -10,6 +10,7 @@
 - Fallbacks must use real historical data, not fabricated examples
 - Any data used must be verifiable and academically sound
 - If real data is unavailable, the system should gracefully indicate the limitation rather than show fake data
+- **CRITICAL FALLBACK RULE**: The ONLY fallback method should be the file with 889 results. either in csv or python.
 
 ## 🎯 Senior Engineer Task Execution Rule
 
