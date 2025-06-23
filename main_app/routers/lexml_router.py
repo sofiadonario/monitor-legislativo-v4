@@ -482,16 +482,4 @@ async def startup_warmup():
         logger.warning(f"API warmup failed: {e}")
 
 
-# Error handlers
-@router.exception_handler(LexMLAPIError)
-async def lexml_api_error_handler(request, exc: LexMLAPIError):
-    """Handle LexML API specific errors"""
-    return JSONResponse(
-        status_code=502,
-        content={
-            "error": "LexML API Error",
-            "detail": str(exc),
-            "fallback_available": True,
-            "timestamp": datetime.now().isoformat()
-        }
-    )
+# Error handling is done within endpoints using try/catch blocks
