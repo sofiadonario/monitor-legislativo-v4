@@ -129,12 +129,18 @@ export class LegislativeDataService {
         
         const response = await apiClient.get<any>('/search', enhancedParams);
         
-        console.log('📡 API Response:', { 
-          status: response?.status || 'unknown',
-          resultsCount: response?.results?.length || 0,
-          hasResults: !!response?.results,
-          responseKeys: Object.keys(response || {}),
-          fullResponse: response
+        console.log('📡 API Response Details:');
+        console.log('  - Status:', response?.status || 'unknown');
+        console.log('  - Response Keys:', Object.keys(response || {}));
+        console.log('  - Results field exists:', !!response?.results);
+        console.log('  - Results length:', response?.results?.length || 0);
+        console.log('  - Response.data exists:', !!response?.data);
+        console.log('  - Response.documents exists:', !!response?.documents);
+        console.log('  - Response.items exists:', !!response?.items);
+        console.log('  - All response fields:');
+        Object.keys(response || {}).forEach(key => {
+          const value = response[key];
+          console.log(`    ${key}:`, Array.isArray(value) ? `Array(${value.length})` : typeof value);
         });
         const documents = this.transformSearchResponse(response);
         
