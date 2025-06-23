@@ -255,7 +255,7 @@ class APIService:
             self.last_health_check[source_key] = datetime.now()
             
             return APIStatus(
-                name=service.config.name,
+                name=getattr(service.config, 'name', f"{source_key.upper()} Service"),
                 source=getattr(DataSource, source_key.upper(), DataSource.CAMARA),
                 is_healthy=is_healthy,
                 last_check=datetime.now(),
@@ -266,7 +266,7 @@ class APIService:
             self.logger.error(f"Health check failed for {source_key}: {str(e)}")
             
             return APIStatus(
-                name=service.config.name,
+                name=getattr(service.config, 'name', f"{source_key.upper()} Service"),
                 source=getattr(DataSource, source_key.upper(), DataSource.CAMARA),
                 is_healthy=False,
                 last_check=datetime.now(),
@@ -277,7 +277,7 @@ class APIService:
         """Get dictionary of available sources and their display names"""
         sources = {}
         for key, service in self.services.items():
-            sources[key] = service.config.name
+            sources[key] = getattr(service.config, 'name', f"{key.upper()} Service")
         return sources
     
     async def clear_cache(self, source: Optional[str] = None):

@@ -252,40 +252,77 @@ class LexMLOfficialSearchService:
     async def _search_tier2_regional_apis(self, query: str, filters: Dict[str, Any] = None) -> Optional[SearchResult]:
         """
         Tier 2: Search using existing regional APIs (Câmara, Senado, etc.)
-        This delegates to the existing implementation for compatibility
+        Temporarily bypassed to focus on Tier 3 local data
         """
         try:
-            # Import the original service for Tier 2
-            from .lexml_service import LexMLSearchService as OriginalService
-            
-            original_service = OriginalService(self.config)
-            await original_service.initialize()
-            
-            # Use the original simplified search
-            result = await original_service.search(query, filters)
-            
-            # Mark as Tier 2
-            if result:
-                result.metadata['search_tier'] = 'tier2_regional_apis'
-                result.metadata['fallback_reason'] = 'tier1_unavailable'
-            
-            return result
+            logger.info("Tier 2 (Regional APIs) temporarily bypassed - proceeding to Tier 3")
+            # Return None to proceed to Tier 3
+            return None
             
         except Exception as e:
             logger.error(f"Tier 2 search failed: {e}")
-            raise
+            return None
     
     async def _search_tier3_local_data(self, query: str, filters: Dict[str, Any] = None) -> SearchResult:
         """
         Tier 3: Search using local CSV dataset (889 documents)
         """
         try:
-            # Load local data
-            sys.path.append(str(Path(__file__).parent.parent.parent / 'src' / 'data'))
-            from real_legislative_data import realLegislativeData
+            # Load local data with multiple path attempts
+            realLegislativeData = []
+            
+            # Try multiple import methods
+            try:
+                # Method 1: Direct import
+                sys.path.append(str(Path(__file__).parent.parent.parent / 'src' / 'data'))
+                from real_legislative_data import realLegislativeData
+                logger.info(f"Tier 3: Loaded {len(realLegislativeData)} documents via direct import")
+            except ImportError:
+                # Method 2: Load CSV directly
+                import csv
+                csv_paths = [
+                    Path(__file__).parent.parent.parent / 'public' / 'lexml_transport_results_20250606_123100.csv',
+                    Path(__file__).parent.parent.parent / 'dist' / 'lexml_transport_results_20250606_123100.csv',
+                    Path('/app/public/lexml_transport_results_20250606_123100.csv'),  # Railway path
+                ]
+                
+                for csv_path in csv_paths:
+                    if csv_path.exists():
+                        logger.info(f"Tier 3: Loading CSV from {csv_path}")
+                        with open(csv_path, 'r', encoding='utf-8-sig') as f:
+                            reader = csv.DictReader(f)
+                            realLegislativeData = []
+                            for row in reader:
+                                doc = {
+                                    'id': row['urn'],
+                                    'title': row['title'],
+                                    'url': row['url'],
+                                    'summary': f'Documento relacionado a {row["search_term"]}',
+                                    'type': 'lei',  # Default type
+                                    'date': '2023-01-01',  # Default date
+                                    'chamber': 'Federal',
+                                    'state': 'BR',
+                                    'keywords': [row['search_term']]
+                                }
+                                realLegislativeData.append(doc)
+                        logger.info(f"Tier 3: Loaded {len(realLegislativeData)} documents from CSV")
+                        break
+                else:
+                    logger.error("Tier 3: No CSV file found in any location")
             
             if not realLegislativeData:
-                raise Exception("Local legislative data not available")
+                logger.warning("Tier 3: No legislative data available, returning empty result")
+                return SearchResult(
+                    query=query,
+                    filters=filters or {},
+                    propositions=[],
+                    total_count=0,
+                    source=DataSource.LEXML,
+                    metadata={
+                        'search_tier': 'tier3_local_data',
+                        'error': 'No local data available'
+                    }
+                )
             
             # Expand search terms
             expanded_terms = await self._expand_search_terms(query)
