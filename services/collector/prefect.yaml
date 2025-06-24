@@ -1,0 +1,246 @@
+# Prefect deployment configuration for Monitor Legislativo Collection Service
+# This file defines how Prefect flows are deployed and scheduled
+
+name: monitor-legislativo-collector
+prefect-version: 2.14.0
+
+# Build configuration
+build:
+  - prefect.deployments.steps.run_shell_script:
+      id: get-commit-hash
+      script: git rev-parse --short HEAD
+      stream_output: false
+
+# Deployment configurations
+deployments:
+  # Daily Collection Flow - Runs every day at 2 AM
+  - name: daily-collection
+    version: "{{ get-commit-hash.stdout }}"
+    tags:
+      - production
+      - automated
+      - daily
+    description: |
+      Daily automated collection of legislative documents from LexML and government APIs.
+      Processes all search terms that are due for collection based on their schedules.
+    entrypoint: src/flows/lexml_collection.py:daily_collection_flow
+    parameters: {}
+    work_pool:
+      name: collector-pool
+      work_queue_name: default
+    schedule:
+      cron: "0 2 * * *"  # Daily at 2 AM
+      timezone: "America/Sao_Paulo"
+      active: true
+    job_variables:
+      env:
+        PYTHONPATH: "/app/services/collector"
+        LOG_LEVEL: "INFO"
+        COLLECTION_MODE: "production"
+      cpu_request: 500
+      memory_request: 1024Mi
+      cpu_limit: 1000
+      memory_limit: 2048Mi
+
+  # Manual Collection Flow - On-demand execution
+  - name: manual-collection
+    version: "{{ get-commit-hash.stdout }}"
+    tags:
+      - production
+      - manual
+      - on-demand
+    description: |
+      Manual collection flow for specific search terms.
+      Allows targeted collection with custom parameters and sources.
+    entrypoint: src/flows/lexml_collection.py:manual_collection_flow
+    parameters:
+      search_term_ids: []
+      sources: ["lexml", "multi_source"]
+      max_records: 100
+    work_pool:
+      name: collector-pool
+      work_queue_name: manual
+    schedule: null  # Manual execution only
+    job_variables:
+      env:
+        PYTHONPATH: "/app/services/collector"
+        LOG_LEVEL: "INFO"
+        COLLECTION_MODE: "manual"
+      cpu_request: 500
+      memory_request: 1024Mi
+      cpu_limit: 1500
+      memory_limit: 3072Mi
+
+  # Health Check Flow - Runs every 15 minutes
+  - name: health-check
+    version: "{{ get-commit-hash.stdout }}"
+    tags:
+      - monitoring
+      - health-check
+      - automated
+    description: |
+      Health check flow to monitor system components and API connectivity.
+      Runs frequent checks and reports system status.
+    entrypoint: src/flows/lexml_collection.py:health_check_flow
+    parameters: {}
+    work_pool:
+      name: collector-pool
+      work_queue_name: monitoring
+    schedule:
+      interval: 900  # Every 15 minutes (900 seconds)
+      timezone: "America/Sao_Paulo"
+      active: true
+    job_variables:
+      env:
+        PYTHONPATH: "/app/services/collector"
+        LOG_LEVEL: "INFO"
+        HEALTH_CHECK_MODE: "automated"
+      cpu_request: 200
+      memory_request: 512Mi
+      cpu_limit: 500
+      memory_limit: 1024Mi
+
+# Pull configuration from git
+pull:
+  - prefect.deployments.steps.git_clone:
+      repository: "{{ prefect.variables.git_repository_url }}"
+      branch: "{{ prefect.variables.git_branch | default('main') }}"
+      access_token: "{{ prefect.blocks.secret.github-access-token }}"
+
+# Default work pool configuration
+work_pools:
+  - name: collector-pool
+    type: docker
+    base_job_template:
+      image: "{{ prefect.variables.collector_image | default('monitor-legislativo/collector:latest') }}"
+      env:
+        # Database configuration
+        DATABASE_URL: "{{ prefect.blocks.secret.database-url.get() }}"
+        
+        # Redis configuration  
+        REDIS_URL: "{{ prefect.blocks.secret.redis-url.get() }}"
+        
+        # Alert configuration
+        ALERT_WEBHOOK_URL: "{{ prefect.blocks.secret.alert-webhook-url.get() }}"
+        
+        # API timeouts and limits
+        HTTP_TIMEOUT: "30"
+        MAX_CONCURRENT_COLLECTIONS: "5"
+        MAX_DOCUMENTS_PER_COLLECTION: "1000"
+        
+        # Monitoring configuration
+        ENABLE_PERFORMANCE_TRACKING: "true"
+        ENABLE_METRICS_COLLECTION: "true"
+        METRICS_RETENTION_DAYS: "30"
+        
+        # Logging configuration
+        LOG_LEVEL: "INFO"
+        LOG_FORMAT: "json"
+        
+        # Feature flags
+        ENABLE_CIRCUIT_BREAKER: "true"
+        ENABLE_RATE_LIMITING: "true"
+        ENABLE_AUTOMATIC_RETRIES: "true"
+        
+      volumes:
+        - "/app/data:/app/data"  # For local data storage/caching
+      network_mode: "bridge"
+      restart_policy:
+        name: "on-failure"
+        maximum_retry_count: 3
+      resources:
+        cpu_request: "500m"
+        memory_request: "1Gi"
+        cpu_limit: "2"
+        memory_limit: "4Gi"
+
+# Variable defaults
+variables:
+  git_repository_url: "https://github.com/your-org/monitor-legislativo-v4.git"
+  git_branch: "main"
+  collector_image: "monitor-legislativo/collector:latest"
+  
+  # Collection settings
+  default_max_records: 100
+  collection_timeout_minutes: 30
+  batch_size: 50
+  
+  # Retry settings
+  max_retries: 3
+  retry_delay_seconds: 60
+  circuit_breaker_threshold: 5
+  
+  # Monitoring settings
+  alert_on_failure: true
+  alert_on_slow_collection: true
+  performance_threshold_ms: 30000
+
+# Notifications configuration
+notifications:
+  - name: collection-failure-alert
+    enabled: true
+    match:
+      - prefect.flow-runs.Failed
+    match_related:
+      - prefect.flow-runs.tags: ["production"]
+    webhook_url: "{{ prefect.blocks.secret.alert-webhook-url.get() }}"
+    body: |
+      {
+        "text": "🚨 Collection Flow Failed",
+        "attachments": [
+          {
+            "color": "danger",
+            "fields": [
+              {
+                "title": "Flow",
+                "value": "{{ flow_run.flow_name }}",
+                "short": true
+              },
+              {
+                "title": "State",
+                "value": "{{ flow_run.state.name }}",
+                "short": true
+              },
+              {
+                "title": "Timestamp",
+                "value": "{{ flow_run.state.timestamp }}",
+                "short": true
+              }
+            ]
+          }
+        ]
+      }
+
+  - name: collection-success-summary
+    enabled: true
+    match:
+      - prefect.flow-runs.Completed
+    match_related:
+      - prefect.flow-runs.tags: ["daily"]
+    webhook_url: "{{ prefect.blocks.secret.alert-webhook-url.get() }}"
+    body: |
+      {
+        "text": "✅ Daily Collection Completed",
+        "attachments": [
+          {
+            "color": "good",
+            "fields": [
+              {
+                "title": "Flow",
+                "value": "{{ flow_run.flow_name }}",
+                "short": true
+              },
+              {
+                "title": "Duration",
+                "value": "{{ flow_run.total_run_time }}",
+                "short": true
+              },
+              {
+                "title": "Completed At",
+                "value": "{{ flow_run.state.timestamp }}",
+                "short": true
+              }
+            ]
+          }
+        ]
+      }
