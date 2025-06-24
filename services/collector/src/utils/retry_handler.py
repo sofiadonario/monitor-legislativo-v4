@@ -301,7 +301,9 @@ def get_retry_config(api_name: str) -> Dict[str, Any]:
         'anm': RetryConfig.REGULATORY_AGENCIES,
         'anp': RetryConfig.REGULATORY_AGENCIES,
         'antaq': RetryConfig.REGULATORY_AGENCIES,
-        'cade': RetryConfig.REGULATORY_AGENCIES
+        'cade': RetryConfig.REGULATORY_AGENCIES,
+        'government_apis': RetryConfig.REGULATORY_AGENCIES,  # For multi-source collection
+        'multi_source': RetryConfig.REGULATORY_AGENCIES
     }
     
     return config_map.get(api_name, RetryConfig.LEXML_API)

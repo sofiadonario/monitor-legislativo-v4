@@ -455,6 +455,545 @@ class ANTTAPIClient(GovernmentAPIClient):
         return documents
 
 
+class ANACAPIClient(GovernmentAPIClient):
+    """Client for ANAC (Agência Nacional de Aviação Civil)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANAC",
+            base_url="https://sistemas.anac.gov.br/dadosabertos/api"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANAC regulations and resolutions"""
+        documents = []
+        
+        try:
+            # ANAC often uses datasets endpoint
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:resolucao OR type:portaria OR type:instrucao_normativa'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/datasets", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            for item in data.get('results', []):
+                doc = {
+                    'urn': f"urn:lex:br:anac:{item.get('type', 'documento')}:{item.get('id', 'unknown')}",
+                    'title': item.get('title', 'Sem título'),
+                    'description': item.get('description', ''),
+                    'document_type': item.get('type', 'Resolução').title(),
+                    'document_date': item.get('created', '').split('T')[0],
+                    'metadata': {
+                        'api_source': 'anac',
+                        'item_id': item.get('id'),
+                        'category': item.get('category'),
+                        'tags': item.get('tags', [])
+                    },
+                    'content_hash': hashlib.sha256(f"{item.get('id', '')}:{item.get('title', '')}".encode()).hexdigest()
+                }
+                documents.append(doc)
+                
+        except Exception as e:
+            logger.error(f"ANAC API error: {e}")
+        
+        return documents
+
+
+class ANEELAPIClient(GovernmentAPIClient):
+    """Client for ANEEL (Agência Nacional de Energia Elétrica)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANEEL",
+            base_url="https://dadosabertos.aneel.gov.br/api/3/action"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANEEL regulations and resolutions"""
+        documents = []
+        
+        try:
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:resolucao OR type:despacho OR type:nota_tecnica'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/package_search", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data.get('success'):
+                for package in data.get('result', {}).get('results', []):
+                    doc = {
+                        'urn': f"urn:lex:br:aneel:{package.get('type', 'documento')}:{package['id']}",
+                        'title': package.get('title', 'Sem título'),
+                        'description': package.get('notes', ''),
+                        'document_type': package.get('type', 'Resolução').title(),
+                        'document_date': package.get('metadata_created', '').split('T')[0],
+                        'metadata': {
+                            'api_source': 'aneel',
+                            'package_id': package['id'],
+                            'organization': package.get('organization', {}).get('title'),
+                            'tags': [tag['name'] for tag in package.get('tags', [])]
+                        },
+                        'content_hash': hashlib.sha256(f"{package['id']}:{package.get('title', '')}".encode()).hexdigest()
+                    }
+                    documents.append(doc)
+                    
+        except Exception as e:
+            logger.error(f"ANEEL API error: {e}")
+        
+        return documents
+
+
+class ANATELAPIClient(GovernmentAPIClient):
+    """Client for ANATEL (Agência Nacional de Telecomunicações)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANATEL",
+            base_url="https://sistemas.anatel.gov.br/dadosabertos/api"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANATEL regulations and resolutions"""
+        documents = []
+        
+        try:
+            # ANATEL may use different API structure
+            params = {
+                'termo': query,
+                'limite': min(limit, 100),
+                'tipo': 'resolucao,ato,portaria'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/documentos", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            for item in data.get('documentos', []):
+                doc = {
+                    'urn': f"urn:lex:br:anatel:{item.get('tipo', 'documento')}:{item.get('numero', 'unknown')}",
+                    'title': f"{item.get('tipo', 'Documento')} {item.get('numero', '')} - {item.get('ementa', '')}",
+                    'description': item.get('ementa', ''),
+                    'document_type': item.get('tipo', 'Resolução').title(),
+                    'document_date': item.get('data_publicacao'),
+                    'metadata': {
+                        'api_source': 'anatel',
+                        'numero': item.get('numero'),
+                        'ano': item.get('ano'),
+                        'status': item.get('status')
+                    },
+                    'content_hash': hashlib.sha256(f"{item.get('numero', '')}:{item.get('ementa', '')}".encode()).hexdigest()
+                }
+                documents.append(doc)
+                
+        except Exception as e:
+            logger.error(f"ANATEL API error: {e}")
+        
+        return documents
+
+
+class ANVISAAPIClient(GovernmentAPIClient):
+    """Client for ANVISA (Agência Nacional de Vigilância Sanitária)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANVISA", 
+            base_url="https://dadosabertos.anvisa.gov.br/api/3/action"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANVISA regulations and resolutions"""
+        documents = []
+        
+        try:
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:resolucao OR type:instrucao_normativa OR type:portaria'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/package_search", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data.get('success'):
+                for package in data.get('result', {}).get('results', []):
+                    doc = {
+                        'urn': f"urn:lex:br:anvisa:{package.get('type', 'documento')}:{package['id']}",
+                        'title': package.get('title', 'Sem título'),
+                        'description': package.get('notes', ''),
+                        'document_type': package.get('type', 'Resolução').title(),
+                        'document_date': package.get('metadata_created', '').split('T')[0],
+                        'metadata': {
+                            'api_source': 'anvisa',
+                            'package_id': package['id'],
+                            'organization': package.get('organization', {}).get('title'),
+                            'tags': [tag['name'] for tag in package.get('tags', [])]
+                        },
+                        'content_hash': hashlib.sha256(f"{package['id']}:{package.get('title', '')}".encode()).hexdigest()
+                    }
+                    documents.append(doc)
+                    
+        except Exception as e:
+            logger.error(f"ANVISA API error: {e}")
+        
+        return documents
+
+
+class ANSAPIClient(GovernmentAPIClient):
+    """Client for ANS (Agência Nacional de Saúde Suplementar)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANS",
+            base_url="https://dadosabertos.ans.gov.br/api/3/action"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANS regulations and resolutions"""
+        documents = []
+        
+        try:
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:resolucao OR type:instrucao_normativa OR type:comunicado'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/package_search", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data.get('success'):
+                for package in data.get('result', {}).get('results', []):
+                    doc = {
+                        'urn': f"urn:lex:br:ans:{package.get('type', 'documento')}:{package['id']}",
+                        'title': package.get('title', 'Sem título'),
+                        'description': package.get('notes', ''),
+                        'document_type': package.get('type', 'Resolução').title(),
+                        'document_date': package.get('metadata_created', '').split('T')[0],
+                        'metadata': {
+                            'api_source': 'ans',
+                            'package_id': package['id'],
+                            'organization': package.get('organization', {}).get('title'),
+                            'tags': [tag['name'] for tag in package.get('tags', [])]
+                        },
+                        'content_hash': hashlib.sha256(f"{package['id']}:{package.get('title', '')}".encode()).hexdigest()
+                    }
+                    documents.append(doc)
+                    
+        except Exception as e:
+            logger.error(f"ANS API error: {e}")
+        
+        return documents
+
+
+class ANAAPIClient(GovernmentAPIClient):
+    """Client for ANA (Agência Nacional de Águas)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANA",
+            base_url="https://dadosabertos.ana.gov.br/api/3/action"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANA regulations and resolutions"""
+        documents = []
+        
+        try:
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:resolucao OR type:portaria OR type:instrucao_normativa'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/package_search", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data.get('success'):
+                for package in data.get('result', {}).get('results', []):
+                    doc = {
+                        'urn': f"urn:lex:br:ana:{package.get('type', 'documento')}:{package['id']}",
+                        'title': package.get('title', 'Sem título'),
+                        'description': package.get('notes', ''),
+                        'document_type': package.get('type', 'Resolução').title(),
+                        'document_date': package.get('metadata_created', '').split('T')[0],
+                        'metadata': {
+                            'api_source': 'ana',
+                            'package_id': package['id'],
+                            'organization': package.get('organization', {}).get('title'),
+                            'tags': [tag['name'] for tag in package.get('tags', [])]
+                        },
+                        'content_hash': hashlib.sha256(f"{package['id']}:{package.get('title', '')}".encode()).hexdigest()
+                    }
+                    documents.append(doc)
+                    
+        except Exception as e:
+            logger.error(f"ANA API error: {e}")
+        
+        return documents
+
+
+class ANCINEAPIClient(GovernmentAPIClient):
+    """Client for ANCINE (Agência Nacional do Cinema)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANCINE",
+            base_url="https://dadosabertos.ancine.gov.br/api/3/action"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANCINE regulations and resolutions"""
+        documents = []
+        
+        try:
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:instrucao_normativa OR type:portaria OR type:resolucao'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/package_search", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data.get('success'):
+                for package in data.get('result', {}).get('results', []):
+                    doc = {
+                        'urn': f"urn:lex:br:ancine:{package.get('type', 'documento')}:{package['id']}",
+                        'title': package.get('title', 'Sem título'),
+                        'description': package.get('notes', ''),
+                        'document_type': package.get('type', 'Instrução Normativa').title(),
+                        'document_date': package.get('metadata_created', '').split('T')[0],
+                        'metadata': {
+                            'api_source': 'ancine',
+                            'package_id': package['id'],
+                            'organization': package.get('organization', {}).get('title'),
+                            'tags': [tag['name'] for tag in package.get('tags', [])]
+                        },
+                        'content_hash': hashlib.sha256(f"{package['id']}:{package.get('title', '')}".encode()).hexdigest()
+                    }
+                    documents.append(doc)
+                    
+        except Exception as e:
+            logger.error(f"ANCINE API error: {e}")
+        
+        return documents
+
+
+class ANMAPIClient(GovernmentAPIClient):
+    """Client for ANM (Agência Nacional de Mineração)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANM",
+            base_url="https://dadosabertos.anm.gov.br/api/3/action"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANM regulations and resolutions"""
+        documents = []
+        
+        try:
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:portaria OR type:instrucao_normativa OR type:resolucao'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/package_search", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data.get('success'):
+                for package in data.get('result', {}).get('results', []):
+                    doc = {
+                        'urn': f"urn:lex:br:anm:{package.get('type', 'documento')}:{package['id']}",
+                        'title': package.get('title', 'Sem título'),
+                        'description': package.get('notes', ''),
+                        'document_type': package.get('type', 'Portaria').title(),
+                        'document_date': package.get('metadata_created', '').split('T')[0],
+                        'metadata': {
+                            'api_source': 'anm',
+                            'package_id': package['id'],
+                            'organization': package.get('organization', {}).get('title'),
+                            'tags': [tag['name'] for tag in package.get('tags', [])]
+                        },
+                        'content_hash': hashlib.sha256(f"{package['id']}:{package.get('title', '')}".encode()).hexdigest()
+                    }
+                    documents.append(doc)
+                    
+        except Exception as e:
+            logger.error(f"ANM API error: {e}")
+        
+        return documents
+
+
+class ANPAPIClient(GovernmentAPIClient):
+    """Client for ANP (Agência Nacional do Petróleo)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANP",
+            base_url="https://dadosabertos.anp.gov.br/api/3/action"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANP regulations and resolutions"""
+        documents = []
+        
+        try:
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:resolucao OR type:portaria OR type:regulamento_tecnico'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/package_search", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data.get('success'):
+                for package in data.get('result', {}).get('results', []):
+                    doc = {
+                        'urn': f"urn:lex:br:anp:{package.get('type', 'documento')}:{package['id']}",
+                        'title': package.get('title', 'Sem título'),
+                        'description': package.get('notes', ''),
+                        'document_type': package.get('type', 'Resolução').title(),
+                        'document_date': package.get('metadata_created', '').split('T')[0],
+                        'metadata': {
+                            'api_source': 'anp',
+                            'package_id': package['id'],
+                            'organization': package.get('organization', {}).get('title'),
+                            'tags': [tag['name'] for tag in package.get('tags', [])]
+                        },
+                        'content_hash': hashlib.sha256(f"{package['id']}:{package.get('title', '')}".encode()).hexdigest()
+                    }
+                    documents.append(doc)
+                    
+        except Exception as e:
+            logger.error(f"ANP API error: {e}")
+        
+        return documents
+
+
+class ANTAQAPIClient(GovernmentAPIClient):
+    """Client for ANTAQ (Agência Nacional de Transportes Aquaviários)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="ANTAQ",
+            base_url="https://dados.antaq.gov.br/api/3/action"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search ANTAQ regulations and resolutions"""
+        documents = []
+        
+        try:
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:resolucao OR type:portaria OR type:instrucao_normativa'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/package_search", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data.get('success'):
+                for package in data.get('result', {}).get('results', []):
+                    doc = {
+                        'urn': f"urn:lex:br:antaq:{package.get('type', 'documento')}:{package['id']}",
+                        'title': package.get('title', 'Sem título'),
+                        'description': package.get('notes', ''),
+                        'document_type': package.get('type', 'Resolução').title(),
+                        'document_date': package.get('metadata_created', '').split('T')[0],
+                        'metadata': {
+                            'api_source': 'antaq',
+                            'package_id': package['id'],
+                            'organization': package.get('organization', {}).get('title'),
+                            'tags': [tag['name'] for tag in package.get('tags', [])]
+                        },
+                        'content_hash': hashlib.sha256(f"{package['id']}:{package.get('title', '')}".encode()).hexdigest()
+                    }
+                    documents.append(doc)
+                    
+        except Exception as e:
+            logger.error(f"ANTAQ API error: {e}")
+        
+        return documents
+
+
+class CADEAPIClient(GovernmentAPIClient):
+    """Client for CADE (Conselho Administrativo de Defesa Econômica)"""
+    
+    def __init__(self):
+        super().__init__(
+            api_name="CADE",
+            base_url="https://dadosabertos.cade.gov.br/api/3/action"
+        )
+    
+    async def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search CADE regulations and resolutions"""
+        documents = []
+        
+        try:
+            params = {
+                'q': query,
+                'rows': min(limit, 100),
+                'fq': 'type:resolucao OR type:portaria OR type:instrucao'
+            }
+            
+            response = await self.session.get(f"{self.base_url}/package_search", params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data.get('success'):
+                for package in data.get('result', {}).get('results', []):
+                    doc = {
+                        'urn': f"urn:lex:br:cade:{package.get('type', 'documento')}:{package['id']}",
+                        'title': package.get('title', 'Sem título'),
+                        'description': package.get('notes', ''),
+                        'document_type': package.get('type', 'Resolução').title(),
+                        'document_date': package.get('metadata_created', '').split('T')[0],
+                        'metadata': {
+                            'api_source': 'cade',
+                            'package_id': package['id'],
+                            'organization': package.get('organization', {}).get('title'),
+                            'tags': [tag['name'] for tag in package.get('tags', [])]
+                        },
+                        'content_hash': hashlib.sha256(f"{package['id']}:{package.get('title', '')}".encode()).hexdigest()
+                    }
+                    documents.append(doc)
+                    
+        except Exception as e:
+            logger.error(f"CADE API error: {e}")
+        
+        return documents
+
+
 class MultiSourceCollector:
     """Collector that aggregates results from multiple government APIs"""
     
@@ -463,23 +1002,33 @@ class MultiSourceCollector:
             'lexml': LexMLCollectionClient(),
             'camara': CamaraAPIClient(),
             'senado': SenadoAPIClient(),
-            'antt': ANTTAPIClient()
+            'antt': ANTTAPIClient(),
+            'anac': ANACAPIClient(),
+            'aneel': ANEELAPIClient(),
+            'anatel': ANATELAPIClient(),
+            'anvisa': ANVISAAPIClient(),
+            'ans': ANSAPIClient(),
+            'ana': ANAAPIClient(),
+            'ancine': ANCINEAPIClient(),
+            'anm': ANMAPIClient(),
+            'anp': ANPAPIClient(),
+            'antaq': ANTAQAPIClient(),
+            'cade': CADEAPIClient()
         }
         
-        # Additional agencies to be implemented
-        self.agency_list = [
-            'anac',   # Agência Nacional de Aviação Civil
-            'aneel',  # Agência Nacional de Energia Elétrica
-            'anatel', # Agência Nacional de Telecomunicações
-            'anvisa', # Agência Nacional de Vigilância Sanitária
-            'ans',    # Agência Nacional de Saúde Suplementar
-            'ana',    # Agência Nacional de Águas
-            'ancine', # Agência Nacional do Cinema
-            'anm',    # Agência Nacional de Mineração
-            'anp',    # Agência Nacional do Petróleo
-            'antaq',  # Agência Nacional de Transportes Aquaviários
-            'cade'    # Conselho Administrativo de Defesa Econômica
-        ]
+        # Agency categories for targeted collection
+        self.agency_categories = {
+            'transport': ['antt', 'anac', 'antaq'],
+            'energy': ['aneel', 'anp'],
+            'telecommunications': ['anatel'],
+            'health': ['anvisa', 'ans'],
+            'environment': ['ana'],
+            'culture': ['ancine'],
+            'mining': ['anm'],
+            'competition': ['cade'],
+            'legislative': ['camara', 'senado'],
+            'legal_database': ['lexml']
+        }
     
     async def collect_from_all_sources(self, query: str, max_records_per_source: int = 50) -> Dict[str, List[Dict[str, Any]]]:
         """Collect documents from all available sources"""
@@ -504,3 +1053,90 @@ class MultiSourceCollector:
                 results[source_name] = []
         
         return results
+    
+    async def collect_from_category(self, query: str, category: str, max_records_per_source: int = 50) -> Dict[str, List[Dict[str, Any]]]:
+        """Collect documents from specific category of agencies"""
+        if category not in self.agency_categories:
+            logger.error(f"Unknown category: {category}")
+            return {}
+        
+        results = {}
+        agencies = self.agency_categories[category]
+        
+        for agency in agencies:
+            if agency in self.clients:
+                try:
+                    logger.info(f"Collecting from {agency} (category: {category})...")
+                    client = self.clients[agency]
+                    
+                    if agency == 'lexml':
+                        documents = await client.collect_documents(query, max_records_per_source)
+                    else:
+                        async with client:
+                            documents = await client.search(query, limit=max_records_per_source)
+                    
+                    results[agency] = documents
+                    logger.info(f"Collected {len(documents)} documents from {agency}")
+                    
+                except Exception as e:
+                    logger.error(f"Error collecting from {agency}: {e}")
+                    results[agency] = []
+        
+        return results
+    
+    async def collect_transport_focused(self, query: str, max_records_per_source: int = 50) -> Dict[str, List[Dict[str, Any]]]:
+        """Specialized collection for transport-related queries"""
+        # Prioritize transport agencies and LexML
+        priority_sources = ['lexml', 'antt', 'anac', 'antaq', 'camara', 'senado']
+        results = {}
+        
+        for source_name in priority_sources:
+            if source_name in self.clients:
+                try:
+                    logger.info(f"Transport collection from {source_name}...")
+                    client = self.clients[source_name]
+                    
+                    if source_name == 'lexml':
+                        # Use transport-specific query expansion for LexML
+                        transport_query = f"{query} AND (transporte OR mobilidade OR trânsito OR aviação OR portuário OR rodoviário OR ferroviário)"
+                        documents = await client.collect_documents(transport_query, max_records_per_source)
+                    else:
+                        async with client:
+                            documents = await client.search(query, limit=max_records_per_source)
+                    
+                    results[source_name] = documents
+                    logger.info(f"Transport collection: {len(documents)} documents from {source_name}")
+                    
+                except Exception as e:
+                    logger.error(f"Transport collection error from {source_name}: {e}")
+                    results[source_name] = []
+        
+        return results
+    
+    def get_available_sources(self) -> List[str]:
+        """Get list of all available sources"""
+        return list(self.clients.keys())
+    
+    def get_category_sources(self, category: str) -> List[str]:
+        """Get sources for a specific category"""
+        return self.agency_categories.get(category, [])
+    
+    def get_source_info(self) -> Dict[str, Dict[str, str]]:
+        """Get information about all sources"""
+        source_info = {}
+        
+        for source_name, client in self.clients.items():
+            if hasattr(client, 'api_name'):
+                source_info[source_name] = {
+                    'name': client.api_name,
+                    'base_url': client.base_url,
+                    'type': 'government_api'
+                }
+            else:
+                source_info[source_name] = {
+                    'name': 'LexML Brasil',
+                    'base_url': client.base_url,
+                    'type': 'legal_database'
+                }
+        
+        return source_info
