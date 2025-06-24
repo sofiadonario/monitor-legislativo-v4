@@ -32,8 +32,13 @@ class SupabaseConfig:
     @classmethod
     def get_async_engine(cls):
         """Create async engine optimized for Supabase free tier"""
+        # Convert DATABASE_URL to asyncpg format
+        db_url = cls.DATABASE_URL
+        if db_url.startswith('postgresql://'):
+            db_url = db_url.replace('postgresql://', 'postgresql+asyncpg://', 1)
+        
         return create_async_engine(
-            cls.DATABASE_URL,
+            db_url,
             pool_size=cls.POOL_SIZE,
             max_overflow=cls.MAX_OVERFLOW,
             pool_timeout=cls.POOL_TIMEOUT,
@@ -43,7 +48,11 @@ class SupabaseConfig:
             connect_args={
                 "server_settings": {
                     "application_name": "monitor_legislativo_v4",
-                }
+                },
+                # SSL configuration for Supabase
+                "ssl": "require",
+                "command_timeout": 60,
+                "prepared_statement_cache_size": 0,  # Disable for Supabase compatibility
             }
         )
     
@@ -66,13 +75,23 @@ class DatabaseManager:
         self.session_factory = SupabaseConfig.get_session_factory()
     
     async def test_connection(self) -> bool:
-        """Test database connection"""
+        """Test database connection with detailed error reporting"""
         try:
             async with self.session_factory() as session:
                 result = await session.execute(text("SELECT 1"))
+                logger.info("Database connection successful")
                 return result.scalar() == 1
+        except ImportError as e:
+            logger.error(f"Missing dependency: {e}")
+            logger.error("Please install: pip install sqlalchemy[asyncio] asyncpg")
+            return False
         except Exception as e:
             logger.error(f"Database connection test failed: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            if "ssl" in str(e).lower():
+                logger.error("SSL issue detected. Checking SSL configuration...")
+            elif "authentication" in str(e).lower():
+                logger.error("Authentication issue. Please check DATABASE_URL")
             return False
     
     async def initialize_schema(self) -> bool:
