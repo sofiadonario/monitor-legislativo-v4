@@ -63,7 +63,10 @@
       "Bash(rg:*)",
       "Bash(git pull:*)",
       "Bash(gh api:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(npx gh-pages:*)",
+      "Bash(npm run postinstall:*)",
+      "Bash(timeout 30 npx gh-pages -d dist --no-history)"
     ]
   },
   "enableAllProjectMcpServers": false

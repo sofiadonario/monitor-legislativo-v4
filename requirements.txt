@@ -166,3 +166,12 @@ cryptography==41.0.7
 # WHY: 3x faster than standard JSON, important for large datasets
 # VERSION: Latest stable for production use
 orjson==3.9.10
+
+# =============================================================================
+# TWO-TIER ARCHITECTURE DEPENDENCIES
+# =============================================================================
+
+# Prefect - Workflow orchestration for automated collection
+# WHY: Reliable task scheduling, error handling, and monitoring
+# VERSION: 2.x with Python 3.11 support
+prefect==2.14.11

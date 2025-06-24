@@ -1,18 +1,25 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import sys
+import os
+
+# Add parent directory to path for core imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from . import gateway_router
 from .routers import lexml_router
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
+from core.database.two_tier_manager import get_two_tier_manager
 
 logger = logging.getLogger(__name__)
 
-# Version 1.2.0 - Enhanced with Database Integration
+# Version 2.0.0 - Two-Tier Architecture
 app = FastAPI(
-    title="Monitor Legislativo - Enhanced Service",
-    description="Brazilian Legislative Monitor with Database-Backed Caching and Analytics",
-    version="1.2.0"
+    title="Monitor Legislativo - Two-Tier Service",
+    description="Brazilian Legislative Monitor with Automated Collection and Advanced Analytics",
+    version="2.0.0"
 )
 
 # Configure CORS
@@ -50,7 +57,11 @@ async def startup_event():
         search_service = await get_simple_search_service()
         logger.info("✅ Enhanced search service initialized successfully")
         
-        logger.info("🚀 Monitor Legislativo Enhanced Service startup complete")
+        # Initialize two-tier manager
+        two_tier_manager = await get_two_tier_manager()
+        logger.info("✅ Two-tier database manager initialized successfully")
+        
+        logger.info("🚀 Monitor Legislativo Two-Tier Service startup complete")
         
     except Exception as e:
         logger.error(f"❌ Startup initialization failed: {e}")
@@ -69,7 +80,7 @@ async def shutdown_event():
             await cache_service.db_manager.close()
             logger.info("✅ Database connections closed")
         
-        logger.info("🔻 Monitor Legislativo Enhanced Service shutdown complete")
+        logger.info("🔻 Monitor Legislativo Two-Tier Service shutdown complete")
         
     except Exception as e:
         logger.error(f"❌ Shutdown cleanup failed: {e}")
@@ -77,17 +88,20 @@ async def shutdown_event():
 @app.get("/", tags=["Root"])
 async def read_root():
     return {
-        "message": "Welcome to the Monitor Legislativo Enhanced Service",
-        "version": "1.2.0",
+        "message": "Welcome to the Monitor Legislativo Two-Tier Service",
+        "version": "2.0.0",
         "features": [
-            "Database-Backed Search Result Caching for 70% Performance Improvement",
-            "Academic Analytics and Search Pattern Tracking",
-            "Three-Tier Fallback Architecture (LexML → Regional APIs → 889 CSV Documents)",
-            "SKOS Vocabulary Expansion with Transport Domain Expertise",
-            "PostgreSQL Integration with Supabase Free Tier",
-            "Export Result Caching and Management",
-            "Real-time Performance Monitoring and Health Checks",
-            "Academic Research Tools with Proper Citations"
+            "🤖 Automated Data Collection with Prefect Orchestration",
+            "📊 Real-time Analytics Dashboard with R Shiny Integration",
+            "🔄 Two-Tier Architecture: Collection Service + Analytics Platform",
+            "📈 Database-Backed Search Result Caching for 70% Performance Improvement",
+            "🎓 Academic Analytics and Research Pattern Tracking",
+            "🏛️ Three-Tier Fallback Architecture (LexML → Regional APIs → 889 CSV Documents)",
+            "🧠 SKOS Vocabulary Expansion with Transport Domain Expertise",
+            "🗄️ PostgreSQL Integration with Advanced Schema Design",
+            "📤 Export Result Caching and Management",
+            "📊 Real-time Performance Monitoring and Health Checks",
+            "🎯 Academic Research Tools with DOI and Citation Support"
         ]
     }
 
@@ -104,15 +118,18 @@ async def health_check():
         
         return {
             "status": "healthy",
-            "service": "monitor-legislativo-enhanced-api",
-            "version": "1.2.0",
+            "service": "monitor-legislativo-two-tier-api",
+            "version": "2.0.0",
             "components": {
+                "two_tier_architecture": "operational",
+                "automated_collection": "available",
                 "database_integration": "available" if cache_service.db_available else "fallback_mode",
                 "search_caching": "enabled" if cache_service.db_available else "disabled",
                 "analytics_tracking": "enabled" if cache_service.db_available else "disabled",
                 "three_tier_fallback": "operational",
                 "csv_fallback_889_docs": "ready",
-                "performance_monitoring": "active"
+                "performance_monitoring": "active",
+                "prefect_orchestration": "ready"
             },
             "database_status": cache_health,
             "search_status": search_health
@@ -121,7 +138,7 @@ async def health_check():
         logger.error(f"Health check failed: {e}")
         return {
             "status": "degraded",
-            "service": "monitor-legislativo-enhanced-api",
-            "version": "1.2.0",
+            "service": "monitor-legislativo-two-tier-api",
+            "version": "2.0.0",
             "error": str(e)
         } 

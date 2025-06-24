@@ -1,0 +1,169 @@
+version: '3.8'
+
+networks:
+  legislativo:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  prefect_data:
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: legislativo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - legislativo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - legislativo
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # TIER 1: Data Collection Service
+  collector:
+    build:
+      context: ./services/collector
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/legislativo
+      - REDIS_URL=redis://redis:6379
+      - PREFECT_API_URL=http://prefect:4200/api
+    volumes:
+      - ./services/collector:/app
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      prefect:
+        condition: service_started
+    networks:
+      - legislativo
+    restart: unless-stopped
+
+  # Prefect Orchestration
+  prefect:
+    image: prefecthq/prefect:2-python3.11
+    command: prefect server start --host 0.0.0.0
+    environment:
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql://postgres:postgres@postgres:5432/prefect
+    ports:
+      - "4200:4200"
+    volumes:
+      - prefect_data:/root/.prefect
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - legislativo
+
+  # TIER 2: Analytics Platform
+  api:
+    build:
+      context: ./main_app
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/legislativo
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./main_app:/app
+      - ./core:/app/core
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - legislativo
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_ANALYTICS_URL=http://localhost:3838
+    depends_on:
+      - api
+    networks:
+      - legislativo
+
+  analytics:
+    build:
+      context: ./r-shiny-app
+      dockerfile: Dockerfile
+    ports:
+      - "3838:3838"
+    volumes:
+      - ./r-shiny-app:/srv/shiny-server
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/legislativo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - legislativo
+
+  # Development Tools
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@legislativo.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - legislativo
+    profiles:
+      - dev-tools
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - legislativo
+    profiles:
+      - dev-tools

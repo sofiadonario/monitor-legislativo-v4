@@ -140,7 +140,7 @@ export class LexMLAPIService {
         throw new Error(`Search failed: ${response.status} ${response.statusText}`);
       }
       
-      const result: LexMLSearchResponse = await response.json();
+      const result: any = await response.json();
       
       // Debug logging to see what we're actually getting
       console.log('🔍 Raw API Response:', {
@@ -152,14 +152,45 @@ export class LexMLAPIService {
         keys: Object.keys(result)
       });
       
+      // Transform backend response to frontend expected structure
+      const transformedDocuments = (result.documents || []).map((doc: any) => ({
+        metadata: {
+          urn: doc.urn,
+          title: doc.title,
+          description: doc.description || '',
+          date: doc.metadata?.date || new Date().toISOString().split('T')[0],
+          tipoDocumento: doc.metadata?.type || 'Lei',
+          autoridade: doc.metadata?.chamber?.toLowerCase() || 'federal',
+          localidade: doc.metadata?.state || 'BR',
+          subject: doc.metadata?.keywords || [],
+          identifier: doc.urn,
+          source_url: doc.url
+        },
+        full_text: doc.full_text,
+        structure: doc.structure,
+        last_modified: doc.metadata?.date || new Date().toISOString(),
+        data_source: result.data_source || 'csv-fallback',
+        cache_key: doc.urn
+      }));
+      
       // Add frontend-specific enhancements
-      const enhancedResult = {
-        ...result,
-        // Ensure we have proper defaults
-        total_found: result.total_found || result.documents.length,
+      const enhancedResult: LexMLSearchResponse = {
+        documents: transformedDocuments,
+        total_found: result.total_found || result.documents?.length || 0,
+        start_record: result.start_record || 1,
+        records_returned: transformedDocuments.length,
+        next_start_record: result.next_start_record,
+        search_time_ms: result.search_time_ms || 0,
+        data_source: result.data_source || 'csv-fallback',
         cache_hit: result.cache_hit || false,
         api_status: result.api_status || 'unknown'
       };
+      
+      console.log('🔄 Transformed Response:', {
+        originalCount: result.documents?.length || 0,
+        transformedCount: transformedDocuments.length,
+        sampleDocument: transformedDocuments[0] || null
+      });
       
       // Cache the successful result
       setCachedSearchResults(query, request.filters, startRecord, maxRecords, enhancedResult);
