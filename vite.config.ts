@@ -63,14 +63,22 @@ export default defineConfig({
         drop_console: false, // Keep console.log for debugging
         drop_debugger: true,
         pure_funcs: ['console.debug'], // Remove only debug logs
-        // Strict eval removal
-        unsafe_eval: false,
         keep_infinity: true,
         // Remove development code
         global_defs: {
           __DEV__: false,
           'process.env.NODE_ENV': 'production'
-        }
+        },
+        // Prevent eval usage
+        unsafe: false,
+        unsafe_comps: false,
+        unsafe_Function: false,
+        unsafe_math: false,
+        unsafe_symbols: false,
+        unsafe_methods: false,
+        unsafe_proto: false,
+        unsafe_regexp: false,
+        unsafe_undefined: false
       },
       mangle: {
         safari10: true // Ensure Safari compatibility
