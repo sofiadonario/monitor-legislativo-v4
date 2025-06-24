@@ -21,20 +21,16 @@ import {
   getCachedSuggestions,
   setCachedSuggestions
 } from './CacheService';
+import { getApiBaseUrl } from '../../../config/api';
 
 export class LexMLAPIService {
   private baseURL: string;
   private defaultTimeout = 10000; // 10 seconds
   
   constructor(baseURL: string = '') {
-    // Handle different environments
-    if (typeof window !== 'undefined') {
-      // Browser environment
-      this.baseURL = baseURL || window.location.origin;
-    } else {
-      // Server environment or build time
-      this.baseURL = baseURL || 'http://localhost:8000';
-    }
+    // Use provided URL or get from API configuration
+    this.baseURL = baseURL || getApiBaseUrl();
+    console.log(`🔧 LexMLAPIService initialized with baseURL: ${this.baseURL}`);
   }
 
   /**
