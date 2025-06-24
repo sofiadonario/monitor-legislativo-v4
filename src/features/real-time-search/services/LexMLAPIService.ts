@@ -132,6 +132,16 @@ export class LexMLAPIService {
       
       const result: LexMLSearchResponse = await response.json();
       
+      // Debug logging to see what we're actually getting
+      console.log('🔍 Raw API Response:', {
+        url: `${this.baseURL}/api/lexml/search?${searchParams}`,
+        status: response.status,
+        result: result,
+        total_found: result.total_found,
+        documents_length: result.documents?.length,
+        keys: Object.keys(result)
+      });
+      
       // Add frontend-specific enhancements
       const enhancedResult = {
         ...result,
