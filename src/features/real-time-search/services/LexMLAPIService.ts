@@ -115,7 +115,10 @@ export class LexMLAPIService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.defaultTimeout);
       
-      const response = await fetch(`${this.baseURL}/api/lexml/search?${searchParams}`, {
+      const fullUrl = `${this.baseURL}/api/lexml/search?${searchParams}`;
+      console.log('🌐 Making API request to:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -125,6 +128,13 @@ export class LexMLAPIService {
       });
       
       clearTimeout(timeoutId);
+      
+      console.log('📡 Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
       
       if (!response.ok) {
         throw new Error(`Search failed: ${response.status} ${response.statusText}`);
@@ -157,7 +167,14 @@ export class LexMLAPIService {
       return enhancedResult;
       
     } catch (error) {
-      console.error('LexML search error:', error);
+      console.error('🚨 LexML search error details:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        name: error instanceof Error ? error.name : 'Unknown error type',
+        baseURL: this.baseURL,
+        searchParams: searchParams.toString()
+      });
       
       // Return fallback response on error
       return {
