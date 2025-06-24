@@ -56,42 +56,8 @@ export default defineConfig({
         tryCatchDeoptimization: false
       }
     },
-    // Use terser minification (CSP-compliant, no eval)
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: false, // Keep console.log for debugging
-        drop_debugger: true,
-        pure_funcs: ['console.debug'], // Remove only debug logs
-        keep_infinity: true,
-        // Remove development code
-        global_defs: {
-          __DEV__: false,
-          'process.env.NODE_ENV': 'production'
-        },
-        // Prevent eval usage
-        unsafe: false,
-        unsafe_comps: false,
-        unsafe_Function: false,
-        unsafe_math: false,
-        unsafe_symbols: false,
-        unsafe_methods: false,
-        unsafe_proto: false,
-        unsafe_regexp: false,
-        unsafe_undefined: false
-      },
-      mangle: {
-        safari10: true // Ensure Safari compatibility
-      },
-      format: {
-        comments: false // Remove comments
-      },
-      // Ensure no eval is generated
-      parse: {
-        ecma: 2015
-      },
-      ecma: 2015
-    },
+    // Disable minification to prevent eval() issues
+    minify: false,
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
     // Enable CSS code splitting

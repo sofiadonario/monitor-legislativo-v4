@@ -184,6 +184,8 @@ export const LexMLSearchBar: React.FC<LexMLSearchBarProps> = ({
         
         <input
           ref={inputRef}
+          id="lexml-search-input"
+          name="lexml-search"
           type="text"
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
@@ -199,6 +201,8 @@ export const LexMLSearchBar: React.FC<LexMLSearchBarProps> = ({
             transition-colors duration-200
           `}
           disabled={isLoading}
+          autoComplete="search"
+          aria-label={isCQLMode ? "CQL search query" : "Search Brazilian legislation"}
         />
 
         {/* CQL Mode Toggle */}
