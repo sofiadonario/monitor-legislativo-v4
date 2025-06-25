@@ -8,6 +8,8 @@ interface UseRealtimeOptions {
   onDocumentUpdated?: (document: LegislativeDocument) => void;
   onDocumentDeleted?: (documentId: string) => void;
   onSystemMessage?: (message: any) => void;
+  onCollectionUpdate?: (collection: any) => void;
+  onNewDocuments?: (data: { count: number }) => void;
 }
 
 interface UseRealtimeReturn {
@@ -26,7 +28,9 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
     onNewDocument,
     onDocumentUpdated,
     onDocumentDeleted,
-    onSystemMessage
+    onSystemMessage,
+    onCollectionUpdate,
+    onNewDocuments
   } = options;
 
   const [isConnected, setIsConnected] = useState(false);
@@ -39,7 +43,9 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
     onNewDocument,
     onDocumentUpdated,
     onDocumentDeleted,
-    onSystemMessage
+    onSystemMessage,
+    onCollectionUpdate,
+    onNewDocuments
   });
 
   // Update callbacks ref when they change
@@ -48,9 +54,11 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
       onNewDocument,
       onDocumentUpdated,
       onDocumentDeleted,
-      onSystemMessage
+      onSystemMessage,
+      onCollectionUpdate,
+      onNewDocuments
     };
-  }, [onNewDocument, onDocumentUpdated, onDocumentDeleted, onSystemMessage]);
+  }, [onNewDocument, onDocumentUpdated, onDocumentDeleted, onSystemMessage, onCollectionUpdate, onNewDocuments]);
 
   // Connection handlers
   const handleConnected = useCallback((data: { type: 'sse' | 'websocket' | 'polling' }) => {
@@ -114,6 +122,30 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
     callbacksRef.current.onSystemMessage?.(message);
   }, []);
 
+  const handleCollectionUpdate = useCallback((collection: any) => {
+    const update: RealtimeUpdate = {
+      type: 'collection_update',
+      data: collection,
+      timestamp: new Date(),
+      id: `update-${Date.now()}-collection`
+    };
+    
+    setRecentUpdates(prev => [update, ...prev].slice(0, maxUpdates));
+    callbacksRef.current.onCollectionUpdate?.(collection);
+  }, []);
+
+  const handleNewDocuments = useCallback((data: { count: number }) => {
+    const update: RealtimeUpdate = {
+      type: 'new_documents',
+      data: data,
+      timestamp: new Date(),
+      id: `update-${Date.now()}-newdocs`
+    };
+    
+    setRecentUpdates(prev => [update, ...prev].slice(0, maxUpdates));
+    callbacksRef.current.onNewDocuments?.(data);
+  }, []);
+
   // Connect/disconnect functions
   const connect = useCallback(() => {
     realtimeService.connect();
@@ -141,6 +173,8 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
     realtimeService.on('document_updated', handleDocumentUpdated);
     realtimeService.on('document_deleted', handleDocumentDeleted);
     realtimeService.on('system_message', handleSystemMessage);
+    realtimeService.on('collection_update', handleCollectionUpdate);
+    realtimeService.on('new_documents', handleNewDocuments);
 
     // Auto-connect if enabled
     if (autoConnect) {
@@ -160,13 +194,16 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
       realtimeService.off('document_updated', handleDocumentUpdated);
       realtimeService.off('document_deleted', handleDocumentDeleted);
       realtimeService.off('system_message', handleSystemMessage);
+      realtimeService.off('collection_update', handleCollectionUpdate);
+      realtimeService.off('new_documents', handleNewDocuments);
       
       if (autoConnect) {
         disconnect();
       }
     };
   }, [autoConnect, connect, disconnect, handleConnected, handleDisconnected, 
-      handleNewDocument, handleDocumentUpdated, handleDocumentDeleted, handleSystemMessage]);
+      handleNewDocument, handleDocumentUpdated, handleDocumentDeleted, handleSystemMessage,
+      handleCollectionUpdate, handleNewDocuments]);
 
   return {
     isConnected,

@@ -204,6 +204,11 @@
   gap: 1rem;
 }
 
+.toolbar-collection-status {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* Main content area */
 .main-content {
   display: grid;
@@ -214,4 +219,164 @@
     "info";
   overflow: hidden;
   height: 100%;
-} 
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .dashboard {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr;
+    grid-template-areas: 
+      "title"
+      "status"
+      "export";
+    gap: 0.5rem;
+    padding: 0.75rem;
+    min-height: auto;
+    max-height: none;
+  }
+
+  .toolbar-left {
+    min-height: auto;
+    max-height: none;
+    text-align: center;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1.1rem;
+    white-space: normal;
+    text-overflow: initial;
+    overflow: visible;
+  }
+
+  .toolbar-left .toolbar-subtitle {
+    font-size: 0.8rem;
+    white-space: normal;
+    text-overflow: initial;
+    overflow: visible;
+  }
+
+  .toolbar-right {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .stats {
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: auto;
+    width: 100%;
+  }
+
+  .stat-item {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    text-align: center;
+  }
+
+  .toolbar-collection-status {
+    width: 100%;
+    margin: 0.25rem 0;
+  }
+
+  .export-btn {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .fallback-warning-banner {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+
+  .dashboard-error {
+    padding: 1rem;
+    min-height: 300px;
+  }
+
+  .dashboard-error h2 {
+    font-size: 1.2rem;
+  }
+
+  .dashboard-error p {
+    font-size: 0.9rem;
+  }
+
+  .info-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 8px 8px 0 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .info-content {
+    padding: 1rem;
+  }
+
+  .info-content h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .close-info {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar {
+    padding: 0.5rem;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .toolbar-left .toolbar-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .stats {
+    gap: 0.25rem;
+  }
+
+  .stat-item {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .export-btn {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+
+  .dashboard-error {
+    padding: 0.75rem;
+  }
+
+  .dashboard-error h2 {
+    font-size: 1.1rem;
+  }
+
+  .dashboard-error button {
+    font-size: 0.9rem;
+    padding: 0.6rem 1.2rem;
+  }
+}

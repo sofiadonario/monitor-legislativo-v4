@@ -338,7 +338,7 @@ jobs:
         
         # Run smoke tests
         curl -f http://$API_URL/health || exit 1
-        python scripts/smoke_tests.py --url http://$API_URL
+        python development/test-scripts/smoke_tests.py --url http://$API_URL
 
   # Deploy to Production
   deploy-production:
@@ -377,10 +377,10 @@ jobs:
         API_URL=$(kubectl get service api-service -n monitor-legislativo-production -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
         
         # Comprehensive health checks
-        python scripts/production_health_check.py --url http://$API_URL
+        python development/test-scripts/production_health_check.py --url http://$API_URL
         
         # Performance tests
-        python scripts/performance_tests.py --url http://$API_URL
+        python development/test-scripts/performance_tests.py --url http://$API_URL
 
     - name: Notify deployment
       uses: 8398a7/action-slack@v3

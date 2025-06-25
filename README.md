@@ -1,22 +1,48 @@
 # Monitor Legislativo v4
-**Ultra-Budget Academic Deployment**
+**Ultra-Budget Academic Deployment with Advanced Analytics**
 
-A comprehensive legislative monitoring system for Brazilian government APIs.
+A comprehensive legislative monitoring system for Brazilian government APIs featuring LexML Enhanced Research Engine integration and advanced R-powered analytics.
+
+## 🏗️ Repository Structure
+
+This repository is comprehensively organized for maintainability and clarity. See [`REPOSITORY_STRUCTURE.md`](./REPOSITORY_STRUCTURE.md) for detailed organization.
+
+### Quick Navigation
+- **📋 [Planning](./planning/)** - Project roadmaps, PRDs, and feature specifications
+- **📚 [Documentation](./documentation/)** - Guides, deployment docs, and technical reports  
+- **🔧 [Development](./development/)** - Scripts, testing tools, and research materials
+- **🌐 [External](./external/)** - Third-party libraries and vendor dependencies
 
 ## 🚀 Features
-- Real-time legislative data from Câmara, Senado, and regulatory agencies
-- Interactive map visualization with offline capability
-- Academic citation tools and multiple export formats
-- 70%+ performance improvement through intelligent caching
-- Ultra-low cost deployment ($7-16/month)
 
-## 🏗️ Architecture
-- **Frontend**: React + TypeScript (GitHub Pages - FREE)
-- **Backend**: FastAPI + Python (Railway - $7/month)  
-- **Database**: PostgreSQL (Supabase - FREE)
+### Core Capabilities
+- **Real-time Legislative Data** from Câmara, Senado, and 11+ regulatory agencies
+- **LexML Enhanced Research Engine** with SKOS vocabulary expansion
+- **Interactive Map Visualization** with offline capability
+- **Academic Citation Tools** and multiple export formats
+- **Advanced R Analytics** with secure iframe integration
+- **Real-time Dashboard Updates** via Server-Sent Events
+- **Saved Query Management** with tag-based organization
+- **Mobile-Responsive Design** with accessibility features
+
+### Performance & Cost
+- **70%+ Performance Improvement** through intelligent caching
+- **Ultra-Low Cost Deployment** ($7-16/month total)
+- **Budget-Efficient Architecture** using free tiers and HTTP polling
+
+## 🏗️ Two-Tier Architecture
+
+### Tier 1: Automated Data Collection
+- **Backend**: FastAPI + Python (Railway - $7/month)
+- **Database**: PostgreSQL (Supabase - FREE) 
 - **Cache**: Redis (Upstash - FREE)
+- **Background Jobs**: Prefect-based collection service
+
+### Tier 2: Analytics Dashboard  
+- **Frontend**: React + TypeScript (GitHub Pages - FREE)
+- **R Analytics**: Shiny integration (Shinyapps.io - FREE/optional $9)
+- **Real-time Updates**: Server-Sent Events with polling fallback
 - **CDN**: CloudFlare (FREE)
-- **R Analytics**: Shiny (Shinyapps.io - FREE/optional $9)
 
 ## 📋 Quick Start
 
@@ -26,7 +52,24 @@ A comprehensive legislative monitoring system for Brazilian government APIs.
 - Git
 
 ### Local Development
-1. **Clone the repository:**
+
+**Automated Setup** (Recommended):
+```bash
+git clone https://github.com/your-username/monitor_legislativo_v4.git
+cd monitor_legislativo_v4
+
+# Run comprehensive development setup
+./development/scripts/dev-setup.sh
+
+# Initialize database
+python development/scripts/initialize_database.py
+
+# Verify installation
+python development/test-scripts/verify_setup.py
+```
+
+**Manual Setup**:
+1. **Clone and navigate:**
     ```bash
     git clone https://github.com/your-username/monitor_legislativo_v4.git
     cd monitor_legislativo_v4
@@ -41,10 +84,13 @@ A comprehensive legislative monitoring system for Brazilian government APIs.
     npm install
     ```
 
-3. **Configure environment:**
+3. **Database setup:**
     ```bash
-    # Copy environment example
-    cp .env.example .env
+    # Unix/Linux/Mac
+    ./development/scripts/setup_database.sh
+    
+    # Windows
+    ./development/scripts/setup_database.bat
     
     # For development with mock data (default)
     cp .env.development .env.development.local

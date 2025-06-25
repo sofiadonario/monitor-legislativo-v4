@@ -94,3 +94,33 @@ export interface MapData {
   states: LocationData[];
   municipalities: LocationData[];
 }
+
+export type CollectionStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export interface CollectionLog {
+  id: number;
+  searchTermId: number;
+  searchTerm: string;
+  status: CollectionStatus;
+  recordsCollected: number;
+  recordsNew: number;
+  recordsUpdated: number;
+  recordsSkipped: number;
+  executionTimeMs: number;
+  errorMessage?: string;
+  startedAt: string;
+  completedAt?: string;
+  sourcesUsed: string[];
+}
+
+export interface SavedQuery {
+  id: string;
+  name: string;
+  description?: string;
+  filters: SearchFilters;
+  createdAt: string;
+  updatedAt: string;
+  timesUsed: number;
+  isPublic: boolean;
+  tags: string[];
+}

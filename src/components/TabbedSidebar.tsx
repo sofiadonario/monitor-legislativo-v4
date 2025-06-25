@@ -14,7 +14,7 @@ interface TabbedSidebarProps {
   onClearSelection: () => void;
 }
 
-type TabType = 'search' | 'analytics';
+type TabType = 'search' | 'analytics' | 'rshiny';
 
 export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
   isOpen,
@@ -96,6 +96,13 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
             >
               📊 Analytics
             </button>
+            <button
+              className={`tab-button ${activeTab === 'rshiny' ? 'active' : ''}`}
+              onClick={() => setActiveTab('rshiny')}
+              aria-selected={activeTab === 'rshiny'}
+            >
+              🔬 R Analytics
+            </button>
           </div>
 
           <div className="sidebar-content">
@@ -139,6 +146,45 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
             {activeTab === 'analytics' && (
               <div className="analytics-tab">
                 <DataVisualization documents={filteredDocuments} />
+              </div>
+            )}
+
+            {activeTab === 'rshiny' && (
+              <div className="rshiny-tab">
+                <div className="rshiny-info">
+                  <h3>🔬 R Analytics Dashboard</h3>
+                  <p>Advanced statistical analysis and visualizations powered by R Shiny.</p>
+                  
+                  <div className="rshiny-stats">
+                    <div className="stat-item">
+                      <span className="stat-value">{filteredDocuments.length}</span>
+                      <span className="stat-label">Documents</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-value">{new Set(filteredDocuments.map(d => d.state)).size}</span>
+                      <span className="stat-label">States</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-value">{new Set(filteredDocuments.map(d => d.type)).size}</span>
+                      <span className="stat-label">Types</span>
+                    </div>
+                  </div>
+
+                  <div className="rshiny-features">
+                    <h4>Available Analyses:</h4>
+                    <ul>
+                      <li>📈 Statistical distributions</li>
+                      <li>🗺️ Interactive geographic analysis</li>
+                      <li>📊 Time series analysis</li>
+                      <li>🔗 Network analysis</li>
+                      <li>📋 Custom report generation</li>
+                    </ul>
+                  </div>
+
+                  <div className="rshiny-note">
+                    <p><strong>Note:</strong> The R Shiny application runs independently and provides advanced analytics capabilities beyond the standard dashboard visualizations.</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>

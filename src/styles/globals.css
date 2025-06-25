@@ -22,6 +22,96 @@ html, body {
   overflow: auto;
 }
 
+/* Mobile-specific global styles */
+@media (max-width: 768px) {
+  html {
+    /* Improve text rendering on mobile */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+
+  body {
+    /* Prevent horizontal scrolling */
+    overflow-x: hidden;
+    /* Improve touch scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Improve button touch targets */
+  button, 
+  [role="button"],
+  input[type="submit"],
+  input[type="button"] {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 12px;
+  }
+
+  /* Improve form input accessibility */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  textarea,
+  select {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 10px 12px;
+    border-radius: 6px;
+  }
+
+  /* Improve link touch targets */
+  a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px;
+    margin: -8px;
+  }
+
+  /* Fix viewport issues */
+  .viewport-fix {
+    width: 100vw;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Even larger touch targets for small screens */
+  button, 
+  [role="button"],
+  input[type="submit"],
+  input[type="button"] {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  textarea,
+  select {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+
 /* Sidebar styles moved to component-specific CSS files */
 
 /* Component-specific styles moved to TabbedSidebar.css */
@@ -294,6 +384,45 @@ html, body {
   cursor: not-allowed;
 }
 
+/* View Mode Switcher */
+.view-mode-switcher {
+  display: flex;
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-mode-btn {
+  background: transparent;
+  color: #666;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.view-mode-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.view-mode-btn.active {
+  background: #2196F3;
+  color: white;
+  box-shadow: 0 1px 3px rgba(33, 150, 243, 0.3);
+}
+
+.analytics-wrapper {
+  grid-area: content;
+  overflow: hidden;
+  height: 100%;
+}
+
 /* Sidebar Overlay (Mobile) */
 .sidebar-overlay {
   position: fixed;
@@ -352,6 +481,20 @@ html, body {
   
   .stat-item {
     font-size: 0.8rem;
+  }
+
+  .view-mode-switcher {
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    background: #f8f9fa;
+  }
+
+  .view-mode-btn {
+    padding: 10px 12px;
+    font-size: 13px;
+    width: 100%;
+    border-radius: 6px;
   }
   
   .export-btn {

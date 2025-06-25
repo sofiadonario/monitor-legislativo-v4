@@ -1,9 +1,9 @@
 // Real-time updates service for new legislation notifications
-import { LegislativeDocument } from '../types';
+import { LegislativeDocument, CollectionLog } from '../types';
 import { BrowserEventEmitter } from '../utils/browserEventEmitter';
 
 export interface RealtimeUpdate {
-  type: 'new_document' | 'document_updated' | 'document_deleted' | 'system_message';
+  type: 'new_document' | 'document_updated' | 'document_deleted' | 'system_message' | 'collection_update' | 'new_documents';
   data: any;
   timestamp: Date;
   id: string;
@@ -74,7 +74,7 @@ class RealtimeService extends BrowserEventEmitter {
 
   // Server-Sent Events connection
   private connectSSE(): void {
-    const url = `${this.config.url}/api/v1/realtime/sse`;
+    const url = `${this.config.url}/api/v1/sse/events`;
     const urlWithLastId = this.lastEventId ? `${url}?lastEventId=${this.lastEventId}` : url;
     
     try {
@@ -98,21 +98,30 @@ class RealtimeService extends BrowserEventEmitter {
       };
       
       // Handle specific event types
-      this.eventSource.addEventListener('new_document', (event: any) => {
+      this.eventSource.addEventListener('collection_update', (event: any) => {
         try {
-          const document: LegislativeDocument = JSON.parse(event.data);
-          this.handleNewDocument(document);
+          const collection: CollectionLog = JSON.parse(event.data);
+          this.handleCollectionUpdate(collection);
         } catch (error) {
-          console.error('Error handling new document:', error);
+          console.error('Error handling collection update:', error);
         }
       });
       
-      this.eventSource.addEventListener('document_updated', (event: any) => {
+      this.eventSource.addEventListener('new_documents', (event: any) => {
         try {
-          const document: LegislativeDocument = JSON.parse(event.data);
-          this.handleDocumentUpdate(document);
+          const data = JSON.parse(event.data);
+          this.emit('new_documents', data);
         } catch (error) {
-          console.error('Error handling document update:', error);
+          console.error('Error handling new documents count:', error);
+        }
+      });
+      
+      this.eventSource.addEventListener('error', (event: any) => {
+        try {
+          const data = JSON.parse(event.data);
+          this.emit('system_message', { type: 'error', ...data });
+        } catch (error) {
+          console.error('Error handling error event:', error);
         }
       });
       
@@ -183,18 +192,12 @@ class RealtimeService extends BrowserEventEmitter {
       if (!this.isConnected) return;
       
       try {
-        const response = await fetch(`${this.config.url}/api/v1/realtime/poll`, {
-          headers: {
-            'Last-Event-ID': this.lastEventId || ''
-          }
-        });
+        const response = await fetch(`${this.config.url}/api/v1/sse/collections/latest`);
         
         if (response.ok) {
-          const updates: RealtimeUpdate[] = await response.json();
-          updates.forEach(update => this.handleUpdate(update));
-          
-          if (updates.length > 0) {
-            this.lastEventId = updates[updates.length - 1].id;
+          const collection = await response.json();
+          if (collection && !collection.error) {
+            this.handleCollectionUpdate(collection);
           }
         }
       } catch (error) {
@@ -243,6 +246,12 @@ class RealtimeService extends BrowserEventEmitter {
       case 'document_deleted':
         this.handleDocumentDelete(update.data);
         break;
+      case 'collection_update':
+        this.handleCollectionUpdate(update.data);
+        break;
+      case 'new_documents':
+        this.emit('new_documents', update.data);
+        break;
       case 'system_message':
         this.emit('system_message', update.data);
         break;
@@ -274,6 +283,43 @@ class RealtimeService extends BrowserEventEmitter {
   // Handle document deletion
   private handleDocumentDelete(documentId: string): void {
     this.emit('document_deleted', documentId);
+  }
+
+  // Handle collection update
+  private handleCollectionUpdate(collection: CollectionLog): void {
+    this.emit('collection_update', collection);
+    
+    // Show notification for completed collections with new documents
+    if (collection.status === 'completed' && collection.recordsNew > 0) {
+      this.handleNewDocument({
+        id: `collection-${collection.id}`,
+        title: `${collection.recordsNew} new documents found`,
+        summary: `Collection "${collection.searchTerm}" found ${collection.recordsNew} new documents`,
+        type: 'projeto_lei',
+        date: new Date(collection.completedAt || collection.startedAt),
+        keywords: ['collection', 'update'],
+        state: '',
+        url: '',
+        status: 'em_tramitacao'
+      } as LegislativeDocument);
+      
+      // Show browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`${collection.recordsNew} new legislative documents`, {
+          body: `Collection "${collection.searchTerm}" completed successfully`,
+          icon: '/favicon.ico',
+          tag: 'collection-complete'
+        });
+      }
+    }
+    
+    // Emit error for failed collections
+    if (collection.status === 'failed') {
+      this.emit('system_message', {
+        type: 'error',
+        message: `Collection failed: ${collection.errorMessage || 'Unknown error'}`
+      });
+    }
   }
 
   // Queue updates when disconnected

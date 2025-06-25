@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { SearchFilters, LegislativeDocument, DocumentType } from '../types';
+import { SavedQueriesPanel } from './SavedQueriesPanel';
 import '../styles/components/EnhancedSearch.css';
 
 interface EnhancedSearchProps {
@@ -33,6 +34,7 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [pendingFilters, setPendingFilters] = useState<SearchFilters>(filters);
+  const [showSavedQueries, setShowSavedQueries] = useState(false);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -240,6 +242,12 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
     onFiltersChange(clearedFilters);
   };
 
+  const handleLoadSavedQuery = (savedFilters: SearchFilters) => {
+    setPendingFilters(savedFilters);
+    onFiltersChange(savedFilters);
+    setShowSavedQueries(false);
+  };
+
   const hasActiveFilters = filters.documentTypes.length > 0 || 
     filters.states.length > 0 || 
     filters.keywords.length > 0 ||
@@ -264,7 +272,16 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
     <div className="enhanced-search">
       {/* Search Input */}
       <div className="search-section">
-        <h3>Buscar Documentos</h3>
+        <div className="search-header">
+          <h3>Buscar Documentos</h3>
+          <button
+            className="saved-queries-btn"
+            onClick={() => setShowSavedQueries(true)}
+            aria-label="Consultas salvas"
+          >
+            📚 Consultas Salvas
+          </button>
+        </div>
         <div className="search-input-container">
           <input
             ref={searchInputRef}
@@ -488,6 +505,14 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
           <button onClick={onClearSelection}>Limpar seleção</button>
         </div>
       )}
+
+      {/* Saved Queries Panel */}
+      <SavedQueriesPanel
+        isOpen={showSavedQueries}
+        onClose={() => setShowSavedQueries(false)}
+        onLoadQuery={handleLoadSavedQuery}
+        currentFilters={filters}
+      />
     </div>
   );
 };

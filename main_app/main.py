@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from . import gateway_router
-from .routers import lexml_router
+from .routers import lexml_router, sse_router
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
 from core.database.two_tier_manager import get_two_tier_manager
@@ -38,6 +38,7 @@ app.add_middleware(
 
 app.include_router(gateway_router.router)
 app.include_router(lexml_router.router)
+app.include_router(sse_router.router)
 
 
 @app.on_event("startup")

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRealtime } from '../hooks/useRealtime';
-import { LegislativeDocument } from '../types';
+import { LegislativeDocument, CollectionLog } from '../types';
 import '../styles/components/RealtimeNotifications.css';
 
 interface Notification {
   id: string;
-  type: 'new' | 'updated' | 'deleted' | 'system';
+  type: 'new' | 'updated' | 'deleted' | 'system' | 'collection';
   title: string;
   message: string;
   timestamp: Date;
@@ -52,9 +52,36 @@ export const RealtimeNotifications: React.FC = () => {
       addNotification({
         type: 'system',
         title: 'System Message',
-        message: message.text || 'System notification',
+        message: message.message || message.text || 'System notification',
         data: message
       });
+    },
+    onCollectionUpdate: (collection: CollectionLog) => {
+      if (collection.status === 'completed') {
+        addNotification({
+          type: 'collection',
+          title: 'Collection Completed',
+          message: `"${collection.searchTerm}": ${collection.recordsCollected} documents (${collection.recordsNew} new)`,
+          data: collection
+        });
+      } else if (collection.status === 'failed') {
+        addNotification({
+          type: 'system',
+          title: 'Collection Failed',
+          message: `"${collection.searchTerm}": ${collection.errorMessage || 'Unknown error'}`,
+          data: collection
+        });
+      }
+    },
+    onNewDocuments: (data: { count: number }) => {
+      if (data.count > 0) {
+        addNotification({
+          type: 'new',
+          title: 'New Documents Available',
+          message: `${data.count} new documents collected in the last hour`,
+          data: data
+        });
+      }
     }
   });
 
@@ -236,6 +263,7 @@ export const RealtimeNotifications: React.FC = () => {
               {notification.type === 'new' && '📄'}
               {notification.type === 'updated' && '✏️'}
               {notification.type === 'deleted' && '🗑️'}
+              {notification.type === 'collection' && '📊'}
               {notification.type === 'system' && 'ℹ️'}
             </span>
             <div className="toast-content">

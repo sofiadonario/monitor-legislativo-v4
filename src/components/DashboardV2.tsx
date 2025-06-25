@@ -10,6 +10,10 @@ import { LoadingSpinner } from './LoadingSpinner';
 const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.OptimizedMap })));
 const TabbedSidebar = lazy(() => import('./TabbedSidebar').then(module => ({ default: module.TabbedSidebar })));
 const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.ExportPanel })));
+const CollectionStatus = lazy(() => import('./CollectionStatus').then(module => ({ default: module.CollectionStatus })));
+const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage').then(module => ({ default: module.default })));
+
+type ViewMode = 'dashboard' | 'analytics';
 
 // Dashboard state interface
 interface DashboardState {
@@ -18,6 +22,7 @@ interface DashboardState {
   selectedState?: string;
   selectedMunicipality?: string;
   filters: SearchFilters;
+  viewMode: ViewMode;
 }
 
 // Initial state
@@ -26,6 +31,7 @@ const initialState: DashboardState = {
   exportPanelOpen: false,
   selectedState: undefined,
   selectedMunicipality: undefined,
+  viewMode: 'dashboard',
   filters: {
     searchTerm: '',
     documentTypes: [],
@@ -55,6 +61,8 @@ const dashboardReducer = (state: DashboardState, action: any): DashboardState =>
       return { ...state, selectedState: undefined, selectedMunicipality: undefined };
     case 'UPDATE_FILTERS':
       return { ...state, filters: action.payload };
+    case 'SET_VIEW_MODE':
+      return { ...state, viewMode: action.payload };
     default:
       return state;
   }
@@ -66,7 +74,7 @@ const DashboardV2: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
-  const { sidebarOpen, exportPanelOpen, selectedState, selectedMunicipality, filters } = state;
+  const { sidebarOpen, exportPanelOpen, selectedState, selectedMunicipality, filters, viewMode } = state;
 
   const mainContentRef = useRef<HTMLElement>(null);
   useKeyboardNavigation();
@@ -101,6 +109,7 @@ const DashboardV2: React.FC = () => {
   const onFiltersChange = useCallback((newFilters: SearchFilters) => dispatch({ type: 'UPDATE_FILTERS', payload: newFilters }), []);
   const toggleSidebar = useCallback(() => dispatch({ type: 'TOGGLE_SIDEBAR' }), []);
   const toggleExportPanel = useCallback(() => dispatch({ type: 'TOGGLE_EXPORT_PANEL' }), []);
+  const setViewMode = useCallback((mode: ViewMode) => dispatch({ type: 'SET_VIEW_MODE', payload: mode }), []);
 
   const filteredDocuments = useMemo(() => {
     return documents.filter(doc => {
@@ -141,6 +150,25 @@ const DashboardV2: React.FC = () => {
                 <span className="stat-item">🗺️ {highlightedStates.length} States</span>
               </div>
             )}
+            <Suspense fallback={null}>
+              <CollectionStatus compact={true} className="toolbar-collection-status" />
+            </Suspense>
+            <div className="view-mode-switcher">
+              <button 
+                className={`view-mode-btn ${viewMode === 'dashboard' ? 'active' : ''}`}
+                onClick={() => setViewMode('dashboard')}
+                aria-pressed={viewMode === 'dashboard'}
+              >
+                🗺️ Map
+              </button>
+              <button 
+                className={`view-mode-btn ${viewMode === 'analytics' ? 'active' : ''}`}
+                onClick={() => setViewMode('analytics')}
+                aria-pressed={viewMode === 'analytics'}
+              >
+                🔬 R Analytics
+              </button>
+            </div>
             <button className="export-btn" onClick={toggleExportPanel} aria-controls="export-panel" aria-expanded={exportPanelOpen}>
               📊 Export
             </button>
@@ -161,18 +189,33 @@ const DashboardV2: React.FC = () => {
           </div>
         )}
 
-        <section className="map-wrapper" aria-labelledby="map-heading">
-          <h2 id="map-heading" className="sr-only">Interactive map</h2>
-          <Suspense fallback={<LoadingSpinner message="Loading map..." />}>
-            <OptimizedMap
-              selectedState={selectedState}
-              selectedMunicipality={selectedMunicipality}
-              documents={filteredDocuments}
-              onLocationClick={handleLocationClick}
-              highlightedLocations={highlightedStates}
-            />
-          </Suspense>
-        </section>
+        {viewMode === 'dashboard' ? (
+          <section className="map-wrapper" aria-labelledby="map-heading">
+            <h2 id="map-heading" className="sr-only">Interactive map</h2>
+            <Suspense fallback={<LoadingSpinner message="Loading map..." />}>
+              <OptimizedMap
+                selectedState={selectedState}
+                selectedMunicipality={selectedMunicipality}
+                documents={filteredDocuments}
+                onLocationClick={handleLocationClick}
+                highlightedLocations={highlightedStates}
+              />
+            </Suspense>
+          </section>
+        ) : (
+          <section className="analytics-wrapper" aria-labelledby="analytics-heading">
+            <h2 id="analytics-heading" className="sr-only">R Shiny Analytics</h2>
+            <Suspense fallback={<LoadingSpinner message="Loading R Analytics..." />}>
+              <AnalyticsPage
+                documents={filteredDocuments}
+                filters={filters}
+                selectedState={selectedState}
+                selectedMunicipality={selectedMunicipality}
+                onFiltersChange={onFiltersChange}
+              />
+            </Suspense>
+          </section>
+        )}
 
         {(selectedState || selectedMunicipality) && (
           <aside className="info-panel" role="complementary" aria-labelledby="location-info-heading">
