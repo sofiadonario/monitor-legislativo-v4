@@ -1,0 +1,306 @@
+# Production nginx Load Balancer Dockerfile
+# Monitor Legislativo v4 - nginx Reverse Proxy
+# Phase 4 Week 13: Production-grade load balancer
+
+FROM nginx:1.25-alpine AS base
+
+# Install security updates and required packages
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    curl \
+    openssl \
+    ca-certificates \
+    tzdata \
+    logrotate \
+    && rm -rf /var/cache/apk/*
+
+# Set timezone to Brazil
+ENV TZ=America/Sao_Paulo
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Create non-root user for nginx
+RUN addgroup -g 1001 -S nginx && \
+    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+
+# Create required directories with proper permissions
+RUN mkdir -p /var/cache/nginx/client_temp \
+             /var/cache/nginx/proxy_temp \
+             /var/cache/nginx/fastcgi_temp \
+             /var/cache/nginx/uwsgi_temp \
+             /var/cache/nginx/scgi_temp \
+             /var/cache/nginx/proxy \
+             /var/log/nginx \
+             /var/run/nginx \
+             /etc/nginx/ssl \
+    && chown -R nginx:nginx /var/cache/nginx \
+                            /var/log/nginx \
+                            /var/run/nginx \
+                            /etc/nginx/ssl
+
+# Copy nginx configuration
+COPY nginx-reverse-proxy.conf /etc/nginx/nginx.conf
+
+# Copy SSL certificates (if available)
+COPY ssl/ /etc/nginx/ssl/
+
+# Create log rotation configuration
+RUN cat > /etc/logrotate.d/nginx << 'EOF'
+/var/log/nginx/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 644 nginx nginx
+    postrotate
+        if [ -f /var/run/nginx/nginx.pid ]; then
+            /bin/kill -USR1 `cat /var/run/nginx/nginx.pid`
+        fi
+    endscript
+}
+EOF
+
+# Create health check script
+RUN cat > /usr/local/bin/health-check.sh << 'EOF'
+#!/bin/sh
+# nginx health check script
+
+# Check if nginx is running
+if ! pgrep nginx > /dev/null; then
+    echo "nginx process not found"
+    exit 1
+fi
+
+# Check if nginx can serve requests
+if ! curl -sf http://localhost:9090/lb-health > /dev/null; then
+    echo "nginx health endpoint not responding"
+    exit 1
+fi
+
+# Check if proxy cache is working
+if [ ! -d /var/cache/nginx/proxy ]; then
+    echo "nginx proxy cache directory not found"
+    exit 1
+fi
+
+echo "nginx is healthy"
+exit 0
+EOF
+
+RUN chmod +x /usr/local/bin/health-check.sh
+
+# Create nginx status monitoring script
+RUN cat > /usr/local/bin/nginx-stats.sh << 'EOF'
+#!/bin/sh
+# nginx statistics collection script
+
+# Get nginx status
+curl -s http://localhost:9090/nginx_status | while read line; do
+    echo "nginx.status $(date +%s) $line"
+done
+
+# Get load balancer health
+curl -s http://localhost:9090/lb-health 2>/dev/null | \
+    jq -r '. | "nginx.health \(.timestamp) \(if .status == "healthy" then 1 else 0 end)"' 2>/dev/null || \
+    echo "nginx.health $(date +%s) 0"
+
+# Get cache statistics
+if [ -d /var/cache/nginx/proxy ]; then
+    cache_size=$(du -s /var/cache/nginx/proxy | awk '{print $1}')
+    echo "nginx.cache.size $(date +%s) $cache_size"
+fi
+
+# Get error log count (last minute)
+error_count=$(grep "$(date --date='1 minute ago' '+%Y/%m/%d %H:%M')" /var/log/nginx/error.log 2>/dev/null | wc -l)
+echo "nginx.errors.rate $(date +%s) $error_count"
+EOF
+
+RUN chmod +x /usr/local/bin/nginx-stats.sh
+
+# Security: Remove default nginx files
+RUN rm -rf /usr/share/nginx/html/* \
+           /etc/nginx/conf.d/default.conf
+
+# Create custom error pages
+RUN mkdir -p /usr/share/nginx/html/errors
+
+RUN cat > /usr/share/nginx/html/errors/50x.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitor Legislativo - Service Temporarily Unavailable</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .error-code { font-size: 72px; color: #e74c3c; margin-bottom: 20px; }
+        .error-message { font-size: 24px; color: #2c3e50; margin-bottom: 30px; }
+        .description { color: #7f8c8d; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-code">503</div>
+        <div class="error-message">Service Temporarily Unavailable</div>
+        <div class="description">
+            The Monitor Legislativo service is temporarily unavailable due to maintenance or high load.
+            Please try again in a few moments.
+        </div>
+    </div>
+</body>
+</html>
+EOF
+
+RUN cat > /usr/share/nginx/html/errors/40x.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitor Legislativo - Page Not Found</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .error-code { font-size: 72px; color: #f39c12; margin-bottom: 20px; }
+        .error-message { font-size: 24px; color: #2c3e50; margin-bottom: 30px; }
+        .description { color: #7f8c8d; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-code">404</div>
+        <div class="error-message">Page Not Found</div>
+        <div class="description">
+            The requested page could not be found on the Monitor Legislativo server.
+            Please check the URL or return to the homepage.
+        </div>
+    </div>
+</body>
+</html>
+EOF
+
+# Set proper ownership
+RUN chown -R nginx:nginx /usr/share/nginx/html
+
+# Expose ports
+EXPOSE 80 443 9090
+
+# Switch to non-root user
+USER nginx
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD /usr/local/bin/health-check.sh
+
+# Labels for metadata
+LABEL maintainer="Monitor Legislativo Team" \
+      description="nginx Load Balancer for Monitor Legislativo v4" \
+      version="1.0.0" \
+      org.opencontainers.image.title="Monitor Legislativo v4 - nginx Load Balancer" \
+      org.opencontainers.image.description="Production-grade nginx reverse proxy and load balancer" \
+      org.opencontainers.image.source="https://github.com/sofiadonario/monitor-legislativo-v4" \
+      org.opencontainers.image.vendor="MackIntegridade" \
+      org.opencontainers.image.licenses="MIT"
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
+
+# =============================================================================
+# Development variant
+# =============================================================================
+FROM base AS development
+
+# Switch back to root for development setup
+USER root
+
+# Install additional development tools
+RUN apk add --no-cache \
+    bash \
+    vim \
+    htop \
+    strace \
+    tcpdump \
+    net-tools
+
+# Install development nginx modules
+RUN apk add --no-cache nginx-mod-http-echo
+
+# Copy development nginx configuration
+COPY nginx.dev.conf /etc/nginx/nginx.conf
+
+# Create development entrypoint
+RUN cat > /docker-entrypoint-dev.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "Starting nginx in development mode..."
+
+# Generate self-signed certificates if not present
+if [ ! -f /etc/nginx/ssl/monitor-legislativo.crt ]; then
+    echo "Generating self-signed SSL certificate for development..."
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout /etc/nginx/ssl/monitor-legislativo.key \
+        -out /etc/nginx/ssl/monitor-legislativo.crt \
+        -subj "/C=BR/ST=SP/L=São Paulo/O=MackIntegridade/CN=localhost"
+    
+    chown nginx:nginx /etc/nginx/ssl/*
+fi
+
+# Start nginx with error log in foreground for development
+exec nginx -g "daemon off; error_log /dev/stderr info;"
+EOF
+
+RUN chmod +x /docker-entrypoint-dev.sh
+
+# Switch back to nginx user
+USER nginx
+
+ENTRYPOINT ["/docker-entrypoint-dev.sh"]
+
+# =============================================================================
+# Production variant (default)
+# =============================================================================
+FROM base AS production
+
+# Production-specific security hardening
+USER root
+
+# Remove unnecessary packages
+RUN apk del --purge \
+    ca-certificates \
+    openssl
+
+# Remove shell access (security hardening)
+RUN rm -rf /bin/sh /bin/bash /usr/bin/vi /usr/bin/vim 2>/dev/null || true
+
+# Create minimal production entrypoint
+RUN cat > /docker-entrypoint-prod.sh << 'EOF'
+#!/bin/sh
+set -e
+
+# Validate SSL certificates exist
+if [ ! -f /etc/nginx/ssl/monitor-legislativo.crt ] || [ ! -f /etc/nginx/ssl/monitor-legislativo.key ]; then
+    echo "ERROR: SSL certificates not found in /etc/nginx/ssl/"
+    echo "Please mount SSL certificates or generate them using the ssl-generation.sh script"
+    exit 1
+fi
+
+# Test nginx configuration
+nginx -t
+
+# Start log rotation in background
+(while true; do sleep 86400; logrotate /etc/logrotate.d/nginx; done) &
+
+# Start statistics collection in background
+(while true; do /usr/local/bin/nginx-stats.sh; sleep 60; done) &
+
+echo "Starting nginx in production mode..."
+exec nginx -g "daemon off;"
+EOF
+
+RUN chmod +x /docker-entrypoint-prod.sh
+
+# Switch to nginx user
+USER nginx
+
+ENTRYPOINT ["/docker-entrypoint-prod.sh"]

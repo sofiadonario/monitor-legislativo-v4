@@ -12,8 +12,9 @@ const TabbedSidebar = lazy(() => import('./TabbedSidebar').then(module => ({ def
 const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.ExportPanel })));
 const CollectionStatus = lazy(() => import('./CollectionStatus').then(module => ({ default: module.CollectionStatus })));
 const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage').then(module => ({ default: module.default })));
+const CacheMonitor = lazy(() => import('./CacheMonitor').then(module => ({ default: module.default })));
 
-type ViewMode = 'dashboard' | 'analytics';
+type ViewMode = 'dashboard' | 'analytics' | 'admin';
 
 // Dashboard state interface
 interface DashboardState {
@@ -168,6 +169,13 @@ const DashboardV2: React.FC = () => {
               >
                 🔬 R Analytics
               </button>
+              <button 
+                className={`view-mode-btn ${viewMode === 'admin' ? 'active' : ''}`}
+                onClick={() => setViewMode('admin')}
+                aria-pressed={viewMode === 'admin'}
+              >
+                ⚙️ Admin
+              </button>
             </div>
             <button className="export-btn" onClick={toggleExportPanel} aria-controls="export-panel" aria-expanded={exportPanelOpen}>
               📊 Export
@@ -189,7 +197,7 @@ const DashboardV2: React.FC = () => {
           </div>
         )}
 
-        {viewMode === 'dashboard' ? (
+        {viewMode === 'dashboard' && (
           <section className="map-wrapper" aria-labelledby="map-heading">
             <h2 id="map-heading" className="sr-only">Interactive map</h2>
             <Suspense fallback={<LoadingSpinner message="Loading map..." />}>
@@ -202,7 +210,9 @@ const DashboardV2: React.FC = () => {
               />
             </Suspense>
           </section>
-        ) : (
+        )}
+
+        {viewMode === 'analytics' && (
           <section className="analytics-wrapper" aria-labelledby="analytics-heading">
             <h2 id="analytics-heading" className="sr-only">R Shiny Analytics</h2>
             <Suspense fallback={<LoadingSpinner message="Loading R Analytics..." />}>
@@ -214,6 +224,56 @@ const DashboardV2: React.FC = () => {
                 onFiltersChange={onFiltersChange}
               />
             </Suspense>
+          </section>
+        )}
+
+        {viewMode === 'admin' && (
+          <section className="admin-wrapper" aria-labelledby="admin-heading">
+            <h2 id="admin-heading" className="sr-only">Administrative Dashboard</h2>
+            <div className="admin-content">
+              <div className="admin-section">
+                <h3>System Performance & Cache Monitoring</h3>
+                <Suspense fallback={<LoadingSpinner message="Loading cache monitor..." />}>
+                  <CacheMonitor showDetailedView={true} className="admin-cache-monitor" />
+                </Suspense>
+              </div>
+              
+              <div className="admin-section">
+                <h3>Collection Status & Data Sources</h3>
+                <Suspense fallback={<LoadingSpinner message="Loading collection status..." />}>
+                  <CollectionStatus compact={false} className="admin-collection-status" />
+                </Suspense>
+              </div>
+              
+              <div className="admin-section">
+                <h3>System Information</h3>
+                <div className="system-info">
+                  <div className="info-card">
+                    <h4>Data Summary</h4>
+                    <p><strong>Total Documents:</strong> {documents.length}</p>
+                    <p><strong>Filtered Documents:</strong> {filteredDocuments.length}</p>
+                    <p><strong>Using Fallback:</strong> {usingFallbackData ? 'Yes' : 'No'}</p>
+                    <p><strong>Active States:</strong> {highlightedStates.length}</p>
+                  </div>
+                  
+                  <div className="info-card">
+                    <h4>Search Filters</h4>
+                    <p><strong>Search Term:</strong> {filters.searchTerm || 'None'}</p>
+                    <p><strong>Document Types:</strong> {filters.documentTypes.length || 'All'}</p>
+                    <p><strong>Selected States:</strong> {filters.states.length || 'All'}</p>
+                    <p><strong>Date Range:</strong> {filters.dateFrom || filters.dateTo ? 'Active' : 'None'}</p>
+                  </div>
+                  
+                  <div className="info-card">
+                    <h4>Performance</h4>
+                    <p><strong>Loading:</strong> {isLoading ? 'Yes' : 'No'}</p>
+                    <p><strong>Error State:</strong> {error ? 'Yes' : 'No'}</p>
+                    <p><strong>Sidebar Open:</strong> {sidebarOpen ? 'Yes' : 'No'}</p>
+                    <p><strong>Export Panel:</strong> {exportPanelOpen ? 'Open' : 'Closed'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
         )}
 

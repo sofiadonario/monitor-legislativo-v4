@@ -380,3 +380,150 @@
     padding: 0.6rem 1.2rem;
   }
 }
+
+/* Admin Dashboard Styles */
+.admin-wrapper {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  background: #f8f9fa;
+}
+
+.admin-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.admin-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.admin-section h3 {
+  background: #f5f5f5;
+  margin: 0;
+  padding: 16px 24px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.admin-cache-monitor,
+.admin-collection-status {
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+}
+
+.system-info {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.info-card {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  transition: all 0.2s ease;
+}
+
+.info-card:hover {
+  border-color: #1976d2;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.1);
+}
+
+.info-card h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #1976d2;
+  padding-bottom: 8px;
+}
+
+.info-card p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555;
+}
+
+.info-card p:last-child {
+  margin-bottom: 0;
+}
+
+.info-card p strong {
+  color: #333;
+  font-weight: 600;
+  display: inline-block;
+  min-width: 140px;
+}
+
+/* Responsive admin dashboard */
+@media (max-width: 768px) {
+  .admin-content {
+    padding: 16px;
+    gap: 16px;
+  }
+  
+  .admin-section h3 {
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+  
+  .system-info {
+    padding: 16px;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .info-card {
+    padding: 16px;
+  }
+  
+  .info-card h4 {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  
+  .info-card p {
+    font-size: 13px;
+  }
+  
+  .info-card p strong {
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-content {
+    padding: 12px;
+  }
+  
+  .info-card p strong {
+    min-width: auto;
+    display: block;
+    margin-bottom: 4px;
+  }
+  
+  .view-mode-switcher {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .view-mode-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
