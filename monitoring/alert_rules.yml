@@ -1,0 +1,457 @@
+# Prometheus Alert Rules for Monitor Legislativo v4
+# Phase 4 Week 15: Comprehensive alerting for all system components
+# Brazilian government data monitoring with specific SLA requirements
+
+groups:
+  # =====================================================================
+  # CRITICAL SYSTEM ALERTS
+  # =====================================================================
+  - name: critical_system_alerts
+    interval: 30s
+    rules:
+      # API Service Down
+      - alert: APIServiceDown
+        expr: up{job="backend-api"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: backend-api
+          component: api
+        annotations:
+          summary: "Monitor Legislativo API service is down"
+          description: "API instance {{ $labels.instance }} has been down for more than 30 seconds. This affects core platform functionality."
+          dashboard: "http://grafana:3000/d/api-overview"
+          runbook: "https://docs.monitor-legislativo.com/runbooks/api-down"
+
+      # Database Connection Issues
+      - alert: DatabaseConnectionFailure
+        expr: |
+          (
+            postgresql_up{job="postgresql"} == 0
+          ) or (
+            rate(postgresql_connection_errors_total[5m]) > 0.1
+          )
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql
+          component: database
+        annotations:
+          summary: "PostgreSQL database connection issues"
+          description: "Database {{ $labels.instance }} is either down or experiencing connection errors ({{ $value }} errors/sec)."
+          dashboard: "http://grafana:3000/d/database-overview"
+
+      # High Error Rate
+      - alert: HighAPIErrorRate
+        expr: |
+          (
+            rate(http_requests_total{job="backend-api",status=~"5.."}[5m]) / 
+            rate(http_requests_total{job="backend-api"}[5m])
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: backend-api
+          component: api
+        annotations:
+          summary: "High API error rate detected"
+          description: "API error rate is {{ $value | humanizePercentage }} over the last 5 minutes on {{ $labels.instance }}."
+          dashboard: "http://grafana:3000/d/api-errors"
+
+      # Load Balancer Down
+      - alert: LoadBalancerDown
+        expr: up{job="nginx"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: nginx
+          component: load-balancer
+        annotations:
+          summary: "nginx load balancer is down"
+          description: "Load balancer {{ $labels.instance }} is unreachable. This affects all incoming traffic."
+          dashboard: "http://grafana:3000/d/nginx-overview"
+
+  # =====================================================================
+  # APPLICATION PERFORMANCE ALERTS
+  # =====================================================================
+  - name: application_performance
+    interval: 60s
+    rules:
+      # Slow API Response Times
+      - alert: SlowAPIResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            rate(http_request_duration_seconds_bucket{job="backend-api"}[5m])
+          ) > 2.0
+        for: 3m
+        labels:
+          severity: warning
+          service: backend-api
+          component: performance
+        annotations:
+          summary: "API response time degradation"
+          description: "95th percentile response time is {{ $value }}s on {{ $labels.instance }}, exceeding 2s threshold."
+          dashboard: "http://grafana:3000/d/api-performance"
+
+      # High Database Query Time
+      - alert: SlowDatabaseQueries
+        expr: |
+          rate(postgresql_slow_queries_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+          component: performance
+        annotations:
+          summary: "High number of slow database queries"
+          description: "{{ $value }} slow queries per second detected on {{ $labels.instance }}."
+
+      # Memory Usage High
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes
+          ) / node_memory_MemTotal_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          component: memory
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+          component: cpu
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}."
+
+  # =====================================================================
+  # BRAZILIAN GOVERNMENT API MONITORING
+  # =====================================================================
+  - name: government_api_monitoring
+    interval: 300s  # Check every 5 minutes
+    rules:
+      # LexML API Unavailable
+      - alert: LexMLAPIDown
+        expr: |
+          probe_success{instance="https://www.lexml.gov.br",job="lexml-api"} == 0
+        for: 10m
+        labels:
+          severity: warning
+          service: lexml
+          component: external-api
+          priority: high
+        annotations:
+          summary: "LexML Brasil API is unavailable"
+          description: "LexML API ({{ $labels.instance }}) has been unreachable for over 10 minutes. This affects legislative data collection."
+          impact: "Legislative document collection will fallback to cached data"
+          dashboard: "http://grafana:3000/d/external-apis"
+
+      # Câmara dos Deputados API Issues
+      - alert: CamaraAPIDown
+        expr: |
+          probe_success{government_source="dadosabertos.camara.leg.br"} == 0
+        for: 15m
+        labels:
+          severity: warning
+          service: camara-api
+          component: external-api
+        annotations:
+          summary: "Câmara dos Deputados API unavailable"
+          description: "Câmara API has been down for 15+ minutes. Federal deputy data collection affected."
+
+      # Senado Federal API Issues  
+      - alert: SenadoAPIDown
+        expr: |
+          probe_success{government_source="legis.senado.leg.br"} == 0
+        for: 15m
+        labels:
+          severity: warning
+          service: senado-api
+          component: external-api
+        annotations:
+          summary: "Senado Federal API unavailable"
+          description: "Senado API has been down for 15+ minutes. Senate data collection affected."
+
+      # Multiple Government APIs Down
+      - alert: MultipleGovAPIsDown
+        expr: |
+          count(probe_success{job="government-apis"} == 0) >= 2
+        for: 5m
+        labels:
+          severity: critical
+          service: government-apis
+          component: external-api
+        annotations:
+          summary: "Multiple government APIs are down"
+          description: "{{ $value }} government APIs are currently unavailable. This may indicate broader connectivity issues."
+
+  # =====================================================================
+  # DATA COLLECTION ALERTS
+  # =====================================================================
+  - name: data_collection_monitoring
+    interval: 3600s  # Check hourly
+    rules:
+      # No Recent Data Collection
+      - alert: NoRecentDataCollection
+        expr: |
+          (time() - monitor_legislativo_last_collection_timestamp) > 14400  # 4 hours
+        for: 0s
+        labels:
+          severity: warning
+          service: data-collection
+          component: scheduler
+        annotations:
+          summary: "No recent data collection activity"
+          description: "Last successful data collection was {{ $value | humanizeDuration }} ago. Check collection scheduler."
+
+      # High Collection Failure Rate
+      - alert: HighCollectionFailureRate
+        expr: |
+          (
+            rate(monitor_legislativo_collection_failures_total[1h]) /
+            rate(monitor_legislativo_collection_attempts_total[1h])
+          ) > 0.2
+        for: 30m
+        labels:
+          severity: warning
+          service: data-collection
+          component: reliability
+        annotations:
+          summary: "High data collection failure rate"
+          description: "Collection failure rate is {{ $value | humanizePercentage }} over the last hour."
+
+      # Document Processing Backlog
+      - alert: DocumentProcessingBacklog
+        expr: |
+          monitor_legislativo_processing_queue_size > 1000
+        for: 15m
+        labels:
+          severity: warning
+          service: data-processing
+          component: queue
+        annotations:
+          summary: "Large document processing backlog"
+          description: "{{ $value }} documents are queued for processing. Consider scaling processing workers."
+
+  # =====================================================================
+  # CACHE AND STORAGE ALERTS
+  # =====================================================================
+  - name: cache_storage_monitoring
+    interval: 60s
+    rules:
+      # Redis Cache Down
+      - alert: RedisCacheDown
+        expr: |
+          redis_up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+          component: cache
+        annotations:
+          summary: "Redis cache instance is down"
+          description: "Redis instance {{ $labels.instance }} is unreachable. Cache performance will be degraded."
+
+      # High Cache Miss Rate
+      - alert: HighCacheMissRate
+        expr: |
+          (
+            rate(redis_keyspace_misses_total[5m]) /
+            (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]))
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: redis
+          component: cache-performance
+        annotations:
+          summary: "High cache miss rate detected"
+          description: "Cache miss rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+
+      # Disk Space Running Low
+      - alert: DiskSpaceRunningLow
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/"} /
+            node_filesystem_size_bytes{mountpoint="/"}
+          ) < 0.15
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          component: storage
+        annotations:
+          summary: "Disk space running low"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining on {{ $labels.instance }}."
+
+      # Database Storage Growing Rapidly
+      - alert: DatabaseStorageGrowth
+        expr: |
+          predict_linear(postgresql_database_size_bytes[1h], 24*3600) >
+          postgresql_database_size_bytes * 1.5
+        for: 0s
+        labels:
+          severity: warning
+          service: postgresql
+          component: storage
+        annotations:
+          summary: "Rapid database growth detected"
+          description: "Database size is projected to grow by 50% in the next 24 hours on {{ $labels.instance }}."
+
+  # =====================================================================
+  # BUSINESS LOGIC ALERTS
+  # =====================================================================
+  - name: business_logic_monitoring
+    interval: 300s
+    rules:
+      # No Recent User Activity
+      - alert: NoRecentUserActivity
+        expr: |
+          (time() - monitor_legislativo_last_user_activity_timestamp) > 1800  # 30 minutes
+        for: 0s
+        labels:
+          severity: info
+          service: frontend
+          component: user-activity
+        annotations:
+          summary: "No recent user activity detected"
+          description: "No user interactions recorded in the last 30 minutes. Platform may be experiencing issues."
+
+      # High Search Response Time
+      - alert: SlowSearchResponses
+        expr: |
+          histogram_quantile(0.95,
+            rate(monitor_legislativo_search_duration_seconds_bucket[5m])
+          ) > 5.0
+        for: 5m
+        labels:
+          severity: warning
+          service: search
+          component: performance
+        annotations:
+          summary: "Search queries are responding slowly"
+          description: "95th percentile search response time is {{ $value }}s, exceeding 5s threshold."
+
+      # Low Data Freshness
+      - alert: StaleDataDetected
+        expr: |
+          (time() - monitor_legislativo_data_freshness_timestamp) > 86400  # 24 hours
+        for: 0s
+        labels:
+          severity: warning
+          service: data-collection
+          component: freshness
+        annotations:
+          summary: "Data freshness issues detected"
+          description: "Some data sources haven't been updated in over 24 hours."
+
+  # =====================================================================
+  # BACKUP AND DISASTER RECOVERY
+  # =====================================================================
+  - name: backup_monitoring
+    interval: 3600s  # Check hourly
+    rules:
+      # Backup Failure
+      - alert: BackupFailure
+        expr: |
+          monitor_legislativo_backup_last_success_timestamp < 
+          (time() - 86400)  # 24 hours
+        for: 0s
+        labels:
+          severity: critical
+          service: backup
+          component: reliability
+        annotations:
+          summary: "Database backup has failed"
+          description: "Last successful backup was {{ $value | humanizeDuration }} ago."
+
+      # Backup Size Anomaly
+      - alert: BackupSizeAnomaly
+        expr: |
+          abs(
+            monitor_legislativo_backup_size_bytes - 
+            avg_over_time(monitor_legislativo_backup_size_bytes[7d])
+          ) / avg_over_time(monitor_legislativo_backup_size_bytes[7d]) > 0.3
+        for: 0s
+        labels:
+          severity: warning
+          service: backup
+          component: validation
+        annotations:
+          summary: "Backup size anomaly detected"
+          description: "Backup size varies significantly from the 7-day average."
+
+  # =====================================================================
+  # SSL CERTIFICATE MONITORING
+  # =====================================================================
+  - name: ssl_certificate_monitoring
+    interval: 3600s
+    rules:
+      # SSL Certificate Expiring Soon
+      - alert: SSLCertificateExpiringSoon
+        expr: |
+          (probe_ssl_earliest_cert_expiry - time()) / 86400 < 30
+        for: 0s
+        labels:
+          severity: warning
+          service: ssl
+          component: certificate
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value }} days."
+
+      # SSL Certificate Expired
+      - alert: SSLCertificateExpired
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() <= 0
+        for: 0s
+        labels:
+          severity: critical
+          service: ssl
+          component: certificate
+        annotations:
+          summary: "SSL certificate has expired"
+          description: "SSL certificate for {{ $labels.instance }} has expired."
+
+  # =====================================================================
+  # R SHINY ANALYTICS MONITORING
+  # =====================================================================
+  - name: r_shiny_monitoring
+    interval: 120s
+    rules:
+      # R Shiny Service Down
+      - alert: RShinyServiceDown
+        expr: |
+          up{job="r-shiny"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: r-shiny
+          component: analytics
+        annotations:
+          summary: "R Shiny analytics service is down"
+          description: "R Shiny instance {{ $labels.instance }} has been down for over 5 minutes."
+
+      # High R Shiny Memory Usage
+      - alert: RShinyHighMemoryUsage
+        expr: |
+          container_memory_usage_bytes{name=~".*shiny.*"} / 
+          container_spec_memory_limit_bytes{name=~".*shiny.*"} > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          service: r-shiny
+          component: resources
+        annotations:
+          summary: "R Shiny service using excessive memory"
+          description: "R Shiny container {{ $labels.name }} is using {{ $value | humanizePercentage }} of allocated memory."

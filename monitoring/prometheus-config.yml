@@ -1,0 +1,318 @@
+# Prometheus Configuration for Monitor Legislativo v4
+# Phase 4 Week 15: Comprehensive monitoring and alerting
+# Monitors all application components, infrastructure, and business metrics
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    cluster: 'monitor-legislativo-v4'
+    environment: 'production'
+    region: 'brazil-southeast'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+      timeout: 10s
+      api_version: v2
+
+# Load alerting rules
+rule_files:
+  - "alert_rules.yml"
+  - "recording_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Monitor Legislativo Frontend (React + nginx)
+  - job_name: 'frontend'
+    static_configs:
+      - targets: ['frontend:8080', 'loadbalancer:80']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+    params:
+      module: [http_2xx]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Monitor Legislativo Backend API
+  - job_name: 'backend-api'
+    static_configs:
+      - targets: 
+          - 'api1:8000'
+          - 'api2:8000'  
+          - 'api3:8000'
+    scrape_interval: 15s
+    metrics_path: /metrics
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.+):(\d+)'
+        target_label: instance_id
+        replacement: '${1}'
+      - source_labels: [__address__]
+        regex: '(.+):(\d+)'
+        target_label: service_port
+        replacement: '${2}'
+
+  # PostgreSQL Database Monitoring
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: 
+          - 'postgres:5432'
+          - 'postgres-replica:5433'
+    scrape_interval: 30s
+    metrics_path: /metrics
+    params:
+      collect[]:
+        - 'pg_stat_database'
+        - 'pg_stat_user_tables'
+        - 'pg_stat_user_indexes'
+        - 'pg_locks'
+        - 'pg_stat_bgwriter'
+        - 'pg_stat_replication'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: postgres-exporter:9187
+
+  # Redis Cache Monitoring
+  - job_name: 'redis'
+    static_configs:
+      - targets: 
+          - 'redis1:6379'
+          - 'redis2:6379'
+    scrape_interval: 30s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: redis-exporter:9121
+
+  # R Shiny Analytics Monitoring
+  - job_name: 'r-shiny'
+    static_configs:
+      - targets:
+          - 'shiny1:3838'
+          - 'shiny2:3838'
+    scrape_interval: 30s
+    metrics_path: /metrics
+    honor_labels: true
+
+  # nginx Load Balancer Monitoring
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['loadbalancer:9090']
+    scrape_interval: 30s
+    metrics_path: /nginx_status
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: nginx-prometheus-exporter:9113
+
+  # WebSocket Services Monitoring
+  - job_name: 'websocket'
+    static_configs:
+      - targets:
+          - 'ws1:8001'
+          - 'ws2:8001'
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Node Exporter (System Metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: 
+          - 'node-exporter:9100'
+    scrape_interval: 30s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '([^:]+):(.*)'
+        target_label: hostname
+        replacement: '${1}'
+
+  # cAdvisor (Container Metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+    metrics_path: /metrics
+    honor_labels: true
+
+  # Application-specific Metrics
+  - job_name: 'monitor-legislativo-app'
+    static_configs:
+      - targets: ['api1:8000', 'api2:8000', 'api3:8000']
+    scrape_interval: 15s
+    metrics_path: /api/v1/metrics
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        target_label: service
+      - source_labels: [__meta_consul_node]
+        target_label: node
+
+  # LexML API Health Monitoring
+  - job_name: 'lexml-api'
+    static_configs:
+      - targets: ['https://www.lexml.gov.br']
+    scrape_interval: 60s
+    metrics_path: /busca/SRU
+    scheme: https
+    params:
+      operation: ['explain']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Brazilian Government APIs Health
+  - job_name: 'government-apis'
+    static_configs:
+      - targets:
+          - 'https://dadosabertos.camara.leg.br'
+          - 'https://legis.senado.leg.br'
+          - 'https://www4.planalto.gov.br'
+    scrape_interval: 300s  # Every 5 minutes
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+      - source_labels: [__param_target]
+        regex: 'https://([^/]+).*'
+        target_label: government_source
+        replacement: '${1}'
+
+  # SSL Certificate Monitoring
+  - job_name: 'ssl-certificates'
+    static_configs:
+      - targets:
+          - 'monitor-legislativo.com:443'
+          - 'www.monitor-legislativo.com:443'
+    scrape_interval: 3600s  # Every hour
+    metrics_path: /probe
+    params:
+      module: [ssl_expire]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Business Metrics Collection
+  - job_name: 'business-metrics'
+    static_configs:
+      - targets: ['api1:8000', 'api2:8000', 'api3:8000']
+    scrape_interval: 60s
+    metrics_path: /api/v1/metrics/business
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '([^:]+):(.*)'
+        target_label: api_instance
+        replacement: '${1}'
+
+  # Log-based Metrics (via Loki/Promtail)
+  - job_name: 'log-metrics'
+    static_configs:
+      - targets: ['loki:3100']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Backup System Monitoring
+  - job_name: 'backup-health'
+    static_configs:
+      - targets: ['backup-monitor:8080']
+    scrape_interval: 300s  # Every 5 minutes
+    metrics_path: /metrics
+
+  # Performance Testing Metrics
+  - job_name: 'performance-tests'
+    static_configs:
+      - targets: ['performance-monitor:8080']
+    scrape_interval: 300s
+    metrics_path: /metrics
+    honor_labels: true
+    # Only scrape when performance tests are running
+    relabel_configs:
+      - source_labels: [__meta_consul_service_tag_performance_test]
+        regex: 'active'
+        action: keep
+
+# Service Discovery (if using Consul)
+  - job_name: 'consul-services'
+    consul_sd_configs:
+      - server: 'consul:8500'
+        services: ['monitor-legislativo', 'postgres', 'redis', 'nginx']
+    scrape_interval: 30s
+    relabel_configs:
+      # Keep only services with monitoring enabled
+      - source_labels: [__meta_consul_service_tag_monitoring]
+        regex: 'enabled'
+        action: keep
+      # Set instance label from consul node
+      - source_labels: [__meta_consul_node]
+        target_label: instance
+      # Set service label
+      - source_labels: [__meta_consul_service]
+        target_label: service
+      # Set environment from consul tag
+      - source_labels: [__meta_consul_service_tag_environment]
+        target_label: environment
+
+# Remote write configuration (for long-term storage)
+remote_write:
+  - url: "http://victoriametrics:8428/api/v1/write"
+    queue_config:
+      max_samples_per_send: 10000
+      batch_send_deadline: 5s
+      max_shards: 20
+    metadata_config:
+      send: true
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus/data
+    retention.time: 15d  # Local retention
+    retention.size: 10GB
+    wal-compression: true
+  exemplars:
+    max_exemplars: 100000
