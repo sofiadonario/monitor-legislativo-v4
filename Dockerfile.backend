@@ -119,7 +119,7 @@ RUN python -m pip install \
 RUN python -m spacy download pt_core_news_sm
 
 # Set up Brazilian legislative text processing
-COPY ./nlp/portuguese_legal_processor.py /app/nlp/
+# COPY ./nlp/portuguese_legal_processor.py /app/nlp/
 COPY ./data/brazilian_legal_vocabularies.json /app/data/
 
 # Expose port
@@ -147,7 +147,7 @@ RUN poetry run pip install --no-cache-dir --upgrade "asyncpg==0.29.0"
 # ========================================
 
 # Copy entrypoint script
-COPY --chown=monitor:monitor ./scripts/entrypoint.sh /app/entrypoint.sh
+COPY ./scripts/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Default command for production
