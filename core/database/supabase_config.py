@@ -63,6 +63,14 @@ class SupabaseConfig:
                 ))
                 logger.info("Fixed DATABASE_URL encoding for special characters")
             
+            # Additional validation for Supabase pooler format
+            if 'pooler.supabase.com' in db_url:
+                # Ensure proper username format for pooler connections
+                if parsed.username and '.' in parsed.username:
+                    logger.info(f"Using Supabase pooler format with username: {parsed.username}")
+                else:
+                    logger.warning("Supabase pooler connections require project-specific username format")
+            
             # Clean URL - SSL will be handled by connect_args
             if 'supabase.co' in db_url:
                 logger.info("SSL will be handled by asyncpg connect_args")
@@ -95,26 +103,17 @@ class SupabaseConfig:
             "prepared_statement_cache_size": 0,  # Disable for Supabase compatibility
         }
         
-        # Force SSL for Supabase connections with certificate
-        if 'supabase.co' in db_url:
+        # Force SSL for Supabase connections
+        if 'supabase.com' in db_url or 'pooler.supabase.com' in db_url:
             import ssl
             ssl_context = ssl.create_default_context()
+            
+            # For Supabase pooler connections, use permissive SSL
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
             
-            # Use Supabase SSL certificate if available
-            ssl_cert_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "ssl certificado.cer")
-            if os.path.exists(ssl_cert_path):
-                try:
-                    ssl_context.load_verify_locations(cafile=ssl_cert_path)
-                    ssl_context.verify_mode = ssl.CERT_REQUIRED
-                    ssl_context.check_hostname = True
-                    logger.info(f"Using Supabase SSL certificate: {ssl_cert_path}")
-                except Exception as e:
-                    logger.warning(f"Could not load SSL certificate {ssl_cert_path}: {e}")
-            
             connect_args["ssl"] = ssl_context
-            logger.info("Configured SSL context for Supabase connection")
+            logger.info("Configured permissive SSL context for Supabase pooler connection")
         
         return create_async_engine(
             db_url,
@@ -185,9 +184,11 @@ class DatabaseManager:
                 elif "ssl" in error_msg.lower():
                     logger.error("🔒 SSL ISSUE: SSL configuration problem")
                     logger.error("Check SSL mode and certificates")
-                elif "authentication" in error_msg.lower() or "password" in error_msg.lower():
+                elif "authentication" in error_msg.lower() or "password" in error_msg.lower() or "object has no attribute 'group'" in error_msg.lower():
                     logger.error("🔐 AUTH ISSUE: Database authentication failed")
-                    logger.error("Check DATABASE_URL credentials")
+                    logger.error("Check DATABASE_URL credentials and format")
+                    logger.error("For Supabase pooler, ensure username format: postgres.PROJECT_REF")
+                    logger.error("For direct connection, use: postgres")
                 elif "timeout" in error_msg.lower():
                     logger.error("⏱️ TIMEOUT ISSUE: Connection timed out")
                     logger.error("Network latency or Supabase overloaded")

@@ -67,7 +67,9 @@
       "Bash(npx gh-pages:*)",
       "Bash(npm run postinstall:*)",
       "Bash(timeout 30 npx gh-pages -d dist --no-history)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(ping:*)"
     ]
   },
   "enableAllProjectMcpServers": false
