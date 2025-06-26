@@ -108,4 +108,4 @@ secrets/
 *.xls
 data/exports/
 data/cache/
-data/temp/ 
+data/temp/ .env.production

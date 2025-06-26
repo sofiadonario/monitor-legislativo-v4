@@ -339,4 +339,4 @@ curl -X POST http://localhost/api/v1/citations/generate \
 
 *Monitor Legislativo v4 - Brazilian Legislative Research Platform for Academic Excellence*  
 *Developed with ❤️ for Brazil's academic and government communities*  
-*Ready for launch: January 2024* 🎉
+*Ready for launch: September 2025 🎉
