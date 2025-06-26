@@ -1,9 +1,9 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-m10PmnUE.js","assets/js/index-DlBwyd5U.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/css/index-CuWVk-Hd.css","assets/css/OptimizedMap-Dlna1-ep.css","assets/js/TabbedSidebar-Ckn0YuF5.js","assets/css/TabbedSidebar-T6IH_SY-.css","assets/js/ExportPanel-BHM7wuwe.js","assets/js/api-0s8aYwKN.js","assets/js/utils-Cs_fMHvp.js","assets/css/ExportPanel-rPKiQ0eQ.css"])))=>i.map(i=>d[i]);
-import { _ as __vitePreload, j as jsxRuntimeExports, L as LoadingSpinner } from "./index-DlBwyd5U.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-3oc5AkkT.js","assets/js/index-C5gwQBOf.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/css/index-CAI7Z5Wf.css","assets/css/OptimizedMap-D0H0UQSZ.css","assets/js/TabbedSidebar-DgTh56X7.js","assets/css/TabbedSidebar-BUx3S1Ap.css","assets/js/ExportPanel-BzGnjinh.js","assets/js/api-0s8aYwKN.js","assets/js/utils-Cs_fMHvp.js","assets/css/ExportPanel-rPKiQ0eQ.css"])))=>i.map(i=>d[i]);
+import { _ as __vitePreload, j as jsxRuntimeExports, L as LoadingSpinner } from "./index-C5gwQBOf.js";
 import { r as reactExports } from "./leaflet-vendor-BcXhkSxI.js";
 import { A as API_CONFIG, g as getApiBaseUrl } from "./api-0s8aYwKN.js";
 import "./react-vendor-CSPBeBBz.js";
-var __async$3 = (__this, __arguments, generator) => {
+var __async$4 = (__this, __arguments, generator) => {
   return new Promise((resolve, reject) => {
     var fulfilled = (value) => {
       try {
@@ -247,7 +247,7 @@ function parseCSVData(csvContent) {
   return documents;
 }
 function loadCSVLegislativeData() {
-  return __async$3(this, null, function* () {
+  return __async$4(this, null, function* () {
     const basePath = "/monitor-legislativo-v4/";
     const CSV_URL = `${basePath}lexml_transport_results_20250606_123100.csv`;
     console.log(`Fetching real CSV data from: ${CSV_URL}`);
@@ -291,7 +291,7 @@ function loadCSVLegislativeData() {
   });
 }
 let csvDataCache = null;
-(() => __async$3(null, null, function* () {
+(() => __async$4(null, null, function* () {
   try {
     console.log("🔥 LOADING REAL LEGISLATIVE DATA...");
     csvDataCache = yield loadCSVLegislativeData();
@@ -306,27 +306,27 @@ let csvDataCache = null;
     console.error("📋 Action required: Check data availability or API connectivity");
   }
 }))();
-var __defProp$2 = Object.defineProperty;
+var __defProp$3 = Object.defineProperty;
 var __defProps$2 = Object.defineProperties;
 var __getOwnPropDescs$2 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$2 = Object.getOwnPropertySymbols;
-var __hasOwnProp$2 = Object.prototype.hasOwnProperty;
-var __propIsEnum$2 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$2 = (obj, key, value) => key in obj ? __defProp$2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$2 = (a, b) => {
+var __getOwnPropSymbols$3 = Object.getOwnPropertySymbols;
+var __hasOwnProp$3 = Object.prototype.hasOwnProperty;
+var __propIsEnum$3 = Object.prototype.propertyIsEnumerable;
+var __defNormalProp$3 = (obj, key, value) => key in obj ? __defProp$3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues$3 = (a, b) => {
   for (var prop in b || (b = {}))
-    if (__hasOwnProp$2.call(b, prop))
-      __defNormalProp$2(a, prop, b[prop]);
-  if (__getOwnPropSymbols$2)
-    for (var prop of __getOwnPropSymbols$2(b)) {
-      if (__propIsEnum$2.call(b, prop))
-        __defNormalProp$2(a, prop, b[prop]);
+    if (__hasOwnProp$3.call(b, prop))
+      __defNormalProp$3(a, prop, b[prop]);
+  if (__getOwnPropSymbols$3)
+    for (var prop of __getOwnPropSymbols$3(b)) {
+      if (__propIsEnum$3.call(b, prop))
+        __defNormalProp$3(a, prop, b[prop]);
     }
   return a;
 };
 var __spreadProps$2 = (a, b) => __defProps$2(a, __getOwnPropDescs$2(b));
-var __publicField$1 = (obj, key, value) => __defNormalProp$2(obj, typeof key !== "symbol" ? key + "" : key, value);
-var __async$2 = (__this, __arguments, generator) => {
+var __publicField$2 = (obj, key, value) => __defNormalProp$3(obj, typeof key !== "symbol" ? key + "" : key, value);
+var __async$3 = (__this, __arguments, generator) => {
   return new Promise((resolve, reject) => {
     var fulfilled = (value) => {
       try {
@@ -348,8 +348,8 @@ var __async$2 = (__this, __arguments, generator) => {
 };
 class ApiClient {
   constructor(config) {
-    __publicField$1(this, "config");
-    __publicField$1(this, "cache", /* @__PURE__ */ new Map());
+    __publicField$2(this, "config");
+    __publicField$2(this, "cache", /* @__PURE__ */ new Map());
     var _a, _b, _c, _d;
     this.config = {
       baseUrl: config.baseUrl,
@@ -383,11 +383,11 @@ class ApiClient {
     });
   }
   fetchWithRetry(_0, _1) {
-    return __async$2(this, arguments, function* (url, options, retries = this.config.retries) {
+    return __async$3(this, arguments, function* (url, options, retries = this.config.retries) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
       try {
-        const response = yield fetch(url, __spreadProps$2(__spreadValues$2({}, options), {
+        const response = yield fetch(url, __spreadProps$2(__spreadValues$3({}, options), {
           signal: controller.signal
         }));
         clearTimeout(timeoutId);
@@ -430,7 +430,7 @@ class ApiClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
   get(endpoint, params) {
-    return __async$2(this, null, function* () {
+    return __async$3(this, null, function* () {
       const cacheKey = this.getCacheKey(endpoint, params);
       const cached = this.getFromCache(cacheKey);
       if (cached !== null) {
@@ -451,7 +451,7 @@ class ApiClient {
     });
   }
   post(endpoint, body) {
-    return __async$2(this, null, function* () {
+    return __async$3(this, null, function* () {
       const url = `${this.config.baseUrl}/api/${this.config.version}${endpoint}`;
       const response = yield this.fetchWithRetry(url, {
         method: "POST",
@@ -492,6 +492,582 @@ const apiClient = new ApiClient({
   cacheTTL: Number(void 0) || 3e5
 });
 var apiClient_default = apiClient;
+var __defProp$2 = Object.defineProperty;
+var __getOwnPropSymbols$2 = Object.getOwnPropertySymbols;
+var __hasOwnProp$2 = Object.prototype.hasOwnProperty;
+var __propIsEnum$2 = Object.prototype.propertyIsEnumerable;
+var __defNormalProp$2 = (obj, key, value) => key in obj ? __defProp$2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues$2 = (a, b) => {
+  for (var prop in b || (b = {}))
+    if (__hasOwnProp$2.call(b, prop))
+      __defNormalProp$2(a, prop, b[prop]);
+  if (__getOwnPropSymbols$2)
+    for (var prop of __getOwnPropSymbols$2(b)) {
+      if (__propIsEnum$2.call(b, prop))
+        __defNormalProp$2(a, prop, b[prop]);
+    }
+  return a;
+};
+var __publicField$1 = (obj, key, value) => __defNormalProp$2(obj, typeof key !== "symbol" ? key + "" : key, value);
+var __async$2 = (__this, __arguments, generator) => {
+  return new Promise((resolve, reject) => {
+    var fulfilled = (value) => {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    var rejected = (value) => {
+      try {
+        step(generator.throw(value));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
+    step((generator = generator.apply(__this, __arguments)).next());
+  });
+};
+class MultiLayerCacheService {
+  constructor(config = {}) {
+    __publicField$1(this, "config");
+    __publicField$1(this, "memoryCache");
+    __publicField$1(this, "stats");
+    __publicField$1(this, "compressionWorker");
+    __publicField$1(this, "refreshQueue");
+    __publicField$1(this, "prefetchQueue");
+    this.config = __spreadValues$2({
+      // Memory cache (fastest, smallest)
+      memoryMaxSize: 50 * 1024 * 1024,
+      // 50MB
+      memoryTTL: 5 * 60 * 1e3,
+      // 5 minutes
+      // Session storage (per-session)
+      sessionStorageMaxSize: 10 * 1024 * 1024,
+      // 10MB
+      sessionStorageTTL: 30 * 60 * 1e3,
+      // 30 minutes
+      // Local storage (persistent)
+      localStorageMaxSize: 25 * 1024 * 1024,
+      // 25MB
+      localStorageTTL: 24 * 60 * 60 * 1e3,
+      // 24 hours
+      // Redis cache (server-side when available)
+      redisEnabled: false,
+      redisTTL: 60 * 60 * 1e3,
+      // 1 hour
+      redisMaxSize: 100 * 1024 * 1024,
+      // 100MB
+      // Performance features
+      compressionEnabled: true,
+      backgroundRefreshEnabled: true,
+      prefetchEnabled: true
+    }, config);
+    this.memoryCache = /* @__PURE__ */ new Map();
+    this.refreshQueue = /* @__PURE__ */ new Set();
+    this.prefetchQueue = /* @__PURE__ */ new Set();
+    this.stats = {
+      memoryHits: 0,
+      memoryMisses: 0,
+      localStorageHits: 0,
+      localStorageMisses: 0,
+      sessionStorageHits: 0,
+      sessionStorageMisses: 0,
+      redisHits: 0,
+      redisMisses: 0,
+      totalRequests: 0,
+      hitRate: 0,
+      averageResponseTime: 0,
+      cacheEfficiency: 0
+    };
+    this.initializeCompressionWorker();
+    this.startMaintenanceTasks();
+  }
+  initializeCompressionWorker() {
+    if (!this.config.compressionEnabled || typeof Worker === "undefined") {
+      return;
+    }
+    try {
+      const compressionCode = `
+        self.onmessage = function(e) {
+          const { action, data, id } = e.data;
+          
+          if (action === 'compress') {
+            try {
+              const compressed = LZString.compress(JSON.stringify(data));
+              self.postMessage({ id, result: compressed, success: true });
+            } catch (error) {
+              self.postMessage({ id, error: error.message, success: false });
+            }
+          } else if (action === 'decompress') {
+            try {
+              const decompressed = JSON.parse(LZString.decompress(data));
+              self.postMessage({ id, result: decompressed, success: true });
+            } catch (error) {
+              self.postMessage({ id, error: error.message, success: false });
+            }
+          }
+        };
+      `;
+      const blob = new Blob([compressionCode], { type: "application/javascript" });
+      this.compressionWorker = new Worker(URL.createObjectURL(blob));
+    } catch (error) {
+      console.warn("Failed to initialize compression worker:", error);
+      this.config.compressionEnabled = false;
+    }
+  }
+  startMaintenanceTasks() {
+    setInterval(() => {
+      this.cleanExpiredEntries();
+    }, 5 * 60 * 1e3);
+    setInterval(() => {
+      this.updateStatistics();
+    }, 60 * 1e3);
+    if (this.config.backgroundRefreshEnabled) {
+      setInterval(() => {
+        this.processRefreshQueue();
+      }, 30 * 1e3);
+    }
+    if (this.config.prefetchEnabled) {
+      setInterval(() => {
+        this.processPrefetchQueue();
+      }, 10 * 1e3);
+    }
+  }
+  /**
+   * Get data from cache with multi-layer fallback
+   */
+  get(key, fallbackFn) {
+    return __async$2(this, null, function* () {
+      const startTime = Date.now();
+      this.stats.totalRequests++;
+      try {
+        const memoryResult = yield this.getFromMemory(key);
+        if (memoryResult !== null) {
+          this.stats.memoryHits++;
+          this.updateAccessStats(key, "memory", Date.now() - startTime);
+          return memoryResult;
+        }
+        this.stats.memoryMisses++;
+        const sessionResult = yield this.getFromSessionStorage(key);
+        if (sessionResult !== null) {
+          this.stats.sessionStorageHits++;
+          yield this.setInMemory(key, sessionResult, this.config.memoryTTL);
+          this.updateAccessStats(key, "session", Date.now() - startTime);
+          return sessionResult;
+        }
+        this.stats.sessionStorageMisses++;
+        const localResult = yield this.getFromLocalStorage(key);
+        if (localResult !== null) {
+          this.stats.localStorageHits++;
+          yield this.setInMemory(key, localResult, this.config.memoryTTL);
+          yield this.setInSessionStorage(key, localResult, this.config.sessionStorageTTL);
+          this.updateAccessStats(key, "local", Date.now() - startTime);
+          return localResult;
+        }
+        this.stats.localStorageMisses++;
+        if (this.config.redisEnabled) {
+          const redisResult = yield this.getFromRedis(key);
+          if (redisResult !== null) {
+            this.stats.redisHits++;
+            yield this.setInMemory(key, redisResult, this.config.memoryTTL);
+            yield this.setInSessionStorage(key, redisResult, this.config.sessionStorageTTL);
+            yield this.setInLocalStorage(key, redisResult, this.config.localStorageTTL);
+            this.updateAccessStats(key, "redis", Date.now() - startTime);
+            return redisResult;
+          }
+          this.stats.redisMisses++;
+        }
+        if (fallbackFn) {
+          const result = yield fallbackFn();
+          if (result !== null) {
+            yield this.set(key, result);
+            this.scheduleBackgroundRefresh(key, fallbackFn);
+          }
+          return result;
+        }
+        return null;
+      } catch (error) {
+        console.error("Cache get error:", error);
+        return fallbackFn ? yield fallbackFn() : null;
+      }
+    });
+  }
+  /**
+   * Set data in all appropriate cache layers
+   */
+  set(key, data, customTTL) {
+    return __async$2(this, null, function* () {
+      try {
+        const ttl = customTTL || this.config.memoryTTL;
+        yield Promise.all([
+          this.setInMemory(key, data, ttl),
+          this.setInSessionStorage(key, data, this.config.sessionStorageTTL),
+          this.setInLocalStorage(key, data, this.config.localStorageTTL),
+          ...this.config.redisEnabled ? [this.setInRedis(key, data, this.config.redisTTL)] : []
+        ]);
+      } catch (error) {
+        console.error("Cache set error:", error);
+      }
+    });
+  }
+  /**
+   * Delete from all cache layers
+   */
+  delete(key) {
+    return __async$2(this, null, function* () {
+      try {
+        yield Promise.all([
+          this.deleteFromMemory(key),
+          this.deleteFromSessionStorage(key),
+          this.deleteFromLocalStorage(key),
+          ...this.config.redisEnabled ? [this.deleteFromRedis(key)] : []
+        ]);
+      } catch (error) {
+        console.error("Cache delete error:", error);
+      }
+    });
+  }
+  /**
+   * Clear all cache layers
+   */
+  clear() {
+    return __async$2(this, null, function* () {
+      try {
+        yield Promise.all([
+          this.clearMemory(),
+          this.clearSessionStorage(),
+          this.clearLocalStorage(),
+          ...this.config.redisEnabled ? [this.clearRedis()] : []
+        ]);
+        this.refreshQueue.clear();
+        this.prefetchQueue.clear();
+      } catch (error) {
+        console.error("Cache clear error:", error);
+      }
+    });
+  }
+  // Memory cache operations
+  getFromMemory(key) {
+    return __async$2(this, null, function* () {
+      const entry = this.memoryCache.get(key);
+      if (!entry) return null;
+      if (Date.now() > entry.timestamp + entry.ttl) {
+        this.memoryCache.delete(key);
+        return null;
+      }
+      entry.accessCount++;
+      entry.lastAccessed = Date.now();
+      return entry.data;
+    });
+  }
+  setInMemory(key, data, ttl) {
+    return __async$2(this, null, function* () {
+      const size = this.calculateDataSize(data);
+      yield this.ensureMemorySpace(size);
+      const entry = {
+        data,
+        timestamp: Date.now(),
+        ttl,
+        accessCount: 1,
+        lastAccessed: Date.now(),
+        size,
+        key
+      };
+      this.memoryCache.set(key, entry);
+    });
+  }
+  deleteFromMemory(key) {
+    return __async$2(this, null, function* () {
+      this.memoryCache.delete(key);
+    });
+  }
+  clearMemory() {
+    return __async$2(this, null, function* () {
+      this.memoryCache.clear();
+    });
+  }
+  // Session storage operations
+  getFromSessionStorage(key) {
+    return __async$2(this, null, function* () {
+      try {
+        const item = sessionStorage.getItem(`mlc_${key}`);
+        if (!item) return null;
+        const entry = JSON.parse(item);
+        if (Date.now() > entry.timestamp + entry.ttl) {
+          sessionStorage.removeItem(`mlc_${key}`);
+          return null;
+        }
+        return entry.compressed ? yield this.decompress(entry.data) : entry.data;
+      } catch (error) {
+        console.warn("Session storage get error:", error);
+        return null;
+      }
+    });
+  }
+  setInSessionStorage(key, data, ttl) {
+    return __async$2(this, null, function* () {
+      try {
+        const compressed = this.config.compressionEnabled ? yield this.compress(data) : data;
+        const entry = {
+          data: compressed,
+          timestamp: Date.now(),
+          ttl,
+          accessCount: 1,
+          lastAccessed: Date.now(),
+          compressed: this.config.compressionEnabled,
+          size: this.calculateDataSize(compressed),
+          key
+        };
+        sessionStorage.setItem(`mlc_${key}`, JSON.stringify(entry));
+      } catch (error) {
+        console.warn("Session storage set error:", error);
+      }
+    });
+  }
+  deleteFromSessionStorage(key) {
+    return __async$2(this, null, function* () {
+      try {
+        sessionStorage.removeItem(`mlc_${key}`);
+      } catch (error) {
+        console.warn("Session storage delete error:", error);
+      }
+    });
+  }
+  clearSessionStorage() {
+    return __async$2(this, null, function* () {
+      try {
+        const keys = Object.keys(sessionStorage);
+        keys.forEach((key) => {
+          if (key.startsWith("mlc_")) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (error) {
+        console.warn("Session storage clear error:", error);
+      }
+    });
+  }
+  // Local storage operations
+  getFromLocalStorage(key) {
+    return __async$2(this, null, function* () {
+      try {
+        const item = localStorage.getItem(`mlc_${key}`);
+        if (!item) return null;
+        const entry = JSON.parse(item);
+        if (Date.now() > entry.timestamp + entry.ttl) {
+          localStorage.removeItem(`mlc_${key}`);
+          return null;
+        }
+        return entry.compressed ? yield this.decompress(entry.data) : entry.data;
+      } catch (error) {
+        console.warn("Local storage get error:", error);
+        return null;
+      }
+    });
+  }
+  setInLocalStorage(key, data, ttl) {
+    return __async$2(this, null, function* () {
+      try {
+        const compressed = this.config.compressionEnabled ? yield this.compress(data) : data;
+        const entry = {
+          data: compressed,
+          timestamp: Date.now(),
+          ttl,
+          accessCount: 1,
+          lastAccessed: Date.now(),
+          compressed: this.config.compressionEnabled,
+          size: this.calculateDataSize(compressed),
+          key
+        };
+        localStorage.setItem(`mlc_${key}`, JSON.stringify(entry));
+      } catch (error) {
+        console.warn("Local storage set error:", error);
+      }
+    });
+  }
+  deleteFromLocalStorage(key) {
+    return __async$2(this, null, function* () {
+      try {
+        localStorage.removeItem(`mlc_${key}`);
+      } catch (error) {
+        console.warn("Local storage delete error:", error);
+      }
+    });
+  }
+  clearLocalStorage() {
+    return __async$2(this, null, function* () {
+      try {
+        const keys = Object.keys(localStorage);
+        keys.forEach((key) => {
+          if (key.startsWith("mlc_")) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (error) {
+        console.warn("Local storage clear error:", error);
+      }
+    });
+  }
+  // Redis operations (placeholders for backend integration)
+  getFromRedis(key) {
+    return __async$2(this, null, function* () {
+      return null;
+    });
+  }
+  setInRedis(key, data, ttl) {
+    return __async$2(this, null, function* () {
+    });
+  }
+  deleteFromRedis(key) {
+    return __async$2(this, null, function* () {
+    });
+  }
+  clearRedis() {
+    return __async$2(this, null, function* () {
+    });
+  }
+  // Utility methods
+  calculateDataSize(data) {
+    return new Blob([JSON.stringify(data)]).size;
+  }
+  ensureMemorySpace(requiredSize) {
+    return __async$2(this, null, function* () {
+      const currentSize = Array.from(this.memoryCache.values()).reduce((total, entry) => total + entry.size, 0);
+      if (currentSize + requiredSize <= this.config.memoryMaxSize) {
+        return;
+      }
+      const entries = Array.from(this.memoryCache.entries()).sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+      let freedSpace = 0;
+      for (const [key, entry] of entries) {
+        this.memoryCache.delete(key);
+        freedSpace += entry.size;
+        if (freedSpace >= requiredSize) {
+          break;
+        }
+      }
+    });
+  }
+  compress(data) {
+    return __async$2(this, null, function* () {
+      if (!this.config.compressionEnabled || !this.compressionWorker) {
+        return data;
+      }
+      return new Promise((resolve) => {
+        const id = Math.random().toString(36);
+        const handler = (e) => {
+          if (e.data.id === id) {
+            this.compressionWorker.removeEventListener("message", handler);
+            resolve(e.data.success ? e.data.result : data);
+          }
+        };
+        this.compressionWorker.addEventListener("message", handler);
+        this.compressionWorker.postMessage({ action: "compress", data, id });
+        setTimeout(() => resolve(data), 1e3);
+      });
+    });
+  }
+  decompress(data) {
+    return __async$2(this, null, function* () {
+      if (!this.config.compressionEnabled || !this.compressionWorker) {
+        return data;
+      }
+      return new Promise((resolve) => {
+        const id = Math.random().toString(36);
+        const handler = (e) => {
+          if (e.data.id === id) {
+            this.compressionWorker.removeEventListener("message", handler);
+            resolve(e.data.success ? e.data.result : data);
+          }
+        };
+        this.compressionWorker.addEventListener("message", handler);
+        this.compressionWorker.postMessage({ action: "decompress", data, id });
+        setTimeout(() => resolve(data), 1e3);
+      });
+    });
+  }
+  cleanExpiredEntries() {
+    const now = Date.now();
+    for (const [key, entry] of this.memoryCache.entries()) {
+      if (now > entry.timestamp + entry.ttl) {
+        this.memoryCache.delete(key);
+      }
+    }
+  }
+  updateStatistics() {
+    const totalHits = this.stats.memoryHits + this.stats.sessionStorageHits + this.stats.localStorageHits + this.stats.redisHits;
+    this.stats.hitRate = this.stats.totalRequests > 0 ? totalHits / this.stats.totalRequests * 100 : 0;
+    this.stats.cacheEfficiency = this.calculateCacheEfficiency();
+  }
+  calculateCacheEfficiency() {
+    const weightedHits = this.stats.memoryHits * 4 + this.stats.sessionStorageHits * 3 + this.stats.localStorageHits * 2 + this.stats.redisHits * 1;
+    const maxPossibleScore = this.stats.totalRequests * 4;
+    return maxPossibleScore > 0 ? weightedHits / maxPossibleScore * 100 : 0;
+  }
+  updateAccessStats(key, layer, responseTime) {
+    this.stats.averageResponseTime = this.stats.averageResponseTime * 0.9 + responseTime * 0.1;
+  }
+  scheduleBackgroundRefresh(key, fallbackFn) {
+    if (this.config.backgroundRefreshEnabled) {
+      this.refreshQueue.add(key);
+    }
+  }
+  processRefreshQueue() {
+    return __async$2(this, null, function* () {
+      const items = Array.from(this.refreshQueue).slice(0, 3);
+      this.refreshQueue = new Set(Array.from(this.refreshQueue).slice(3));
+      for (const key of items) {
+      }
+    });
+  }
+  processPrefetchQueue() {
+    return __async$2(this, null, function* () {
+      const items = Array.from(this.prefetchQueue).slice(0, 2);
+      this.prefetchQueue = new Set(Array.from(this.prefetchQueue).slice(2));
+      for (const key of items) {
+      }
+    });
+  }
+  /**
+   * Get cache statistics
+   */
+  getStats() {
+    this.updateStatistics();
+    return __spreadValues$2({}, this.stats);
+  }
+  /**
+   * Get cache size information
+   */
+  getCacheSizes() {
+    const memorySize = Array.from(this.memoryCache.values()).reduce((total, entry) => total + entry.size, 0);
+    return {
+      memory: memorySize,
+      session: 0,
+      // Would calculate from sessionStorage
+      local: 0,
+      // Would calculate from localStorage  
+      redis: 0
+      // Would get from backend
+    };
+  }
+  /**
+   * Cleanup resources
+   */
+  dispose() {
+    if (this.compressionWorker) {
+      this.compressionWorker.terminate();
+    }
+    this.memoryCache.clear();
+    this.refreshQueue.clear();
+    this.prefetchQueue.clear();
+  }
+}
+const multiLayerCache = new MultiLayerCacheService({
+  compressionEnabled: true,
+  backgroundRefreshEnabled: true,
+  prefetchEnabled: true
+});
 var __defProp$1 = Object.defineProperty;
 var __defProps$1 = Object.defineProperties;
 var __getOwnPropDescs$1 = Object.getOwnPropertyDescriptors;
@@ -568,9 +1144,17 @@ const _LegislativeDataService = class _LegislativeDataService2 {
   }
   getLocalCsvData() {
     return __async$1(this, null, function* () {
+      const cacheKey = _LegislativeDataService2.CACHE_KEYS.CSV_DATA;
+      const cachedData = yield multiLayerCache.get(cacheKey);
+      if (cachedData) {
+        console.log("📦 Using multi-layer cached CSV data");
+        return cachedData;
+      }
       if (this.csvDataCache && this.csvDataCache.length > 0) {
-        console.log("Using cached real CSV data.");
-        return { documents: this.csvDataCache, usingFallback: true };
+        console.log("Using in-memory cached real CSV data.");
+        const result = { documents: this.csvDataCache, usingFallback: true };
+        yield multiLayerCache.set(cacheKey, result, 24 * 60 * 60 * 1e3);
+        return result;
       }
       try {
         console.log("Attempting to load real CSV legislative data...");
@@ -578,7 +1162,9 @@ const _LegislativeDataService = class _LegislativeDataService2 {
         if (csvDocs && Array.isArray(csvDocs) && csvDocs.length > 0) {
           console.log(`Loaded ${csvDocs.length} real documents from CSV`);
           this.csvDataCache = csvDocs;
-          return { documents: csvDocs, usingFallback: true };
+          const result = { documents: csvDocs, usingFallback: true };
+          yield multiLayerCache.set(cacheKey, result, 24 * 60 * 60 * 1e3);
+          return result;
         }
         throw new Error("CSV file was loaded but contained no documents or invalid data.");
       } catch (error) {
@@ -590,16 +1176,30 @@ const _LegislativeDataService = class _LegislativeDataService2 {
   }
   fetchDocuments(filters) {
     return __async$1(this, null, function* () {
-      const cacheKey = JSON.stringify(filters || {});
-      if (this.requestCache.has(cacheKey)) {
+      const filterKey = JSON.stringify(filters || {});
+      const cacheKey = `${_LegislativeDataService2.CACHE_KEYS.DOCUMENTS}_${filterKey}`;
+      const cachedResult = yield multiLayerCache.get(
+        cacheKey,
+        () => __async$1(this, null, function* () {
+          console.log("🔄 Cache miss - fetching fresh data");
+          return yield this._performFetch(filters);
+        })
+      );
+      if (cachedResult) {
+        console.log("🎯 Cache hit - returning cached documents");
+        return cachedResult;
+      }
+      if (this.requestCache.has(filterKey)) {
         console.log("⚡ Request deduped: Using existing pending request");
-        return this.requestCache.get(cacheKey);
+        return this.requestCache.get(filterKey);
       }
       const requestPromise = this._performFetch(filters);
-      this.requestCache.set(cacheKey, requestPromise);
+      this.requestCache.set(filterKey, requestPromise);
       console.log(`📊 Active requests: ${this.requestCache.size}`);
-      requestPromise.finally(() => {
-        this.requestCache.delete(cacheKey);
+      requestPromise.then((result) => __async$1(this, null, function* () {
+        yield multiLayerCache.set(cacheKey, result, 10 * 60 * 1e3);
+      })).finally(() => {
+        this.requestCache.delete(filterKey);
         console.log(`🧹 Cache cleanup - Active requests: ${this.requestCache.size}`);
       });
       return requestPromise;
@@ -662,17 +1262,35 @@ const _LegislativeDataService = class _LegislativeDataService2 {
   }
   fetchDocumentById(id) {
     return __async$1(this, null, function* () {
+      const cacheKey = `${_LegislativeDataService2.CACHE_KEYS.DOCUMENT_BY_ID}_${id}`;
+      const cachedDoc = yield multiLayerCache.get(cacheKey);
+      if (cachedDoc) {
+        console.log(`🎯 Cache hit for document ID: ${id}`);
+        return cachedDoc;
+      }
       const allDocs = yield this.fetchDocuments();
-      return allDocs.documents.find((doc) => doc.id === id) || null;
+      const document2 = allDocs.documents.find((doc) => doc.id === id) || null;
+      if (document2) {
+        yield multiLayerCache.set(cacheKey, document2, 30 * 60 * 1e3);
+      }
+      return document2;
     });
   }
   searchDocuments(searchTerm) {
     return __async$1(this, null, function* () {
+      const cacheKey = `${_LegislativeDataService2.CACHE_KEYS.SEARCH_RESULTS}_${searchTerm.toLowerCase()}`;
+      const cachedResults = yield multiLayerCache.get(cacheKey);
+      if (cachedResults) {
+        console.log(`🎯 Cache hit for search term: ${searchTerm}`);
+        return cachedResults;
+      }
       const allDocs = yield this.fetchDocuments();
       const lowerSearchTerm = searchTerm.toLowerCase();
-      return allDocs.documents.filter(
+      const results = allDocs.documents.filter(
         (doc) => doc.title.toLowerCase().includes(lowerSearchTerm) || doc.summary.toLowerCase().includes(lowerSearchTerm) || doc.keywords && doc.keywords.some((keyword) => keyword.toLowerCase().includes(lowerSearchTerm))
       );
+      yield multiLayerCache.set(cacheKey, results, 15 * 60 * 1e3);
+      return results;
     });
   }
   filterLocalData(data, filters) {
@@ -772,8 +1390,119 @@ const _LegislativeDataService = class _LegislativeDataService2 {
       citation: prop.citation
     };
   }
+  fetchCollectionStatus() {
+    return __async$1(this, null, function* () {
+      const cacheKey = _LegislativeDataService2.CACHE_KEYS.COLLECTION_STATUS;
+      const cachedStatus = yield multiLayerCache.get(cacheKey);
+      if (cachedStatus) {
+        console.log("🎯 Cache hit for collection status");
+        return cachedStatus;
+      }
+      try {
+        const response = yield apiClient_default.get("/collections/recent");
+        const results = this.transformCollectionLogs(response);
+        yield multiLayerCache.set(cacheKey, results, 5 * 60 * 1e3);
+        return results;
+      } catch (error) {
+        console.error("Failed to fetch collection status:", error);
+        return [];
+      }
+    });
+  }
+  fetchLatestCollection() {
+    return __async$1(this, null, function* () {
+      const cacheKey = _LegislativeDataService2.CACHE_KEYS.LATEST_COLLECTION;
+      const cachedLatest = yield multiLayerCache.get(cacheKey);
+      if (cachedLatest !== null) {
+        console.log("🎯 Cache hit for latest collection");
+        return cachedLatest;
+      }
+      try {
+        const response = yield apiClient_default.get("/collections/latest");
+        let result = null;
+        if (response && response.id) {
+          result = this.transformCollectionLog(response);
+        }
+        yield multiLayerCache.set(cacheKey, result, 3 * 60 * 1e3);
+        return result;
+      } catch (error) {
+        console.error("Failed to fetch latest collection:", error);
+        return null;
+      }
+    });
+  }
+  transformCollectionLogs(response) {
+    if (!response || !Array.isArray(response)) {
+      return [];
+    }
+    return response.map((log) => this.transformCollectionLog(log));
+  }
+  transformCollectionLog(log) {
+    return {
+      id: log.id,
+      searchTermId: log.search_term_id,
+      searchTerm: log.search_term,
+      status: log.status,
+      recordsCollected: log.records_collected || 0,
+      recordsNew: log.records_new || 0,
+      recordsUpdated: log.records_updated || 0,
+      recordsSkipped: log.records_skipped || 0,
+      executionTimeMs: log.execution_time_ms || 0,
+      errorMessage: log.error_message,
+      startedAt: log.started_at,
+      completedAt: log.completed_at,
+      sourcesUsed: log.sources_used || []
+    };
+  }
+  // Cache management methods
+  invalidateCache(type) {
+    return __async$1(this, null, function* () {
+      switch (type) {
+        case "documents":
+          break;
+        case "search":
+          break;
+        case "collections":
+          break;
+        case "all":
+        default:
+          yield multiLayerCache.clear();
+          console.log("🧹 All caches cleared");
+          return;
+      }
+      console.log(`🧹 Invalidating cache for type: ${type}`);
+      yield multiLayerCache.clear();
+    });
+  }
+  getCacheStats() {
+    return __async$1(this, null, function* () {
+      return multiLayerCache.getStats();
+    });
+  }
+  getCacheSizes() {
+    return __async$1(this, null, function* () {
+      return multiLayerCache.getCacheSizes();
+    });
+  }
+  // Force refresh specific data
+  forceRefreshDocuments(filters) {
+    return __async$1(this, null, function* () {
+      const filterKey = JSON.stringify(filters || {});
+      const cacheKey = `${_LegislativeDataService2.CACHE_KEYS.DOCUMENTS}_${filterKey}`;
+      yield multiLayerCache.delete(cacheKey);
+      return this.fetchDocuments(filters);
+    });
+  }
 };
 __publicField(_LegislativeDataService, "instance");
+__publicField(_LegislativeDataService, "CACHE_KEYS", {
+  DOCUMENTS: "legislative_docs",
+  SEARCH_RESULTS: "search_results",
+  DOCUMENT_BY_ID: "document_id",
+  COLLECTION_STATUS: "collection_status",
+  LATEST_COLLECTION: "latest_collection",
+  CSV_DATA: "csv_data"
+});
 let LegislativeDataService = _LegislativeDataService;
 const legislativeDataService = LegislativeDataService.getInstance();
 const useKeyboardNavigation = (onEscape, onEnter) => {
@@ -840,9 +1569,9 @@ var __async = (__this, __arguments, generator) => {
     step((generator = generator.apply(__this, __arguments)).next());
   });
 };
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-m10PmnUE.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-Ckn0YuF5.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-BHM7wuwe.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10,11]) : void 0));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-3oc5AkkT.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-DgTh56X7.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-BzGnjinh.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10,11]) : void 0));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,
