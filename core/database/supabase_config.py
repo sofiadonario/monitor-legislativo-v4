@@ -63,11 +63,9 @@ class SupabaseConfig:
                 ))
                 logger.info("Fixed DATABASE_URL encoding for special characters")
             
-            # Add SSL parameters for Supabase if not present
-            if 'supabase.co' in db_url and 'sslmode' not in db_url:
-                separator = '&' if '?' in db_url else '?'
-                db_url += f"{separator}sslmode=require&sslcert=&sslkey=&sslrootcert="
-                logger.info("Added explicit SSL configuration for Supabase")
+            # Clean URL - SSL will be handled by connect_args
+            if 'supabase.co' in db_url:
+                logger.info("SSL will be handled by asyncpg connect_args")
             
             return db_url
             
@@ -97,10 +95,26 @@ class SupabaseConfig:
             "prepared_statement_cache_size": 0,  # Disable for Supabase compatibility
         }
         
-        # Force SSL for Supabase connections
+        # Force SSL for Supabase connections with certificate
         if 'supabase.co' in db_url:
-            connect_args["ssl"] = "require"
-            logger.info("Forcing SSL for Supabase connection")
+            import ssl
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            # Use Supabase SSL certificate if available
+            ssl_cert_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "ssl certificado.cer")
+            if os.path.exists(ssl_cert_path):
+                try:
+                    ssl_context.load_verify_locations(cafile=ssl_cert_path)
+                    ssl_context.verify_mode = ssl.CERT_REQUIRED
+                    ssl_context.check_hostname = True
+                    logger.info(f"Using Supabase SSL certificate: {ssl_cert_path}")
+                except Exception as e:
+                    logger.warning(f"Could not load SSL certificate {ssl_cert_path}: {e}")
+            
+            connect_args["ssl"] = ssl_context
+            logger.info("Configured SSL context for Supabase connection")
         
         return create_async_engine(
             db_url,
