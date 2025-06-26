@@ -94,10 +94,14 @@ class SupabaseConfig:
         
         # Add SSL to URL for psycopg (not in connect_args)
         if 'supabase.com' in db_url:
-            if '?' in db_url:
-                db_url += '&sslmode=require'
+            if 'sslmode' not in db_url: # Check if sslmode is not already present
+                if '?' in db_url:
+                    db_url += '&sslmode=require'
+                else:
+                    db_url += '?sslmode=require'
+                logger.info("Added sslmode=require to DATABASE_URL for psycopg")
             else:
-                db_url += '?sslmode=require'
+                logger.info("sslmode already present in DATABASE_URL")
             logger.info("Using psycopg driver as PRIMARY due to asyncpg compatibility issues")
         
         # Psycopg connection arguments (different from asyncpg)

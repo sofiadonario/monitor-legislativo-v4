@@ -226,3 +226,5 @@ This multi-layered approach **will** solve the issue because:
 **Your job is safe!** 🎉
 
 This is now a **definitive diagnosis and solution** rather than guesswork. 
+
+curl https://monitor-legislativo-v4-production.up.railway.app/health 
