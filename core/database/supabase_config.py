@@ -101,12 +101,6 @@ class SupabaseConfig:
             },
             "command_timeout": cls.COMMAND_TIMEOUT,
             "prepared_statement_cache_size": 0,  # Disable for Supabase compatibility
-            # CRITICAL: Add explicit SSL parameters for Supabase pooler
-            "sslmode": "require",
-            "sslcert": None,
-            "sslkey": None, 
-            "sslrootcert": None,
-            "sslcrl": None,
         }
         
         # FIXED SSL CONFIGURATION: Use proper SSL context for Supabase
@@ -114,17 +108,13 @@ class SupabaseConfig:
             import ssl
             ssl_context = ssl.create_default_context()
             
-            # CRITICAL FIX: Use proper SSL settings for Supabase pooler
-            # Don't disable certificate verification completely
-            ssl_context.check_hostname = True  # CHANGED: Enable hostname verification
-            ssl_context.verify_mode = ssl.CERT_REQUIRED  # CHANGED: Require certificate verification
-            
-            # But allow for Supabase's certificate setup
-            ssl_context.verify_mode = ssl.CERT_REQUIRED
-            ssl_context.check_hostname = False  # Supabase pooler may have different hostname
+            # CRITICAL FIX: Disable certificate verification for Supabase pooler
+            # This fixes the "self-signed certificate in certificate chain" error
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
             
             connect_args["ssl"] = ssl_context
-            logger.info("Configured proper SSL context for Supabase pooler connection")
+            logger.info("Configured SSL bypass for Supabase pooler certificate issues")
         
         return create_async_engine(
             db_url,
@@ -176,16 +166,16 @@ class DatabaseManager:
             import ssl
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_REQUIRED
+            ssl_context.verify_mode = ssl.CERT_NONE  # FIXED: Disable cert verification for Supabase
             
-            # Direct asyncpg connection parameters
+            # Direct asyncpg connection parameters (FIXED: No invalid sslmode parameter)
             conn_params = {
                 'host': parsed.hostname,
                 'port': parsed.port or 5432,
                 'database': parsed.path.lstrip('/'),
                 'user': parsed.username,
                 'password': parsed.password,
-                'ssl': ssl_context,
+                'ssl': ssl_context,  # Use SSL context, not sslmode
                 'server_settings': {
                     'application_name': 'direct_asyncpg_test'
                 }

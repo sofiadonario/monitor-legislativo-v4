@@ -295,4 +295,72 @@ async def test_alternative_connection():
             "status": "error",
             "error": str(e),
             "message": "Alternative connection test failed"
+        }
+
+@app.get("/api/v1/test/ssl-bypass", tags=["Testing"])
+async def test_ssl_bypass():
+    """Test direct asyncpg connection with SSL bypass for Supabase certificate issues"""
+    import urllib.parse
+    import ssl
+    import asyncio
+    
+    try:
+        db_url = os.getenv('DATABASE_URL', '')
+        if not db_url:
+            return {"status": "error", "message": "DATABASE_URL not configured"}
+        
+        parsed = urllib.parse.urlparse(db_url)
+        
+        # Create SSL context with certificate verification disabled
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        
+        logger.info("🔧 Testing SSL bypass for Supabase certificate issues")
+        
+        # Import asyncpg and test direct connection
+        import asyncpg
+        
+        conn_params = {
+            'host': parsed.hostname,
+            'port': parsed.port or 5432,
+            'database': parsed.path.lstrip('/'),
+            'user': parsed.username,
+            'password': parsed.password,
+            'ssl': ssl_context,
+            'server_settings': {
+                'application_name': 'ssl_bypass_test'
+            }
+        }
+        
+        # Test connection with 30 second timeout
+        conn = await asyncio.wait_for(
+            asyncpg.connect(**conn_params),
+            timeout=30
+        )
+        
+        # Test basic query
+        result = await conn.fetchval("SELECT 1")
+        
+        # Test version query
+        version = await conn.fetchval("SELECT version()")
+        
+        await conn.close()
+        
+        return {
+            "status": "success",
+            "message": "SSL bypass connection successful!",
+            "test_result": result,
+            "postgres_version": version[:100],  # Truncate for display
+            "ssl_bypass": "enabled",
+            "connection_method": "direct_asyncpg_ssl_bypass"
+        }
+        
+    except Exception as e:
+        logger.error(f"SSL bypass test failed: {e}")
+        return {
+            "status": "error", 
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "message": "SSL bypass test failed - check logs for details"
         } 

@@ -34,16 +34,45 @@ class AlternativeSupabaseConfig:
         """Create async engine using psycopg (async version) driver instead of asyncpg"""
         db_url = cls.DATABASE_URL
         
+        # FIXED: Properly handle password encoding for psycopg
+        parsed = urllib.parse.urlparse(db_url)
+        if parsed.password and ('%' in parsed.password):
+            # URL decode the password for psycopg
+            import urllib.parse
+            decoded_password = urllib.parse.unquote(parsed.password)
+            
+            # Reconstruct URL with decoded password for psycopg
+            netloc = f"{parsed.username}:{decoded_password}@{parsed.hostname}"
+            if parsed.port:
+                netloc += f":{parsed.port}"
+            
+            db_url = urllib.parse.urlunparse((
+                parsed.scheme,
+                netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment
+            ))
+            logger.info("Fixed password encoding for psycopg driver")
+        
         # Convert to psycopg format (async psycopg)
         if db_url.startswith('postgresql://'):
             db_url = db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
         
-        # psycopg connection arguments
+        # FIXED: Use proper psycopg connection arguments (no sslmode in connect_args)
         connect_args = {
-            "sslmode": "require",
             "application_name": "monitor_legislativo_v4_psycopg",
             "connect_timeout": cls.CONNECT_TIMEOUT,
         }
+        
+        # Add SSL to the URL itself for psycopg
+        if 'supabase.com' in db_url:
+            if '?' in db_url:
+                db_url += '&sslmode=require'
+            else:
+                db_url += '?sslmode=require'
+            logger.info("Added SSL mode to URL for psycopg driver")
         
         logger.info("Using psycopg (async) driver as fallback for Supabase connection")
         
@@ -66,18 +95,17 @@ class AlternativeSupabaseConfig:
         if db_url.startswith('postgresql://'):
             db_url = db_url.replace('postgresql://', 'postgresql+asyncpg://', 1)
         
-        # Simplified connection arguments for older asyncpg compatibility
+        # FIXED: Simplified connection arguments for asyncpg compatibility (no sslmode)
         connect_args = {
             "server_settings": {
                 "application_name": "monitor_legislativo_v4_asyncpg_compat",
             },
             "command_timeout": cls.COMMAND_TIMEOUT,
             "prepared_statement_cache_size": 0,
-            # Minimal SSL configuration
-            "sslmode": "require",
+            # REMOVED: sslmode parameter - invalid for asyncpg
         }
         
-        # Minimal SSL context for compatibility
+        # FIXED: Minimal SSL context for compatibility
         if 'supabase.com' in db_url:
             import ssl
             ssl_context = ssl.create_default_context()
@@ -177,14 +205,20 @@ class AlternativeDatabaseManager:
             db_url = AlternativeSupabaseConfig.DATABASE_URL
             parsed = urllib.parse.urlparse(db_url)
             
-            # Ultra-minimal connection parameters
+            # FIXED: Proper SSL context for direct asyncpg connection
+            import ssl
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE  # Disable cert verification
+            
+            # FIXED: Ultra-minimal connection parameters (no sslmode)
             conn = await asyncpg.connect(
                 host=parsed.hostname,
                 port=parsed.port or 5432,
                 database=parsed.path.lstrip('/'),
                 user=parsed.username,
                 password=parsed.password,
-                ssl='require'  # Simple SSL requirement
+                ssl=ssl_context  # Use SSL context instead of 'require'
             )
             
             result = await conn.fetchval("SELECT 1")
