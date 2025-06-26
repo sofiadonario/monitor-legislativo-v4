@@ -38,7 +38,6 @@ class AlternativeSupabaseConfig:
         parsed = urllib.parse.urlparse(db_url)
         if parsed.password and ('%' in parsed.password):
             # URL decode the password for psycopg
-            import urllib.parse
             decoded_password = urllib.parse.unquote(parsed.password)
             
             # Reconstruct URL with decoded password for psycopg

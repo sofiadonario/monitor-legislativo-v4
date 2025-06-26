@@ -14,24 +14,24 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Layer 1: Update pip to latest version first
 RUN pip install --no-cache-dir --upgrade pip
 
-# Layer 2: Install asyncpg FIRST before any other dependencies
-RUN pip install --no-cache-dir --upgrade "asyncpg==0.29.0"
+# Layer 2: Install asyncpg FIRST before any other dependencies (0.28.0 for Supabase compatibility)
+RUN pip install --no-cache-dir --upgrade "asyncpg==0.28.0"
 
 # Layer 3: Verify asyncpg installation
-RUN python -c "import asyncpg; print(f'AsyncPG version installed: {asyncpg.__version__}'); assert asyncpg.__version__ == '0.29.0', f'Wrong version: {asyncpg.__version__}'"
+RUN python -c "import asyncpg; print(f'AsyncPG version installed: {asyncpg.__version__}'); assert asyncpg.__version__ == '0.28.0', f'Wrong version: {asyncpg.__version__}'"
 
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Layer 4: Force reinstall asyncpg after all dependencies (CRITICAL FAILSAFE)
-RUN pip install --no-cache-dir --upgrade --force-reinstall "asyncpg==0.29.0"
+RUN pip install --no-cache-dir --upgrade --force-reinstall "asyncpg==0.28.0"
 
 # Layer 5: Install fallback driver (psycopg) for compatibility
 RUN pip install --no-cache-dir --upgrade "psycopg[binary]==3.1.12"
 
 # Layer 6: Final verification that both drivers are installed
-RUN python -c "import asyncpg; print(f'Final AsyncPG version: {asyncpg.__version__}'); assert asyncpg.__version__ == '0.29.0', f'Final verification failed: {asyncpg.__version__}'"
+RUN python -c "import asyncpg; print(f'Final AsyncPG version: {asyncpg.__version__}'); assert asyncpg.__version__ == '0.28.0', f'Final verification failed: {asyncpg.__version__}'"
 RUN python -c "import psycopg; print(f'Psycopg fallback driver: {psycopg.__version__}')"
 
 # Stage 2: Create the final production image
@@ -72,6 +72,6 @@ CMD ["sh", "-c", "echo '=== RAILWAY RUNTIME ENVIRONMENT DEBUG ===' && \
     echo '=== ENVIRONMENT VARIABLES ===' && \
     env | grep -iE '(database|railway|supabase)' && \
     echo '=== FINAL ASYNCPG VERSION VERIFICATION ===' && \
-    python -c 'import asyncpg; v=asyncpg.__version__; print(f\"Runtime AsyncPG: {v}\"); parts=v.split(\".\"); major,minor=int(parts[0]),int(parts[1]); compatible=major>0 or (major==0 and minor>=26); print(f\"Supabase compatible: {compatible}\"); exit(0 if compatible else 1)' && \
+    python -c 'import asyncpg; v=asyncpg.__version__; print(f\"Runtime AsyncPG: {v}\"); expected=\"0.28.0\"; print(f\"Expected: {expected}\"); print(f\"Supabase compatible: {v == expected}\"); exit(0 if v == expected else 1)' && \
     echo '=== STARTING APPLICATION ===' && \
     uvicorn main_app.main:app --host 0.0.0.0 --port 8080"] 

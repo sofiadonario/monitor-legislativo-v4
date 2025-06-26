@@ -39,8 +39,8 @@ aioredis==2.0.1
 
 # AsyncPG - PostgreSQL driver for Supabase
 # WHY: Connects to your FREE Supabase database
-# VERSION: 0.29.x has best Supabase compatibility
-asyncpg==0.29.0
+# VERSION: 0.28.x for Supabase compatibility (0.29.0 has auth issues)
+asyncpg==0.28.0
 
 # Psycopg - Alternative async PostgreSQL driver (FALLBACK)
 # WHY: Backup driver if asyncpg has authentication issues with Supabase
