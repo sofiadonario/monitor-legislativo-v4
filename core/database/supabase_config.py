@@ -50,7 +50,7 @@ class SupabaseConfig:
                     "application_name": "monitor_legislativo_v4",
                 },
                 # SSL configuration for Supabase
-                "ssl": "require",
+                "ssl": {"mode": "require"} if "supabase" in db_url else None,
                 "command_timeout": 60,
                 "prepared_statement_cache_size": 0,  # Disable for Supabase compatibility
             }

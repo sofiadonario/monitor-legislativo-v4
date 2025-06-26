@@ -38,6 +38,7 @@ from .config import (
 )
 from .official_vocabulary_client import OfficialVocabularyClient
 from .skos_processor import SKOSProcessor
+import os
 
 # Configure logging
 logger = logging.getLogger(__name__)
