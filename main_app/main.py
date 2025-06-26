@@ -406,4 +406,74 @@ async def test_password_decoding():
             "status": "error",
             "error": str(e),
             "message": "Password decoding test failed"
+        }
+
+@app.get("/api/v1/test/primary-driver", tags=["Testing"])
+async def test_primary_driver():
+    """Test the new primary psycopg driver configuration"""
+    import urllib.parse
+    import psycopg
+    import asyncio
+    
+    try:
+        db_url = os.getenv('DATABASE_URL', '')
+        if not db_url:
+            return {"status": "error", "message": "DATABASE_URL not configured"}
+        
+        parsed = urllib.parse.urlparse(db_url)
+        
+        # Test password decoding
+        password = parsed.password
+        password_decoded = False
+        if password and ('%' in password):
+            original_password = password
+            password = urllib.parse.unquote(password)
+            password_decoded = True
+            logger.info(f"Password decoded: {original_password} → {password}")
+        
+        # Create psycopg connection string
+        conn_string = f"host={parsed.hostname} port={parsed.port or 5432} dbname={parsed.path.lstrip('/')} user={parsed.username} password={password} sslmode=require"
+        
+        logger.info("🔧 Testing NEW PRIMARY DRIVER: psycopg")
+        
+        # Test connection
+        conn = await asyncio.wait_for(
+            psycopg.AsyncConnection.connect(conn_string),
+            timeout=30
+        )
+        
+        # Test query
+        async with conn.cursor() as cur:
+            await cur.execute("SELECT 1")
+            result = await cur.fetchone()
+            
+            await cur.execute("SELECT current_database(), current_user")
+            db_info = await cur.fetchone()
+        
+        await conn.close()
+        
+        return {
+            "status": "success",
+            "message": "PRIMARY DRIVER CHANGE SUCCESSFUL!",
+            "driver": "psycopg",
+            "test_result": result[0],
+            "database_info": {
+                "database": db_info[0],
+                "user": db_info[1]
+            },
+            "connection_details": {
+                "host": parsed.hostname,
+                "port": parsed.port or 5432,
+                "password_decoded": password_decoded,
+                "ssl_mode": "require"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Primary driver test failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "message": "Primary driver test failed - psycopg connection unsuccessful"
         } 

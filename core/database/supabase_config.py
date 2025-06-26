@@ -84,38 +84,29 @@ class SupabaseConfig:
     
     @classmethod
     def get_async_engine(cls):
-        """Create async engine optimized for Railway/Supabase deployment"""
+        """Create async engine optimized for Railway/Supabase deployment - SWITCHED TO PSYCOPG"""
         # Fix DATABASE_URL encoding and SSL
         db_url = cls.fix_database_url()
         
-        # Convert to asyncpg format
+        # CRITICAL CHANGE: Switch to psycopg driver instead of asyncpg
         if db_url.startswith('postgresql://'):
-            db_url = db_url.replace('postgresql://', 'postgresql+asyncpg://', 1)
+            db_url = db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
         
-        # CRITICAL FIX: Enhanced connection arguments for Supabase compatibility
+        # Add SSL to URL for psycopg (not in connect_args)
+        if 'supabase.com' in db_url:
+            if '?' in db_url:
+                db_url += '&sslmode=require'
+            else:
+                db_url += '?sslmode=require'
+            logger.info("Using psycopg driver as PRIMARY due to asyncpg compatibility issues")
+        
+        # Psycopg connection arguments (different from asyncpg)
         connect_args = {
-            "server_settings": {
-                "application_name": "monitor_legislativo_v4_railway",
-                "tcp_keepalives_idle": "120",
-                "tcp_keepalives_interval": "30",
-                "tcp_keepalives_count": "3",
-            },
-            "command_timeout": cls.COMMAND_TIMEOUT,
-            "prepared_statement_cache_size": 0,  # Disable for Supabase compatibility
+            "application_name": "monitor_legislativo_v4_railway_psycopg",
+            "connect_timeout": cls.CONNECT_TIMEOUT,
         }
         
-        # FIXED SSL CONFIGURATION: Use proper SSL context for Supabase
-        if 'supabase.com' in db_url or 'pooler.supabase.com' in db_url:
-            import ssl
-            ssl_context = ssl.create_default_context()
-            
-            # CRITICAL FIX: Disable certificate verification for Supabase pooler
-            # This fixes the "self-signed certificate in certificate chain" error
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            
-            connect_args["ssl"] = ssl_context
-            logger.info("Configured SSL bypass for Supabase pooler certificate issues")
+        logger.info("SWITCHED PRIMARY DRIVER: Using psycopg instead of asyncpg for Supabase compatibility")
         
         return create_async_engine(
             db_url,
@@ -149,44 +140,32 @@ class DatabaseManager:
         self.session_factory = SupabaseConfig.get_session_factory()
     
     async def test_direct_asyncpg_connection(self) -> bool:
-        """CRITICAL: Test direct asyncpg connection bypassing SQLAlchemy"""
+        """CRITICAL: Test direct psycopg connection bypassing SQLAlchemy (SWITCHED FROM ASYNCPG)"""
         try:
-            import asyncpg
+            # Try direct psycopg connection instead of asyncpg
+            import psycopg
             
             db_url = SupabaseConfig.DATABASE_URL
             if not db_url:
                 logger.error("No DATABASE_URL available for direct connection test")
                 return False
             
-            logger.info("🔧 Testing DIRECT asyncpg connection (bypassing SQLAlchemy)")
+            logger.info("🔧 Testing DIRECT psycopg connection (bypassing SQLAlchemy)")
             
-            # Parse the URL for direct asyncpg connection
+            # Parse the URL for direct psycopg connection
             parsed = urllib.parse.urlparse(db_url)
             
             # CRITICAL FIX: Decode password if it contains URL encoding
             password = parsed.password
             if password and ('%' in password):
+                original_password = password
                 password = urllib.parse.unquote(password)
-                logger.info("Decoded URL-encoded password for direct asyncpg connection")
+                logger.info(f"Decoded URL-encoded password: {original_password} → {password}")
+            else:
+                logger.info("Password does not contain URL encoding")
             
-            # Create SSL context specifically for direct asyncpg
-            import ssl
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE  # FIXED: Disable cert verification for Supabase
-            
-            # Direct asyncpg connection parameters (FIXED: No invalid sslmode parameter)
-            conn_params = {
-                'host': parsed.hostname,
-                'port': parsed.port or 5432,
-                'database': parsed.path.lstrip('/'),
-                'user': parsed.username,
-                'password': password,  # Use decoded password
-                'ssl': ssl_context,  # Use SSL context, not sslmode
-                'server_settings': {
-                    'application_name': 'direct_asyncpg_test'
-                }
-            }
+            # Connection string for psycopg
+            conn_string = f"host={parsed.hostname} port={parsed.port or 5432} dbname={parsed.path.lstrip('/')} user={parsed.username} password={password} sslmode=require"
             
             logger.info(f"Direct connection to: {parsed.hostname}:{parsed.port or 5432}")
             logger.info(f"Database: {parsed.path.lstrip('/')}")
@@ -194,36 +173,68 @@ class DatabaseManager:
             
             # Try direct connection with timeout
             conn = await asyncio.wait_for(
-                asyncpg.connect(**conn_params),
+                psycopg.AsyncConnection.connect(conn_string),
                 timeout=30
             )
             
             # Test basic query
-            result = await conn.fetchval("SELECT 1")
-            logger.info(f"✅ DIRECT asyncpg connection successful! Result: {result}")
-            
-            # Test PostgreSQL version
-            version = await conn.fetchval("SELECT version()")
-            logger.info(f"✅ PostgreSQL version: {version}")
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT 1")
+                result = await cur.fetchone()
+                logger.info(f"✅ DIRECT psycopg connection successful! Result: {result[0]}")
+                
+                # Test PostgreSQL version
+                await cur.execute("SELECT version()")
+                version = await cur.fetchone()
+                logger.info(f"✅ PostgreSQL version: {version[0][:100]}")
             
             await conn.close()
             return True
             
         except Exception as e:
-            logger.error(f"❌ DIRECT asyncpg connection failed: {e}")
+            logger.error(f"❌ DIRECT psycopg connection failed: {e}")
             logger.error(f"Error type: {type(e).__name__}")
             
             error_str = str(e).lower()
-            if 'nonetype' in error_str and 'group' in error_str:
-                logger.error("🔍 SAME ERROR with direct asyncpg - this is an asyncpg/Supabase incompatibility!")
-                logger.error("🔍 Possible solutions:")
-                logger.error("  1. Try asyncpg version 0.28.0 instead of 0.29.0")
-                logger.error("  2. Use psycopg2 driver instead of asyncpg")
-                logger.error("  3. Contact Supabase support about pooler compatibility")
+            if 'password' in error_str or 'authentication' in error_str:
+                logger.error("🔍 AUTHENTICATION ISSUE - check password decoding")
             elif 'ssl' in error_str:
                 logger.error("🔍 SSL/TLS handshake issue - certificate problem")
-            elif 'authentication' in error_str:
-                logger.error("🔍 Authentication failed - credential problem")
+            elif 'connection' in error_str:
+                logger.error("🔍 Network connectivity issue")
+            
+            # Fallback: try asyncpg as secondary test
+            logger.info("🔄 Falling back to asyncpg test...")
+            try:
+                import asyncpg
+                
+                parsed = urllib.parse.urlparse(SupabaseConfig.DATABASE_URL)
+                password = parsed.password
+                if password and ('%' in password):
+                    password = urllib.parse.unquote(password)
+                
+                import ssl
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                
+                conn = await asyncpg.connect(
+                    host=parsed.hostname,
+                    port=parsed.port or 5432,
+                    database=parsed.path.lstrip('/'),
+                    user=parsed.username,
+                    password=password,
+                    ssl=ssl_context
+                )
+                
+                result = await conn.fetchval("SELECT 1")
+                await conn.close()
+                logger.info("✅ Fallback asyncpg connection successful!")
+                return True
+                
+            except Exception as fallback_e:
+                logger.error(f"❌ Fallback asyncpg also failed: {fallback_e}")
+                return False
             
             return False
     
