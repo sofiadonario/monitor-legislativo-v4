@@ -138,6 +138,10 @@ ENV ENVIRONMENT=production \
     PORTUGUESE_NLP_ENABLED=true \
     BRAZILIAN_LEGAL_PROCESSING=true
 
+# FINAL DEPENDENCY CHECK: Ensure correct asyncpg version is installed
+# This is a failsafe to prevent version conflicts.
+RUN poetry run pip install --no-cache-dir --upgrade "asyncpg==0.29.0"
+
 # ========================================
 # PRODUCTION ENTRYPOINT
 # ========================================
