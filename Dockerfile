@@ -13,7 +13,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir --upgrade asyncpg==0.29.0
+RUN pip install --no-cache-dir --upgrade "asyncpg==0.29.0"
 
 # Stage 2: Create the final production image
 FROM python:3.11-slim
