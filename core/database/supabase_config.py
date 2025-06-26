@@ -5,11 +5,14 @@ Ultra-Budget Academic Deployment
 
 import os
 import asyncio
+import urllib.parse
+import time
 from typing import Optional, Dict, Any
 import logging
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError, TimeoutError as SQLTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -20,22 +23,84 @@ class SupabaseConfig:
     # Database connection
     DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/legislativo')
     
-    # Connection pool settings for free tier optimization
-    POOL_SIZE = 5  # Small pool for free tier
+    # Connection pool settings for Railway/Supabase optimization
+    POOL_SIZE = 3  # Smaller pool for Railway container limits
     MAX_OVERFLOW = 0  # No overflow to stay within limits
-    POOL_TIMEOUT = 30
-    POOL_RECYCLE = 3600  # 1 hour
+    POOL_TIMEOUT = 60  # Increased timeout for Railway network
+    POOL_RECYCLE = 1800  # 30 minutes for Railway connections
+    
+    # Railway-specific timeouts
+    CONNECT_TIMEOUT = 30  # Connection establishment timeout
+    COMMAND_TIMEOUT = 60  # SQL command timeout
     
     # Query optimization
     ECHO_SQL = os.getenv('DEBUG', 'false').lower() == 'true'
     
     @classmethod
-    def get_async_engine(cls):
-        """Create async engine optimized for Supabase free tier"""
-        # Convert DATABASE_URL to asyncpg format
+    def fix_database_url(cls) -> str:
+        """Fix DATABASE_URL for Railway/Supabase compatibility"""
         db_url = cls.DATABASE_URL
+        
+        # Parse URL to fix encoding issues
+        try:
+            parsed = urllib.parse.urlparse(db_url)
+            
+            # URL encode password if it contains special characters
+            if parsed.password and ('*' in parsed.password or '+' in parsed.password):
+                encoded_password = urllib.parse.quote(parsed.password, safe='')
+                # Reconstruct URL with encoded password
+                netloc = f"{parsed.username}:{encoded_password}@{parsed.hostname}"
+                if parsed.port:
+                    netloc += f":{parsed.port}"
+                
+                db_url = urllib.parse.urlunparse((
+                    parsed.scheme,
+                    netloc,
+                    parsed.path,
+                    parsed.params,
+                    parsed.query,
+                    parsed.fragment
+                ))
+                logger.info("Fixed DATABASE_URL encoding for special characters")
+            
+            # Add SSL parameters for Supabase if not present
+            if 'supabase.co' in db_url and 'sslmode' not in db_url:
+                separator = '&' if '?' in db_url else '?'
+                db_url += f"{separator}sslmode=require&sslcert=&sslkey=&sslrootcert="
+                logger.info("Added explicit SSL configuration for Supabase")
+            
+            return db_url
+            
+        except Exception as e:
+            logger.warning(f"Could not parse DATABASE_URL: {e}, using original")
+            return db_url
+    
+    @classmethod
+    def get_async_engine(cls):
+        """Create async engine optimized for Railway/Supabase deployment"""
+        # Fix DATABASE_URL encoding and SSL
+        db_url = cls.fix_database_url()
+        
+        # Convert to asyncpg format
         if db_url.startswith('postgresql://'):
             db_url = db_url.replace('postgresql://', 'postgresql+asyncpg://', 1)
+        
+        # Railway-optimized connection arguments
+        connect_args = {
+            "server_settings": {
+                "application_name": "monitor_legislativo_v4_railway",
+                "tcp_keepalives_idle": "120",
+                "tcp_keepalives_interval": "30",
+                "tcp_keepalives_count": "3",
+            },
+            "command_timeout": cls.COMMAND_TIMEOUT,
+            "prepared_statement_cache_size": 0,  # Disable for Supabase compatibility
+        }
+        
+        # Force SSL for Supabase connections
+        if 'supabase.co' in db_url:
+            connect_args["ssl"] = "require"
+            logger.info("Forcing SSL for Supabase connection")
         
         return create_async_engine(
             db_url,
@@ -44,16 +109,10 @@ class SupabaseConfig:
             pool_timeout=cls.POOL_TIMEOUT,
             pool_recycle=cls.POOL_RECYCLE,
             echo=cls.ECHO_SQL,
-            # Optimize for Supabase
-            connect_args={
-                "server_settings": {
-                    "application_name": "monitor_legislativo_v4",
-                },
-                # SSL configuration for Supabase
-                "ssl": {"mode": "require"} if "supabase" in db_url else None,
-                "command_timeout": 60,
-                "prepared_statement_cache_size": 0,  # Disable for Supabase compatibility
-            }
+            connect_args=connect_args,
+            # Additional Railway optimizations
+            pool_pre_ping=True,  # Validate connections before use
+            pool_reset_on_return='commit',  # Clean up connections
         )
     
     @classmethod
@@ -75,24 +134,75 @@ class DatabaseManager:
         self.session_factory = SupabaseConfig.get_session_factory()
     
     async def test_connection(self) -> bool:
-        """Test database connection with detailed error reporting"""
-        try:
-            async with self.session_factory() as session:
-                result = await session.execute(text("SELECT 1"))
-                logger.info("Database connection successful")
-                return result.scalar() == 1
-        except ImportError as e:
-            logger.error(f"Missing dependency: {e}")
-            logger.error("Please install: pip install sqlalchemy[asyncio] asyncpg")
-            return False
-        except Exception as e:
-            logger.error(f"Database connection test failed: {e}")
-            logger.error(f"Error type: {type(e).__name__}")
-            if "ssl" in str(e).lower():
-                logger.error("SSL issue detected. Checking SSL configuration...")
-            elif "authentication" in str(e).lower():
-                logger.error("Authentication issue. Please check DATABASE_URL")
-            return False
+        """Test database connection with retry logic and detailed error reporting"""
+        max_retries = 3
+        retry_delay = 2
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Database connection attempt {attempt + 1}/{max_retries}")
+                
+                async with self.session_factory() as session:
+                    result = await session.execute(text("SELECT 1"))
+                    logger.info("✅ Database connection successful")
+                    return result.scalar() == 1
+                    
+            except ImportError as e:
+                logger.error(f"Missing dependency: {e}")
+                logger.error("Please install: pip install sqlalchemy[asyncio] asyncpg")
+                return False
+                
+            except (OperationalError, SQLTimeoutError, OSError) as e:
+                error_msg = str(e)
+                error_type = type(e).__name__
+                
+                # Enhanced error logging with network details
+                logger.error(f"Database connection attempt {attempt + 1} failed: {error_msg}")
+                logger.error(f"Error type: {error_type}")
+                
+                # Specific error analysis
+                if "errno 101" in error_msg.lower() or "network is unreachable" in error_msg.lower():
+                    logger.error("🌐 NETWORK ISSUE: Railway cannot reach Supabase")
+                    logger.error("Possible causes:")
+                    logger.error("  - Supabase project is paused/inactive")
+                    logger.error("  - Railway IP blocked by Supabase firewall")
+                    logger.error("  - DNS resolution issues")
+                    logger.error("  - Supabase service outage")
+                elif "ssl" in error_msg.lower():
+                    logger.error("🔒 SSL ISSUE: SSL configuration problem")
+                    logger.error("Check SSL mode and certificates")
+                elif "authentication" in error_msg.lower() or "password" in error_msg.lower():
+                    logger.error("🔐 AUTH ISSUE: Database authentication failed")
+                    logger.error("Check DATABASE_URL credentials")
+                elif "timeout" in error_msg.lower():
+                    logger.error("⏱️ TIMEOUT ISSUE: Connection timed out")
+                    logger.error("Network latency or Supabase overloaded")
+                else:
+                    logger.error(f"🔧 OTHER ISSUE: {error_msg}")
+                
+                # Log connection details for debugging
+                db_url = SupabaseConfig.DATABASE_URL
+                if db_url:
+                    parsed = urllib.parse.urlparse(db_url)
+                    logger.error(f"Target host: {parsed.hostname}")
+                    logger.error(f"Target port: {parsed.port or 5432}")
+                    logger.error(f"Database: {parsed.path.lstrip('/')}")
+                
+                # Retry logic
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delay} seconds...")
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    logger.error("❌ All connection attempts failed")
+                    return False
+                    
+            except Exception as e:
+                logger.error(f"Unexpected database error: {e}")
+                logger.error(f"Error type: {type(e).__name__}")
+                return False
+        
+        return False
     
     async def initialize_schema(self) -> bool:
         """Initialize basic schema for academic use"""

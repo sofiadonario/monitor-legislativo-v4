@@ -142,4 +142,119 @@ async def health_check():
             "service": "monitor-legislativo-two-tier-api",
             "version": "2.0.0",
             "error": str(e)
+        }
+
+@app.get("/api/v1/health/database", tags=["Health"])
+async def database_diagnostic():
+    """Detailed database diagnostic endpoint for Railway debugging"""
+    import urllib.parse
+    import socket
+    import time
+    
+    diagnostic_data = {
+        "timestamp": time.time(),
+        "environment": {
+            "railway_environment": os.getenv("RAILWAY_ENVIRONMENT"),
+            "environment": os.getenv("ENVIRONMENT", "unknown"),
+            "deployment_id": os.getenv("RAILWAY_DEPLOYMENT_ID"),
+        },
+        "database_config": {},
+        "network_tests": {},
+        "connection_tests": {},
+        "recommendations": []
+    }
+    
+    try:
+        # Database URL analysis
+        db_url = os.getenv("DATABASE_URL", "")
+        if db_url:
+            parsed = urllib.parse.urlparse(db_url)
+            diagnostic_data["database_config"] = {
+                "host": parsed.hostname,
+                "port": parsed.port or 5432,
+                "database": parsed.path.lstrip("/"),
+                "username": parsed.username,
+                "password_set": bool(parsed.password),
+                "has_special_chars_in_password": bool(parsed.password and ('*' in parsed.password or '+' in parsed.password)),
+                "ssl_in_url": "sslmode" in db_url,
+                "is_supabase": "supabase.co" in db_url if parsed.hostname else False
+            }
+            
+            # Network connectivity test
+            if parsed.hostname:
+                try:
+                    start_time = time.time()
+                    socket.create_connection((parsed.hostname, parsed.port or 5432), timeout=10)
+                    connection_time = time.time() - start_time
+                    diagnostic_data["network_tests"]["tcp_connection"] = {
+                        "status": "success",
+                        "connection_time_ms": round(connection_time * 1000, 2)
+                    }
+                except socket.timeout:
+                    diagnostic_data["network_tests"]["tcp_connection"] = {
+                        "status": "timeout",
+                        "error": "Connection timed out after 10 seconds"
+                    }
+                    diagnostic_data["recommendations"].append("Network timeout - check Railway to Supabase connectivity")
+                except OSError as e:
+                    diagnostic_data["network_tests"]["tcp_connection"] = {
+                        "status": "failed",
+                        "error": str(e),
+                        "errno": getattr(e, 'errno', None)
+                    }
+                    if getattr(e, 'errno', None) == 101:
+                        diagnostic_data["recommendations"].append("Network unreachable - Supabase may be blocking Railway IPs")
+            
+            # DNS resolution test
+            try:
+                import socket
+                ip_addresses = socket.gethostbyname_ex(parsed.hostname)[2]
+                diagnostic_data["network_tests"]["dns_resolution"] = {
+                    "status": "success",
+                    "ip_addresses": ip_addresses
+                }
+            except Exception as e:
+                diagnostic_data["network_tests"]["dns_resolution"] = {
+                    "status": "failed",
+                    "error": str(e)
+                }
+                diagnostic_data["recommendations"].append("DNS resolution failed - check hostname")
+        
+        # Database connection test
+        try:
+            from core.database.supabase_config import get_database_manager
+            db_manager = await get_database_manager()
+            connection_success = await db_manager.test_connection()
+            
+            diagnostic_data["connection_tests"]["database_connection"] = {
+                "status": "success" if connection_success else "failed",
+                "manager_available": db_manager is not None
+            }
+            
+            if not connection_success:
+                diagnostic_data["recommendations"].append("Database connection failed - check credentials and network")
+        
+        except Exception as e:
+            diagnostic_data["connection_tests"]["database_connection"] = {
+                "status": "error",
+                "error": str(e),
+                "error_type": type(e).__name__
+            }
+            diagnostic_data["recommendations"].append("Database manager error - check imports and dependencies")
+        
+        # Environment variable recommendations
+        if not diagnostic_data["database_config"].get("ssl_in_url") and diagnostic_data["database_config"].get("is_supabase"):
+            diagnostic_data["recommendations"].append("Add explicit SSL mode to DATABASE_URL for Supabase")
+        
+        if diagnostic_data["database_config"].get("has_special_chars_in_password"):
+            diagnostic_data["recommendations"].append("URL encode password in DATABASE_URL")
+        
+        return diagnostic_data
+        
+    except Exception as e:
+        logger.error(f"Database diagnostic failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "recommendations": ["Check Railway logs for detailed error information"]
         } 
