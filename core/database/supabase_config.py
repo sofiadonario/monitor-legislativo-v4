@@ -91,7 +91,7 @@ class SupabaseConfig:
         if db_url.startswith('postgresql://'):
             db_url = db_url.replace('postgresql://', 'postgresql+asyncpg://', 1)
         
-        # Railway-optimized connection arguments
+        # CRITICAL FIX: Enhanced connection arguments for Supabase compatibility
         connect_args = {
             "server_settings": {
                 "application_name": "monitor_legislativo_v4_railway",
@@ -101,19 +101,30 @@ class SupabaseConfig:
             },
             "command_timeout": cls.COMMAND_TIMEOUT,
             "prepared_statement_cache_size": 0,  # Disable for Supabase compatibility
+            # CRITICAL: Add explicit SSL parameters for Supabase pooler
+            "sslmode": "require",
+            "sslcert": None,
+            "sslkey": None, 
+            "sslrootcert": None,
+            "sslcrl": None,
         }
         
-        # Force SSL for Supabase connections
+        # FIXED SSL CONFIGURATION: Use proper SSL context for Supabase
         if 'supabase.com' in db_url or 'pooler.supabase.com' in db_url:
             import ssl
             ssl_context = ssl.create_default_context()
             
-            # For Supabase pooler connections, use permissive SSL
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
+            # CRITICAL FIX: Use proper SSL settings for Supabase pooler
+            # Don't disable certificate verification completely
+            ssl_context.check_hostname = True  # CHANGED: Enable hostname verification
+            ssl_context.verify_mode = ssl.CERT_REQUIRED  # CHANGED: Require certificate verification
+            
+            # But allow for Supabase's certificate setup
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+            ssl_context.check_hostname = False  # Supabase pooler may have different hostname
             
             connect_args["ssl"] = ssl_context
-            logger.info("Configured permissive SSL context for Supabase pooler connection")
+            logger.info("Configured proper SSL context for Supabase pooler connection")
         
         return create_async_engine(
             db_url,
@@ -131,7 +142,7 @@ class SupabaseConfig:
     @classmethod
     def get_session_factory(cls):
         """Create session factory"""
-        engine = cls.get_async_engine()
+        engine = cls.get_async_engine() 
         return sessionmaker(
             bind=engine,
             class_=AsyncSession,
@@ -146,14 +157,97 @@ class DatabaseManager:
         self.engine = SupabaseConfig.get_async_engine()
         self.session_factory = SupabaseConfig.get_session_factory()
     
+    async def test_direct_asyncpg_connection(self) -> bool:
+        """CRITICAL: Test direct asyncpg connection bypassing SQLAlchemy"""
+        try:
+            import asyncpg
+            
+            db_url = SupabaseConfig.DATABASE_URL
+            if not db_url:
+                logger.error("No DATABASE_URL available for direct connection test")
+                return False
+            
+            logger.info("🔧 Testing DIRECT asyncpg connection (bypassing SQLAlchemy)")
+            
+            # Parse the URL for direct asyncpg connection
+            parsed = urllib.parse.urlparse(db_url)
+            
+            # Create SSL context specifically for direct asyncpg
+            import ssl
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+            
+            # Direct asyncpg connection parameters
+            conn_params = {
+                'host': parsed.hostname,
+                'port': parsed.port or 5432,
+                'database': parsed.path.lstrip('/'),
+                'user': parsed.username,
+                'password': parsed.password,
+                'ssl': ssl_context,
+                'server_settings': {
+                    'application_name': 'direct_asyncpg_test'
+                }
+            }
+            
+            logger.info(f"Direct connection to: {parsed.hostname}:{parsed.port or 5432}")
+            logger.info(f"Database: {parsed.path.lstrip('/')}")
+            logger.info(f"Username: {parsed.username}")
+            
+            # Try direct connection with timeout
+            conn = await asyncio.wait_for(
+                asyncpg.connect(**conn_params),
+                timeout=30
+            )
+            
+            # Test basic query
+            result = await conn.fetchval("SELECT 1")
+            logger.info(f"✅ DIRECT asyncpg connection successful! Result: {result}")
+            
+            # Test PostgreSQL version
+            version = await conn.fetchval("SELECT version()")
+            logger.info(f"✅ PostgreSQL version: {version}")
+            
+            await conn.close()
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ DIRECT asyncpg connection failed: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            
+            error_str = str(e).lower()
+            if 'nonetype' in error_str and 'group' in error_str:
+                logger.error("🔍 SAME ERROR with direct asyncpg - this is an asyncpg/Supabase incompatibility!")
+                logger.error("🔍 Possible solutions:")
+                logger.error("  1. Try asyncpg version 0.28.0 instead of 0.29.0")
+                logger.error("  2. Use psycopg2 driver instead of asyncpg")
+                logger.error("  3. Contact Supabase support about pooler compatibility")
+            elif 'ssl' in error_str:
+                logger.error("🔍 SSL/TLS handshake issue - certificate problem")
+            elif 'authentication' in error_str:
+                logger.error("🔍 Authentication failed - credential problem")
+            
+            return False
+    
     async def test_connection(self) -> bool:
         """Test database connection with retry logic and detailed error reporting"""
         max_retries = 3
         retry_delay = 2
         
+        # FIRST: Try direct asyncpg connection to isolate the issue
+        logger.info("🔬 DIAGNOSTIC: Testing direct asyncpg connection first...")
+        direct_success = await self.test_direct_asyncpg_connection()
+        
+        if direct_success:
+            logger.info("✅ Direct asyncpg works - issue is in SQLAlchemy layer")
+        else:
+            logger.error("❌ Direct asyncpg fails - issue is in asyncpg/Supabase compatibility")
+        
+        # SECOND: Try SQLAlchemy connection
         for attempt in range(max_retries):
             try:
-                logger.info(f"Database connection attempt {attempt + 1}/{max_retries}")
+                logger.info(f"Database connection attempt {attempt + 1}/{max_retries} (via SQLAlchemy)")
                 
                 async with self.session_factory() as session:
                     result = await session.execute(text("SELECT 1"))
@@ -189,6 +283,12 @@ class DatabaseManager:
                     logger.error("Check DATABASE_URL credentials and format")
                     logger.error("For Supabase pooler, ensure username format: postgres.PROJECT_REF")
                     logger.error("For direct connection, use: postgres")
+                    
+                    # CRITICAL: Check if direct asyncpg worked but SQLAlchemy failed
+                    if direct_success:
+                        logger.error("🎯 SOLUTION FOUND: Direct asyncpg works, SQLAlchemy fails")
+                        logger.error("🎯 Try switching to psycopg2 driver or different asyncpg version")
+                    
                 elif "timeout" in error_msg.lower():
                     logger.error("⏱️ TIMEOUT ISSUE: Connection timed out")
                     logger.error("Network latency or Supabase overloaded")

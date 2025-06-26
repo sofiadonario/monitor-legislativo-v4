@@ -12,6 +12,7 @@ from .routers import lexml_router, sse_router
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
 from core.database.two_tier_manager import get_two_tier_manager
+from core.database.alternative_config import get_alternative_database_manager
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,18 @@ async def startup_event():
             logger.info("✅ Database cache service initialized successfully")
         else:
             logger.warning("⚠️  Database cache service running in fallback mode")
+            
+            # CRITICAL: Try alternative database manager if primary fails
+            logger.info("🔄 Attempting alternative database connection methods...")
+            try:
+                alt_manager = await get_alternative_database_manager()
+                alt_status = await alt_manager.get_health_status()
+                if alt_status["connected"]:
+                    logger.info(f"✅ Alternative database connection successful using {alt_status['driver_used']}")
+                else:
+                    logger.error("❌ Alternative database connection also failed")
+            except Exception as alt_e:
+                logger.error(f"❌ Alternative database manager failed: {alt_e}")
         
         # Initialize search service
         search_service = await get_simple_search_service()
@@ -257,4 +270,29 @@ async def database_diagnostic():
             "status": "error",
             "error": str(e),
             "recommendations": ["Check Railway logs for detailed error information"]
+        }
+
+@app.get("/api/v1/test/alternative-connection", tags=["Testing"])
+async def test_alternative_connection():
+    """Test alternative database connection methods"""
+    try:
+        logger.info("🔧 Testing alternative database connection methods")
+        
+        # Test the alternative database manager
+        alt_manager = await get_alternative_database_manager()
+        alt_status = await alt_manager.get_health_status()
+        
+        return {
+            "status": "success",
+            "alternative_connection": alt_status,
+            "message": f"Alternative connection test completed using {alt_status.get('driver_used', 'unknown')} driver",
+            "connected": alt_status.get("connected", False)
+        }
+        
+    except Exception as e:
+        logger.error(f"Alternative connection test failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "message": "Alternative connection test failed"
         } 
