@@ -363,4 +363,47 @@ async def test_ssl_bypass():
             "error": str(e),
             "error_type": type(e).__name__,
             "message": "SSL bypass test failed - check logs for details"
+        }
+
+@app.get("/api/v1/test/password-decoding", tags=["Testing"])
+async def test_password_decoding():
+    """Test URL password decoding for debugging"""
+    import urllib.parse
+    
+    try:
+        db_url = os.getenv('DATABASE_URL', '')
+        if not db_url:
+            return {"status": "error", "message": "DATABASE_URL not configured"}
+        
+        parsed = urllib.parse.urlparse(db_url)
+        
+        # Show password encoding status
+        original_password = parsed.password
+        decoded_password = urllib.parse.unquote(original_password) if original_password else None
+        
+        password_info = {
+            "has_password": bool(original_password),
+            "password_length": len(original_password) if original_password else 0,
+            "contains_encoding": '%' in original_password if original_password else False,
+            "original_contains_percent2A": '%2A' in original_password if original_password else False,
+            "decoded_contains_asterisk": '*' in decoded_password if decoded_password else False,
+            "encoding_fixed": original_password != decoded_password if original_password else False
+        }
+        
+        return {
+            "status": "success",
+            "message": "Password decoding analysis complete",
+            "database_host": parsed.hostname,
+            "database_user": parsed.username,
+            "password_analysis": password_info,
+            "encoding_issue_detected": password_info.get("contains_encoding", False),
+            "fix_applied": password_info.get("encoding_fixed", False)
+        }
+        
+    except Exception as e:
+        logger.error(f"Password decoding test failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "message": "Password decoding test failed"
         } 

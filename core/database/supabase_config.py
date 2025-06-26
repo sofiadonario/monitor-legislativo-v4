@@ -45,11 +45,12 @@ class SupabaseConfig:
         try:
             parsed = urllib.parse.urlparse(db_url)
             
-            # URL encode password if it contains special characters
-            if parsed.password and ('*' in parsed.password or '+' in parsed.password):
-                encoded_password = urllib.parse.quote(parsed.password, safe='')
-                # Reconstruct URL with encoded password
-                netloc = f"{parsed.username}:{encoded_password}@{parsed.hostname}"
+            # CRITICAL FIX: URL decode password if it contains encoded characters
+            if parsed.password and ('%' in parsed.password):
+                # URL decode the password for asyncpg compatibility
+                decoded_password = urllib.parse.unquote(parsed.password)
+                # Reconstruct URL with decoded password
+                netloc = f"{parsed.username}:{decoded_password}@{parsed.hostname}"
                 if parsed.port:
                     netloc += f":{parsed.port}"
                 
@@ -61,7 +62,7 @@ class SupabaseConfig:
                     parsed.query,
                     parsed.fragment
                 ))
-                logger.info("Fixed DATABASE_URL encoding for special characters")
+                logger.info(f"Fixed DATABASE_URL password decoding: %2A → * for asyncpg compatibility")
             
             # Additional validation for Supabase pooler format
             if 'pooler.supabase.com' in db_url:
@@ -162,6 +163,12 @@ class DatabaseManager:
             # Parse the URL for direct asyncpg connection
             parsed = urllib.parse.urlparse(db_url)
             
+            # CRITICAL FIX: Decode password if it contains URL encoding
+            password = parsed.password
+            if password and ('%' in password):
+                password = urllib.parse.unquote(password)
+                logger.info("Decoded URL-encoded password for direct asyncpg connection")
+            
             # Create SSL context specifically for direct asyncpg
             import ssl
             ssl_context = ssl.create_default_context()
@@ -174,7 +181,7 @@ class DatabaseManager:
                 'port': parsed.port or 5432,
                 'database': parsed.path.lstrip('/'),
                 'user': parsed.username,
-                'password': parsed.password,
+                'password': password,  # Use decoded password
                 'ssl': ssl_context,  # Use SSL context, not sslmode
                 'server_settings': {
                     'application_name': 'direct_asyncpg_test'

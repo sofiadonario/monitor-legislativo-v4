@@ -204,6 +204,12 @@ class AlternativeDatabaseManager:
             db_url = AlternativeSupabaseConfig.DATABASE_URL
             parsed = urllib.parse.urlparse(db_url)
             
+            # CRITICAL FIX: Decode password if it contains URL encoding
+            password = parsed.password
+            if password and ('%' in password):
+                password = urllib.parse.unquote(password)
+                logger.info("Decoded URL-encoded password for direct connection test")
+            
             # FIXED: Proper SSL context for direct asyncpg connection
             import ssl
             ssl_context = ssl.create_default_context()
@@ -216,7 +222,7 @@ class AlternativeDatabaseManager:
                 port=parsed.port or 5432,
                 database=parsed.path.lstrip('/'),
                 user=parsed.username,
-                password=parsed.password,
+                password=password,  # Use decoded password
                 ssl=ssl_context  # Use SSL context instead of 'require'
             )
             
