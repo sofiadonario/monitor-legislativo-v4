@@ -1,0 +1,486 @@
+# Production Docker Compose Configuration
+# Monitor Legislativo v4 - Brazilian Legislative Research Platform
+# Optimized for production deployment with high availability and performance
+
+version: '3.8'
+
+services:
+  # ========================================
+  # REVERSE PROXY & LOAD BALANCER
+  # ========================================
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: monitor-legislativo-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+      - static_files:/usr/share/nginx/html/static
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monitor-legislativo.rule=Host(`monitor-legislativo.gov.br`)"
+      - "traefik.http.routers.monitor-legislativo.tls=true"
+      - "traefik.http.routers.monitor-legislativo.tls.certresolver=letsencrypt"
+
+  # ========================================
+  # FRONTEND APPLICATION
+  # ========================================
+  frontend:
+    image: monitor-legislativo/frontend:${VERSION:-latest}
+    container_name: monitor-legislativo-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        - NODE_ENV=production
+        - VITE_API_URL=${BACKEND_URL}
+        - VITE_APP_VERSION=${VERSION}
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - static_files:/app/dist
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================================
+  # BACKEND APPLICATION
+  # ========================================
+  backend:
+    image: monitor-legislativo/backend:${VERSION:-latest}
+    container_name: monitor-legislativo-backend
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        - ENVIRONMENT=production
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      
+      # Brazilian Government APIs
+      - CAMARA_API_URL=${CAMARA_API_URL}
+      - SENADO_API_URL=${SENADO_API_URL}
+      - PLANALTO_API_URL=${PLANALTO_API_URL}
+      - LEXML_API_URL=${LEXML_API_URL}
+      
+      # Performance Settings
+      - MAX_CONCURRENT_REQUESTS=${MAX_CONCURRENT_REQUESTS:-500}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30000}
+      - CACHE_TTL=${CACHE_TTL:-3600}
+      
+      # Monitoring
+      - PROMETHEUS_ENABLED=${PROMETHEUS_ENABLED:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      
+      # Brazilian Specific
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-pt-BR}
+      - TIMEZONE=${TIMEZONE:-America/Sao_Paulo}
+      - CITATION_DEFAULT_STYLE=${CITATION_DEFAULT_STYLE:-abnt}
+    
+    ports:
+      - "8000"
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    depends_on:
+      - database
+      - redis
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+  # ========================================
+  # DATABASE (POSTGRESQL)
+  # ========================================
+  database:
+    image: postgres:15-alpine
+    container_name: monitor-legislativo-database
+    environment:
+      - POSTGRES_DB=${DB_NAME:-monitor_legislativo_prod}
+      - POSTGRES_USER=${DB_USER:-monitor_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --locale=pt_BR.UTF-8
+      
+      # Performance Tuning
+      - POSTGRES_SHARED_BUFFERS=512MB
+      - POSTGRES_EFFECTIVE_CACHE_SIZE=2GB
+      - POSTGRES_WORK_MEM=256MB
+      - POSTGRES_MAINTENANCE_WORK_MEM=256MB
+      - POSTGRES_MAX_CONNECTIONS=200
+      
+      # Brazilian Portuguese Support
+      - LC_COLLATE=pt_BR.UTF-8
+      - LC_CTYPE=pt_BR.UTF-8
+    
+    ports:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/backups:/backups
+      - ./database/postgresql.conf:/etc/postgresql/postgresql.conf
+    
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-monitor_user} -d ${DB_NAME:-monitor_legislativo_prod}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    
+    command: >
+      postgres
+      -c shared_buffers=512MB
+      -c effective_cache_size=2GB
+      -c work_mem=256MB
+      -c maintenance_work_mem=256MB
+      -c max_connections=200
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c log_statement=all
+      -c log_min_duration_statement=1000
+      -c shared_preload_libraries=pg_stat_statements
+
+  # ========================================
+  # CACHE (REDIS)
+  # ========================================
+  redis:
+    image: redis:7-alpine
+    container_name: monitor-legislativo-redis
+    command: >
+      redis-server
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --appendonly yes
+      --appendfsync everysec
+      --requirepass ${REDIS_PASSWORD}
+    
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    
+    ports:
+      - "6379"
+    
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # ========================================
+  # MONITORING STACK
+  # ========================================
+  
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:v2.40.0
+    container_name: monitor-legislativo-prometheus
+    ports:
+      - "9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/rules:/etc/prometheus/rules
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=90d'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:9.3.0
+    container_name: monitor-legislativo-grafana
+    ports:
+      - "3000"
+    volumes:
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-worldmap-panel
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=${SMTP_HOST}
+      - GF_SMTP_USER=${SMTP_USER}
+      - GF_SMTP_PASSWORD=${SMTP_PASSWORD}
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Alertmanager for alerting
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: monitor-legislativo-alertmanager
+    ports:
+      - "9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+
+  # ========================================
+  # BACKUP SERVICE
+  # ========================================
+  backup:
+    image: monitor-legislativo/backup:${VERSION:-latest}
+    container_name: monitor-legislativo-backup
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - BACKUP_S3_BUCKET=${BACKUP_S3_BUCKET}
+      - BACKUP_ENCRYPTION_KEY=${BACKUP_ENCRYPTION_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}  # Daily at 2 AM
+    volumes:
+      - ./backup/scripts:/app/scripts
+      - backup_data:/backups
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    depends_on:
+      - database
+      - redis
+
+  # ========================================
+  # LOG AGGREGATION
+  # ========================================
+  
+  # Elasticsearch for log storage
+  elasticsearch:
+    image: elasticsearch:8.5.0
+    container_name: monitor-legislativo-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200"
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # Logstash for log processing
+  logstash:
+    image: logstash:8.5.0
+    container_name: monitor-legislativo-logstash
+    volumes:
+      - ./logging/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logs:/logs
+    environment:
+      - "LS_JAVA_OPTS=-Xmx1g -Xms1g"
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+
+  # Kibana for log visualization
+  kibana:
+    image: kibana:8.5.0
+    container_name: monitor-legislativo-kibana
+    ports:
+      - "5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - monitor-legislativo-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+
+# ========================================
+# VOLUMES
+# ========================================
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/monitor-legislativo/postgres
+  
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/monitor-legislativo/redis
+  
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/monitor-legislativo/prometheus
+  
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/monitor-legislativo/grafana
+  
+  alertmanager_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/monitor-legislativo/alertmanager
+  
+  elasticsearch_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/monitor-legislativo/elasticsearch
+  
+  backup_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/monitor-legislativo/backups
+  
+  static_files:
+    driver: local
+
+# ========================================
+# NETWORKS
+# ========================================
+networks:
+  monitor-legislativo-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ========================================
+# PRODUCTION DEPLOYMENT PROFILES
+# ========================================
+profiles:
+  # Minimal production setup
+  minimal:
+    services:
+      - nginx
+      - frontend
+      - backend
+      - database
+      - redis
+
+  # Full monitoring stack
+  monitoring:
+    services:
+      - prometheus
+      - grafana
+      - alertmanager
+
+  # Log aggregation stack
+  logging:
+    services:
+      - elasticsearch
+      - logstash
+      - kibana
+
+  # Backup services
+  backup:
+    services:
+      - backup
