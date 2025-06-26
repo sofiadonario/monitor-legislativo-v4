@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from . import gateway_router
 from .routers import lexml_router, sse_router
+from .api import geographic, ml_analysis
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
 from core.database.two_tier_manager import get_two_tier_manager
@@ -40,6 +41,8 @@ app.add_middleware(
 app.include_router(gateway_router.router)
 app.include_router(lexml_router.router)
 app.include_router(sse_router.router)
+app.include_router(geographic.router)
+app.include_router(ml_analysis.router)
 
 
 @app.on_event("startup")
@@ -74,6 +77,22 @@ async def startup_event():
         # Initialize two-tier manager
         two_tier_manager = await get_two_tier_manager()
         logger.info("✅ Two-tier database manager initialized successfully")
+        
+        # Initialize geographic service
+        try:
+            from .api.geographic import get_geographic_service
+            geographic_service = await get_geographic_service()
+            logger.info("✅ Geographic service initialized successfully")
+        except Exception as geo_e:
+            logger.warning(f"⚠️  Geographic service initialization failed: {geo_e}")
+        
+        # Initialize ML analysis engine
+        try:
+            from .api.ml_analysis import get_ml_engine
+            ml_engine = await get_ml_engine()
+            logger.info("✅ ML text analysis engine initialized successfully")
+        except Exception as ml_e:
+            logger.warning(f"⚠️  ML analysis engine initialization failed: {ml_e}")
         
         logger.info("🚀 Monitor Legislativo Two-Tier Service startup complete")
         
@@ -115,7 +134,14 @@ async def read_root():
             "🗄️ PostgreSQL Integration with Advanced Schema Design",
             "📤 Export Result Caching and Management",
             "📊 Real-time Performance Monitoring and Health Checks",
-            "🎯 Academic Research Tools with DOI and Citation Support"
+            "🎯 Academic Research Tools with DOI and Citation Support",
+            "🇧🇷 Brazilian Geographic Integration with 5,570+ Municipalities",
+            "📍 Document Geographic Analysis and Scope Detection",
+            "🗺️ IBGE-compliant Municipality Data with Coordinates",
+            "🤖 ML-Powered Text Analysis with Transport Classification",
+            "🔍 Document Similarity Detection and Clustering",
+            "🏷️ Automated Keyword Extraction and Categorization",
+            "📊 Advanced Text Statistics and Complexity Analysis"
         ]
     }
 

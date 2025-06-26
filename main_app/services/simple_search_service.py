@@ -5,6 +5,8 @@ Simple Search Service
 Enhanced search service with database integration for caching and analytics.
 Provides a three-tier architecture with database-backed performance optimization.
 Falls back to CSV data when database or APIs are unavailable.
+
+Now includes enhanced LexML client with automatic pagination and batch processing.
 """
 
 import logging
@@ -20,6 +22,11 @@ from real_legislative_data import realLegislativeData
 
 # Import database cache service
 from .database_cache_service import get_database_cache_service
+
+# Import enhanced LexML client
+sys.path.append(str(Path(__file__).parent.parent.parent / 'core'))
+from api.lexml_enhanced_client import LexMLEnhancedClient, PaginationConfig
+from api.connection_pool import get_global_pool_manager
 
 logger = logging.getLogger(__name__)
 
@@ -56,16 +63,23 @@ class SimpleSearchService:
     """
     Enhanced search service with database integration and CSV fallback.
     Implements three-tier search with caching, analytics, and known working Tier 3.
+    
+    Now includes:
+    - Enhanced LexML client with automatic pagination
+    - Connection pooling for improved performance
+    - Batch processing capabilities
     """
     
     def __init__(self):
         self.documents = realLegislativeData
         self.initialized = False
         self.cache_service = None
+        self.enhanced_lexml_client = None
+        self.pool_manager = None
         logger.info(f"Enhanced Search Service initialized with {len(self.documents)} documents")
     
     async def initialize(self):
-        """Initialize the search service with database integration"""
+        """Initialize the search service with database integration and enhanced LexML client"""
         if self.initialized:
             return
         
@@ -85,8 +99,62 @@ class SimpleSearchService:
             logger.warning(f"Database cache service initialization failed: {e}")
             self.cache_service = None
         
+        # Initialize connection pool manager
+        try:
+            self.pool_manager = await get_global_pool_manager()
+            logger.info("Connection pool manager initialized")
+        except Exception as e:
+            logger.warning(f"Connection pool manager initialization failed: {e}")
+        
+        # Initialize enhanced LexML client
+        try:
+            # Get pooled session for LexML
+            session = None
+            if self.pool_manager:
+                session = await self.pool_manager.get_session("lexml", "https://www.lexml.gov.br")
+            
+            # Configure pagination for academic research
+            pagination_config = PaginationConfig(
+                batch_size=50,  # Optimal for LexML API
+                max_total_records=1000,  # Reasonable limit for research
+                concurrent_requests=2,  # Conservative to respect rate limits
+                delay_between_batches=1.0  # Polite delay
+            )
+            
+            # Create enhanced client with official client backend
+            from api.lexml_official_client import LexMLOfficialClient
+            base_client = LexMLOfficialClient(session=session)
+            
+            self.enhanced_lexml_client = LexMLEnhancedClient(
+                base_client=base_client,
+                pagination_config=pagination_config
+            )
+            
+            logger.info("Enhanced LexML client initialized with pagination support")
+            
+            # Warm up cache with common transport queries
+            common_queries = [
+                "transporte",
+                "transporte AND rodoviário",
+                "transporte AND ferroviário",
+                "transporte AND aéreo",
+                "transporte AND marítimo",
+                "mobilidade urbana",
+                "logística"
+            ]
+            await self.enhanced_lexml_client.warmup_cache(common_queries)
+            
+        except Exception as e:
+            logger.warning(f"Enhanced LexML client initialization failed: {e}")
+            self.enhanced_lexml_client = None
+        
         self.initialized = True
         logger.info(f"Enhanced Search Service ready with {len(self.documents)} documents")
+    
+    def _log_progress(self, current: int, total: int):
+        """Progress callback for pagination"""
+        percentage = (current / total) * 100 if total > 0 else 0
+        logger.info(f"Enhanced LexML progress: {current}/{total} documents ({percentage:.1f}%)")
     
     async def search(self, request) -> LexMLSearchResponse:
         """
@@ -130,11 +198,79 @@ class SimpleSearchService:
                         api_status="cached"
                     )
             
-            # Tier 1: LexML API (will fail due to dependencies, proceed to Tier 3)
-            logger.info("Tier 1 (LexML API): Skipping due to dependency issues")
+            # Tier 1: Enhanced LexML API with automatic pagination
+            if self.enhanced_lexml_client:
+                try:
+                    logger.info(f"Tier 1 (Enhanced LexML): Searching for '{query}' with pagination")
+                    
+                    # Use enhanced client with pagination
+                    lexml_documents = await self.enhanced_lexml_client.search_with_pagination(
+                        query=query,
+                        max_records=max_records * 2,  # Get more to improve cache
+                        progress_callback=self._log_progress
+                    )
+                    
+                    if lexml_documents:
+                        # Convert to our format
+                        documents = []
+                        for doc in lexml_documents:
+                            documents.append(LexMLDocument(
+                                urn=doc.urn,
+                                title=doc.title,
+                                description=getattr(doc, 'resumo', '') or getattr(doc, 'description', ''),
+                                url=getattr(doc, 'texto_integral_url', '') or '',
+                                metadata={
+                                    'autoridade': getattr(doc, 'autoridade', ''),
+                                    'evento': getattr(doc, 'evento', ''),
+                                    'data_evento': getattr(doc, 'data_evento', ''),
+                                    'tipo_documento': getattr(doc, 'tipo_documento', ''),
+                                    'localidade': getattr(doc, 'localidade', ''),
+                                    'palavras_chave': getattr(doc, 'palavras_chave', [])
+                                }
+                            ))
+                        
+                        # Apply pagination
+                        start_idx = start_record - 1
+                        end_idx = start_idx + max_records
+                        paginated_docs = documents[start_idx:end_idx]
+                        
+                        search_time = (datetime.now() - start_time).total_seconds() * 1000
+                        
+                        # Cache the result
+                        if self.cache_service and self.cache_service.db_available:
+                            cache_data = {
+                                'documents': [
+                                    {
+                                        'urn': doc.urn,
+                                        'title': doc.title,
+                                        'description': doc.description,
+                                        'url': doc.url,
+                                        'metadata': doc.metadata
+                                    } for doc in documents
+                                ]
+                            }
+                            await self.cache_service.cache_search_result(query, filters, cache_data)
+                        
+                        logger.info(f"Enhanced LexML success: {len(paginated_docs)} documents")
+                        
+                        return LexMLSearchResponse(
+                            documents=paginated_docs,
+                            total_found=len(documents),
+                            start_record=start_record,
+                            records_returned=len(paginated_docs),
+                            search_time_ms=search_time,
+                            data_source="enhanced-lexml",
+                            cache_hit=False,
+                            api_status="success"
+                        )
+                        
+                except Exception as e:
+                    logger.warning(f"Enhanced LexML failed: {e}, falling back to Tier 2/3")
+            else:
+                logger.info("Tier 1 (Enhanced LexML): Not available, proceeding to fallback")
             
-            # Tier 2: Regional APIs (will fail due to dependencies, proceed to Tier 3)
-            logger.info("Tier 2 (Regional APIs): Skipping due to dependency issues")
+            # Tier 2: Regional APIs (future enhancement, proceed to Tier 3)
+            logger.info("Tier 2 (Regional APIs): Not implemented yet, proceeding to fallback")
             
             # Tier 3: CSV Fallback (this works!)
             logger.info(f"Tier 3 (CSV Fallback): Searching for '{query}'")

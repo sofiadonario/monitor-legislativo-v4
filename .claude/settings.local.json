@@ -69,7 +69,8 @@
       "Bash(timeout 30 npx gh-pages -d dist --no-history)",
       "Bash(git fetch:*)",
       "WebFetch(domain:supabase.com)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   },
   "enableAllProjectMcpServers": false
