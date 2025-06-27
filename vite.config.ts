@@ -56,8 +56,23 @@ export default defineConfig({
         tryCatchDeoptimization: false
       }
     },
-    // Disable minification to prevent eval() issues
-    minify: false,
+    // Use terser for minification with CSP-safe settings
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false,
+        drop_debugger: true,
+        pure_funcs: ['console.debug'],
+        passes: 2
+      },
+      mangle: true,
+      format: {
+        comments: false
+      },
+      // Ensure no eval is generated
+      keep_fnames: false,
+      keep_classnames: false
+    },
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
     // Enable CSS code splitting
