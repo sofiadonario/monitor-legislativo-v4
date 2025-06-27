@@ -7,9 +7,9 @@ const ASSET_CACHE = 'legislativo-assets-v1';
 
 // Static assets to cache immediately
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  '/monitor-legislativo-v4/',
+  '/monitor-legislativo-v4/index.html',
+  '/monitor-legislativo-v4/map-icon.svg'
 ];
 
 // Cache strategies by route pattern
