@@ -546,8 +546,16 @@ server <- function(input, output, session) {
     session$userData$authenticated <- FALSE
   }
   
+  # Create reactive authentication state
+  auth_state <- reactive({
+    # This will react to changes in session$userData$authenticated
+    session$userData$authenticated
+  })
+  
   # Handle authentication and UI switching
   observe({
+    auth_state()  # Make sure this reactive runs
+    
     if (!is_authenticated(session)) {
       # Show login UI
       output$ui <- renderUI({
@@ -562,6 +570,9 @@ server <- function(input, output, session) {
       output$ui <- renderUI({
         create_main_ui()
       })
+      
+      # Log successful UI switch
+      flog.info("Switched to main UI for authenticated user")
     }
   })
   

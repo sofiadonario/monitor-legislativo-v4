@@ -219,8 +219,10 @@ handle_login <- function(input, output, session) {
             paste("✅ Login realizado com sucesso! Bem-vindo,", auth_result$user$name))
       })
       
-      # Redirect to main app after brief delay
-      session$reload()
+      # Log successful authentication
+      flog.info("User authenticated successfully: %s", auth_result$user$username)
+      
+      # The UI will update automatically via the observe() in app.R
       
     } else {
       # Show error message
@@ -248,8 +250,7 @@ logout_user <- function(session) {
   session$userData$authenticated <- FALSE
   session$userData$user <- NULL
   
-  # Reload to show login page
-  session$reload()
+  # The UI will update automatically via the observe() in app.R
 }
 
 #' Create user info display

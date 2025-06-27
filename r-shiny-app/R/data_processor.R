@@ -288,8 +288,8 @@ clean_text <- function(text) {
     # Fix encoding issues
     replace_html() %>%
     # Standardize quotes
-    str_replace_all(""", '"') %>%
-    str_replace_all(""", '"') %>%
+    str_replace_all('"', '"') %>%
+    str_replace_all('"', '"') %>%
     # Remove control characters
     str_replace_all("[\\r\\n\\t]+", " ") %>%
     # Truncate if too long
