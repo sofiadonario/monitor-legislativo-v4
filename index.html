@@ -43,8 +43,11 @@
               
               // Check for updates periodically
               setInterval(() => {
-                registration.update();
-              }, 60000); // Check every minute
+                registration.update().catch(err => {
+                  // Silently handle update errors
+                  console.debug('Service worker update check failed:', err);
+                });
+              }, 300000); // Check every 5 minutes
               
               // Handle updates
               registration.addEventListener('updatefound', () => {

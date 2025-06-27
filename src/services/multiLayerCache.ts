@@ -122,6 +122,12 @@ class MultiLayerCacheService {
       return;
     }
 
+    // Disable compression worker on GitHub Pages due to CSP restrictions
+    if (window.location.hostname.includes('github.io')) {
+      this.config.compressionEnabled = false;
+      return;
+    }
+
     try {
       // Create inline worker for compression
       const compressionCode = `
