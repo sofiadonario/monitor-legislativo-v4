@@ -9,7 +9,28 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from . import gateway_router
 from .routers import lexml_router, sse_router
-from .api import geographic, ml_analysis
+
+# Import API modules with error handling for production deployment
+try:
+    from .api import geographic
+    GEOGRAPHIC_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Geographic API not available: {e}")
+    GEOGRAPHIC_API_AVAILABLE = False
+
+try:
+    from .api import ml_analysis
+    ML_ANALYSIS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: ML Analysis API not available: {e}")
+    ML_ANALYSIS_API_AVAILABLE = False
+
+try:
+    from .api import advanced_geocoding
+    ADVANCED_GEOCODING_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Advanced Geocoding API not available: {e}")
+    ADVANCED_GEOCODING_API_AVAILABLE = False
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
 from core.database.two_tier_manager import get_two_tier_manager
@@ -41,8 +62,16 @@ app.add_middleware(
 app.include_router(gateway_router.router)
 app.include_router(lexml_router.router)
 app.include_router(sse_router.router)
-app.include_router(geographic.router)
-app.include_router(ml_analysis.router)
+
+# Include API routers conditionally
+if GEOGRAPHIC_API_AVAILABLE:
+    app.include_router(geographic.router)
+
+if ML_ANALYSIS_API_AVAILABLE:
+    app.include_router(ml_analysis.router)
+
+if ADVANCED_GEOCODING_API_AVAILABLE:
+    app.include_router(advanced_geocoding.router)
 
 
 @app.on_event("startup")
@@ -78,21 +107,38 @@ async def startup_event():
         two_tier_manager = await get_two_tier_manager()
         logger.info("✅ Two-tier database manager initialized successfully")
         
-        # Initialize geographic service
-        try:
-            from .api.geographic import get_geographic_service
-            geographic_service = await get_geographic_service()
-            logger.info("✅ Geographic service initialized successfully")
-        except Exception as geo_e:
-            logger.warning(f"⚠️  Geographic service initialization failed: {geo_e}")
+        # Initialize geographic service (if available)
+        if GEOGRAPHIC_API_AVAILABLE:
+            try:
+                from .api.geographic import get_geographic_service
+                geographic_service = await get_geographic_service()
+                logger.info("✅ Geographic service initialized successfully")
+            except Exception as geo_e:
+                logger.warning(f"⚠️  Geographic service initialization failed: {geo_e}")
+        else:
+            logger.info("ℹ️  Geographic service not available - skipping initialization")
         
-        # Initialize ML analysis engine
-        try:
-            from .api.ml_analysis import get_ml_engine
-            ml_engine = await get_ml_engine()
-            logger.info("✅ ML text analysis engine initialized successfully")
-        except Exception as ml_e:
-            logger.warning(f"⚠️  ML analysis engine initialization failed: {ml_e}")
+        # Initialize ML analysis engine (if available)
+        if ML_ANALYSIS_API_AVAILABLE:
+            try:
+                from .api.ml_analysis import get_ml_engine
+                ml_engine = await get_ml_engine()
+                logger.info("✅ ML text analysis engine initialized successfully")
+            except Exception as ml_e:
+                logger.warning(f"⚠️  ML analysis engine initialization failed: {ml_e}")
+        else:
+            logger.info("ℹ️  ML analysis engine not available - skipping initialization")
+        
+        # Initialize advanced geocoding service (if available)
+        if ADVANCED_GEOCODING_API_AVAILABLE:
+            try:
+                from .api.advanced_geocoding import get_advanced_geocoder
+                advanced_geocoder = await get_advanced_geocoder()
+                logger.info("✅ Advanced Brazilian geocoding service initialized successfully")
+            except Exception as geo_e:
+                logger.warning(f"⚠️  Advanced geocoding service initialization failed: {geo_e}")
+        else:
+            logger.info("ℹ️  Advanced geocoding service not available - skipping initialization")
         
         logger.info("🚀 Monitor Legislativo Two-Tier Service startup complete")
         
@@ -120,29 +166,54 @@ async def shutdown_event():
 
 @app.get("/", tags=["Root"])
 async def read_root():
+    # Build features list dynamically based on available components
+    features = [
+        "🤖 Automated Data Collection with Prefect Orchestration",
+        "📊 Real-time Analytics Dashboard with R Shiny Integration",
+        "🔄 Two-Tier Architecture: Collection Service + Analytics Platform",
+        "📈 Database-Backed Search Result Caching for 70% Performance Improvement",
+        "🎓 Academic Analytics and Research Pattern Tracking",
+        "🏛️ Three-Tier Fallback Architecture (LexML → Regional APIs → 889 CSV Documents)",
+        "🧠 SKOS Vocabulary Expansion with Transport Domain Expertise",
+        "🗄️ PostgreSQL Integration with Advanced Schema Design",
+        "📤 Export Result Caching and Management",
+        "📊 Real-time Performance Monitoring and Health Checks",
+        "🎯 Academic Research Tools with DOI and Citation Support"
+    ]
+    
+    # Add features based on available components
+    if GEOGRAPHIC_API_AVAILABLE:
+        features.extend([
+            "🇧🇷 Brazilian Geographic Integration with 5,570+ Municipalities",
+            "📍 Document Geographic Analysis and Scope Detection",
+            "🗺️ IBGE-compliant Municipality Data with Coordinates"
+        ])
+    
+    if ML_ANALYSIS_API_AVAILABLE:
+        features.extend([
+            "🤖 ML-Powered Text Analysis with Transport Classification",
+            "🔍 Document Similarity Detection and Clustering", 
+            "🏷️ Automated Keyword Extraction and Categorization",
+            "📊 Advanced Text Statistics and Complexity Analysis"
+        ])
+    
+    if ADVANCED_GEOCODING_API_AVAILABLE:
+        features.extend([
+            "🎯 Advanced Brazilian Geocoding with 6-Level Precision",
+            "🗺️ SIRGAS 2000 Coordinate System Support",
+            "📮 CEP Validation and Address Standardization",
+            "📐 Haversine Distance Calculations and Spatial Analysis"
+        ])
+    
     return {
         "message": "Welcome to the Monitor Legislativo Two-Tier Service",
         "version": "2.0.0",
-        "features": [
-            "🤖 Automated Data Collection with Prefect Orchestration",
-            "📊 Real-time Analytics Dashboard with R Shiny Integration",
-            "🔄 Two-Tier Architecture: Collection Service + Analytics Platform",
-            "📈 Database-Backed Search Result Caching for 70% Performance Improvement",
-            "🎓 Academic Analytics and Research Pattern Tracking",
-            "🏛️ Three-Tier Fallback Architecture (LexML → Regional APIs → 889 CSV Documents)",
-            "🧠 SKOS Vocabulary Expansion with Transport Domain Expertise",
-            "🗄️ PostgreSQL Integration with Advanced Schema Design",
-            "📤 Export Result Caching and Management",
-            "📊 Real-time Performance Monitoring and Health Checks",
-            "🎯 Academic Research Tools with DOI and Citation Support",
-            "🇧🇷 Brazilian Geographic Integration with 5,570+ Municipalities",
-            "📍 Document Geographic Analysis and Scope Detection",
-            "🗺️ IBGE-compliant Municipality Data with Coordinates",
-            "🤖 ML-Powered Text Analysis with Transport Classification",
-            "🔍 Document Similarity Detection and Clustering",
-            "🏷️ Automated Keyword Extraction and Categorization",
-            "📊 Advanced Text Statistics and Complexity Analysis"
-        ]
+        "features": features,
+        "components_status": {
+            "geographic_api": GEOGRAPHIC_API_AVAILABLE,
+            "ml_analysis_api": ML_ANALYSIS_API_AVAILABLE,
+            "advanced_geocoding_api": ADVANCED_GEOCODING_API_AVAILABLE
+        }
     }
 
 @app.get("/health", tags=["Health"])

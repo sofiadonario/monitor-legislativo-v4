@@ -23,10 +23,21 @@ from real_legislative_data import realLegislativeData
 # Import database cache service
 from .database_cache_service import get_database_cache_service
 
-# Import enhanced LexML client
-sys.path.append(str(Path(__file__).parent.parent.parent / 'core'))
-from api.lexml_enhanced_client import LexMLEnhancedClient, PaginationConfig
-from api.connection_pool import get_global_pool_manager
+# Import enhanced LexML client with try/except for production deployment
+try:
+    sys.path.append(str(Path(__file__).parent.parent.parent / 'core'))
+    from api.lexml_enhanced_client import LexMLEnhancedClient, PaginationConfig
+    from api.connection_pool import get_global_pool_manager
+    ENHANCED_CLIENT_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Enhanced LexML client not available: {e}")
+    ENHANCED_CLIENT_AVAILABLE = False
+    # Mock classes for when enhanced client is not available
+    class LexMLEnhancedClient:
+        def __init__(self, **kwargs): pass
+    class PaginationConfig:
+        def __init__(self, **kwargs): pass
+    async def get_global_pool_manager(): return None
 
 logger = logging.getLogger(__name__)
 
@@ -99,54 +110,64 @@ class SimpleSearchService:
             logger.warning(f"Database cache service initialization failed: {e}")
             self.cache_service = None
         
-        # Initialize connection pool manager
-        try:
-            self.pool_manager = await get_global_pool_manager()
-            logger.info("Connection pool manager initialized")
-        except Exception as e:
-            logger.warning(f"Connection pool manager initialization failed: {e}")
+        # Initialize connection pool manager (only if enhanced client available)
+        if ENHANCED_CLIENT_AVAILABLE:
+            try:
+                self.pool_manager = await get_global_pool_manager()
+                logger.info("Connection pool manager initialized")
+            except Exception as e:
+                logger.warning(f"Connection pool manager initialization failed: {e}")
         
-        # Initialize enhanced LexML client
-        try:
-            # Get pooled session for LexML
-            session = None
-            if self.pool_manager:
-                session = await self.pool_manager.get_session("lexml", "https://www.lexml.gov.br")
-            
-            # Configure pagination for academic research
-            pagination_config = PaginationConfig(
-                batch_size=50,  # Optimal for LexML API
-                max_total_records=1000,  # Reasonable limit for research
-                concurrent_requests=2,  # Conservative to respect rate limits
-                delay_between_batches=1.0  # Polite delay
-            )
-            
-            # Create enhanced client with official client backend
-            from api.lexml_official_client import LexMLOfficialClient
-            base_client = LexMLOfficialClient(session=session)
-            
-            self.enhanced_lexml_client = LexMLEnhancedClient(
-                base_client=base_client,
-                pagination_config=pagination_config
-            )
-            
-            logger.info("Enhanced LexML client initialized with pagination support")
-            
-            # Warm up cache with common transport queries
-            common_queries = [
-                "transporte",
-                "transporte AND rodoviário",
-                "transporte AND ferroviário",
-                "transporte AND aéreo",
-                "transporte AND marítimo",
-                "mobilidade urbana",
-                "logística"
-            ]
-            await self.enhanced_lexml_client.warmup_cache(common_queries)
-            
-        except Exception as e:
-            logger.warning(f"Enhanced LexML client initialization failed: {e}")
+            # Initialize enhanced LexML client
+            try:
+                # Get pooled session for LexML
+                session = None
+                if self.pool_manager:
+                    session = await self.pool_manager.get_session("lexml", "https://www.lexml.gov.br")
+                
+                # Configure pagination for academic research
+                pagination_config = PaginationConfig(
+                    batch_size=50,  # Optimal for LexML API
+                    max_total_records=1000,  # Reasonable limit for research
+                    concurrent_requests=2,  # Conservative to respect rate limits
+                    delay_between_batches=1.0  # Polite delay
+                )
+                
+                # Create enhanced client with official client backend
+                try:
+                    from api.lexml_official_client import LexMLOfficialClient
+                    base_client = LexMLOfficialClient(session=session)
+                    
+                    self.enhanced_lexml_client = LexMLEnhancedClient(
+                        base_client=base_client,
+                        pagination_config=pagination_config
+                    )
+                    
+                    logger.info("Enhanced LexML client initialized with pagination support")
+                    
+                    # Warm up cache with common transport queries
+                    common_queries = [
+                        "transporte",
+                        "transporte AND rodoviário",
+                        "transporte AND ferroviário",
+                        "transporte AND aéreo",
+                        "transporte AND marítimo",
+                        "mobilidade urbana",
+                        "logística"
+                    ]
+                    await self.enhanced_lexml_client.warmup_cache(common_queries)
+                    
+                except ImportError as import_e:
+                    logger.warning(f"LexML official client import failed: {import_e}")
+                    self.enhanced_lexml_client = None
+                
+            except Exception as e:
+                logger.warning(f"Enhanced LexML client initialization failed: {e}")
+                self.enhanced_lexml_client = None
+        else:
+            logger.info("Enhanced LexML client not available - using fallback mode")
             self.enhanced_lexml_client = None
+            self.pool_manager = None
         
         self.initialized = True
         logger.info(f"Enhanced Search Service ready with {len(self.documents)} documents")
