@@ -1,5 +1,5 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-CsTctND5.js","assets/js/index-CREcncgK.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/css/index-CAI7Z5Wf.css","assets/css/OptimizedMap-D0H0UQSZ.css","assets/js/TabbedSidebar-B_rdeaqy.js","assets/css/TabbedSidebar-BUx3S1Ap.css","assets/js/ExportPanel-CzyeTXVd.js","assets/js/api-CK1EtbNt.js","assets/js/utils-Cs_fMHvp.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/AIResearchAssistant-DjiJUMn0.js","assets/js/DocumentValidationPanel-g3CKjj8_.js"])))=>i.map(i=>d[i]);
-import { _ as __vitePreload, j as jsxRuntimeExports, L as LoadingSpinner } from "./index-CREcncgK.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-DykCKKYT.js","assets/js/index-D3xkQ84y.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/css/index-CAI7Z5Wf.css","assets/css/OptimizedMap-D0H0UQSZ.css","assets/js/TabbedSidebar-DC0BkuN1.js","assets/css/TabbedSidebar-BUx3S1Ap.css","assets/js/ExportPanel-BUSzioyv.js","assets/js/api-CK1EtbNt.js","assets/js/utils-Cs_fMHvp.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/AIResearchAssistant-z4IqVfoE.js","assets/js/DocumentValidationPanel-_DuPJpd8.js"])))=>i.map(i=>d[i]);
+import { _ as __vitePreload, j as jsxRuntimeExports, L as LoadingSpinner } from "./index-D3xkQ84y.js";
 import { r as reactExports } from "./leaflet-vendor-BcXhkSxI.js";
 import { A as API_CONFIG, g as getApiBaseUrl } from "./api-CK1EtbNt.js";
 var __async$4 = (__this, __arguments, generator) => {
@@ -585,6 +585,10 @@ class MultiLayerCacheService {
   }
   initializeCompressionWorker() {
     if (!this.config.compressionEnabled || typeof Worker === "undefined") {
+      return;
+    }
+    if (window.location.hostname.includes("github.io")) {
+      this.config.compressionEnabled = false;
       return;
     }
     try {
@@ -1568,11 +1572,11 @@ var __async = (__this, __arguments, generator) => {
     step((generator = generator.apply(__this, __arguments)).next());
   });
 };
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-CsTctND5.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-B_rdeaqy.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-CzyeTXVd.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10,11]) : void 0));
-const AIResearchAssistant = reactExports.lazy(() => __vitePreload(() => import("./AIResearchAssistant-DjiJUMn0.js"), true ? __vite__mapDeps([12,1,2,3,4,9]) : void 0));
-const DocumentValidationPanel = reactExports.lazy(() => __vitePreload(() => import("./DocumentValidationPanel-g3CKjj8_.js"), true ? __vite__mapDeps([13,1,2,3,4,9]) : void 0));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-DykCKKYT.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-DC0BkuN1.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-BUSzioyv.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10,11]) : void 0));
+const AIResearchAssistant = reactExports.lazy(() => __vitePreload(() => import("./AIResearchAssistant-z4IqVfoE.js"), true ? __vite__mapDeps([12,1,2,3,4,9]) : void 0));
+const DocumentValidationPanel = reactExports.lazy(() => __vitePreload(() => import("./DocumentValidationPanel-_DuPJpd8.js"), true ? __vite__mapDeps([13,1,2,3,4,9]) : void 0));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,
