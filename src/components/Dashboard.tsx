@@ -10,20 +10,27 @@ import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 const OptimizedMap = lazy(() => import('./OptimizedMap'));
 const TabbedSidebar = lazy(() => import('./TabbedSidebar'));
 const ExportPanel = lazy(() => import('./ExportPanel'));
+const AIResearchAssistant = lazy(() => import('./AIResearchAssistant'));
+const DocumentValidationPanel = lazy(() => import('./DocumentValidationPanel'));
 
 // Dashboard state interface
 interface DashboardState {
   sidebarOpen: boolean;
   exportPanelOpen: boolean;
+  aiAssistantOpen: boolean;
+  validationPanelOpen: boolean;
   selectedState?: string;
   selectedMunicipality?: string;
   filters: SearchFilters;
+  selectedDocuments: LegislativeDocument[];
 }
 
 // Initial state
 const initialState: DashboardState = {
   sidebarOpen: true,
   exportPanelOpen: false,
+  aiAssistantOpen: false,
+  validationPanelOpen: false,
   selectedState: undefined,
   selectedMunicipality: undefined,
   filters: {
@@ -35,7 +42,8 @@ const initialState: DashboardState = {
     keywords: [],
     dateFrom: undefined,
     dateTo: undefined
-  }
+  },
+  selectedDocuments: []
 };
 
 // Reducer function
@@ -47,6 +55,10 @@ const dashboardReducer = (state: DashboardState, action: any): DashboardState =>
       return { ...state, sidebarOpen: action.payload };
     case 'TOGGLE_EXPORT_PANEL':
       return { ...state, exportPanelOpen: !state.exportPanelOpen };
+    case 'TOGGLE_AI_ASSISTANT':
+      return { ...state, aiAssistantOpen: !state.aiAssistantOpen };
+    case 'TOGGLE_VALIDATION_PANEL':
+      return { ...state, validationPanelOpen: !state.validationPanelOpen };
     case 'SELECT_STATE':
       return { ...state, selectedState: action.payload, selectedMunicipality: undefined };
     case 'SELECT_MUNICIPALITY':
@@ -55,6 +67,8 @@ const dashboardReducer = (state: DashboardState, action: any): DashboardState =>
       return { ...state, selectedState: undefined, selectedMunicipality: undefined };
     case 'UPDATE_FILTERS':
       return { ...state, filters: action.payload };
+    case 'SET_SELECTED_DOCUMENTS':
+      return { ...state, selectedDocuments: action.payload };
     default:
       return state;
   }
@@ -66,7 +80,7 @@ const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
-  const { sidebarOpen, exportPanelOpen, selectedState, selectedMunicipality, filters } = state;
+  const { sidebarOpen, exportPanelOpen, aiAssistantOpen, validationPanelOpen, selectedState, selectedMunicipality, filters, selectedDocuments } = state;
 
   const mainContentRef = useRef<HTMLElement>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -142,6 +156,8 @@ const Dashboard: React.FC = () => {
   const onFiltersChange = useCallback((newFilters: SearchFilters) => dispatch({ type: 'UPDATE_FILTERS', payload: newFilters }), []);
   const toggleSidebar = useCallback(() => dispatch({ type: 'TOGGLE_SIDEBAR' }), []);
   const toggleExportPanel = useCallback(() => dispatch({ type: 'TOGGLE_EXPORT_PANEL' }), []);
+  const toggleAIAssistant = useCallback(() => dispatch({ type: 'TOGGLE_AI_ASSISTANT' }), []);
+  const toggleValidationPanel = useCallback(() => dispatch({ type: 'TOGGLE_VALIDATION_PANEL' }), []);
 
   const filteredDocuments = useMemo(() => {
     if (!documents || !Array.isArray(documents)) {
@@ -191,6 +207,12 @@ const Dashboard: React.FC = () => {
                 <span className="stat-item">🗺️ {highlightedStates.length} States</span>
               </div>
             )}
+            <button className="ai-btn" onClick={toggleAIAssistant} aria-controls="ai-assistant" aria-expanded={aiAssistantOpen}>
+              🤖 AI Assistant
+            </button>
+            <button className="validation-btn" onClick={toggleValidationPanel} aria-controls="validation-panel" aria-expanded={validationPanelOpen}>
+              🛡️ Validate
+            </button>
             <button className="export-btn" onClick={toggleExportPanel} aria-controls="export-panel" aria-expanded={exportPanelOpen}>
               📊 Export
             </button>
@@ -247,6 +269,24 @@ const Dashboard: React.FC = () => {
           documents={filteredDocuments || []}
         />
       </Suspense>
+      {aiAssistantOpen && (
+        <Suspense fallback={<LoadingSpinner message="Loading AI assistant..." />}>
+          <AIResearchAssistant
+            selectedDocuments={selectedDocuments}
+            onDocumentAnalyzed={(analysis) => console.log('Document analyzed:', analysis)}
+            className="ai-assistant-panel"
+          />
+        </Suspense>
+      )}
+      {validationPanelOpen && (
+        <Suspense fallback={<LoadingSpinner message="Loading validation panel..." />}>
+          <DocumentValidationPanel
+            documents={selectedDocuments}
+            onValidationComplete={(results) => console.log('Validation complete:', results)}
+            className="validation-panel"
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
