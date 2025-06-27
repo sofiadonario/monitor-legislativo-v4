@@ -1,4 +1,4 @@
-import { apiConfig } from '../config/api';
+import { API_CONFIG } from '../config/api';
 
 export interface GeoLocation {
   latitude: number;
@@ -60,7 +60,7 @@ class SpatialAnalysisService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${apiConfig.baseURL}/api/v1/spatial`;
+    this.baseUrl = `${API_CONFIG.baseUrl}/api/v1/spatial`;
   }
 
   async analyzeDocumentSpatialContext(document: DocumentInput): Promise<SpatialAnalysis> {

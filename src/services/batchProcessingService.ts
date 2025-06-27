@@ -1,4 +1,4 @@
-import { apiConfig } from '../config/api';
+import { API_CONFIG } from '../config/api';
 
 export interface DocumentInput {
   id: string;
@@ -65,7 +65,7 @@ class BatchProcessingService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${apiConfig.baseURL}/api/v1/batch`;
+    this.baseUrl = `${API_CONFIG.baseUrl}/api/v1/batch`;
   }
 
   async createBatchJob(request: BatchJobRequest): Promise<{

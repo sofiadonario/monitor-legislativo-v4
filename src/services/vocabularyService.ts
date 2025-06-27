@@ -1,4 +1,4 @@
-import { apiConfig } from '../config/api';
+import { API_CONFIG } from '../config/api';
 
 export interface Concept {
   uri: string;
@@ -55,7 +55,7 @@ class VocabularyService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${apiConfig.baseURL}/api/v1/vocabulary`;
+    this.baseUrl = `${API_CONFIG.baseUrl}/api/v1/vocabulary`;
   }
 
   async searchConcepts(

@@ -1,4 +1,4 @@
-import { apiConfig } from '../config/api';
+import { API_CONFIG } from '../config/api';
 
 export interface GraphNode {
   id: string;
@@ -164,7 +164,7 @@ class KnowledgeGraphService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${apiConfig.baseUrl}/api/v1/knowledge-graph`;
+    this.baseUrl = `${API_CONFIG.baseUrl}/api/v1/knowledge-graph`;
   }
 
   async buildKnowledgeGraph(

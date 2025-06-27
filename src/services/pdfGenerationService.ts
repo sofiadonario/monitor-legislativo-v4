@@ -1,5 +1,5 @@
 import html2canvas from 'html2canvas';
-import { apiConfig } from '../config/api';
+import { API_CONFIG } from '../config/api';
 
 export interface DocumentExportOptions {
   format: 'pdf' | 'word' | 'html' | 'txt' | 'citation';
@@ -54,7 +54,7 @@ class PdfGenerationService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = apiConfig.baseUrl;
+    this.baseUrl = API_CONFIG.baseUrl;
   }
 
   // Generate PDF from document content

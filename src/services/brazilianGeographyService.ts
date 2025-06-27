@@ -1,4 +1,4 @@
-import { apiConfig } from '../config/api';
+import { API_CONFIG } from '../config/api';
 
 export interface BrazilianMunicipality {
   name: string;
@@ -54,7 +54,7 @@ class BrazilianGeographyService {
   private statesCache: BrazilianState[] | null = null;
 
   constructor() {
-    this.baseUrl = apiConfig.baseUrl;
+    this.baseUrl = API_CONFIG.baseUrl;
   }
 
   // Load Brazilian municipalities data (from datasets-br/city-codes)
