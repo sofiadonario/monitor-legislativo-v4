@@ -52,6 +52,41 @@ try:
 except ImportError as e:
     print(f"Warning: AI Document Analysis API not available: {e}")
     AI_DOCUMENT_ANALYSIS_API_AVAILABLE = False
+
+try:
+    from .api import knowledge_graph
+    KNOWLEDGE_GRAPH_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Knowledge Graph API not available: {e}")
+    KNOWLEDGE_GRAPH_API_AVAILABLE = False
+
+try:
+    from .api import spatial_analysis_api
+    SPATIAL_ANALYSIS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Spatial Analysis API not available: {e}")
+    SPATIAL_ANALYSIS_API_AVAILABLE = False
+
+try:
+    from .api import vocabulary_api
+    VOCABULARY_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Vocabulary API not available: {e}")
+    VOCABULARY_API_AVAILABLE = False
+
+try:
+    from .api import batch_processing_api
+    BATCH_PROCESSING_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Batch Processing API not available: {e}")
+    BATCH_PROCESSING_API_AVAILABLE = False
+
+try:
+    from .api import government_standards_api
+    GOVERNMENT_STANDARDS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Government Standards API not available: {e}")
+    GOVERNMENT_STANDARDS_API_AVAILABLE = False
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
 from core.database.two_tier_manager import get_two_tier_manager
@@ -102,6 +137,21 @@ if AI_AGENTS_API_AVAILABLE:
 
 if AI_DOCUMENT_ANALYSIS_API_AVAILABLE:
     app.include_router(ai_document_analysis.router)
+
+if KNOWLEDGE_GRAPH_API_AVAILABLE:
+    app.include_router(knowledge_graph.router)
+
+if SPATIAL_ANALYSIS_API_AVAILABLE:
+    app.include_router(spatial_analysis_api.router)
+
+if VOCABULARY_API_AVAILABLE:
+    app.include_router(vocabulary_api.router)
+
+if BATCH_PROCESSING_API_AVAILABLE:
+    app.include_router(batch_processing_api.router)
+
+if GOVERNMENT_STANDARDS_API_AVAILABLE:
+    app.include_router(government_standards_api.router)
 
 
 @app.on_event("startup")
@@ -294,6 +344,46 @@ async def read_root():
             "🎓 Academic Research Integration with Cost Optimization"
         ])
     
+    if SPATIAL_ANALYSIS_API_AVAILABLE:
+        features.extend([
+            "🗺️ Advanced Spatial Document Analysis with Brazilian Geography",
+            "📍 Automatic Geographic Reference Extraction from Legislative Texts",
+            "🌍 Reverse Geocoding with Brazilian Municipality Context",
+            "🔗 Spatial Document Clustering and Proximity Analysis",
+            "🏛️ Jurisdiction Level Classification (Federal, State, Municipal)",
+            "📊 Distance-based Document Correlation and Relationship Detection"
+        ])
+    
+    if VOCABULARY_API_AVAILABLE:
+        features.extend([
+            "📚 W3C SKOS-Compliant Vocabulary Management",
+            "🌲 Interactive Hierarchical Vocabulary Navigation",
+            "🔍 Vocabulary-Enhanced Query Expansion",
+            "🇧🇷 Brazilian Legislative Terminology with Transport Focus",
+            "🔗 Semantic Concept Relationships (Broader, Narrower, Related)",
+            "📤 RDF/JSON-LD Export for Semantic Web Integration"
+        ])
+    
+    if BATCH_PROCESSING_API_AVAILABLE:
+        features.extend([
+            "⚙️ Parallel Batch Document Processing with AI Enhancement",
+            "📊 Real-time Progress Tracking and Queue Management",
+            "🔄 7-Step Processing Pipeline (Entities, Knowledge Graph, Patterns, Spatial, Standards, AI, Export)",
+            "📈 Resource Utilization Monitoring and Performance Statistics",
+            "📤 Bulk Export with Multiple Format Support",
+            "🎯 Priority-based Job Scheduling and Management"
+        ])
+    
+    if GOVERNMENT_STANDARDS_API_AVAILABLE:
+        features.extend([
+            "🏛️ Brazilian Government Document Standards Validation",
+            "📊 5-Level Digitization Maturity Model Assessment",
+            "✅ LexML URN Validation and Metadata Completeness Checking",
+            "🔍 Quality Scoring with Compliance Percentage",
+            "🔄 Processing Pipeline Recommendations",
+            "📋 Document Validation Rules and Government Compliance"
+        ])
+    
     return {
         "message": "Welcome to the Monitor Legislativo Two-Tier Service",
         "version": "2.0.0",
@@ -304,7 +394,12 @@ async def read_root():
             "advanced_geocoding_api": ADVANCED_GEOCODING_API_AVAILABLE,
             "document_validation_api": DOCUMENT_VALIDATION_API_AVAILABLE,
             "ai_agents_api": AI_AGENTS_API_AVAILABLE,
-            "ai_document_analysis_api": AI_DOCUMENT_ANALYSIS_API_AVAILABLE
+            "ai_document_analysis_api": AI_DOCUMENT_ANALYSIS_API_AVAILABLE,
+            "knowledge_graph_api": KNOWLEDGE_GRAPH_API_AVAILABLE,
+            "spatial_analysis_api": SPATIAL_ANALYSIS_API_AVAILABLE,
+            "vocabulary_api": VOCABULARY_API_AVAILABLE,
+            "batch_processing_api": BATCH_PROCESSING_API_AVAILABLE,
+            "government_standards_api": GOVERNMENT_STANDARDS_API_AVAILABLE
         }
     }
 
