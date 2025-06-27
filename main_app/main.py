@@ -31,6 +31,27 @@ try:
 except ImportError as e:
     print(f"Warning: Advanced Geocoding API not available: {e}")
     ADVANCED_GEOCODING_API_AVAILABLE = False
+
+try:
+    from .api import document_validation
+    DOCUMENT_VALIDATION_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Document Validation API not available: {e}")
+    DOCUMENT_VALIDATION_API_AVAILABLE = False
+
+try:
+    from .api import ai_agents
+    AI_AGENTS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: AI Agents API not available: {e}")
+    AI_AGENTS_API_AVAILABLE = False
+
+try:
+    from .api import ai_document_analysis
+    AI_DOCUMENT_ANALYSIS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: AI Document Analysis API not available: {e}")
+    AI_DOCUMENT_ANALYSIS_API_AVAILABLE = False
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
 from core.database.two_tier_manager import get_two_tier_manager
@@ -72,6 +93,15 @@ if ML_ANALYSIS_API_AVAILABLE:
 
 if ADVANCED_GEOCODING_API_AVAILABLE:
     app.include_router(advanced_geocoding.router)
+
+if DOCUMENT_VALIDATION_API_AVAILABLE:
+    app.include_router(document_validation.router)
+
+if AI_AGENTS_API_AVAILABLE:
+    app.include_router(ai_agents.router)
+
+if AI_DOCUMENT_ANALYSIS_API_AVAILABLE:
+    app.include_router(ai_document_analysis.router)
 
 
 @app.on_event("startup")
@@ -140,6 +170,40 @@ async def startup_event():
         else:
             logger.info("ℹ️  Advanced geocoding service not available - skipping initialization")
         
+        # Initialize document validation service (if available)
+        if DOCUMENT_VALIDATION_API_AVAILABLE:
+            try:
+                from .api.document_validation import get_document_validator
+                document_validator = await get_document_validator()
+                logger.info("✅ Document validation service initialized successfully")
+            except Exception as val_e:
+                logger.warning(f"⚠️  Document validation service initialization failed: {val_e}")
+        else:
+            logger.info("ℹ️  Document validation service not available - skipping initialization")
+        
+        # Initialize AI agents service (if available)
+        if AI_AGENTS_API_AVAILABLE:
+            try:
+                from .api.ai_agents import get_agent_manager
+                agent_manager = await get_agent_manager()
+                logger.info("✅ AI agents service initialized successfully")
+            except Exception as ai_e:
+                logger.warning(f"⚠️  AI agents service initialization failed: {ai_e}")
+        else:
+            logger.info("ℹ️  AI agents service not available - skipping initialization")
+        
+        # Initialize AI document analysis service (if available)
+        if AI_DOCUMENT_ANALYSIS_API_AVAILABLE:
+            try:
+                from .api.ai_document_analysis import get_analysis_engine, get_citation_generator
+                analysis_engine = await get_analysis_engine()
+                citation_generator = await get_citation_generator()
+                logger.info("✅ AI document analysis service initialized successfully")
+            except Exception as analysis_e:
+                logger.warning(f"⚠️  AI document analysis service initialization failed: {analysis_e}")
+        else:
+            logger.info("ℹ️  AI document analysis service not available - skipping initialization")
+        
         logger.info("🚀 Monitor Legislativo Two-Tier Service startup complete")
         
     except Exception as e:
@@ -205,6 +269,31 @@ async def read_root():
             "📐 Haversine Distance Calculations and Spatial Analysis"
         ])
     
+    if DOCUMENT_VALIDATION_API_AVAILABLE:
+        features.extend([
+            "✅ Document Validation Framework with Quality Metrics",
+            "🔍 URN Format Validation for Brazilian Legislative Standards",
+            "📊 Metadata Completeness Assessment and Scoring",
+            "🛡️ Data Integrity Monitoring and Health Checks"
+        ])
+    
+    if AI_AGENTS_API_AVAILABLE:
+        features.extend([
+            "🤖 Production-Ready AI Agents with Dual-Memory Architecture",
+            "💰 Cost Monitoring and 60-80% Semantic Caching Optimization",
+            "🧠 Specialized Brazilian Legislative Research Assistance"
+        ])
+    
+    if AI_DOCUMENT_ANALYSIS_API_AVAILABLE:
+        features.extend([
+            "📄 AI-Powered Document Summarization with Academic Focus",
+            "🔍 Intelligent Metadata Extraction and Enhancement",
+            "📊 Comprehensive Content Analysis and Quality Metrics",
+            "🔗 Document Relationship Discovery and Legal Connections",
+            "📚 AI-Enhanced Citation Generation (ABNT, APA, Chicago, Vancouver)",
+            "🎓 Academic Research Integration with Cost Optimization"
+        ])
+    
     return {
         "message": "Welcome to the Monitor Legislativo Two-Tier Service",
         "version": "2.0.0",
@@ -212,7 +301,10 @@ async def read_root():
         "components_status": {
             "geographic_api": GEOGRAPHIC_API_AVAILABLE,
             "ml_analysis_api": ML_ANALYSIS_API_AVAILABLE,
-            "advanced_geocoding_api": ADVANCED_GEOCODING_API_AVAILABLE
+            "advanced_geocoding_api": ADVANCED_GEOCODING_API_AVAILABLE,
+            "document_validation_api": DOCUMENT_VALIDATION_API_AVAILABLE,
+            "ai_agents_api": AI_AGENTS_API_AVAILABLE,
+            "ai_document_analysis_api": AI_DOCUMENT_ANALYSIS_API_AVAILABLE
         }
     }
 
