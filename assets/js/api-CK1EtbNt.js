@@ -52,6 +52,7 @@ const buildApiUrl = (endpoint, params) => {
   return url;
 };
 const API_CONFIG = {
+  baseUrl: getApiBaseUrl(),
   timeout: 3e4,
   headers: {
     "Content-Type": "application/json",

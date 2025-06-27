@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/Dashboard-Da8AjoJY.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/api-DW14Y_8v.js","assets/css/Dashboard-MxTedLtk.css","assets/js/LexMLSearchPage-D3x8nJUM.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/Dashboard-BIcc2mI2.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/api-CK1EtbNt.js","assets/css/Dashboard-MxTedLtk.css","assets/js/LexMLSearchPage-C49_JYVf.js","assets/js/KnowledgeGraphViewer-Br_lx_WU.js","assets/js/ResearchWorkflow-DXHIjDPT.js","assets/js/GlassCard-C8VsNocO.js","assets/css/GlassCard-CuHxkkb4.css","assets/js/VocabularyNavigator-gAAbNX1n.js"])))=>i.map(i=>d[i]);
 import { r as requireReact, a as requireReactDom, g as getDefaultExportFromCjs } from "./react-vendor-CSPBeBBz.js";
 import { r as reactExports } from "./leaflet-vendor-BcXhkSxI.js";
 (function polyfill() {
@@ -208,14 +208,23 @@ const LoadingSpinner = ({
     /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "loading-message", children: message })
   ] });
 };
-const Dashboard = reactExports.lazy(() => __vitePreload(() => import("./Dashboard-Da8AjoJY.js").then((n) => n.D), true ? __vite__mapDeps([0,1,2,3,4]) : void 0));
-const LexMLSearchPage = reactExports.lazy(() => __vitePreload(() => import("./LexMLSearchPage-D3x8nJUM.js"), true ? __vite__mapDeps([5,1,2,3]) : void 0));
+const Dashboard = reactExports.lazy(() => __vitePreload(() => import("./Dashboard-BIcc2mI2.js").then((n) => n.D), true ? __vite__mapDeps([0,1,2,3,4]) : void 0));
+const LexMLSearchPage = reactExports.lazy(() => __vitePreload(() => import("./LexMLSearchPage-C49_JYVf.js"), true ? __vite__mapDeps([5,1,2,3]) : void 0));
+const KnowledgeGraphViewer = reactExports.lazy(() => __vitePreload(() => import("./KnowledgeGraphViewer-Br_lx_WU.js"), true ? __vite__mapDeps([6,1,2,3]) : void 0));
+const ResearchWorkflow = reactExports.lazy(() => __vitePreload(() => import("./ResearchWorkflow-DXHIjDPT.js"), true ? __vite__mapDeps([7,1,2,8,9]) : void 0));
+const VocabularyNavigator = reactExports.lazy(() => __vitePreload(() => import("./VocabularyNavigator-gAAbNX1n.js"), true ? __vite__mapDeps([10,1,2,8,9]) : void 0));
 const App = () => {
   const [currentPage, setCurrentPage] = reactExports.useState("dashboard");
   const renderCurrentPage = () => {
     switch (currentPage) {
       case "search":
         return /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading LexML Search..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx(LexMLSearchPage, {}) });
+      case "knowledge-graph":
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading Knowledge Graph..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(KnowledgeGraphViewer, {}) }) });
+      case "research":
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading Research Workflow..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ResearchWorkflow, {}) }) });
+      case "vocabulary":
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading Vocabulary Navigator..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(VocabularyNavigator, {}) }) });
       case "dashboard":
       default:
         return /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading Dashboard..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx(Dashboard, {}) });
@@ -239,6 +248,30 @@ const App = () => {
             onClick: () => setCurrentPage("search"),
             className: `px-3 py-1 text-sm rounded ${currentPage === "search" ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:text-gray-900"}`,
             children: "LexML Search"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setCurrentPage("research"),
+            className: `px-3 py-1 text-sm rounded ${currentPage === "research" ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:text-gray-900"}`,
+            children: "Research Workflow"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setCurrentPage("vocabulary"),
+            className: `px-3 py-1 text-sm rounded ${currentPage === "vocabulary" ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:text-gray-900"}`,
+            children: "Vocabulary"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setCurrentPage("knowledge-graph"),
+            className: `px-3 py-1 text-sm rounded ${currentPage === "knowledge-graph" ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:text-gray-900"}`,
+            children: "Knowledge Graph"
           }
         )
       ] })

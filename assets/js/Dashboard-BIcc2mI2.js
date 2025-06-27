@@ -1,7 +1,7 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-1is-_t1U.js","assets/js/index-BYGq6Ng0.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/css/index-CAI7Z5Wf.css","assets/css/OptimizedMap-D0H0UQSZ.css","assets/js/TabbedSidebar-JMZIN1ub.js","assets/css/TabbedSidebar-BUx3S1Ap.css","assets/js/ExportPanel-B4oO_6BS.js","assets/js/api-DW14Y_8v.js","assets/js/utils-Cs_fMHvp.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/AIResearchAssistant-DoAHUYra.js","assets/js/DocumentValidationPanel-BQBvTHRZ.js"])))=>i.map(i=>d[i]);
-import { _ as __vitePreload, j as jsxRuntimeExports, L as LoadingSpinner } from "./index-BYGq6Ng0.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-CsTctND5.js","assets/js/index-CREcncgK.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/css/index-CAI7Z5Wf.css","assets/css/OptimizedMap-D0H0UQSZ.css","assets/js/TabbedSidebar-B_rdeaqy.js","assets/css/TabbedSidebar-BUx3S1Ap.css","assets/js/ExportPanel-CzyeTXVd.js","assets/js/api-CK1EtbNt.js","assets/js/utils-Cs_fMHvp.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/AIResearchAssistant-DjiJUMn0.js","assets/js/DocumentValidationPanel-g3CKjj8_.js"])))=>i.map(i=>d[i]);
+import { _ as __vitePreload, j as jsxRuntimeExports, L as LoadingSpinner } from "./index-CREcncgK.js";
 import { r as reactExports } from "./leaflet-vendor-BcXhkSxI.js";
-import { A as API_CONFIG, g as getApiBaseUrl } from "./api-DW14Y_8v.js";
+import { A as API_CONFIG, g as getApiBaseUrl } from "./api-CK1EtbNt.js";
 var __async$4 = (__this, __arguments, generator) => {
   return new Promise((resolve, reject) => {
     var fulfilled = (value) => {
@@ -1568,11 +1568,11 @@ var __async = (__this, __arguments, generator) => {
     step((generator = generator.apply(__this, __arguments)).next());
   });
 };
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-1is-_t1U.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-JMZIN1ub.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-B4oO_6BS.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10,11]) : void 0));
-const AIResearchAssistant = reactExports.lazy(() => __vitePreload(() => import("./AIResearchAssistant-DoAHUYra.js"), true ? __vite__mapDeps([12,1,2,3,4,9]) : void 0));
-const DocumentValidationPanel = reactExports.lazy(() => __vitePreload(() => import("./DocumentValidationPanel-BQBvTHRZ.js"), true ? __vite__mapDeps([13,1,2,3,4,9]) : void 0));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-CsTctND5.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-B_rdeaqy.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-CzyeTXVd.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10,11]) : void 0));
+const AIResearchAssistant = reactExports.lazy(() => __vitePreload(() => import("./AIResearchAssistant-DjiJUMn0.js"), true ? __vite__mapDeps([12,1,2,3,4,9]) : void 0));
+const DocumentValidationPanel = reactExports.lazy(() => __vitePreload(() => import("./DocumentValidationPanel-g3CKjj8_.js"), true ? __vite__mapDeps([13,1,2,3,4,9]) : void 0));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,

@@ -1,6 +1,6 @@
-import { j as jsxRuntimeExports } from "./index-BYGq6Ng0.js";
+import { j as jsxRuntimeExports } from "./index-CREcncgK.js";
 import { r as reactExports } from "./leaflet-vendor-BcXhkSxI.js";
-import { b as buildApiUrl, A as API_CONFIG, C as CORS_CONFIG } from "./api-DW14Y_8v.js";
+import { b as buildApiUrl, A as API_CONFIG, C as CORS_CONFIG } from "./api-CK1EtbNt.js";
 import { g as getDefaultExportFromCjs } from "./react-vendor-CSPBeBBz.js";
 import { r as requirePapaparse_min, h as html2canvas } from "./utils-Cs_fMHvp.js";
 const exportToBibTeX = (documents) => {
