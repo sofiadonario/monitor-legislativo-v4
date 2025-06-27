@@ -1,8 +1,7 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-3oc5AkkT.js","assets/js/index-C5gwQBOf.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/css/index-CAI7Z5Wf.css","assets/css/OptimizedMap-D0H0UQSZ.css","assets/js/TabbedSidebar-DgTh56X7.js","assets/css/TabbedSidebar-BUx3S1Ap.css","assets/js/ExportPanel-BzGnjinh.js","assets/js/api-0s8aYwKN.js","assets/js/utils-Cs_fMHvp.js","assets/css/ExportPanel-rPKiQ0eQ.css"])))=>i.map(i=>d[i]);
-import { _ as __vitePreload, j as jsxRuntimeExports, L as LoadingSpinner } from "./index-C5gwQBOf.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/js/OptimizedMap-1is-_t1U.js","assets/js/index-BYGq6Ng0.js","assets/js/react-vendor-CSPBeBBz.js","assets/js/leaflet-vendor-BcXhkSxI.js","assets/css/index-CAI7Z5Wf.css","assets/css/OptimizedMap-D0H0UQSZ.css","assets/js/TabbedSidebar-JMZIN1ub.js","assets/css/TabbedSidebar-BUx3S1Ap.css","assets/js/ExportPanel-B4oO_6BS.js","assets/js/api-DW14Y_8v.js","assets/js/utils-Cs_fMHvp.js","assets/css/ExportPanel-rPKiQ0eQ.css","assets/js/AIResearchAssistant-DoAHUYra.js","assets/js/DocumentValidationPanel-BQBvTHRZ.js"])))=>i.map(i=>d[i]);
+import { _ as __vitePreload, j as jsxRuntimeExports, L as LoadingSpinner } from "./index-BYGq6Ng0.js";
 import { r as reactExports } from "./leaflet-vendor-BcXhkSxI.js";
-import { A as API_CONFIG, g as getApiBaseUrl } from "./api-0s8aYwKN.js";
-import "./react-vendor-CSPBeBBz.js";
+import { A as API_CONFIG, g as getApiBaseUrl } from "./api-DW14Y_8v.js";
 var __async$4 = (__this, __arguments, generator) => {
   return new Promise((resolve, reject) => {
     var fulfilled = (value) => {
@@ -1569,12 +1568,16 @@ var __async = (__this, __arguments, generator) => {
     step((generator = generator.apply(__this, __arguments)).next());
   });
 };
-const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-3oc5AkkT.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
-const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-DgTh56X7.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
-const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-BzGnjinh.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10,11]) : void 0));
+const OptimizedMap = reactExports.lazy(() => __vitePreload(() => import("./OptimizedMap-1is-_t1U.js"), true ? __vite__mapDeps([0,1,2,3,4,5]) : void 0));
+const TabbedSidebar = reactExports.lazy(() => __vitePreload(() => import("./TabbedSidebar-JMZIN1ub.js"), true ? __vite__mapDeps([6,1,2,3,4,7]) : void 0));
+const ExportPanel = reactExports.lazy(() => __vitePreload(() => import("./ExportPanel-B4oO_6BS.js"), true ? __vite__mapDeps([8,1,2,3,4,9,10,11]) : void 0));
+const AIResearchAssistant = reactExports.lazy(() => __vitePreload(() => import("./AIResearchAssistant-DoAHUYra.js"), true ? __vite__mapDeps([12,1,2,3,4,9]) : void 0));
+const DocumentValidationPanel = reactExports.lazy(() => __vitePreload(() => import("./DocumentValidationPanel-BQBvTHRZ.js"), true ? __vite__mapDeps([13,1,2,3,4,9]) : void 0));
 const initialState = {
   sidebarOpen: true,
   exportPanelOpen: false,
+  aiAssistantOpen: false,
+  validationPanelOpen: false,
   selectedState: void 0,
   selectedMunicipality: void 0,
   filters: {
@@ -1586,7 +1589,8 @@ const initialState = {
     keywords: [],
     dateFrom: void 0,
     dateTo: void 0
-  }
+  },
+  selectedDocuments: []
 };
 const dashboardReducer = (state, action) => {
   switch (action.type) {
@@ -1596,6 +1600,10 @@ const dashboardReducer = (state, action) => {
       return __spreadProps(__spreadValues({}, state), { sidebarOpen: action.payload });
     case "TOGGLE_EXPORT_PANEL":
       return __spreadProps(__spreadValues({}, state), { exportPanelOpen: !state.exportPanelOpen });
+    case "TOGGLE_AI_ASSISTANT":
+      return __spreadProps(__spreadValues({}, state), { aiAssistantOpen: !state.aiAssistantOpen });
+    case "TOGGLE_VALIDATION_PANEL":
+      return __spreadProps(__spreadValues({}, state), { validationPanelOpen: !state.validationPanelOpen });
     case "SELECT_STATE":
       return __spreadProps(__spreadValues({}, state), { selectedState: action.payload, selectedMunicipality: void 0 });
     case "SELECT_MUNICIPALITY":
@@ -1604,6 +1612,8 @@ const dashboardReducer = (state, action) => {
       return __spreadProps(__spreadValues({}, state), { selectedState: void 0, selectedMunicipality: void 0 });
     case "UPDATE_FILTERS":
       return __spreadProps(__spreadValues({}, state), { filters: action.payload });
+    case "SET_SELECTED_DOCUMENTS":
+      return __spreadProps(__spreadValues({}, state), { selectedDocuments: action.payload });
     default:
       return state;
   }
@@ -1614,7 +1624,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = reactExports.useState(true);
   const [error, setError] = reactExports.useState(null);
   const [usingFallbackData, setUsingFallbackData] = reactExports.useState(false);
-  const { sidebarOpen, exportPanelOpen, selectedState, selectedMunicipality, filters } = state;
+  const { sidebarOpen, exportPanelOpen, aiAssistantOpen, validationPanelOpen, selectedState, selectedMunicipality, filters, selectedDocuments } = state;
   const mainContentRef = reactExports.useRef(null);
   const debounceTimeoutRef = reactExports.useRef(null);
   const abortControllerRef = reactExports.useRef(null);
@@ -1670,6 +1680,8 @@ const Dashboard = () => {
   const onFiltersChange = reactExports.useCallback((newFilters) => dispatch({ type: "UPDATE_FILTERS", payload: newFilters }), []);
   const toggleSidebar = reactExports.useCallback(() => dispatch({ type: "TOGGLE_SIDEBAR" }), []);
   const toggleExportPanel = reactExports.useCallback(() => dispatch({ type: "TOGGLE_EXPORT_PANEL" }), []);
+  const toggleAIAssistant = reactExports.useCallback(() => dispatch({ type: "TOGGLE_AI_ASSISTANT" }), []);
+  const toggleValidationPanel = reactExports.useCallback(() => dispatch({ type: "TOGGLE_VALIDATION_PANEL" }), []);
   const filteredDocuments = reactExports.useMemo(() => {
     if (!documents || !Array.isArray(documents)) {
       return [];
@@ -1721,6 +1733,8 @@ const Dashboard = () => {
               " States"
             ] })
           ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "ai-btn", onClick: toggleAIAssistant, "aria-controls": "ai-assistant", "aria-expanded": aiAssistantOpen, children: "🤖 AI Assistant" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "validation-btn", onClick: toggleValidationPanel, "aria-controls": "validation-panel", "aria-expanded": validationPanelOpen, children: "🛡️ Validate" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: "export-btn", onClick: toggleExportPanel, "aria-controls": "export-panel", "aria-expanded": exportPanelOpen, children: "📊 Export" })
         ] })
       ] }),
@@ -1766,10 +1780,31 @@ const Dashboard = () => {
         onClose: toggleExportPanel,
         documents: filteredDocuments || []
       }
+    ) }),
+    aiAssistantOpen && /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading AI assistant..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      AIResearchAssistant,
+      {
+        selectedDocuments,
+        onDocumentAnalyzed: (analysis) => console.log("Document analyzed:", analysis),
+        className: "ai-assistant-panel"
+      }
+    ) }),
+    validationPanelOpen && /* @__PURE__ */ jsxRuntimeExports.jsx(reactExports.Suspense, { fallback: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSpinner, { message: "Loading validation panel..." }), children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DocumentValidationPanel,
+      {
+        documents: selectedDocuments,
+        onValidationComplete: (results) => console.log("Validation complete:", results),
+        className: "validation-panel"
+      }
     ) })
   ] });
 };
 var Dashboard_default = Dashboard;
+const Dashboard$1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  default: Dashboard_default
+}, Symbol.toStringTag, { value: "Module" }));
 export {
-  Dashboard_default as default
+  Dashboard$1 as D,
+  apiClient_default as a
 };

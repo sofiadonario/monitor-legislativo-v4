@@ -8,6 +8,60 @@
   overflow: hidden;
 }
 
+/* AI Assistant and Validation Panel positioning */
+.ai-assistant-panel {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  width: 400px;
+  max-height: calc(100vh - 100px);
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.validation-panel {
+  position: fixed;
+  top: 80px;
+  right: 440px;
+  width: 450px;
+  max-height: calc(100vh - 100px);
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Toolbar button styles */
+.ai-btn, .validation-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.ai-btn:hover {
+  background-color: #45a049;
+}
+
+.validation-btn {
+  background-color: #2196f3;
+}
+
+.validation-btn:hover {
+  background-color: #1976d2;
+}
+
 /* Error state styles */
 .dashboard-error {
   display: flex;
