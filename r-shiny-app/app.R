@@ -31,23 +31,24 @@ geography_data <- load_brazil_geography()
 
 # Create main UI function that requires authentication
 create_main_ui <- function() {
-  dashboardPage(
-    
-    # Header
-    dashboardHeader(
-      title = "Monitor Legislativo Acadêmico",
-      titleWidth = 300,
+  tryCatch({
+    dashboardPage(
       
-      # User info and logout in header
-      tags$li(class = "dropdown",
-              style = "padding: 15px 10px; margin-right: 10px;",
-              tags$span(style = "color: white;",
-                       icon("user"), " Usuário conectado | "),
-              actionLink("logout_link", 
-                        tags$span(style = "color: white;", 
-                                 icon("sign-out"), " Sair"))
-      )
-    ),
+      # Header
+      dashboardHeader(
+        title = "Monitor Legislativo Acadêmico",
+        titleWidth = 300,
+        
+        # User info and logout in header
+        tags$li(class = "dropdown",
+                style = "padding: 15px 10px; margin-right: 10px;",
+                tags$span(style = "color: white;",
+                         icon("user"), " Usuário conectado | "),
+                actionLink("logout_link", 
+                          tags$span(style = "color: white;", 
+                                   icon("sign-out"), " Sair"))
+        )
+      ),
   
   # Sidebar
   dashboardSidebar(
@@ -77,8 +78,7 @@ create_main_ui <- function() {
       "Período:",
       start = Sys.Date() - 365,  # Last year
       end = Sys.Date(),
-      format = "dd/mm/yyyy",
-      language = "pt-BR"
+      format = "dd/mm/yyyy"
     ),
     
     # Document types
@@ -528,6 +528,16 @@ create_main_ui <- function() {
     )
   )
   )
+  }, error = function(e) {
+    # Return simple UI if main UI fails
+    fluidPage(
+      h2("⚠️ Dashboard Loading Error"),
+      p("There was an error loading the main dashboard."),
+      p("Error:", e$message),
+      br(),
+      actionButton("logout_link", "Back to Login", class = "btn-warning")
+    )
+  })
 }
 
 # Main UI with authentication wrapper
@@ -540,6 +550,18 @@ ui <- fluidPage(
 # =============================================================================
 
 server <- function(input, output, session) {
+  
+  # Add CORS headers for React integration
+  session$allowReconnect("force")
+  
+  # Set CORS headers for all responses
+  observe({
+    session$sendCustomMessage(type = 'set-headers', message = list(
+      "Access-Control-Allow-Origin" = "*",
+      "Access-Control-Allow-Methods" = "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers" = "Content-Type, Authorization, X-Requested-With"
+    ))
+  })
   
   # Initialize authentication state
   if (is.null(session$userData$authenticated)) {
@@ -556,7 +578,10 @@ server <- function(input, output, session) {
   observe({
     auth_state()  # Make sure this reactive runs
     
+    flog.info("UI Observer triggered - Auth state: %s", auth_state())
+    
     if (!is_authenticated(session)) {
+      flog.info("User not authenticated - showing login UI")
       # Show login UI
       output$ui <- renderUI({
         create_login_ui()
@@ -566,13 +591,22 @@ server <- function(input, output, session) {
       handle_login(input, output, session)
       
     } else {
+      flog.info("User authenticated - attempting to load main UI")
       # Show main application UI
       output$ui <- renderUI({
-        create_main_ui()
+        tryCatch({
+          result <- create_main_ui()
+          flog.info("Main UI created successfully")
+          result
+        }, error = function(e) {
+          flog.error("Error creating main UI: %s", e$message)
+          fluidPage(
+            h2("⚠️ Dashboard Error"),
+            p("Error loading dashboard:", e$message),
+            actionButton("logout_link", "Back to Login")
+          )
+        })
       })
-      
-      # Log successful UI switch
-      flog.info("Switched to main UI for authenticated user")
     }
   })
   
@@ -1033,5 +1067,56 @@ server <- function(input, output, session) {
 # RUN APPLICATION
 # =============================================================================
 
+# Add custom HTTP handlers for API endpoints
+addResourcePath("health", tempdir())
+
+# Health endpoint handler
+health_handler <- function(req) {
+  # Set CORS headers
+  headers <- list(
+    "Access-Control-Allow-Origin" = "*",
+    "Access-Control-Allow-Methods" = "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers" = "Content-Type, Authorization, X-Requested-With",
+    "Content-Type" = "application/json"
+  )
+  
+  # Handle OPTIONS preflight request
+  if (req$REQUEST_METHOD == "OPTIONS") {
+    return(list(
+      status = 200L,
+      headers = headers,
+      body = ""
+    ))
+  }
+  
+  # Health check response
+  response_body <- jsonlite::toJSON(list(
+    status = "healthy",
+    timestamp = Sys.time(),
+    version = "1.0.0"
+  ), auto_unbox = TRUE)
+  
+  return(list(
+    status = 200L,
+    headers = headers,
+    body = response_body
+  ))
+}
+
+# Register the health handler
+options(shiny.port = 3838)
+options(shiny.host = "0.0.0.0")
+
 # Create the Shiny app object
-shinyApp(ui = ui, server = server)
+app <- shinyApp(ui = ui, server = server)
+
+# Add health endpoint as a custom handler
+app$httpHandler <- function(req) {
+  if (req$PATH_INFO == "/health") {
+    return(health_handler(req))
+  }
+  # Return NULL to let Shiny handle other requests normally
+  return(NULL)
+}
+
+app

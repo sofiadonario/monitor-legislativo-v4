@@ -80,7 +80,8 @@ const productionConfig: Partial<RShinyConfig> = {
   allowedOrigins: [
     'http://localhost:3838',
     'https://*.shinyapps.io',
-    'https://sofiadonario.github.io'
+    'https://sofiadonario.github.io',
+    'https://sofiadonario.github.io/monitor-legislativo-v4'
   ],
   // More restrictive sandbox for production
   sandbox: 'allow-same-origin allow-scripts allow-forms allow-popups',
