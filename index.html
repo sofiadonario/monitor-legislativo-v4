@@ -13,7 +13,8 @@
       style-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com;
       img-src 'self' data: https: blob: https://tile.openstreetmap.org https://cdnjs.cloudflare.com;
       font-src 'self' https: data:;
-      connect-src 'self' https://dadosabertos.camara.leg.br https://legis.senado.leg.br https://www.lexml.gov.br https://servicodados.ibge.gov.br https://monitor-legislativo-v4-production.up.railway.app;
+      connect-src 'self' https://dadosabertos.camara.leg.br https://legis.senado.leg.br https://www.lexml.gov.br https://servicodados.ibge.gov.br https://monitor-legislativo-v4-production.up.railway.app http://localhost:3838 https://*.shinyapps.io;
+      frame-src 'self' http://localhost:3838 https://*.shinyapps.io;
       object-src 'none';
       base-uri 'self';
       form-action 'self';

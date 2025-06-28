@@ -76,10 +76,11 @@ const developmentConfig: Partial<RShinyConfig> = {
 // Production configuration
 const productionConfig: Partial<RShinyConfig> = {
   // Use environment variable for production URL
-  baseUrl: process.env.REACT_APP_RSHINY_URL || 'https://your-rshiny-app.shinyapps.io',
+  baseUrl: process.env.REACT_APP_RSHINY_URL || 'http://localhost:3838',
   allowedOrigins: [
-    'https://your-rshiny-app.shinyapps.io',
-    'https://your-domain.com'
+    'http://localhost:3838',
+    'https://*.shinyapps.io',
+    'https://sofiadonario.github.io'
   ],
   // More restrictive sandbox for production
   sandbox: 'allow-same-origin allow-scripts allow-forms allow-popups',

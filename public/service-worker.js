@@ -175,8 +175,10 @@ async function handleStaticAsset(request) {
     const response = await fetch(request);
     
     if (response.ok) {
-      // Cache the response
-      cache.put(request, response.clone());
+      // Only cache valid URL schemes (skip chrome-extension://)
+      if (request.url.startsWith('http://') || request.url.startsWith('https://')) {
+        cache.put(request, response.clone());
+      }
       
       const headers = new Headers(response.headers);
       headers.set('X-Cache', 'MISS');

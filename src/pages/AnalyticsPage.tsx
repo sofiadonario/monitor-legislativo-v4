@@ -7,16 +7,16 @@ import { LegislativeDocument, SearchFilters } from '../types';
 import '../styles/pages/AnalyticsPage.css';
 
 interface AnalyticsPageProps {
-  documents: LegislativeDocument[];
-  filters: SearchFilters;
+  documents?: LegislativeDocument[];
+  filters?: SearchFilters;
   selectedState?: string;
   selectedMunicipality?: string;
   onFiltersChange?: (filters: SearchFilters) => void;
 }
 
 const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
-  documents,
-  filters,
+  documents = [],
+  filters = {},
   selectedState,
   selectedMunicipality,
   onFiltersChange
