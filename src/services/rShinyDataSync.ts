@@ -29,13 +29,15 @@ class RShinyDataSyncService {
   }
 
   private initializeConnectionMonitoring(): void {
-    // Check R Shiny availability every 30 seconds
+    // Only check R Shiny availability every 2 minutes to reduce load
     setInterval(() => {
       this.checkRShinyHealth();
-    }, 30000);
+    }, 120000); // 2 minutes instead of 30 seconds
 
-    // Initial health check
-    this.checkRShinyHealth();
+    // Initial health check with delay
+    setTimeout(() => {
+      this.checkRShinyHealth();
+    }, 5000); // Wait 5 seconds before first check
   }
 
   private async checkRShinyHealth(): Promise<boolean> {

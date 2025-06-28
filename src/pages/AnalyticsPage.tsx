@@ -38,9 +38,9 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
     hasError,
     hasPendingSync
   } = useRShinySync({
-    autoSync: true,
-    syncFiltersDelay: 1000,
-    syncDocumentsDelay: 2000
+    autoSync: false, // Disable auto sync to prevent resource exhaustion
+    syncFiltersDelay: 5000, // Increase delay to 5 seconds
+    syncDocumentsDelay: 10000 // Increase delay to 10 seconds
   });
 
   // Initialize R Shiny connection and URL
@@ -58,8 +58,8 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
         
         setRShinyUrl(url);
         
-        // Perform initial sync
-        await forceSync(filters, documents, selectedState, selectedMunicipality);
+        // Only sync if R Shiny is actually available
+        // Removed automatic sync to prevent resource exhaustion
         
         setIsInitializing(false);
       } catch (error) {
@@ -72,26 +72,8 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
     initializeRShiny();
   }, [getRShinyUrl, getSessionId, forceSync, filters, documents, selectedState, selectedMunicipality]);
 
-  // Sync filters when they change
-  useEffect(() => {
-    if (!isInitializing) {
-      syncFilters(filters);
-    }
-  }, [filters, syncFilters, isInitializing]);
-
-  // Sync documents when they change
-  useEffect(() => {
-    if (!isInitializing && documents.length > 0) {
-      syncDocuments(documents);
-    }
-  }, [documents, syncDocuments, isInitializing]);
-
-  // Sync selection when it changes
-  useEffect(() => {
-    if (!isInitializing) {
-      syncSelection(selectedState, selectedMunicipality);
-    }
-  }, [selectedState, selectedMunicipality, syncSelection, isInitializing]);
+  // Only sync manually when R Shiny is actually connected
+  // Removed automatic sync to prevent resource exhaustion
 
   const handleRShinyLoad = () => {
     console.log('R Shiny application loaded successfully');
