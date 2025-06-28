@@ -1,0 +1,82 @@
+# Environment Configuration Template
+# Monitor Legislativo v4 - Private Database System
+# Copy this to .env and fill in your actual values
+
+# =============================================================================
+# DATABASE CONFIGURATION (REQUIRED)
+# =============================================================================
+
+# Supabase Database URL
+# Get this from: Supabase Dashboard → Settings → Database → Connection string (URI mode)
+# Format: postgresql://[username]:[password]@[host]:[port]/[database]?sslmode=require
+DATABASE_URL=postgresql://postgres.abcdefghij:your_password@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+
+# =============================================================================
+# COLLECTION CONFIGURATION (OPTIONAL)
+# =============================================================================
+
+# LexML API Configuration
+LEXML_BASE_URL=https://www.lexml.gov.br/oai/sru
+LEXML_TIMEOUT=60
+LEXML_MAX_RETRIES=3
+LEXML_RATE_LIMIT_DELAY=1
+
+# Collection Frequency (for cron jobs)
+COLLECTION_FREQUENCY=monthly
+COLLECTION_TIME=02:00
+
+# =============================================================================
+# APPLICATION CONFIGURATION (OPTIONAL)
+# =============================================================================
+
+# Application Environment
+ENVIRONMENT=development
+DEBUG=false
+
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# =============================================================================
+# CACHE CONFIGURATION (OPTIONAL - Uses Redis if available)
+# =============================================================================
+
+# Redis Configuration (optional - for enhanced performance)
+# REDIS_URL=redis://localhost:6379/0
+# REDIS_TTL=3600
+
+# =============================================================================
+# MONITORING & LOGGING (OPTIONAL)
+# =============================================================================
+
+# Log Level
+LOG_LEVEL=INFO
+
+# Analytics
+ENABLE_ANALYTICS_TRACKING=true
+ENABLE_SEARCH_LOGGING=true
+
+# =============================================================================
+# PRIVATE DATABASE FEATURES (OPTIONAL)
+# =============================================================================
+
+# Search Configuration
+MAX_SEARCH_RESULTS=500
+DEFAULT_PAGE_SIZE=50
+
+# Collection Limits
+MAX_DOCUMENTS_PER_TERM=10000
+COLLECTION_BATCH_SIZE=100
+
+# Geographic Analysis
+ENABLE_STATE_DENSITY_MAPPING=true
+ENABLE_MUNICIPALITY_ANALYSIS=true
+
+# =============================================================================
+# INSTRUCTIONS
+# =============================================================================
+
+# 1. Copy this file: cp environment.template .env
+# 2. Edit .env with your actual Supabase DATABASE_URL
+# 3. Run: python3 scripts/periodic_collection_scheduler.py
+# 4. Test: uvicorn main_app.main:app --reload 

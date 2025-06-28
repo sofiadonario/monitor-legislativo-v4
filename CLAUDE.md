@@ -237,6 +237,10 @@ Never commit `.env` files. Use `.env.example` as reference.
 ### Deployment Memory
 - All changes made to main must be adapted to aws deployment too 
 
+## CLI Tools Memory
+
+- Use Gemini CLI in non-interactive mode for reading, listing files etc, since it has a giant context.
+
 ## Remember
 - This is an academic research tool - data integrity is paramount
 - Every feature must support the research mission

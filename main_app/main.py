@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from . import gateway_router
-from .routers import lexml_router, sse_router
+from .routers import lexml_router, sse_router, private_database_router
 
 # Import API modules with error handling for production deployment
 try:
@@ -118,6 +118,7 @@ app.add_middleware(
 app.include_router(gateway_router.router)
 app.include_router(lexml_router.router)
 app.include_router(sse_router.router)
+app.include_router(private_database_router.router)
 
 # Include API routers conditionally
 if GEOGRAPHIC_API_AVAILABLE:
