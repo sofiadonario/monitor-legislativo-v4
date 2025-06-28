@@ -8,8 +8,9 @@ const LexMLSearchPage = lazy(() => import('./pages/LexMLSearchPage'));
 const KnowledgeGraphViewer = lazy(() => import('./components/KnowledgeGraphViewer'));
 const ResearchWorkflow = lazy(() => import('./components/ResearchWorkflow'));
 const VocabularyNavigator = lazy(() => import('./components/VocabularyNavigator'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 
-type AppPage = 'dashboard' | 'search' | 'knowledge-graph' | 'research' | 'vocabulary';
+type AppPage = 'dashboard' | 'search' | 'knowledge-graph' | 'research' | 'vocabulary' | 'analytics';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<AppPage>('dashboard');
@@ -44,6 +45,12 @@ const App: React.FC = () => {
             <div className="p-4">
               <VocabularyNavigator />
             </div>
+          </Suspense>
+        );
+      case 'analytics':
+        return (
+          <Suspense fallback={<LoadingSpinner message="Loading Analytics..." />}>
+            <AnalyticsPage />
           </Suspense>
         );
       case 'dashboard':
@@ -113,6 +120,16 @@ const App: React.FC = () => {
                 }`}
               >
                 Knowledge Graph
+              </button>
+              <button
+                onClick={() => setCurrentPage('analytics')}
+                className={`px-3 py-1 text-sm rounded ${
+                  currentPage === 'analytics' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Analytics
               </button>
             </div>
           </div>
