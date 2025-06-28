@@ -1103,20 +1103,25 @@ health_handler <- function(req) {
   ))
 }
 
-# Register the health handler
+# Configure Shiny with CORS support
 options(shiny.port = 3838)
 options(shiny.host = "0.0.0.0")
 
-# Create the Shiny app object
-app <- shinyApp(ui = ui, server = server)
+# Enable CORS in httpuv
+options(shiny.cors = TRUE)
 
-# Add health endpoint as a custom handler
-app$httpHandler <- function(req) {
-  if (req$PATH_INFO == "/health") {
-    return(health_handler(req))
-  }
-  # Return NULL to let Shiny handle other requests normally
-  return(NULL)
-}
+# Add custom filter for CORS headers
+addResourcePath("api", tempdir())
 
-app
+# Create the Shiny app object with CORS support
+runApp(
+  list(ui = ui, server = server),
+  host = "0.0.0.0",
+  port = 3838,
+  options = list(
+    # Enable CORS
+    "shiny.cors" = TRUE,
+    # Add CORS headers
+    "shiny.sanitize.errors" = FALSE
+  )
+)

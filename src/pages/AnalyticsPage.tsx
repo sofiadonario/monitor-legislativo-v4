@@ -157,25 +157,36 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
           </div>
 
           <div className="fallback-message">
-            <p>The R Shiny analytics application is currently unavailable. This may be due to:</p>
-            <ul>
-              <li>Server maintenance or deployment</li>
-              <li>Network connectivity issues</li>
-              <li>Resource limitations</li>
-            </ul>
+            <p>The R Shiny analytics application is running locally but cannot be accessed from GitHub Pages due to browser security restrictions (HTTPS → HTTP blocking).</p>
+            
+            <h4>📋 How to Access R Shiny Analytics:</h4>
+            <div className="access-instructions">
+              <div className="instruction-item">
+                <strong>Option 1: Direct Access</strong>
+                <p>Open R Shiny directly in a new tab:</p>
+                <a 
+                  href="http://localhost:3838" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="external-btn"
+                >
+                  🔗 Open R Shiny Dashboard
+                </a>
+                <p className="login-info">Login: <code>admin</code> / <code>admin123</code></p>
+              </div>
+              
+              <div className="instruction-item">
+                <strong>Option 2: Local Development</strong>
+                <p>Run the React app locally to enable full integration:</p>
+                <code>npm run dev</code>
+                <p>Then visit: <a href="http://localhost:3000/monitor-legislativo-v4/" target="_blank">http://localhost:3000/monitor-legislativo-v4/</a></p>
+              </div>
+            </div>
             
             <div className="fallback-actions">
               <button onClick={handleRetryConnection} className="retry-btn">
-                🔄 Retry Connection
+                🔄 Test Connection Again
               </button>
-              <a 
-                href={getRShinyUrl()} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="external-btn"
-              >
-                🔗 Open R Shiny Directly
-              </a>
             </div>
           </div>
         </div>
