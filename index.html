@@ -1,77 +1,43 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/monitor-legislativo-v4/map-icon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Academic Transport Legislation Monitor - Research platform for Brazilian transport legislation analysis" />
+<html>
+<head>
+    <title>Monitor Legislativo v4 - R Analytics</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f8f9fa; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .status { color: #28a745; font-weight: bold; }
+        .card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Monitor Legislativo v4</h1>
+        <h2 class="status">✅ R Shiny Service: ONLINE</h2>
+        
+        <div class="card">
+            <h3>System Information</h3>
+            <p><strong>Service:</strong> Railway Production</p>
+            <p><strong>Status:</strong> Healthy</p>
+            <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+            <p><strong>Purpose:</strong> R Analytics for Legislative Data</p>
+        </div>
+        
+        <div class="card">
+            <h3>Health Check</h3>
+            <p><strong>Endpoint:</strong> /health</p>
+            <p><strong>Status:</strong> ✅ Available</p>
+            <p>This service provides R analytics integration for the React frontend.</p>
+        </div>
+        
+        <div class="card">
+            <h3>Integration</h3>
+            <p>This service is designed to work with the Monitor Legislativo v4 React application.</p>
+            <p><strong>React App:</strong> <a href="https://sofiadonario.github.io/monitor-legislativo-v4/" target="_blank">Open Dashboard</a></p>
+        </div>
+    </div>
     
-    <!-- SECURITY: Content Security Policy (Temporarily Relaxed for Debugging) -->
-    <meta http-equiv="Content-Security-Policy" content="
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval';
-      style-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com;
-      img-src 'self' data: https: blob: https://tile.openstreetmap.org https://cdnjs.cloudflare.com;
-      font-src 'self' https: data:;
-      connect-src 'self' https://dadosabertos.camara.leg.br https://legis.senado.leg.br https://www.lexml.gov.br https://servicodados.ibge.gov.br https://monitor-legislativo-v4-production.up.railway.app http://localhost:3838 https://*.shinyapps.io;
-      frame-src 'self' http://localhost:3838 https://*.shinyapps.io;
-      object-src 'none';
-      base-uri 'self';
-      form-action 'self';
-      upgrade-insecure-requests;
-    ">
-    
-    <!-- SECURITY: Additional security headers -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-    
-    <title>Brazilian Transport Legislation Monitor</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin=""/>
-    <script type="module" crossorigin src="/monitor-legislativo-v4/assets/js/index-DshiUUTS.js"></script>
-    <link rel="modulepreload" crossorigin href="/monitor-legislativo-v4/assets/js/react-vendor-DFJYf2oa.js">
-    <link rel="modulepreload" crossorigin href="/monitor-legislativo-v4/assets/js/leaflet-vendor-CuwtxqHJ.js">
-    <link rel="stylesheet" crossorigin href="/monitor-legislativo-v4/assets/css/index-BK5Bk6i7.css">
-  </head>
-  <body>
-    <div id="root"></div>
-    
-    <!-- Service Worker Registration -->
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/monitor-legislativo-v4/service-worker.js')
-            .then(registration => {
-              console.log('ServiceWorker registered:', registration.scope);
-              
-              // Check for updates periodically
-              setInterval(() => {
-                registration.update().catch(err => {
-                  // Silently handle update errors
-                  console.debug('Service worker update check failed:', err);
-                });
-              }, 300000); // Check every 5 minutes
-              
-              // Handle updates
-              registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    // New service worker available
-                    if (confirm('Nova versão disponível! Deseja atualizar?')) {
-                      newWorker.postMessage({ type: 'SKIP_WAITING' });
-                      window.location.reload();
-                    }
-                  }
-                });
-              });
-            })
-            .catch(error => {
-              console.error('ServiceWorker registration failed:', error);
-            });
-        });
-      }
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
     </script>
-  </body>
+</body>
 </html>
