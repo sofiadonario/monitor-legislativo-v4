@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: monitor-legislativo-rshiny
+    env: docker
+    dockerfilePath: ./r-shiny-minimal/Dockerfile
+    dockerContext: ./r-shiny-minimal
+    plan: free
+    port: 3838
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 3838
+      - key: ENVIRONMENT
+        value: production
+    scaling:
+      minInstances: 1
+      maxInstances: 1
