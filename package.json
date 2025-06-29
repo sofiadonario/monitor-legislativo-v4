@@ -4,6 +4,7 @@
   "description": "Academic research platform for monitoring Brazilian transport legislation with real government data",
   "private": true,
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@types/d3": "^7.4.3",
     "@types/leaflet": "^1.9.12",
     "@types/papaparse": "^5.3.14",

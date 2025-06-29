@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { LexMLDocument, DataSource } from '../types/lexml-api.types';
 import DataSourceIndicator from './DataSourceIndicator';
+import { SkeletonDocumentList } from '../../../components/common/SkeletonLoader';
 
 interface SearchResultsProps {
   documents: LexMLDocument[];
@@ -262,14 +263,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
       {/* Loading State */}
       {isLoading && documents.length === 0 && (
-        <div className="flex items-center justify-center py-8">
-          <div className="flex items-center gap-3">
-            <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-            <span className="text-gray-600">
-              {apiStatus === 'connected' ? 'Searching LexML Brasil database...' : 'Searching documents...'}
-            </span>
-          </div>
-        </div>
+        <SkeletonDocumentList count={viewMode === 'card' ? 6 : 5} />
       )}
 
       {/* Results Grid/List */}

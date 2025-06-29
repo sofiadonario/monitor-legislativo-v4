@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SearchFilters, LegislativeDocument } from '../types';
 import { DataVisualization } from './DataVisualization';
 import { EnhancedSearch } from './EnhancedSearch';
+import { MagnifyingGlass, ChartBar, FlaskConical, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import '../styles/components/TabbedSidebar.css';
 
 interface TabbedSidebarProps {
@@ -75,7 +76,7 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
           aria-label={isOpen ? 'Fechar painel lateral' : 'Abrir painel lateral'}
           aria-expanded={isOpen}
         >
-          {isOpen ? '◀' : '▶'}
+          {isOpen ? <CaretLeft size={16} weight="bold" /> : <CaretRight size={16} weight="bold" />}
         </button>
       </div>
 
@@ -87,21 +88,21 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
               onClick={() => setActiveTab('search')}
               aria-selected={activeTab === 'search'}
             >
-              🔍 Search & Filters
+              <MagnifyingGlass size={16} weight="fill" /> Search & Filters
             </button>
             <button
               className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
               onClick={() => setActiveTab('analytics')}
               aria-selected={activeTab === 'analytics'}
             >
-              📊 Analytics
+              <ChartBar size={16} weight="fill" /> Analytics
             </button>
             <button
               className={`tab-button ${activeTab === 'rshiny' ? 'active' : ''}`}
               onClick={() => setActiveTab('rshiny')}
               aria-selected={activeTab === 'rshiny'}
             >
-              🔬 R Analytics
+              <FlaskConical size={16} weight="fill" /> R Analytics
             </button>
           </div>
 

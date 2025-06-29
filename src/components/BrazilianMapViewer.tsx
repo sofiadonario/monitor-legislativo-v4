@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { brazilianGeographyService, LegislativeHeatmapData, BrazilianMunicipality, BrazilianState } from '../services/brazilianGeographyService';
 import GlassCard from './GlassCard';
+import { SkeletonMapLoading } from './common/SkeletonLoader';
 import '../styles/glassmorphism.css';
 
 // Fix for default markers in React Leaflet
@@ -311,11 +312,8 @@ const BrazilianMapViewer: React.FC<BrazilianMapViewerProps> = ({
         <div className="flex-1">
           <GlassCard variant="light" className="p-0 overflow-hidden">
             {loading ? (
-              <div className="flex items-center justify-center h-96">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Carregando dados geográficos...</p>
-                </div>
+              <div style={{ height: `${height}px` }}>
+                <SkeletonMapLoading />
               </div>
             ) : (
               <MapContainer

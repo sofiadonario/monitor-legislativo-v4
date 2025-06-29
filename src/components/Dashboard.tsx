@@ -5,6 +5,8 @@ import '../styles/accessibility.css';
 import '../styles/components/Dashboard.css';
 import { LegislativeDocument, SearchFilters } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
+import { SkeletonLoader, SkeletonDocumentList, SkeletonMapLoading, SkeletonChart } from './common/SkeletonLoader';
+import { Files, MapTrifold, FlaskConical, Gear, ChartBar } from '@phosphor-icons/react';
 
 // Lazy load heavy components
 const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.default })));
@@ -145,10 +147,15 @@ const DashboardV2: React.FC = () => {
             <p className="toolbar-subtitle">Academic research platform for transport legislation analysis</p>
           </div>
           <div className="toolbar-right">
-            {isLoading ? <LoadingSpinner message="Loading..." /> : (
+            {isLoading ? (
               <div className="stats" aria-live="polite">
-                <span className="stat-item">📄 {filteredDocuments.length} Docs</span>
-                <span className="stat-item">🗺️ {highlightedStates.length} States</span>
+                <span className="stat-item"><SkeletonLoader variant="text" width="80px" /></span>
+                <span className="stat-item"><SkeletonLoader variant="text" width="80px" /></span>
+              </div>
+            ) : (
+              <div className="stats" aria-live="polite">
+                <span className="stat-item"><Files size={16} weight="fill" /> {filteredDocuments.length} Docs</span>
+                <span className="stat-item"><MapTrifold size={16} weight="fill" /> {highlightedStates.length} States</span>
               </div>
             )}
             <Suspense fallback={null}>
@@ -160,25 +167,25 @@ const DashboardV2: React.FC = () => {
                 onClick={() => setViewMode('dashboard')}
                 aria-pressed={viewMode === 'dashboard'}
               >
-                🗺️ Map
+                <MapTrifold size={16} weight="fill" /> Map
               </button>
               <button 
                 className={`view-mode-btn ${viewMode === 'analytics' ? 'active' : ''}`}
                 onClick={() => setViewMode('analytics')}
                 aria-pressed={viewMode === 'analytics'}
               >
-                🔬 R Analytics
+                <FlaskConical size={16} weight="fill" /> R Analytics
               </button>
               <button 
                 className={`view-mode-btn ${viewMode === 'admin' ? 'active' : ''}`}
                 onClick={() => setViewMode('admin')}
                 aria-pressed={viewMode === 'admin'}
               >
-                ⚙️ Admin
+                <Gear size={16} weight="fill" /> Admin
               </button>
             </div>
             <button className="export-btn" onClick={toggleExportPanel} aria-controls="export-panel" aria-expanded={exportPanelOpen}>
-              📊 Export
+              <ChartBar size={16} weight="fill" /> Export
             </button>
           </div>
         </header>
@@ -195,7 +202,7 @@ const DashboardV2: React.FC = () => {
         {viewMode === 'dashboard' && (
           <section className="map-wrapper" aria-labelledby="map-heading">
             <h2 id="map-heading" className="sr-only">Interactive map</h2>
-            <Suspense fallback={<LoadingSpinner message="Loading map..." />}>
+            <Suspense fallback={<SkeletonMapLoading />}>
               <OptimizedMap
                 selectedState={selectedState}
                 selectedMunicipality={selectedMunicipality}
@@ -210,7 +217,7 @@ const DashboardV2: React.FC = () => {
         {viewMode === 'analytics' && (
           <section className="analytics-wrapper" aria-labelledby="analytics-heading">
             <h2 id="analytics-heading" className="sr-only">R Shiny Analytics</h2>
-            <Suspense fallback={<LoadingSpinner message="Loading R Analytics..." />}>
+            <Suspense fallback={<div className="analytics-skeleton"><SkeletonChart /><SkeletonChart /><SkeletonChart /></div>}>
               <AnalyticsPage
                 documents={filteredDocuments}
                 filters={filters}

@@ -1,4 +1,5 @@
-/* Import accessibility styles */
+/* Import design tokens and accessibility styles */
+@import './themes/design-tokens.css';
 @import './accessibility.css';
 
 /* Reset and Base Styles */
@@ -560,12 +561,36 @@ html, body {
   }
 }
 
-/* Focus styles for keyboard navigation */
-button:focus,
-input:focus,
-select:focus {
-  outline: 2px solid #2196F3;
+/* Enhanced focus styles for keyboard navigation */
+:focus-visible {
+  outline: 3px solid #2196F3;
   outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove default focus for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Specific focus styles for interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #2196F3;
+  outline-offset: 2px;
+  transition: outline-offset 0.1s ease;
+}
+
+/* Enhanced focus for dark mode */
+@media (prefers-color-scheme: dark) {
+  :focus-visible {
+    outline-color: #64B5F6;
+  }
 }
 
 /* High contrast mode support */
