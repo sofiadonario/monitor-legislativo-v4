@@ -81,7 +81,16 @@
       "Bash(npm run type-check:*)",
       "Bash(timeout 10s npm run dev)",
       "Bash(docker:*)",
-      "Bash(./setup_complete.sh)"
+      "Bash(./setup_complete.sh)",
+      "Bash(./deploy_to_railway.sh:*)",
+      "Bash(railway login:*)",
+      "Bash(railway status:*)",
+      "Bash(railway link:*)",
+      "Bash(railway up:*)",
+      "Bash(railway service:*)",
+      "Bash(railway:*)",
+      "Bash(timeout:*)",
+      "Bash(./railway_deploy_api.sh)"
     ]
   },
   "enableAllProjectMcpServers": false
