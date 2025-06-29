@@ -15,6 +15,7 @@ import uuid
 import json
 import re
 import time
+from pathlib import Path
 
 import asyncpg
 from sqlalchemy import create_engine
@@ -44,8 +45,28 @@ class LexMLPeriodicCollector:
         self.retry_delay = 2.0
         self.api_delay = 1.0  # Delay between API calls (respectful)
         
+        # Load search terms from JSON file
+        self.search_terms = self._load_search_terms()
+        
         # Initialize database connection
         self._setup_database()
+    
+    def _load_search_terms(self) -> List[str]:
+        """Load search terms from JSON file"""
+        try:
+            json_path = Path(__file__).parent / 'search_terms.json'
+            if json_path.exists():
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    terms = data.get('search_terms', [])
+                    logger.info(f"Loaded {len(terms)} search terms from {json_path}")
+                    return terms
+            else:
+                logger.warning(f"Search terms file not found at {json_path}")
+                return []
+        except Exception as e:
+            logger.error(f"Failed to load search terms: {e}")
+            return []
     
     def _setup_database(self):
         """Setup async database connection"""
@@ -295,6 +316,46 @@ class LexMLPeriodicCollector:
                     await asyncio.sleep(self.retry_delay * (attempt + 1))
                 else:
                     raise
+    
+    async def sync_search_terms_from_json(self):
+        """Sync search terms from JSON file to database"""
+        if not self.search_terms:
+            logger.warning("No search terms loaded from JSON file")
+            return
+        
+        try:
+            async with self.session_factory() as session:
+                # First, get existing terms from database
+                result = await session.execute(text("""
+                    SELECT term_name FROM search_terms_config
+                """))
+                existing_terms = {row[0] for row in result.fetchall()}
+                
+                # Add new terms from JSON that aren't in database
+                added_count = 0
+                for term in self.search_terms:
+                    if term not in existing_terms:
+                        await session.execute(text("""
+                            INSERT INTO search_terms_config 
+                            (term_name, cql_query, description, collection_frequency, 
+                             priority_level, is_active, created_at)
+                            VALUES (:term_name, :cql_query, :description, :frequency,
+                                    :priority, true, NOW())
+                        """), {
+                            'term_name': term[:100],  # Truncate to fit database
+                            'cql_query': term,  # Use the full term as CQL query
+                            'description': f'Transport legislation search: {term[:50]}',
+                            'frequency': 'monthly',
+                            'priority': 2  # Medium priority
+                        })
+                        added_count += 1
+                
+                await session.commit()
+                logger.info(f"Added {added_count} new search terms to database")
+                
+        except Exception as e:
+            logger.error(f"Failed to sync search terms: {e}")
+            raise
 
     # Additional helper methods would go here...
     # [Truncated for brevity - the full implementation would include all the parsing and database methods]
