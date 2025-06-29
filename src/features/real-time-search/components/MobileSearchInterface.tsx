@@ -742,7 +742,7 @@ export const MobileSearchInterface: React.FC<MobileSearchInterfaceProps> = ({
               </div>
             ))
           )}
-        </section>
+        </div>
       </main>
 
       {/* Bottom Action Bar */}

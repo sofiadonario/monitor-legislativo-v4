@@ -7,9 +7,9 @@ import { LegislativeDocument, SearchFilters } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
 
 // Lazy load heavy components
-const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.OptimizedMap })));
-const TabbedSidebar = lazy(() => import('./TabbedSidebar').then(module => ({ default: module.TabbedSidebar })));
-const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.ExportPanel })));
+const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.default })));
+const TabbedSidebar = lazy(() => import('./TabbedSidebar').then(module => ({ default: module.default })));
+const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.default })));
 const CollectionStatus = lazy(() => import('./CollectionStatus').then(module => ({ default: module.CollectionStatus })));
 const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage').then(module => ({ default: module.default })));
 const CacheMonitor = lazy(() => import('./CacheMonitor').then(module => ({ default: module.default })));
