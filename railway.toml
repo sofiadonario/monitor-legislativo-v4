@@ -18,5 +18,3 @@ deploy.healthcheckPath = "/health"
 name = "rshiny"
 build.builder = "DOCKERFILE"
 build.dockerfilePath = "Dockerfile.rshiny"
-deploy.healthcheckPath = "/"
-deploy.healthcheckTimeout = 300
