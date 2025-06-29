@@ -17,6 +17,6 @@ deploy.healthcheckPath = "/health"
 [[services]]
 name = "monitor-legislativo-rshiny"
 build.builder = "DOCKERFILE"
-build.dockerfilePath = "r-shiny-app/Dockerfile"
-deploy.healthcheckPath = "/health"
+build.dockerfilePath = "r-shiny-app/Dockerfile.simple"
+deploy.healthcheckPath = "/"
 source = "r-shiny-app/"

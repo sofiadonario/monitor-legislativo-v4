@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitor Legislativo v4 - R Analytics</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f8f9fa; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .status { color: #28a745; font-weight: bold; }
+        .card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Monitor Legislativo v4</h1>
+        <h2 class="status">✅ R Shiny Service: ONLINE</h2>
+        
+        <div class="card">
+            <h3>System Information</h3>
+            <p><strong>Service:</strong> Railway Production</p>
+            <p><strong>Status:</strong> Healthy</p>
+            <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+            <p><strong>Purpose:</strong> R Analytics for Legislative Data</p>
+        </div>
+        
+        <div class="card">
+            <h3>Health Check</h3>
+            <p><strong>Endpoint:</strong> /health</p>
+            <p><strong>Status:</strong> ✅ Available</p>
+            <p>This service provides R analytics integration for the React frontend.</p>
+        </div>
+        
+        <div class="card">
+            <h3>Integration</h3>
+            <p>This service is designed to work with the Monitor Legislativo v4 React application.</p>
+            <p><strong>React App:</strong> <a href="https://sofiadonario.github.io/monitor-legislativo-v4/" target="_blank">Open Dashboard</a></p>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html>
