@@ -21,74 +21,12 @@ except ImportError as e:
     GEOGRAPHIC_API_AVAILABLE = False
 
 try:
-    from .api import ml_analysis
-    ML_ANALYSIS_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: ML Analysis API not available: {e}")
-    ML_ANALYSIS_API_AVAILABLE = False
-
-try:
     from .api import advanced_geocoding
     ADVANCED_GEOCODING_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Advanced Geocoding API not available: {e}")
     ADVANCED_GEOCODING_API_AVAILABLE = False
 
-try:
-    from .api import document_validation
-    DOCUMENT_VALIDATION_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: Document Validation API not available: {e}")
-    DOCUMENT_VALIDATION_API_AVAILABLE = False
-
-try:
-    from .api import ai_agents
-    AI_AGENTS_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: AI Agents API not available: {e}")
-    AI_AGENTS_API_AVAILABLE = False
-
-try:
-    from .api import ai_document_analysis
-    AI_DOCUMENT_ANALYSIS_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: AI Document Analysis API not available: {e}")
-    AI_DOCUMENT_ANALYSIS_API_AVAILABLE = False
-
-try:
-    from .api import knowledge_graph
-    KNOWLEDGE_GRAPH_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: Knowledge Graph API not available: {e}")
-    KNOWLEDGE_GRAPH_API_AVAILABLE = False
-
-try:
-    from .api import spatial_analysis_api
-    SPATIAL_ANALYSIS_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: Spatial Analysis API not available: {e}")
-    SPATIAL_ANALYSIS_API_AVAILABLE = False
-
-try:
-    from .api import vocabulary_api
-    VOCABULARY_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: Vocabulary API not available: {e}")
-    VOCABULARY_API_AVAILABLE = False
-
-try:
-    from .api import batch_processing_api
-    BATCH_PROCESSING_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: Batch Processing API not available: {e}")
-    BATCH_PROCESSING_API_AVAILABLE = False
-
-try:
-    from .api import government_standards_api
-    GOVERNMENT_STANDARDS_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: Government Standards API not available: {e}")
-    GOVERNMENT_STANDARDS_API_AVAILABLE = False
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
 from core.database.two_tier_manager import get_two_tier_manager
@@ -126,35 +64,8 @@ app.include_router(private_database_router.router)
 if GEOGRAPHIC_API_AVAILABLE:
     app.include_router(geographic.router)
 
-if ML_ANALYSIS_API_AVAILABLE:
-    app.include_router(ml_analysis.router)
-
 if ADVANCED_GEOCODING_API_AVAILABLE:
     app.include_router(advanced_geocoding.router)
-
-if DOCUMENT_VALIDATION_API_AVAILABLE:
-    app.include_router(document_validation.router)
-
-if AI_AGENTS_API_AVAILABLE:
-    app.include_router(ai_agents.router)
-
-if AI_DOCUMENT_ANALYSIS_API_AVAILABLE:
-    app.include_router(ai_document_analysis.router)
-
-if KNOWLEDGE_GRAPH_API_AVAILABLE:
-    app.include_router(knowledge_graph.router)
-
-if SPATIAL_ANALYSIS_API_AVAILABLE:
-    app.include_router(spatial_analysis_api.router)
-
-if VOCABULARY_API_AVAILABLE:
-    app.include_router(vocabulary_api.router)
-
-if BATCH_PROCESSING_API_AVAILABLE:
-    app.include_router(batch_processing_api.router)
-
-if GOVERNMENT_STANDARDS_API_AVAILABLE:
-    app.include_router(government_standards_api.router)
 
 
 @app.on_event("startup")

@@ -2,21 +2,26 @@
 API Gateway Router for the Unified Service
 """
 
-from fastapi import APIRouter
-from web.api import routes as web_api_routes
-from web.api import health_routes, monitoring_routes, debug_routes
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/api/v1", tags=["API Gateway"])
 
-# Include the main application routes
-router.include_router(web_api_routes.router, tags=["Main API"])
+# Basic health endpoint
+@router.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "monitor-legislativo-v4"}
 
-# Include monitoring and health routes
-router.include_router(health_routes.router, tags=["Health"])
-router.include_router(monitoring_routes.router, tags=["Monitoring"])
-
-# Include debug routes for implementation verification
-router.include_router(debug_routes.router, tags=["Debug"])
+# Basic status endpoint  
+@router.get("/status")
+async def status_check():
+    """Status check endpoint"""
+    return {
+        "status": "operational",
+        "version": "4.0.0",
+        "environment": "production"
+    }
 
 @router.get("/", summary="API Gateway Root")
 async def gateway_root():
