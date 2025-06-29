@@ -7,6 +7,8 @@ import os
 # Add parent directory to path for core imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Force Railway redeployment - 2025-06-29
+
 from . import gateway_router
 from .routers import lexml_router, sse_router, private_database_router
 
