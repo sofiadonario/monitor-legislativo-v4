@@ -1,38 +1,38 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { legislativeDataService } from '../services/legislativeDataService';
-import '../styles/components/Dashboard.css';
 import '../styles/accessibility.css';
+import '../styles/components/Dashboard.css';
 import { LegislativeDocument, SearchFilters } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
-import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 
 // Lazy load heavy components
-const OptimizedMap = lazy(() => import('./OptimizedMap'));
-const TabbedSidebar = lazy(() => import('./TabbedSidebar'));
-const ExportPanel = lazy(() => import('./ExportPanel'));
-const AIResearchAssistant = lazy(() => import('./AIResearchAssistant'));
-const DocumentValidationPanel = lazy(() => import('./DocumentValidationPanel'));
+const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.OptimizedMap })));
+const TabbedSidebar = lazy(() => import('./TabbedSidebar').then(module => ({ default: module.TabbedSidebar })));
+const ExportPanel = lazy(() => import('./ExportPanel').then(module => ({ default: module.ExportPanel })));
+const CollectionStatus = lazy(() => import('./CollectionStatus').then(module => ({ default: module.CollectionStatus })));
+const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage').then(module => ({ default: module.default })));
+const CacheMonitor = lazy(() => import('./CacheMonitor').then(module => ({ default: module.default })));
+
+type ViewMode = 'dashboard' | 'analytics' | 'admin';
 
 // Dashboard state interface
 interface DashboardState {
   sidebarOpen: boolean;
   exportPanelOpen: boolean;
-  aiAssistantOpen: boolean;
-  validationPanelOpen: boolean;
   selectedState?: string;
   selectedMunicipality?: string;
   filters: SearchFilters;
-  selectedDocuments: LegislativeDocument[];
+  viewMode: ViewMode;
 }
 
 // Initial state
 const initialState: DashboardState = {
   sidebarOpen: true,
   exportPanelOpen: false,
-  aiAssistantOpen: false,
-  validationPanelOpen: false,
   selectedState: undefined,
   selectedMunicipality: undefined,
+  viewMode: 'dashboard',
   filters: {
     searchTerm: '',
     documentTypes: [],
@@ -42,8 +42,7 @@ const initialState: DashboardState = {
     keywords: [],
     dateFrom: undefined,
     dateTo: undefined
-  },
-  selectedDocuments: []
+  }
 };
 
 // Reducer function
@@ -55,10 +54,6 @@ const dashboardReducer = (state: DashboardState, action: any): DashboardState =>
       return { ...state, sidebarOpen: action.payload };
     case 'TOGGLE_EXPORT_PANEL':
       return { ...state, exportPanelOpen: !state.exportPanelOpen };
-    case 'TOGGLE_AI_ASSISTANT':
-      return { ...state, aiAssistantOpen: !state.aiAssistantOpen };
-    case 'TOGGLE_VALIDATION_PANEL':
-      return { ...state, validationPanelOpen: !state.validationPanelOpen };
     case 'SELECT_STATE':
       return { ...state, selectedState: action.payload, selectedMunicipality: undefined };
     case 'SELECT_MUNICIPALITY':
@@ -67,85 +62,44 @@ const dashboardReducer = (state: DashboardState, action: any): DashboardState =>
       return { ...state, selectedState: undefined, selectedMunicipality: undefined };
     case 'UPDATE_FILTERS':
       return { ...state, filters: action.payload };
-    case 'SET_SELECTED_DOCUMENTS':
-      return { ...state, selectedDocuments: action.payload };
+    case 'SET_VIEW_MODE':
+      return { ...state, viewMode: action.payload };
     default:
       return state;
   }
 };
 
-const Dashboard: React.FC = () => {
+const DashboardV2: React.FC = () => {
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
   const [documents, setDocuments] = useState<LegislativeDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
-  const { sidebarOpen, exportPanelOpen, aiAssistantOpen, validationPanelOpen, selectedState, selectedMunicipality, filters, selectedDocuments } = state;
+  const { sidebarOpen, exportPanelOpen, selectedState, selectedMunicipality, filters, viewMode } = state;
 
   const mainContentRef = useRef<HTMLElement>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
   useKeyboardNavigation();
 
   useEffect(() => {
     const loadDocuments = async () => {
-      // Cancel previous request if exists
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      // Clear existing debounce timer
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-
-      // Set up new debounced request
-      debounceTimeoutRef.current = setTimeout(async () => {
-        console.log('🎯 API Request: Debounced search triggered', { searchTerm: filters.searchTerm });
-        
-        setIsLoading(true);
-        setError(null);
-        
-        try {
-          // Create new abort controller for this request
-          abortControllerRef.current = new AbortController();
-          
-          const { documents: docs, usingFallback } = await legislativeDataService.fetchDocuments(filters);
-          
-          if (docs.length === 0 && usingFallback) {
-            setError('Could not load from API or CSV. Please check data sources.');
-          }
-          setDocuments(docs);
-          setUsingFallbackData(usingFallback);
-          
-          console.log('📊 Request completed', { documentsFound: docs.length, usingFallback });
-        } catch (err) {
-          // Don't show error if request was aborted (user typed more)
-          if (err instanceof Error && err.name === 'AbortError') {
-            console.log('⚡ Request cancelled - user continued typing');
-            return;
-          }
-          
-          const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-          setError(errorMessage);
-          console.error('Error loading documents:', err);
-        } finally {
-          setIsLoading(false);
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { documents: docs, usingFallback } = await legislativeDataService.fetchDocuments(filters);
+        if (docs.length === 0 && usingFallback) {
+          setError('Could not load from API or CSV. Please check data sources.');
         }
-      }, 500); // 500ms debounce delay
+        setDocuments(docs);
+        setUsingFallbackData(usingFallback);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+        setError(errorMessage);
+        console.error('Error loading documents:', err);
+      } finally {
+        setIsLoading(false);
+      }
     };
-
     loadDocuments();
-
-    // Cleanup function
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
   }, [filters]);
 
   const handleLocationClick = useCallback((type: 'state' | 'municipality', id: string) => {
@@ -156,30 +110,20 @@ const Dashboard: React.FC = () => {
   const onFiltersChange = useCallback((newFilters: SearchFilters) => dispatch({ type: 'UPDATE_FILTERS', payload: newFilters }), []);
   const toggleSidebar = useCallback(() => dispatch({ type: 'TOGGLE_SIDEBAR' }), []);
   const toggleExportPanel = useCallback(() => dispatch({ type: 'TOGGLE_EXPORT_PANEL' }), []);
-  const toggleAIAssistant = useCallback(() => dispatch({ type: 'TOGGLE_AI_ASSISTANT' }), []);
-  const toggleValidationPanel = useCallback(() => dispatch({ type: 'TOGGLE_VALIDATION_PANEL' }), []);
+  const setViewMode = useCallback((mode: ViewMode) => dispatch({ type: 'SET_VIEW_MODE', payload: mode }), []);
 
   const filteredDocuments = useMemo(() => {
-    if (!documents || !Array.isArray(documents)) {
-      return [];
-    }
     return documents.filter(doc => {
-      if (!doc) return false;
       if (selectedState && doc.state !== selectedState) return false;
       if (selectedMunicipality && doc.municipality !== selectedMunicipality) return false;
       return true;
     });
   }, [documents, selectedState, selectedMunicipality]);
 
-  const highlightedStates = useMemo(() => {
-    if (!filteredDocuments || !Array.isArray(filteredDocuments)) {
-      return [];
-    }
-    return [...new Set(filteredDocuments
-      .map(doc => doc?.state)
-      .filter((state): state is string => Boolean(state))
-    )];
-  }, [filteredDocuments]);
+  const highlightedStates = useMemo(() => 
+    [...new Set(filteredDocuments.map(doc => doc.state).filter(Boolean as (value: string | undefined) => value is string))],
+    [filteredDocuments]
+  );
 
   return (
     <div className="dashboard">
@@ -189,7 +133,7 @@ const Dashboard: React.FC = () => {
           onToggle={toggleSidebar}
           filters={filters}
           onFiltersChange={onFiltersChange}
-          documents={documents || []}
+          documents={documents}
           selectedState={selectedState}
           onClearSelection={handleClearSelection}
         />
@@ -207,23 +151,38 @@ const Dashboard: React.FC = () => {
                 <span className="stat-item">🗺️ {highlightedStates.length} States</span>
               </div>
             )}
-            <button className="ai-btn" onClick={toggleAIAssistant} aria-controls="ai-assistant" aria-expanded={aiAssistantOpen}>
-              🤖 AI Assistant
-            </button>
-            <button className="validation-btn" onClick={toggleValidationPanel} aria-controls="validation-panel" aria-expanded={validationPanelOpen}>
-              🛡️ Validate
-            </button>
+            <Suspense fallback={null}>
+              <CollectionStatus compact={true} className="toolbar-collection-status" />
+            </Suspense>
+            <div className="view-mode-switcher">
+              <button 
+                className={`view-mode-btn ${viewMode === 'dashboard' ? 'active' : ''}`}
+                onClick={() => setViewMode('dashboard')}
+                aria-pressed={viewMode === 'dashboard'}
+              >
+                🗺️ Map
+              </button>
+              <button 
+                className={`view-mode-btn ${viewMode === 'analytics' ? 'active' : ''}`}
+                onClick={() => setViewMode('analytics')}
+                aria-pressed={viewMode === 'analytics'}
+              >
+                🔬 R Analytics
+              </button>
+              <button 
+                className={`view-mode-btn ${viewMode === 'admin' ? 'active' : ''}`}
+                onClick={() => setViewMode('admin')}
+                aria-pressed={viewMode === 'admin'}
+              >
+                ⚙️ Admin
+              </button>
+            </div>
             <button className="export-btn" onClick={toggleExportPanel} aria-controls="export-panel" aria-expanded={exportPanelOpen}>
               📊 Export
             </button>
           </div>
         </header>
 
-        {usingFallbackData && (
-          <div className="fallback-warning-banner" role="alert">
-            <strong>Warning:</strong> Using local CSV data. API connection may have failed.
-          </div>
-        )}
 
         {error && !isLoading && (
           <div className="dashboard-error" role="alert">
@@ -233,18 +192,85 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        <section className="map-wrapper" aria-labelledby="map-heading">
-          <h2 id="map-heading" className="sr-only">Interactive map</h2>
-          <Suspense fallback={<LoadingSpinner message="Loading map..." />}>
-            <OptimizedMap
-              selectedState={selectedState}
-              selectedMunicipality={selectedMunicipality}
-              documents={filteredDocuments || []}
-              onLocationClick={handleLocationClick}
-              highlightedLocations={highlightedStates || []}
-            />
-          </Suspense>
-        </section>
+        {viewMode === 'dashboard' && (
+          <section className="map-wrapper" aria-labelledby="map-heading">
+            <h2 id="map-heading" className="sr-only">Interactive map</h2>
+            <Suspense fallback={<LoadingSpinner message="Loading map..." />}>
+              <OptimizedMap
+                selectedState={selectedState}
+                selectedMunicipality={selectedMunicipality}
+                documents={filteredDocuments}
+                onLocationClick={handleLocationClick}
+                highlightedLocations={highlightedStates}
+              />
+            </Suspense>
+          </section>
+        )}
+
+        {viewMode === 'analytics' && (
+          <section className="analytics-wrapper" aria-labelledby="analytics-heading">
+            <h2 id="analytics-heading" className="sr-only">R Shiny Analytics</h2>
+            <Suspense fallback={<LoadingSpinner message="Loading R Analytics..." />}>
+              <AnalyticsPage
+                documents={filteredDocuments}
+                filters={filters}
+                selectedState={selectedState}
+                selectedMunicipality={selectedMunicipality}
+                onFiltersChange={onFiltersChange}
+              />
+            </Suspense>
+          </section>
+        )}
+
+        {viewMode === 'admin' && (
+          <section className="admin-wrapper" aria-labelledby="admin-heading">
+            <h2 id="admin-heading" className="sr-only">Administrative Dashboard</h2>
+            <div className="admin-content">
+              <div className="admin-section">
+                <h3>System Performance & Cache Monitoring</h3>
+                <Suspense fallback={<LoadingSpinner message="Loading cache monitor..." />}>
+                  <CacheMonitor showDetailedView={true} className="admin-cache-monitor" />
+                </Suspense>
+              </div>
+              
+              <div className="admin-section">
+                <h3>Collection Status & Data Sources</h3>
+                <Suspense fallback={<LoadingSpinner message="Loading collection status..." />}>
+                  <CollectionStatus compact={false} className="admin-collection-status" />
+                </Suspense>
+              </div>
+              
+              <div className="admin-section">
+                <h3>System Information</h3>
+                <div className="system-info">
+                  <div className="info-card">
+                    <h4>Data Summary</h4>
+                    <p><strong>Total Documents:</strong> {documents.length}</p>
+                    <p><strong>Filtered Documents:</strong> {filteredDocuments.length}</p>
+                    <p><strong>Using Fallback:</strong> {usingFallbackData ? 'Yes' : 'No'}</p>
+                    <p><strong>Active States:</strong> {highlightedStates.length}</p>
+                  </div>
+                  
+                  <div className="info-card">
+                    <h4>Search Filters</h4>
+                    <p><strong>Search Term:</strong> {filters.searchTerm || 'None'}</p>
+                    <p><strong>Document Types:</strong> {filters.documentTypes.length || 'All'}</p>
+                    <p><strong>Selected States:</strong> {filters.states.length || 'All'}</p>
+                    <p><strong>Date Range:</strong> {filters.dateFrom || filters.dateTo ? 'Active' : 'None'}</p>
+                  </div>
+                  
+                  <div className="info-card">
+                    <h4>Performance</h4>
+                    <p><strong>Loading:</strong> {isLoading ? 'Yes' : 'No'}</p>
+                    <p><strong>Error State:</strong> {error ? 'Yes' : 'No'}</p>
+                    <p><strong>Sidebar Open:</strong> {sidebarOpen ? 'Yes' : 'No'}</p>
+                    <p><strong>Export Panel:</strong> {exportPanelOpen ? 'Open' : 'Closed'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {(selectedState || selectedMunicipality) && (
           <aside className="info-panel" role="complementary" aria-labelledby="location-info-heading">
@@ -266,29 +292,11 @@ const Dashboard: React.FC = () => {
           id="export-panel"
           isOpen={exportPanelOpen}
           onClose={toggleExportPanel}
-          documents={filteredDocuments || []}
+          documents={filteredDocuments}
         />
       </Suspense>
-      {aiAssistantOpen && (
-        <Suspense fallback={<LoadingSpinner message="Loading AI assistant..." />}>
-          <AIResearchAssistant
-            selectedDocuments={selectedDocuments}
-            onDocumentAnalyzed={(analysis) => console.log('Document analyzed:', analysis)}
-            className="ai-assistant-panel"
-          />
-        </Suspense>
-      )}
-      {validationPanelOpen && (
-        <Suspense fallback={<LoadingSpinner message="Loading validation panel..." />}>
-          <DocumentValidationPanel
-            documents={selectedDocuments}
-            onValidationComplete={(results) => console.log('Validation complete:', results)}
-            className="validation-panel"
-          />
-        </Suspense>
-      )}
     </div>
   );
 };
 
-export default Dashboard;
+export default DashboardV2; 

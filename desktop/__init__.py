@@ -1,1 +1,0 @@
-"""Monitor Legislativo Desktop Application"""

@@ -31,32 +31,6 @@ export class LegislativeDataService {
     return LegislativeDataService.instance;
   }
   
-  private async testBackendConnectivity(): Promise<{ available: boolean; reason?: string }> {
-    try {
-      // Quick health check with short timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
-      const baseUrl = getApiBaseUrl();
-      
-      const response = await fetch(`${baseUrl}/health`, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: { 'Accept': 'application/json' }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        return { available: true };
-      } else {
-        return { available: false, reason: `HTTP ${response.status}` };
-      }
-    } catch (error) {
-      console.log(`Backend connectivity check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      return { available: false, reason: 'Connection failed' };
-    }
-  }
   
   private async getLocalCsvData(): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
     // Check multi-layer cache first
@@ -156,59 +130,10 @@ export class LegislativeDataService {
     }
     
     try {
-      console.log('🔬 Connecting to LexML Enhanced Research Engine...');
-      
-      // Quick connectivity test first
-      const healthCheck = await this.testBackendConnectivity();
-      
-      if (healthCheck.available) {
-        console.log('✅ Backend connectivity confirmed, proceeding with enhanced search...');
-        
-        const params = this.buildQueryParams(filters);
-        
-        // Add LexML-specific parameters for vocabulary enhancement
-        const enhancedParams = {
-          ...params,
-          sources: 'lexml,camara,senado,planalto'  // Prioritize LexML
-        };
-        
-        console.log('🔍 API Search Parameters:', enhancedParams);
-        
-        const response = await apiClient.get<any>('/search', enhancedParams);
-        
-        console.log('📡 API Response Analysis:');
-        console.log('  - Query:', response?.query);
-        console.log('  - Total Count:', response?.total_count);
-        console.log('  - Results Length:', response?.results?.length || 0);
-        console.log('  - Sources:', response?.sources);
-        console.log('  - Enhanced Search:', response?.enhanced_search);
-        console.log('  - Filters Applied:', response?.filters);
-        console.log('  - Metadata:', response?.metadata);
-        
-        if (response?.total_count === 0) {
-          console.warn('🚨 Backend API found 0 results for query:', response?.query);
-          console.log('🔧 This suggests the backend search needs investigation');
-        }
-        const documents = this.transformSearchResponse(response);
-        
-        if (documents.length === 0) {
-          console.warn('🔄 Enhanced API returned no results, falling back to embedded real data');
-          const localData = await this.getLocalCsvData();
-          return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
-        }
-        
-        // Log vocabulary enhancement information
-        if (response.metadata?.vocabulary_expansion) {
-          console.log(`📚 Vocabulary enhanced search: '${response.metadata.vocabulary_expansion.original_term}' → ${response.metadata.vocabulary_expansion.expansion_count} terms`);
-        }
-        
-        console.log(`✅ Successfully fetched ${documents.length} documents from LexML Enhanced API`);
-        return { documents: documents, usingFallback: false };
-      } else {
-        console.warn('⚠️ Backend not available, using embedded real data immediately');
-        const localData = await this.getLocalCsvData();
-        return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
-      }
+      // Use embedded CSV data directly (backend processing handled separately)
+      console.log('📦 Using embedded CSV data');
+      const localData = await this.getLocalCsvData();
+      return { documents: this.filterLocalData(localData.documents, filters), usingFallback: false };
     } catch (error) {
       console.warn('⚠️ Enhanced API fetch failed, attempting fallback to embedded real data:', error);
       try {

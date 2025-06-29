@@ -1,1 +1,0 @@
-# Monitor Legislativo v4 - Collector Service
