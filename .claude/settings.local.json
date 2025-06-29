@@ -77,7 +77,8 @@
       "Bash(R:*)",
       "Bash(\"/mnt/c/Program Files/R/R-4.5.1/bin/Rscript.exe\" setup_and_run.R)",
       "Bash(pkill:*)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "Bash(git branch:*)"
     ]
   },
   "enableAllProjectMcpServers": false
