@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
 
 # Copy ONLY the R Shiny app
 COPY app-rshiny.R /app/app.R
+COPY start-rshiny.sh /app/start-rshiny.sh
+RUN chmod +x /app/start-rshiny.sh
 
 # Install R packages
 RUN R -e "install.packages('shiny', repos='https://cran.rstudio.com/')"
@@ -21,5 +23,5 @@ EXPOSE 3838
 # HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 #     CMD curl -f http://localhost:3838/ || exit 1
 
-# Run ONLY the R Shiny app
-CMD ["R", "-e", "shiny::runApp('/app/app.R', host='0.0.0.0', port=3838)"]
+# Run ONLY the R Shiny app with startup script
+CMD ["/app/start-rshiny.sh"]
