@@ -6,7 +6,8 @@ import '../styles/components/Dashboard.css';
 import { LegislativeDocument, SearchFilters } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
 import { SkeletonLoader, SkeletonDocumentList, SkeletonMapLoading, SkeletonChart } from './common/SkeletonLoader';
-import { Files, MapTrifold, Flask, Gear, ChartBar } from '@phosphor-icons/react';\nimport RShinyStatus from './RShinyStatus';
+import { Files, MapTrifold, Flask, Gear, ChartBar } from '@phosphor-icons/react';
+import RShinyStatus from './RShinyStatus';
 
 // Lazy load heavy components
 const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.default })));

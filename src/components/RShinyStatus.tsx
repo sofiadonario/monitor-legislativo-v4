@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { rShinyConfig } from '../config/rshiny';
-import { Flask, CheckCircle, XCircle, Clock, ExternalLink } from '@phosphor-icons/react';
+import { Flask, CheckCircle, XCircle, Clock, ArrowSquareOut } from '@phosphor-icons/react';
 
 interface RShinyStatusProps {
   className?: string;
@@ -116,7 +116,7 @@ const RShinyStatus: React.FC<RShinyStatusProps> = ({ className = '', showDetails
             className="ml-1 hover:opacity-70 transition-opacity"
             title="Open R Shiny App"
           >
-            <ExternalLink size={12} weight="bold" />
+            <ArrowSquareOut size={12} weight="bold" />
           </a>
         )}
       </div>
