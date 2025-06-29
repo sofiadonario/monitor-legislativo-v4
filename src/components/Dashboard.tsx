@@ -6,7 +6,7 @@ import '../styles/components/Dashboard.css';
 import { LegislativeDocument, SearchFilters } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
 import { SkeletonLoader, SkeletonDocumentList, SkeletonMapLoading, SkeletonChart } from './common/SkeletonLoader';
-import { Files, MapTrifold, Flask, Gear, ChartBar } from '@phosphor-icons/react';
+import { Files, MapTrifold, Flask, Gear, ChartBar } from '@phosphor-icons/react';\nimport RShinyStatus from './RShinyStatus';
 
 // Lazy load heavy components
 const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.default })));
@@ -161,6 +161,7 @@ const DashboardV2: React.FC = () => {
             <Suspense fallback={null}>
               <CollectionStatus compact={true} className="toolbar-collection-status" />
             </Suspense>
+            <RShinyStatus className="toolbar-rshiny-status" />
             <div className="view-mode-switcher">
               <button 
                 className={`view-mode-btn ${viewMode === 'dashboard' ? 'active' : ''}`}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "r-shiny-app/Dockerfile"
+  },
+  "deploy": {
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 120,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "replicas": 1
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "SHINY_LOG_LEVEL": "INFO",
+        "R_LIBS_USER": "/app/renv/library",
+        "ENVIRONMENT": "production",
+        "PORT": "3838"
+      }
+    },
+    "development": {
+      "variables": {
+        "SHINY_LOG_LEVEL": "DEBUG",
+        "R_LIBS_USER": "/app/renv/library",
+        "ENVIRONMENT": "development",
+        "PORT": "3838"
+      }
+    }
+  }
+}
