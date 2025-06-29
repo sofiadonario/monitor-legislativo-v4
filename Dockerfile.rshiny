@@ -17,9 +17,9 @@ RUN R -e "install.packages('shiny', repos='https://cran.rstudio.com/')"
 # Expose port 3838
 EXPOSE 3838
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:3838/ || exit 1
+# Health check - disabled for Railway compatibility
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+#     CMD curl -f http://localhost:3838/ || exit 1
 
 # Run ONLY the R Shiny app
 CMD ["R", "-e", "shiny::runApp('/app/app.R', host='0.0.0.0', port=3838)"]
