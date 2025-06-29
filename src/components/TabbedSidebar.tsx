@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { SearchFilters, LegislativeDocument } from '../types';
 import { DataVisualization } from './DataVisualization';
 import { EnhancedSearch } from './EnhancedSearch';
-import { MagnifyingGlass, ChartBar, FlaskConical, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { MagnifyingGlass, ChartBar, Flask, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import '../styles/components/TabbedSidebar.css';
 
 interface TabbedSidebarProps {
@@ -102,7 +102,7 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
               onClick={() => setActiveTab('rshiny')}
               aria-selected={activeTab === 'rshiny'}
             >
-              <FlaskConical size={16} weight="fill" /> R Analytics
+              <Flask size={16} weight="fill" /> R Analytics
             </button>
           </div>
 

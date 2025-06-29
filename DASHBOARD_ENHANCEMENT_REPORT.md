@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This report analyzes the current dashboard map utility implementation and proposes comprehensive enhancements for better database information display. The analysis covers both React-based and R-based visualization approaches, with specific recommendations for academic research workflows.
+This report analyzes the current dashboard map utility implementation and proposes comprehensive enhancements for better displaying database information. The analysis covers both React-based and R-based visualization approaches, with specific recommendations for academic research workflows.
 
 ### Key Findings
 - **Current State:** Hybrid React + R Shiny architecture with Leaflet maps

@@ -6,7 +6,7 @@ import '../styles/components/Dashboard.css';
 import { LegislativeDocument, SearchFilters } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
 import { SkeletonLoader, SkeletonDocumentList, SkeletonMapLoading, SkeletonChart } from './common/SkeletonLoader';
-import { Files, MapTrifold, FlaskConical, Gear, ChartBar } from '@phosphor-icons/react';
+import { Files, MapTrifold, Flask, Gear, ChartBar } from '@phosphor-icons/react';
 
 // Lazy load heavy components
 const OptimizedMap = lazy(() => import('./OptimizedMap').then(module => ({ default: module.default })));
@@ -174,7 +174,7 @@ const DashboardV2: React.FC = () => {
                 onClick={() => setViewMode('analytics')}
                 aria-pressed={viewMode === 'analytics'}
               >
-                <FlaskConical size={16} weight="fill" /> R Analytics
+                <Flask size={16} weight="fill" /> R Analytics
               </button>
               <button 
                 className={`view-mode-btn ${viewMode === 'admin' ? 'active' : ''}`}
