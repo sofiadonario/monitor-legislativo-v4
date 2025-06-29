@@ -1,0 +1,37 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile.rshiny"
+  },
+  "deploy": {
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  },
+  "services": {
+    "monitor-legislativo-api": {
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "main_app/Dockerfile"
+      },
+      "deploy": {
+        "healthcheckPath": "/health",
+        "healthcheckTimeout": 100
+      }
+    },
+    "rshiny": {
+      "build": {
+        "builder": "DOCKERFILE", 
+        "dockerfilePath": "Dockerfile.rshiny",
+        "buildContext": "."
+      },
+      "deploy": {
+        "healthcheckPath": "/",
+        "healthcheckTimeout": 300,
+        "startCommand": "R -e \"shiny::runApp('/app/app.R', host='0.0.0.0', port=3838)\""
+      }
+    }
+  }
+}
