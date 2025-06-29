@@ -14,6 +14,9 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import asyncio
 
+# Set up logger first
+logger = logging.getLogger(__name__)
+
 # Import the working CSV data
 import sys
 from pathlib import Path
@@ -38,8 +41,6 @@ except ImportError as e:
     class PaginationConfig:
         def __init__(self, **kwargs): pass
     async def get_global_pool_manager(): return None
-
-logger = logging.getLogger(__name__)
 
 
 class LexMLSearchResponse:

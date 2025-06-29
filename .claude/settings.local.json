@@ -70,7 +70,14 @@
       "Bash(git fetch:*)",
       "WebFetch(domain:supabase.com)",
       "Bash(ping:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(Rscript:*)",
+      "Bash(echo $PATH)",
+      "Bash(\"/mnt/c/Program Files/R/R-4.5.1/bin/Rscript.exe\" --version)",
+      "Bash(R:*)",
+      "Bash(\"/mnt/c/Program Files/R/R-4.5.1/bin/Rscript.exe\" setup_and_run.R)",
+      "Bash(pkill:*)",
+      "Bash(ss:*)"
     ]
   },
   "enableAllProjectMcpServers": false
