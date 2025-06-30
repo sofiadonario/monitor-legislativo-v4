@@ -47,8 +47,10 @@ required_packages <- c(
   
   # Logging
   "futile.logger"
+  
+  # Text processing
+  "textclean"
 )
-
 # Install packages if not already installed
 for (pkg in required_packages) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
