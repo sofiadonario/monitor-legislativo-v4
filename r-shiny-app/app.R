@@ -35,6 +35,26 @@ writeLines <- function(text, con = stdout(), sep = "\n", useBytes = FALSE) {
 }
 # --- END DEBUG TRACING ---
 
+# Add health check handler with debug
+message(">>>> Setting up health check handler <<<<")
+options(shiny.http.response.filter = function(req, res) {
+  if (!is.null(req$PATH_INFO) && req$PATH_INFO == "/health") {
+    message("=== HEALTH CHECK REQUEST RECEIVED ===")
+    res$status <- 200
+    res$headers <- list("Content-Type" = "application/json")
+    
+    # Ensure body is a single string
+    health_response <- '{"status":"healthy","app":"monitor-legislativo-rshiny"}'
+    message(paste("Health response class:", class(health_response)))
+    message(paste("Health response length:", length(health_response)))
+    
+    res$body <- health_response
+    message("=== HEALTH CHECK RESPONSE SET ===")
+    return(res)
+  }
+  return(res)
+})
+
 # Load environment and required packages
 source(".Rprofile")
 
