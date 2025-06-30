@@ -35,25 +35,38 @@ writeLines <- function(text, con = stdout(), sep = "\n", useBytes = FALSE) {
 }
 # --- END DEBUG TRACING ---
 
-# Add health check handler with debug
+# Add health check handler with writeImpl fix
 message(">>>> Setting up health check handler <<<<")
+
+# Fix for writeImpl issue - ensure single element character vectors
 options(shiny.http.response.filter = function(req, res) {
   if (!is.null(req$PATH_INFO) && req$PATH_INFO == "/health") {
     message("=== HEALTH CHECK REQUEST RECEIVED ===")
-    res$status <- 200
-    res$headers <- list("Content-Type" = "application/json")
     
-    # Ensure body is a single string
-    health_response <- '{"status":"healthy","app":"monitor-legislativo-rshiny"}'
-    message(paste("Health response class:", class(health_response)))
-    message(paste("Health response length:", length(health_response)))
+    # Method 1: Try using shiny's built-in response
+    res$status <- 200L
+    res$headers[["Content-Type"]] <- "text/plain"
+    res$body <- as.character("OK")
     
-    res$body <- health_response
-    message("=== HEALTH CHECK RESPONSE SET ===")
+    message(paste("Response body class:", class(res$body)))
+    message(paste("Response body length:", length(res$body)))
+    message(paste("Response body content:", res$body))
+    
     return(res)
   }
   return(res)
 })
+
+# Alternative: Use httpuv handler directly
+if (FALSE) {  # Disabled for now, can enable if filter doesn't work
+  registerHttpHandler("/health", function(req) {
+    list(
+      status = 200L,
+      headers = list("Content-Type" = "text/plain"),
+      body = "OK"
+    )
+  })
+}
 
 # Load environment and required packages
 source(".Rprofile")
