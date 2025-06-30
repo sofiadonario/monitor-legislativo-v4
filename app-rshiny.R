@@ -4,14 +4,14 @@ library(shiny)
 ui <- fluidPage(
   titlePanel("Monitor Legislativo v4 - R Analytics Service"),
   
-  h2("🌟 R Shiny Service: ONLINE"),
+  h2("R Shiny Service: ONLINE"),
   
   div(class = "well",
     h3("System Information:"),
     p(strong("Service:"), "Railway R Shiny"),
     p(strong("R Version:"), R.version.string),
     p(strong("Shiny Version:"), packageVersion("shiny")),
-    p(strong("Status:"), "✅ Healthy"),
+    p(strong("Status:"), "Healthy"),
     p(strong("Timestamp:"), textOutput("timestamp", inline = TRUE))
   ),
   
@@ -37,7 +37,7 @@ server <- function(input, output, session) {
   
   output$test_output <- renderText({
     if (input$test_btn > 0) {
-      paste("✅ Button clicked", input$test_btn, "times at", Sys.time())
+      paste("Button clicked", input$test_btn, "times at", Sys.time())
     } else {
       "Ready for testing..."
     }
