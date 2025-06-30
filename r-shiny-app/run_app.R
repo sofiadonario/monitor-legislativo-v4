@@ -1,19 +1,32 @@
 #!/usr/bin/env Rscript
 
-# Debug: Wrap cat to find multi-line vectors
+# --- TRACING WRAPPER START ---
+# This code is for debugging the 'writeImpl' warning.
+# It wraps cat() and writeLines() to print a stack trace when they
+# are called with multi-element character vectors.
+
+message(">>>> EXECUTING CUSTOM run_app.R - TRACING ENABLED <<<<")
+
 old_cat <- base::cat
 cat <- function(..., file = "", sep = " ", fill = FALSE, labels = NULL, append = FALSE) {
-  # The warning is about the first argument being a character vector of length > 1
-  if (length(list(...)) > 0) {
-    arg1 <- list(...)[[1]]
-    if (is.character(arg1) && length(arg1) > 1) {
-        message("--- CAT TRACEBACK ---")
-        try(print(traceback(1)))
-        message("--- END TRACEBACK ---")
-    }
+  if (is.character(list(...)[[1]]) && length(list(...)[[1]]) > 1) {
+    message("--- CAT TRACEBACK ---")
+    try(print(traceback(1)))
+    message("--- END TRACEBACK ---")
   }
   old_cat(..., file = file, sep = sep, fill = fill, labels = labels, append = append)
 }
+
+old_writeLines <- base::writeLines
+writeLines <- function(text, ...) {
+  if (is.character(text) && length(text) > 1) {
+    message("--- WRITELINES TRACEBACK ---")
+    try(print(traceback(1)))
+    message("--- END TRACEBACK ---")
+  }
+  old_writeLines(text, ...)
+}
+# --- TRACING WRAPPER END ---
 
 # Run script for Railway deployment
 # This adds a health endpoint handler
