@@ -39,12 +39,12 @@ RUN mkdir -p /app/data/cache /app/data/geographic /app/www /app/logs
 RUN chmod -R 755 /app
 RUN chown -R shiny:shiny /app
 
-# Expose port 3838
-EXPOSE 3838
+# Expose default Shiny port (Railway sets $PORT, default 8080)
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:3838/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
-# Start Shiny server
-CMD ["R", "-e", "shiny::runApp('/app', host='0.0.0.0', port=3838)"]
+# Start Shiny server with health endpoint support
+CMD ["Rscript", "/app/run_app.R"]
