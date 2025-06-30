@@ -1,0 +1,20 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "./Dockerfile.railway"
+
+[deploy]
+startCommand = "Rscript run_app.R"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[env]
+PORT = "3838"
+SHINY_LOG_LEVEL = "INFO"
+
+[[services]]
+name = "rshiny"
+port = 3838
+
+[healthcheck]
+path = "/health"
+port = 3838

@@ -1,0 +1,38 @@
+# Simplified Dockerfile for Railway deployment
+FROM rocker/shiny:4.3.1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libgdal-dev \
+    libudunits2-dev \
+    libproj-dev \
+    libgeos-dev \
+    libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /srv/shiny-server
+
+# Copy app files
+COPY . .
+
+# Install R packages
+RUN R -e "source('.Rprofile')"
+
+# Create necessary directories
+RUN mkdir -p data/cache data/geographic www logs exports
+
+# Set permissions
+RUN chown -R shiny:shiny /srv/shiny-server
+
+# Expose port
+EXPOSE 3838
+
+# Make run script executable
+RUN chmod +x run_app.R
+
+# Run app
+CMD ["Rscript", "run_app.R"]
