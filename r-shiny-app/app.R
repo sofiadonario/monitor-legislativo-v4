@@ -2,6 +2,39 @@
 # REAL Brazilian Legislative Data from Government APIs
 # Academic Research Tool
 
+# --- DEBUG TRACING FOR WRITEIMPL WARNING ---
+message(">>>> APP.R DEBUG TRACING ENABLED <<<<")
+
+# Wrap cat() to trace multi-element vectors
+old_cat <- base::cat
+cat <- function(..., file = "", sep = " ", fill = FALSE, labels = NULL, append = FALSE) {
+  args <- list(...)
+  if (length(args) > 0 && is.character(args[[1]]) && length(args[[1]]) > 1) {
+    message("=== CAT MULTI-ELEMENT DETECTED ===")
+    message(paste("Length:", length(args[[1]])))
+    message(paste("Content preview:", paste(head(args[[1]], 3), collapse = " | ")))
+    message("Call stack:")
+    print(sys.calls())
+    message("=== END CAT TRACE ===")
+  }
+  old_cat(..., file = file, sep = sep, fill = fill, labels = labels, append = append)
+}
+
+# Wrap writeLines() to trace multi-element vectors
+old_writeLines <- base::writeLines
+writeLines <- function(text, con = stdout(), sep = "\n", useBytes = FALSE) {
+  if (is.character(text) && length(text) > 1) {
+    message("=== WRITELINES MULTI-ELEMENT DETECTED ===")
+    message(paste("Length:", length(text)))
+    message(paste("Content preview:", paste(head(text, 3), collapse = " | ")))
+    message("Call stack:")
+    print(sys.calls())
+    message("=== END WRITELINES TRACE ===")
+  }
+  old_writeLines(text, con = con, sep = sep, useBytes = useBytes)
+}
+# --- END DEBUG TRACING ---
+
 # Load environment and required packages
 source(".Rprofile")
 
