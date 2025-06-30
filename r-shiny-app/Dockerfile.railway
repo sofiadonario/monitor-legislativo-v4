@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /srv/shiny-server
+# Set working directory to /app (where Railway expects it)
+WORKDIR /app
 
 # Copy app files
 COPY . .
@@ -26,7 +26,7 @@ RUN R -e "source('.Rprofile')"
 RUN mkdir -p data/cache data/geographic www logs exports
 
 # Set permissions
-RUN chown -R shiny:shiny /srv/shiny-server
+RUN chown -R shiny:shiny /app
 
 # Expose port
 EXPOSE 3838
@@ -34,5 +34,11 @@ EXPOSE 3838
 # Make run script executable
 RUN chmod +x run_app.R
 
-# Run app
+# Create a startup script that Railway's auto-detection will use
+RUN echo '#!/usr/bin/env Rscript' > /app/startup.R && \
+    echo 'message(">>>> CUSTOM STARTUP SCRIPT EXECUTING <<<<")' >> /app/startup.R && \
+    echo 'source("/app/app.R")' >> /app/startup.R && \
+    chmod +x /app/startup.R
+
+# Run app (Railway may override this)
 CMD ["Rscript", "run_app.R"]
