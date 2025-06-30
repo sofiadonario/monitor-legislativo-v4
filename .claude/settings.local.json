@@ -90,7 +90,8 @@
       "Bash(railway service:*)",
       "Bash(railway:*)",
       "Bash(timeout:*)",
-      "Bash(./railway_deploy_api.sh)"
+      "Bash(./railway_deploy_api.sh)",
+      "Bash(git ls-tree:*)"
     ]
   },
   "enableAllProjectMcpServers": false
