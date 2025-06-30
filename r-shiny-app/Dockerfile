@@ -1,6 +1,10 @@
 # Multi-stage Docker build for R Shiny Academic Legislative Monitor
 FROM rocker/shiny:latest
 
+# Use persistent cache for R packages
+ARG R_LIBS_USER=/usr/local/lib/R/site-library
+ENV R_LIBS_USER=${R_LIBS_USER}
+
 # Set working directory
 WORKDIR /app
 
@@ -20,24 +24,13 @@ RUN apt-get update && apt-get install -y \
 # Copy application files
 COPY . /app/
 
-# Install R packages from .Rprofile
-RUN cd /app && R -e "source('.Rprofile')"
+# Install R packages from .Rprofile (cached between builds)
+RUN --mount=type=cache,target=${R_LIBS_USER} \
+    Rscript -e "source('/app/.Rprofile')"
 
-# Additional packages for enhanced functionality
-RUN R -e "install.packages(c( \
-    'plotly', \
-    'highcharter', \
-    'dygraphs', \
-    'ggiraph', \
-    'tmap', \
-    'sf', \
-    'htmlwidgets', \
-    'reactR', \
-    'crosstalk', \
-    'promises', \
-    'future', \
-    'ipc' \
-), repos='https://cran.rstudio.com/')"
+# Additional packages for enhanced functionality (also cached)
+RUN --mount=type=cache,target=${R_LIBS_USER} \
+    Rscript -e "install.packages(c( \"plotly\", \"highcharter\", \"dygraphs\", \"ggiraph\", \"tmap\", \"sf\", \"htmlwidgets\", \"reactR\", \"crosstalk\", \"promises\", \"future\", \"ipc\" ), repos='https://cran.rstudio.com/')"
 
 # Create necessary directories
 RUN mkdir -p /app/data/cache /app/data/geographic /app/www /app/logs
