@@ -1,5 +1,20 @@
 #!/usr/bin/env Rscript
 
+# Debug: Wrap cat to find multi-line vectors
+old_cat <- base::cat
+cat <- function(..., file = "", sep = " ", fill = FALSE, labels = NULL, append = FALSE) {
+  # The warning is about the first argument being a character vector of length > 1
+  if (length(list(...)) > 0) {
+    arg1 <- list(...)[[1]]
+    if (is.character(arg1) && length(arg1) > 1) {
+        message("--- CAT TRACEBACK ---")
+        try(print(traceback(1)))
+        message("--- END TRACEBACK ---")
+    }
+  }
+  old_cat(..., file = file, sep = sep, fill = fill, labels = labels, append = append)
+}
+
 # Run script for Railway deployment
 # This adds a health endpoint handler
 
