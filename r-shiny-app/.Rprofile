@@ -46,7 +46,7 @@ required_packages <- c(
   "scales",
   
   # Logging
-  "futile.logger"
+  "futile.logger",
   
   # Text processing
   "textclean"
