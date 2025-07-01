@@ -24,11 +24,11 @@
     "rshiny-minimal": {
       "build": {
         "builder": "DOCKERFILE",
-        "dockerfilePath": "Dockerfile.rshiny-minimal"
+        "dockerfilePath": "r-shiny-app/Dockerfile",
+        "buildContext": "r-shiny-app"
       },
       "deploy": {
-        "startCommand": "Rscript /app/run_app.R",
-        "healthcheckPath": "/health",
+        "healthcheckPath": "/",
         "healthcheckTimeout": 300,
         "restartPolicyType": "ON_FAILURE",
         "restartPolicyMaxRetries": 3

@@ -13,5 +13,5 @@ RUN chmod +x ./run_app.R
 # Expose port (Railway will override with $PORT)
 EXPOSE 3838
 
-# Start R Shiny app
-CMD ["Rscript", "./run_app.R"]
+# Start R Shiny app using PORT from Railway
+CMD Rscript ./run_app.R
