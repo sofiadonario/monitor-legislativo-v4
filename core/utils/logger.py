@@ -7,6 +7,9 @@ import logging
 import sys
 from typing import Optional
 
+# Alias for backward compatibility
+Logger = logging.getLogger
+
 def get_logger(name: str, level: Optional[str] = None) -> logging.Logger:
     """
     Get a logger instance with standard configuration
