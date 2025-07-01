@@ -4,8 +4,7 @@
     "monitor-legislativo-v4": {
       "build": {
         "builder": "DOCKERFILE",
-        "dockerfilePath": "main_app/Dockerfile",
-        "buildContext": "main_app"
+        "dockerfilePath": "main_app/Dockerfile"
       },
       "deploy": {
         "healthcheckPath": "/health",
