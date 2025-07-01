@@ -13,6 +13,8 @@ import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import asyncio
+import sys
+from pathlib import Path
 
 # Set up logger first
 logger = logging.getLogger(__name__)
@@ -23,8 +25,6 @@ try:
 except ImportError:
     # Fallback for different path structures
     try:
-        import sys
-        from pathlib import Path
         sys.path.append(str(Path(__file__).parent.parent.parent / 'src' / 'data'))
         from real_legislative_data import realLegislativeData
     except ImportError:

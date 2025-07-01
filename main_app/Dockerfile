@@ -22,6 +22,9 @@ COPY main_app/ ./main_app/
 # Copy src data directory with legislative data
 COPY src/ ./src/
 
+# Copy public directory with CSV data files
+COPY public/ ./public/
+
 # Set Python path to include core, main_app, and src
 ENV PYTHONPATH=/app:/app/core:/app/main_app:/app/src
 ENV PYTHONUNBUFFERED=1
