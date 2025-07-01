@@ -18,10 +18,19 @@ import asyncio
 logger = logging.getLogger(__name__)
 
 # Import the working CSV data
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent / 'src' / 'data'))
-from real_legislative_data import realLegislativeData
+try:
+    from data.real_legislative_data import realLegislativeData
+except ImportError:
+    # Fallback for different path structures
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.append(str(Path(__file__).parent.parent.parent / 'src' / 'data'))
+        from real_legislative_data import realLegislativeData
+    except ImportError:
+        # Final fallback with empty data
+        logger.warning("Could not import real_legislative_data, using empty fallback")
+        realLegislativeData = []
 
 # Import database cache service
 from .database_cache_service import get_database_cache_service

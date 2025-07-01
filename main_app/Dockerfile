@@ -19,8 +19,11 @@ COPY core/ ./core/
 # Copy main app
 COPY main_app/ ./main_app/
 
-# Set Python path to include both core and main_app
-ENV PYTHONPATH=/app:/app/core:/app/main_app
+# Copy src data directory with legislative data
+COPY src/ ./src/
+
+# Set Python path to include core, main_app, and src
+ENV PYTHONPATH=/app:/app/core:/app/main_app:/app/src
 ENV PYTHONUNBUFFERED=1
 
 # Expose port
