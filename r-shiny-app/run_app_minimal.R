@@ -2,13 +2,11 @@
 
 library(shiny)
 
+# Use Railway's PORT environment variable
 port <- as.numeric(Sys.getenv("PORT", "3838"))
 host <- "0.0.0.0"
 
-message("Starting minimal R Shiny app on ", host, ":", port)
-
-# Simple health check endpoint
-addResourcePath("health", ".")
+message("Starting R Shiny app on ", host, ":", port)
 
 # Run the app
-runApp("app-minimal.R", host = host, port = port, launch.browser = FALSE)
+runApp("app.R", host = host, port = port, launch.browser = FALSE)
