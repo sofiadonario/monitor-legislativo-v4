@@ -20,6 +20,10 @@ class TwoTierDatabaseManager(BaseManager):
     
     async def create_search_term(self, term_data: Dict[str, Any]) -> int:
         """Create a new search term for automated collection"""
+        if not self.database_available:
+            logger.warning("Database not available - cannot create search term")
+            return -1
+            
         try:
             async with self.session_factory() as session:
                 result = await session.execute(text("""
@@ -44,6 +48,10 @@ class TwoTierDatabaseManager(BaseManager):
     
     async def get_active_search_terms(self) -> List[Dict[str, Any]]:
         """Get all active search terms for collection"""
+        if not self.database_available:
+            logger.warning("Database not available - returning empty search terms list")
+            return []
+            
         try:
             async with self.session_factory() as session:
                 result = await session.execute(text("""
@@ -288,6 +296,14 @@ class TwoTierDatabaseManager(BaseManager):
     
     async def get_dashboard_summary(self) -> Dict[str, Any]:
         """Get comprehensive dashboard summary"""
+        if not self.database_available:
+            logger.warning("Database not available - returning empty dashboard summary")
+            return {
+                'message': 'Database not configured - dashboard unavailable',
+                'collection_performance': [],
+                'search_patterns': []
+            }
+            
         try:
             async with self.session_factory() as session:
                 # Refresh materialized view
@@ -364,11 +380,15 @@ async def get_two_tier_manager() -> TwoTierDatabaseManager:
         _two_tier_manager = TwoTierDatabaseManager()
         _two_tier_manager.engine = base_manager.engine
         _two_tier_manager.session_factory = base_manager.session_factory
+        _two_tier_manager.database_available = base_manager.database_available
         
-        # Test connection and initialize schema
-        if await _two_tier_manager.test_connection():
-            logger.info("Two-tier database manager initialized successfully")
+        # Only test connection and initialize schema if database is available
+        if _two_tier_manager.database_available:
+            if await _two_tier_manager.test_connection():
+                logger.info("Two-tier database manager initialized successfully")
+            else:
+                logger.warning("Two-tier database manager initialized in fallback mode")
         else:
-            logger.warning("Two-tier database manager initialized in fallback mode")
+            logger.info("Two-tier database manager initialized without database connection")
     
     return _two_tier_manager

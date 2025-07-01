@@ -67,10 +67,9 @@ class EnvironmentConfig:
             "configuration": {}
         }
         
-        # Critical validations
+        # Critical validations - DATABASE_URL is optional for fallback mode
         if not cls.DATABASE_URL:
-            validation_results["errors"].append("DATABASE_URL is required but not set")
-            validation_results["valid"] = False
+            validation_results["warnings"].append("DATABASE_URL not set - application will run in fallback mode without database features")
         elif cls.DATABASE_URL.startswith('postgresql://postgres:postgres@localhost'):
             validation_results["warnings"].append("DATABASE_URL appears to be using localhost - check if this is intended for production")
         

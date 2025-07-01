@@ -30,7 +30,7 @@ class SupabaseConfig:
     """Configuration for Supabase PostgreSQL database"""
     
     # Database connection - Use environment configuration
-    DATABASE_URL = EnvironmentConfig.DATABASE_URL or 'postgresql://postgres:postgres@db.supabase.co:5432/postgres'
+    DATABASE_URL = EnvironmentConfig.DATABASE_URL if EnvironmentConfig.DATABASE_URL else None
     
     # Connection pool settings for Railway/Supabase optimization
     POOL_SIZE = 3  # Smaller pool for Railway container limits
@@ -46,9 +46,13 @@ class SupabaseConfig:
     ECHO_SQL = EnvironmentConfig.DEBUG
     
     @classmethod
-    def fix_database_url(cls) -> str:
+    def fix_database_url(cls) -> Optional[str]:
         """Fix DATABASE_URL for Railway/Supabase compatibility"""
         db_url = cls.DATABASE_URL
+        
+        # Return None if no DATABASE_URL is configured
+        if not db_url:
+            return None
         
         # Parse URL to fix encoding issues
         try:
@@ -97,6 +101,11 @@ class SupabaseConfig:
         # Fix DATABASE_URL encoding and SSL
         db_url = cls.fix_database_url()
         
+        # Return None if no DATABASE_URL is configured
+        if not db_url:
+            logger.warning("No DATABASE_URL configured - database engine cannot be created")
+            return None
+        
         # CRITICAL CHANGE: Switch to psycopg driver instead of asyncpg
         if db_url.startswith('postgresql://'):
             db_url = db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
@@ -137,7 +146,10 @@ class SupabaseConfig:
     @classmethod
     def get_session_factory(cls):
         """Create session factory"""
-        engine = cls.get_async_engine() 
+        engine = cls.get_async_engine()
+        if not engine:
+            logger.warning("Cannot create session factory - no database engine available")
+            return None
         return sessionmaker(
             bind=engine,
             class_=AsyncSession,
@@ -151,9 +163,15 @@ class DatabaseManager:
     def __init__(self):
         self.engine = SupabaseConfig.get_async_engine()
         self.session_factory = SupabaseConfig.get_session_factory()
+        self.database_available = bool(self.engine and self.session_factory)
     
     async def test_direct_asyncpg_connection(self) -> bool:
         """CRITICAL: Test direct psycopg connection bypassing SQLAlchemy (SWITCHED FROM ASYNCPG)"""
+        # Skip if database is not configured
+        if not self.database_available:
+            logger.info("Database not configured - skipping direct connection test")
+            return False
+            
         try:
             # Try direct psycopg connection instead of asyncpg
             import psycopg
@@ -253,6 +271,11 @@ class DatabaseManager:
     
     async def test_connection(self) -> bool:
         """Test database connection with retry logic and detailed error reporting"""
+        # Skip if database is not configured
+        if not self.database_available:
+            logger.info("Database not configured - skipping connection test")
+            return False
+            
         max_retries = 3
         retry_delay = 2
         
@@ -342,6 +365,11 @@ class DatabaseManager:
     
     async def initialize_schema(self) -> bool:
         """Initialize basic schema for academic use"""
+        # Skip if database is not configured
+        if not self.database_available:
+            logger.info("Database not configured - skipping schema initialization")
+            return False
+            
         try:
             async with self.session_factory() as session:
                 # Create basic tables for caching and session data
@@ -403,6 +431,11 @@ class DatabaseManager:
     
     async def cleanup_expired_cache(self) -> int:
         """Clean up expired cache entries"""
+        # Skip if database is not configured
+        if not self.database_available:
+            logger.info("Database not configured - skipping cache cleanup")
+            return 0
+            
         try:
             async with self.session_factory() as session:
                 result = await session.execute(text("""
@@ -427,6 +460,15 @@ class DatabaseManager:
     
     async def get_cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics"""
+        # Skip if database is not configured
+        if not self.database_available:
+            logger.info("Database not configured - returning empty cache stats")
+            return {
+                "cache": {"total_entries": 0, "active_entries": 0, "expired_entries": 0},
+                "exports": {"total_cached": 0, "unique_formats": 0},
+                "searches": {"total_24h": 0, "avg_execution_ms": 0, "avg_results": 0}
+            }
+            
         try:
             async with self.session_factory() as session:
                 # Cache entries stats
@@ -484,7 +526,8 @@ class DatabaseManager:
     
     async def close(self):
         """Close database connections"""
-        await self.engine.dispose()
+        if self.database_available and self.engine:
+            await self.engine.dispose()
 
 
 # Singleton instance for academic deployment
@@ -496,9 +539,12 @@ async def get_database_manager() -> DatabaseManager:
     global _db_manager
     if _db_manager is None:
         _db_manager = DatabaseManager()
-        # Test connection and initialize schema
-        if await _db_manager.test_connection():
-            await _db_manager.initialize_schema()
+        # Only test connection and initialize schema if database is configured
+        if _db_manager.database_available:
+            if await _db_manager.test_connection():
+                await _db_manager.initialize_schema()
+            else:
+                logger.warning("Database connection failed - running in fallback mode")
         else:
-            logger.warning("Database connection failed - some features may not work")
+            logger.info("Database not configured - running in fallback mode")
     return _db_manager

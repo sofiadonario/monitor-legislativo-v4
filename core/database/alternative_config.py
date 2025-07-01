@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class AlternativeSupabaseConfig:
     """Alternative configuration using psycopg2 driver for Supabase compatibility"""
     
-    DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/legislativo')
+    DATABASE_URL = os.getenv('DATABASE_URL')
     
     # Connection settings
     POOL_SIZE = 3
@@ -33,6 +33,11 @@ class AlternativeSupabaseConfig:
     def get_psycopg_engine(cls):
         """Create async engine using psycopg (async version) driver instead of asyncpg"""
         db_url = cls.DATABASE_URL
+        
+        # Return None if no DATABASE_URL is configured
+        if not db_url:
+            logger.warning("No DATABASE_URL configured for psycopg engine")
+            return None
         
         # FIXED: Properly handle password encoding for psycopg
         parsed = urllib.parse.urlparse(db_url)
@@ -91,6 +96,11 @@ class AlternativeSupabaseConfig:
         """Try asyncpg with version 0.28.0 parameters (more compatible)"""
         db_url = cls.DATABASE_URL
         
+        # Return None if no DATABASE_URL is configured
+        if not db_url:
+            logger.warning("No DATABASE_URL configured for asyncpg engine")
+            return None
+        
         if db_url.startswith('postgresql://'):
             db_url = db_url.replace('postgresql://', 'postgresql+asyncpg://', 1)
         
@@ -136,10 +146,18 @@ class AlternativeDatabaseManager:
     async def initialize_with_fallback(self) -> bool:
         """Try different database drivers in order of preference"""
         
+        # Check if DATABASE_URL is configured first
+        if not AlternativeSupabaseConfig.DATABASE_URL:
+            logger.info("No DATABASE_URL configured - skipping alternative database initialization")
+            return False
+        
         # Method 1: Try improved asyncpg configuration
         try:
             logger.info("🔧 Trying Method 1: Improved asyncpg configuration")
             self.engine = AlternativeSupabaseConfig.get_asyncpg_engine_v28()
+            if not self.engine:
+                logger.error("❌ Method 1 failed: Could not create asyncpg engine")
+                raise Exception("Engine creation failed")
             self.session_factory = sessionmaker(
                 bind=self.engine,
                 class_=AsyncSession,
@@ -158,6 +176,9 @@ class AlternativeDatabaseManager:
         try:
             logger.info("🔧 Trying Method 2: psycopg (async) driver")
             self.engine = AlternativeSupabaseConfig.get_psycopg_engine()
+            if not self.engine:
+                logger.error("❌ Method 2 failed: Could not create psycopg engine")
+                raise Exception("Engine creation failed")
             self.session_factory = sessionmaker(
                 bind=self.engine,
                 class_=AsyncSession,

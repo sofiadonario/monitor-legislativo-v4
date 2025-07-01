@@ -156,17 +156,21 @@ async def startup_event():
         else:
             logger.warning("⚠️  Database cache service running in fallback mode")
             
-            # CRITICAL: Try alternative database manager if primary fails
-            logger.info("🔄 Attempting alternative database connection methods...")
-            try:
-                alt_manager = await get_alternative_database_manager()
-                alt_status = await alt_manager.get_health_status()
-                if alt_status["connected"]:
-                    logger.info(f"✅ Alternative database connection successful using {alt_status['driver_used']}")
-                else:
-                    logger.error("❌ Alternative database connection also failed")
-            except Exception as alt_e:
-                logger.error(f"❌ Alternative database manager failed: {alt_e}")
+            # Only try alternative database manager if DATABASE_URL is configured
+            from core.config.env_loader import EnvironmentConfig
+            if EnvironmentConfig.DATABASE_URL:
+                logger.info("🔄 Attempting alternative database connection methods...")
+                try:
+                    alt_manager = await get_alternative_database_manager()
+                    alt_status = await alt_manager.get_health_status()
+                    if alt_status["connected"]:
+                        logger.info(f"✅ Alternative database connection successful using {alt_status['driver_used']}")
+                    else:
+                        logger.error("❌ Alternative database connection also failed")
+                except Exception as alt_e:
+                    logger.error(f"❌ Alternative database manager failed: {alt_e}")
+            else:
+                logger.info("ℹ️  DATABASE_URL not configured - skipping alternative database connection attempts")
         
         # Initialize search service
         search_service = await get_simple_search_service()
