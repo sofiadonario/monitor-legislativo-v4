@@ -1,0 +1,17 @@
+# Minimal R Shiny for Railway
+FROM rocker/shiny:4.3.2
+
+WORKDIR /app
+
+# Copy minimal app files
+COPY r-shiny-app/app-minimal.R /app/app.R
+COPY r-shiny-app/run_app_minimal.R /app/run_app.R
+
+# Make run script executable
+RUN chmod +x /app/run_app.R
+
+# Expose port
+EXPOSE 3838
+
+# Run the minimal app
+CMD ["Rscript", "/app/run_app.R"]

@@ -24,7 +24,7 @@
     "rshiny": {
       "build": {
         "builder": "DOCKERFILE", 
-        "dockerfilePath": "r-shiny-app/Dockerfile.railway.minimal",
+        "dockerfilePath": "Dockerfile.rshiny-minimal",
         "buildContext": "."
       },
       "deploy": {
