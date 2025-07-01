@@ -27,10 +27,73 @@ except ImportError as e:
     print(f"Warning: Advanced Geocoding API not available: {e}")
     ADVANCED_GEOCODING_API_AVAILABLE = False
 
+# Define additional API availability flags
+try:
+    from .api import ml_analysis
+    ML_ANALYSIS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: ML Analysis API not available: {e}")
+    ML_ANALYSIS_API_AVAILABLE = False
+
+try:
+    from .api import document_validation
+    DOCUMENT_VALIDATION_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Document Validation API not available: {e}")
+    DOCUMENT_VALIDATION_API_AVAILABLE = False
+
+try:
+    from .api import ai_agents
+    AI_AGENTS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: AI Agents API not available: {e}")
+    AI_AGENTS_API_AVAILABLE = False
+
+try:
+    from .api import ai_document_analysis
+    AI_DOCUMENT_ANALYSIS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: AI Document Analysis API not available: {e}")
+    AI_DOCUMENT_ANALYSIS_API_AVAILABLE = False
+
+try:
+    from .api import spatial_analysis_api
+    SPATIAL_ANALYSIS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Spatial Analysis API not available: {e}")
+    SPATIAL_ANALYSIS_API_AVAILABLE = False
+
+try:
+    from .api import vocabulary_api
+    VOCABULARY_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Vocabulary API not available: {e}")
+    VOCABULARY_API_AVAILABLE = False
+
+try:
+    from .api import batch_processing_api
+    BATCH_PROCESSING_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Batch Processing API not available: {e}")
+    BATCH_PROCESSING_API_AVAILABLE = False
+
+try:
+    from .api import government_standards_api
+    GOVERNMENT_STANDARDS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Government Standards API not available: {e}")
+    GOVERNMENT_STANDARDS_API_AVAILABLE = False
+
+# Additional API flags referenced in the code
+KNOWLEDGE_GRAPH_API_AVAILABLE = False  # Not implemented yet
+
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
 from core.database.two_tier_manager import get_two_tier_manager
 from core.database.alternative_config import get_alternative_database_manager
+
+# Import environment configuration and validation
+from core.config.env_loader import EnvironmentConfig, validate_environment, log_environment_info
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +136,18 @@ async def startup_event():
     """Initialize services on application startup"""
     try:
         logger.info("Initializing Monitor Legislativo Enhanced Service...")
+        
+        # Validate environment configuration
+        env_validation = validate_environment()
+        if not env_validation["valid"]:
+            logger.error("Environment configuration validation failed!")
+            for error in env_validation["errors"]:
+                logger.error(f"  - {error}")
+        else:
+            logger.info("✅ Environment configuration validated successfully")
+        
+        # Log environment information
+        log_environment_info()
         
         # Initialize database cache service
         cache_service = await get_database_cache_service()
@@ -604,6 +679,30 @@ async def test_password_decoding():
             "status": "error",
             "error": str(e),
             "message": "Password decoding test failed"
+        }
+
+@app.get("/api/v1/config/environment", tags=["Configuration"])
+async def get_environment_configuration():
+    """Get current environment configuration status"""
+    try:
+        env_validation = validate_environment()
+        return {
+            "status": "success" if env_validation["valid"] else "issues_found",
+            "environment_validation": env_validation,
+            "runtime_info": {
+                "environment": EnvironmentConfig.ENVIRONMENT,
+                "is_production": EnvironmentConfig.is_production(),
+                "is_development": EnvironmentConfig.is_development(),
+                "debug_mode": EnvironmentConfig.DEBUG,
+                "railway_deployment": bool(EnvironmentConfig.RAILWAY_ENVIRONMENT)
+            }
+        }
+    except Exception as e:
+        logger.error(f"Environment configuration check failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "message": "Failed to retrieve environment configuration"
         }
 
 @app.get("/api/v1/test/primary-driver", tags=["Testing"])

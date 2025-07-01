@@ -5,6 +5,7 @@ Configuration settings for Monitor Legislativo
 import os
 from typing import Dict, List, Any
 from dataclasses import dataclass
+from .env_loader import EnvironmentConfig
 
 
 @dataclass

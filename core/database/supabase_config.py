@@ -14,14 +14,23 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, TimeoutError as SQLTimeoutError
 
+# Import environment configuration
+try:
+    from ..config.env_loader import EnvironmentConfig
+except ImportError:
+    # Fallback if env_loader is not available
+    class EnvironmentConfig:
+        DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@db.supabase.co:5432/postgres')
+        DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
+
 logger = logging.getLogger(__name__)
 
 
 class SupabaseConfig:
     """Configuration for Supabase PostgreSQL database"""
     
-    # Database connection
-    DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/legislativo')
+    # Database connection - Use environment configuration
+    DATABASE_URL = EnvironmentConfig.DATABASE_URL or 'postgresql://postgres:postgres@db.supabase.co:5432/postgres'
     
     # Connection pool settings for Railway/Supabase optimization
     POOL_SIZE = 3  # Smaller pool for Railway container limits
@@ -34,7 +43,7 @@ class SupabaseConfig:
     COMMAND_TIMEOUT = 60  # SQL command timeout
     
     # Query optimization
-    ECHO_SQL = os.getenv('DEBUG', 'false').lower() == 'true'
+    ECHO_SQL = EnvironmentConfig.DEBUG
     
     @classmethod
     def fix_database_url(cls) -> str:
