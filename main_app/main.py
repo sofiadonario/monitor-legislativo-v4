@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import sys
 import os
+from datetime import datetime
 
 # Add parent directory to path for core imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -404,41 +405,13 @@ async def read_root():
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Enhanced health check endpoint with database integration status."""
-    try:
-        # Get service health statuses
-        cache_service = await get_database_cache_service()
-        search_service = await get_simple_search_service()
-        
-        cache_health = await cache_service.get_health_status()
-        search_health = await search_service.get_health_status()
-        
-        return {
-            "status": "healthy",
-            "service": "monitor-legislativo-two-tier-api",
-            "version": "2.0.0",
-            "components": {
-                "two_tier_architecture": "operational",
-                "automated_collection": "available",
-                "database_integration": "available" if cache_service.db_available else "fallback_mode",
-                "search_caching": "enabled" if cache_service.db_available else "disabled",
-                "analytics_tracking": "enabled" if cache_service.db_available else "disabled",
-                "three_tier_fallback": "operational",
-                "csv_fallback_889_docs": "ready",
-                "performance_monitoring": "active",
-                "prefect_orchestration": "ready"
-            },
-            "database_status": cache_health,
-            "search_status": search_health
-        }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {
-            "status": "degraded",
-            "service": "monitor-legislativo-two-tier-api",
-            "version": "2.0.0",
-            "error": str(e)
-        }
+    """Simple health check endpoint for Railway."""
+    # Return immediately without any async operations to ensure fast response
+    return {
+        "status": "healthy",
+        "service": "monitor-legislativo-api",
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 @app.get("/api/v1/health/database", tags=["Health"])
 async def database_diagnostic():
