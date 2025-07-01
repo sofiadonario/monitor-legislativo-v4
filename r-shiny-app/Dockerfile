@@ -14,4 +14,4 @@ RUN chmod +x ./run_app.R
 EXPOSE 3838
 
 # Start R Shiny app using PORT from Railway
-CMD Rscript ./run_app.R
+CMD ["sh", "-c", "PORT=${PORT:-3838} Rscript ./run_app.R"]
