@@ -1,40 +1,77 @@
-FROM python:3.11-slim
+# Stage 1: Build the virtual environment
+FROM python:3.11-slim as builder
 
+# Set the working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Create a virtual environment
+RUN python -m venv /opt/venv
 
-# Copy requirements from parent directory
+# Activate the virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+
+# CRITICAL: Multiple layers of asyncpg protection
+# Layer 1: Update pip to latest version first
+RUN pip install --no-cache-dir --upgrade pip
+
+# Layer 2: Install asyncpg FIRST before any other dependencies (0.28.0 for Supabase compatibility)
+RUN pip install --no-cache-dir --upgrade "asyncpg==0.28.0"
+
+# Layer 3: Verify asyncpg installation
+RUN python -c "import asyncpg; print(f'AsyncPG version installed: {asyncpg.__version__}'); assert asyncpg.__version__ == '0.28.0', f'Wrong version: {asyncpg.__version__}'"
+
+# Copy the requirements file and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy core modules
-COPY core/ ./core/
+# Layer 4: Force reinstall asyncpg after all dependencies (CRITICAL FAILSAFE)
+RUN pip install --no-cache-dir --upgrade --force-reinstall "asyncpg==0.28.0"
 
-# Copy main app
-COPY main_app/ ./main_app/
+# Layer 5: Install fallback driver (psycopg) for compatibility
+RUN pip install --no-cache-dir --upgrade "psycopg[binary]==3.1.12"
 
-# Copy src data directory with legislative data
-COPY src/ ./src/
+# Layer 6: Final verification that both drivers are installed
+RUN python -c "import asyncpg; print(f'Final AsyncPG version: {asyncpg.__version__}'); assert asyncpg.__version__ == '0.28.0', f'Final verification failed: {asyncpg.__version__}'"
+RUN python -c "import psycopg; print(f'Psycopg fallback driver: {psycopg.__version__}')"
 
-# Copy public directory with CSV data files
-COPY public/ ./public/
+# Stage 2: Create the final production image
+FROM python:3.11-slim
 
-# Set Python path to include core, main_app, and src
-ENV PYTHONPATH=/app:/app/core:/app/main_app:/app/src
-ENV PYTHONUNBUFFERED=1
+# Set the working directory
+WORKDIR /app
 
-# Expose port
-EXPOSE 8000
+# Copy the virtual environment from the builder stage
+COPY --from=builder /opt/venv /opt/venv
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
+# Copy the application code
+COPY . .
 
-# Start the application - use PORT env var from Railway
-CMD uvicorn main_app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Activate the virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Expose the port the app will run on
+EXPOSE 8080
+
+# CRITICAL DEBUGGING: Print runtime environment details before starting the app
+# This will help us identify the exact asyncpg version being used at runtime
+CMD ["sh", "-c", "echo '=== RAILWAY RUNTIME ENVIRONMENT DEBUG ===' && \
+    echo 'Python version:' && python --version && \
+    echo 'Pip version:' && pip --version && \
+    echo '=== ASYNCPG VERSION CHECK ===' && \
+    pip freeze | grep -i asyncpg && \
+    echo '=== SQLALCHEMY VERSION CHECK ===' && \
+    pip freeze | grep -i sqlalchemy && \
+    echo '=== ALL DATABASE-RELATED PACKAGES ===' && \
+    pip freeze | grep -iE '(asyncpg|sqlalchemy|psycopg|postgres)' && \
+    echo '=== TESTING ASYNCPG IMPORT ===' && \
+    python -c 'import asyncpg; print(f\"asyncpg version: {asyncpg.__version__}\")' && \
+    echo '=== TESTING PSYCOPG FALLBACK IMPORT ===' && \
+    python -c 'import psycopg; print(f\"psycopg fallback version: {psycopg.__version__}\")' && \
+    echo '=== FULL DEPENDENCY TREE FOR ASYNCPG ===' && \
+    pip show asyncpg && \
+    echo '=== ENVIRONMENT VARIABLES ===' && \
+    env | grep -iE '(database|railway|supabase)' && \
+    echo '=== FINAL ASYNCPG VERSION VERIFICATION ===' && \
+    python -c 'import asyncpg; v=asyncpg.__version__; print(f\"Runtime AsyncPG: {v}\"); expected=\"0.28.0\"; print(f\"Expected: {expected}\"); print(f\"Supabase compatible: {v == expected}\"); exit(0 if v == expected else 1)' && \
+    echo '=== STARTING APPLICATION ===' && \
+    uvicorn main_app.main:app --host 0.0.0.0 --port 8080"]
