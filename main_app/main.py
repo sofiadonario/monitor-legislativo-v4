@@ -157,8 +157,14 @@ async def startup_event():
             logger.warning("⚠️  Database cache service running in fallback mode")
             
             # Only try alternative database manager if DATABASE_URL is configured
-            from core.config.env_loader import EnvironmentConfig
-            if EnvironmentConfig.DATABASE_URL:
+            try:
+                from core.config.env_loader import EnvironmentConfig
+                database_url = EnvironmentConfig.DATABASE_URL
+            except ImportError:
+                # Fallback to environment variable if env_loader not available
+                database_url = os.getenv('DATABASE_URL')
+            
+            if database_url:
                 logger.info("🔄 Attempting alternative database connection methods...")
                 try:
                     alt_manager = await get_alternative_database_manager()

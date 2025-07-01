@@ -39,6 +39,12 @@ class AlternativeSupabaseConfig:
             logger.warning("No DATABASE_URL configured for psycopg engine")
             return None
         
+        # Validate DATABASE_URL to prevent invalid connection attempts
+        if 'db.supabase.co' in db_url:
+            logger.error("Invalid DATABASE_URL detected: db.supabase.co is not a valid Supabase host")
+            logger.error("Please use your actual Supabase project URL or leave DATABASE_URL unset for fallback mode")
+            return None
+        
         # FIXED: Properly handle password encoding for psycopg
         parsed = urllib.parse.urlparse(db_url)
         if parsed.password and ('%' in parsed.password):
@@ -99,6 +105,11 @@ class AlternativeSupabaseConfig:
         # Return None if no DATABASE_URL is configured
         if not db_url:
             logger.warning("No DATABASE_URL configured for asyncpg engine")
+            return None
+        
+        # Validate DATABASE_URL to prevent invalid connection attempts
+        if 'db.supabase.co' in db_url:
+            logger.error("Invalid DATABASE_URL detected: db.supabase.co is not a valid Supabase host")
             return None
         
         if db_url.startswith('postgresql://'):

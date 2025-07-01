@@ -20,7 +20,7 @@ try:
 except ImportError:
     # Fallback if env_loader is not available
     class EnvironmentConfig:
-        DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@db.supabase.co:5432/postgres')
+        DATABASE_URL = os.getenv('DATABASE_URL')  # No hardcoded fallback
         DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
 logger = logging.getLogger(__name__)
