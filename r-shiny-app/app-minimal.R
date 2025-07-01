@@ -1,21 +1,19 @@
 library(shiny)
 
 ui <- fluidPage(
-  titlePanel("Monitor Legislativo - Minimal Test"),
+  titlePanel("Monitor Legislativo - R Shiny"),
   
   sidebarLayout(
     sidebarPanel(
       h3("Status"),
-      p("This is a minimal R Shiny app for Railway deployment testing."),
-      p("If you can see this, R Shiny is working on Railway!")
+      p("R Shiny service is running successfully on Railway!"),
+      br(),
+      p("This demonstrates the R analytics component of Monitor Legislativo v4.")
     ),
     
     mainPanel(
       h3("System Information"),
-      verbatimTextOutput("sysinfo"),
-      
-      h3("Environment Variables"),
-      verbatimTextOutput("envvars")
+      verbatimTextOutput("sysinfo")
     )
   )
 )
@@ -23,22 +21,24 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   output$sysinfo <- renderPrint({
     list(
+      Status = "✅ R Shiny Running",
       R_Version = R.version.string,
       Platform = Sys.info()["sysname"],
-      Working_Directory = getwd(),
-      Port = Sys.getenv("PORT", "3838")
+      Port = Sys.getenv("PORT", "3838"),
+      Working_Directory = getwd()
     )
   })
   
-  output$envvars <- renderPrint({
-    env_vars <- Sys.getenv()
-    env_vars[grep("RAILWAY|PORT|SHINY", names(env_vars))]
+  # Simple health check route
+  observeEvent(session$clientData, {
+    if (!is.null(session$clientData$url_pathname) && 
+        session$clientData$url_pathname == "/health") {
+      session$sendCustomMessage("health", "OK")
+    }
   })
 }
 
 options(shiny.host = "0.0.0.0")
 options(shiny.port = as.integer(Sys.getenv("PORT", "3838")))
-
-message("Starting minimal Shiny app on port ", getOption("shiny.port"))
 
 shinyApp(ui = ui, server = server)

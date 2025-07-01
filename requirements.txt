@@ -180,3 +180,12 @@ orjson==3.9.10
 # WHY: Reliable task scheduling, error handling, and monitoring
 # VERSION: 2.x with Python 3.11 support
 prefect==2.14.11
+
+# =============================================================================
+# GEOSPATIAL ANALYSIS - SPATIAL SEARCH FUNCTIONALITY
+# =============================================================================
+
+# GeoPy - Geocoding and distance calculations
+# WHY: Required for spatial analysis of legislative documents
+# VERSION: 2.x with stable coordinate system support
+geopy==2.4.1

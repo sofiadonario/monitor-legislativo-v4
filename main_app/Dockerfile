@@ -6,17 +6,18 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements from parent directory
-COPY ../requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy core modules
-COPY ../core/ ./core/
+COPY core/ ./core/
 
 # Copy main app
-COPY . ./main_app/
+COPY main_app/ ./main_app/
 
 # Set Python path to include both core and main_app
 ENV PYTHONPATH=/app:/app/core:/app/main_app
