@@ -3,7 +3,7 @@
 
 [build]
 builder = "dockerfile"
-dockerfilePath = "r-shiny-app/Dockerfile.railway"
+dockerfilePath = "r-shiny-app/Dockerfile"
 buildContext = "r-shiny-app"
 
 [deploy]

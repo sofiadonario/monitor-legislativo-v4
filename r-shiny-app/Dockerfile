@@ -1,17 +1,36 @@
-# R Shiny Dockerfile for Railway
-FROM rocker/shiny:4.3.2
+# Optimized Dockerfile for Railway R Shiny deployment
+FROM rocker/shiny:4.3.1
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libgdal-dev \
+    libudunits2-dev \
+    libproj-dev \
+    libgeos-dev \
+    libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
 WORKDIR /app
 
-# Copy the minimal R Shiny app files
-COPY app-minimal.R ./app.R
-COPY run_app_minimal.R ./run_app.R
+# Copy R application files
+COPY r-shiny-app/app-minimal.R ./app.R
+COPY r-shiny-app/.Rprofile ./
 
-# Make run script executable
-RUN chmod +x ./run_app.R
+# Install R packages
+RUN R -e "source('.Rprofile')"
 
-# Expose port (Railway will override with $PORT)
+# Create necessary directories
+RUN mkdir -p data/cache data/geographic www logs exports
+
+# Set permissions
+RUN chown -R shiny:shiny /app
+
+# Expose port
 EXPOSE 3838
 
-# Start R Shiny app using PORT from Railway
-CMD ["sh", "-c", "PORT=${PORT:-3838} Rscript ./run_app.R"]
+# Run the Shiny app with proper signal handling
+CMD ["R", "-e", "shiny::runApp('/app/app.R', host='0.0.0.0', port=as.integer(Sys.getenv('PORT', '3838')))"]
