@@ -3,7 +3,8 @@
 
 [build]
 builder = "dockerfile"
-dockerfilePath = "./Dockerfile.railway"
+dockerfilePath = "r-shiny-app/Dockerfile.railway"
+buildContext = "r-shiny-app"
 
 [deploy]
 restartPolicyType = "on_failure"
