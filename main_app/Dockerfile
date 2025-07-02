@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir --upgrade "asyncpg==0.28.0"
 RUN python -c "import asyncpg; print(f'AsyncPG version installed: {asyncpg.__version__}'); assert asyncpg.__version__ == '0.28.0', f'Wrong version: {asyncpg.__version__}'"
 
 # Copy the requirements file and install dependencies
-COPY requirements.txt .
+COPY main_app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Layer 4: Force reinstall asyncpg after all dependencies (CRITICAL FAILSAFE)
@@ -43,36 +43,14 @@ WORKDIR /app
 # Copy the virtual environment from the builder stage
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy the application source into /app/main_app so it's a package
-COPY . /app/main_app
+# Copy the application source from the main_app directory into /app
+COPY main_app/ /app/
 
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONPATH="/app:${PYTHONPATH}"
 
 # Expose the port the app will run on
 EXPOSE 8080
 
-# CRITICAL DEBUGGING: Print runtime environment details before starting the app
-# This will help us identify the exact asyncpg version being used at runtime
-CMD ["sh", "-c", "echo '=== RAILWAY RUNTIME ENVIRONMENT DEBUG ===' && \
-    echo 'Python version:' && python --version && \
-    echo 'Pip version:' && pip --version && \
-    echo '=== ASYNCPG VERSION CHECK ===' && \
-    pip freeze | grep -i asyncpg && \
-    echo '=== SQLALCHEMY VERSION CHECK ===' && \
-    pip freeze | grep -i sqlalchemy && \
-    echo '=== ALL DATABASE-RELATED PACKAGES ===' && \
-    pip freeze | grep -iE '(asyncpg|sqlalchemy|psycopg|postgres)' && \
-    echo '=== TESTING ASYNCPG IMPORT ===' && \
-    python -c 'import asyncpg; print(f\"asyncpg version: {asyncpg.__version__}\")' && \
-    echo '=== TESTING PSYCOPG FALLBACK IMPORT ===' && \
-    python -c 'import psycopg; print(f\"psycopg fallback version: {psycopg.__version__}\")' && \
-    echo '=== FULL DEPENDENCY TREE FOR ASYNCPG ===' && \
-    pip show asyncpg && \
-    echo '=== ENVIRONMENT VARIABLES ===' && \
-    env | grep -iE '(database|railway|supabase)' && \
-    echo '=== FINAL ASYNCPG VERSION VERIFICATION ===' && \
-    python -c 'import asyncpg; v=asyncpg.__version__; print(f\"Runtime AsyncPG: {v}\"); expected=\"0.28.0\"; print(f\"Expected: {expected}\"); print(f\"Supabase compatible: {v == expected}\"); exit(0 if v == expected else 1)' && \
-    echo '=== STARTING APPLICATION ===' && \
-    uvicorn main_app.main:app --host 0.0.0.0 --port 8080"]
+# Start the application using uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
