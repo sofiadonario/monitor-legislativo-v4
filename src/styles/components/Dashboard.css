@@ -1,6 +1,6 @@
 /* Dashboard Layout */
 .dashboard {
-  display: block;
+  display: flex;
   height: 100vh;
   position: relative;
   overflow: hidden;
@@ -270,14 +270,8 @@
     "content" 
     "info";
   overflow: hidden;
-  height: 100vh;
-  width: 100%;
-  /* Ensure content uses full width regardless of sidebar state */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: 1;
+  position: relative;
   z-index: 1;
 }
 

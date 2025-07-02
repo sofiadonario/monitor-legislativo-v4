@@ -245,37 +245,17 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
             </div>
           </div>
 
-          <div className="fallback-message">
-            <p>The R Shiny analytics application is running locally but cannot be accessed from GitHub Pages due to browser security restrictions (HTTPS → HTTP blocking).</p>
-            
-            <h4>📋 How to Access R Shiny Analytics:</h4>
-            <div className="access-instructions">
-              <div className="instruction-item">
-                <strong>Option 1: Direct Access</strong>
-                <p>Open R Shiny directly in a new tab:</p>
-                <a 
-                  href="http://localhost:3838" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="external-btn"
-                >
-                  🔗 Open R Shiny Dashboard
-                </a>
-                <p className="login-info">Login: <code>admin</code> / <code>admin123</code></p>
-              </div>
+          <div className="analytics-footer">
+            <div className="data-source-info">
+              <h4>📊 Data Source Information</h4>
+              <p>Analytics based on {summaryStats.totalDocuments} legislative documents from the Brazilian transport legislation database.</p>
+              <p>Data includes laws, decrees, regulations, and other legal documents from {summaryStats.statesCount} Brazilian states.</p>
               
-              <div className="instruction-item">
-                <strong>Option 2: Local Development</strong>
-                <p>Run the React app locally to enable full integration:</p>
-                <code>npm run dev</code>
-                <p>Then visit: <a href="http://localhost:3000/monitor-legislativo-v4/" target="_blank">http://localhost:3000/monitor-legislativo-v4/</a></p>
-              </div>
-            </div>
-            
-            <div className="fallback-actions">
-              <button onClick={handleRetryConnection} className="retry-btn">
-                🔄 Test Connection Again
-              </button>
+              {summaryStats.dateRange && (
+                <p>
+                  Coverage period: {summaryStats.dateRange.earliest.getFullYear()} - {summaryStats.dateRange.latest.getFullYear()}
+                </p>
+              )}
             </div>
           </div>
         </div>
