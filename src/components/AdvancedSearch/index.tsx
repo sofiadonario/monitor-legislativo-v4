@@ -48,8 +48,8 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                       filters.municipalities.length > 0 ||
                       filters.chambers.length > 0 ||
                       filters.keywords.length > 0 ||
-                      filters.dateFrom || 
-                      filters.dateTo;
+                      !!filters.dateFrom || 
+                      !!filters.dateTo;
     
     setIsFormValid(hasSearchTerm || hasFilters);
   }, [filters]);

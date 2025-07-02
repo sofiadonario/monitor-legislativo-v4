@@ -5,9 +5,10 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 // Lazy load components
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const LexMLSearchPage = lazy(() => import('./pages/LexMLSearchPage'));
+const AdvancedSearchPage = lazy(() => import('./pages/AdvancedSearchPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 
-type AppPage = 'dashboard' | 'search' | 'analytics';
+type AppPage = 'dashboard' | 'search' | 'advanced-search' | 'analytics';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<AppPage>('dashboard');
@@ -18,6 +19,12 @@ const App: React.FC = () => {
         return (
           <Suspense fallback={<LoadingSpinner message="Loading LexML Search..." />}>
             <LexMLSearchPage />
+          </Suspense>
+        );
+      case 'advanced-search':
+        return (
+          <Suspense fallback={<LoadingSpinner message="Loading Advanced Search..." />}>
+            <AdvancedSearchPage />
           </Suspense>
         );
       case 'analytics':
@@ -63,6 +70,16 @@ const App: React.FC = () => {
                 }`}
               >
                 LexML Search
+              </button>
+              <button
+                onClick={() => setCurrentPage('advanced-search')}
+                className={`px-3 py-1 text-sm rounded ${
+                  currentPage === 'advanced-search' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Advanced Search
               </button>
               <button
                 onClick={() => setCurrentPage('analytics')}

@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { SearchFilters, DocumentType } from '../../types';
-import { brazilianStates } from '../../data/brazil-states';
+import { brazilStatesData } from '../../data/brazil-states';
 
 interface FieldSpecificFiltersProps {
   filters: SearchFilters;
@@ -21,6 +21,13 @@ const DOCUMENT_TYPES: Array<{value: DocumentType; label: string}> = [
   { value: 'projeto_lei', label: 'Projeto de Lei' },
   { value: 'medida_provisoria', label: 'Medida Provisória' }
 ];
+
+// Extract states from GeoJSON data
+const brazilianStates = brazilStatesData.features.map(feature => ({
+  abbreviation: feature.properties.id,
+  name: feature.properties.name,
+  municipalities: [] // We'll populate this as needed
+}));
 
 const CHAMBERS = [
   'Câmara dos Deputados',
@@ -51,11 +58,14 @@ export const FieldSpecificFilters: React.FC<FieldSpecificFiltersProps> = ({
   // Load municipalities for selected states
   useEffect(() => {
     if (filters.states.length > 0) {
-      const municipalities = filters.states.flatMap(stateAbbr => {
-        const state = brazilianStates.find(s => s.abbreviation === stateAbbr);
-        return state?.municipalities || [];
-      });
-      setAvailableMunicipalities(municipalities);
+      // For now, we'll use a simple list of common municipalities
+      // In a real implementation, this would come from an API or database
+      const commonMunicipalities = [
+        'São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza',
+        'Belo Horizonte', 'Manaus', 'Curitiba', 'Recife', 'Goiânia',
+        'Belém', 'Porto Alegre', 'Guarulhos', 'Campinas', 'São Luís'
+      ];
+      setAvailableMunicipalities(commonMunicipalities);
     } else {
       setAvailableMunicipalities([]);
     }
@@ -74,16 +84,9 @@ export const FieldSpecificFilters: React.FC<FieldSpecificFiltersProps> = ({
       : filters.states.filter(s => s !== stateAbbr);
     onFiltersChange({ states: newStates });
     
-    // Clear municipalities if state is deselected
-    if (!checked) {
-      const remainingMunicipalities = filters.municipalities.filter(muni => {
-        const remainingStates = newStates;
-        return remainingStates.some(stateAbbr => {
-          const state = brazilianStates.find(s => s.abbreviation === stateAbbr);
-          return state?.municipalities.includes(muni);
-        });
-      });
-      onFiltersChange({ municipalities: remainingMunicipalities });
+    // Clear municipalities if no states are selected
+    if (newStates.length === 0) {
+      onFiltersChange({ municipalities: [] });
     }
   };
 

@@ -35,7 +35,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
   const loadSavedSearches = async () => {
     try {
       setLoading(true);
-      const searches = await savedQueriesService.getSavedQueries();
+      const searches = savedQueriesService.getAllQueries();
       setSavedSearches(searches);
     } catch (error) {
       console.error('Failed to load saved searches:', error);
@@ -48,15 +48,15 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
     if (!saveDialogData.name.trim()) return;
 
     try {
-      const newSavedQuery: Omit<SavedQuery, 'id' | 'createdAt' | 'updatedAt' | 'timesUsed'> = {
-        name: saveDialogData.name,
-        description: saveDialogData.description,
-        filters: currentFilters,
-        isPublic: saveDialogData.isPublic,
-        tags: saveDialogData.tags
-      };
-
-      await savedQueriesService.saveQuery(newSavedQuery);
+      savedQueriesService.saveQuery(
+        saveDialogData.name,
+        currentFilters,
+        {
+          description: saveDialogData.description,
+          isPublic: saveDialogData.isPublic,
+          tags: saveDialogData.tags
+        }
+      );
       await loadSavedSearches();
       setShowSaveDialog(false);
       setSaveDialogData({
@@ -84,7 +84,10 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
   const handleApplySearch = async (savedSearch: SavedQuery) => {
     try {
       // Update usage count
-      await savedQueriesService.updateQueryUsage(savedSearch.id);
+      savedQueriesService.updateQuery(savedSearch.id, {
+        ...savedSearch,
+        timesUsed: savedSearch.timesUsed + 1
+      });
       onSavedSearchApply(savedSearch.filters);
       
       // Refresh the list to show updated usage count

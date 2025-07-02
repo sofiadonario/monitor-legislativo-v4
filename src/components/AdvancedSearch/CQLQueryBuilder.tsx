@@ -377,7 +377,7 @@ export const CQLQueryBuilder: React.FC<CQLQueryBuilderProps> = ({
             <ul>
               <li><code>dc.title = "transport"</code> - Title contains "transport"</li>
               <li><code>dc.subject any "bus metro train"</code> - Subject contains any of these words</li>
-              <li><code>dc.date >= "2020-01-01"</code> - Documents from 2020 onwards</li>
+              <li><code>dc.date {'>'}= "2020-01-01"</code> - Documents from 2020 onwards</li>
               <li><code>dc.title = "transport" AND dc.type = "lei"</code> - Title contains "transport" and type is "lei"</li>
               <li><code>(dc.title = "bus" OR dc.title = "metro") AND dc.coverage = "São Paulo"</code> - Complex query with grouping</li>
             </ul>

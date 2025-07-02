@@ -93,7 +93,8 @@
       "Bash(./railway_deploy_api.sh)",
       "Bash(git ls-tree:*)",
       "Bash(./deploy_to_railway.sh)",
-      "Bash(unset DATABASE_URL)"
+      "Bash(unset DATABASE_URL)",
+      "Bash(source:*)"
     ]
   },
   "enableAllProjectMcpServers": false
