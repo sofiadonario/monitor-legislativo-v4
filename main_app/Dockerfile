@@ -48,6 +48,7 @@ COPY . .
 
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONPATH="/app:${PYTHONPATH}"
 
 # Expose the port the app will run on
 EXPOSE 8080
