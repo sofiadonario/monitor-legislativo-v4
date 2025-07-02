@@ -1,10 +1,6 @@
 from fastapi import APIRouter, Query, HTTPException, Request, Depends
 from typing import List, Optional
-from ..services.simple_search_service import (
-    get_simple_search_service,
-    SimpleSearchService,
-    Document,
-)
+from ..services.simple_search_service import get_simple_search_service, SimpleSearchService, Document
 from ..services.database_cache_service import get_database_cache_service
 import logging
 
