@@ -751,4 +751,35 @@ async def test_primary_driver():
             "error": str(e),
             "error_type": type(e).__name__,
             "message": "Primary driver test failed - psycopg connection unsuccessful"
-        } 
+        }
+
+@app.get("/rshiny-maintenance/health", tags=["RShiny Maintenance"])
+async def rshiny_maintenance_health():
+    """Temporary rShiny maintenance endpoint"""
+    return {
+        "status": "maintenance",
+        "message": "R Shiny service is temporarily under maintenance",
+        "expected_restoration": "Service will be restored soon",
+        "alternative": "Limited analytics available through main API",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+@app.get("/rshiny-maintenance", tags=["RShiny Maintenance"])  
+async def rshiny_maintenance_page():
+    """Temporary rShiny maintenance page"""
+    return {
+        "service": "R Shiny Analytics",
+        "status": "maintenance",
+        "message": "The R Shiny analytics service is temporarily unavailable due to deployment configuration issues",
+        "details": {
+            "reason": "Railway deployment configuration needs adjustment",
+            "estimated_downtime": "Short-term maintenance",
+            "workaround": "Basic analytics available through main API endpoints"
+        },
+        "alternative_endpoints": {
+            "document_search": "/api/private/documents",
+            "basic_analytics": "/api/v1/analytics/summary",
+            "health_status": "/health"
+        },
+        "timestamp": datetime.utcnow().isoformat()
+    } 

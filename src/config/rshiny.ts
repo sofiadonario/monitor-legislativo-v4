@@ -76,13 +76,14 @@ const developmentConfig: Partial<RShinyConfig> = {
 // Production configuration
 const productionConfig: Partial<RShinyConfig> = {
   // Use environment variable for production URL
-  baseUrl: process.env.REACT_APP_RSHINY_URL || process.env.VITE_RSHINY_URL || 'https://monitor-legislativo-rshiny-production.up.railway.app',
+  baseUrl: process.env.REACT_APP_RSHINY_URL || process.env.VITE_RSHINY_URL || 'https://monitor-legislativo-v4-production.up.railway.app/rshiny-maintenance',
   allowedOrigins: [
     'http://localhost:3838',
     'https://*.shinyapps.io',
     'https://sofiadonario.github.io',
     'https://sofiadonario.github.io/monitor-legislativo-v4',
     'https://monitor-legislativo-rshiny-production.up.railway.app',
+    'https://monitor-legislativo-v4-production.up.railway.app',
     'https://*.up.railway.app'
   ],
   // More restrictive sandbox for production

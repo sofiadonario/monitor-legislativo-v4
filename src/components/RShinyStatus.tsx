@@ -80,7 +80,7 @@ const RShinyStatus: React.FC<RShinyStatusProps> = ({ className = '', showDetails
       case 'healthy':
         return 'R Shiny Available';
       case 'unhealthy':
-        return 'R Shiny Unavailable';
+        return 'R Shiny Maintenance';
       case 'checking':
         return 'Checking R Shiny...';
       default:
@@ -191,8 +191,8 @@ const RShinyStatus: React.FC<RShinyStatusProps> = ({ className = '', showDetails
                   Open R Shiny App
                 </a>
               ) : (
-                <div className="text-xs text-gray-500">
-                  R Shiny server not available. Check deployment status.
+                <div className="text-xs text-blue-600">
+                  R Shiny analytics temporarily under maintenance. Core features available via main dashboard.
                 </div>
               )}
             </div>

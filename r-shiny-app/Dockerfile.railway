@@ -1,4 +1,4 @@
-# Simplified Dockerfile for Railway deployment
+# Optimized Dockerfile for Railway R Shiny deployment
 FROM rocker/shiny:4.3.1
 
 # Install system dependencies
@@ -13,11 +13,12 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory to /app (where Railway expects it)
+# Set working directory
 WORKDIR /app
 
-# Copy app files from r-shiny-app directory
-COPY r-shiny-app/ .
+# Copy R application files
+COPY r-shiny-app/app-minimal.R ./app.R
+COPY r-shiny-app/.Rprofile ./
 
 # Install R packages
 RUN R -e "source('.Rprofile')"
@@ -31,10 +32,5 @@ RUN chown -R shiny:shiny /app
 # Expose port
 EXPOSE 3838
 
-# Make run script executable
-RUN chmod +x run_app.R
-
-# Remove the startup script - we'll use run_app.R directly
-
-# Run app (Railway may override this)
-CMD ["Rscript", "run_app.R"]
+# Run the Shiny app with proper signal handling
+CMD ["R", "-e", "shiny::runApp('/app/app.R', host='0.0.0.0', port=as.integer(Sys.getenv('PORT', '3838')))"]

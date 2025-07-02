@@ -1,4 +1,5 @@
 library(shiny)
+library(jsonlite)
 
 ui <- fluidPage(
   titlePanel("Monitor Legislativo - R Shiny"),
@@ -25,15 +26,25 @@ server <- function(input, output, session) {
       R_Version = R.version.string,
       Platform = Sys.info()["sysname"],
       Port = Sys.getenv("PORT", "3838"),
-      Working_Directory = getwd()
+      Working_Directory = getwd(),
+      Timestamp = Sys.time()
     )
   })
   
-  # Simple health check route
+  # Health check endpoint
   observeEvent(session$clientData, {
     if (!is.null(session$clientData$url_pathname) && 
         session$clientData$url_pathname == "/health") {
-      session$sendCustomMessage("health", "OK")
+      
+      health_response <- list(
+        status = "healthy",
+        service = "rshiny",
+        version = R.version.string,
+        timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%S"),
+        port = Sys.getenv("PORT", "3838")
+      )
+      
+      session$sendCustomMessage("health", toJSON(health_response, auto_unbox = TRUE))
     }
   })
 }
