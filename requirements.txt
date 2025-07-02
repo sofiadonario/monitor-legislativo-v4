@@ -193,20 +193,3 @@ prefect==2.14.11
 # WHY: Required for spatial analysis of legislative documents
 # VERSION: 2.x with stable coordinate system support
 geopy==2.4.1
-
-aenum==3.1.15
-aiohttp==3.9.5
-aiosignal==1.3.1
-annotated-types==0.6.0
-anyio==4.3.0
-async-timeout==4.0.3
-asyncpg==0.29.0
-attrs==23.2.0
-beautifulsoup4==4.12.3
-certifi==2024.2.2
-requests-toolbelt==1.0.0
-scikit-learn==1.4.2
-scipy==1.13.0
-six==1.16.0
-sniffio==1.3.1
-soupsieve==2.5
