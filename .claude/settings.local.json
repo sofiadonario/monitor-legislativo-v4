@@ -94,7 +94,8 @@
       "Bash(git ls-tree:*)",
       "Bash(./deploy_to_railway.sh)",
       "Bash(unset DATABASE_URL)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(npm test -- geographic.test.ts)"
     ]
   },
   "enableAllProjectMcpServers": false
