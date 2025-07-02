@@ -4,20 +4,20 @@ import logging
 import os
 from datetime import datetime
 
-# Imports are now absolute from the 'src' directory.
-import gateway_router
-from routers import lexml_router, sse_router, private_database_router
+# Imports are now relative from the 'src' package root.
+from . import gateway_router
+from .routers import lexml_router, sse_router, private_database_router
 
 # Import API modules with error handling for production deployment
 try:
-    from api import geographic
+    from .api import geographic
     GEOGRAPHIC_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Geographic API not available: {e}")
     GEOGRAPHIC_API_AVAILABLE = False
 
 try:
-    from api import advanced_geocoding
+    from .api import advanced_geocoding
     ADVANCED_GEOCODING_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Advanced Geocoding API not available: {e}")
@@ -25,56 +25,56 @@ except ImportError as e:
 
 # Define additional API availability flags
 try:
-    from api import ml_analysis
+    from .api import ml_analysis
     ML_ANALYSIS_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: ML Analysis API not available: {e}")
     ML_ANALYSIS_API_AVAILABLE = False
 
 try:
-    from api import document_validation
+    from .api import document_validation
     DOCUMENT_VALIDATION_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Document Validation API not available: {e}")
     DOCUMENT_VALIDATION_API_AVAILABLE = False
 
 try:
-    from api import ai_agents
+    from .api import ai_agents
     AI_AGENTS_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: AI Agents API not available: {e}")
     AI_AGENTS_API_AVAILABLE = False
 
 try:
-    from api import ai_document_analysis
+    from .api import ai_document_analysis
     AI_DOCUMENT_ANALYSIS_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: AI Document Analysis API not available: {e}")
     AI_DOCUMENT_ANALYSIS_API_AVAILABLE = False
 
 try:
-    from api import spatial_analysis_api
+    from .api import spatial_analysis_api
     SPATIAL_ANALYSIS_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Spatial Analysis API not available: {e}")
     SPATIAL_ANALYSIS_API_AVAILABLE = False
 
 try:
-    from api import vocabulary_api
+    from .api import vocabulary_api
     VOCABULARY_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Vocabulary API not available: {e}")
     VOCABULARY_API_AVAILABLE = False
 
 try:
-    from api import batch_processing_api
+    from .api import batch_processing_api
     BATCH_PROCESSING_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Batch Processing API not available: {e}")
     BATCH_PROCESSING_API_AVAILABLE = False
 
 try:
-    from api import government_standards_api
+    from .api import government_standards_api
     GOVERNMENT_STANDARDS_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Government Standards API not available: {e}")
@@ -83,13 +83,13 @@ except ImportError as e:
 # Additional API flags referenced in the code
 KNOWLEDGE_GRAPH_API_AVAILABLE = False  # Not implemented yet
 
-from services.database_cache_service import get_database_cache_service
-from services.simple_search_service import get_simple_search_service
-from database.two_tier_manager import get_two_tier_manager
-from database.alternative_config import get_alternative_database_manager
+from .services.database_cache_service import get_database_cache_service
+from .services.simple_search_service import get_simple_search_service
+from .database.two_tier_manager import get_two_tier_manager
+from .database.alternative_config import get_alternative_database_manager
 
 # Import environment configuration and validation
-from config.env_loader import EnvironmentConfig, validate_environment, log_environment_info
+from .config.env_loader import EnvironmentConfig, validate_environment, log_environment_info
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +154,7 @@ async def startup_event():
             
             # Only try alternative database manager if DATABASE_URL is configured
             try:
-                from config.env_loader import EnvironmentConfig
+                from .config.env_loader import EnvironmentConfig
                 database_url = EnvironmentConfig.DATABASE_URL
             except ImportError:
                 # Fallback to environment variable if env_loader not available
@@ -185,7 +185,7 @@ async def startup_event():
         # Initialize geographic service (if available)
         if GEOGRAPHIC_API_AVAILABLE:
             try:
-                from api.geographic import get_geographic_service
+                from .api.geographic import get_geographic_service
                 geographic_service = await get_geographic_service()
                 logger.info("✅ Geographic service initialized successfully")
             except Exception as geo_e:
@@ -196,7 +196,7 @@ async def startup_event():
         # Initialize ML analysis engine (if available)
         if ML_ANALYSIS_API_AVAILABLE:
             try:
-                from api.ml_analysis import get_ml_engine
+                from .api.ml_analysis import get_ml_engine
                 ml_engine = await get_ml_engine()
                 logger.info("✅ ML text analysis engine initialized successfully")
             except Exception as ml_e:
@@ -207,7 +207,7 @@ async def startup_event():
         # Initialize advanced geocoding service (if available)
         if ADVANCED_GEOCODING_API_AVAILABLE:
             try:
-                from api.advanced_geocoding import get_advanced_geocoder
+                from .api.advanced_geocoding import get_advanced_geocoder
                 advanced_geocoder = await get_advanced_geocoder()
                 logger.info("✅ Advanced Brazilian geocoding service initialized successfully")
             except Exception as geo_e:
@@ -218,7 +218,7 @@ async def startup_event():
         # Initialize document validation service (if available)
         if DOCUMENT_VALIDATION_API_AVAILABLE:
             try:
-                from api.document_validation import get_document_validator
+                from .api.document_validation import get_document_validator
                 document_validator = await get_document_validator()
                 logger.info("✅ Document validation service initialized successfully")
             except Exception as val_e:
@@ -229,7 +229,7 @@ async def startup_event():
         # Initialize AI agents service (if available)
         if AI_AGENTS_API_AVAILABLE:
             try:
-                from api.ai_agents import get_agent_manager
+                from .api.ai_agents import get_agent_manager
                 agent_manager = await get_agent_manager()
                 logger.info("✅ AI agents service initialized successfully")
             except Exception as ai_e:
@@ -240,7 +240,7 @@ async def startup_event():
         # Initialize AI document analysis service (if available)
         if AI_DOCUMENT_ANALYSIS_API_AVAILABLE:
             try:
-                from api.ai_document_analysis import get_analysis_engine, get_citation_generator
+                from .api.ai_document_analysis import get_analysis_engine, get_citation_generator
                 analysis_engine = await get_analysis_engine()
                 citation_generator = await get_citation_generator()
                 logger.info("✅ AI document analysis service initialized successfully")
@@ -486,7 +486,7 @@ async def database_diagnostic():
         
         # Database connection test
         try:
-            from database.supabase_config import get_database_manager
+            from .database.supabase_config import get_database_manager
             db_manager = await get_database_manager()
             connection_success = await db_manager.test_connection()
             
