@@ -16,4 +16,6 @@ cmds = [
 ]
 
 [start]
+# Set PYTHONPATH to include the app directory, ensuring all modules are found.
+env = { "PYTHONPATH" = "/app" }
 cmd = "uvicorn src.main:app --host 0.0.0.0 --port $PORT"
