@@ -1,43 +1,42 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Monitor Legislativo v4 - R Analytics</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f8f9fa; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .status { color: #28a745; font-weight: bold; }
-        .card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚀 Monitor Legislativo v4</h1>
-        <h2 class="status">✅ R Shiny Service: ONLINE</h2>
-        
-        <div class="card">
-            <h3>System Information</h3>
-            <p><strong>Service:</strong> Railway Production</p>
-            <p><strong>Status:</strong> Healthy</p>
-            <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
-            <p><strong>Purpose:</strong> R Analytics for Legislative Data</p>
-        </div>
-        
-        <div class="card">
-            <h3>Health Check</h3>
-            <p><strong>Endpoint:</strong> /health</p>
-            <p><strong>Status:</strong> ✅ Available</p>
-            <p>This service provides R analytics integration for the React frontend.</p>
-        </div>
-        
-        <div class="card">
-            <h3>Integration</h3>
-            <p>This service is designed to work with the Monitor Legislativo v4 React application.</p>
-            <p><strong>React App:</strong> <a href="https://sofiadonario.github.io/monitor-legislativo-v4/" target="_blank">Open Dashboard</a></p>
-        </div>
-    </div>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/map-icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Monitor Legislativo v4 - Academic research platform for monitoring Brazilian transport legislation with real government data" />
+    <meta name="keywords" content="Brazilian legislation, transport law, academic research, LexML, legal analysis" />
+    <meta name="author" content="Monitor Legislativo v4 Research Team" />
     
-    <script>
-        document.getElementById('timestamp').textContent = new Date().toLocaleString();
-    </script>
-</body>
+    <!-- Open Graph metadata -->
+    <meta property="og:title" content="Monitor Legislativo v4 - Brazilian Transport Legislation Research" />
+    <meta property="og:description" content="Academic research platform for monitoring Brazilian transport legislation with real government data" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sofiadonario.github.io/monitor-legislativo-v4/" />
+    
+    <!-- Academic and research metadata -->
+    <meta name="dc.title" content="Monitor Legislativo v4" />
+    <meta name="dc.description" content="Academic research platform for monitoring Brazilian transport legislation" />
+    <meta name="dc.subject" content="Brazilian legislation; transport law; legal research; academic analysis" />
+    <meta name="dc.type" content="Interactive Resource" />
+    <meta name="dc.format" content="text/html" />
+    <meta name="dc.language" content="pt-BR" />
+    
+    <!-- Security headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https: blob:; connect-src 'self' https://monitor-legislativo-v4-production.up.railway.app https://servicodados.ibge.gov.br https://lexml.gov.br; font-src 'self' data:; frame-src 'self';" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <title>Monitor Legislativo v4 - Brazilian Transport Legislation Research</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

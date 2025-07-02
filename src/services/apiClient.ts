@@ -197,4 +197,5 @@ const apiClient = new ApiClient({
   cacheTTL: Number(import.meta.env.VITE_CACHE_TTL) || 300000
 });
 
+export { apiClient };
 export default apiClient;
