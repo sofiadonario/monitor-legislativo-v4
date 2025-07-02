@@ -124,3 +124,67 @@ export interface SavedQuery {
   isPublic: boolean;
   tags: string[];
 }
+
+// Vocabulary and SKOS types
+export interface Concept {
+  uri: string;
+  prefLabel: Record<string, string>;
+  altLabels: Record<string, string[]>;
+  definition: Record<string, string>;
+  conceptScheme?: string;
+  broader: string[];
+  narrower: string[];
+  related: string[];
+  notation?: string;
+}
+
+export interface ConceptSearchResult {
+  concept: Concept;
+  matchType: string;
+  score: number;
+  matchedLabel: string;
+  context?: string;
+}
+
+export interface ConceptHierarchy {
+  concept: Concept;
+  path: string[];
+  children: Concept[];
+  parent?: Concept;
+  siblings: Concept[];
+  depth: number;
+  isRoot: boolean;
+  isLeaf: boolean;
+}
+
+export interface QueryExpansion {
+  original: string[];
+  narrower: string[];
+  broader: string[];
+  related: string[];
+  synonyms: string[];
+}
+
+export interface ConceptSchemeOverview {
+  scheme: string;
+  totalConcepts: number;
+  maxDepth: number;
+  rootConcepts: Array<{uri: string; label: string}>;
+  topLevelCategories: number;
+}
+
+export interface VocabularyHealth {
+  status: string;
+  service: string;
+  components: Record<string, string>;
+  dataCoverage: {
+    totalConcepts: number;
+    conceptSchemes: number;
+    languagesSupported: string[];
+    relationshipTypes: string[];
+  };
+  performance: {
+    labelIndexSize: number;
+    averageHierarchyDepth: number;
+  };
+}

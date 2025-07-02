@@ -102,6 +102,20 @@ export const API_ENDPOINTS = {
     health: '/api/v1/ai-analysis/health'
   },
   
+  // Vocabulary endpoints (Sprint 1)
+  vocabulary: {
+    search: '/api/v1/vocabulary/search',
+    concept: '/api/v1/vocabulary/concept',
+    broader: '/api/v1/vocabulary/concept/{concept_uri}/broader',
+    narrower: '/api/v1/vocabulary/concept/{concept_uri}/narrower',
+    related: '/api/v1/vocabulary/concept/{concept_uri}/related',
+    expandQuery: '/api/v1/vocabulary/expand-query',
+    schemes: '/api/v1/vocabulary/schemes',
+    scheme: '/api/v1/vocabulary/scheme',
+    export: '/api/v1/vocabulary/export/skos-rdf',
+    health: '/api/v1/vocabulary/health'
+  },
+  
   // Export endpoints
   export: '/api/v1/export',
   exportCSV: '/api/v1/export/csv',
