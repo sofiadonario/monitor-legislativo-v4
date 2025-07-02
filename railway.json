@@ -9,17 +9,6 @@
         "healthcheckPath": "/health",
         "healthcheckTimeout": 100
       }
-    },
-    "rshiny": {
-      "build": {
-        "builder": "DOCKERFILE", 
-        "dockerfilePath": "Dockerfile.railway",
-        "buildContext": "r-shiny-app"
-      },
-      "deploy": {
-        "restartPolicyType": "ON_FAILURE",
-        "restartPolicyMaxRetries": 3
-      }
     }
   }
 } 

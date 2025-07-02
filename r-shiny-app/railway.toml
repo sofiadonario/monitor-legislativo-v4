@@ -1,0 +1,10 @@
+# Railway Config as Code for R Shiny Service
+# This overrides all dashboard settings and forces Docker build
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile.railway"
+
+[deploy]
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3 
