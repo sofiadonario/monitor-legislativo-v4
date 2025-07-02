@@ -12,8 +12,8 @@ from collections import defaultdict, deque
 import asyncio
 import xml.etree.ElementTree as ET
 
-from config.config import Config
-from utils.logger import Logger
+from ..config.config import Config
+from ..utils.logger import Logger
 
 logger = Logger.get_logger()
 

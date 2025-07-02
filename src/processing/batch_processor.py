@@ -15,14 +15,14 @@ from pathlib import Path
 from collections import deque
 from threading import Lock
 
-from config.config import Config
-from utils.logger import Logger
-from models.legislative_data import LegislativeDocument
-from ai.entity_extractor import EntityExtractor
-from ai.knowledge_graph import KnowledgeGraphBuilder
-from ai.pattern_detector import PatternDetector
-from data_processing.government_standards import GovernmentStandardsProcessor
-from services.spatial_analysis import SpatialAnalysisService
+from ..config.config import Config
+from ..utils.logger import Logger
+from ..models.legislative_data import LegislativeDocument
+from ..ai.entity_extractor import EntityExtractor
+from ..ai.knowledge_graph import KnowledgeGraphBuilder
+from ..ai.pattern_detector import PatternDetector
+from ..data_processing.government_standards import GovernmentStandardsProcessor
+from ..services.spatial_analysis import SpatialAnalysisService
 
 logger = Logger()
 

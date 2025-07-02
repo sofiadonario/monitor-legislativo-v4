@@ -10,9 +10,9 @@ import re
 import json
 import logging
 
-from config.config import Config
-from utils.logger import Logger
-from models.legislative_data import LegislativeDocument
+from ..config.config import Config
+from ..utils.logger import Logger
+from ..models.legislative_data import LegislativeDocument
 
 logger = Logger.get_logger()
 
