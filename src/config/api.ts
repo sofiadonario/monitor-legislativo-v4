@@ -116,6 +116,20 @@ export const API_ENDPOINTS = {
     health: '/api/v1/vocabulary/health'
   },
   
+  // Document Analysis endpoints (Sprint 2)
+  documentAnalysis: {
+    content: '/api/v1/ai-analysis/analyze',
+    metadata: '/api/v1/ai-analysis/extract-metadata',
+    crossReferences: '/api/v1/ai-analysis/discover-relationships',
+    similarDocuments: '/api/v1/ml/similarity',
+    qualityScore: '/api/v1/validation/document',
+    citation: '/api/v1/ai-analysis/generate-citation',
+    batchCitations: '/api/v1/ai-analysis/generate-citations-batch',
+    citationStyles: '/api/v1/ai-analysis/citation-styles',
+    comparison: '/api/v1/ai-analysis/compare-documents',
+    health: '/api/v1/ai-analysis/health'
+  },
+  
   // Export endpoints
   export: '/api/v1/export',
   exportCSV: '/api/v1/export/csv',

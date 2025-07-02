@@ -188,3 +188,156 @@ export interface VocabularyHealth {
     averageHierarchyDepth: number;
   };
 }
+
+// Document Analysis types for Sprint 2
+export interface DocumentContent {
+  urn: string;
+  title: string;
+  content: string;
+  htmlContent?: string;
+  plainText: string;
+  metadata: DocumentMetadata;
+  sections: DocumentSection[];
+  attachments: DocumentAttachment[];
+}
+
+export interface DocumentMetadata {
+  urn: string;
+  title: string;
+  type: DocumentType;
+  authority: string;
+  publicationDate: string;
+  effectiveDate?: string;
+  status: DocumentStatus;
+  subject: string[];
+  keywords: string[];
+  language: string;
+  jurisdiction: string;
+  source: string;
+  lastModified: string;
+  version: string;
+  qualityScore: QualityScore;
+}
+
+export interface DocumentSection {
+  id: string;
+  title: string;
+  content: string;
+  level: number;
+  order: number;
+  type: 'article' | 'chapter' | 'section' | 'paragraph' | 'item';
+  references: string[];
+}
+
+export interface DocumentAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  description?: string;
+}
+
+export interface QualityScore {
+  overall: number;
+  completeness: number;
+  accuracy: number;
+  consistency: number;
+  timeliness: number;
+  details: QualityDetails;
+}
+
+export interface QualityDetails {
+  missingFields: string[];
+  validationErrors: ValidationError[];
+  warnings: string[];
+  lastValidated: string;
+}
+
+export interface ValidationError {
+  field: string;
+  error: string;
+  severity: 'error' | 'warning' | 'info';
+}
+
+export interface CrossReference {
+  id: string;
+  sourceUrn: string;
+  targetUrn: string;
+  type: CrossReferenceType;
+  description: string;
+  context: string;
+  bidirectional: boolean;
+  strength: number;
+}
+
+export type CrossReferenceType = 
+  | 'citation' 
+  | 'amendment' 
+  | 'repeal' 
+  | 'reference' 
+  | 'implementation' 
+  | 'supersedes' 
+  | 'related';
+
+export interface SimilarDocument {
+  urn: string;
+  title: string;
+  similarity: number;
+  matchType: 'content' | 'metadata' | 'structure' | 'keywords';
+  commonElements: string[];
+  explanation: string;
+}
+
+export interface Citation {
+  format: CitationFormat;
+  text: string;
+  bibtex?: string;
+  ris?: string;
+  endnote?: string;
+  metadata: CitationMetadata;
+}
+
+export type CitationFormat = 'ABNT' | 'APA' | 'Chicago' | 'Vancouver' | 'MLA' | 'IEEE';
+
+export interface CitationMetadata {
+  authors: string[];
+  title: string;
+  publisher: string;
+  publicationDate: string;
+  url: string;
+  accessDate: string;
+  doi?: string;
+  isbn?: string;
+}
+
+export interface ComparisonResult {
+  documents: DocumentMetadata[];
+  similarities: SimilarityMetrics;
+  differences: Difference[];
+  summary: ComparisonSummary;
+}
+
+export interface SimilarityMetrics {
+  contentSimilarity: number;
+  structureSimilarity: number;
+  metadataSimilarity: number;
+  overallSimilarity: number;
+  commonSections: number;
+  uniqueSections: { doc1: number; doc2: number };
+}
+
+export interface Difference {
+  type: 'content' | 'structure' | 'metadata';
+  field: string;
+  document1Value: string;
+  document2Value: string;
+  significance: 'high' | 'medium' | 'low';
+  description: string;
+}
+
+export interface ComparisonSummary {
+  primaryDifferences: string[];
+  keyInsights: string[];
+  recommendations: string[];
+}
