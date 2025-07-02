@@ -46,6 +46,9 @@ COPY --from=builder /opt/venv /opt/venv
 # Copy the application code
 COPY . .
 
+# Ensure main_app package (with __init__.py) is up to date and bypass cache issues
+COPY main_app /app/main_app
+
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONPATH="/app:${PYTHONPATH}"
