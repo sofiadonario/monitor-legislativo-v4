@@ -43,8 +43,8 @@ WORKDIR /app
 # Copy the virtual environment from the builder stage
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy the application source from the main_app directory into /app
-COPY . /app/
+# Copy the application source into a subdirectory to create a package
+COPY . /app/main_app/
 
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
@@ -52,5 +52,5 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Expose the port the app will run on
 EXPOSE 8080
 
-# Start the application using uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Start the application using uvicorn with the correct module path
+CMD ["uvicorn", "main_app.main:app", "--host", "0.0.0.0", "--port", "8080"]
