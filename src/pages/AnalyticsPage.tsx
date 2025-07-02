@@ -43,12 +43,20 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
     syncDocumentsDelay: 10000 // Increase delay to 10 seconds
   });
 
-  // Initialize R Shiny connection and URL
+  // Initialize Analytics - use local data first, R Shiny as enhancement
   useEffect(() => {
-    const initializeRShiny = async () => {
+    const initializeAnalytics = async () => {
       setIsInitializing(true);
       
       try {
+        // Always show local analytics, don't depend on R Shiny connection
+        if (documents.length > 0) {
+          setShowFallback(true); // Use fallback which shows local analytics
+          setIsInitializing(false);
+          return;
+        }
+        
+        // Try R Shiny as enhancement if available
         const sessionId = getSessionId();
         const url = buildRShinyUrl(sessionId, {
           documentsCount: documents.length.toString(),
@@ -57,19 +65,15 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
         });
         
         setRShinyUrl(url);
-        
-        // Only sync if R Shiny is actually available
-        // Removed automatic sync to prevent resource exhaustion
-        
         setIsInitializing(false);
       } catch (error) {
-        console.error('Failed to initialize R Shiny connection:', error);
+        console.error('Failed to initialize analytics:', error);
         setShowFallback(true);
         setIsInitializing(false);
       }
     };
 
-    initializeRShiny();
+    initializeAnalytics();
   }, [getRShinyUrl, getSessionId, forceSync, filters, documents, selectedState, selectedMunicipality]);
 
   // Only sync manually when R Shiny is actually connected
@@ -99,11 +103,42 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
       latest: new Date(Math.max(...documents.map(doc => new Date(doc.date).getTime())))
     } : null;
 
+    // Enhanced analytics
+    const documentsByType = documents.reduce((acc, doc) => {
+      acc[doc.type] = (acc[doc.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const documentsByState = documents.reduce((acc, doc) => {
+      if (doc.state) {
+        acc[doc.state] = (acc[doc.state] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    const documentsByStatus = documents.reduce((acc, doc) => {
+      acc[doc.status] = (acc[doc.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topStates = Object.entries(documentsByState)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5);
+
+    const topTypes = Object.entries(documentsByType)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5);
+
     return {
       totalDocuments: documents.length,
       statesCount,
       documentTypesCount,
-      dateRange
+      dateRange,
+      documentsByType,
+      documentsByState,
+      documentsByStatus,
+      topStates,
+      topTypes
     };
   }, [documents]);
 
@@ -126,7 +161,7 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
           <div className="fallback-header">
             <h2>📊 Analytics Dashboard</h2>
             <div className="fallback-status">
-              <span className="status-offline">R Shiny Unavailable</span>
+              <span className="status-online">Local Analytics - {summaryStats.totalDocuments} Documents</span>
             </div>
           </div>
           
@@ -153,6 +188,60 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
                   <span className="summary-label">Date Range</span>
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="analytics-charts">
+            <div className="chart-section">
+              <h4>📊 Top 5 States by Document Count</h4>
+              <div className="chart-bars">
+                {summaryStats.topStates.map(([state, count]) => (
+                  <div key={state} className="chart-bar">
+                    <span className="bar-label">{state}</span>
+                    <div className="bar-container">
+                      <div 
+                        className="bar-fill" 
+                        style={{ 
+                          width: `${(count / summaryStats.topStates[0][1]) * 100}%` 
+                        }}
+                      ></div>
+                      <span className="bar-value">{count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="chart-section">
+              <h4>📄 Document Types Distribution</h4>
+              <div className="chart-bars">
+                {summaryStats.topTypes.map(([type, count]) => (
+                  <div key={type} className="chart-bar">
+                    <span className="bar-label">{type.replace('_', ' ')}</span>
+                    <div className="bar-container">
+                      <div 
+                        className="bar-fill bar-fill-secondary" 
+                        style={{ 
+                          width: `${(count / summaryStats.topTypes[0][1]) * 100}%` 
+                        }}
+                      ></div>
+                      <span className="bar-value">{count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="chart-section">
+              <h4>⚖️ Document Status Overview</h4>
+              <div className="status-grid">
+                {Object.entries(summaryStats.documentsByStatus).map(([status, count]) => (
+                  <div key={status} className="status-item">
+                    <span className="status-count">{count}</span>
+                    <span className="status-label">{status.replace('_', ' ')}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

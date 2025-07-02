@@ -1,8 +1,6 @@
 /* Dashboard Layout */
 .dashboard {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: auto 1fr;
+  display: block;
   height: 100vh;
   position: relative;
   overflow: hidden;
@@ -272,11 +270,29 @@
     "content" 
     "info";
   overflow: hidden;
-  height: 100%;
+  height: 100vh;
   width: 100%;
   /* Ensure content uses full width regardless of sidebar state */
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
+}
+
+/* Analytics overlay styles */
+.analytics-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+  padding: 1rem;
+  overflow-y: auto;
 }
 
 /* Mobile Responsive Styles */

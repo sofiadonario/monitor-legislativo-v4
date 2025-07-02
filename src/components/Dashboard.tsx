@@ -201,23 +201,23 @@ const DashboardV2: React.FC = () => {
           </div>
         )}
 
-        {viewMode === 'dashboard' && (
-          <section className="map-wrapper" aria-labelledby="map-heading">
-            <h2 id="map-heading" className="sr-only">Interactive map</h2>
-            <Suspense fallback={<SkeletonMapLoading />}>
-              <OptimizedMap
-                selectedState={selectedState}
-                selectedMunicipality={selectedMunicipality}
-                documents={filteredDocuments}
-                onLocationClick={handleLocationClick}
-                highlightedLocations={highlightedStates}
-              />
-            </Suspense>
-          </section>
-        )}
+        {/* Map is always visible as the base layer */}
+        <section className="map-wrapper" aria-labelledby="map-heading">
+          <h2 id="map-heading" className="sr-only">Interactive map</h2>
+          <Suspense fallback={<SkeletonMapLoading />}>
+            <OptimizedMap
+              selectedState={selectedState}
+              selectedMunicipality={selectedMunicipality}
+              documents={filteredDocuments}
+              onLocationClick={handleLocationClick}
+              highlightedLocations={highlightedStates}
+            />
+          </Suspense>
+        </section>
 
+        {/* Analytics overlay when selected */}
         {viewMode === 'analytics' && (
-          <section className="analytics-wrapper" aria-labelledby="analytics-heading">
+          <section className="analytics-wrapper analytics-overlay" aria-labelledby="analytics-heading">
             <h2 id="analytics-heading" className="sr-only">R Shiny Analytics</h2>
             <Suspense fallback={<div className="analytics-skeleton"><SkeletonChart /><SkeletonChart /><SkeletonChart /></div>}>
               <AnalyticsPage

@@ -8,6 +8,132 @@
   overflow: hidden;
 }
 
+.analytics-fallback {
+  padding: 2rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.fallback-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.status-online {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Analytics Charts */
+.analytics-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.chart-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chart-section h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chart-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.bar-label {
+  min-width: 120px;
+  font-size: 0.875rem;
+  color: #666;
+  text-transform: capitalize;
+}
+
+.bar-container {
+  flex: 1;
+  position: relative;
+  height: 24px;
+  background: #f1f3f4;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #4285f4, #34a853);
+  border-radius: 12px;
+  transition: width 0.3s ease;
+}
+
+.bar-fill-secondary {
+  background: linear-gradient(90deg, #ff6b35, #f7931e);
+}
+
+.bar-value {
+  position: relative;
+  z-index: 1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #333;
+  margin-left: auto;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.status-count {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.status-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+  text-transform: capitalize;
+  text-align: center;
+}
+
 /* Loading State */
 .analytics-loading {
   justify-content: center;
