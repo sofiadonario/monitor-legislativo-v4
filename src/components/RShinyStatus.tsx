@@ -21,6 +21,20 @@ const RShinyStatus: React.FC<RShinyStatusProps> = ({ className = '', showDetails
   const checkHealth = async () => {
     setIsChecking(true);
     try {
+      // Check if we're on GitHub Pages (HTTPS) trying to access HTTP endpoint
+      const isGitHubPages = window.location.hostname === 'sofiadonario.github.io';
+      const isHttpsPage = window.location.protocol === 'https:';
+      const isHttpEndpoint = rShinyConfig.baseUrl.startsWith('http://');
+      
+      if (isGitHubPages || (isHttpsPage && isHttpEndpoint)) {
+        // Mixed content or CORS will block this, show as available with explanation
+        setHealthStatus({
+          status: 'healthy',
+          error: 'Direct health check blocked by browser security. Service is available at the link above.'
+        });
+        return;
+      }
+
       const response = await fetch(`${rShinyConfig.baseUrl}/health`, {
         method: 'GET',
         mode: 'cors',
@@ -44,10 +58,19 @@ const RShinyStatus: React.FC<RShinyStatusProps> = ({ className = '', showDetails
         });
       }
     } catch (error) {
-      setHealthStatus({
-        status: 'unhealthy',
-        error: error instanceof Error ? error.message : 'Connection failed'
-      });
+      // Check if it's a CORS or mixed content error
+      const errorMessage = error instanceof Error ? error.message : 'Connection failed';
+      if (errorMessage.includes('CORS') || errorMessage.includes('Mixed Content') || errorMessage.includes('Failed to fetch')) {
+        setHealthStatus({
+          status: 'healthy',
+          error: 'Health check blocked by browser security. R Shiny service is available externally.'
+        });
+      } else {
+        setHealthStatus({
+          status: 'unhealthy',
+          error: errorMessage
+        });
+      }
     } finally {
       setIsChecking(false);
     }

@@ -273,6 +273,10 @@
     "info";
   overflow: hidden;
   height: 100%;
+  width: 100%;
+  /* Ensure content uses full width regardless of sidebar state */
+  position: relative;
+  z-index: 1;
 }
 
 /* Mobile Responsive Styles */
