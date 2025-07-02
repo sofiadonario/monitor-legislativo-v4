@@ -341,3 +341,138 @@ export interface ComparisonSummary {
   keyInsights: string[];
   recommendations: string[];
 }
+
+// Geographic types for Sprint 3
+export interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
+export interface Address {
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  municipality: string;
+  state: string;
+  postalCode?: string;
+  country: string;
+  formattedAddress: string;
+}
+
+export interface Municipality {
+  id: string;
+  name: string;
+  stateId: string;
+  stateAbbreviation: string;
+  stateName: string;
+  region: string;
+  microregion?: string;
+  mesoregion?: string;
+  population?: number;
+  area?: number;
+  coordinates: Coordinates;
+  boundaries?: GeoJSON.Geometry;
+  ibgeCode: string;
+}
+
+export interface DocumentLocation {
+  urn: string;
+  title: string;
+  type: DocumentType;
+  coordinates: Coordinates;
+  municipality: string;
+  state: string;
+  address?: Address;
+  precision: 'exact' | 'municipality' | 'state' | 'approximate';
+  confidence: number;
+}
+
+export interface GeographicSearchParams {
+  center?: Coordinates;
+  radius?: number;
+  states?: string[];
+  municipalities?: string[];
+  regions?: string[];
+  boundingBox?: {
+    northeast: Coordinates;
+    southwest: Coordinates;
+  };
+  includeNearby?: boolean;
+}
+
+export interface ClusterAnalysis {
+  clusters: DocumentCluster[];
+  summary: {
+    totalClusters: number;
+    totalDocuments: number;
+    averageClusterSize: number;
+    largestCluster: string;
+    densestArea: string;
+  };
+  methodology: string;
+  timestamp: string;
+}
+
+export interface DocumentCluster {
+  id: string;
+  center: Coordinates;
+  radius: number;
+  documentCount: number;
+  documents: DocumentLocation[];
+  density: number;
+  primaryTypes: DocumentType[];
+  keywords: string[];
+}
+
+export interface DistanceMatrix {
+  locations: string[];
+  distances: number[][];
+  unit: 'km' | 'miles';
+  method: 'haversine' | 'road' | 'euclidean';
+}
+
+export interface RegionalPattern {
+  region: string;
+  documentCount: number;
+  documentTypes: Record<DocumentType, number>;
+  temporalDistribution: {
+    year: number;
+    count: number;
+  }[];
+  topKeywords: string[];
+  legislativeActivity: number;
+  trends: {
+    type: 'increasing' | 'decreasing' | 'stable';
+    percentage: number;
+  };
+}
+
+export interface JurisdictionComparison {
+  jurisdictions: JurisdictionData[];
+  metrics: {
+    totalDocuments: Record<string, number>;
+    documentsPerCapita: Record<string, number>;
+    legislativeActivity: Record<string, number>;
+    topKeywords: Record<string, string[]>;
+  };
+  insights: string[];
+  recommendations: string[];
+}
+
+export interface JurisdictionData {
+  name: string;
+  type: 'federal' | 'state' | 'municipal';
+  documentCount: number;
+  population?: number;
+  area?: number;
+  boundaries?: GeoJSON.Geometry;
+}
+
+export interface GeographicExportOptions extends ExportOptions {
+  format: 'geojson' | 'kml' | 'csv' | 'shapefile';
+  includeGeometry?: boolean;
+  coordinateSystem?: 'WGS84' | 'SIRGAS2000';
+  simplifyGeometry?: boolean;
+  attributes?: string[];
+}
