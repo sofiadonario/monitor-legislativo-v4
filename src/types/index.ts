@@ -97,6 +97,65 @@ export interface MapData {
 
 export type CollectionStatus = 'pending' | 'running' | 'completed' | 'failed';
 
+// Geographic and spatial types
+export interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
+export interface Municipality {
+  id: string;
+  name: string;
+  stateId: string;
+  stateAbbreviation: string;
+  population?: number;
+  area?: number;
+  coordinates: Coordinates;
+  ibgeCode: string;
+  boundaries?: GeoJSON.Geometry;
+}
+
+export interface DocumentLocation {
+  urn: string;
+  title: string;
+  type: DocumentType;
+  coordinates: Coordinates;
+  municipality: string;
+  state: string;
+  confidence: number;
+  precision: 'exact' | 'municipality' | 'state' | 'approximate';
+  address?: {
+    street?: string;
+    number?: string;
+    neighborhood?: string;
+    postalCode?: string;
+    formattedAddress: string;
+  };
+}
+
+export type TransportType = 'highway' | 'railway' | 'waterway' | 'airway' | 'pipeline';
+
+export interface TransportRoute {
+  id: string;
+  name: string;
+  type: TransportType;
+  coordinates: Coordinates[];
+  description?: string;
+  length?: number;
+  operator?: string;
+}
+
+export type JurisdictionType = 'federal' | 'state' | 'municipal' | 'regulatory' | 'environmental' | 'transport';
+
+export interface JurisdictionArea {
+  id: string;
+  name: string;
+  type: JurisdictionType;
+  agency?: string;
+  description?: string;
+  boundaries: GeoJSON.Geometry;
+}
+
 export interface CollectionLog {
   id: number;
   searchTermId: number;
