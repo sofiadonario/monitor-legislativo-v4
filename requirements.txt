@@ -67,7 +67,7 @@ httpx==0.25.2
 
 # AIOHTTP - Async HTTP client for API calls
 # WHY: Calls Câmara, Senado, regulatory agencies + LexML Brasil official SRU protocol
-# VERSION: 3.9.x is stable and Railway-compatible 
+# VERSION: 3.9.x is stable and Railway-compatible
 # CRITICAL: Required for LexML Brasil integration and SKOS vocabulary loading
 aiohttp==3.9.5
 
@@ -90,7 +90,7 @@ lxml==4.9.3
 # CACHING - REDIS FOR MULTI-TIER PERFORMANCE
 # =============================================================================
 
-# Redis - High-performance in-memory cache 
+# Redis - High-performance in-memory cache
 # WHY: Caches LexML API responses for faster academic research
 # VERSION: 5.0.x supports async operations and connection pooling
 redis==5.0.1
