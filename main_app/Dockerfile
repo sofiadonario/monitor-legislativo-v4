@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir --upgrade "asyncpg==0.28.0"
 RUN python -c "import asyncpg; print(f'AsyncPG version installed: {asyncpg.__version__}'); assert asyncpg.__version__ == '0.28.0', f'Wrong version: {asyncpg.__version__}'"
 
 # Copy the requirements file and install dependencies
-COPY requirements.txt .
+COPY main_app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Layer 4: Force reinstall asyncpg after all dependencies (CRITICAL FAILSAFE)
@@ -43,8 +43,9 @@ WORKDIR /app
 # Copy the virtual environment from the builder stage
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy the application source into a subdirectory to create a package
-COPY . /app/main_app/
+# Copy the application source and core logic into the container
+COPY main_app/ /app/main_app/
+COPY core/ /app/core/
 
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
