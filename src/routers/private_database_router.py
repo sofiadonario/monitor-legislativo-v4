@@ -28,7 +28,7 @@ router = APIRouter(
 async def get_private_db_session():
     """Dependency to get private database session"""
     try:
-        from database.supabase_config import get_database_manager
+        from ..database.supabase_config import get_database_manager
         db_manager = await get_database_manager()
         async with db_manager.session_factory() as session:
             yield session
@@ -339,7 +339,7 @@ async def trigger_manual_collection(
     """
     try:
         import os
-        from periodic_collection.lexml_collector import LexMLPeriodicCollector
+        from ..periodic_collection.lexml_collector import LexMLPeriodicCollector
         
         database_url = os.getenv('DATABASE_URL')
         if not database_url:
@@ -367,7 +367,7 @@ async def trigger_manual_collection(
 async def _run_collection_task(database_url: str, search_term_id: Optional[int] = None):
     """Background task to run collection"""
     try:
-        from periodic_collection.lexml_collector import LexMLPeriodicCollector
+        from ..periodic_collection.lexml_collector import LexMLPeriodicCollector
         
         async with LexMLPeriodicCollector(database_url) as collector:
             if search_term_id:
@@ -457,14 +457,14 @@ async def get_db_service():
 
 async def get_db_manager_dependency():
     """Dependency to get the raw database manager."""
-    from database.supabase_config import get_database_manager
+    from ..database.supabase_config import get_database_manager
     return await get_database_manager()
 
 
 def get_periodic_collector_dependency():
     """Dependency to get the periodic collector."""
     try:
-        from periodic_collection.lexml_collector import LexMLPeriodicCollector
+        from ..periodic_collection.lexml_collector import LexMLPeriodicCollector
         return LexMLPeriodicCollector()
     except ImportError as e:
         logger.warning(f"Periodic collector not available: {e}")

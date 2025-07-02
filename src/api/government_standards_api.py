@@ -8,13 +8,13 @@ from pydantic import BaseModel
 import logging
 from datetime import datetime
 
-from data_processing.government_standards import (
+from ..data_processing.government_standards import (
     GovernmentStandardsProcessor,
     DigitizationLevel,
     DataQualityScore,
     ValidationResult
 )
-from models.legislative_data import LegislativeDocument
+from ..models.legislative_data import LegislativeDocument
 
 logger = logging.getLogger(__name__)
 

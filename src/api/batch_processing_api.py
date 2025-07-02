@@ -8,13 +8,13 @@ from pydantic import BaseModel
 import logging
 from datetime import datetime
 
-from processing.batch_processor import (
+from ..processing.batch_processor import (
     BatchProcessor,
     get_batch_processor,
     BatchStatusResponse,
     BatchJob,
 )
-from models.legislative_data import LegislativeDocument
+from ..models.legislative_data import LegislativeDocument
 
 logger = logging.getLogger(__name__)
 

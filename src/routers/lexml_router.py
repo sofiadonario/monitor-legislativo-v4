@@ -9,14 +9,12 @@ from typing import Optional, List
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
-
-# Use enhanced search service with database integration
-from services.simple_search_service import (
+from ..services.simple_search_service import (
     get_simple_search_service,
     SimpleSearchService,
     Document,
 )
-from services.database_cache_service import get_database_cache_service
+from ..services.database_cache_service import get_database_cache_service
 
 logger = logging.getLogger(__name__)
 

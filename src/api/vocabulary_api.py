@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 import logging
-from vocabulary.skos_manager import SKOSVocabularyManager, ConceptScheme
+from ..vocabulary.skos_manager import SKOSVocabularyManager, ConceptScheme
 
 logger = logging.getLogger(__name__)
 

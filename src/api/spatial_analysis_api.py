@@ -8,8 +8,8 @@ from pydantic import BaseModel
 import asyncio
 import logging
 
-from services.spatial_analysis import SpatialAnalysisService, GeoLocation, SpatialCluster, DocumentSpatialAnalysis
-from models.legislative_data import LegislativeDocument
+from ..services.spatial_analysis import SpatialAnalysisService, GeoLocation, SpatialCluster, DocumentSpatialAnalysis
+from ..models.legislative_data import LegislativeDocument
 
 logger = logging.getLogger(__name__)
 
