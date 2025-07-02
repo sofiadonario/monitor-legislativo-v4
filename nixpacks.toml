@@ -4,10 +4,15 @@ providers = ["python"]
 
 # Define the installation and startup commands.
 [phases.install]
-# This single command activates the virtual environment and then runs pip.
-# This ensures pip is found and resolves the "command not found" error.
+# This is the complete and correct command.
+# 1. Creates the virtual environment.
+# 2. Activates it.
+# 3. Upgrades pip.
+# 4. Installs all requirements.
+# This single, chained command ensures everything happens in the correct order
+# and in the same shell, resolving all previous errors.
 cmds = [
-  ". /opt/venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt"
+  "python -m venv --copies /opt/venv && . /opt/venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt"
 ]
 
 [start]
