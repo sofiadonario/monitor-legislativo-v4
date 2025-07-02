@@ -43,8 +43,8 @@ WORKDIR /app
 # Copy the virtual environment from the builder stage
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy the application code
-COPY . .
+# Copy the application source into /app/main_app so it's a package
+COPY . /app/main_app
 
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
@@ -75,4 +75,4 @@ CMD ["sh", "-c", "echo '=== RAILWAY RUNTIME ENVIRONMENT DEBUG ===' && \
     echo '=== FINAL ASYNCPG VERSION VERIFICATION ===' && \
     python -c 'import asyncpg; v=asyncpg.__version__; print(f\"Runtime AsyncPG: {v}\"); expected=\"0.28.0\"; print(f\"Expected: {expected}\"); print(f\"Supabase compatible: {v == expected}\"); exit(0 if v == expected else 1)' && \
     echo '=== STARTING APPLICATION ===' && \
-    uvicorn app_entry:app --host 0.0.0.0 --port 8080"]
+    uvicorn main_app.main:app --host 0.0.0.0 --port 8080"]
