@@ -12,5 +12,5 @@ python = "3.11"
 cmds = ["pip install --upgrade pip", "pip install -r requirements.txt"]
 
 [start]
-# This command starts the application server correctly.
-cmd = "uvicorn main_app.main:app --host 0.0.0.0 --port $PORT" 
+# This command starts the application.
+cmd = "uvicorn src.main:app --host 0.0.0.0 --port $PORT" 
