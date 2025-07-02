@@ -1,8 +1,16 @@
+# nixpacks.toml
+
+# Force the environment to use Python 3.11.
+# This is the most critical step to solve the dependency issues,
+# as it ensures 'distutils' is available for older packages.
+[providers]
+python = "3.11"
+
 [phases.install]
 # This command overrides the default install step.
-# It installs build tools first, which is required by some dependencies.
-cmds = ["pip install --upgrade pip setuptools wheel", "pip install -r requirements.txt"]
+# It ensures a clean installation of all packages.
+cmds = ["pip install --upgrade pip", "pip install -r requirements.txt"]
 
 [start]
-# This command starts the application.
+# This command starts the application server correctly.
 cmd = "uvicorn main_app.main:app --host 0.0.0.0 --port $PORT" 
