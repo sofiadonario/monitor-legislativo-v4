@@ -8,6 +8,9 @@ class DatabaseCacheService:
     A placeholder cache service to allow the application to start.
     This service simulates the database caching functionality required by the routers.
     """
+    def __init__(self):
+        self.db_available = False # Set to False to indicate placeholder status
+
     async def get_search_results(self, query: str) -> List[Dict[str, Any]]:
         logger.warning(f"Using placeholder DatabaseCacheService. No cache will be used for query: {query}")
         return None # Return None to indicate a cache miss.
