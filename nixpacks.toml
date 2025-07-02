@@ -1,8 +1,6 @@
 # nixpacks.toml
 
-# Force the environment to use Python 3.11.
-[providers]
-python = "3.11"
+providers = ["python"]
 
 # Define the installation and startup commands.
 [phases.install]
