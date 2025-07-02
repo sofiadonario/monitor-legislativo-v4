@@ -23,8 +23,10 @@ from pathlib import Path
 
 # Import advanced geocoding components
 sys.path.append(str(Path(__file__).parent.parent.parent / "core"))
-from geographic.advanced_geocoder import (
-    AdvancedBrazilianGeocoder, 
+from ..geographic.advanced_geocoder import (
+    AdvancedBrazilianGeocoder,
+    get_advanced_geocoder,
+    GeocodingResult,
     GeocodeResult, 
     AddressComponents,
     PrecisionLevel,

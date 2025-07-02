@@ -451,7 +451,7 @@ async def private_database_health(
 
 async def get_db_service():
     """Dependency to get the database cache service."""
-    from services.database_cache_service import get_database_cache_service
+    from ..services.database_cache_service import get_database_cache_service
     return await get_database_cache_service()
 
 
