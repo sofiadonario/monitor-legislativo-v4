@@ -1,0 +1,29 @@
+# Ignore R Shiny files for Python service build
+r-shiny-app/
+r-shiny-standalone/
+r-shiny-minimal/
+*.R
+*.r
+Dockerfile.railway
+R-4.3.2.tar.gz
+
+# Ignore frontend build files (keep src/ for Python API)
+node_modules/
+dist/
+public/
+vite.config.ts
+tsconfig.json
+tsconfig.node.json
+package.json
+package-lock.json
+.npmrc
+jest.config.js
+.eslintrc.js
+
+# Ignore docs and planning
+docs/
+documentation/
+planning/
+*.md
+*.pdf
+img9.png 
