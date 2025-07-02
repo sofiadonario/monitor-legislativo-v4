@@ -149,6 +149,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply trigger to documents table
+DROP TRIGGER IF EXISTS update_search_vector_trigger ON private_legislative_documents;
 CREATE TRIGGER update_search_vector_trigger
     BEFORE INSERT OR UPDATE ON private_legislative_documents
     FOR EACH ROW EXECUTE FUNCTION update_document_search_vector();

@@ -3,6 +3,8 @@ from typing import Optional, Dict, Any
 
 from .supabase_config import DatabaseManager as BaseManager, get_database_manager
 
+logger = logging.getLogger(__name__)
+
 
 class TwoTierManager:
     """Manages two-tier database access (primary and fallback)"""
