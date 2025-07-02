@@ -60,7 +60,7 @@ export const DocumentComparison: React.FC<DocumentComparisonProps> = ({
       if (comparisonResult.status === 'fulfilled' && comparisonResult.value) {
         setComparison(comparisonResult.value);
       } else {
-        console.warn('Failed to load comparison analysis:', comparisonResult.reason);
+        console.warn('Failed to load comparison analysis:', comparisonResult.status === 'rejected' ? comparisonResult.reason : 'Unknown error');
       }
 
     } catch (err) {

@@ -70,7 +70,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
   const handleSectionClick = (sectionId: string) => {
     setActiveSection(sectionId);
-    const element = document.getElementById(`section-${sectionId}`);
+    const element = window.document.getElementById(`section-${sectionId}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
@@ -201,7 +201,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                   {(metadata || document.metadata).effectiveDate && (
                     <div className="document-viewer__metadata-item">
                       <strong>Effective Date:</strong>
-                      <span>{formatDate((metadata || document.metadata).effectiveDate)}</span>
+                      <span>{formatDate((metadata || document.metadata).effectiveDate!)}</span>
                     </div>
                   )}
                   <div className="document-viewer__metadata-item">

@@ -241,6 +241,9 @@ Never commit `.env` files. Use `.env.example` as reference.
 
 - Use Gemini CLI in non-interactive mode for reading, listing files etc, since it has a giant context.
 
+## Development Workflow Memories
+- Always commit and push when you finish something
+
 ## Remember
 - This is an academic research tool - data integrity is paramount
 - Every feature must support the research mission
