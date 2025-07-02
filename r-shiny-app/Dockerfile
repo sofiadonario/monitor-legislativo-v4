@@ -16,9 +16,9 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy R application files
-COPY r-shiny-app/app-minimal.R ./app.R
-COPY r-shiny-app/.Rprofile ./
+# Copy R application files (paths relative to build context)
+COPY app-minimal.R ./app.R
+COPY .Rprofile ./
 
 # Install R packages
 RUN R -e "source('.Rprofile')"
