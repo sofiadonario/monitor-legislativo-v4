@@ -65,7 +65,7 @@ httpx==0.25.2
 # WHY: Calls Câmara, Senado, regulatory agencies + LexML Brasil official SRU protocol
 # VERSION: 3.9.x is stable and Railway-compatible 
 # CRITICAL: Required for LexML Brasil integration and SKOS vocabulary loading
-aiohttp==3.9.1
+aiohttp==3.9.5
 
 # Requests - Backup HTTP client (simpler, slower)
 # WHY: Fallback for when aiohttp doesn't work
@@ -75,7 +75,7 @@ requests==2.31.0
 # Beautiful Soup - HTML parsing for web scraping
 # WHY: Extracts data from government websites that don't have APIs
 # VERSION: 4.12.x handles Portuguese text encoding perfectly
-beautifulsoup4==4.12.2
+beautifulsoup4==4.12.3
 
 # LXML - Fast XML/HTML parser
 # WHY: Parses XML from Senado and other government sources
@@ -137,6 +137,10 @@ python-dotenv==1.0.0
 # VERSION: 6.0.x handles UTF-8 encoding for Portuguese text
 PyYAML==6.0.1
 
+# Setuptools - Build tool for package installation
+# WHY: Required for packages that use distutils, fixes build errors on Python 3.12+
+setuptools
+
 # =============================================================================
 # MONITORING - TRACKS PERFORMANCE
 # =============================================================================
@@ -189,3 +193,20 @@ prefect==2.14.11
 # WHY: Required for spatial analysis of legislative documents
 # VERSION: 2.x with stable coordinate system support
 geopy==2.4.1
+
+aenum==3.1.15
+aiohttp==3.9.5
+aiosignal==1.3.1
+annotated-types==0.6.0
+anyio==4.3.0
+async-timeout==4.0.3
+asyncpg==0.29.0
+attrs==23.2.0
+beautifulsoup4==4.12.3
+certifi==2024.2.2
+requests-toolbelt==1.0.0
+scikit-learn==1.4.2
+scipy==1.13.0
+six==1.16.0
+sniffio==1.3.1
+soupsieve==2.5
