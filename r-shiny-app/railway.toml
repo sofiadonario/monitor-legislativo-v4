@@ -1,10 +1,18 @@
-# Railway Config as Code for R Shiny Service
-# This overrides all dashboard settings and forces Docker build
+# Complete Railway Config as Code for R Shiny Service
+# This file contains ALL configuration and overrides dashboard settings
 
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile.railway"
+dockerfilePath = "./Dockerfile.railway"
 
 [deploy]
 restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 3 
+restartPolicyMaxRetries = 3
+replicas = 1
+
+# Environment variables for R Shiny
+[deploy.env]
+PORT = "3838"
+SHINY_LOG_LEVEL = "INFO"
+R_LIBS_USER = "/app/renv/library"
+ENVIRONMENT = "production" 
