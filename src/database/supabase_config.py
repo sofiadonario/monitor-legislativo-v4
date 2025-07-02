@@ -24,7 +24,15 @@ class DatabaseManager:
                 db_url = EnvironmentConfig.DATABASE_URL
                 if not db_url:
                     raise ValueError("DATABASE_URL environment variable is not set.")
-                
+
+                #
+                # THIS IS THE FIX:
+                # Force the URL to use the asyncpg driver, which is what
+                # SQLAlchemy's asyncio extension requires.
+                #
+                if db_url.startswith("postgresql://"):
+                    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
                 cls._engine = create_async_engine(
                     db_url,
                     pool_pre_ping=True,

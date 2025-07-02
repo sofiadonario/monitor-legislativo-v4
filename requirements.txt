@@ -46,7 +46,7 @@ aioredis==2.0.1
 # VERSION: 0.28.x for Supabase compatibility (0.29.0 has auth issues)
 asyncpg==0.28.0
 
-# Psycopg - The only psycopg driver needed. It is asynchronous.
+# Psycopg - Alternative async PostgreSQL driver (FALLBACK)
 # WHY: Backup driver if asyncpg has authentication issues with Supabase
 # VERSION: Async version compatible with SQLAlchemy async
 psycopg[binary]==3.1.12
