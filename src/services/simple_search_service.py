@@ -1,13 +1,19 @@
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-class Document:
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
+class Document(BaseModel):
+    """
+    A Pydantic model representing a legislative document.
+    This ensures compatibility with FastAPI's response_model.
+    """
+    urn: str
+    title: str
+    description: Optional[str] = None
+    full_text_url: Optional[str] = None
+    
 class SimpleSearchService:
     """
     A placeholder search service to allow the application to start.
@@ -15,7 +21,7 @@ class SimpleSearchService:
     """
     async def search(self, query: str, limit: int = 50) -> List[Document]:
         logger.warning(f"Using placeholder SimpleSearchService. No real search will be performed for query: {query}")
-        # Return an empty list to ensure the router has a valid response.
+        # Return an empty list of Document models to ensure the router has a valid response.
         return []
 
 # Singleton instance
