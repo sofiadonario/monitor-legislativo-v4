@@ -12,6 +12,10 @@ fastapi==0.104.1
 # Uvicorn - ASGI server (preferred for FastAPI async support)
 uvicorn[standard]==0.24.0
 
+# SSE Starlette - Server-Sent Events support for FastAPI
+# WHY: Required for real-time notification streaming
+sse-starlette==1.8.2
+
 # NOTE: Removed gunicorn - Railway kept trying to use it
 # Using uvicorn directly for simpler deployment
 
