@@ -100,8 +100,8 @@ redis[hiredis]==5.0.1
 # =============================================================================
 
 # Pendulum - Advanced date/time library
-# WHY: Explicitly set to >=3.0.0 to ensure Python 3.12+ compatibility
-pendulum>=3.0.0
+# WHY: Pinned to 3.0.0 to guarantee Python 3.12+ compatibility.
+pendulum==3.0.0
 
 # Python DateUtil - Date parsing and formatting
 # WHY: Government APIs return dates in different formats
