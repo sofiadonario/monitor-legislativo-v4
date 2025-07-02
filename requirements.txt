@@ -182,8 +182,8 @@ orjson==3.9.10
 
 # Prefect - Workflow orchestration for automated collection
 # WHY: Reliable task scheduling, error handling, and monitoring
-# VERSION: 2.x with Python 3.11 support
-prefect==2.14.11
+# VERSION: Upgraded to 2.19.x for Python 3.12+ compatibility
+prefect==2.19.2
 
 # =============================================================================
 # GEOSPATIAL ANALYSIS - SPATIAL SEARCH FUNCTIONALITY
