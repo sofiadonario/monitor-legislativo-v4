@@ -56,7 +56,7 @@
     "test:ci": "jest --ci --coverage --watchAll=false",
     "performance:test": "node development/test-scripts/frontend_performance_test.js",
     "performance:full": "python development/test-scripts/run_performance_tests.py",
-    "deploy:staging": "npm run build:prod && gh-pages -d dist -b staging",
+    "deploy:staging": "npm run build && gh-pages -d dist -b staging",
     "deploy:prod": "development/scripts/deploy-production.sh",
     "deploy": "npm run deploy:prod",
     "predeploy": "npm run build:prod",

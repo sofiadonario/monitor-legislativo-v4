@@ -7,11 +7,11 @@
 const isDevelopment = import.meta.env.MODE === 'development';
 const isProduction = import.meta.env.MODE === 'production';
 
-// API Base URLs
+// API Base URLs  
 const API_URLS = {
   development: 'http://localhost:8000', // Local development backend
-  production: import.meta.env.VITE_API_URL || 'https://monitor-legislativo-v4-production.up.railway.app', // Railway backend
-  staging: import.meta.env.VITE_API_URL || 'https://monitor-legislativo-v4-production.up.railway.app'
+  production: import.meta.env.VITE_API_URL || 'https://monitor-legislativo-v4-production-7e46.up.railway.app', // Railway backend
+  staging: import.meta.env.VITE_API_URL || 'https://monitor-legislativo-v4-production-7e46.up.railway.app'
 };
 
 // Get current API base URL
@@ -28,7 +28,7 @@ export const API_ENDPOINTS = {
   status: '/api/docs',
   
   // Core data endpoints
-  search: '/api/v1/search',
+  search: '/lexml/search',
   sources: '/api/v1/sources',
   
   // Geographic endpoints (Week 1)
