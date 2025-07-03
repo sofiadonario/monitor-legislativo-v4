@@ -156,10 +156,9 @@ export class LegislativeDataService {
       
       // Try multiple endpoints that might return document data
       const endpoints = [
+        '/lexml/search', // This should be the primary endpoint for all documents
         '/api/v1/collections/latest',
-        '/api/v1/private-database/documents',
-        '/lexml/search',
-        '/'
+        '/api/v1/private-database/documents'
       ];
       
       for (const endpoint of endpoints) {
