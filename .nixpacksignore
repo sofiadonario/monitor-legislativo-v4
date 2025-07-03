@@ -1,16 +1,39 @@
-# Ignore R Shiny files for Python service build
+# Ignore R Shiny directories to prevent conflicts
 r-shiny-app/
-r-shiny-standalone/
 r-shiny-minimal/
+r-shiny-standalone/
+
+# Ignore development and testing directories
+development/
+tests/
+documentation/
+test-scripts/
+
+# Ignore data files to reduce build size
+data/
+*.csv
+*.xlsx
+*.rds
+
+# Ignore R specific files
 *.R
-*.r
-Dockerfile.railway
-R-4.3.2.tar.gz
+*.Rmd
+.Rprofile
+renv/
+renv.lock
+
+# Ignore frontend build files
+dist/
+build/
+node_modules/
+public/
+
+# Ignore git and cache
+.git/
+.cache/
+__pycache__/
 
 # Ignore frontend build files (keep src/ for Python API)
-node_modules/
-dist/
-public/
 vite.config.ts
 tsconfig.json
 tsconfig.node.json
@@ -21,8 +44,6 @@ jest.config.js
 .eslintrc.js
 
 # Ignore docs and planning
-docs/
-documentation/
 planning/
 *.md
 *.pdf
