@@ -21,14 +21,13 @@ jobs:
       with:
         node-version: '18'
         
-    - name: Aggressively clean caches and dependencies
+    - name: GUARANTEE CLEAN BUILD - Nuke all caches and modules
       run: |
-        rm -rf node_modules
-        rm -rf dist
+        npm run clean
         npm cache clean --force
         
-    - name: Install dependencies cleanly
-      run: npm install
+    - name: Install dependencies with Clean Install
+      run: npm ci
       
     - name: Build application
       run: npm run build
