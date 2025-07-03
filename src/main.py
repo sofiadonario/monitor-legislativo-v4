@@ -95,13 +95,6 @@ except ImportError as e:
     INTERACTIVE_VISUALIZATION_API_AVAILABLE = False
 
 try:
-    from .api import document_validation
-    DOCUMENT_VALIDATION_API_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: Document Validation API not available: {e}")
-    DOCUMENT_VALIDATION_API_AVAILABLE = False
-
-try:
     from .api import citation_enhancement
     CITATION_ENHANCEMENT_API_AVAILABLE = True
 except ImportError as e:
@@ -155,18 +148,20 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Configure CORS
+# Define allowed origins for CORS
+origins = [
+    "https://sofiadonario.github.io",  # Your GitHub Pages frontend
+    "https://rshiny-production-1f4b.up.railway.app",  # Your R Shiny app
+    "http://localhost:3000",  # For local development
+]
+
+# Add CORS middleware to the application
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://sofiadonario.github.io",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174"
-    ],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 app.include_router(gateway_router.router)
