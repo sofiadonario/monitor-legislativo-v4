@@ -6,7 +6,7 @@ from datetime import datetime
 
 # Imports are now relative from the 'src' package root.
 from . import gateway_router
-from .routers import lexml_router, sse_router, private_database_router
+from .routers import lexml_router, sse_router, private_database_router, collections_router
 
 # Import API modules with error handling for production deployment
 try:
@@ -53,7 +53,35 @@ except ImportError as e:
     AI_DOCUMENT_ANALYSIS_API_AVAILABLE = False
 
 try:
-    from .api import spatial_analysis_api
+    from .api import knowledge_graph
+    KNOWLEDGE_GRAPH_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Knowledge Graph API not available: {e}")
+    KNOWLEDGE_GRAPH_API_AVAILABLE = False
+
+try:
+    from .api import semantic_cache
+    SEMANTIC_CACHE_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Semantic Cache API not available: {e}")
+    SEMANTIC_CACHE_API_AVAILABLE = False
+
+try:
+    from .api import advanced_nlp
+    ADVANCED_NLP_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Advanced NLP API not available: {e}")
+    ADVANCED_NLP_API_AVAILABLE = False
+
+try:
+    from .api import enhanced_geocoding
+    ENHANCED_GEOCODING_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Enhanced Geocoding API not available: {e}")
+    ENHANCED_GEOCODING_API_AVAILABLE = False
+
+try:
+    from .api import spatial_analysis
     SPATIAL_ANALYSIS_API_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Spatial Analysis API not available: {e}")
@@ -81,7 +109,6 @@ except ImportError as e:
     GOVERNMENT_STANDARDS_API_AVAILABLE = False
 
 # Additional API flags referenced in the code
-KNOWLEDGE_GRAPH_API_AVAILABLE = False  # Not implemented yet
 
 from .services.database_cache_service import get_database_cache_service
 from .services.simple_search_service import get_simple_search_service
@@ -118,6 +145,7 @@ app.include_router(gateway_router.router)
 app.include_router(lexml_router.router)
 app.include_router(sse_router.router)
 app.include_router(private_database_router.router)
+app.include_router(collections_router.router)
 
 # Include API routers conditionally
 if GEOGRAPHIC_API_AVAILABLE:
@@ -125,6 +153,24 @@ if GEOGRAPHIC_API_AVAILABLE:
 
 if ADVANCED_GEOCODING_API_AVAILABLE:
     app.include_router(advanced_geocoding.router)
+
+if AI_AGENTS_API_AVAILABLE:
+    app.include_router(ai_agents.router)
+
+if KNOWLEDGE_GRAPH_API_AVAILABLE:
+    app.include_router(knowledge_graph.router)
+
+if SEMANTIC_CACHE_API_AVAILABLE:
+    app.include_router(semantic_cache.router)
+
+if ADVANCED_NLP_API_AVAILABLE:
+    app.include_router(advanced_nlp.router)
+
+if ENHANCED_GEOCODING_API_AVAILABLE:
+    app.include_router(enhanced_geocoding.router)
+
+if SPATIAL_ANALYSIS_API_AVAILABLE:
+    app.include_router(spatial_analysis.router)
 
 
 @app.on_event("startup")
@@ -248,6 +294,17 @@ async def startup_event():
                 logger.warning(f"⚠️  AI document analysis service initialization failed: {analysis_e}")
         else:
             logger.info("ℹ️  AI document analysis service not available - skipping initialization")
+        
+        # Initialize knowledge graph service (if available)
+        if KNOWLEDGE_GRAPH_API_AVAILABLE:
+            try:
+                from .api.knowledge_graph import get_knowledge_graph
+                knowledge_graph = await get_knowledge_graph()
+                logger.info("✅ Legislative knowledge graph service initialized successfully")
+            except Exception as kg_e:
+                logger.warning(f"⚠️  Knowledge graph service initialization failed: {kg_e}")
+        else:
+            logger.info("ℹ️  Knowledge graph service not available - skipping initialization")
         
         logger.info("🚀 Monitor Legislativo Two-Tier Service startup complete")
         
@@ -377,6 +434,16 @@ async def read_root():
             "🔍 Quality Scoring with Compliance Percentage",
             "🔄 Processing Pipeline Recommendations",
             "📋 Document Validation Rules and Government Compliance"
+        ])
+    
+    if KNOWLEDGE_GRAPH_API_AVAILABLE:
+        features.extend([
+            "🕸️ Legislative Knowledge Graph with Entity Extraction",
+            "🔗 Relationship Mapping Between Laws, Organizations, and Concepts",
+            "📊 Graph Analysis with Centrality and Clustering Metrics",
+            "🎯 Community Detection and Influence Pathway Analysis",
+            "🧠 AI-Powered Insight Discovery from Document Relationships",
+            "📈 Interactive Knowledge Graph Visualization"
         ])
     
     return {
