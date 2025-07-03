@@ -165,7 +165,12 @@ export class LegislativeDataService {
         try {
           console.log(`🔍 Trying endpoint: ${endpoint}`);
           const url = `${baseUrl}${endpoint}`;
-          const params = filters?.searchTerm ? `?q=${encodeURIComponent(filters.searchTerm)}` : '';
+          
+          // CRITICAL FIX: Add a default query parameter for /lexml/search
+          let params = filters?.searchTerm ? `?q=${encodeURIComponent(filters.searchTerm)}` : '';
+          if (endpoint === '/lexml/search' && !params) {
+            params = `?query=transporte`;
+          }
           
           const response = await fetch(`${url}${params}`, {
             method: 'GET',

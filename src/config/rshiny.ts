@@ -76,7 +76,7 @@ const developmentConfig: Partial<RShinyConfig> = {
 // Production configuration
 const productionConfig: Partial<RShinyConfig> = {
   // Use environment variable for production URL
-  baseUrl: process.env.REACT_APP_RSHINY_URL || process.env.VITE_RSHINY_URL || 'https://rshiny-production.up.railway.app',
+  baseUrl: process.env.REACT_APP_RSHINY_URL || process.env.VITE_RSHINY_URL || 'https://rshiny-production-1f4b.up.railway.app',
   allowedOrigins: [
     'http://localhost:3838',
     'https://*.shinyapps.io',
