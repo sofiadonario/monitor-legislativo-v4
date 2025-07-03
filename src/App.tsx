@@ -75,7 +75,7 @@ const Navigation: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
-      <Router>
+      <Router basename="/monitor-legislativo-v4">
         <div className="App">
           <Navigation />
           
