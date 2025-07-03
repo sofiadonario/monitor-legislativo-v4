@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import Header from './Header';
-import DataSummary from './DataSummary';
-import SkeletonLoader from './SkeletonLoader';
-import DataMap from './DataMap';
-import DocumentList from './DocumentList';
+import Header from './Header.jsx';
+import DataSummary from './DataSummary.jsx';
+import SkeletonLoader from './SkeletonLoader.jsx';
+import DataMap from './DataMap.jsx';
+import DocumentList from './DocumentList.jsx';
 import { LegislativeDataService } from '../services/legislativeDataService';
 
 const Dashboard = () => {
