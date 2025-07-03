@@ -203,7 +203,8 @@ create_main_ui <- function() {
     
     # Custom CSS
     tags$head(
-      tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
+      tags$link(rel = "stylesheet", type = "text/css", href = "custom.css"),
+      HTML('<meta http-equiv="Content-Security-Policy" content="frame-ancestors \'self\' https://sofiadonario.github.io;">')
     ),
     
     tabItems(
@@ -763,6 +764,10 @@ create_main_ui <- function() {
 
 # Main UI with authentication wrapper
 ui <- fluidPage(
+  tags$head(
+    # This is a meta tag fallback, but the primary fix is in the server function.
+    HTML('<meta http-equiv="Content-Security-Policy" content="frame-ancestors \'self\' https://sofiadonario.github.io;">')
+  ),
   uiOutput("ui")
 )
 
@@ -1459,6 +1464,24 @@ server <- function(input, output, session) {
   session$onSessionEnded(function() {
     close_database()
     flog.info("Session ended, database connection closed")
+  })
+  
+  # ==============================================================================
+  # CRITICAL FIX: Add response headers to allow embedding
+  # ==============================================================================
+  observe({
+    shiny::addCustomMessageHandler("http-headers", function(message) {
+      session$sendCustomMessage("http-headers", NULL)
+    })
+    
+    session$onFlushed(function() {
+      if (!session$clientData$headersSent) {
+        session$sendCustomMessage("http-headers", list(
+          "Content-Security-Policy" = "frame-ancestors 'self' https://sofiadonario.github.io",
+          "X-Frame-Options" = "ALLOW-FROM https://sofiadonario.github.io"
+        ))
+      }
+    }, once = TRUE)
   })
 }
 
