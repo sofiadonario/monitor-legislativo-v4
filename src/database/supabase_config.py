@@ -6,6 +6,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, TimeoutError as SQLTimeoutError
 import ssl
+import re
 
 from ..config.env_loader import EnvironmentConfig
 
@@ -25,6 +26,9 @@ class DatabaseManager:
                 db_url = EnvironmentConfig.DATABASE_URL
                 if not db_url:
                     raise ValueError("DATABASE_URL environment variable is not set.")
+                
+                # AGGRESSIVE FIX: Manually remove any sslmode from the URL string
+                db_url = re.sub(r'[?&]sslmode=[^&]*', '', db_url)
 
                 #
                 # THIS IS THE FIX:

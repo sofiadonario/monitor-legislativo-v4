@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
+import ssl
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,10 @@ class AlternativeSupabaseConfig:
         """Create async engine using psycopg (async version) driver instead of asyncpg"""
         db_url = cls.DATABASE_URL
         
+        # AGGRESSIVE FIX: Manually remove any sslmode from the URL string
+        if db_url:
+            db_url = re.sub(r'[?&]sslmode=[^&]*', '', db_url)
+
         # Return None if no DATABASE_URL is configured
         if not db_url:
             logger.warning("No DATABASE_URL configured for psycopg engine")
@@ -102,6 +108,10 @@ class AlternativeSupabaseConfig:
         """Try asyncpg with version 0.28.0 parameters (more compatible)"""
         db_url = cls.DATABASE_URL
         
+        # AGGRESSIVE FIX: Manually remove any sslmode from the URL string
+        if db_url:
+            db_url = re.sub(r'[?&]sslmode=[^&]*', '', db_url)
+
         # Return None if no DATABASE_URL is configured
         if not db_url:
             logger.warning("No DATABASE_URL configured for asyncpg engine")
@@ -126,7 +136,6 @@ class AlternativeSupabaseConfig:
 
         # FIXED: Use a proper SSL context for Supabase
         if 'supabase.com' in db_url:
-            import ssl
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
@@ -242,7 +251,6 @@ class AlternativeDatabaseManager:
                 logger.info("Decoded URL-encoded password for direct connection test")
             
             # FIXED: Proper SSL context for direct asyncpg connection
-            import ssl
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE  # Disable cert verification
