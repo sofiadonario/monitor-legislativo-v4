@@ -40,9 +40,9 @@ class DatabaseManager:
                     connect_args={
                         "server_settings": {
                             "application_name": "MonitorLegislativoV4"
-                        }
-                    },
-                    ssl='require'
+                        },
+                        "ssl": "require"
+                    }
                 )
                 cls._session_factory = async_sessionmaker(
                     bind=cls._engine,

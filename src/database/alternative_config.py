@@ -121,18 +121,13 @@ class AlternativeSupabaseConfig:
                 "application_name": "monitor_legislativo_v4_asyncpg_compat",
             },
             "command_timeout": cls.COMMAND_TIMEOUT,
-            "prepared_statement_cache_size": 0,
-            # REMOVED: sslmode parameter - invalid for asyncpg
+            "prepared_statement_cache_size": 0
         }
         
-        # FIXED: Minimal SSL context for compatibility
+        # FIXED: Use 'require' for Supabase SSL
         if 'supabase.com' in db_url:
-            import ssl
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE  # Most permissive for compatibility
-            connect_args["ssl"] = ssl_context
-            logger.info("Using minimal SSL configuration for asyncpg compatibility")
+            connect_args["ssl"] = "require"
+            logger.info("Using 'ssl': 'require' for asyncpg Supabase connection")
         
         return create_async_engine(
             db_url,
