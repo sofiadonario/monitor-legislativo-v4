@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, TimeoutError as SQLTimeoutError
+import ssl
 
 from ..config.env_loader import EnvironmentConfig
 
@@ -33,6 +34,11 @@ class DatabaseManager:
                 if db_url.startswith("postgresql://"):
                     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+                # Create a permissive SSL context for Supabase
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+
                 cls._engine = create_async_engine(
                     db_url,
                     pool_pre_ping=True,
@@ -41,7 +47,7 @@ class DatabaseManager:
                         "server_settings": {
                             "application_name": "MonitorLegislativoV4"
                         },
-                        "ssl": "require"
+                        "ssl": ssl_context
                     }
                 )
                 cls._session_factory = async_sessionmaker(

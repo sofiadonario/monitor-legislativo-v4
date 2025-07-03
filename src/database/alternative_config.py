@@ -115,7 +115,7 @@ class AlternativeSupabaseConfig:
         if db_url.startswith('postgresql://'):
             db_url = db_url.replace('postgresql://', 'postgresql+asyncpg://', 1)
         
-        # FIXED: Simplified connection arguments for asyncpg compatibility (no sslmode)
+        # FIXED: Simplified connection arguments for asyncpg compatibility
         connect_args = {
             "server_settings": {
                 "application_name": "monitor_legislativo_v4_asyncpg_compat",
@@ -123,12 +123,16 @@ class AlternativeSupabaseConfig:
             "command_timeout": cls.COMMAND_TIMEOUT,
             "prepared_statement_cache_size": 0
         }
-        
-        # FIXED: Use 'require' for Supabase SSL
+
+        # FIXED: Use a proper SSL context for Supabase
         if 'supabase.com' in db_url:
-            connect_args["ssl"] = "require"
-            logger.info("Using 'ssl': 'require' for asyncpg Supabase connection")
-        
+            import ssl
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            connect_args["ssl"] = ssl_context
+            logger.info("Using SSL context for asyncpg Supabase connection")
+
         return create_async_engine(
             db_url,
             pool_size=cls.POOL_SIZE,
