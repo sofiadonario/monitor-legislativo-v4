@@ -130,22 +130,109 @@ export class LegislativeDataService {
     }
     
     try {
-      // Use embedded CSV data directly (backend processing handled separately)
-      console.log('📦 Using embedded CSV data');
-      const localData = await this.getLocalCsvData();
-      return { documents: this.filterLocalData(localData.documents, filters), usingFallback: false };
+      // Try to fetch from backend API first
+      console.log('🌐 Attempting to fetch from backend API...');
+      const apiResult = await this.fetchFromAPI(filters);
+      if (apiResult && apiResult.documents.length > 0) {
+        console.log(`✅ API fetch successful: ${apiResult.documents.length} documents`);
+        return apiResult;
+      }
+      throw new Error('API returned no documents');
     } catch (error) {
-      console.warn('⚠️ Enhanced API fetch failed, attempting fallback to embedded real data:', error);
+      console.warn('⚠️ Backend API fetch failed, attempting fallback to embedded real data:', error);
       try {
         const localData = await this.getLocalCsvData();
-        return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
+        return { documents: this.filterLocalData(localData.documents, filters), usingFallback: true };
       } catch (csvError) {
-        console.error('❌ Both Enhanced API and embedded data sources failed:', { apiError: error, csvError });
-        throw new Error('Unable to load legislative data from any real source (Enhanced API or embedded data). Please check data availability.');
+        console.error('❌ Both Backend API and embedded data sources failed:', { apiError: error, csvError });
+        throw new Error('Unable to load legislative data from any real source (Backend API or embedded data). Please check data availability.');
       }
     }
   }
   
+  private async fetchFromAPI(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      
+      // Try multiple endpoints that might return document data
+      const endpoints = [
+        '/api/v1/collections/latest',
+        '/api/v1/private-database/documents',
+        '/lexml/search',
+        '/'
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`🔍 Trying endpoint: ${endpoint}`);
+          const url = `${baseUrl}${endpoint}`;
+          const params = filters?.searchTerm ? `?q=${encodeURIComponent(filters.searchTerm)}` : '';
+          
+          const response = await fetch(`${url}${params}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-Client': 'monitor-legislativo-frontend'
+            },
+            timeout: 15000
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Endpoint ${endpoint} responded:`, data);
+            
+            // Try to extract documents from various response formats
+            let documents: LegislativeDocument[] = [];
+            
+            if (data.documents && Array.isArray(data.documents)) {
+              documents = data.documents;
+            } else if (data.results && Array.isArray(data.results)) {
+              documents = data.results;
+            } else if (data.collection && data.collection.document_count) {
+              // Collection info endpoint - return as a single document representation
+              documents = [{
+                id: data.collection.id || 'latest',
+                title: data.collection.name || 'Latest Collection',
+                summary: data.collection.description || `Collection with ${data.collection.document_count} documents`,
+                type: 'projeto_lei' as DocumentType,
+                date: data.collection.last_updated || new Date().toISOString(),
+                keywords: data.collection.features || [],
+                state: '',
+                municipality: '',
+                url: '',
+                status: 'em_tramitacao' as DocumentStatus,
+                author: 'Monitor Legislativo',
+                chamber: 'Sistema',
+                number: data.collection.document_count?.toString() || '0',
+                source: 'Backend API',
+                citation: ''
+              }];
+            } else if (Array.isArray(data)) {
+              documents = data;
+            }
+            
+            if (documents.length > 0) {
+              console.log(`📄 Found ${documents.length} documents from ${endpoint}`);
+              return { 
+                documents: this.filterLocalData(documents, filters), 
+                usingFallback: false 
+              };
+            }
+          }
+        } catch (endpointError) {
+          console.warn(`❌ Endpoint ${endpoint} failed:`, endpointError);
+          continue;
+        }
+      }
+      
+      throw new Error('No API endpoints returned valid document data');
+    } catch (error) {
+      console.error('🌐 API fetch failed:', error);
+      throw error;
+    }
+  }
+
   async fetchDocumentById(id: string): Promise<LegislativeDocument | null> {
     const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENT_BY_ID}_${id}`;
     
@@ -327,8 +414,29 @@ export class LegislativeDataService {
     }
     
     try {
-      const response = await apiClient.get<any>('/collections/recent');
-      const results = this.transformCollectionLogs(response);
+      // Try new backend API first
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/v1/collections/status`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const results = this.transformCollectionLogs(data.collections || [data]);
+        
+        // Cache the results
+        await multiLayerCache.set(cacheKey, results, 5 * 60 * 1000); // 5 minutes
+        
+        return results;
+      }
+      
+      // Fallback to old API client
+      const fallbackResponse = await apiClient.get<any>('/collections/recent');
+      const results = this.transformCollectionLogs(fallbackResponse);
       
       // Cache the results
       await multiLayerCache.set(cacheKey, results, 5 * 60 * 1000); // 5 minutes
@@ -351,11 +459,36 @@ export class LegislativeDataService {
     }
     
     try {
-      const response = await apiClient.get<any>('/collections/latest');
+      // Try new backend API first
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/v1/collections/latest`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        let result: CollectionLog | null = null;
+        
+        if (data && (data.id || data.collection)) {
+          result = this.transformCollectionLog(data.collection || data);
+        }
+        
+        // Cache the result (even if null)
+        await multiLayerCache.set(cacheKey, result, 3 * 60 * 1000); // 3 minutes
+        
+        return result;
+      }
+      
+      // Fallback to old API client
+      const fallbackResponse = await apiClient.get<any>('/collections/latest');
       let result: CollectionLog | null = null;
       
-      if (response && response.id) {
-        result = this.transformCollectionLog(response);
+      if (fallbackResponse && fallbackResponse.id) {
+        result = this.transformCollectionLog(fallbackResponse);
       }
       
       // Cache the result (even if null)

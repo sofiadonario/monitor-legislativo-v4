@@ -88,6 +88,34 @@ except ImportError as e:
     SPATIAL_ANALYSIS_API_AVAILABLE = False
 
 try:
+    from .api import interactive_visualization
+    INTERACTIVE_VISUALIZATION_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Interactive Visualization API not available: {e}")
+    INTERACTIVE_VISUALIZATION_API_AVAILABLE = False
+
+try:
+    from .api import document_validation
+    DOCUMENT_VALIDATION_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Document Validation API not available: {e}")
+    DOCUMENT_VALIDATION_API_AVAILABLE = False
+
+try:
+    from .api import citation_enhancement
+    CITATION_ENHANCEMENT_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Citation Enhancement API not available: {e}")
+    CITATION_ENHANCEMENT_API_AVAILABLE = False
+
+try:
+    from .api import performance_optimization
+    PERFORMANCE_OPTIMIZATION_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Performance Optimization API not available: {e}")
+    PERFORMANCE_OPTIMIZATION_API_AVAILABLE = False
+
+try:
     from .api import vocabulary_api
     VOCABULARY_API_AVAILABLE = True
 except ImportError as e:
@@ -171,6 +199,18 @@ if ENHANCED_GEOCODING_API_AVAILABLE:
 
 if SPATIAL_ANALYSIS_API_AVAILABLE:
     app.include_router(spatial_analysis.router)
+
+if INTERACTIVE_VISUALIZATION_API_AVAILABLE:
+    app.include_router(interactive_visualization.router)
+
+if DOCUMENT_VALIDATION_API_AVAILABLE:
+    app.include_router(document_validation.router)
+
+if CITATION_ENHANCEMENT_API_AVAILABLE:
+    app.include_router(citation_enhancement.router)
+
+if PERFORMANCE_OPTIMIZATION_API_AVAILABLE:
+    app.include_router(performance_optimization.router)
 
 
 @app.on_event("startup")
