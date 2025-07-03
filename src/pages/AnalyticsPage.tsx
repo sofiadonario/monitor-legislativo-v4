@@ -4,6 +4,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useRShinySync } from '../hooks/useRShinySync';
 import { buildRShinyUrl } from '../config/rshiny';
 import { LegislativeDocument, SearchFilters } from '../types';
+import { useI18n } from '../contexts/I18nContext';
 import '../styles/pages/AnalyticsPage.css';
 
 interface AnalyticsPageProps {
@@ -23,6 +24,7 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
   selectedMunicipality,
   onFiltersChange
 }) => {
+  const { t } = useI18n();
   const [rShinyUrl, setRShinyUrl] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(true);
   const [showFallback, setShowFallback] = useState(false);
@@ -46,38 +48,29 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
     syncDocumentsDelay: 10000 // Increase delay to 10 seconds
   });
 
-  // Initialize Analytics - use local data first, R Shiny as enhancement
+  // Initialize Analytics - prioritize local analytics
   useEffect(() => {
-    const initializeAnalytics = async () => {
-      setIsInitializing(true);
-      
-      try {
-        // Always show local analytics, don't depend on R Shiny connection
-        if (documents.length > 0) {
-          setShowFallback(true); // Use fallback which shows local analytics
-          setIsInitializing(false);
-          return;
+    // Always use local analytics immediately - they're fully functional
+    setShowFallback(true);
+    setIsInitializing(false);
+    
+    // Optional: Try R Shiny as an enhancement in background (don't block)
+    if (documents.length > 0) {
+      setTimeout(() => {
+        try {
+          const sessionId = getSessionId();
+          const url = buildRShinyUrl(sessionId, {
+            documentsCount: documents.length.toString(),
+            selectedState: selectedState || '',
+            selectedMunicipality: selectedMunicipality || ''
+          });
+          setRShinyUrl(url);
+        } catch (error) {
+          console.log('R Shiny enhancement unavailable:', error);
         }
-        
-        // Try R Shiny as enhancement if available
-        const sessionId = getSessionId();
-        const url = buildRShinyUrl(sessionId, {
-          documentsCount: documents.length.toString(),
-          selectedState: selectedState || '',
-          selectedMunicipality: selectedMunicipality || ''
-        });
-        
-        setRShinyUrl(url);
-        setIsInitializing(false);
-      } catch (error) {
-        console.error('Failed to initialize analytics:', error);
-        setShowFallback(true);
-        setIsInitializing(false);
-      }
-    };
-
-    initializeAnalytics();
-  }, [getRShinyUrl, getSessionId, forceSync, filters, documents, selectedState, selectedMunicipality]);
+      }, 100); // Minimal delay to avoid blocking
+    }
+  }, [getSessionId, documents, selectedState, selectedMunicipality]);
 
   // Only sync manually when R Shiny is actually connected
   // Removed automatic sync to prevent resource exhaustion
@@ -162,9 +155,9 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
       <div className="analytics-page analytics-fallback">
         <div className="fallback-content">
           <div className="fallback-header">
-            <h2>📊 Analytics Dashboard</h2>
+            <h2>📊 {t('analytics.title')}</h2>
             <div className="fallback-status">
-              <span className="status-online">Local Analytics - {summaryStats.totalDocuments} Documents</span>
+              <span className="status-online">{t('analytics.localAnalytics')} - {summaryStats.totalDocuments} {t('analytics.documents')}</span>
             </div>
           </div>
           
@@ -173,22 +166,22 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
             <div className="summary-grid">
               <div className="summary-item">
                 <span className="summary-value">{summaryStats.totalDocuments}</span>
-                <span className="summary-label">Documents</span>
+                <span className="summary-label">{t('analytics.documents')}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-value">{summaryStats.statesCount}</span>
-                <span className="summary-label">States</span>
+                <span className="summary-label">{t('analytics.states')}</span>
               </div>
               <div className="summary-item">
                 <span className="summary-value">{summaryStats.documentTypesCount}</span>
-                <span className="summary-label">Document Types</span>
+                <span className="summary-label">{t('analytics.documentTypes')}</span>
               </div>
               {summaryStats.dateRange && (
                 <div className="summary-item">
                   <span className="summary-value">
                     {summaryStats.dateRange.earliest.getFullYear()} - {summaryStats.dateRange.latest.getFullYear()}
                   </span>
-                  <span className="summary-label">Date Range</span>
+                  <span className="summary-label">{t('analytics.dateRange')}</span>
                 </div>
               )}
             </div>
@@ -201,37 +194,37 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
                 className={`analytics-tab ${activeTab === 'overview' ? 'active' : ''}`}
                 onClick={() => setActiveTab('overview')}
               >
-                📊 Overview
+                📊 {t('analytics.overview')}
               </button>
               <button 
                 className={`analytics-tab ${activeTab === 'distributions' ? 'active' : ''}`}
                 onClick={() => setActiveTab('distributions')}
               >
-                📈 Statistical Distributions
+                📈 {t('analytics.distributions')}
               </button>
               <button 
                 className={`analytics-tab ${activeTab === 'geographic' ? 'active' : ''}`}
                 onClick={() => setActiveTab('geographic')}
               >
-                🗺️ Geographic Analysis
+                🗺️ {t('analytics.geographic')}
               </button>
               <button 
                 className={`analytics-tab ${activeTab === 'timeseries' ? 'active' : ''}`}
                 onClick={() => setActiveTab('timeseries')}
               >
-                📊 Time Series
+                📊 {t('analytics.timeseries')}
               </button>
               <button 
                 className={`analytics-tab ${activeTab === 'network' ? 'active' : ''}`}
                 onClick={() => setActiveTab('network')}
               >
-                🔗 Network Analysis
+                🔗 {t('analytics.network')}
               </button>
               <button 
                 className={`analytics-tab ${activeTab === 'reports' ? 'active' : ''}`}
                 onClick={() => setActiveTab('reports')}
               >
-                📋 Custom Reports
+                📋 {t('analytics.reports')}
               </button>
             </div>
           </div>
@@ -297,8 +290,8 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
             {activeTab === 'distributions' && (
               <div className="distributions-analysis">
                 <div className="analysis-header">
-                  <h3>📈 Statistical Distributions Analysis</h3>
-                  <p>Statistical analysis of document distributions across various dimensions</p>
+                  <h3>📈 {t('analytics.statisticalDistributions')}</h3>
+                  <p>{t('analytics.statisticalDesc')}</p>
                 </div>
                 
                 <div className="distributions-grid">
@@ -385,8 +378,8 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
             {activeTab === 'geographic' && (
               <div className="geographic-analysis">
                 <div className="analysis-header">
-                  <h3>🗺️ Interactive Geographic Analysis</h3>
-                  <p>Spatial distribution and geographic patterns of legislative documents</p>
+                  <h3>🗺️ {t('analytics.interactiveGeo')}</h3>
+                  <p>{t('analytics.geoDesc')}</p>
                 </div>
                 
                 <div className="geographic-grid">
@@ -467,8 +460,8 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
             {activeTab === 'timeseries' && (
               <div className="timeseries-analysis">
                 <div className="analysis-header">
-                  <h3>📊 Time Series Analysis</h3>
-                  <p>Temporal patterns and trends in legislative document creation</p>
+                  <h3>📊 {t('analytics.timeSeriesAnalysis')}</h3>
+                  <p>{t('analytics.timeDesc')}</p>
                 </div>
                 
                 <div className="timeseries-grid">
@@ -540,8 +533,8 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
             {activeTab === 'network' && (
               <div className="network-analysis">
                 <div className="analysis-header">
-                  <h3>🔗 Network Analysis</h3>
-                  <p>Relationships and connections between documents, keywords, and jurisdictions</p>
+                  <h3>🔗 {t('analytics.networkAnalysis')}</h3>
+                  <p>{t('analytics.networkDesc')}</p>
                 </div>
                 
                 <div className="network-grid">
@@ -607,8 +600,8 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
             {activeTab === 'reports' && (
               <div className="reports-generation">
                 <div className="analysis-header">
-                  <h3>📋 Custom Report Generation</h3>
-                  <p>Generate comprehensive analytical reports based on current data</p>
+                  <h3>📋 {t('analytics.customReports')}</h3>
+                  <p>{t('analytics.reportsDesc')}</p>
                 </div>
                 
                 <div className="reports-grid">
@@ -699,13 +692,15 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
 
           <div className="analytics-footer">
             <div className="data-source-info">
-              <h4>📊 Data Source Information</h4>
-              <p>Analytics based on {summaryStats.totalDocuments} legislative documents from the Brazilian transport legislation database.</p>
+              <h4>📊 {t('analytics.dataSource')}</h4>
+              <p>{t('analytics.basedOn').replace('{count}', summaryStats.totalDocuments.toString())}</p>
               <p>Data includes laws, decrees, regulations, and other legal documents from {summaryStats.statesCount} Brazilian states.</p>
               
               {summaryStats.dateRange && (
                 <p>
-                  Coverage period: {summaryStats.dateRange.earliest.getFullYear()} - {summaryStats.dateRange.latest.getFullYear()}
+                  {t('analytics.coverage')
+                    .replace('{start}', summaryStats.dateRange.earliest.getFullYear().toString())
+                    .replace('{end}', summaryStats.dateRange.latest.getFullYear().toString())}
                 </p>
               )}
             </div>
