@@ -78,6 +78,7 @@ source("R/data_processor.R")
 source("R/map_generator.R")
 source("R/export_utils.R")
 source("R/database.R")
+source("R/urn_parser_integration.R")
 
 # Initialize application
 flog.info("Starting Legislative Monitor R Application")
@@ -90,6 +91,10 @@ if (!init_success) {
 
 # Load geographic data at startup
 geography_data <- load_brazil_geography()
+
+# Load parsed URN data at startup
+urn_data <- load_parsed_urn_data()
+flog.info("Loaded %d parsed URN records at startup", nrow(urn_data))
 
 # =============================================================================
 # USER INTERFACE
@@ -123,6 +128,7 @@ create_main_ui <- function() {
     sidebarMenu(
       menuItem("🗺️ Mapa Interativo", tabName = "map", icon = icon("map")),
       menuItem("📊 Dados e Análise", tabName = "data", icon = icon("table")),
+      menuItem("🔍 Análise de URN", tabName = "urn_analysis", icon = icon("search")),
       menuItem("📋 Exportar", tabName = "export", icon = icon("download")),
       menuItem("⚙️ Configurações", tabName = "settings", icon = icon("cog")),
       menuItem("ℹ️ Sobre", tabName = "about", icon = icon("info"))
@@ -263,6 +269,155 @@ create_main_ui <- function() {
               collapsible = TRUE,
               
               htmlOutput("location_details")
+            )
+          )
+        )
+      ),
+      
+      # URN ANALYSIS TAB  
+      tabItem(
+        tabName = "urn_analysis",
+        
+        fluidRow(
+          box(
+            title = "📈 Resumo da Análise de URN",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            
+            fluidRow(
+              valueBoxOutput("urn_total_docs", width = 3),
+              valueBoxOutput("urn_legislation_count", width = 3),
+              valueBoxOutput("urn_jurisprudence_count", width = 3),
+              valueBoxOutput("urn_coverage_rate", width = 3)
+            )
+          )
+        ),
+        
+        fluidRow(
+          box(
+            title = "🔍 Filtros de URN",
+            status = "info",
+            solidHeader = TRUE,
+            width = 3,
+            
+            radioButtons(
+              "urn_filter_type",
+              "Tipo de Documento:",
+              choices = list(
+                "Todos" = "all",
+                "Legislação" = "legislation",
+                "Jurisprudência" = "jurisprudence"
+              ),
+              selected = "all"
+            ),
+            
+            hr(),
+            
+            conditionalPanel(
+              condition = "input.urn_filter_type == 'legislation' || input.urn_filter_type == 'all'",
+              h5("📋 Filtros de Legislação"),
+              selectInput(
+                "urn_state_filter",
+                "Estado:",
+                choices = NULL,  # Will be populated by server
+                multiple = TRUE
+              ),
+              selectInput(
+                "urn_municipality_filter", 
+                "Município:",
+                choices = NULL,  # Will be populated by server
+                multiple = TRUE
+              )
+            ),
+            
+            conditionalPanel(
+              condition = "input.urn_filter_type == 'jurisprudence' || input.urn_filter_type == 'all'",
+              h5("⚖️ Filtros de Jurisprudência"),
+              selectInput(
+                "urn_justice_filter",
+                "Tipo de Justiça:",
+                choices = NULL,  # Will be populated by server
+                multiple = TRUE
+              ),
+              selectInput(
+                "urn_region_filter",
+                "Região Judicial:", 
+                choices = NULL,  # Will be populated by server
+                multiple = TRUE
+              )
+            ),
+            
+            br(),
+            actionButton("btn_apply_urn_filters", "🔍 Aplicar Filtros", 
+                        class = "btn-primary", width = "100%"),
+            br(), br(),
+            actionButton("btn_clear_urn_filters", "🗑️ Limpar Filtros", 
+                        class = "btn-warning", width = "100%")
+          ),
+          
+          box(
+            title = "📊 Distribuição por Tipo",
+            status = "success",
+            solidHeader = TRUE,
+            width = 4,
+            
+            plotOutput("urn_type_plot", height = "300px")
+          ),
+          
+          box(
+            title = "📅 Distribuição Temporal",
+            status = "warning", 
+            solidHeader = TRUE,
+            width = 5,
+            
+            plotOutput("urn_temporal_plot", height = "300px")
+          )
+        ),
+        
+        fluidRow(
+          box(
+            title = "🗺️ Análise Geográfica (Legislação)",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 6,
+            
+            plotOutput("urn_state_plot", height = "400px")
+          ),
+          
+          box(
+            title = "⚖️ Análise Judicial (Jurisprudência)",
+            status = "danger",
+            solidHeader = TRUE,
+            width = 6,
+            
+            plotOutput("urn_justice_plot", height = "400px") 
+          )
+        ),
+        
+        fluidRow(
+          box(
+            title = "📋 Dados Detalhados de URN",
+            status = "info",
+            solidHeader = TRUE,
+            width = 12,
+            
+            DT::dataTableOutput("urn_details_table"),
+            
+            br(),
+            
+            fluidRow(
+              column(6, 
+                     h5("📊 Estatísticas:"),
+                     verbatimTextOutput("urn_filtered_stats")
+              ),
+              column(6,
+                     div(style = "text-align: right;",
+                         br(),
+                         downloadButton("download_urn_analysis", "📥 Baixar Análise URN", 
+                                      class = "btn-success")
+                     )
+              )
             )
           )
         )
@@ -980,6 +1135,184 @@ server <- function(input, output, session) {
       theme_minimal() +
       scale_x_continuous(breaks = scales::pretty_breaks(n = 8))
   })
+  
+  # ==========================================================================
+  # URN ANALYSIS TAB OUTPUTS
+  # ==========================================================================
+  
+  # URN data filtering
+  urn_filtered_data <- reactive({
+    
+    data <- urn_data
+    
+    # Apply URN type filter
+    if (!is.null(input$urn_filter_type) && input$urn_filter_type != "all") {
+      data <- data %>% filter(urn_type == input$urn_filter_type)
+    }
+    
+    # Apply state filter for legislation
+    if (!is.null(input$urn_state_filter) && length(input$urn_state_filter) > 0) {
+      data <- data %>% filter(state %in% input$urn_state_filter | is.na(state))
+    }
+    
+    # Apply municipality filter for legislation  
+    if (!is.null(input$urn_municipality_filter) && length(input$urn_municipality_filter) > 0) {
+      data <- data %>% filter(municipality %in% input$urn_municipality_filter | is.na(municipality))
+    }
+    
+    # Apply justice filter for jurisprudence
+    if (!is.null(input$urn_justice_filter) && length(input$urn_justice_filter) > 0) {
+      data <- data %>% filter(justice %in% input$urn_justice_filter | is.na(justice))
+    }
+    
+    # Apply region filter for jurisprudence
+    if (!is.null(input$urn_region_filter) && length(input$urn_region_filter) > 0) {
+      data <- data %>% filter(region %in% input$urn_region_filter | is.na(region))
+    }
+    
+    return(data)
+  })
+  
+  # Update filter choices based on available data
+  observe({
+    
+    # Update state choices for legislation
+    states <- urn_data %>% 
+      filter(urn_type == "legislation", !is.na(state)) %>% 
+      distinct(state) %>% 
+      arrange(state) %>% 
+      pull(state)
+    
+    updateSelectInput(session, "urn_state_filter", 
+                     choices = setNames(states, states))
+    
+    # Update municipality choices based on selected states
+    municipalities <- urn_data %>%
+      filter(urn_type == "legislation", !is.na(municipality)) %>%
+      distinct(municipality) %>%
+      arrange(municipality) %>%
+      pull(municipality)
+    
+    updateSelectInput(session, "urn_municipality_filter",
+                     choices = setNames(municipalities, municipalities))
+    
+    # Update justice type choices for jurisprudence
+    justice_types <- urn_data %>%
+      filter(urn_type == "jurisprudence", !is.na(justice)) %>%
+      distinct(justice) %>%
+      arrange(justice) %>%
+      pull(justice)
+    
+    updateSelectInput(session, "urn_justice_filter",
+                     choices = setNames(justice_types, justice_types))
+    
+    # Update region choices for jurisprudence
+    regions <- urn_data %>%
+      filter(urn_type == "jurisprudence", !is.na(region)) %>%
+      distinct(region) %>%
+      arrange(region) %>%
+      pull(region)
+    
+    updateSelectInput(session, "urn_region_filter",
+                     choices = setNames(regions, regions))
+  })
+  
+  # URN summary value boxes
+  output$urn_total_docs <- renderValueBox({
+    data <- urn_filtered_data()
+    count <- nrow(data)
+    valueBox(count, "Total de Documentos", icon = icon("file-text"), color = "blue")
+  })
+  
+  output$urn_legislation_count <- renderValueBox({
+    data <- urn_filtered_data()
+    count <- sum(data$urn_type == "legislation", na.rm = TRUE)
+    valueBox(count, "Legislação", icon = icon("gavel"), color = "green")
+  })
+  
+  output$urn_jurisprudence_count <- renderValueBox({
+    data <- urn_filtered_data()
+    count <- sum(data$urn_type == "jurisprudence", na.rm = TRUE)
+    valueBox(count, "Jurisprudência", icon = icon("balance-scale"), color = "red")
+  })
+  
+  output$urn_coverage_rate <- renderValueBox({
+    data <- urn_filtered_data()
+    total <- nrow(data)
+    parsed <- sum(!is.na(data$urn_type) & data$urn_type != "unknown", na.rm = TRUE)
+    rate <- if (total > 0) round(parsed / total * 100, 1) else 0
+    valueBox(paste0(rate, "%"), "Taxa de Parsing", icon = icon("chart-line"), color = "yellow")
+  })
+  
+  # URN analysis plots
+  output$urn_type_plot <- renderPlot({
+    data <- urn_filtered_data()
+    plot_urn_type_distribution(data)
+  })
+  
+  output$urn_temporal_plot <- renderPlot({
+    data <- urn_filtered_data()
+    plot_temporal_distribution(data)
+  })
+  
+  output$urn_state_plot <- renderPlot({
+    data <- urn_filtered_data()
+    plot_state_distribution(data)
+  })
+  
+  output$urn_justice_plot <- renderPlot({
+    data <- urn_filtered_data()
+    plot_justice_distribution(data)
+  })
+  
+  # URN details table
+  output$urn_details_table <- DT::renderDataTable({
+    data <- urn_filtered_data()
+    create_urn_datatable(data, input$urn_filter_type %||% "all")
+  })
+  
+  # URN filtered statistics
+  output$urn_filtered_stats <- renderText({
+    data <- urn_filtered_data()
+    summary_stats <- generate_urn_summary(data)
+    
+    paste(
+      "Documentos filtrados:", summary_stats$total_documents,
+      "\nLegislação:", paste0(summary_stats$legislation_count, " (", summary_stats$legislation_percentage, "%)"),
+      "\nJurisprudência:", paste0(summary_stats$jurisprudence_count, " (", summary_stats$jurisprudence_percentage, "%)"),
+      "\nEstados únicos:", summary_stats$unique_states,
+      "\nMunicípios únicos:", summary_stats$unique_municipalities,
+      "\nPeríodo:", summary_stats$date_range,
+      "\nTipos principais:", paste(summary_stats$top_document_types, collapse = ", ")
+    )
+  })
+  
+  # URN filter actions
+  observeEvent(input$btn_apply_urn_filters, {
+    # Trigger reactive update (filters are already applied via reactive)
+    showNotification("Filtros aplicados aos dados de URN", type = "message")
+  })
+  
+  observeEvent(input$btn_clear_urn_filters, {
+    updateRadioButtons(session, "urn_filter_type", selected = "all")
+    updateSelectInput(session, "urn_state_filter", selected = character(0))
+    updateSelectInput(session, "urn_municipality_filter", selected = character(0))
+    updateSelectInput(session, "urn_justice_filter", selected = character(0))
+    updateSelectInput(session, "urn_region_filter", selected = character(0))
+    
+    showNotification("Filtros de URN limpos", type = "message")
+  })
+  
+  # URN data download
+  output$download_urn_analysis <- downloadHandler(
+    filename = function() {
+      paste0("urn_analysis_", format(Sys.Date(), "%Y%m%d"), ".csv")
+    },
+    content = function(file) {
+      data <- urn_filtered_data()
+      write.csv(data, file, row.names = FALSE)
+    }
+  )
   
   # ==========================================================================
   # EXPORT FUNCTIONALITY
