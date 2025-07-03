@@ -3,38 +3,48 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+  workflow_dispatch: # Allow manual runs
 
 permissions:
   contents: write
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout
+    - name: Checkout repository
       uses: actions/checkout@v4
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
-    - name: Install dependencies
-      run: npm ci
+    - name: Aggressively clean caches and dependencies
+      run: |
+        rm -rf node_modules
+        rm -rf dist
+        npm cache clean --force
+        
+    - name: Install dependencies cleanly
+      run: npm install
       
     - name: Build application
-      run: |
-        npm run build -- --force
+      run: npm run build
       env:
         NODE_ENV: production
         VITE_API_URL: https://monitor-legislativo-v4-production.up.railway.app
+        
+    - name: Verify build output
+      run: ls -R dist
         
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist
-        cname: sofiadonario.github.io
-        enable_jekyll: false
+        # The following lines are removed to ensure a clean deployment
+        # cname: sofiadonario.github.io 
+        # enable_jekyll: false
+        # We will rely on the defaults of the action for a clean slate.
