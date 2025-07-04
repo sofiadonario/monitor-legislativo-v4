@@ -5,7 +5,6 @@ from datetime import datetime
 from supabase import create_client, Client
 
 from ..config.env_loader import EnvironmentConfig
-from ..database.supabase_config import get_database_manager
 
 logger = logging.getLogger(__name__)
 
