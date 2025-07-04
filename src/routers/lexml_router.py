@@ -11,17 +11,14 @@ logger = logging.getLogger(__name__)
 @router.get("/lexml/search", summary="Search LexML Brasil", response_model=List[Document])
 async def search_lexml(
     request: Request,
-    query: str = Query(..., description="Search query for LexML"),
-    limit: int = Query(50, description="Number of results to return"),
+    query: str = Query("transporte", description="Search query for LexML"),
+    limit: int = Query(1000, description="Number of results to return"),
     search_service: SimpleSearchService = Depends(get_simple_search_service),
 ):
     """
     Search for legislative documents on LexML Brasil.
     NOTE: Caching is temporarily disabled to force fresh results.
     """
-    if not query:
-        raise HTTPException(status_code=400, detail="Query parameter is required")
-
     client_ip = request.client.host
     logger.info(f"LexML search request from {client_ip} for query: '{query}' (CACHE DISABLED)")
 
