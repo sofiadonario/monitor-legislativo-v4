@@ -30,6 +30,30 @@ async def health_check():
         "supabase_url": EnvironmentConfig.SUPABASE_URL[:30] + "..." if EnvironmentConfig.SUPABASE_URL else None
     }
 
+@router.get("/processed-documents/test")
+async def test_connection():
+    """Test Supabase connection with detailed error reporting"""
+    try:
+        supabase = get_supabase_client()
+        
+        # Test basic connection
+        result = supabase.table('legislative_documents').select('id').limit(1).execute()
+        
+        return {
+            "status": "success",
+            "message": "Connection successful",
+            "data_count": len(result.data),
+            "has_data": len(result.data) > 0
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 def get_supabase_client() -> Client:
     """Get Supabase client for direct access"""
     try:
