@@ -197,3 +197,17 @@ prefect==2.14.11
 # WHY: Required for spatial analysis of legislative documents
 # VERSION: 2.x with stable coordinate system support
 geopy==2.4.1
+
+# =============================================================================
+# DATABASE AND DATA PROCESSING - SUPABASE INTEGRATION
+# =============================================================================
+
+# Supabase - PostgreSQL client for cloud database
+# WHY: Required for storing and retrieving processed legislative documents
+# VERSION: Latest stable for production use
+supabase==2.5.1
+
+# Pandas - Data manipulation and analysis
+# WHY: Required for processing CSV data and data transformations
+# VERSION: 2.x with Python 3.11 support
+pandas==2.1.4
