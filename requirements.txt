@@ -41,10 +41,10 @@ aioredis==2.0.1
 # DATABASE - STORES YOUR DATA
 # =============================================================================
 
-# AsyncPG - PostgreSQL driver for Supabase
+# AsyncPG - PostgreSQL driver for Supabase (updated version)
 # WHY: Connects to your FREE Supabase database
-# VERSION: 0.28.x for Supabase compatibility (0.29.0 has auth issues)
-asyncpg==0.28.0
+# VERSION: 0.29.x for better compatibility 
+# NOTE: This is the primary version used for processed documents API
 
 # Psycopg - Alternative async PostgreSQL driver (FALLBACK)
 # WHY: Backup driver if asyncpg has authentication issues with Supabase
