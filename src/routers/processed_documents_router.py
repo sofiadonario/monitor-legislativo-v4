@@ -2,7 +2,16 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Dict, Any, Optional
 import logging
 from datetime import datetime
-from supabase import create_client, Client
+
+try:
+    from supabase import create_client, Client
+    SUPABASE_AVAILABLE = True
+except ImportError as e:
+    logger = logging.getLogger(__name__)
+    logger.error(f"Failed to import supabase: {e}")
+    SUPABASE_AVAILABLE = False
+    Client = None
+    create_client = None
 
 from ..config.env_loader import EnvironmentConfig
 
@@ -10,9 +19,23 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["Processed Documents"])
 
+@router.get("/processed-documents/health")
+async def health_check():
+    """Check if processed documents API is properly configured"""
+    return {
+        "status": "ok",
+        "supabase_available": SUPABASE_AVAILABLE,
+        "supabase_url_configured": bool(EnvironmentConfig.SUPABASE_URL),
+        "supabase_key_configured": bool(EnvironmentConfig.SUPABASE_ANON_KEY),
+        "supabase_url": EnvironmentConfig.SUPABASE_URL[:30] + "..." if EnvironmentConfig.SUPABASE_URL else None
+    }
+
 def get_supabase_client() -> Client:
     """Get Supabase client for direct access"""
     try:
+        if not SUPABASE_AVAILABLE:
+            raise ImportError("Supabase module is not available")
+            
         supabase_url = EnvironmentConfig.SUPABASE_URL
         supabase_key = EnvironmentConfig.SUPABASE_ANON_KEY
         
