@@ -32,7 +32,7 @@ export const ProcessedDataDashboard: React.FC = () => {
       const [statsData, categoriesData, documentsData] = await Promise.all([
         processedDataService.getStats(),
         processedDataService.getCategories(),
-        processedDataService.getProcessedDocuments({ limit: 10 })
+        processedDataService.getProcessedDocuments({ limit: 1000 })
       ]);
 
       setStats(statsData.stats);

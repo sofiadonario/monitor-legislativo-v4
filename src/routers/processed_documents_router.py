@@ -147,57 +147,60 @@ async def get_document_categories():
     Get document categories and their counts for dashboard analytics
     """
     try:
-        supabase = get_supabase_client()
-        
-        # Get all documents to analyze categories
-        result = supabase.table('legislative_documents')\
-            .select('document_type_full, state, urn_type, search_term')\
-            .execute()
-        
-        data = result.data
-        
-        # Analyze categories
-        document_types = {}
-        states = {}
-        urn_types = {}
-        search_terms = {}
-        
-        for doc in data:
-            # Document types
-            doc_type = doc.get('document_type_full', 'Unknown')
-            document_types[doc_type] = document_types.get(doc_type, 0) + 1
+        conn = await get_db_connection()
+        try:
+            # Get all documents to analyze categories
+            rows = await conn.fetch("""
+                SELECT document_type_full, state, urn_type, search_term 
+                FROM legislative_documents
+            """)
             
-            # States
-            state = doc.get('state', 'Federal')
-            if state:
-                states[state] = states.get(state, 0) + 1
+            data = [dict(row) for row in rows]
             
-            # URN types
-            urn_type = doc.get('urn_type', 'Unknown')
-            urn_types[urn_type] = urn_types.get(urn_type, 0) + 1
+            # Analyze categories
+            document_types = {}
+            states = {}
+            urn_types = {}
+            search_terms = {}
             
-            # Search terms
-            search_term = doc.get('search_term', 'Unknown')
-            search_terms[search_term] = search_terms.get(search_term, 0) + 1
-        
-        # Sort by count
-        document_types = dict(sorted(document_types.items(), key=lambda x: x[1], reverse=True))
-        states = dict(sorted(states.items(), key=lambda x: x[1], reverse=True))
-        urn_types = dict(sorted(urn_types.items(), key=lambda x: x[1], reverse=True))
-        search_terms = dict(sorted(search_terms.items(), key=lambda x: x[1], reverse=True))
-        
-        return {
-            "status": "success",
-            "categories": {
-                "document_types": document_types,
-                "states": states,
-                "urn_types": urn_types,
-                "search_terms": search_terms
-            },
-            "total_documents": len(data),
-            "last_updated": datetime.utcnow().isoformat()
-        }
-        
+            for doc in data:
+                # Document types
+                doc_type = doc.get('document_type_full', 'Unknown')
+                document_types[doc_type] = document_types.get(doc_type, 0) + 1
+                
+                # States
+                state = doc.get('state', 'Federal')
+                if state:
+                    states[state] = states.get(state, 0) + 1
+                
+                # URN types
+                urn_type = doc.get('urn_type', 'Unknown')
+                urn_types[urn_type] = urn_types.get(urn_type, 0) + 1
+                
+                # Search terms
+                search_term = doc.get('search_term', 'Unknown')
+                search_terms[search_term] = search_terms.get(search_term, 0) + 1
+            
+            # Sort by count
+            document_types = dict(sorted(document_types.items(), key=lambda x: x[1], reverse=True))
+            states = dict(sorted(states.items(), key=lambda x: x[1], reverse=True))
+            urn_types = dict(sorted(urn_types.items(), key=lambda x: x[1], reverse=True))
+            search_terms = dict(sorted(search_terms.items(), key=lambda x: x[1], reverse=True))
+            
+            return {
+                "status": "success",
+                "categories": {
+                    "document_types": document_types,
+                    "states": states,
+                    "urn_types": urn_types,
+                    "search_terms": search_terms
+                },
+                "total_documents": len(data),
+                "last_updated": datetime.utcnow().isoformat()
+            }
+        finally:
+            await conn.close()
+            
     except Exception as e:
         logger.error(f"Error fetching categories: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch categories")
