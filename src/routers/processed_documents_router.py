@@ -4,14 +4,13 @@ import logging
 from datetime import datetime
 
 try:
-    from supabase import create_client, Client
-    SUPABASE_AVAILABLE = True
+    import asyncpg
+    import asyncio
+    POSTGRES_AVAILABLE = True
 except ImportError as e:
     logger = logging.getLogger(__name__)
-    logger.error(f"Failed to import supabase: {e}")
-    SUPABASE_AVAILABLE = False
-    Client = None
-    create_client = None
+    logger.error(f"Failed to import asyncpg: {e}")
+    POSTGRES_AVAILABLE = False
 
 from ..config.env_loader import EnvironmentConfig
 
@@ -24,27 +23,27 @@ async def health_check():
     """Check if processed documents API is properly configured"""
     return {
         "status": "ok",
-        "supabase_available": SUPABASE_AVAILABLE,
+        "postgres_available": POSTGRES_AVAILABLE,
         "supabase_url_configured": bool(EnvironmentConfig.SUPABASE_URL),
-        "supabase_key_configured": bool(EnvironmentConfig.SUPABASE_ANON_KEY),
+        "supabase_db_url_configured": bool(EnvironmentConfig.SUPABASE_DB_URL),
         "supabase_url": EnvironmentConfig.SUPABASE_URL[:30] + "..." if EnvironmentConfig.SUPABASE_URL else None
     }
 
 @router.get("/processed-documents/test")
 async def test_connection():
-    """Test Supabase connection with detailed error reporting"""
+    """Test PostgreSQL connection with detailed error reporting"""
     try:
-        supabase = get_supabase_client()
-        
-        # Test basic connection
-        result = supabase.table('legislative_documents').select('id').limit(1).execute()
-        
-        return {
-            "status": "success",
-            "message": "Connection successful",
-            "data_count": len(result.data),
-            "has_data": len(result.data) > 0
-        }
+        async with get_db_connection() as conn:
+            # Test basic connection
+            result = await conn.fetchrow("SELECT COUNT(*) as count FROM legislative_documents LIMIT 1")
+            count = result['count'] if result else 0
+            
+            return {
+                "status": "success",
+                "message": "Connection successful",
+                "total_documents": count,
+                "has_data": count > 0
+            }
     except Exception as e:
         import traceback
         return {
@@ -54,22 +53,20 @@ async def test_connection():
             "traceback": traceback.format_exc()
         }
 
-def get_supabase_client() -> Client:
-    """Get Supabase client for direct access"""
-    try:
-        if not SUPABASE_AVAILABLE:
-            raise ImportError("Supabase module is not available")
-            
-        supabase_url = EnvironmentConfig.SUPABASE_URL
-        supabase_key = EnvironmentConfig.SUPABASE_ANON_KEY
-        
-        if not supabase_url or not supabase_key:
-            raise ValueError("Supabase credentials not configured")
-        
-        return create_client(supabase_url, supabase_key)
-    except Exception as e:
-        logger.error(f"Failed to create Supabase client: {type(e).__name__}: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+async def get_db_connection():
+    """Get PostgreSQL connection for Supabase"""
+    if not POSTGRES_AVAILABLE:
+        raise ImportError("asyncpg module is not available")
+    
+    db_url = EnvironmentConfig.SUPABASE_DB_URL
+    if not db_url:
+        raise ValueError("SUPABASE_DB_URL not configured")
+    
+    # Parse the connection string and add password if needed
+    if "[YOUR-PASSWORD]" in db_url:
+        raise ValueError("Please replace [YOUR-PASSWORD] with actual password in SUPABASE_DB_URL")
+    
+    return await asyncpg.connect(db_url)
 
 @router.get("/processed-documents")
 async def get_processed_documents(

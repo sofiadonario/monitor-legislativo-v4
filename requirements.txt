@@ -202,10 +202,10 @@ geopy==2.4.1
 # DATABASE AND DATA PROCESSING - SUPABASE INTEGRATION
 # =============================================================================
 
-# Supabase - PostgreSQL client for cloud database
-# WHY: Required for storing and retrieving processed legislative documents
-# VERSION: Updated to fix proxy parameter compatibility issue
-supabase==2.8.0
+# AsyncPG - Async PostgreSQL client for Supabase
+# WHY: Direct PostgreSQL connection to Supabase, more reliable than supabase-py
+# VERSION: Latest stable for async operations
+asyncpg==0.29.0
 
 # Pandas - Data manipulation and analysis
 # WHY: Required for processing CSV data and data transformations

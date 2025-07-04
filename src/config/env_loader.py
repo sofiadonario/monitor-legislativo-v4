@@ -18,6 +18,7 @@ class EnvironmentConfig:
     # Supabase Configuration
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
+    SUPABASE_DB_URL: str = os.getenv("SUPABASE_DB_URL", "")
     
     # Redis Configuration (Upstash)
     REDIS_URL: str = os.getenv("REDIS_URL", "")
