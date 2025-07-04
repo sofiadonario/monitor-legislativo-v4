@@ -6,7 +6,7 @@ from datetime import datetime
 
 # Imports are now relative from the 'src' package root.
 from . import gateway_router
-from .routers import lexml_router, sse_router, private_database_router, collections_router, rshiny_proxy_router
+from .routers import lexml_router, sse_router, private_database_router, collections_router, rshiny_proxy_router, processed_documents_router
 
 # Import API modules with error handling for production deployment
 try:
@@ -169,6 +169,7 @@ app.include_router(lexml_router.router)
 app.include_router(sse_router.router)
 app.include_router(private_database_router.router)
 app.include_router(collections_router.router)
+app.include_router(processed_documents_router.router)
 app.include_router(rshiny_proxy_router.router)
 
 # Include API routers conditionally

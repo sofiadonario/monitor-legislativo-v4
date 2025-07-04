@@ -17,6 +17,7 @@ import {
   aiInsightsService 
 } from '../../services/aiInsightsService';
 import { LegislativeDocument } from '../../types';
+import { ProcessedDataDashboard } from '../ProcessedDataDashboard';
 
 interface AnalyticsDashboardProps {
   userId: string;
@@ -36,7 +37,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   showAIInsights = true
 }) => {
   // State management
-  const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'insights' | 'trends' | 'models'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'insights' | 'trends' | 'data' | 'models'>('overview');
   const [realTimeData, setRealTimeData] = useState<any>(null);
   const [reports, setReports] = useState<AnalyticsReport[]>([]);
   const [aiInsights, setAIInsights] = useState<AIInsight[]>([]);
@@ -305,6 +306,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           📈 Trends
         </button>
         <button
+          className={`tab ${activeTab === 'data' ? 'active' : ''}`}
+          onClick={() => setActiveTab('data')}
+        >
+          📋 Processed Data
+        </button>
+        <button
           className={`tab ${activeTab === 'models' ? 'active' : ''}`}
           onClick={() => setActiveTab('models')}
         >
@@ -520,6 +527,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {/* AI Insights Tab */}
       {activeTab === 'insights' && showAIInsights && (
         <div className="insights-panel">
+          {/* Processed Data Dashboard */}
+          <ProcessedDataDashboard />
+          
           <div className="insights-header">
             <h2>AI-Powered Insights</h2>
             <div className="insights-controls">
@@ -652,6 +662,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Processed Data Tab */}
+      {activeTab === 'data' && (
+        <div className="data-panel">
+          <ProcessedDataDashboard />
         </div>
       )}
 
