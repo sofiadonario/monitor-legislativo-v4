@@ -244,13 +244,21 @@ class SimpleSearchService:
         document_objects = []
         try:
             async with db_manager.session_factory() as session:
-                # A simple query to find documents that match the query in title or summary.
-                # This is a basic search and can be improved with full-text search later.
+                # FINAL CORRECTED QUERY
                 sql_query = text("""
-                    SELECT urn, title, summary as description, url as full_text_url, type as document_type, date, author as authority, '' as subject, source
-                    FROM legislative_documents
-                    WHERE title ILIKE :query OR summary ILIKE :query
-                    ORDER BY date DESC
+                    SELECT 
+                        urn, 
+                        title, 
+                        description, 
+                        full_text_url, 
+                        document_type, 
+                        publication_date as date, 
+                        authority, 
+                        subject_keywords as subject,
+                        source_url as source
+                    FROM private_legislative_documents
+                    WHERE title ILIKE :query OR description ILIKE :query
+                    ORDER BY publication_date DESC
                     LIMIT :limit
                 """)
                 
@@ -264,6 +272,12 @@ class SimpleSearchService:
                 
                 for row in rows:
                     doc_data = dict(row)
+                    # Ensure subject is a list of strings
+                    if 'subject' in doc_data and isinstance(doc_data['subject'], str):
+                        doc_data['subject'] = [s.strip() for s in doc_data['subject'].strip('{}').split(',')]
+                    elif doc_data.get('subject') is None:
+                        doc_data['subject'] = []
+                        
                     document_objects.append(Document(**doc_data))
 
         except Exception as e:
@@ -273,6 +287,9 @@ class SimpleSearchService:
                 logger.info("Database failed, trying CSV fallback")
                 csv_results = self._search_csv_fallback(query)
                 for doc_data in csv_results[:limit]:
+                    # Ensure subject is a list for CSV fallback as well
+                    if 'subject' in doc_data and isinstance(doc_data['subject'], str):
+                        doc_data['subject'] = [s.strip() for s in doc_data['subject'].split(',')]
                     document_objects.append(Document(**doc_data))
 
         logger.info(f"Returning {len(document_objects)} documents for query: {query}")
