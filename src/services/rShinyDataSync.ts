@@ -42,7 +42,11 @@ class RShinyDataSyncService {
 
   private async checkRShinyHealth(): Promise<boolean> {
     try {
-      const response = await fetch(`${rShinyConfig.baseUrl}${rShinyConfig.healthEndpoint}`, {
+      const healthUrl = (typeof window !== 'undefined' && window.location.hostname.includes('github.io'))
+        ? '/rshiny/health'
+        : `${rShinyConfig.baseUrl}${rShinyConfig.healthEndpoint}`;
+
+      const response = await fetch(healthUrl, {
         method: 'GET',
         signal: AbortSignal.timeout(5000)
       });
