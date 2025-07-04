@@ -204,8 +204,8 @@ geopy==2.4.1
 
 # Supabase - PostgreSQL client for cloud database
 # WHY: Required for storing and retrieving processed legislative documents
-# VERSION: Latest stable for production use
-supabase==2.5.1
+# VERSION: Updated to fix proxy parameter compatibility issue
+supabase==2.8.0
 
 # Pandas - Data manipulation and analysis
 # WHY: Required for processing CSV data and data transformations
