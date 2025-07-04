@@ -378,30 +378,19 @@ fetch_senado_data <- function(endpoint = "materia/pesquisa/lista",
 #' @param date_from Start date (optional)
 #' @param max_results Maximum results to return
 fetch_lexml_data <- function(query = NULL, state = NULL, municipality = NULL, 
-                            date_from = NULL, max_results = 100) {
+                            date_from = NULL, max_results = 1000) {
   
-  flog.info("Searching LexML Brasil with query: %s", query %||% "all")
+  flog.info("Searching application database with query: %s", query %||% "all")
   
-  base_url <- config$apis$federal$lexml$base_url
-  full_url <- paste0(base_url, "/search")
+  # CORRECTED: Point to our own backend service, not the external LexML API
+  base_url <- "https://monitor-legislativo-v4-production.up.railway.app"
+  full_url <- paste0(base_url, "/lexml/search")
   
-  params <- list(
-    format = "json",
-    max = max_results
-  )
+  params <- list()
   
-  if (!is.null(query)) {
-    params$q <- query
-  }
-  if (!is.null(state)) {
-    params$authority <- paste0("br.", tolower(state))
-  }
-  if (!is.null(municipality)) {
-    params$authority <- paste0("br.", tolower(state), ".", tolower(municipality))
-  }
-  if (!is.null(date_from)) {
-    params$date_from <- format(as.Date(date_from), "%Y-%m-%d")
-  }
+  # The backend now requires a query.
+  params$query <- query %||% "transporte"
+  params$limit <- max_results
   
   tryCatch({
     response <- GET(
@@ -409,13 +398,14 @@ fetch_lexml_data <- function(query = NULL, state = NULL, municipality = NULL,
       query = params,
       add_headers(
         "Accept" = "application/json",
-        "User-Agent" = "Academic-Legislative-Monitor/1.0"
+        "User-Agent" = "R-Shiny-Academic-Client/1.0"
       ),
-      timeout(30)
+      timeout(60) # Increased timeout for potentially large queries
     )
     
     if (status_code(response) != 200) {
-      flog.error("LexML API error: HTTP %d", status_code(response))
+      flog.error("Application backend API error: HTTP %d - %s", 
+               status_code(response), content(response, "text"))
       return(NULL)
     }
     
@@ -423,27 +413,18 @@ fetch_lexml_data <- function(query = NULL, state = NULL, municipality = NULL,
     parsed_data <- fromJSON(content_data, flatten = TRUE)
     
     if (is.data.frame(parsed_data) && nrow(parsed_data) > 0) {
-      result_data <- parsed_data %>%
-        mutate(
-          fonte = "LexML Brasil",
-          api_endpoint = "search",
-          data_coleta = Sys.time(),
-          nivel = case_when(
-            str_detect(authority %||% "", "^br\\.[a-z]{2}\\.[a-z]+") ~ "Municipal",
-            str_detect(authority %||% "", "^br\\.[a-z]{2}$") ~ "Estadual",
-            TRUE ~ "Federal"
-          )
-        )
-      
-      flog.info("Successfully fetched %d records from LexML", nrow(result_data))
+      # The backend now returns data in the correct format.
+      # No further standardization should be needed here.
+      result_data <- parsed_data
+      flog.info("Successfully fetched %d records from application backend", nrow(result_data))
       return(result_data)
     } else {
-      flog.warn("No data returned from LexML search")
+      flog.warn("No data returned from application backend search")
       return(NULL)
     }
     
   }, error = function(e) {
-    flog.error("Error fetching LexML data: %s", e$message)
+    flog.error("Error fetching from application backend: %s", e$message)
     return(NULL)
   })
 }
