@@ -15,6 +15,10 @@ class EnvironmentConfig:
     # Database Configuration
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     
+    # Supabase Configuration
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
+    
     # Redis Configuration (Upstash)
     REDIS_URL: str = os.getenv("REDIS_URL", "")
     REDIS_MAX_CONNECTIONS: int = int(os.getenv("REDIS_MAX_CONNECTIONS", "10"))
@@ -80,6 +84,9 @@ def validate_environment():
     # Warning checks
     if not EnvironmentConfig.get_redis_url():
         warnings.append("Redis URL not configured - caching will be disabled")
+    
+    if not EnvironmentConfig.SUPABASE_URL or not EnvironmentConfig.SUPABASE_ANON_KEY:
+        warnings.append("Supabase not configured - processed documents features will not work")
     
     if not EnvironmentConfig.LEXML_API_URL:
         errors.append("LexML API URL not configured - search will not work")
