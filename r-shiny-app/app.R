@@ -61,7 +61,7 @@ options(shiny.http.response.filter = function(req, res) {
 })
 
 # Register /health handler with CORS support
-registerHttpHandler("/health", function(req) {
+registerHttpHandler("health", function(req) {
   # Pre-flight
   if (identical(req$REQUEST_METHOD, "OPTIONS")) {
     return(list(
