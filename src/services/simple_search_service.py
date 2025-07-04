@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import quote
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import httpx
 import aiohttp
 
@@ -18,19 +18,20 @@ logger = logging.getLogger(__name__)
 
 class Document(BaseModel):
     """
-    A Pydantic model representing a legislative document.
-    This ensures compatibility with FastAPI's response_model.
+    A Pydantic model representing a legislative document,
+    matching the frontend's LegislativeDocument interface.
     """
+    id: str = Field(alias='urn')
     urn: str
     title: str
-    description: Optional[str] = None
-    full_text_url: Optional[str] = None
-    document_type: Optional[str] = None
+    summary: Optional[str] = Field(alias='description')
+    url: Optional[str] = Field(alias='full_text_url')
+    type: Optional[str] = Field(alias='document_type')
     date: Optional[str] = None
-    authority: Optional[str] = None
-    subject: Optional[str] = None
-    source: str = "lexml"  # lexml or csv
-    
+    author: Optional[str] = Field(alias='authority')
+    keywords: List[str] = Field(alias='subject', default=[])
+    source: str = "database"
+
 class SimpleSearchService:
     """
     LexML search service with CSV fallback.
@@ -244,7 +245,7 @@ class SimpleSearchService:
         document_objects = []
         try:
             async with db_manager.session_factory() as session:
-                # FINAL CORRECTED QUERY
+                # FINAL CORRECTED QUERY - This now matches the frontend's data model
                 sql_query = text("""
                     SELECT 
                         urn, 
@@ -272,13 +273,18 @@ class SimpleSearchService:
                 
                 for row in rows:
                     doc_data = dict(row)
-                    # Ensure subject is a list of strings
+                    
+                    # Add 'id' field for frontend compatibility, using 'urn'
+                    doc_data['id'] = doc_data.get('urn')
+                    
+                    # Convert subject keywords from string representation of array to a proper list
                     if 'subject' in doc_data and isinstance(doc_data['subject'], str):
                         doc_data['subject'] = [s.strip() for s in doc_data['subject'].strip('{}').split(',')]
                     elif doc_data.get('subject') is None:
                         doc_data['subject'] = []
                         
-                    document_objects.append(Document(**doc_data))
+                    # Create the Document object using aliases
+                    document_objects.append(Document.model_validate(doc_data))
 
         except Exception as e:
             logger.error(f"Database search failed for query '{query}': {e}", exc_info=True)
@@ -287,10 +293,19 @@ class SimpleSearchService:
                 logger.info("Database failed, trying CSV fallback")
                 csv_results = self._search_csv_fallback(query)
                 for doc_data in csv_results[:limit]:
-                    # Ensure subject is a list for CSV fallback as well
-                    if 'subject' in doc_data and isinstance(doc_data['subject'], str):
-                        doc_data['subject'] = [s.strip() for s in doc_data['subject'].split(',')]
-                    document_objects.append(Document(**doc_data))
+                    doc_data['id'] = doc_data.get('urn') # Add id for consistency
+                    if 'keywords' not in doc_data and 'subject' in doc_data:
+                        doc_data['keywords'] = doc_data.pop('subject') # Rename for model
+                    if 'keywords' in doc_data and isinstance(doc_data['keywords'], str):
+                        doc_data['keywords'] = [s.strip() for s in doc_data['keywords'].split(',')]
+                    
+                    # Map other CSV fields if necessary
+                    doc_data['url'] = doc_data.get('full_text_url')
+                    doc_data['type'] = doc_data.get('document_type')
+                    doc_data['author'] = doc_data.get('authority')
+                    doc_data['summary'] = doc_data.get('description')
+
+                    document_objects.append(Document.model_validate(doc_data, from_attributes=True))
 
         logger.info(f"Returning {len(document_objects)} documents for query: {query}")
         return document_objects
