@@ -82,7 +82,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <I18nProvider>
-        <Router basename="/monitor-legislativo-v4">
+        <Router>
           <div className="App">
             <Navigation />
             
