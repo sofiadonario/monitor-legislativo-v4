@@ -15,28 +15,40 @@ This guide will help you deploy the Monitor Legislativo frontend on Railway, rep
 ### 1. Create New Railway Service
 
 1. Go to your Railway project dashboard
-2. Click "New Service"
-3. Select "GitHub Repo"
-4. Choose your repository: `sofiadonario/monitor-legislativo-v4`
-5. Name it: "frontend" or "monitor-legislativo-frontend"
+2. Click "New Service"  
+3. Select "Empty Service" (NOT GitHub Repo yet)
+4. Name it: "frontend" or "monitor-legislativo-frontend"
+5. Once created, go to Settings → Connect GitHub Repo
+6. Choose your repository: `sofiadonario/monitor-legislativo-v4`
 
 ### 2. Configure Build Settings
 
-Railway will automatically detect and use the configuration from `railway.frontend.json`.
+**IMPORTANT**: Since the repository has both Python (backend) and Node.js (frontend) code, you must override the auto-detection.
 
-**Option A: Use Config-as-Code (Recommended)**
-1. Railway will read `railway.frontend.json` 
-2. No manual configuration needed
-3. All settings are version controlled
+In the service Settings tab:
 
-**Option B: Manual Configuration**
-- Build Command: `npm ci && npm run build`
-- Start Command: `node server.js`
-- Health Check Path: `/health`
+1. **Override Build Command**:
+   ```bash
+   cd $RAILWAY_PROJECT_ROOT && npm ci && npm run build
+   ```
 
-**Option C: Use Dockerfile**
+2. **Override Start Command**:
+   ```bash
+   cd $RAILWAY_PROJECT_ROOT && node server.js
+   ```
+
+3. **Builder**: Set to NIXPACKS (default)
+
+4. **Watch Paths** (optional):
+   - `src/**`
+   - `public/**`
+   - `package.json`
+   - `*.ts`
+   - `*.tsx`
+
+**Alternative: Use Custom Dockerfile**
 - Set Dockerfile Path: `Dockerfile.frontend`
-- Railway will use nginx to serve the app
+- This bypasses auto-detection issues
 
 ### 3. Set Environment Variables
 

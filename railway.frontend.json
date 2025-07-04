@@ -3,6 +3,14 @@
   "build": {
     "builder": "NIXPACKS",
     "buildCommand": "npm ci && npm run build",
+    "nixpacksPlan": {
+      "providers": ["node"],
+      "phases": {
+        "setup": {
+          "nixPkgs": ["nodejs_20", "npm-9_x"]
+        }
+      }
+    },
     "watchPatterns": [
       "src/**",
       "public/**", 
