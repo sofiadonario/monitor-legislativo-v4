@@ -11,6 +11,8 @@ import httpx
 import aiohttp
 
 from ..config.env_loader import EnvironmentConfig
+from ..database.supabase_config import get_database_manager
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -225,55 +227,54 @@ class SimpleSearchService:
         else:
             return 'Outros'
     
-    async def search(self, query: str, limit: int = 50) -> List[Document]:
+    async def search(self, query: str, limit: int = 1000) -> List[Document]:
         """
-        Search for legislative documents.
-        
-        Args:
-            query: Search query
-            limit: Maximum number of results
-            
-        Returns:
-            List of Document objects
+        Search for legislative documents directly from the Supabase database.
         """
         if not query:
             return []
         
-        documents = []
+        logger.info(f"Searching database for query: '{query}' with limit: {limit}")
         
-        # Try LexML API first
-        try:
-            lexml_results = await self._search_lexml(query)
-            documents.extend(lexml_results)
-        except Exception as e:
-            logger.error(f"LexML search failed: {e}")
-        
-        # If no results and CSV fallback is enabled, try CSV
-        if not documents and self.use_csv_fallback:
-            logger.info("No LexML results, trying CSV fallback")
-            csv_results = self._search_csv_fallback(query)
-            documents.extend(csv_results)
-        
-        # Convert to Document objects and limit results
+        db_manager = await get_database_manager()
+        if not db_manager or not db_manager.session_factory:
+            logger.error("Database manager not available for search.")
+            return []
+            
         document_objects = []
-        for doc_data in documents[:limit]:
-            try:
-                doc = Document(
-                    urn=doc_data.get('urn', ''),
-                    title=doc_data.get('title', ''),
-                    description=doc_data.get('description'),
-                    full_text_url=doc_data.get('full_text_url'),
-                    document_type=doc_data.get('document_type'),
-                    date=doc_data.get('date'),
-                    authority=doc_data.get('authority'),
-                    subject=doc_data.get('subject'),
-                    source=doc_data.get('source', 'lexml')
+        try:
+            async with db_manager.session_factory() as session:
+                # A simple query to find documents that match the query in title or summary.
+                # This is a basic search and can be improved with full-text search later.
+                sql_query = text("""
+                    SELECT urn, title, summary as description, url as full_text_url, type as document_type, date, author as authority, '' as subject, source
+                    FROM legislative_documents
+                    WHERE title ILIKE :query OR summary ILIKE :query
+                    ORDER BY date DESC
+                    LIMIT :limit
+                """)
+                
+                result = await session.execute(
+                    sql_query, 
+                    {"query": f"%{query}%", "limit": limit}
                 )
-                document_objects.append(doc)
-            except Exception as e:
-                logger.warning(f"Error creating Document object: {e}")
-                continue
-        
+                
+                rows = result.fetchall()
+                logger.info(f"Found {len(rows)} documents from database.")
+                
+                for row in rows:
+                    doc_data = dict(row)
+                    document_objects.append(Document(**doc_data))
+
+        except Exception as e:
+            logger.error(f"Database search failed for query '{query}': {e}", exc_info=True)
+            # Fallback to CSV if the database fails
+            if self.use_csv_fallback:
+                logger.info("Database failed, trying CSV fallback")
+                csv_results = self._search_csv_fallback(query)
+                for doc_data in csv_results[:limit]:
+                    document_objects.append(Document(**doc_data))
+
         logger.info(f"Returning {len(document_objects)} documents for query: {query}")
         return document_objects
 
