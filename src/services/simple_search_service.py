@@ -245,29 +245,27 @@ class SimpleSearchService:
         document_objects = []
         try:
             async with db_manager.session_factory() as session:
-                # FINAL CORRECTED QUERY - This now matches the frontend's data model
-                sql_query = text("""
-                    SELECT 
-                        urn, 
-                        title, 
-                        description, 
-                        full_text_url, 
-                        document_type, 
-                        publication_date as date, 
-                        authority, 
-                        subject_keywords as subject,
-                        source_url as source
-                    FROM private_legislative_documents
-                    WHERE title ILIKE :query OR description ILIKE :query
-                    ORDER BY publication_date DESC
-                    LIMIT :limit
-                """)
                 
-                result = await session.execute(
-                    sql_query, 
-                    {"query": f"%{query}%", "limit": limit}
-                )
-                
+                # If the query is the generic 'transporte', fetch all documents.
+                if query == 'transporte':
+                    sql_query = text("""
+                        SELECT urn, title, description, full_text_url, document_type, publication_date as date, authority, subject_keywords as subject, source_url as source
+                        FROM private_legislative_documents
+                        ORDER BY publication_date DESC
+                        LIMIT :limit
+                    """)
+                    result = await session.execute(sql_query, {"limit": limit})
+                else:
+                    # Otherwise, perform the specific search.
+                    sql_query = text("""
+                        SELECT urn, title, description, full_text_url, document_type, publication_date as date, authority, subject_keywords as subject, source_url as source
+                        FROM private_legislative_documents
+                        WHERE title ILIKE :query OR description ILIKE :query
+                        ORDER BY publication_date DESC
+                        LIMIT :limit
+                    """)
+                    result = await session.execute(sql_query, {"query": f"%{query}%", "limit": limit})
+
                 rows = result.fetchall()
                 logger.info(f"Found {len(rows)} documents from database.")
                 

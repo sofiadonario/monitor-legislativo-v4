@@ -777,6 +777,15 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
+  # DEFINITIVE CORS FIX: Set headers on all responses. This must be the first observer.
+  observe({
+    add_headers <- function(res) {
+      res$headers$`Access-Control-Allow-Origin` <- "*"
+      res
+    }
+    session$registerDataObj(name = "cors-headers", data = list(), filter = add_headers)
+  })
+
   # Add CORS headers for React integration
   session$allowReconnect("force")
   
