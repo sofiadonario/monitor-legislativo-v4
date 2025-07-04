@@ -1,0 +1,583 @@
+import { loadCSVLegislativeData } from '../data/csv-legislative-data';
+import { LegislativeDocument, SearchFilters, DocumentType, DocumentStatus, CollectionLog } from '../types';
+import apiClient from './apiClient';
+import { getApiBaseUrl } from '../config/api';
+import { multiLayerCache } from './multiLayerCache';
+
+// Check environment variables for data source configuration
+const forceCSVOnly = import.meta.env.VITE_FORCE_CSV_ONLY === 'true';
+
+export class LegislativeDataService {
+  private static instance: LegislativeDataService;
+  private csvDataCache: LegislativeDocument[] | null = null;
+  private requestCache = new Map<string, Promise<{ documents: LegislativeDocument[], usingFallback: boolean }>>();
+  
+  // Cache key prefixes for different data types
+  private static readonly CACHE_KEYS = {
+    DOCUMENTS: 'legislative_docs',
+    SEARCH_RESULTS: 'search_results',
+    DOCUMENT_BY_ID: 'document_id',
+    COLLECTION_STATUS: 'collection_status',
+    LATEST_COLLECTION: 'latest_collection',
+    CSV_DATA: 'csv_data'
+  } as const;
+  
+  private constructor() {}
+  
+  static getInstance(): LegislativeDataService {
+    if (!LegislativeDataService.instance) {
+      LegislativeDataService.instance = new LegislativeDataService();
+    }
+    return LegislativeDataService.instance;
+  }
+  
+  
+  private async getLocalCsvData(): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
+    // Check multi-layer cache first
+    const cacheKey = LegislativeDataService.CACHE_KEYS.CSV_DATA;
+    const cachedData = await multiLayerCache.get<{ documents: LegislativeDocument[], usingFallback: boolean }>(cacheKey);
+    
+    if (cachedData) {
+      console.log('📦 Using multi-layer cached CSV data');
+      return cachedData;
+    }
+    
+    // Fallback to memory cache
+    if (this.csvDataCache && this.csvDataCache.length > 0) {
+      console.log('Using in-memory cached real CSV data.');
+      const result = { documents: this.csvDataCache, usingFallback: true };
+      // Store in multi-layer cache for future use
+      await multiLayerCache.set(cacheKey, result, 24 * 60 * 60 * 1000); // 24 hours
+      return result;
+    }
+
+    try {
+      console.log('Attempting to load real CSV legislative data...');
+      const csvDocs = await loadCSVLegislativeData();
+      if (csvDocs && Array.isArray(csvDocs) && csvDocs.length > 0) {
+        console.log(`Loaded ${csvDocs.length} real documents from CSV`);
+        this.csvDataCache = csvDocs;
+        const result = { documents: csvDocs, usingFallback: true };
+        
+        // Cache the result in multi-layer cache
+        await multiLayerCache.set(cacheKey, result, 24 * 60 * 60 * 1000); // 24 hours
+        
+        return result;
+      }
+      throw new Error('CSV file was loaded but contained no documents or invalid data.');
+    } catch (error) {
+      console.error('Critical error: Failed to load or parse real CSV data.', error);
+      console.error('🚨 NO MOCK FALLBACK: Academic integrity requires real data sources only');
+      // NO MOCK FALLBACK - return empty array to force proper error handling
+      throw new Error(`Cannot load legislative data: ${error instanceof Error ? error.message : 'Unknown CSV error'}. Real data source required.`);
+    }
+  }
+  
+  async fetchDocuments(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
+    // Generate cache key from filters
+    const filterKey = JSON.stringify(filters || {});
+    const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENTS}_${filterKey}`;
+    
+    // Check multi-layer cache first
+    const cachedResult = await multiLayerCache.get<{ documents: LegislativeDocument[], usingFallback: boolean }>(
+      cacheKey,
+      async () => {
+        console.log('🔄 Cache miss - fetching fresh data');
+        return await this._performFetch(filters);
+      }
+    );
+    
+    if (cachedResult) {
+      console.log('🎯 Cache hit - returning cached documents');
+      return cachedResult;
+    }
+    
+    // Fallback to request deduplication for concurrent requests
+    if (this.requestCache.has(filterKey)) {
+      console.log('⚡ Request deduped: Using existing pending request');
+      return this.requestCache.get(filterKey)!;
+    }
+
+    // Create new request
+    const requestPromise = this._performFetch(filters);
+    
+    // Cache the promise for deduplication
+    this.requestCache.set(filterKey, requestPromise);
+    console.log(`📊 Active requests: ${this.requestCache.size}`);
+    
+    // Auto-cleanup after completion and cache result
+    requestPromise.then(async (result) => {
+      // Cache the successful result
+      await multiLayerCache.set(cacheKey, result, 10 * 60 * 1000); // 10 minutes for API results
+    }).finally(() => {
+      this.requestCache.delete(filterKey);
+      console.log(`🧹 Cache cleanup - Active requests: ${this.requestCache.size}`);
+    });
+    
+    return requestPromise;
+  }
+
+  private async _performFetch(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
+    if (forceCSVOnly) {
+      console.log('Force CSV-only mode. Using real CSV data exclusively.');
+      try {
+        const localData = await this.getLocalCsvData();
+        return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
+      } catch (error) {
+        console.error('Failed to load CSV data in CSV-only mode:', error);
+        throw error; // Don't hide CSV loading errors
+      }
+    }
+    
+    try {
+      // Try to fetch from backend API first
+      console.log('🌐 Attempting to fetch from backend API...');
+      const apiResult = await this.fetchFromAPI(filters);
+      if (apiResult && apiResult.documents.length > 0) {
+        console.log(`✅ API fetch successful: ${apiResult.documents.length} documents`);
+        return apiResult;
+      }
+      throw new Error('API returned no documents');
+    } catch (error) {
+      console.warn('⚠️ Backend API fetch failed, attempting fallback to embedded real data:', error);
+      try {
+        const localData = await this.getLocalCsvData();
+        return { documents: this.filterLocalData(localData.documents, filters), usingFallback: true };
+      } catch (csvError) {
+        console.error('❌ Both Backend API and embedded data sources failed:', { apiError: error, csvError });
+        throw new Error('Unable to load legislative data from any real source (Backend API or embedded data). Please check data availability.');
+      }
+    }
+  }
+  
+  private async fetchFromAPI(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      
+      const endpoints = [
+        '/lexml/search', // CORRECTED: This is the true root path for the search
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`🔍 Trying endpoint: ${endpoint}`);
+          const url = `${baseUrl}${endpoint}`;
+          
+          // CRITICAL FIX: Add a default query parameter
+          let params = filters?.searchTerm ? `?query=${encodeURIComponent(filters.searchTerm)}` : '';
+          if (!params) {
+            params = `?query=transporte`;
+          }
+          
+          const response = await fetch(`${url}${params}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-Client': 'monitor-legislativo-frontend'
+            },
+            timeout: 15000
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Endpoint ${endpoint} responded:`, data);
+            
+            // Try to extract documents from various response formats
+            let documents: LegislativeDocument[] = [];
+            
+            if (data.documents && Array.isArray(data.documents)) {
+              documents = data.documents;
+            } else if (data.results && Array.isArray(data.results)) {
+              documents = data.results;
+            } else if (data.collection && data.collection.document_count) {
+              // Collection info endpoint - return as a single document representation
+              documents = [{
+                id: data.collection.id || 'latest',
+                title: data.collection.name || 'Latest Collection',
+                summary: data.collection.description || `Collection with ${data.collection.document_count} documents`,
+                type: 'projeto_lei' as DocumentType,
+                date: data.collection.last_updated || new Date().toISOString(),
+                keywords: data.collection.features || [],
+                state: '',
+                municipality: '',
+                url: '',
+                status: 'em_tramitacao' as DocumentStatus,
+                author: 'Monitor Legislativo',
+                chamber: 'Sistema',
+                number: data.collection.document_count?.toString() || '0',
+                source: 'Backend API',
+                citation: ''
+              }];
+            } else if (Array.isArray(data)) {
+              documents = data;
+            }
+            
+            if (documents.length > 0) {
+              console.log(`📄 Found ${documents.length} documents from ${endpoint}`);
+              return { 
+                documents: this.filterLocalData(documents, filters), 
+                usingFallback: false 
+              };
+            }
+          }
+        } catch (endpointError) {
+          console.warn(`❌ Endpoint ${endpoint} failed:`, endpointError);
+          continue;
+        }
+      }
+      
+      throw new Error('No API endpoints returned valid document data');
+    } catch (error) {
+      console.error('🌐 API fetch failed:', error);
+      throw error;
+    }
+  }
+
+  async fetchDocumentById(id: string): Promise<LegislativeDocument | null> {
+    const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENT_BY_ID}_${id}`;
+    
+    // Check cache first
+    const cachedDoc = await multiLayerCache.get<LegislativeDocument>(cacheKey);
+    if (cachedDoc) {
+      console.log(`🎯 Cache hit for document ID: ${id}`);
+      return cachedDoc;
+    }
+    
+    // Fetch from all documents if not cached
+    const allDocs = await this.fetchDocuments();
+    const document = allDocs.documents.find(doc => doc.id === id) || null;
+    
+    // Cache the result if found
+    if (document) {
+      await multiLayerCache.set(cacheKey, document, 30 * 60 * 1000); // 30 minutes
+    }
+    
+    return document;
+  }
+  
+  async searchDocuments(searchTerm: string): Promise<LegislativeDocument[]> {
+    const cacheKey = `${LegislativeDataService.CACHE_KEYS.SEARCH_RESULTS}_${searchTerm.toLowerCase()}`;
+    
+    // Check cache first
+    const cachedResults = await multiLayerCache.get<LegislativeDocument[]>(cacheKey);
+    if (cachedResults) {
+      console.log(`🎯 Cache hit for search term: ${searchTerm}`);
+      return cachedResults;
+    }
+    
+    // Perform search
+    const allDocs = await this.fetchDocuments();
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const results = allDocs.documents.filter(doc => 
+      doc.title.toLowerCase().includes(lowerSearchTerm) ||
+      doc.summary.toLowerCase().includes(lowerSearchTerm) ||
+      (doc.keywords && doc.keywords.some(keyword => keyword.toLowerCase().includes(lowerSearchTerm)))
+    );
+    
+    // Cache the results
+    await multiLayerCache.set(cacheKey, results, 15 * 60 * 1000); // 15 minutes
+    
+    return results;
+  }
+  
+  private filterLocalData(data: LegislativeDocument[], filters?: SearchFilters): LegislativeDocument[] {
+    if (!filters) return data;
+    
+    return data.filter(doc => {
+      if (filters.searchTerm && 
+          !doc.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) &&
+          !doc.summary.toLowerCase().includes(filters.searchTerm.toLowerCase()) &&
+          !doc.keywords.some(keyword => keyword.toLowerCase().includes(filters.searchTerm.toLowerCase()))) {
+        return false;
+      }
+      
+      if (filters.documentTypes.length > 0 && !filters.documentTypes.includes(doc.type)) {
+        return false;
+      }
+      
+      if (filters.states.length > 0 && doc.state && !filters.states.includes(doc.state)) {
+        return false;
+      }
+      
+      if (filters.municipalities.length > 0 && doc.municipality && !filters.municipalities.includes(doc.municipality)) {
+        return false;
+      }
+      
+      if (filters.chambers.length > 0 && doc.chamber && !filters.chambers.includes(doc.chamber)) {
+        return false;
+      }
+      
+      if (filters.dateFrom && new Date(doc.date) < filters.dateFrom) {
+        return false;
+      }
+      
+      if (filters.dateTo && new Date(doc.date) > filters.dateTo) {
+        return false;
+      }
+      
+      return true;
+    });
+  }
+  
+  private buildQueryParams(filters?: SearchFilters): Record<string, string> {
+    const params: Record<string, string> = {};
+    
+    // q parameter is required - use a default if not provided
+    params.q = filters?.searchTerm || 'transporte';
+    
+    if (filters?.states && filters.states.length > 0) {
+      params.states = filters.states.join(',');
+    }
+    if (filters?.dateFrom) {
+      params.start_date = this.formatDate(filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      params.end_date = this.formatDate(filters.dateTo);
+    }
+    
+    // Add default sources (can be made configurable later)
+    params.sources = 'CAMARA,SENADO,PLANALTO';
+    
+    return params;
+  }
+  
+  private formatDate(date: Date): string {
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+  }
+  
+  private transformSearchResponse(response: any): LegislativeDocument[] {
+    if (!response.results || !Array.isArray(response.results)) {
+      return [];
+    }
+    return response.results.map((item: any) => this.transformProposition(item));
+  }
+  
+  private transformProposition(prop: any): LegislativeDocument {
+    // Map backend Proposition to frontend LegislativeDocument
+    const documentTypeMap: Record<string, DocumentType> = {
+      'PL': 'projeto_lei',
+      'PLP': 'projeto_lei',
+      'PEC': 'projeto_lei',
+      'MPV': 'medida_provisoria',
+      'PLV': 'projeto_lei',
+      'PDL': 'decreto',
+      'PRC': 'resolucao',
+      'DECRETO': 'decreto',
+      'PORTARIA': 'portaria',
+      'RESOLUCAO': 'resolucao',
+      'INSTRUCAO_NORMATIVA': 'instrucao_normativa',
+      'LEI': 'lei'
+    };
+    
+    const statusMap: Record<string, DocumentStatus> = {
+      'ACTIVE': 'em_tramitacao',
+      'APPROVED': 'aprovado',
+      'REJECTED': 'rejeitado',
+      'ARCHIVED': 'arquivado',
+      'WITHDRAWN': 'arquivado',
+      'PUBLISHED': 'sancionado'
+    };
+    
+    // Extract state from authors if available
+    let state = '';
+    if (prop.authors && Array.isArray(prop.authors) && prop.authors.length > 0) {
+      state = prop.authors[0].state || '';
+    }
+    
+    return {
+      id: prop.id,
+      title: prop.title,
+      summary: prop.summary || '',
+      type: documentTypeMap[prop.type] || 'projeto_lei',
+      date: prop.publication_date || prop.date || new Date().toISOString(),
+      keywords: prop.keywords || [],
+      state: state,
+      municipality: prop.municipality || '',
+      url: prop.url || '',
+      status: statusMap[prop.status] || 'em_tramitacao',
+      author: prop.authors?.[0]?.name || '',
+      chamber: prop.source === 'CAMARA' ? 'Câmara dos Deputados' : prop.source === 'SENADO' ? 'Senado Federal' : '',
+      number: prop.number,
+      source: prop.source,
+      citation: prop.citation
+    };
+  }
+  
+  async fetchCollectionStatus(): Promise<CollectionLog[]> {
+    const cacheKey = LegislativeDataService.CACHE_KEYS.COLLECTION_STATUS;
+    
+    // Check cache first
+    const cachedStatus = await multiLayerCache.get<CollectionLog[]>(cacheKey);
+    if (cachedStatus) {
+      console.log('🎯 Cache hit for collection status');
+      return cachedStatus;
+    }
+    
+    try {
+      // Try new backend API first
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/v1/collections/status`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const results = this.transformCollectionLogs(data.collections || [data]);
+        
+        // Cache the results
+        await multiLayerCache.set(cacheKey, results, 5 * 60 * 1000); // 5 minutes
+        
+        return results;
+      }
+      
+      // Fallback to old API client
+      const fallbackResponse = await apiClient.get<any>('/collections/recent');
+      const results = this.transformCollectionLogs(fallbackResponse);
+      
+      // Cache the results
+      await multiLayerCache.set(cacheKey, results, 5 * 60 * 1000); // 5 minutes
+      
+      return results;
+    } catch (error) {
+      console.error('Failed to fetch collection status:', error);
+      return [];
+    }
+  }
+  
+  async fetchLatestCollection(): Promise<CollectionLog | null> {
+    const cacheKey = LegislativeDataService.CACHE_KEYS.LATEST_COLLECTION;
+    
+    // Check cache first
+    const cachedLatest = await multiLayerCache.get<CollectionLog | null>(cacheKey);
+    if (cachedLatest !== null) {
+      console.log('🎯 Cache hit for latest collection');
+      return cachedLatest;
+    }
+    
+    try {
+      // Try new backend API first
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/v1/collections/latest`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        let result: CollectionLog | null = null;
+        
+        if (data && (data.id || data.collection)) {
+          result = this.transformCollectionLog(data.collection || data);
+        }
+        
+        // Cache the result (even if null)
+        await multiLayerCache.set(cacheKey, result, 3 * 60 * 1000); // 3 minutes
+        
+        return result;
+      }
+      
+      // Fallback to old API client
+      const fallbackResponse = await apiClient.get<any>('/collections/latest');
+      let result: CollectionLog | null = null;
+      
+      if (fallbackResponse && fallbackResponse.id) {
+        result = this.transformCollectionLog(fallbackResponse);
+      }
+      
+      // Cache the result (even if null)
+      await multiLayerCache.set(cacheKey, result, 3 * 60 * 1000); // 3 minutes
+      
+      return result;
+    } catch (error) {
+      console.error('Failed to fetch latest collection:', error);
+      return null;
+    }
+  }
+  
+  private transformCollectionLogs(response: any): CollectionLog[] {
+    if (!response || !Array.isArray(response)) {
+      return [];
+    }
+    return response.map(log => this.transformCollectionLog(log));
+  }
+  
+  private transformCollectionLog(log: any): CollectionLog {
+    return {
+      id: log.id,
+      searchTermId: log.search_term_id,
+      searchTerm: log.search_term,
+      status: log.status,
+      recordsCollected: log.records_collected || 0,
+      recordsNew: log.records_new || 0,
+      recordsUpdated: log.records_updated || 0,
+      recordsSkipped: log.records_skipped || 0,
+      executionTimeMs: log.execution_time_ms || 0,
+      errorMessage: log.error_message,
+      startedAt: log.started_at,
+      completedAt: log.completed_at,
+      sourcesUsed: log.sources_used || []
+    };
+  }
+  
+  // Cache management methods
+  async invalidateCache(type?: 'all' | 'documents' | 'search' | 'collections'): Promise<void> {
+    const patterns: string[] = [];
+    
+    switch (type) {
+      case 'documents':
+        patterns.push(LegislativeDataService.CACHE_KEYS.DOCUMENTS);
+        patterns.push(LegislativeDataService.CACHE_KEYS.DOCUMENT_BY_ID);
+        patterns.push(LegislativeDataService.CACHE_KEYS.CSV_DATA);
+        break;
+      case 'search':
+        patterns.push(LegislativeDataService.CACHE_KEYS.SEARCH_RESULTS);
+        break;
+      case 'collections':
+        patterns.push(LegislativeDataService.CACHE_KEYS.COLLECTION_STATUS);
+        patterns.push(LegislativeDataService.CACHE_KEYS.LATEST_COLLECTION);
+        break;
+      case 'all':
+      default:
+        // Clear all cache layers
+        await multiLayerCache.clear();
+        console.log('🧹 All caches cleared');
+        return;
+    }
+    
+    // For specific types, we'd need a pattern-based deletion
+    // For now, clear all since multiLayerCache doesn't support pattern deletion
+    console.log(`🧹 Invalidating cache for type: ${type}`);
+    await multiLayerCache.clear();
+  }
+  
+  async getCacheStats() {
+    return multiLayerCache.getStats();
+  }
+  
+  async getCacheSizes() {
+    return multiLayerCache.getCacheSizes();
+  }
+  
+  // Force refresh specific data
+  async forceRefreshDocuments(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
+    const filterKey = JSON.stringify(filters || {});
+    const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENTS}_${filterKey}`;
+    
+    // Remove from cache
+    await multiLayerCache.delete(cacheKey);
+    
+    // Fetch fresh data
+    return this.fetchDocuments(filters);
+  }
+}
+
+// Export singleton instance
+export const legislativeDataService = LegislativeDataService.getInstance();

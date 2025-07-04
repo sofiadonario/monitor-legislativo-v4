@@ -1,0 +1,1 @@
+export { DocumentComparison } from './DocumentComparison';
