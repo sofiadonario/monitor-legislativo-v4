@@ -141,7 +141,19 @@ class DatabaseCacheService:
             return
             
         cache_key = self._generate_cache_key(query)
-        serialized_results = json.dumps(results, ensure_ascii=False)
+        
+        # Ensure results are JSON-serializable
+        if results and not isinstance(results[0], (dict, str, int, float, bool, type(None))):
+            # Likely list of Pydantic models; convert to dicts
+            try:
+                results_serializable = [r.model_dump() for r in results]
+            except AttributeError:
+                # Fallback: convert via dict()
+                results_serializable = [dict(r) for r in results]
+        else:
+            results_serializable = results
+
+        serialized_results = json.dumps(results_serializable, ensure_ascii=False)
         
         # Save to Redis
         if self.redis_available and self.redis_client:
