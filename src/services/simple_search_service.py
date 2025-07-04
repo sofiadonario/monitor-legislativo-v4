@@ -10,11 +10,11 @@ class Document(BaseModel):
     id: str  # unique identifier (same as urn)
     urn: str
     title: str
-    summary: Optional[str] = Field(alias='description', default=None)
-    url: Optional[str] = Field(alias='full_text_url', default=None)
-    type: Optional[str] = Field(alias='document_type', default=None)
+    summary: Optional[str] = None
+    url: Optional[str] = None
+    type: Optional[str] = None
     date: Optional[str] = None
-    author: Optional[str] = Field(alias='authority', default=None)
+    author: Optional[str] = None
     keywords: List[str] = []
     source: str = "processed_csv"
 
@@ -68,9 +68,9 @@ class SimpleSearchService:
                     'id': row.get('urn', ''),
                     'urn': row.get('urn', ''),
                     'title': row.get('title', ''),
-                    'summary': row.get('description', ''),
+                    'summary': row.get('document_description', ''),
                     'url': row.get('full_text_url', ''),
-                    'type': row.get('document_type', ''),
+                    'type': row.get('document_type_full', ''),
                     'date': row.get('publication_date', ''),
                     'author': row.get('authority', ''),
                     'keywords': [kw.strip() for kw in row.get('subject_keywords', '').strip('{}').split(',') if kw.strip()],
