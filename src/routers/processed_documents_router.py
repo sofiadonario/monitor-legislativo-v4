@@ -21,8 +21,8 @@ def get_supabase_client() -> Client:
         
         return create_client(supabase_url, supabase_key)
     except Exception as e:
-        logger.error(f"Failed to create Supabase client: {e}")
-        raise HTTPException(status_code=500, detail="Database connection failed")
+        logger.error(f"Failed to create Supabase client: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
 
 @router.get("/processed-documents")
 async def get_processed_documents(
@@ -67,8 +67,8 @@ async def get_processed_documents(
         }
         
     except Exception as e:
-        logger.error(f"Error fetching processed documents: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch documents")
+        logger.error(f"Error fetching processed documents: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch documents: {str(e)}")
 
 @router.get("/processed-documents/categories")
 async def get_document_categories():
