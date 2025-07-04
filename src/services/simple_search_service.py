@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 class Document(BaseModel):
-    id: str = Field(alias='urn')
+    id: str  # unique identifier (same as urn)
     urn: str
     title: str
     summary: Optional[str] = Field(alias='description', default=None)
