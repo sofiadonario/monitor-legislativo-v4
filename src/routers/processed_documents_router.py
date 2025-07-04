@@ -33,7 +33,8 @@ async def health_check():
 async def test_connection():
     """Test PostgreSQL connection with detailed error reporting"""
     try:
-        async with get_db_connection() as conn:
+        conn = await get_db_connection()
+        try:
             # Test basic connection
             result = await conn.fetchrow("SELECT COUNT(*) as count FROM legislative_documents LIMIT 1")
             count = result['count'] if result else 0
@@ -44,6 +45,8 @@ async def test_connection():
                 "total_documents": count,
                 "has_data": count > 0
             }
+        finally:
+            await conn.close()
     except Exception as e:
         import traceback
         return {
@@ -78,37 +81,61 @@ async def get_processed_documents(
     urn_type: Optional[str] = Query(None, description="Filter by URN type")
 ):
     """
-    Get processed legislative documents from Supabase
+    Get processed legislative documents from PostgreSQL/Supabase
     """
     try:
-        supabase = get_supabase_client()
-        
-        # Build query
-        query = supabase.table('legislative_documents').select('*')
-        
-        # Apply filters
-        if search_term:
-            query = query.ilike('search_term', f'%{search_term}%')
-        if document_type:
-            query = query.ilike('document_type_full', f'%{document_type}%')
-        if state:
-            query = query.eq('state', state)
-        if urn_type:
-            query = query.eq('urn_type', urn_type)
-        
-        # Apply pagination
-        query = query.range(offset, offset + limit - 1)
-        
-        # Execute query
-        result = query.execute()
-        
-        return {
-            "status": "success",
-            "data": result.data,
-            "count": len(result.data),
-            "offset": offset,
-            "limit": limit
-        }
+        conn = await get_db_connection()
+        try:
+            # Build SQL query
+            where_conditions = []
+            params = []
+            param_count = 0
+            
+            if search_term:
+                param_count += 1
+                where_conditions.append(f"search_term ILIKE ${param_count}")
+                params.append(f"%{search_term}%")
+            
+            if document_type:
+                param_count += 1
+                where_conditions.append(f"document_type_full ILIKE ${param_count}")
+                params.append(f"%{document_type}%")
+                
+            if state:
+                param_count += 1
+                where_conditions.append(f"state = ${param_count}")
+                params.append(state)
+                
+            if urn_type:
+                param_count += 1
+                where_conditions.append(f"urn_type = ${param_count}")
+                params.append(urn_type)
+            
+            where_clause = " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+            
+            query = f"""
+                SELECT * FROM legislative_documents
+                {where_clause}
+                ORDER BY created_at DESC
+                LIMIT ${param_count + 1} OFFSET ${param_count + 2}
+            """
+            params.extend([limit, offset])
+            
+            # Execute query
+            rows = await conn.fetch(query, *params)
+            
+            # Convert to dict
+            data = [dict(row) for row in rows]
+            
+            return {
+                "status": "success",
+                "data": data,
+                "count": len(data),
+                "offset": offset,
+                "limit": limit
+            }
+        finally:
+            await conn.close()
         
     except Exception as e:
         logger.error(f"Error fetching processed documents: {type(e).__name__}: {str(e)}", exc_info=True)
