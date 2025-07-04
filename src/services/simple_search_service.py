@@ -20,8 +20,13 @@ class Document(BaseModel):
 
 class SimpleSearchService:
     def __init__(self):
-        # DEFINITIVE FIX: Point to the correct processed data file.
-        self.csv_path = Path(__file__).parent.parent / "data" / "processed" / "lexml_parsed_enhanced.csv"
+        # Adjust path: move three levels up to project root, then into data/processed
+        self.csv_path = (
+            Path(__file__).resolve().parent.parent.parent
+            / "data"
+            / "processed"
+            / "lexml_parsed_enhanced.csv"
+        )
         self.csv_data: Optional[List[dict]] = None
         self._load_csv_data()
 
