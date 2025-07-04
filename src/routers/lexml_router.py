@@ -14,32 +14,19 @@ async def search_lexml(
     query: str = Query(..., description="Search query for LexML"),
     limit: int = Query(50, description="Number of results to return"),
     search_service: SimpleSearchService = Depends(get_simple_search_service),
-    cache_service = Depends(get_database_cache_service),
 ):
     """
     Search for legislative documents on LexML Brasil.
-    Results are cached for performance.
+    NOTE: Caching is temporarily disabled to force fresh results.
     """
     if not query:
         raise HTTPException(status_code=400, detail="Query parameter is required")
 
-    # Use client IP for rate limiting or analytics if needed
     client_ip = request.client.host
-    logger.info(f"LexML search request from {client_ip} for query: '{query}'")
+    logger.info(f"LexML search request from {client_ip} for query: '{query}' (CACHE DISABLED)")
 
     try:
-        # Check cache first
-        cached_results = await cache_service.get_search_results(query)
-        if cached_results:
-            logger.info(f"Cache hit for query: '{query}'")
-            return cached_results
-
-        logger.info(f"Cache miss for query: '{query}'. Searching LexML.")
         documents = await search_service.search(query, limit=limit)
-
-        # Store results in cache
-        await cache_service.save_search_results(query, documents)
-
         return documents
 
     except HTTPException as http_exc:
