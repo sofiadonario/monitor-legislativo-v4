@@ -20,12 +20,9 @@ class Document(BaseModel):
 
 class SimpleSearchService:
     def __init__(self):
-        # Adjust path: move three levels up to project root, then into data/processed
+        # CSV is stored under src/data/processed to ensure it is included in build context
         self.csv_path = (
-            Path(__file__).resolve().parent.parent.parent
-            / "data"
-            / "processed"
-            / "lexml_parsed_enhanced.csv"
+            Path(__file__).resolve().parent.parent / "data" / "processed" / "lexml_parsed_enhanced.csv"
         )
         self.csv_data: Optional[List[dict]] = None
         self._load_csv_data()

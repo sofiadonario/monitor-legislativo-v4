@@ -106,6 +106,8 @@ secrets/
 *.csv
 *.xlsx
 *.xls
+# Allow processed CSVs inside src/data/processed
+!src/data/processed/*.csv
 data/exports/
 data/cache/
 data/temp/ .env.production
