@@ -60,30 +60,30 @@ options(shiny.http.response.filter = function(req, res) {
   return(res)
 })
 
-# Alternative: Use httpuv handler directly
-if (FALSE) {  # Disabled for now, can enable if filter doesn't work
-  registerHttpHandler("/health", function(req) {
-    if (identical(req$REQUEST_METHOD, "OPTIONS")) {
-      return(list(
-        status = 204L,
-        headers = list(
-          "Access-Control-Allow-Origin" = "https://sofiadonario.github.io",
-          "Access-Control-Allow-Methods" = "GET, OPTIONS",
-          "Access-Control-Allow-Headers" = "Content-Type"
-        ),
-        body = ""
-      ))
-    }
-    list(
-      status = 200L,
+# Register /health handler with CORS support
+registerHttpHandler("/health", function(req) {
+  # Pre-flight
+  if (identical(req$REQUEST_METHOD, "OPTIONS")) {
+    return(list(
+      status = 204L,
       headers = list(
-        "Content-Type" = "text/plain",
-        "Access-Control-Allow-Origin" = "https://sofiadonario.github.io"
+        "Access-Control-Allow-Origin" = "https://sofiadonario.github.io",
+        "Access-Control-Allow-Methods" = "GET, OPTIONS",
+        "Access-Control-Allow-Headers" = "Content-Type"
       ),
-      body = "OK"
-    )
-  })
-}
+      body = ""
+    ))
+  }
+  # Normal GET
+  list(
+    status = 200L,
+    headers = list(
+      "Content-Type" = "text/plain",
+      "Access-Control-Allow-Origin" = "https://sofiadonario.github.io"
+    ),
+    body = "OK"
+  )
+})
 
 # Load environment and required packages
 source(".Rprofile")
