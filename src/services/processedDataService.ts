@@ -46,7 +46,9 @@ export interface ProcessedDataResponse {
   limit: number;
 }
 
-const API_BASE_URL = '/api/v1';
+import { getApiBaseUrl } from '../config/api';
+
+const API_BASE_URL = `${getApiBaseUrl()}/api/v1`;
 
 class ProcessedDataService {
   

@@ -35,6 +35,13 @@ export const ProcessedDataDashboard: React.FC = () => {
         processedDataService.getProcessedDocuments({ limit: 1000 })
       ]);
 
+      console.log('ProcessedData API Response:', {
+        statsData,
+        categoriesData,
+        documentsCount: documentsData.data.length,
+        totalFromCategories: categoriesData.total_documents
+      });
+      
       setStats(statsData.stats);
       setCategories(categoriesData.categories);
       setRecentDocuments(documentsData.data);

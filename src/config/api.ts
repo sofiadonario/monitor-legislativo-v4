@@ -6,16 +6,20 @@
 // Environment configuration
 const isDevelopment = import.meta.env.MODE === 'development';
 const isProduction = import.meta.env.MODE === 'production';
+const isRailway = import.meta.env.VITE_RAILWAY_ENVIRONMENT === 'true';
 
 // API Base URLs  
 const API_URLS = {
   development: 'http://localhost:8000', // Local development backend
-  production: 'https://monitor-legislativo-v4-production.up.railway.app', // CORRECTED: This is the main service with the data endpoints
+  production: isRailway ? '' : 'https://backend-api-production-2392.up.railway.app', // Use relative URLs on Railway
   staging: import.meta.env.VITE_API_URL || 'https://monitor-legislativo-v4-production-7e46.up.railway.app'
 };
 
 // Get current API base URL
 export const getApiBaseUrl = (): string => {
+  // If on Railway frontend, use relative URLs (nginx will proxy)
+  if (isRailway && isProduction) return '';
+  
   if (isDevelopment) return API_URLS.development;
   if (isProduction) return API_URLS.production;
   return API_URLS.staging;
