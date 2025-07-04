@@ -46,6 +46,9 @@ options(shiny.http.response.filter = function(req, res) {
     # Method 1: Try using shiny's built-in response
     res$status <- 200L
     res$headers[["Content-Type"]] <- "text/plain"
+    res$headers[["Access-Control-Allow-Origin"]] <- "https://sofiadonario.github.io"
+    res$headers[["Access-Control-Allow-Methods"]] <- "GET, OPTIONS"
+    res$headers[["Access-Control-Allow-Headers"]] <- "Content-Type"
     res$body <- as.character("OK")
     
     message(paste("Response body class:", class(res$body)))
@@ -60,9 +63,23 @@ options(shiny.http.response.filter = function(req, res) {
 # Alternative: Use httpuv handler directly
 if (FALSE) {  # Disabled for now, can enable if filter doesn't work
   registerHttpHandler("/health", function(req) {
+    if (identical(req$REQUEST_METHOD, "OPTIONS")) {
+      return(list(
+        status = 204L,
+        headers = list(
+          "Access-Control-Allow-Origin" = "https://sofiadonario.github.io",
+          "Access-Control-Allow-Methods" = "GET, OPTIONS",
+          "Access-Control-Allow-Headers" = "Content-Type"
+        ),
+        body = ""
+      ))
+    }
     list(
       status = 200L,
-      headers = list("Content-Type" = "text/plain"),
+      headers = list(
+        "Content-Type" = "text/plain",
+        "Access-Control-Allow-Origin" = "https://sofiadonario.github.io"
+      ),
       body = "OK"
     )
   })
