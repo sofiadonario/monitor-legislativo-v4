@@ -154,11 +154,8 @@ export class LegislativeDataService {
     try {
       const baseUrl = getApiBaseUrl();
       
-      // Try multiple endpoints that might return document data
       const endpoints = [
-        '/lexml/search', // This should be the primary endpoint for all documents
-        '/api/v1/collections/latest',
-        '/api/v1/private-database/documents'
+        '/lexml/search', // CORRECTED: This is the true root path for the search
       ];
       
       for (const endpoint of endpoints) {
@@ -166,9 +163,9 @@ export class LegislativeDataService {
           console.log(`🔍 Trying endpoint: ${endpoint}`);
           const url = `${baseUrl}${endpoint}`;
           
-          // CRITICAL FIX: Add a default query parameter for /lexml/search
-          let params = filters?.searchTerm ? `?q=${encodeURIComponent(filters.searchTerm)}` : '';
-          if (endpoint === '/lexml/search' && !params) {
+          // CRITICAL FIX: Add a default query parameter
+          let params = filters?.searchTerm ? `?query=${encodeURIComponent(filters.searchTerm)}` : '';
+          if (!params) {
             params = `?query=transporte`;
           }
           
