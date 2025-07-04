@@ -1,0 +1,45 @@
+{
+  "timestamp": 1751559660.5324135,
+  "results": [
+    {
+      "url": "https://monitor-legislativo-v4-production-7e46.up.railway.app",
+      "status": "http_error",
+      "response_time": null,
+      "error": "HTTP 404: Not Found",
+      "service": "Backend API (Production)"
+    },
+    {
+      "url": "https://monitor-legislativo-v4-production-7e46.up.railway.app/health",
+      "status": "http_error",
+      "response_time": null,
+      "error": "HTTP 404: Not Found",
+      "service": "Backend API Health"
+    },
+    {
+      "url": "https://rshiny-production-1f4b.up.railway.app",
+      "status": "healthy",
+      "response_time": 1065.73,
+      "error": null,
+      "status_code": 200,
+      "content_preview": "<!DOCTYPE html>\n<html>\n<head>\n  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>\n  <script type=\"application/shiny-singletons\"></script>\n  <script type=\"application/html-dependenci...",
+      "service": "R Shiny (Production)"
+    },
+    {
+      "url": "https://sofiadonario.github.io/monitor-legislativo-v4/",
+      "status": "healthy",
+      "response_time": 467.28,
+      "error": null,
+      "status_code": 200,
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/monitor-legislativo-v4/map-icon.svg\" />\n    <meta name=\"viewport\" content=\"width...",
+      "service": "Frontend (GitHub Pages)"
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "healthy": 2,
+    "failed": 2,
+    "backend_healthy": false,
+    "rshiny_healthy": true,
+    "frontend_healthy": true
+  }
+}

@@ -1,0 +1,213 @@
+# PRODUCTION REQUIREMENTS - ULTRA-BUDGET ACADEMIC DEPLOYMENT
+# Total deployment cost: $7-16/month
+# Optimized for Railway ($7/month) + Free tiers (Supabase, Upstash, GitHub Pages)
+
+# =============================================================================
+# CORE WEB FRAMEWORK - REQUIRED FOR BASIC FUNCTIONALITY
+# =============================================================================
+
+# FastAPI - Modern Python web framework for async APIs
+fastapi==0.104.1
+
+# Uvicorn - ASGI server (preferred for FastAPI async support)
+uvicorn[standard]==0.24.0
+
+# SSE Starlette - Server-Sent Events support for FastAPI
+# WHY: Required for real-time notification streaming
+sse-starlette==1.8.2
+
+# NOTE: Removed gunicorn - Railway kept trying to use it
+# Using uvicorn directly for simpler deployment
+
+# Python Multipart - Handle file uploads and form data
+# WHY: Required for export functionality and form handling
+python-multipart==0.0.6
+
+# =============================================================================
+# CACHING SYSTEM - MAKES YOUR APP 70% FASTER
+# =============================================================================
+
+# Redis - Main cache store (connects to Upstash FREE Redis)
+# WHY: Stores search results, API responses, makes app super fast
+# VERSION: 5.0.x works perfectly with Upstash cloud Redis
+redis==5.0.1
+
+# Async Redis - For async/await performance
+# WHY: Allows multiple requests at same time without blocking
+# VERSION: Must match Redis version compatibility
+aioredis==2.0.1
+
+# =============================================================================
+# DATABASE - STORES YOUR DATA
+# =============================================================================
+
+# AsyncPG - PostgreSQL driver for Supabase (updated version)
+# WHY: Connects to your FREE Supabase database
+# VERSION: 0.29.x for better compatibility 
+# NOTE: This is the primary version used for processed documents API
+
+# Psycopg - Alternative async PostgreSQL driver (FALLBACK)
+# WHY: Backup driver if asyncpg has authentication issues with Supabase
+# VERSION: Async version compatible with SQLAlchemy async
+psycopg[binary]==3.1.12
+
+# SQLAlchemy - Database ORM (Object-Relational Mapping)
+# WHY: Makes database queries easier and safer
+# VERSION: 2.0.x with async support for modern Python
+sqlalchemy[asyncio]==2.0.23
+
+# =============================================================================
+# HTTP REQUESTS - TALKS TO GOVERNMENT APIS + LEXML BRASIL
+# =============================================================================
+
+# HTTPX - Modern async HTTP client for LexML Brasil API
+# WHY: Better async performance than aiohttp, perfect for LexML SRU protocol
+# VERSION: 0.25.x supports HTTP/2 and has excellent async support
+httpx==0.25.2
+
+# AIOHTTP - Async HTTP client for API calls
+# WHY: Calls Câmara, Senado, regulatory agencies + LexML Brasil official SRU protocol
+# VERSION: 3.9.x is stable and Railway-compatible
+# CRITICAL: Required for LexML Brasil integration and SKOS vocabulary loading
+aiohttp==3.9.5
+
+# Requests - Backup HTTP client (simpler, slower)
+# WHY: Fallback for when aiohttp doesn't work
+# VERSION: Most stable version for government APIs
+requests==2.31.0
+
+# Beautiful Soup - HTML parsing for web scraping
+# WHY: Extracts data from government websites that don't have APIs
+# VERSION: 4.12.x handles Portuguese text encoding perfectly
+beautifulsoup4==4.12.3
+
+# LXML - Fast XML/HTML parser
+# WHY: Parses XML from Senado and other government sources
+# VERSION: 4.9.x is pre-compiled for Railway's Linux environment
+lxml==4.9.3
+
+# =============================================================================
+# CACHING - REDIS FOR MULTI-TIER PERFORMANCE
+# =============================================================================
+
+# Redis - High-performance in-memory cache
+# WHY: Caches LexML API responses for faster academic research
+# VERSION: 5.0.x supports async operations and connection pooling
+redis==5.0.1
+
+# Async Redis support for async/await patterns
+# WHY: Integrates with FastAPI's async architecture
+redis[hiredis]==5.0.1
+
+# =============================================================================
+# DATA PROCESSING - HANDLES SEARCH RESULTS
+# =============================================================================
+
+# Python DateUtil - Date parsing and formatting
+# WHY: Government APIs return dates in different formats
+# VERSION: 2.8.x handles Brazilian date formats
+python-dateutil==2.8.2
+
+# Pydantic - Data validation and parsing
+# WHY: Ensures data from government APIs is valid and safe
+# VERSION: 2.5.x works with FastAPI 0.104.x
+pydantic==2.5.2
+
+# TQDM - Progress bar for long-running operations
+# WHY: Visual feedback for data processing and academic exports
+# VERSION: 4.66.1 is stable and widely used
+tqdm==4.66.1
+
+# =============================================================================
+# EXPORT FUNCTIONALITY - CREATES FILES FOR DOWNLOAD
+# =============================================================================
+
+# OpenPyXL - Creates Excel files (.xlsx)
+# WHY: Academics love Excel files for data analysis
+# VERSION: 3.1.x creates files compatible with all Excel versions
+openpyxl==3.1.2
+
+# =============================================================================
+# CONFIGURATION - MANAGES SETTINGS
+# =============================================================================
+
+# Python DotEnv - Loads environment variables from .env files
+# WHY: Keeps your database passwords and API keys secure
+# VERSION: 1.0.x is stable for production use
+python-dotenv==1.0.0
+
+# PyYAML - Reads YAML configuration files
+# WHY: Configuration files are easier to read than JSON
+# VERSION: 6.0.x handles UTF-8 encoding for Portuguese text
+PyYAML==6.0.1
+
+# Setuptools - Build tool for package installation
+# WHY: Required for packages that use distutils, fixes build errors on Python 3.12+
+setuptools
+
+# =============================================================================
+# MONITORING - TRACKS PERFORMANCE
+# =============================================================================
+
+# Prometheus Client - Performance metrics
+# WHY: Track cache hit rates, response times, errors
+# VERSION: 0.19.x is lightweight and Railway-friendly
+prometheus-client==0.19.0
+
+# =============================================================================
+# SECURITY - KEEPS YOUR APP SAFE
+# =============================================================================
+
+# Cryptography - Encryption and security functions
+# WHY: Required for secure connections and password hashing
+# VERSION: 41.x has all security fixes and Railway compatibility
+cryptography==41.0.7
+
+# =============================================================================
+# SKOS VOCABULARY PROCESSING - LEXML BRASIL INTEGRATION
+# =============================================================================
+
+# XML ElementTree support (built into Python, but explicit import for SKOS)
+# WHY: Required for parsing SKOS RDF/XML vocabularies from LexML Brasil
+# NOTE: xml.etree.ElementTree is built-in, no external dependency needed
+
+# =============================================================================
+# PERFORMANCE OPTIMIZATION
+# =============================================================================
+
+# Orjson - Ultra-fast JSON parsing
+# WHY: 3x faster than standard JSON, important for large datasets
+# VERSION: Latest stable for production use
+orjson==3.9.10
+
+# =============================================================================
+# TWO-TIER ARCHITECTURE DEPENDENCIES
+# =============================================================================
+
+# Prefect - Workflow orchestration for automated collection
+# WHY: Reliable task scheduling, error handling, and monitoring
+# VERSION: 2.x with Python 3.11 support
+prefect==2.14.11
+
+# =============================================================================
+# GEOSPATIAL ANALYSIS - SPATIAL SEARCH FUNCTIONALITY
+# =============================================================================
+
+# GeoPy - Geocoding and distance calculations
+# WHY: Required for spatial analysis of legislative documents
+# VERSION: 2.x with stable coordinate system support
+geopy==2.4.1
+
+# =============================================================================
+# DATABASE AND DATA PROCESSING - SUPABASE INTEGRATION
+# =============================================================================
+
+# AsyncPG - Async PostgreSQL client for Supabase
+# WHY: Direct PostgreSQL connection to Supabase, more reliable than supabase-py
+# VERSION: Latest stable for async operations
+asyncpg==0.29.0
+
+# Pandas - Data manipulation and analysis
+# WHY: Required for processing CSV data and data transformations
+# VERSION: 2.x with Python 3.11 support
+pandas==2.1.4
