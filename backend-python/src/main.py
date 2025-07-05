@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
@@ -555,6 +556,48 @@ async def debug_csv_status():
             debug_info["read_error"] = str(e)
     
     return debug_info
+
+@app.get("/lexml_transport_results_20250606_123100.csv", tags=["Static"])
+async def serve_csv_as_file():
+    """Serve CSV file as static content to bypass frontend caching issues"""
+    from pathlib import Path
+    
+    # Path to the CSV file
+    csv_path = Path(__file__).resolve().parent / "data" / "processed" / "lexml_parsed_enhanced.csv"
+    
+    if not csv_path.exists():
+        # Try alternative paths
+        alt_paths = [
+            Path("/app/backend-python/src/data/processed/lexml_parsed_enhanced.csv"),
+            Path("/app/data/processed/lexml_parsed_enhanced.csv"),
+            Path("./data/processed/lexml_parsed_enhanced.csv"),
+            Path("./src/data/processed/lexml_parsed_enhanced.csv"),
+        ]
+        
+        for alt_path in alt_paths:
+            if alt_path.exists():
+                csv_path = alt_path
+                break
+        else:
+            raise HTTPException(status_code=404, detail="CSV file not found")
+    
+    try:
+        # Read and return the raw CSV content
+        with open(csv_path, 'r', encoding='utf-8-sig') as f:
+            content = f.read()
+        
+        return Response(
+            content=content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": "inline; filename=lexml_transport_results_20250606_123100.csv",
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading CSV file: {str(e)}")
 
 @app.get("/api/v1/csv/documents", tags=["Data"])
 async def get_csv_documents():

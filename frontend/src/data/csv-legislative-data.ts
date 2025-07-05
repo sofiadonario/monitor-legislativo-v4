@@ -322,11 +322,12 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
     console.warn('❌ Backend API failed, trying static CSV file:', apiError);
   }
 
-  // Fallback to static CSV file 
+  // Fallback to backend-served CSV file 
   try {
-    const basePath = import.meta.env.VITE_BASE_PATH || import.meta.env.BASE_URL || '';
-    const CSV_URL = `${basePath}/lexml_transport_results_20250606_123100.csv`;
-    console.log(`Fetching real CSV data from static file: ${CSV_URL}`);
+    // Try backend-served CSV as static file
+    const backendUrl = 'https://backend-api-production-2392.up.railway.app';
+    const CSV_URL = `${backendUrl}/lexml_transport_results_20250606_123100.csv`;
+    console.log(`🔄 Trying backend-served CSV file: ${CSV_URL}`);
 
     const response = await fetch(CSV_URL);
     if (!response.ok) {
