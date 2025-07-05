@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
@@ -555,6 +555,62 @@ async def debug_csv_status():
             debug_info["read_error"] = str(e)
     
     return debug_info
+
+@app.get("/api/v1/csv/documents", tags=["Data"])
+async def get_csv_documents():
+    """Serve CSV legislative documents as JSON for frontend"""
+    from pathlib import Path
+    import csv
+    import json
+    
+    # Path to the CSV file 
+    csv_path = Path(__file__).resolve().parent / "data" / "processed" / "lexml_parsed_enhanced.csv"
+    
+    if not csv_path.exists():
+        # Try alternative paths
+        alt_paths = [
+            Path("/app/backend-python/src/data/processed/lexml_parsed_enhanced.csv"),
+            Path("/app/data/processed/lexml_parsed_enhanced.csv"),
+            Path("./data/processed/lexml_parsed_enhanced.csv"),
+            Path("./src/data/processed/lexml_parsed_enhanced.csv"),
+        ]
+        
+        for alt_path in alt_paths:
+            if alt_path.exists():
+                csv_path = alt_path
+                break
+        else:
+            raise HTTPException(status_code=404, detail="CSV file not found")
+    
+    try:
+        documents = []
+        with open(csv_path, 'r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Convert CSV row to match frontend expected format
+                if row.get('urn'):  # Only include rows with URN
+                    documents.append({
+                        "id": row.get('urn', ''),
+                        "urn": row.get('urn', ''),
+                        "title": row.get('title', 'No Title'),
+                        "summary": f"Document retrieved on {row.get('date_searched', '')} for search term '{row.get('search_term', '')}'",
+                        "url": row.get('url', ''),
+                        "type": row.get('document_type_full', 'Unknown'),
+                        "date": row.get('promulgation_date', ''),
+                        "author": row.get('author', ''),
+                        "keywords": [],
+                        "source": "processed_csv"
+                    })
+        
+        return {
+            "status": "success",
+            "data": documents,
+            "count": len(documents),
+            "source": "CSV file"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading CSV file: {str(e)}")
 
 @app.get("/api/v1/health/database", tags=["Health"])
 async def database_diagnostic():

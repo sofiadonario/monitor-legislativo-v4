@@ -299,24 +299,37 @@ export function parseCSVData(csvContent: string): LegislativeDocument[] {
 
 // Load and parse the main CSV data file for transport legislation
 export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
-  // Handle GitHub Pages base path
-  const basePath = import.meta.env.VITE_BASE_PATH || import.meta.env.BASE_URL || '';
-  const CSV_URL = `${basePath}/lexml_transport_results_20250606_123100.csv`;
-  console.log(`Fetching real CSV data from: ${CSV_URL}`);
-
+  console.log('🔥 Loading real legislative data from backend API...');
+  
+  // Try to get data from backend API first
   try {
+    const { getApiBaseUrl } = await import('../config/api');
+    const baseUrl = getApiBaseUrl();
+    const API_URL = `${baseUrl}/api/v1/csv/documents`;
+    console.log(`Fetching real CSV data from backend API: ${API_URL}`);
+
+    const response = await fetch(API_URL);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.status === 'success' && data.data && Array.isArray(data.data)) {
+        console.log(`✅ Successfully loaded ${data.count} documents from backend API`);
+        return data.data as LegislativeDocument[];
+      }
+    }
+    console.warn(`Backend API not accessible (${response.status}), trying static CSV file`);
+  } catch (apiError) {
+    console.warn('Backend API failed, trying static CSV file:', apiError);
+  }
+
+  // Fallback to static CSV file 
+  try {
+    const basePath = import.meta.env.VITE_BASE_PATH || import.meta.env.BASE_URL || '';
+    const CSV_URL = `${basePath}/lexml_transport_results_20250606_123100.csv`;
+    console.log(`Fetching real CSV data from static file: ${CSV_URL}`);
+
     const response = await fetch(CSV_URL);
     if (!response.ok) {
-      console.warn(`CSV file not accessible (${response.status}), falling back to embedded real data`);
-      // Fallback to embedded real data (NOT mock data)
-      const { realLegislativeData, validateDataIntegrity } = await import('./real-legislative-data');
-      
-      if (!validateDataIntegrity()) {
-        throw new Error('Embedded real data failed integrity validation');
-      }
-      
-      console.log(`Using embedded real legislative data: ${realLegislativeData.length} documents from LexML`);
-      return realLegislativeData;
+      throw new Error(`CSV file not accessible (${response.status})`);
     }
     
     let csvContent = await response.text();
@@ -336,10 +349,10 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
     }
     console.log(`Successfully loaded ${parsedData.length} documents from CSV file`);
     return parsedData;
-  } catch (error) {
-    console.error('Error loading CSV legislative data:', error);
+  } catch (csvError) {
+    console.error('Error loading CSV legislative data:', csvError);
     
-    // Try embedded real data as final fallback
+    // Final fallback to embedded real data
     try {
       const { realLegislativeData, validateDataIntegrity } = await import('./real-legislative-data');
       
