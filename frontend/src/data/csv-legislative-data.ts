@@ -305,20 +305,21 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
   try {
     const { getApiBaseUrl } = await import('../config/api');
     const baseUrl = getApiBaseUrl();
-    const API_URL = `${baseUrl}/api/v1/csv/documents`;
-    console.log(`Fetching real CSV data from backend API: ${API_URL}`);
+    const timestamp = Date.now();
+    const API_URL = `${baseUrl}/api/v1/csv/documents?t=${timestamp}`;
+    console.log(`🚀 Fetching real CSV data from backend API: ${API_URL}`);
 
     const response = await fetch(API_URL);
     if (response.ok) {
       const data = await response.json();
       if (data.status === 'success' && data.data && Array.isArray(data.data)) {
-        console.log(`✅ Successfully loaded ${data.count} documents from backend API`);
+        console.log(`🎉 BACKEND API SUCCESS: Loaded ${data.count} documents from backend API (bypassing static file issues)`);
         return data.data as LegislativeDocument[];
       }
     }
-    console.warn(`Backend API not accessible (${response.status}), trying static CSV file`);
+    console.warn(`❌ Backend API not accessible (${response.status}), trying static CSV file`);
   } catch (apiError) {
-    console.warn('Backend API failed, trying static CSV file:', apiError);
+    console.warn('❌ Backend API failed, trying static CSV file:', apiError);
   }
 
   // Fallback to static CSV file 
