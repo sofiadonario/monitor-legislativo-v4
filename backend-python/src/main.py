@@ -512,6 +512,50 @@ async def health_check():
         "timestamp": datetime.utcnow().isoformat()
     }
 
+@app.get("/api/v1/debug/csv", tags=["Debug"])
+async def debug_csv_status():
+    """Debug endpoint to check CSV file status"""
+    from pathlib import Path
+    import os
+    
+    # Expected path from simple_search_service.py
+    csv_path = Path(__file__).resolve().parent / "data" / "processed" / "lexml_parsed_enhanced.csv"
+    
+    # Alternative paths to check
+    alt_paths = [
+        Path("/app/backend-python/src/data/processed/lexml_parsed_enhanced.csv"),
+        Path("/app/data/processed/lexml_parsed_enhanced.csv"),
+        Path("./data/processed/lexml_parsed_enhanced.csv"),
+        Path("./src/data/processed/lexml_parsed_enhanced.csv"),
+    ]
+    
+    debug_info = {
+        "current_dir": os.getcwd(),
+        "file_location": str(Path(__file__).resolve()),
+        "expected_csv_path": str(csv_path),
+        "csv_exists": csv_path.exists(),
+        "csv_size": csv_path.stat().st_size if csv_path.exists() else 0,
+        "alternative_paths": {}
+    }
+    
+    # Check alternative paths
+    for alt_path in alt_paths:
+        debug_info["alternative_paths"][str(alt_path)] = {
+            "exists": alt_path.exists(),
+            "size": alt_path.stat().st_size if alt_path.exists() else 0
+        }
+    
+    # Try to count rows if file exists
+    if csv_path.exists():
+        try:
+            with open(csv_path, 'r', encoding='utf-8-sig') as f:
+                row_count = sum(1 for line in f) - 1  # Subtract header
+            debug_info["row_count"] = row_count
+        except Exception as e:
+            debug_info["read_error"] = str(e)
+    
+    return debug_info
+
 @app.get("/api/v1/health/database", tags=["Health"])
 async def database_diagnostic():
     """Detailed database diagnostic endpoint for Railway debugging"""
