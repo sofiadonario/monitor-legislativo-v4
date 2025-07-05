@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
@@ -79,6 +79,25 @@ const Navigation: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  // Direct API test to bypass cached CSV loader
+  useEffect(() => {
+    const testBackendAPI = async () => {
+      try {
+        console.log('🔥 DIRECT API TEST: Testing backend connection...');
+        const response = await fetch('https://backend-api-production-2392.up.railway.app/api/v1/csv/documents?t=' + Date.now());
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`🎉 DIRECT API SUCCESS: Backend returned ${data.count} documents!`);
+        } else {
+          console.warn('❌ DIRECT API FAILED:', response.status);
+        }
+      } catch (error) {
+        console.warn('❌ DIRECT API ERROR:', error);
+      }
+    };
+    testBackendAPI();
+  }, []);
+
   return (
     <ErrorBoundary>
       <I18nProvider>

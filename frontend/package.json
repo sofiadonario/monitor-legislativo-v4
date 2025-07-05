@@ -1,6 +1,6 @@
 {
   "name": "academic-transport-legislation-monitor",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "Academic research platform for monitoring Brazilian transport legislation with real government data",
   "private": true,
   "dependencies": {
