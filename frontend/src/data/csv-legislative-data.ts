@@ -301,7 +301,7 @@ export function parseCSVData(csvContent: string): LegislativeDocument[] {
 export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
   // Handle GitHub Pages base path
   const basePath = import.meta.env.VITE_BASE_PATH || import.meta.env.BASE_URL || '';
-  const CSV_URL = `${basePath}lexml_transport_results_20250606_123100.csv`;
+  const CSV_URL = `${basePath}/lexml_transport_results_20250606_123100.csv`;
   console.log(`Fetching real CSV data from: ${CSV_URL}`);
 
   try {
