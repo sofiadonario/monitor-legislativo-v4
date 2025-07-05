@@ -189,11 +189,6 @@ orjson==3.9.10
 # VERSION: 2.x with Python 3.11 support
 prefect==2.14.11
 
-# Pendulum - Python datetimes made easy (Prefect dependency)
-# WHY: Required by Prefect, needs specific version for Python 3.12
-# VERSION: 3.x supports Python 3.12 without distutils issues
-pendulum>=3.0.0
-
 # =============================================================================
 # GEOSPATIAL ANALYSIS - SPATIAL SEARCH FUNCTIONALITY
 # =============================================================================

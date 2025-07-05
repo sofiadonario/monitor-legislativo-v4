@@ -2,10 +2,13 @@
 
 providers = ["python"]
 
+[phases.setup]
+nixPkgs = ["python311", "gcc"]
+
 # Define the installation phase
 [phases.install]
 cmds = [
-  "cd backend-python && python -m venv --copies /opt/venv && . /opt/venv/bin/activate && pip install --upgrade pip setuptools wheel && pip install -r requirements.txt"
+  "cd backend-python && python3.11 -m venv --copies /opt/venv && . /opt/venv/bin/activate && pip install --upgrade pip setuptools wheel && pip install -r requirements.txt"
 ]
 
 # Set environment and start command
