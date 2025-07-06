@@ -95,7 +95,8 @@
       "Bash(./deploy_to_railway.sh)",
       "Bash(unset DATABASE_URL)",
       "Bash(source:*)",
-      "Bash(npm test -- geographic.test.ts)"
+      "Bash(npm test -- geographic.test.ts)",
+      "Bash(git check-ignore:*)"
     ]
   },
   "enableAllProjectMcpServers": false

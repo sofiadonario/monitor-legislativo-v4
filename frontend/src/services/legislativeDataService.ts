@@ -31,6 +31,15 @@ export class LegislativeDataService {
     }
     return LegislativeDataService.instance;
   }
+
+  // Clear cache to force fresh data loading
+  async clearCache(): Promise<void> {
+    console.log('🗑️ Clearing legislative data cache');
+    this.csvDataCache = null;
+    this.requestCache.clear();
+    // Clear multiLayer cache for document-related keys
+    await multiLayerCache.clear();
+  }
   
   
   private async getLocalCsvData(): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
@@ -75,10 +84,9 @@ export class LegislativeDataService {
   }
   
   async fetchDocuments(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
-    // Generate cache key from filters - add timestamp to force cache bypass
+    // Generate cache key from filters
     const filterKey = JSON.stringify(filters || {});
-    const cacheBuster = Date.now(); // TEMP: Force fresh requests
-    const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENTS}_${filterKey}_${cacheBuster}`;
+    const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENTS}_${filterKey}`;
     
     // Check multi-layer cache first
     const cachedResult = await multiLayerCache.get<{ documents: LegislativeDocument[], usingFallback: boolean }>(

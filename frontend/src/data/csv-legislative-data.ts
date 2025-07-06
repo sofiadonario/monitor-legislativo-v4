@@ -1,15 +1,67 @@
 import { LegislativeDocument } from '../types';
 
-// CSV row interface
+// CSV row interface - Updated to match enhanced CSV with 15 columns
 interface CSVRow {
-  search_term: string;
-  date_searched: string;
-  url: string;
-  title: string;
-  urn: string;
+  search_term: string;           // Column 1
+  date_searched: string;         // Column 2
+  url: string;                   // Column 3
+  title: string;                 // Column 4
+  urn: string;                   // Column 5
+  urn_type: string;              // Column 6
+  country: string;               // Column 7
+  state: string;                 // Column 8 - Direct state info
+  municipality: string;          // Column 9 - Direct municipality info
+  justice: string;               // Column 10
+  region: string;                // Column 11
+  court_class: string;           // Column 12 - For chamber categorization
+  document_type_full: string;    // Column 13 - Full document type
+  promulgation_date: string;     // Column 14 - Actual document date
+  document_description: string;  // Column 15
 }
 
-// Parse URN to extract metadata
+// Map document_type_full to DocumentType enum
+function mapDocumentType(documentTypeFull: string): string {
+  const type = documentTypeFull.toLowerCase();
+  
+  if (type.includes('lei')) return 'lei';
+  if (type.includes('decreto')) return 'decreto';
+  if (type.includes('medida provisória') || type.includes('mpv')) return 'medida_provisoria';
+  if (type.includes('emenda')) return 'emenda_constitucional';
+  if (type.includes('portaria')) return 'portaria';
+  if (type.includes('projeto de lei') || type.includes('pl')) return 'projeto_lei';
+  if (type.includes('resolução')) return 'resolucao';
+  if (type.includes('instrução normativa')) return 'instrucao_normativa';
+  
+  // Default fallback
+  return 'lei';
+}
+
+// Map court_class to chamber
+function mapChamber(courtClass: string): string {
+  const chamber = courtClass.toLowerCase();
+  
+  if (chamber.includes('federal')) return 'Federal';
+  if (chamber.includes('estadual')) return 'Estadual';
+  if (chamber.includes('municipal')) return 'Municipal';
+  if (chamber.includes('senado')) return 'Senado';
+  if (chamber.includes('câmara') || chamber.includes('camara')) return 'Câmara dos Deputados';
+  
+  return 'Federal'; // Default
+}
+
+// Extract document number from URN
+function extractNumberFromURN(urn: string): string | undefined {
+  const parts = urn.split(';');
+  if (parts.length > 1) {
+    const lastPart = parts[parts.length - 1];
+    // Extract number from patterns like "60491" or "2014-05-26;60491"
+    const numberMatch = lastPart.match(/(\d+)$/);
+    return numberMatch ? numberMatch[1] : undefined;
+  }
+  return undefined;
+}
+
+// Parse URN to extract metadata (DEPRECATED - now using direct CSV fields)
 function parseURN(urn: string): {
   state?: string;
   municipality?: string;
@@ -262,7 +314,17 @@ export function parseCSVData(csvContent: string): LegislativeDocument[] {
       date_searched: values[1] || '',
       url: values[2] || '',
       title: values[3] || 'No Title Provided',
-      urn: values[4] || ''
+      urn: values[4] || '',
+      urn_type: values[5] || '',
+      country: values[6] || '',
+      state: values[7] || '',
+      municipality: values[8] || '',
+      justice: values[9] || '',
+      region: values[10] || '',
+      court_class: values[11] || '',
+      document_type_full: values[12] || '',
+      promulgation_date: values[13] || '',
+      document_description: values[14] || ''
     };
 
     if (!row.urn) {
@@ -270,26 +332,46 @@ export function parseCSVData(csvContent: string): LegislativeDocument[] {
       continue;
     }
 
-    const { state, municipality, type, number, date, chamber } = parseURN(row.urn);
+    // Use direct CSV fields instead of URN parsing
+    const documentType = mapDocumentType(row.document_type_full);
+    const chamber = mapChamber(row.court_class);
     
-    // More robust date handling
-    const docDate = date || new Date(); // Fallback to current date if parsing fails
+    // Parse promulgation_date or fall back to URN parsing date
+    let docDate: Date;
+    if (row.promulgation_date) {
+      docDate = new Date(row.promulgation_date);
+      if (isNaN(docDate.getTime())) {
+        // If promulgation_date is invalid, try URN parsing
+        const { date } = parseURN(row.urn);
+        docDate = date || new Date();
+      }
+    } else {
+      const { date } = parseURN(row.urn);
+      docDate = date || new Date();
+    }
 
     documents.push({
       id: row.urn,
       title: row.title,
-      summary: `Document retrieved on ${row.date_searched} for search term "${row.search_term}".`,
-      type: type || 'lei',
+      summary: row.document_description || `Document retrieved on ${row.date_searched} for search term "${row.search_term}".`,
+      type: documentType,
       date: docDate.toISOString(),
       keywords: generateKeywords(row.search_term, row.title),
-      state: state || 'Federal',
-      municipality: municipality,
+      state: row.state || 'Federal',
+      municipality: row.municipality || undefined,
       url: row.url,
       status: 'sancionado',
-      chamber: chamber || 'Unknown',
-      number: number,
+      chamber: chamber,
+      number: extractNumberFromURN(row.urn),
       source: 'LexML',
-      citation: generateCitation({ title: row.title, url: row.url, date: docDate, state, type, number }, row.urn)
+      citation: generateCitation({ 
+        title: row.title, 
+        url: row.url, 
+        date: docDate, 
+        state: row.state, 
+        type: documentType, 
+        number: extractNumberFromURN(row.urn) 
+      }, row.urn)
     });
   }
 
