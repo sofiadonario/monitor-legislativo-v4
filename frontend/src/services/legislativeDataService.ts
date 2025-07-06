@@ -201,6 +201,8 @@ export class LegislativeDataService {
             if (data.data && Array.isArray(data.data)) {
               // New API structure: {status, data, count, source}
               documents = data.data;
+              console.log(`🔍 Sample document structure:`, documents[0] ? Object.keys(documents[0]) : 'no documents');
+              console.log(`🔍 Sample document:`, documents[0]);
             } else if (data.documents && Array.isArray(data.documents)) {
               documents = data.documents;
             } else if (data.results && Array.isArray(data.results)) {
