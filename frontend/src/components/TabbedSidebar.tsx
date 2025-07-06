@@ -29,6 +29,10 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('search');
 
 
+  console.log('🔍 TabbedSidebar DEBUG - Raw documents:', documents.length);
+  console.log('🔍 TabbedSidebar DEBUG - Filters:', filters);
+  console.log('🔍 TabbedSidebar DEBUG - SelectedState:', selectedState);
+  
   const filteredDocuments = documents.filter(doc => {
     if (filters.searchTerm && 
         !doc.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) &&
@@ -61,6 +65,8 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
     
     return true;
   });
+  
+  console.log('🔍 TabbedSidebar DEBUG - Filtered documents:', filteredDocuments.length);
 
   return (
     <aside 
