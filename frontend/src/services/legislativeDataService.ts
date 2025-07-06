@@ -163,11 +163,9 @@ export class LegislativeDataService {
           console.log(`🔍 Trying endpoint: ${endpoint}`);
           const url = `${baseUrl}${endpoint}`;
           
-          // CRITICAL FIX: Add a default query parameter
-          let params = filters?.searchTerm ? `?query=${encodeURIComponent(filters.searchTerm)}` : '';
-          if (!params) {
-            params = `?query=transporte`;
-          }
+          // Use cache-busting like Direct API Test
+          const params = `?t=${Date.now()}`;
+          console.log(`🔍 Full URL: ${url}${params}`);
           
           const response = await fetch(`${url}${params}`, {
             method: 'GET',
@@ -181,7 +179,8 @@ export class LegislativeDataService {
           
           if (response.ok) {
             const data = await response.json();
-            console.log(`✅ Endpoint ${endpoint} responded:`, data);
+            console.log(`✅ Endpoint ${endpoint} responded with:`, typeof data, data?.count || data?.length || 'unknown count');
+            console.log(`✅ Response structure:`, Object.keys(data || {}));
             
             // Try to extract documents from various response formats
             let documents: LegislativeDocument[] = [];
@@ -223,6 +222,7 @@ export class LegislativeDataService {
           }
         } catch (endpointError) {
           console.warn(`❌ Endpoint ${endpoint} failed:`, endpointError);
+          console.warn(`❌ Full URL was: ${url}${params}`);
           continue;
         }
       }
