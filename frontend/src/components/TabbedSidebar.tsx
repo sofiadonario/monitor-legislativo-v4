@@ -33,6 +33,17 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
   console.log('🔍 TabbedSidebar DEBUG - Filters:', filters);
   console.log('🔍 TabbedSidebar DEBUG - SelectedState:', selectedState);
   
+  // Debug document structure
+  if (documents.length > 0) {
+    console.log('🔍 TabbedSidebar DEBUG - Sample document structure:', Object.keys(documents[0]));
+    console.log('🔍 TabbedSidebar DEBUG - Sample document values:', {
+      type: documents[0].type,
+      state: documents[0].state,
+      chamber: documents[0].chamber,
+      municipality: documents[0].municipality
+    });
+  }
+  
   const filteredDocuments = documents.filter(doc => {
     if (filters.searchTerm && 
         !doc.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) &&
