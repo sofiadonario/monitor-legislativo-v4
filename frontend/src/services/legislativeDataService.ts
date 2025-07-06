@@ -75,9 +75,10 @@ export class LegislativeDataService {
   }
   
   async fetchDocuments(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
-    // Generate cache key from filters
+    // Generate cache key from filters - add timestamp to force cache bypass
     const filterKey = JSON.stringify(filters || {});
-    const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENTS}_${filterKey}`;
+    const cacheBuster = Date.now(); // TEMP: Force fresh requests
+    const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENTS}_${filterKey}_${cacheBuster}`;
     
     // Check multi-layer cache first
     const cachedResult = await multiLayerCache.get<{ documents: LegislativeDocument[], usingFallback: boolean }>(
