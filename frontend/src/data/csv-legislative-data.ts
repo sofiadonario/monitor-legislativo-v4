@@ -356,14 +356,19 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
     
     // Final fallback to embedded real data
     try {
-      const { realLegislativeData, validateDataIntegrity } = await import('./real-legislative-data');
+      const { fullLegislativeData } = await import('./fullLegislativeData');
       
-      if (!validateDataIntegrity()) {
-        throw new Error('Embedded real data failed integrity validation');
-      }
+      // Convert to LegislativeDocument format if needed
+      const documents = fullLegislativeData.map((doc: any) => ({
+        search_term: doc.search_term,
+        date_searched: doc.date_searched,
+        url: doc.url,
+        title: doc.title,
+        urn: doc.urn
+      }));
       
-      console.log(`Fallback: Using embedded real legislative data: ${realLegislativeData.length} documents from LexML`);
-      return realLegislativeData;
+      console.log(`Fallback: Using embedded full legislative data: ${documents.length} documents from LexML`);
+      return documents;
     } catch (fallbackError) {
       console.error('Even embedded real data failed to load:', fallbackError);
       throw new Error(`Unable to load any real legislative data source. Please check data availability.`);
