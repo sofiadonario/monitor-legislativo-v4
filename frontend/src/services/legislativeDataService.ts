@@ -188,7 +188,10 @@ export class LegislativeDataService {
             // Try to extract documents from various response formats
             let documents: LegislativeDocument[] = [];
             
-            if (data.documents && Array.isArray(data.documents)) {
+            if (data.data && Array.isArray(data.data)) {
+              // New API structure: {status, data, count, source}
+              documents = data.data;
+            } else if (data.documents && Array.isArray(data.documents)) {
               documents = data.documents;
             } else if (data.results && Array.isArray(data.results)) {
               documents = data.results;
