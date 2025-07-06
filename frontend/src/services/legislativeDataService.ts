@@ -155,7 +155,7 @@ export class LegislativeDataService {
       const baseUrl = getApiBaseUrl();
       
       const endpoints = [
-        '/lexml/search', // CORRECTED: This is the true root path for the search
+        '/api/v1/csv/documents', // Use same endpoint as Direct API Test (889 documents)
       ];
       
       for (const endpoint of endpoints) {
