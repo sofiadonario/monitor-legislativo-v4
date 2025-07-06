@@ -6,6 +6,7 @@ import { multiLayerCache } from './multiLayerCache';
 
 // Check environment variables for data source configuration
 const forceCSVOnly = import.meta.env.VITE_FORCE_CSV_ONLY === 'true';
+console.log('🔍 forceCSVOnly flag:', forceCSVOnly, 'VITE_FORCE_CSV_ONLY:', import.meta.env.VITE_FORCE_CSV_ONLY);
 
 export class LegislativeDataService {
   private static instance: LegislativeDataService;
@@ -118,8 +119,9 @@ export class LegislativeDataService {
   }
 
   private async _performFetch(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
+    console.log('🔍 _performFetch called, forceCSVOnly:', forceCSVOnly);
     if (forceCSVOnly) {
-      console.log('Force CSV-only mode. Using real CSV data exclusively.');
+      console.log('🔍 Force CSV-only mode. Using real CSV data exclusively.');
       try {
         const localData = await this.getLocalCsvData();
         return { documents: this.filterLocalData(localData.documents, filters), usingFallback: localData.usingFallback };
