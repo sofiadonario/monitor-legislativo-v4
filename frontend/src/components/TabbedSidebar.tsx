@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SearchFilters, LegislativeDocument } from '../types';
 import { DataVisualization } from './DataVisualization';
 import { EnhancedSearch } from './EnhancedSearch';
+import { DataDiagnostics } from './DataDiagnostics';
 import { MagnifyingGlass, ChartBar, Flask, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import '../styles/components/TabbedSidebar.css';
 import { formatDateForDisplay } from '../utils/dateParser';

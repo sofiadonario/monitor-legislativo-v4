@@ -211,7 +211,7 @@ function normalizeStateName(stateCode: string): string {
     'tocantins': 'TO',
     'mato.grosso': 'MT',
     'mato.grosso.sul': 'MS',
-    'piauí': 'PI'
+    'piaui': 'PI'
   };
   
   return stateMap[stateCode] || stateCode.toUpperCase();

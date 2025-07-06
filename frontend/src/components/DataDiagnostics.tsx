@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { LegislativeDocument } from '../types';
 import { countDocumentsByState, getMissingStates, BRAZILIAN_STATES } from '../utils/stateValidator';
 import { getYearFromDate } from '../utils/dateParser';
-import './DataDiagnostics.css';
+import '../styles/components/DataDiagnostics.css';
 
 interface DataDiagnosticsProps {
   documents: LegislativeDocument[];
