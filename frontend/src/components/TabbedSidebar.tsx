@@ -4,6 +4,7 @@ import { DataVisualization } from './DataVisualization';
 import { EnhancedSearch } from './EnhancedSearch';
 import { MagnifyingGlass, ChartBar, Flask, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import '../styles/components/TabbedSidebar.css';
+import { formatDateForDisplay } from '../utils/dateParser';
 
 interface TabbedSidebarProps {
   isOpen: boolean;
@@ -15,7 +16,7 @@ interface TabbedSidebarProps {
   onClearSelection: () => void;
 }
 
-type TabType = 'search' | 'analytics' | 'rshiny';
+type TabType = 'search' | 'analytics' | 'diagnostics' | 'rshiny';
 
 export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
   isOpen,
@@ -26,7 +27,7 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
   selectedState,
   onClearSelection
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('search');
+  const [activeTab, setActiveTab] = useState<TabType>('diagnostics');
 
 
   console.log('🔍 TabbedSidebar DEBUG - Raw documents:', documents.length);
@@ -115,6 +116,13 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
               <ChartBar size={16} weight="fill" /> Analytics
             </button>
             <button
+              className={`tab-button ${activeTab === 'diagnostics' ? 'active' : ''}`}
+              onClick={() => setActiveTab('diagnostics')}
+              aria-selected={activeTab === 'diagnostics'}
+            >
+              <Flask size={16} weight="fill" /> Diagnostics
+            </button>
+            <button
               className={`tab-button ${activeTab === 'rshiny' ? 'active' : ''}`}
               onClick={() => setActiveTab('rshiny')}
               aria-selected={activeTab === 'rshiny'}
@@ -150,7 +158,7 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
                         <p className="document-chamber">Origem: {doc.chamber}</p>
                       )}
                       <p className="document-date">
-                        {typeof doc.date === 'string' ? new Date(doc.date).toLocaleDateString() : doc.date.toLocaleDateString()}
+                        {formatDateForDisplay(doc.date)}
                       </p>
                       {doc.state && (
                         <p className="document-location">Estado: {doc.state}</p>
@@ -164,6 +172,12 @@ export const TabbedSidebar: React.FC<TabbedSidebarProps> = ({
             {activeTab === 'analytics' && (
               <div className="analytics-tab">
                 <DataVisualization documents={filteredDocuments} />
+              </div>
+            )}
+
+            {activeTab === 'diagnostics' && (
+              <div className="diagnostics-tab">
+                <DataDiagnostics documents={documents} />
               </div>
             )}
 

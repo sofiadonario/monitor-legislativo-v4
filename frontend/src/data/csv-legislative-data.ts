@@ -1,4 +1,6 @@
 import { LegislativeDocument } from '../types';
+import { parseBrazilianDate } from '../utils/dateParser';
+import { normalizeStateName } from '../utils/stateValidator';
 
 // CSV row interface - Updated to match enhanced CSV with 15 columns
 interface CSVRow {
@@ -366,17 +368,27 @@ export function parseCSVData(csvContent: string): LegislativeDocument[] {
     const chamber = mapChamber(row.court_class);
     
     // Parse promulgation_date or fall back to URN parsing date
-    let docDate: Date;
+    let docDate: Date | null = null;
+    
+    // Try parsing promulgation_date first
     if (row.promulgation_date) {
-      docDate = new Date(row.promulgation_date);
-      if (isNaN(docDate.getTime())) {
-        // If promulgation_date is invalid, try URN parsing
-        const { date } = parseURN(row.urn);
-        docDate = date || new Date();
+      docDate = parseBrazilianDate(row.promulgation_date);
+      if (!docDate) {
+        console.warn(`Failed to parse promulgation_date for row ${i + 1}: "${row.promulgation_date}"`);
       }
-    } else {
+    }
+    
+    // If no valid date from promulgation_date, try URN
+    if (!docDate) {
       const { date } = parseURN(row.urn);
-      docDate = date || new Date();
+      docDate = date || null;
+    }
+    
+    // If still no date, log warning but continue (don't use current date as fallback)
+    if (!docDate) {
+      console.warn(`No valid date found for document: ${row.title} (URN: ${row.urn})`);
+      // Use a placeholder date far in the past to indicate missing data
+      docDate = new Date('1900-01-01');
     }
 
     documents.push({
@@ -386,7 +398,7 @@ export function parseCSVData(csvContent: string): LegislativeDocument[] {
       type: documentType,
       date: docDate.toISOString(),
       keywords: generateKeywords(row.search_term, row.title),
-      state: row.state || 'Federal',
+      state: normalizeStateName(row.state) || 'Federal',
       municipality: row.municipality || undefined,
       url: row.url,
       status: 'sancionado',

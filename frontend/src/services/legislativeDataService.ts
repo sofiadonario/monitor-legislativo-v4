@@ -3,6 +3,8 @@ import { LegislativeDocument, SearchFilters, DocumentType, DocumentStatus, Colle
 import apiClient from './apiClient';
 import { getApiBaseUrl } from '../config/api';
 import { multiLayerCache } from './multiLayerCache';
+import { normalizeStateName } from '../utils/stateValidator';
+import { parseBrazilianDate } from '../utils/dateParser';
 
 // Check environment variables for data source configuration
 const forceCSVOnly = import.meta.env.VITE_FORCE_CSV_ONLY === 'true';
@@ -460,14 +462,23 @@ export class LegislativeDataService {
         documentType = this.normalizeAPIDocumentType(doc.type);
       }
       
+      // Parse date properly
+      let docDate: Date | null = null;
+      if (doc.date) {
+        docDate = parseBrazilianDate(doc.date);
+      }
+      if (!docDate) {
+        docDate = new Date('1900-01-01'); // Placeholder for missing date
+      }
+
       return {
         id: doc.id || doc.urn || `doc_${Date.now()}_${Math.random()}`,
         title: doc.title || 'Documento sem título',
         summary: doc.summary || `Documento extraído da API: ${doc.title || 'Sem título'}`,
         type: documentType,
-        date: doc.date || new Date().toISOString(),
+        date: docDate.toISOString(),
         keywords: keywords,
-        state: state,
+        state: normalizeStateName(state) || 'Federal',
         municipality: municipality,
         url: doc.url || '',
         status: doc.status || 'sancionado',
