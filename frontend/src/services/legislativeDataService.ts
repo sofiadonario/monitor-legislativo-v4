@@ -203,6 +203,9 @@ export class LegislativeDataService {
               documents = data.data;
               console.log(`🔍 Sample document structure:`, documents[0] ? Object.keys(documents[0]) : 'no documents');
               console.log(`🔍 Sample document:`, documents[0]);
+              
+              // Transform API documents to proper LegislativeDocument format if needed
+              documents = this.transformAPIDocuments(documents);
             } else if (data.documents && Array.isArray(data.documents)) {
               documents = data.documents;
             } else if (data.results && Array.isArray(data.results)) {
@@ -420,6 +423,214 @@ export class LegislativeDataService {
       source: prop.source,
       citation: prop.citation
     };
+  }
+
+  private transformAPIDocuments(rawDocuments: any[]): LegislativeDocument[] {
+    console.log('🔄 Transforming API documents to proper format');
+    
+    return rawDocuments.map((doc: any) => {
+      // If document already has proper format, return as-is
+      if (doc.state && doc.chamber && doc.keywords && Array.isArray(doc.keywords)) {
+        return doc as LegislativeDocument;
+      }
+      
+      // Parse URN if available to extract metadata
+      let state = 'Federal';
+      let chamber = 'Federal';
+      let municipality: string | undefined;
+      let documentType: DocumentType = 'lei';
+      let keywords: string[] = [];
+      
+      if (doc.urn) {
+        const parsed = this.parseURNForAPI(doc.urn);
+        state = parsed.state || 'Federal';
+        chamber = parsed.chamber || 'Federal';
+        municipality = parsed.municipality;
+        documentType = parsed.type as DocumentType;
+      }
+      
+      // Extract keywords from title and existing type
+      if (doc.title) {
+        keywords = this.generateKeywordsFromTitle(doc.title);
+      }
+      
+      // Normalize document type from various formats
+      if (doc.type) {
+        documentType = this.normalizeAPIDocumentType(doc.type);
+      }
+      
+      return {
+        id: doc.id || doc.urn || `doc_${Date.now()}_${Math.random()}`,
+        title: doc.title || 'Documento sem título',
+        summary: doc.summary || `Documento extraído da API: ${doc.title || 'Sem título'}`,
+        type: documentType,
+        date: doc.date || new Date().toISOString(),
+        keywords: keywords,
+        state: state,
+        municipality: municipality,
+        url: doc.url || '',
+        status: doc.status || 'sancionado',
+        author: doc.author || '',
+        chamber: chamber,
+        number: doc.number,
+        source: doc.source || 'API',
+        citation: doc.citation || ''
+      } as LegislativeDocument;
+    });
+  }
+
+  private parseURNForAPI(urn: string): { state?: string; municipality?: string; type: string; chamber?: string; } {
+    // Use same logic as CSV parsing
+    const parts = urn.split(':');
+    
+    let state: string | undefined;
+    let municipality: string | undefined;
+    let type = 'lei';
+    let chamber: string | undefined;
+    
+    if (parts.length < 4) {
+      return { state, municipality, type, chamber };
+    }
+    
+    // Handle federal format: urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833
+    if (parts[2] === 'br' && parts[3].includes('congresso.nacional')) {
+      state = 'Federal';
+      chamber = 'Congresso Nacional';
+      
+      if (parts.length > 4) {
+        const typePart = parts[4];
+        if (typePart.includes('medida.provisoria')) {
+          type = 'medida_provisoria';
+        } else if (typePart.includes('decreto')) {
+          type = 'decreto';
+        } else if (typePart.includes('lei')) {
+          type = 'lei';
+        }
+      }
+    }
+    // Handle state/municipal format: urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491
+    else if (parts[2].includes(';')) {
+      const locationPart = parts[2];
+      const locationSegments = locationPart.split(';');
+      
+      if (locationSegments.length > 1) {
+        const stateCode = locationSegments[1];
+        state = this.normalizeStateNameForAPI(stateCode);
+        
+        if (locationSegments.length > 2) {
+          municipality = this.normalizeMunicipalityNameForAPI(locationSegments[2]);
+        }
+      }
+      
+      if (parts.length > 3) {
+        const chamberPart = parts[3];
+        if (chamberPart === 'estadual') {
+          chamber = 'Governo Estadual';
+        } else if (chamberPart === 'municipal') {
+          chamber = 'Governo Municipal';
+        } else if (chamberPart === 'federal') {
+          chamber = 'Governo Federal';
+        }
+      }
+      
+      if (parts.length > 4) {
+        const typePart = parts[4];
+        if (typePart.includes('decreto')) {
+          type = 'decreto';
+        } else if (typePart.includes('lei')) {
+          type = 'lei';
+        } else if (typePart.includes('portaria')) {
+          type = 'portaria';
+        } else if (typePart.includes('resolucao')) {
+          type = 'resolucao';
+        }
+      }
+    }
+    
+    return { state, municipality, type, chamber };
+  }
+
+  private normalizeStateNameForAPI(stateCode: string): string {
+    const stateMap: Record<string, string> = {
+      'sao.paulo': 'SP',
+      'minas.gerais': 'MG',
+      'rio.de.janeiro': 'RJ',
+      'rio.grande.sul': 'RS',
+      'parana': 'PR',
+      'bahia': 'BA',
+      'distrito.federal': 'DF',
+      'espirito.santo': 'ES',
+      'goias': 'GO',
+      'santa.catarina': 'SC',
+      'ceara': 'CE',
+      'pernambuco': 'PE',
+      'para': 'PA',
+      'maranhao': 'MA',
+      'paraiba': 'PB',
+      'alagoas': 'AL',
+      'sergipe': 'SE',
+      'rondonia': 'RO',
+      'acre': 'AC',
+      'amazonas': 'AM',
+      'roraima': 'RR',
+      'amapa': 'AP',
+      'tocantins': 'TO',
+      'mato.grosso': 'MT',
+      'mato.grosso.sul': 'MS',
+      'piaui': 'PI'
+    };
+    
+    return stateMap[stateCode] || stateCode.toUpperCase();
+  }
+
+  private normalizeMunicipalityNameForAPI(municipalityCode: string): string {
+    return municipalityCode
+      .split('.')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  private normalizeAPIDocumentType(apiType: string): DocumentType {
+    const type = apiType.toLowerCase();
+    
+    if (type.includes('lei')) return 'lei';
+    if (type.includes('decreto')) return 'decreto';
+    if (type.includes('medida provisória') || type.includes('mpv')) return 'medida_provisoria';
+    if (type.includes('portaria')) return 'portaria';
+    if (type.includes('projeto de lei') || type.includes('pl')) return 'projeto_lei';
+    if (type.includes('resolução')) return 'resolucao';
+    if (type.includes('instrução normativa')) return 'instrucao_normativa';
+    
+    return 'lei'; // Default fallback
+  }
+
+  private generateKeywordsFromTitle(title: string): string[] {
+    const keywords = new Set<string>();
+    
+    // Add 'transporte' as it's the main search term
+    keywords.add('transporte');
+    
+    // Extract keywords from title
+    const titleWords = title.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 3);
+    
+    titleWords.forEach(word => keywords.add(word));
+    
+    // Add common transport-related terms if they appear in title
+    const transportTerms = [
+      'rodoviário', 'carga', 'logística', 'frete', 
+      'fretamento', 'caminhão', 'veículo', 'rodovia', 'tráfego'
+    ];
+    
+    transportTerms.forEach(term => {
+      if (title.toLowerCase().includes(term)) {
+        keywords.add(term);
+      }
+    });
+    
+    return Array.from(keywords).slice(0, 8); // Limit to 8 keywords
   }
   
   async fetchCollectionStatus(): Promise<CollectionLog[]> {

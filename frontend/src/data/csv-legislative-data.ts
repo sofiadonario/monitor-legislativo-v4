@@ -70,7 +70,11 @@ function parseURN(urn: string): {
   date?: Date;
   chamber?: string;
 } {
-  // Example URN: urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491
+  // Handle different URN formats:
+  // 1. urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833
+  // 2. urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491  
+  // 3. urn:lex:br;minas.gerais;itabirito:municipal:lei:2008-12-05;2708
+  
   const parts = urn.split(':');
   
   let state: string | undefined;
@@ -80,72 +84,97 @@ function parseURN(urn: string): {
   let date: Date | undefined;
   let chamber: string | undefined;
   
-  // Extract chamber and location info
-  if (parts.length > 2) {
-    const locationPart = parts[2];
+  if (parts.length < 4) {
+    return { state, municipality, type, number, date, chamber };
+  }
+  
+  // Handle federal format: urn:lex:br:congresso.nacional:medida.provisoria;mpv:2018-05-27;833
+  if (parts[2] === 'br' && parts[3].includes('congresso.nacional')) {
+    state = 'Federal';
+    chamber = 'Congresso Nacional';
     
-    // Extract legislative chamber/authority
-    if (locationPart.includes('congresso.nacional')) {
-      chamber = 'Congresso Nacional';
-    } else if (locationPart.includes('camara.leg.br') || locationPart.includes('camara.municipal')) {
-      chamber = 'Câmara dos Deputados';
-    } else if (locationPart.includes('senado.leg.br')) {
-      chamber = 'Senado Federal';
-    } else if (locationPart.includes('federal') || locationPart === 'br') {
-      chamber = 'DOU/Planalto';
-    } else if (locationPart.includes('estadual')) {
-      chamber = 'Governo Estadual';
-    } else if (locationPart.includes('municipal')) {
-      chamber = 'Governo Municipal';
-    } else if (locationPart.includes('tribunal')) {
-      chamber = 'Poder Judiciário';
+    // Extract type from parts[4]
+    if (parts.length > 4) {
+      const typePart = parts[4];
+      if (typePart.includes('medida.provisoria')) {
+        type = 'medida_provisoria';
+      } else if (typePart.includes('decreto')) {
+        type = 'decreto';
+      } else if (typePart.includes('lei')) {
+        type = 'lei';
+      }
     }
     
-    // Extract location info (state/municipality)
-    if (locationPart && locationPart !== 'br') {
-      const locationParts = locationPart.split(';');
-      if (locationParts.length > 0) {
-        const mainLocation = locationParts[0];
-        if (mainLocation.includes('.')) {
-          const [stateCode, municipalityCode] = mainLocation.split('.');
-          state = normalizeStateName(stateCode);
-          if (municipalityCode) {
-            municipality = normalizeMunicipalityName(municipalityCode);
-          }
-        } else {
-          state = normalizeStateName(mainLocation);
+    // Extract number from last part
+    if (parts.length > 5) {
+      const lastPart = parts[parts.length - 1];
+      const numberMatch = lastPart.match(/(\d+)$/);
+      if (numberMatch) {
+        number = numberMatch[1];
+      }
+    }
+  }
+  // Handle state/municipal format: urn:lex:br;sao.paulo:estadual:decreto:2014-05-26;60491
+  else if (parts[2].includes(';')) {
+    const locationPart = parts[2];
+    const locationSegments = locationPart.split(';');
+    
+    if (locationSegments.length > 1) {
+      // Extract state
+      const stateCode = locationSegments[1];
+      state = normalizeStateName(stateCode);
+      
+      // Extract municipality if present
+      if (locationSegments.length > 2) {
+        municipality = normalizeMunicipalityName(locationSegments[2]);
+      }
+    }
+    
+    // Extract chamber from parts[3]
+    if (parts.length > 3) {
+      const chamberPart = parts[3];
+      if (chamberPart === 'estadual') {
+        chamber = 'Governo Estadual';
+      } else if (chamberPart === 'municipal') {
+        chamber = 'Governo Municipal';
+      } else if (chamberPart === 'federal') {
+        chamber = 'Governo Federal';
+      }
+    }
+    
+    // Extract type from parts[4]
+    if (parts.length > 4) {
+      const typePart = parts[4];
+      if (typePart.includes('decreto')) {
+        type = 'decreto';
+      } else if (typePart.includes('lei')) {
+        type = 'lei';
+      } else if (typePart.includes('portaria')) {
+        type = 'portaria';
+      } else if (typePart.includes('resolucao')) {
+        type = 'resolucao';
+      }
+    }
+    
+    // Extract date and number from last part
+    if (parts.length > 5) {
+      const lastPart = parts[parts.length - 1];
+      const datePart = parts[parts.length - 2];
+      
+      // Try to parse date
+      if (datePart && datePart.match(/\d{4}-\d{2}-\d{2}/)) {
+        try {
+          date = new Date(datePart);
+        } catch (e) {
+          date = new Date();
         }
       }
-    }
-  }
-  
-  // Extract document type
-  if (parts.length > 3) {
-    const typePart = parts[3];
-    if (typePart.includes(':')) {
-      type = typePart.split(':')[0];
-    } else {
-      type = typePart;
-    }
-    type = normalizeDocumentType(type);
-  }
-  
-  // Extract date and number from the last part
-  if (parts.length > 4) {
-    const lastPart = parts[parts.length - 1];
-    const datePart = parts[parts.length - 2];
-    
-    if (datePart && datePart.match(/\d{4}-\d{2}-\d{2}/)) {
-      try {
-        date = new Date(datePart);
-      } catch (e) {
-        // If date parsing fails, use current date
-        date = new Date();
+      
+      // Extract number
+      const numberMatch = lastPart.match(/(\d+)$/);
+      if (numberMatch) {
+        number = numberMatch[1];
       }
-    }
-    
-    if (lastPart && lastPart.match(/\d+/)) {
-      number = lastPart.replace(/[^\d]/g, '');
     }
   }
   
@@ -440,14 +469,41 @@ export async function loadCSVLegislativeData(): Promise<LegislativeDocument[]> {
     try {
       const { fullLegislativeData } = await import('./fullLegislativeData');
       
-      // Convert to LegislativeDocument format if needed
-      const documents = fullLegislativeData.map((doc: any) => ({
-        search_term: doc.search_term,
-        date_searched: doc.date_searched,
-        url: doc.url,
-        title: doc.title,
-        urn: doc.urn
-      }));
+      // Properly transform embedded data to LegislativeDocument format
+      const documents: LegislativeDocument[] = fullLegislativeData.map((doc: any) => {
+        // Parse URN to extract metadata
+        const { state, municipality, type, number, date, chamber } = parseURN(doc.urn);
+        
+        // Generate keywords from search term and title
+        const keywords = generateKeywords('transporte', doc.title);
+        
+        // Parse date or use current date
+        const docDate = date || new Date();
+        
+        return {
+          id: doc.urn,
+          title: doc.title,
+          summary: `Document retrieved on ${doc.date_searched || 'unknown date'} for search term "transporte".`,
+          type: type as any || 'lei',
+          date: docDate.toISOString(),
+          keywords: keywords,
+          state: state || 'Federal',
+          municipality: municipality || undefined,
+          url: doc.url,
+          status: 'sancionado',
+          chamber: chamber || 'Federal',
+          number: number,
+          source: 'LexML',
+          citation: generateCitation({ 
+            title: doc.title, 
+            url: doc.url, 
+            date: docDate, 
+            state: state || 'Federal', 
+            type: type as any || 'lei', 
+            number: number 
+          }, doc.urn)
+        };
+      });
       
       console.log(`Fallback: Using embedded full legislative data: ${documents.length} documents from LexML`);
       return documents;
