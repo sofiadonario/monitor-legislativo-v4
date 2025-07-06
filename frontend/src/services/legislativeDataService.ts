@@ -43,8 +43,9 @@ export class LegislativeDataService {
   
   
   private async getLocalCsvData(): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
-    // Check multi-layer cache first
-    const cacheKey = LegislativeDataService.CACHE_KEYS.CSV_DATA;
+    // Check multi-layer cache first with version
+    const CACHE_VERSION = 'v2_enhanced_csv';
+    const cacheKey = `${LegislativeDataService.CACHE_KEYS.CSV_DATA}_${CACHE_VERSION}`;
     const cachedData = await multiLayerCache.get<{ documents: LegislativeDocument[], usingFallback: boolean }>(cacheKey);
     
     if (cachedData) {
@@ -84,9 +85,10 @@ export class LegislativeDataService {
   }
   
   async fetchDocuments(filters?: SearchFilters): Promise<{ documents: LegislativeDocument[], usingFallback: boolean }> {
-    // Generate cache key from filters
+    // Generate cache key from filters with version to invalidate old cache
+    const CACHE_VERSION = 'v2_enhanced_csv'; // Update this when data structure changes
     const filterKey = JSON.stringify(filters || {});
-    const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENTS}_${filterKey}`;
+    const cacheKey = `${LegislativeDataService.CACHE_KEYS.DOCUMENTS}_${CACHE_VERSION}_${filterKey}`;
     
     // Check multi-layer cache first
     const cachedResult = await multiLayerCache.get<{ documents: LegislativeDocument[], usingFallback: boolean }>(
