@@ -426,9 +426,10 @@ export class LegislativeDataService {
   }
 
   private transformAPIDocuments(rawDocuments: any[]): LegislativeDocument[] {
-    console.log('🔄 Transforming API documents to proper format');
+    console.log('🔄 Transforming API documents to proper format', rawDocuments.length);
+    console.log('🔄 Sample raw document before transformation:', rawDocuments[0]);
     
-    return rawDocuments.map((doc: any) => {
+    const transformedDocs = rawDocuments.map((doc: any) => {
       // If document already has proper format, return as-is
       if (doc.state && doc.chamber && doc.keywords && Array.isArray(doc.keywords)) {
         return doc as LegislativeDocument;
@@ -477,6 +478,9 @@ export class LegislativeDataService {
         citation: doc.citation || ''
       } as LegislativeDocument;
     });
+    
+    console.log('✅ Transformation complete. Sample transformed document:', transformedDocs[0]);
+    return transformedDocs;
   }
 
   private parseURNForAPI(urn: string): { state?: string; municipality?: string; type: string; chamber?: string; } {
