@@ -152,6 +152,7 @@ app = FastAPI(
 # Define allowed origins for CORS
 origins = [
     "https://sofiadonario.github.io",  # Your GitHub Pages frontend
+    "https://frontend-production-3db8.up.railway.app",  # Production frontend
     "https://rshiny-production-1f4b.up.railway.app",  # Your R Shiny app
     "http://localhost:3000",  # For local development
 ]
