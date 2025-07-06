@@ -92,6 +92,8 @@ const DashboardV2: React.FC = () => {
         if (docs.length === 0 && usingFallback) {
           setError('Could not load from API or CSV. Please check data sources.');
         }
+        console.log('🔍 Dashboard DEBUG - Loaded documents:', docs.length);
+        console.log('🔍 Dashboard DEBUG - Using fallback:', usingFallback);
         setDocuments(docs);
         setUsingFallbackData(usingFallback);
       } catch (err) {
