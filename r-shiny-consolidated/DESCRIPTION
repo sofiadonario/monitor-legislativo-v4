@@ -1,0 +1,59 @@
+Package: MonitorLegislativoR
+Title: Monitor Legislativo v4 - R Architecture Consolidation
+Version: 1.0.0
+Authors@R: 
+    person(given = "Academic",
+           family = "Research Team",
+           role = c("aut", "cre"),
+           email = "contact@example.com")
+Description: Academic research platform for monitoring Brazilian legislative data
+    with comprehensive geographic analysis and AI-enhanced search capabilities.
+    This version consolidates the multi-stack architecture into a pure R solution
+    using modern frameworks like bslib, echarts4r, and leaflet.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Depends: 
+    R (>= 4.3.0)
+Imports:
+    shiny (>= 1.7.0),
+    bslib (>= 0.5.0),
+    echarts4r (>= 0.4.4),
+    leaflet (>= 2.1.0),
+    tmap (>= 3.3.0),
+    DT (>= 0.28),
+    shinyWidgets (>= 0.7.0),
+    shinydashboard (>= 0.7.2),
+    plotly (>= 4.10.0),
+    dplyr (>= 1.1.0),
+    httr (>= 1.4.0),
+    jsonlite (>= 1.8.0),
+    sf (>= 1.0.0),
+    RPostgres (>= 1.4.0),
+    pool (>= 1.0.0),
+    memoise (>= 2.0.0),
+    future (>= 1.33.0),
+    promises (>= 1.2.0),
+    yaml (>= 2.3.0),
+    config (>= 0.3.0),
+    lubridate (>= 1.9.0),
+    stringr (>= 1.5.0),
+    purrr (>= 1.0.0),
+    tidyr (>= 1.3.0),
+    ggplot2 (>= 3.4.0),
+    scales (>= 1.2.0),
+    viridis (>= 0.6.0),
+    RColorBrewer (>= 1.1.0),
+    htmltools (>= 0.5.0),
+    htmlwidgets (>= 1.6.0),
+    crosstalk (>= 1.2.0),
+    reactable (>= 0.4.0),
+    fresh (>= 0.2.0)
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    devtools
+VignetteBuilder: knitr
