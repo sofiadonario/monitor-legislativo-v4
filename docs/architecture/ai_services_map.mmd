@@ -1,0 +1,14 @@
+```mermaid
+graph LR;
+  Backend["FastAPI Core"] --> Cache["Semantic Cache"]
+  Backend --> Agents["AI Agents"]
+  Backend --> Geo["Advanced Geocoding"]
+  Backend --> ML["ML Analysis"]
+  Backend --> KG["Knowledge Graph"]
+  Backend --> NLP["Advanced NLP"]
+  Agents -->|cost tracking| Cache
+  ML --> Cache
+  NLP --> Cache
+  Geo --> Backend
+  KG --> Backend
+``` 
