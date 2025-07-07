@@ -9,7 +9,7 @@ nixPkgs = ["python311Full", "poetry", "gcc"]
 # Define the installation phase
 [phases.install]
 # just install the backend deps with Poetry
-cmds = ["cd backend && poetry install --no-interaction"]
+cmds = ["cd backend && poetry env use python3.11 && poetry install --no-interaction"]
 
 # Set environment and start command
 [start]
