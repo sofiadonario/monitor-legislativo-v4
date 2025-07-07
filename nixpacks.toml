@@ -8,10 +8,10 @@ nixPkgs = ["python311", "gcc"]
 # Define the installation phase
 [phases.install]
 cmds = [
-  "cd backend-python && python3.11 -m venv --copies /opt/venv && . /opt/venv/bin/activate && pip install --upgrade pip setuptools wheel && pip install -r requirements.txt"
+  "cd backend && poetry install --no-interaction"
 ]
 
 # Set environment and start command
 [start]
-env = { "PYTHONPATH" = "/app/backend-python" }
-cmd = "cd backend-python && . /opt/venv/bin/activate && uvicorn src.main:app --host 0.0.0.0 --port $PORT"
+env = { "PYTHONPATH" = "/app/backend" }
+cmd = "cd backend && poetry run uvicorn src.main:app --host 0.0.0.0 --port $PORT"
