@@ -3,17 +3,18 @@
 providers = ["python"]
 
 [phases.setup]
-nixPkgs = ["python311Full", "gcc"]
+# ship a full Python 3.11 interpreter + Poetry + a compiler
+nixPkgs = ["python311Full", "poetry", "gcc"]
 
 # Define the installation phase
 [phases.install]
-# Nixpacks will detect pyproject.toml inside backend/ and run "poetry install"
-cmds = ["cd backend"]
+# just install the backend deps with Poetry
+cmds = ["cd backend && poetry install --no-interaction"]
 
 # Set environment and start command
 [start]
-env = { PYTHONPATH = "/app/backend" }
 cmd = "cd backend && poetry run uvicorn src.main:app --host 0.0.0.0 --port $PORT"
+env = { PYTHONPATH = "/app/backend" }
 
 [build]
 builder = "nixpacks"
