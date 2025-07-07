@@ -8,6 +8,7 @@ nixPkgs = ["python311", "gcc"]
 # Define the installation phase
 [phases.install]
 cmds = [
+  "pip install --no-cache-dir poetry==1.8.2",
   "cd backend && poetry install --no-interaction"
 ]
 
