@@ -48,6 +48,12 @@ source("R/spatial_analysis.R")
 source("R/interactive_mapping.R")
 source("R/map_search.R")
 
+# Source Week 5 document analysis and academic tools modules
+source("R/document_viewer.R")
+source("R/document_comparison.R")
+source("R/citation_generator.R")
+source("R/export_system.R")
+
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
 
@@ -265,12 +271,53 @@ ui <- page_navbar(
   nav_panel(
     title = "📄 Análise de Documentos",
     icon = icon("file-alt"),
-    layout_columns(
-      col_widths = c(12),
+    
+    # Enhanced document analysis with tabs
+    navset_card_tab(
+      id = "document_analysis_tabs",
       
-      card(
-        card_header("🔍 Análise Detalhada de Documentos"),
-        card_body(
+      # Document Viewer Tab
+      nav_panel(
+        "📖 Visualização de Documentos",
+        layout_columns(
+          col_widths = c(12),
+          
+          conditionalPanel(
+            condition = "output.has_selected_document",
+            
+            # Enhanced document viewer
+            document_viewer_ui("main_document_viewer")
+          ),
+          
+          conditionalPanel(
+            condition = "!output.has_selected_document",
+            div(
+              class = "text-center py-5",
+              icon("file-alt", class = "fa-3x text-muted"),
+              h4("Selecione um documento", class = "text-muted mt-3"),
+              p("Clique em um documento na tabela de resultados para visualizar detalhes", class = "text-muted")
+            )
+          )
+        )
+      ),
+      
+      # Document Comparison Tab
+      nav_panel(
+        "📊 Comparação de Documentos",
+        layout_columns(
+          col_widths = c(12),
+          
+          # Document comparison interface
+          document_comparison_ui("main_document_comparison")
+        )
+      ),
+      
+      # Legacy Document Details Tab (for backward compatibility)
+      nav_panel(
+        "📋 Detalhes Tradicionais",
+        layout_columns(
+          col_widths = c(12),
+          
           conditionalPanel(
             condition = "output.has_selected_document",
             
@@ -317,102 +364,158 @@ ui <- page_navbar(
     )
   ),
   
-  # Export Tab
+  # Export and Citations Tab
   nav_panel(
-    title = "📤 Exportar",
+    title = "📤 Exportar & Citar",
     icon = icon("download"),
-    layout_columns(
-      col_widths = c(8, 4),
+    
+    # Enhanced export with tabs
+    navset_card_tab(
+      id = "export_tabs",
       
-      card(
-        card_header("📤 Exportar Dados de Pesquisa"),
-        card_body(
-          h5("Formato de Exportação"),
-          radioButtons(
-            "export_format",
-            NULL,
-            choices = list(
-              "📊 CSV - Dados tabulares" = "csv",
-              "📋 Excel - Planilha completa" = "xlsx",
-              "📄 PDF - Relatório acadêmico" = "pdf",
-              "🌐 HTML - Relatório web" = "html",
-              "📋 JSON - Dados estruturados" = "json"
-            ),
-            selected = "csv"
-          ),
+      # Data Export Tab
+      nav_panel(
+        "📊 Exportação de Dados",
+        layout_columns(
+          col_widths = c(8, 4),
           
-          h5("Opções de Exportação"),
-          checkboxGroupInput(
-            "export_options",
-            NULL,
-            choices = list(
-              "Incluir metadados completos" = "metadata",
-              "Incluir análise estatística" = "stats",
-              "Incluir visualizações" = "charts",
-              "Incluir citações acadêmicas" = "citations"
-            ),
-            selected = c("metadata", "stats")
-          ),
-          
-          numericInput(
-            "export_limit",
-            "Máximo de registros:",
-            value = 1000,
-            min = 1,
-            max = 5000,
-            step = 100
-          ),
-          
-          br(),
-          
-          action_button(
-            "btn_export",
-            "📦 Gerar Exportação",
-            class = "btn-success btn-lg w-100"
-          ),
-          
-          br(), br(),
-          
-          conditionalPanel(
-            condition = "output.export_ready",
-            div(
-              class = "alert alert-success",
-              icon("check-circle"),
-              " Exportação concluída!",
+          card(
+            card_header("📤 Exportar Dados de Pesquisa"),
+            card_body(
+              # Export template selection
+              h5("Tipo de Relatório"),
+              selectInput(
+                "export_template",
+                NULL,
+                choices = list(
+                  "📊 Dataset para Pesquisa" = "research_dataset",
+                  "📋 Relatório Acadêmico Completo" = "academic_report",
+                  "📈 Resumo Executivo dos Dados" = "data_summary",
+                  "📊 Análise Estatística Detalhada" = "statistical_analysis",
+                  "🗺️ Relatório de Análise Geográfica" = "geographic_analysis",
+                  "📅 Análise Temporal Legislativa" = "temporal_analysis",
+                  "⚖️ Estudo Comparativo" = "comparative_study"
+                ),
+                selected = "research_dataset"
+              ),
+              
+              # Format selection
+              h5("Formato de Exportação"),
+              radioButtons(
+                "export_format",
+                NULL,
+                choices = list(
+                  "📊 CSV - Dados tabulares" = "csv",
+                  "📋 Excel - Planilha completa" = "xlsx",
+                  "📄 HTML - Relatório web" = "html",
+                  "📋 JSON - Dados estruturados" = "json",
+                  "📦 ZIP - Pacote completo" = "zip",
+                  "🔧 R Data (RDS)" = "rds",
+                  "📄 XML - Dados estruturados" = "xml"
+                ),
+                selected = "csv"
+              ),
+              
+              # Quality level
+              h5("Nível de Qualidade"),
+              radioButtons(
+                "export_quality",
+                NULL,
+                choices = list(
+                  "📝 Rascunho (Visualização)" = "draft",
+                  "📋 Padrão (Publicação)" = "standard",
+                  "🎓 Publicação (Revisão por Pares)" = "publication",
+                  "🗃️ Arquivo (Preservação)" = "archive"
+                ),
+                selected = "standard"
+              ),
+              
+              # Enhanced options
+              h5("Opções de Exportação"),
+              checkboxGroupInput(
+                "export_options",
+                NULL,
+                choices = list(
+                  "Incluir metadados completos" = "include_metadata",
+                  "Incluir análise estatística" = "include_stats",
+                  "Incluir visualizações" = "include_charts",
+                  "Incluir citações acadêmicas" = "include_citations"
+                ),
+                selected = c("include_metadata", "include_stats")
+              ),
+              
+              numericInput(
+                "export_limit",
+                "Máximo de registros:",
+                value = 1000,
+                min = 1,
+                max = 5000,
+                step = 100
+              ),
+              
               br(),
-              downloadButton(
-                "download_export",
-                "📥 Baixar Arquivo",
-                class = "btn-success btn-sm mt-2"
+              
+              action_button(
+                "btn_export",
+                "📦 Gerar Exportação",
+                class = "btn-success btn-lg w-100"
+              ),
+              
+              br(), br(),
+              
+              conditionalPanel(
+                condition = "output.export_ready",
+                div(
+                  class = "alert alert-success",
+                  icon("check-circle"),
+                  " Exportação concluída!",
+                  br(),
+                  downloadButton(
+                    "download_export",
+                    "📥 Baixar Arquivo",
+                    class = "btn-success btn-sm mt-2"
+                  )
+                )
+              )
+            )
+          ),
+          
+          card(
+            card_header("📋 Citação da Plataforma"),
+            card_body(
+              h6("Como citar esta pesquisa:"),
+              wellPanel(
+                style = "background: rgba(248, 249, 250, 0.8); border-radius: 8px;",
+                tags$small(
+                  em(paste0(
+                    "Monitor Legislativo v4. Dados legislativos brasileiros. ",
+                    "Consultado em ", format(Sys.Date(), "%d de %B de %Y"), ". ",
+                    "Plataforma acadêmica de pesquisa."
+                  ))
+                )
+              ),
+              
+              h6("Fontes de Dados:"),
+              tags$ul(
+                tags$li("Câmara dos Deputados"),
+                tags$li("Senado Federal"),
+                tags$li("LexML Brasil"),
+                tags$li("Assembleias Legislativas"),
+                tags$li("IBGE - Dados Geográficos")
               )
             )
           )
         )
       ),
       
-      card(
-        card_header("📋 Citação Acadêmica"),
-        card_body(
-          h6("Como citar esta pesquisa:"),
-          wellPanel(
-            style = "background: rgba(248, 249, 250, 0.8); border-radius: 8px;",
-            tags$small(
-              em(paste0(
-                "Monitor Legislativo v4. Dados legislativos brasileiros. ",
-                "Consultado em ", format(Sys.Date(), "%d de %B de %Y"), ". ",
-                "Plataforma acadêmica de pesquisa."
-              ))
-            )
-          ),
+      # Academic Citations Tab
+      nav_panel(
+        "🎓 Citações Acadêmicas",
+        layout_columns(
+          col_widths = c(12),
           
-          h6("Fontes de Dados:"),
-          tags$ul(
-            tags$li("Câmara dos Deputados"),
-            tags$li("Senado Federal"),
-            tags$li("LexML Brasil"),
-            tags$li("Assembleias Legislativas"),
-            tags$li("IBGE - Dados Geográficos")
-          )
+          # Citation generator interface
+          citation_generator_ui("main_citation_generator")
         )
       )
     )
@@ -828,6 +931,30 @@ server <- function(input, output, session) {
   })
   
   # ========================================================================
+  # ENHANCED DOCUMENT MODULES (Week 5)
+  # ========================================================================
+  
+  # Document viewer module
+  document_viewer_server("main_document_viewer", reactive({
+    if (!is.null(values$selected_document)) {
+      # Convert single document to data frame format expected by viewer
+      data.frame(values$selected_document, stringsAsFactors = FALSE)
+    } else {
+      NULL
+    }
+  }))
+  
+  # Document comparison module
+  document_comparison_server("main_document_comparison", reactive({
+    values$search_results
+  }))
+  
+  # Citation generator module
+  citation_generator_server("main_citation_generator", reactive({
+    values$search_results
+  }))
+  
+  # ========================================================================
   # EXPORT FUNCTIONALITY
   # ========================================================================
   
@@ -842,27 +969,44 @@ server <- function(input, output, session) {
       return()
     }
     
-    showNotification("Gerando exportação...", type = "message")
+    showNotification("Gerando exportação avançada...", type = "message")
     
     future({
+      # Use enhanced export system
       export_legislative_data(
         data = values$search_results,
         format = input$export_format,
-        options = input$export_options,
-        limit = input$export_limit
+        template = input$export_template %||% "research_dataset",
+        options = list(
+          include_metadata = "include_metadata" %in% input$export_options,
+          include_stats = "include_stats" %in% input$export_options,
+          include_charts = "include_charts" %in% input$export_options,
+          include_citations = "include_citations" %in% input$export_options,
+          limit = input$export_limit,
+          states = input$`main_search-states_filter`,
+          types = input$`main_search-document_types`,
+          date_from = input$`main_search-date_range`[1],
+          date_to = input$`main_search-date_range`[2]
+        ),
+        quality = input$export_quality %||% "standard"
       )
     }) %...>% {
       values$export_file <- .
-      showNotification("Exportação concluída!", type = "success")
+      showNotification("Exportação avançada concluída!", type = "success")
+    } %...!% {
+      showNotification("Erro na exportação. Tente novamente.", type = "error")
     }
   })
   
   output$download_export <- downloadHandler(
     filename = function() {
-      paste0("monitor_legislativo_", Sys.Date(), ".", input$export_format)
+      template_name <- gsub("[^a-zA-Z0-9]", "_", input$export_template %||% "export")
+      paste0("monitor_legislativo_", template_name, "_", Sys.Date(), ".", input$export_format)
     },
     content = function(file) {
-      file.copy(values$export_file, file)
+      if (!is.null(values$export_file) && file.exists(values$export_file)) {
+        file.copy(values$export_file, file)
+      }
     }
   )
   
