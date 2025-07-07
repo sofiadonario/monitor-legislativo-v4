@@ -3,14 +3,12 @@
 providers = ["python"]
 
 [phases.setup]
-nixPkgs = ["python311Full", "python311Packages.pip", "gcc"]
+nixPkgs = ["python311Full", "gcc"]
 
 # Define the installation phase
 [phases.install]
-cmds = [
-  "python3.11 -m pip install --no-cache-dir poetry==1.8.2",
-  "cd backend && poetry env use python3.11 && poetry install --no-interaction"
-]
+# Nixpacks will detect pyproject.toml inside backend/ and run "poetry install"
+cmds = ["cd backend"]
 
 # Set environment and start command
 [start]
