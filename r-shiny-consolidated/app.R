@@ -71,6 +71,12 @@ source("R/performance_optimization.R")
 source("R/application_monitoring.R")
 source("R/analytics_reporting.R")
 
+# Source Week 9 API integration and external services modules
+source("R/restRserve_api.R")
+source("R/external_integrations.R")
+source("R/batch_operations.R")
+source("R/data_pipeline.R")
+
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
 
@@ -85,6 +91,18 @@ cat(paste("  Redis Cache:", if(redis_init_result$status == "success") "✅" else
 cat(paste("  Performance Optimization:", if(perf_init_result$status == "success") "✅" else "❌", "\n"))
 cat(paste("  Application Monitoring:", if(monitoring_init_result$status == "success") "✅" else "❌", "\n"))
 cat(paste("  Analytics & Reporting:", if(analytics_init_result$status == "success") "✅" else "❌", "\n"))
+
+# Initialize Week 9 API and integration systems
+api_init_result <- initialize_api_system(start_server = FALSE)  # Don't auto-start server
+external_init_result <- initialize_external_integrations()
+batch_init_result <- initialize_batch_operations()
+pipeline_init_result <- initialize_data_pipeline()
+
+cat("🔗 API & Integration systems initialized:\n")
+cat(paste("  RestRserve API:", if(api_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  External Integrations:", if(external_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  Batch Operations:", if(batch_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  Data Pipeline:", if(pipeline_init_result$status == "success") "✅" else "❌", "\n"))
 
 # Initialize enhanced geographic data and performance monitoring  
 geographic_data <- load_enhanced_ibge_data(year = 2020, level = "state", simplified = TRUE)
@@ -589,6 +607,84 @@ ui <- page_navbar(
     
     # User profile and management interface
     user_profile_ui("main_user_profile")
+  ),
+  
+  # API & Integrations Tab (Week 9)
+  nav_panel(
+    title = "🔗 API & Integrações",
+    icon = icon("plug"),
+    
+    layout_columns(
+      col_widths = c(6, 6),
+      
+      # External Services Status
+      card(
+        card_header("🌐 Status dos Serviços Externos"),
+        card_body(
+          htmlOutput("external_services_status"),
+          br(),
+          action_button(
+            "btn_test_integrations",
+            "🔍 Testar Integrações",
+            class = "btn-primary btn-sm w-100"
+          )
+        )
+      ),
+      
+      # Data Pipeline Status  
+      card(
+        card_header("📊 Pipeline de Dados"),
+        card_body(
+          htmlOutput("data_pipeline_status"),
+          br(),
+          action_button(
+            "btn_run_pipeline",
+            "🚀 Executar Pipeline",
+            class = "btn-success btn-sm w-100"
+          )
+        )
+      )
+    ),
+    
+    layout_columns(
+      col_widths = c(4, 4, 4),
+      
+      # Batch Operations
+      card(
+        card_header("📦 Operações em Lote"),
+        card_body(
+          htmlOutput("batch_operations_status"),
+          br(),
+          action_button(
+            "btn_view_batches",
+            "📋 Ver Operações",
+            class = "btn-info btn-sm w-100"
+          )
+        )
+      ),
+      
+      # API Statistics
+      card(
+        card_header("📈 Estatísticas da API"),
+        card_body(
+          htmlOutput("api_statistics"),
+          br(),
+          action_button(
+            "btn_start_api_server",
+            "🚀 Iniciar Servidor API",
+            class = "btn-warning btn-sm w-100"
+          )
+        )
+      ),
+      
+      # Integration Metrics
+      card(
+        card_header("📊 Métricas de Integração"),
+        card_body(
+          htmlOutput("integration_metrics")
+        )
+      )
+    )
   ),
   
   # Performance Monitoring Tab (Week 8)
@@ -1311,6 +1407,173 @@ server <- function(input, output, session) {
     } else {
       showNotification("Analytics reporting not available", type = "error")
     }
+  })
+  
+  # ========================================================================
+  # API & INTEGRATIONS (Week 9)
+  # ========================================================================
+  
+  # External services status
+  output$external_services_status <- renderUI({
+    if (exists("get_integration_statistics")) {
+      integration_stats <- get_integration_statistics()
+      
+      tagList(
+        div(
+          class = "metric-row",
+          p(strong("Total Requests:"), integration_stats$total_requests %||% 0),
+          p(strong("Success Rate:"), paste0(round((integration_stats$success_rate %||% 0) * 100, 1), "%")),
+          p(strong("Services Healthy:"), paste(integration_stats$services_healthy %||% 0, "/", integration_stats$total_services %||% 0)),
+          p(strong("Last Health Check:"), 
+            if (!is.null(integration_stats$last_health_check)) {
+              format(integration_stats$last_health_check, "%H:%M:%S")
+            } else {
+              "Never"
+            }
+          )
+        )
+      )
+    } else {
+      p("Integration statistics not available")
+    }
+  })
+  
+  # Data pipeline status
+  output$data_pipeline_status <- renderUI({
+    if (exists("get_pipeline_statistics")) {
+      pipeline_stats <- get_pipeline_statistics()
+      
+      tagList(
+        div(
+          class = "metric-row",
+          p(strong("Active Pipelines:"), pipeline_stats$active_pipelines %||% 0),
+          p(strong("Completed Runs:"), pipeline_stats$completed_pipelines %||% 0),
+          p(strong("Recent Runs (24h):"), pipeline_stats$recent_runs_24h %||% 0),
+          p(strong("Avg Duration:"), paste(round(pipeline_stats$avg_duration_seconds %||% 0, 1), "sec")),
+          p(strong("Success Rate:"), paste0(pipeline_stats$success_rate %||% 0, "%"))
+        )
+      )
+    } else {
+      p("Pipeline statistics not available")
+    }
+  })
+  
+  # Batch operations status
+  output$batch_operations_status <- renderUI({
+    if (exists("get_batch_statistics")) {
+      batch_stats <- get_batch_statistics()
+      
+      tagList(
+        div(
+          class = "metric-row",
+          p(strong("Active Batches:"), batch_stats$active_batches %||% 0),
+          p(strong("Completed Batches:"), batch_stats$completed_batches %||% 0),
+          p(strong("Scheduled Jobs:"), batch_stats$scheduled_jobs %||% 0),
+          p(strong("Avg Throughput:"), paste(batch_stats$avg_throughput_docs_per_sec %||% 0, "docs/sec")),
+          p(strong("Success Rate:"), paste0(round((batch_stats$success_rate %||% 0) * 100, 1), "%"))
+        )
+      )
+    } else {
+      p("Batch statistics not available")
+    }
+  })
+  
+  # API statistics
+  output$api_statistics <- renderUI({
+    if (exists("api_state") && !is.null(api_state$app)) {
+      tagList(
+        div(
+          class = "metric-row",
+          p(strong("API Status:"), "Initialized"),
+          p(strong("Active Connections:"), api_state$active_connections %||% 0),
+          p(strong("Total Requests:"), length(api_state$request_counts %||% list())),
+          p(strong("Performance Metrics:"), length(api_state$performance_metrics %||% list()))
+        )
+      )
+    } else {
+      div(
+        class = "alert alert-warning",
+        "API not initialized"
+      )
+    }
+  })
+  
+  # Integration metrics
+  output$integration_metrics <- renderUI({
+    if (exists("external_state") && !is.null(external_state$service_health)) {
+      healthy_services <- sum(sapply(external_state$service_health, function(x) x$status == "healthy"))
+      total_services <- length(external_state$service_health)
+      
+      tagList(
+        div(
+          class = "metric-row",
+          p(strong("Government APIs:"), 
+            sum(sapply(names(EXTERNAL_CONFIG$government_apis), function(x) EXTERNAL_CONFIG$government_apis[[x]]$enabled))),
+          p(strong("Regulatory Agencies:"), 
+            sum(sapply(names(EXTERNAL_CONFIG$regulatory_agencies), function(x) EXTERNAL_CONFIG$regulatory_agencies[[x]]$enabled))),
+          p(strong("Health Status:"), paste(healthy_services, "/", total_services)),
+          p(strong("Cache Enabled:"), if(EXTERNAL_CONFIG$caching$cache_responses) "Yes" else "No")
+        )
+      )
+    } else {
+      p("Integration metrics not available")
+    }
+  })
+  
+  # API and integration actions
+  observeEvent(input$btn_test_integrations, {
+    if (exists("check_all_services_health")) {
+      showNotification("Testing external integrations...", type = "message")
+      
+      future({
+        check_all_services_health()
+      }) %...>% {
+        showNotification("Integration health check completed", type = "success")
+      } %...!% {
+        showNotification("Integration health check failed", type = "error")
+      }
+    } else {
+      showNotification("Integration system not available", type = "error")
+    }
+  })
+  
+  observeEvent(input$btn_run_pipeline, {
+    if (exists("execute_data_pipeline")) {
+      showNotification("Starting data pipeline execution...", type = "message")
+      
+      future({
+        execute_data_pipeline()
+      }) %...>% {
+        if (.$status == "completed") {
+          showNotification(paste("Pipeline completed:", .$total_documents, "documents processed"), type = "success")
+        } else {
+          showNotification(paste("Pipeline failed:", .$error), type = "error")
+        }
+      } %...!% {
+        showNotification("Pipeline execution failed", type = "error")
+      }
+    } else {
+      showNotification("Data pipeline not available", type = "error")
+    }
+  })
+  
+  observeEvent(input$btn_start_api_server, {
+    if (exists("start_api_server") && exists("api_state") && !is.null(api_state$app)) {
+      showNotification("Starting API server...", type = "message")
+      
+      tryCatch({
+        start_api_server(background = TRUE)
+        showNotification("API server started successfully", type = "success")
+      }, error = function(e) {
+        showNotification(paste("Failed to start API server:", e$message), type = "error")
+      })
+    } else {
+      showNotification("API system not available", type = "error")
+    }
+  })
+  
+  observeEvent(input$btn_view_batches, {
+    showNotification("Batch operations viewer would open here", type = "message")
   })
   
   # ========================================================================
