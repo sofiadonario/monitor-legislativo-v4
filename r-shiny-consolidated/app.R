@@ -43,12 +43,25 @@ source("R/vocabulary_processing.R")
 source("R/search_engine.R")
 source("R/document_pipeline.R")
 
+# Source Week 4 geographic analysis and mapping modules
+source("R/spatial_analysis.R")
+source("R/interactive_mapping.R")
+source("R/map_search.R")
+
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
 
-# Initialize geographic data and performance monitoring
-geographic_data <- initialize_geographic_data(load_municipalities = FALSE)
+# Initialize enhanced geographic data and performance monitoring  
+geographic_data <- load_enhanced_ibge_data(year = 2020, level = "state", simplified = TRUE)
 warm_cache()  # Pre-warm cache for better performance
+
+# Initialize spatial analysis system
+if (!is.null(geographic_data)) {
+  log_event(paste("Enhanced IBGE data loaded:", nrow(geographic_data), "states with spatial analysis"))
+} else {
+  log_event("Using fallback geographic data", "WARN")
+  geographic_data <- create_fallback_spatial_data("state")
+}
 
 # ============================================================================
 # USER INTERFACE
@@ -706,65 +719,79 @@ server <- function(input, output, session) {
   # OUTPUTS - MAP
   # ========================================================================
   
-  # Enhanced map with geobr integration
+  # Enhanced interactive map with spatial analysis
   output$`brazil_map-map` <- renderLeaflet({
     
-    # Create base map with geobr data
-    if (geographic_data$geobr_available && !is.null(geographic_data$states)) {
-      map <- create_choropleth_with_data(
-        geographic_data = geographic_data$states,
-        legislative_data = values$search_results %||% data.frame(),
-        join_by = "state_code",
-        value_column = "count"
-      )
-    } else {
-      # Fallback to basic map
-      map <- leaflet() %>%
-        setView(lng = -47.8825, lat = -15.7942, zoom = 4) %>%
-        addProviderTiles(providers$CartoDB.Positron)
+    # Create enhanced interactive map with clustering and spatial analysis
+    enhanced_map <- create_enhanced_interactive_map(
+      legislative_data = values$search_results,
+      geo_data = geographic_data,
+      map_style = input$`brazil_map-map_style` %||% "default",
+      color_variable = input$`brazil_map-color_variable` %||% "count",
+      enable_clustering = input$`brazil_map-show_clusters` %||% TRUE
+    )
+    
+    # Initialize map search functionality
+    if (!is.null(enhanced_map)) {
+      enhanced_map <- initialize_map_search(enhanced_map, enable_drawing = TRUE)
     }
     
-    map %||% leaflet() %>% 
+    enhanced_map %||% leaflet() %>% 
       setView(lng = -47.8825, lat = -15.7942, zoom = 4) %>%
       addProviderTiles(providers$CartoDB.Positron)
   })
   
   # Update map when data or settings change
-  observeEvent(list(values$search_results, input$`brazil_map-color_variable`), {
-    if (!is.null(values$search_results) && geographic_data$geobr_available) {
+  observeEvent(list(values$search_results, input$`brazil_map-color_variable`, input$`brazil_map-show_clusters`), {
+    if (!is.null(values$search_results) && !is.null(geographic_data)) {
       
-      # Update map with new choropleth
-      new_map <- create_choropleth_with_data(
-        geographic_data = geographic_data$states,
-        legislative_data = values$search_results,
-        join_by = "state_code",
-        value_column = input$`brazil_map-color_variable` %||% "count"
-      )
-      
-      if (!is.null(new_map)) {
-        output$`brazil_map-map` <- renderLeaflet(new_map)
-      }
+      # Update map with enhanced interactive features
+      leafletProxy("brazil_map-map") %>%
+        update_interactive_map(
+          legislative_data = values$search_results,
+          geo_data = geographic_data,
+          color_variable = input$`brazil_map-color_variable` %||% "count",
+          enable_clustering = input$`brazil_map-show_clusters` %||% TRUE
+        )
     }
   })
   
-  # Geographic statistics
+  # Enhanced geographic statistics with spatial analysis
   output$geographic_stats <- renderUI({
     if (is.null(values$search_results)) {
       return(p("Nenhum dado para análise geográfica"))
     }
     
-    stats <- calculate_geographic_stats(values$search_results, "state")
+    # Perform spatial clustering analysis
+    clustered_docs <- spatial_cluster_documents(values$search_results, geographic_data)
+    
+    # Calculate comprehensive spatial statistics  
+    spatial_stats <- calculate_spatial_statistics(clustered_docs, geographic_data)
     
     tagList(
-      p(strong("Cobertura Nacional:")),
-      p(paste(stats$total_locations, "estados cobertos (", stats$coverage_percentage, "%)")),
-      p(strong("Documentos com localização:")),
-      p(paste(stats$documents_with_location, "de", nrow(values$search_results))),
-      if (nchar(stats$top_locations) > 0) {
+      p(strong("🗺️ Cobertura Nacional:")),
+      p(paste(spatial_stats$covered_states, "estados cobertos (", spatial_stats$geographic_coverage, "%)")),
+      
+      p(strong("📍 Análise Espacial:")),
+      p(paste("Total de documentos:", spatial_stats$total_documents)),
+      
+      if (!is.null(clustered_docs) && "spatial_cluster" %in% names(clustered_docs)) {
         tagList(
-          p(strong("Estados com mais documentos:")),
-          p(stats$top_locations)
+          p(strong("🔗 Clusters Espaciais:")),
+          p(paste("Encontrados", length(unique(clustered_docs$spatial_cluster)), "grupos espaciais")),
+          
+          p(strong("📊 Densidade Regional:")),
+          if (nrow(spatial_stats$regional_aggregation) > 0) {
+            div(
+              lapply(1:min(3, nrow(spatial_stats$regional_aggregation)), function(i) {
+                region <- spatial_stats$regional_aggregation[i, ]
+                p(paste("•", region$region_code, ":", region$total_documents, "documentos"))
+              })
+            )
+          } else p("Dados regionais não disponíveis")
         )
+      } else {
+        p("Análise de clusters em andamento...")
       }
     )
   })
