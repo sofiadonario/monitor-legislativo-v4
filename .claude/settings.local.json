@@ -99,7 +99,10 @@
       "Bash(git check-ignore:*)",
       "Bash(git add railway.toml)",
       "Bash(git commit -m \"$(cat <<''EOF''\nForce redeploy - update trigger\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git push origin main)"
+      "Bash(git push origin main)",
+      "Bash(poetry add:*)",
+      "Bash(poetry run alembic:*)",
+      "Bash(poetry show:*)"
     ]
   },
   "enableAllProjectMcpServers": false

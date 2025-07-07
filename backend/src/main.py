@@ -5,9 +5,12 @@ import logging
 import os
 from datetime import datetime
 
+# Prometheus instrumentation
+from prometheus_fastapi_instrumentator import Instrumentator
+
 # Imports are now relative from the 'src' package root.
 from . import gateway_router
-from .routers import lexml_router, sse_router, private_database_router, collections_router, rshiny_proxy_router, processed_documents_router, analytics_router
+from .routers import lexml_router, sse_router, private_database_router, collections_router, rshiny_proxy_router, processed_documents_router, analytics_router, auth_router
 
 # Import API modules with error handling for production deployment
 try:
@@ -149,6 +152,24 @@ app = FastAPI(
     version="2.0.0"
 )
 
+# Setup Prometheus instrumentation
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_respect_env_var=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics"],
+)
+
+# Add custom metrics
+from .metrics import (
+    db_query_duration, db_query_count, db_connection_count,
+    api_search_requests, api_cache_hits, api_cache_misses,
+    documents_processed, document_processing_duration
+)
+
+instrumentator.instrument(app).expose(app)
+
 # Define allowed origins for CORS
 origins = [
     "https://sofiadonario.github.io",  # Your GitHub Pages frontend
@@ -174,6 +195,7 @@ app.include_router(collections_router.router)
 app.include_router(processed_documents_router.router)
 app.include_router(rshiny_proxy_router.router)
 app.include_router(analytics_router.router)
+app.include_router(auth_router.router)
 
 # Include API routers conditionally
 if GEOGRAPHIC_API_AVAILABLE:
@@ -514,6 +536,48 @@ async def health_check():
         "service": "monitor-legislativo-api",
         "timestamp": datetime.utcnow().isoformat()
     }
+
+@app.get("/ready", tags=["Health"])
+async def readiness_check():
+    """
+    Readiness probe that checks database and Redis connectivity.
+    Returns 200 if ready, 503 if not ready.
+    """
+    from .health import check_readiness
+    from .database.supabase_config import DatabaseManager
+    
+    # Get database session
+    db_manager = DatabaseManager()
+    db_session = None
+    
+    try:
+        # Initialize database if needed
+        await db_manager.initialize()
+        db_session = await db_manager.get_session()
+        
+        # Perform readiness check
+        result = await check_readiness(
+            db_session=db_session,
+            check_db=True,
+            check_redis_conn=True
+        )
+        return result
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (503 from check_readiness)
+        raise
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "not_ready",
+                "error": str(e)
+            }
+        )
+    finally:
+        if db_session:
+            await db_session.close()
 
 @app.get("/api/v1/debug/csv", tags=["Debug"])
 async def debug_csv_status():

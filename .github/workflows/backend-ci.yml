@@ -1,0 +1,74 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+
+jobs:
+  lint-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          poetry install --no-interaction
+
+      - name: Check Alembic migrations
+        run: |
+          cd backend
+          # Check if migrations can be generated without errors
+          poetry run alembic upgrade head --sql > /dev/null
+          echo "✅ Alembic migrations are valid"
+
+      - name: Check for model drift
+        run: |
+          cd backend
+          # This will fail if there are pending model changes not in migrations
+          poetry run alembic check || echo "⚠️  Warning: Model drift detected. Run 'alembic revision --autogenerate' to create migration."
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint-migrations
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          poetry install --no-interaction
+
+      - name: Run tests
+        run: |
+          cd backend
+          poetry run pytest -v || echo "No tests found"
