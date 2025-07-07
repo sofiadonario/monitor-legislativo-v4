@@ -37,6 +37,12 @@ source("R/geobr_integration.R")
 source("R/data_processing.R")
 source("R/performance.R")
 
+# Source Week 3 LexML and search engine modules
+source("R/lexml_integration.R")
+source("R/vocabulary_processing.R")
+source("R/search_engine.R")
+source("R/document_pipeline.R")
+
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
 
@@ -487,16 +493,16 @@ server <- function(input, output, session) {
   # SEARCH FUNCTIONALITY
   # ========================================================================
   
-  # Enhanced search with new UI components
+  # Enhanced search with LexML integration and vocabulary processing
   observeEvent(input$`main_search-btn_search`, {
     
     # Record performance metric
     search_start_time <- Sys.time()
     
-    create_toast("Iniciando busca...", "info")
+    create_toast("Iniciando busca avançada...", "info")
     
-    # Perform async search with enhanced processing
-    async_search_legislative_data(
+    # Use enhanced search engine with LexML and vocabulary expansion
+    enhanced_search(
       query = input$`main_search-search_query`,
       filters = list(
         date_from = input$`main_search-date_range`[1],
@@ -504,27 +510,42 @@ server <- function(input, output, session) {
         types = input$`main_search-document_types`,
         states = input$`main_search-states_filter`,
         limit = input$max_results %||% 1000
+      ),
+      sources = c("lexml", "api"),
+      options = list(
+        enable_vocabulary_expansion = TRUE,
+        enable_result_ranking = TRUE,
+        max_results_per_source = 500
       )
     ) %...>% {
-      # Validate and enhance data
-      validation_result <- validate_legislative_documents(.)
+      # Process results through document pipeline
+      processed_results <- process_document_pipeline(., options = list(
+        enable_classification = TRUE,
+        enable_quality_scoring = TRUE,
+        min_document_quality = 60
+      ))
       
-      if (validation_result$validation_report$valid_records > 0) {
-        values$search_results <- validation_result$valid_data
+      if (!is.null(processed_results) && nrow(processed_results) > 0) {
+        values$search_results <- processed_results
         
         search_time <- as.numeric(Sys.time() - search_start_time, units = "secs") * 1000
         record_metric("search_time", search_time, "performance")
         
+        # Get vocabulary analysis
+        vocab_analysis <- analyze_vocabulary_coverage(input$`main_search-search_query`)
+        
         create_toast(
-          paste("Busca concluída!", validation_result$validation_report$valid_records, "documentos encontrados"),
+          paste("Busca LexML concluída!", nrow(processed_results), "documentos processados",
+                "- Cobertura vocabular:", paste0(vocab_analysis$coverage_percentage, "%")),
           "success"
         )
       } else {
-        create_toast("Nenhum documento válido encontrado", "warning")
+        create_toast("Nenhum documento encontrado", "warning")
+        values$search_results <- create_empty_search_result()
       }
     } %...!% {
-      create_toast("Erro na busca. Tentando dados de fallback...", "error")
-      values$search_results <- create_fallback_data()
+      create_toast("Erro na busca LexML. Usando dados de fallback...", "error")
+      values$search_results <- create_fallback_lexml_data(input$`main_search-search_query`)
     }
   })
   
