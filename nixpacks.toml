@@ -16,3 +16,7 @@ cmds = [
 [start]
 env = { "PYTHONPATH" = "/app/backend" }
 cmd = "cd backend && poetry run uvicorn src.main:app --host 0.0.0.0 --port $PORT"
+
+[build]
+builder = "nixpacks"
+watchPatterns = ["backend/**", "nixpacks.toml"]
