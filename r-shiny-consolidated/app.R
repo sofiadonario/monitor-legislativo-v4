@@ -60,6 +60,11 @@ source("R/time_series_analysis.R")
 source("R/data_exploration.R")
 source("R/legislative_pattern_analytics.R")
 
+# Source Week 7 authentication and user management modules
+source("R/auth_system.R")
+source("R/user_management.R")
+source("R/security_system.R")
+
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
 
@@ -95,7 +100,7 @@ ui <- page_navbar(
     heading_font = font_google("Inter", wght = "600")
   ),
   
-  # Custom CSS for modern glassmorphism design
+  # Custom CSS for modern glassmorphism design and security JavaScript
   tags$head(
     tags$style(HTML("
       .navbar-brand {
@@ -141,7 +146,30 @@ ui <- page_navbar(
         background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
       }
-    "))
+      
+      .user-profile-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      }
+      
+      .auth-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        padding: 8px 16px;
+        transition: all 0.3s ease;
+      }
+      
+      .auth-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+    ")),
+    
+    # Include security JavaScript
+    tags$script(HTML(get_security_js()))
   ),
   
   # Search and Dashboard Tab
@@ -536,6 +564,15 @@ ui <- page_navbar(
     )
   ),
   
+  # User Management Tab (Week 7)
+  nav_panel(
+    title = "👤 Usuário",
+    icon = icon("user"),
+    
+    # User profile and management interface
+    user_profile_ui("main_user_profile")
+  ),
+  
   # Settings Tab
   nav_panel(
     title = "⚙️ Configurações",
@@ -612,12 +649,17 @@ ui <- page_navbar(
 
 server <- function(input, output, session) {
   
+  # Initialize security system
+  initialize_security(session)
+  
   # Reactive values
   values <- reactiveValues(
     search_results = NULL,
     selected_document = NULL,
     export_file = NULL,
-    map_data = NULL
+    map_data = NULL,
+    user_data = NULL,
+    auth_status = FALSE
   )
   
   # ========================================================================
@@ -972,6 +1014,15 @@ server <- function(input, output, session) {
   # Advanced analytics dashboard module (Week 6)
   advanced_dashboard_server("main_analytics_dashboard", reactive({
     values$search_results
+  }))
+  
+  # ========================================================================
+  # USER MANAGEMENT AND AUTHENTICATION (Week 7)
+  # ========================================================================
+  
+  # User profile management module
+  user_profile_server("main_user_profile", reactive({
+    values$user_data
   }))
   
   # ========================================================================
