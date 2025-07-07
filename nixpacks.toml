@@ -3,12 +3,13 @@
 providers = ["python"]
 
 [phases.setup]
-nixPkgs = ["python311", "poetry", "gcc"]
+nixPkgs = ["python311Full", "gcc"]
 
 # Define the installation phase
 [phases.install]
 cmds = [
-  "cd backend && poetry install --no-interaction"
+  "python3.11 -m pip install --no-cache-dir poetry==1.8.2",
+  "cd backend && poetry env use python3.11 && poetry install --no-interaction"
 ]
 
 # Set environment and start command
