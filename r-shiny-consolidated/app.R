@@ -54,6 +54,12 @@ source("R/document_comparison.R")
 source("R/citation_generator.R")
 source("R/export_system.R")
 
+# Source Week 6 advanced dashboard and analytics modules
+source("R/advanced_dashboard.R")
+source("R/time_series_analysis.R")
+source("R/data_exploration.R")
+source("R/legislative_pattern_analytics.R")
+
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
 
@@ -362,6 +368,15 @@ ui <- page_navbar(
         )
       )
     )
+  ),
+  
+  # Analytics Dashboard Tab (Week 6)
+  nav_panel(
+    title = "📊 Analytics Dashboard",
+    icon = icon("chart-line"),
+    
+    # Advanced dashboard interface
+    advanced_dashboard_ui("main_analytics_dashboard")
   ),
   
   # Export and Citations Tab
@@ -951,6 +966,11 @@ server <- function(input, output, session) {
   
   # Citation generator module
   citation_generator_server("main_citation_generator", reactive({
+    values$search_results
+  }))
+  
+  # Advanced analytics dashboard module (Week 6)
+  advanced_dashboard_server("main_analytics_dashboard", reactive({
     values$search_results
   }))
   
