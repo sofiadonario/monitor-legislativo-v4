@@ -8,7 +8,11 @@ nixPkgs = ["python311", "gcc"]
 # Define the installation phase
 [phases.install]
 cmds = [
+  # bootstrap pip
+  "python3 -m ensurepip --upgrade",
+  # install Poetry
   "python3 -m pip install --no-cache-dir poetry==1.8.2",
+  # install project deps
   "cd backend && poetry install --no-interaction"
 ]
 
