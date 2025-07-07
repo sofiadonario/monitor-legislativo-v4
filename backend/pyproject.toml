@@ -40,6 +40,8 @@ spacy = "3.6.1"
 transformers = "4.33.2"
 supabase = "^2.0.0"
 pandas = "^2.0.0"
+sse-starlette = "<2.0"
+scipy = "1.11.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0"
