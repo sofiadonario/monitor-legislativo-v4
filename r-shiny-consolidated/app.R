@@ -29,11 +29,20 @@ source("R/database.R")
 source("R/api_client.R")
 source("R/geographic.R")
 source("R/visualization.R")
-source("R/ui_components.R")
 source("R/utils.R")
+
+# Source Week 2 enhanced modules
+source("R/ui_components.R")
+source("R/geobr_integration.R")
+source("R/data_processing.R")
+source("R/performance.R")
 
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
+
+# Initialize geographic data and performance monitoring
+geographic_data <- initialize_geographic_data(load_municipalities = FALSE)
+warm_cache()  # Pre-warm cache for better performance
 
 # ============================================================================
 # USER INTERFACE
@@ -111,98 +120,39 @@ ui <- page_navbar(
     layout_columns(
       col_widths = c(4, 8),
       
-      # Search Panel
-      card(
-        class = "search-panel",
-        card_header(
-          class = "d-flex justify-content-between align-items-center",
-          tags$h5("🔍 Filtros de Busca", class = "mb-0"),
-          action_button(
-            "btn_clear_filters",
-            "Limpar",
-            class = "btn-outline-secondary btn-sm"
-          )
-        ),
-        card_body(
-          textInput(
-            "search_query",
-            "Buscar documentos:",
-            placeholder = "Ex: transporte público, mobilidade urbana...",
-            value = ""
-          ),
-          
-          dateRangeInput(
-            "date_range",
-            "Período:",
-            start = Sys.Date() - 365,
-            end = Sys.Date(),
-            format = "dd/mm/yyyy",
-            language = "pt-BR"
-          ),
-          
-          selectInput(
-            "document_types",
-            "Tipos de documento:",
-            choices = list(
-              "Todos" = "all",
-              "Leis" = "lei",
-              "Decretos" = "decreto",
-              "Portarias" = "portaria",
-              "Resoluções" = "resolucao"
-            ),
-            selected = "all",
-            multiple = TRUE
-          ),
-          
-          selectInput(
-            "states_filter",
-            "Estados:",
-            choices = get_brazilian_states(),
-            selected = NULL,
-            multiple = TRUE
-          ),
-          
-          br(),
-          
-          action_button(
-            "btn_search",
-            "🔍 Buscar",
-            class = "btn-primary w-100",
-            style = "border-radius: 8px; font-weight: 500;"
-          )
-        )
-      ),
+      # Enhanced Search Panel with new UI components
+      search_interface_ui("main_search"),
       
       # Results Panel
       card(
         card_header("📊 Resultados da Busca"),
         card_body(
-          # Summary cards
+          # Enhanced summary cards with animations
           layout_columns(
             col_widths = c(3, 3, 3, 3),
-            value_box(
+            enhanced_value_box(
               title = "Total de Documentos",
               value = textOutput("total_documents"),
-              showcase = icon("file-text"),
-              theme = value_box_theme(bg = app_config$ui$primary_color)
+              icon = "file-text",
+              color = "primary"
             ),
-            value_box(
-              title = "Estados",
+            enhanced_value_box(
+              title = "Estados Cobertos",
               value = textOutput("total_states"),
-              showcase = icon("map"),
-              theme = value_box_theme(bg = app_config$ui$success_color)
+              icon = "map",
+              color = "success"
             ),
-            value_box(
-              title = "Tipos",
+            enhanced_value_box(
+              title = "Tipos de Documento",
               value = textOutput("total_types"),
-              showcase = icon("tags"),
-              theme = value_box_theme(bg = app_config$ui$info_color)
+              icon = "tags",
+              color = "info"
             ),
-            value_box(
+            enhanced_value_box(
               title = "Mais Recente",
               value = textOutput("latest_date"),
-              showcase = icon("calendar"),
-              theme = value_box_theme(bg = app_config$ui$warning_color)
+              icon = "calendar",
+              color = "warning"
             )
           ),
           
@@ -212,24 +162,20 @@ ui <- page_navbar(
             
             nav_panel(
               "📋 Tabela",
-              div(
-                style = "margin-top: 1rem;",
-                DT::dataTableOutput("results_table")
-              )
+              enhanced_data_table("results", options = list(
+                pageLength = 25,
+                scrollX = TRUE,
+                dom = 'Bfrtip',
+                buttons = list('copy', 'csv', 'excel', 'pdf')
+              ))
             ),
             
             nav_panel(
               "📊 Gráficos",
               layout_columns(
                 col_widths = c(6, 6),
-                card(
-                  card_header("Distribuição por Tipo"),
-                  card_body(echarts4rOutput("type_chart"))
-                ),
-                card(
-                  card_header("Distribuição Temporal"),
-                  card_body(echarts4rOutput("temporal_chart"))
-                )
+                enhanced_chart_ui("type_chart", "Distribuição por Tipo de Documento"),
+                enhanced_chart_ui("temporal_chart", "Evolução Temporal da Legislação")
               )
             )
           )
@@ -245,15 +191,8 @@ ui <- page_navbar(
     layout_columns(
       col_widths = c(8, 4),
       
-      # Map Panel
-      card(
-        full_screen = TRUE,
-        card_header("🗺️ Mapa Legislativo do Brasil"),
-        card_body(
-          padding = 0,
-          leafletOutput("brazil_map", height = "600px")
-        )
-      ),
+      # Enhanced Map Panel
+      enhanced_map_ui("brazil_map", height = "600px"),
       
       # Map Controls and Info
       layout_columns(
@@ -548,42 +487,59 @@ server <- function(input, output, session) {
   # SEARCH FUNCTIONALITY
   # ========================================================================
   
-  # Search button click
-  observeEvent(input$btn_search, {
+  # Enhanced search with new UI components
+  observeEvent(input$`main_search-btn_search`, {
     
-    # Show loading
-    showNotification("Buscando dados...", type = "message", duration = 2)
+    # Record performance metric
+    search_start_time <- Sys.time()
     
-    # Perform search asynchronously
-    future({
-      search_legislative_data(
-        query = input$search_query,
-        date_from = input$date_range[1],
-        date_to = input$date_range[2],
-        types = if("all" %in% input$document_types) NULL else input$document_types,
-        states = input$states_filter,
-        limit = input$max_results
+    create_toast("Iniciando busca...", "info")
+    
+    # Perform async search with enhanced processing
+    async_search_legislative_data(
+      query = input$`main_search-search_query`,
+      filters = list(
+        date_from = input$`main_search-date_range`[1],
+        date_to = input$`main_search-date_range`[2],
+        types = input$`main_search-document_types`,
+        states = input$`main_search-states_filter`,
+        limit = input$max_results %||% 1000
       )
-    }) %...>% {
-      values$search_results <- .
-      showNotification("Busca concluída!", type = "success", duration = 3)
+    ) %...>% {
+      # Validate and enhance data
+      validation_result <- validate_legislative_documents(.)
+      
+      if (validation_result$validation_report$valid_records > 0) {
+        values$search_results <- validation_result$valid_data
+        
+        search_time <- as.numeric(Sys.time() - search_start_time, units = "secs") * 1000
+        record_metric("search_time", search_time, "performance")
+        
+        create_toast(
+          paste("Busca concluída!", validation_result$validation_report$valid_records, "documentos encontrados"),
+          "success"
+        )
+      } else {
+        create_toast("Nenhum documento válido encontrado", "warning")
+      }
     } %...!% {
-      showNotification("Erro na busca", type = "error", duration = 5)
+      create_toast("Erro na busca. Tentando dados de fallback...", "error")
+      values$search_results <- create_fallback_data()
     }
   })
   
-  # Clear filters
-  observeEvent(input$btn_clear_filters, {
-    updateTextInput(session, "search_query", value = "")
-    updateDateRangeInput(session, "date_range", 
+  # Clear filters with enhanced UI
+  observeEvent(input$`main_search-btn_clear_filters`, {
+    updateTextInput(session, "main_search-search_query", value = "")
+    updateDateRangeInput(session, "main_search-date_range", 
                         start = Sys.Date() - 365, end = Sys.Date())
-    updateSelectInput(session, "document_types", selected = "all")
-    updateSelectInput(session, "states_filter", selected = NULL)
+    updateCheckboxGroupInput(session, "main_search-document_types", selected = NULL)
+    updateSelectizeInput(session, "main_search-states_filter", selected = NULL)
     
     values$search_results <- NULL
     values$selected_document <- NULL
     
-    showNotification("Filtros limpos", type = "message")
+    create_toast("Filtros limpos", "info")
   })
   
   # ========================================================================
@@ -614,10 +570,10 @@ server <- function(input, output, session) {
   })
   
   # ========================================================================
-  # OUTPUTS - DATA TABLE
+  # OUTPUTS - ENHANCED DATA TABLE
   # ========================================================================
   
-  output$results_table <- DT::renderDataTable({
+  output$`results-table` <- DT::renderDataTable({
     
     if (is.null(values$search_results)) {
       return(data.frame(
@@ -625,7 +581,7 @@ server <- function(input, output, session) {
       ))
     }
     
-    # Prepare display data
+    # Prepare display data with enhanced processing
     display_data <- values$search_results %>%
       select(
         Título = titulo,
@@ -633,29 +589,46 @@ server <- function(input, output, session) {
         Número = numero,
         Data = data,
         Estado = estado,
+        Qualidade = validation_score,
+        Categoria = categoria,
         Fonte = fonte
       ) %>%
       mutate(
         Data = format(as.Date(Data), "%d/%m/%Y"),
-        Título = stringr::str_trunc(Título, 80)
+        Título = stringr::str_trunc(Título, 80),
+        Qualidade = paste0(round(Qualidade), "%")
       ) %>%
       arrange(desc(as.Date(Data, format = "%d/%m/%Y")))
     
     display_data
     
   }, options = list(
-    pageLength = app_config$performance$pagination_size,
+    pageLength = 25,
     scrollX = TRUE,
+    scrollY = "400px",
+    dom = 'Bfrtip',
+    buttons = list(
+      list(extend = 'copy', text = 'Copiar'),
+      list(extend = 'csv', text = 'CSV'),
+      list(extend = 'excel', text = 'Excel'),
+      list(extend = 'pdf', text = 'PDF')
+    ),
     language = list(
       url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json'
     ),
     selection = 'single'
   ), selection = 'single')
   
+  # Row count for enhanced table
+  output$`results-row_count` <- renderText({
+    if (is.null(values$search_results)) "0 documentos"
+    else paste(nrow(values$search_results), "documentos")
+  })
+  
   # Handle row selection for document details
-  observeEvent(input$results_table_rows_selected, {
-    if (length(input$results_table_rows_selected) > 0 && !is.null(values$search_results)) {
-      selected_row <- input$results_table_rows_selected[1]
+  observeEvent(input$`results-table_rows_selected`, {
+    if (length(input$`results-table_rows_selected`) > 0 && !is.null(values$search_results)) {
+      selected_row <- input$`results-table_rows_selected`[1]
       values$selected_document <- values$search_results[selected_row, ]
     }
   })
@@ -664,7 +637,8 @@ server <- function(input, output, session) {
   # OUTPUTS - CHARTS
   # ========================================================================
   
-  output$type_chart <- renderEcharts4r({
+  # Enhanced charts with new UI components
+  output$`type_chart-chart` <- renderEcharts4r({
     
     if (is.null(values$search_results)) {
       return(e_charts() %>% e_title("Sem dados para exibir"))
@@ -677,14 +651,15 @@ server <- function(input, output, session) {
     type_data %>%
       e_charts(tipo) %>%
       e_bar(n, name = "Documentos") %>%
-      e_color(app_config$ui$chart_palette) %>%
-      e_title("Distribuição por Tipo") %>%
+      e_color(c("#0d6efd", "#198754", "#fd7e14", "#dc3545", "#6f42c1")) %>%
+      e_title("Distribuição por Tipo de Documento") %>%
       e_tooltip(trigger = "axis") %>%
       e_legend(show = FALSE) %>%
-      e_flip_coords()
+      e_flip_coords() %>%
+      e_animation(duration = 1000)
   })
   
-  output$temporal_chart <- renderEcharts4r({
+  output$`temporal_chart-chart` <- renderEcharts4r({
     
     if (is.null(values$search_results)) {
       return(e_charts() %>% e_title("Sem dados para exibir"))
@@ -697,42 +672,80 @@ server <- function(input, output, session) {
     
     temporal_data %>%
       e_charts(ano) %>%
-      e_line(n, smooth = TRUE, name = "Documentos") %>%
-      e_color(app_config$ui$primary_color) %>%
-      e_title("Distribuição Temporal") %>%
+      e_line(n, smooth = TRUE, name = "Documentos", symbol_size = 6) %>%
+      e_area(n, name = "Área", opacity = 0.3) %>%
+      e_color("#0d6efd") %>%
+      e_title("Evolução Temporal da Legislação") %>%
       e_tooltip(trigger = "axis") %>%
-      e_legend(show = FALSE)
+      e_legend(show = FALSE) %>%
+      e_animation(duration = 1500)
   })
   
   # ========================================================================
   # OUTPUTS - MAP
   # ========================================================================
   
-  output$brazil_map <- renderLeaflet({
+  # Enhanced map with geobr integration
+  output$`brazil_map-map` <- renderLeaflet({
     
-    # Create base map
-    map <- leaflet() %>%
-      setView(lng = app_config$geography$default_center$lng,
-              lat = app_config$geography$default_center$lat,
-              zoom = app_config$geography$default_zoom) %>%
-      addProviderTiles(providers[[app_config$ui$map$default_tiles]])
-    
-    # Add data if available
-    if (!is.null(values$search_results)) {
-      map <- add_legislative_data_to_map(map, values$search_results, input$map_color_by)
+    # Create base map with geobr data
+    if (geographic_data$geobr_available && !is.null(geographic_data$states)) {
+      map <- create_choropleth_with_data(
+        geographic_data = geographic_data$states,
+        legislative_data = values$search_results %||% data.frame(),
+        join_by = "state_code",
+        value_column = "count"
+      )
+    } else {
+      # Fallback to basic map
+      map <- leaflet() %>%
+        setView(lng = -47.8825, lat = -15.7942, zoom = 4) %>%
+        addProviderTiles(providers$CartoDB.Positron)
     }
     
-    map
+    map %||% leaflet() %>% 
+      setView(lng = -47.8825, lat = -15.7942, zoom = 4) %>%
+      addProviderTiles(providers$CartoDB.Positron)
   })
   
   # Update map when data or settings change
-  observeEvent(list(values$search_results, input$map_color_by, input$show_clusters), {
-    if (!is.null(values$search_results)) {
-      leafletProxy("brazil_map") %>%
-        clearMarkers() %>%
-        clearMarkerClusters() %>%
-        add_legislative_data_to_map(values$search_results, input$map_color_by)
+  observeEvent(list(values$search_results, input$`brazil_map-color_variable`), {
+    if (!is.null(values$search_results) && geographic_data$geobr_available) {
+      
+      # Update map with new choropleth
+      new_map <- create_choropleth_with_data(
+        geographic_data = geographic_data$states,
+        legislative_data = values$search_results,
+        join_by = "state_code",
+        value_column = input$`brazil_map-color_variable` %||% "count"
+      )
+      
+      if (!is.null(new_map)) {
+        output$`brazil_map-map` <- renderLeaflet(new_map)
+      }
     }
+  })
+  
+  # Geographic statistics
+  output$geographic_stats <- renderUI({
+    if (is.null(values$search_results)) {
+      return(p("Nenhum dado para análise geográfica"))
+    }
+    
+    stats <- calculate_geographic_stats(values$search_results, "state")
+    
+    tagList(
+      p(strong("Cobertura Nacional:")),
+      p(paste(stats$total_locations, "estados cobertos (", stats$coverage_percentage, "%)")),
+      p(strong("Documentos com localização:")),
+      p(paste(stats$documents_with_location, "de", nrow(values$search_results))),
+      if (nchar(stats$top_locations) > 0) {
+        tagList(
+          p(strong("Estados com mais documentos:")),
+          p(stats$top_locations)
+        )
+      }
+    )
   })
   
   # ========================================================================
@@ -815,20 +828,36 @@ server <- function(input, output, session) {
   })
   
   output$system_stats <- renderText({
+    
+    # Get performance statistics
+    perf_stats <- get_performance_stats()
+    memory_stats <- get_memory_usage()
+    
     paste(
-      "Memória usada:", format(object.size(values), units = "MB"),
-      "\nSessão iniciada:", format(Sys.time(), "%H:%M:%S"),
-      "\nResultados em cache:", ifelse(is.null(values$search_results), 0, nrow(values$search_results))
+      "Uptime:", perf_stats$uptime_hours, "horas",
+      "\nMemória usada:", memory_stats$used_mb, "MB",
+      "\nRequisições totais:", perf_stats$total_requests,
+      "\nResultados em cache:", ifelse(is.null(values$search_results), 0, nrow(values$search_results)),
+      if (!is.null(perf_stats$search_performance)) {
+        paste("\nTempo médio busca:", perf_stats$search_performance$average_time_ms, "ms")
+      } else ""
     )
   })
   
-  # Clear cache
+  # Clear cache with performance monitoring
   observeEvent(input$btn_clear_cache, {
+    
+    # Use performance module for cleanup
+    cleanup_result <- cleanup_memory(aggressive = TRUE)
+    
     values$search_results <- NULL
     values$selected_document <- NULL
     values$export_file <- NULL
-    gc()
-    showNotification("Cache limpo", type = "success")
+    
+    create_toast(
+      paste("Cache limpo:", round(cleanup_result$memory_freed_mb, 1), "MB liberados"),
+      "success"
+    )
   })
   
   # ========================================================================
