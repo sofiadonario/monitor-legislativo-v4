@@ -65,8 +65,26 @@ source("R/auth_system.R")
 source("R/user_management.R")
 source("R/security_system.R")
 
+# Source Week 8 performance optimization and monitoring modules
+source("R/redis_cache.R")
+source("R/performance_optimization.R")
+source("R/application_monitoring.R")
+source("R/analytics_reporting.R")
+
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
+
+# Initialize Week 8 performance and monitoring systems
+redis_init_result <- initialize_redis_cache(warm_on_startup = TRUE)
+perf_init_result <- initialize_performance_optimization()
+monitoring_init_result <- initialize_monitoring()
+analytics_init_result <- initialize_analytics()
+
+cat("📊 Performance systems initialized:\n")
+cat(paste("  Redis Cache:", if(redis_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  Performance Optimization:", if(perf_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  Application Monitoring:", if(monitoring_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  Analytics & Reporting:", if(analytics_init_result$status == "success") "✅" else "❌", "\n"))
 
 # Initialize enhanced geographic data and performance monitoring  
 geographic_data <- load_enhanced_ibge_data(year = 2020, level = "state", simplified = TRUE)
@@ -573,6 +591,78 @@ ui <- page_navbar(
     user_profile_ui("main_user_profile")
   ),
   
+  # Performance Monitoring Tab (Week 8)
+  nav_panel(
+    title = "📊 Performance",
+    icon = icon("tachometer-alt"),
+    
+    layout_columns(
+      col_widths = c(4, 4, 4),
+      
+      # System Health Card
+      card(
+        card_header("🏥 System Health"),
+        card_body(
+          htmlOutput("system_health_status"),
+          br(),
+          action_button(
+            "btn_run_health_check",
+            "🔍 Run Health Check",
+            class = "btn-primary btn-sm w-100"
+          )
+        )
+      ),
+      
+      # Performance Metrics Card
+      card(
+        card_header("⚡ Performance Metrics"),
+        card_body(
+          htmlOutput("performance_metrics_summary"),
+          br(),
+          action_button(
+            "btn_optimize_performance",
+            "🚀 Optimize Performance",
+            class = "btn-success btn-sm w-100"
+          )
+        )
+      ),
+      
+      # Analytics Summary Card
+      card(
+        card_header("📈 Analytics Summary"),
+        card_body(
+          htmlOutput("analytics_summary"),
+          br(),
+          action_button(
+            "btn_generate_report",
+            "📋 Generate Report",
+            class = "btn-info btn-sm w-100"
+          )
+        )
+      )
+    ),
+    
+    layout_columns(
+      col_widths = c(6, 6),
+      
+      # Cache Performance
+      card(
+        card_header("💾 Cache Performance"),
+        card_body(
+          htmlOutput("cache_performance_stats")
+        )
+      ),
+      
+      # Recent Alerts
+      card(
+        card_header("🚨 Recent Alerts"),
+        card_body(
+          htmlOutput("recent_alerts_display")
+        )
+      )
+    )
+  ),
+  
   # Settings Tab
   nav_panel(
     title = "⚙️ Configurações",
@@ -669,8 +759,12 @@ server <- function(input, output, session) {
   # Enhanced search with LexML integration and vocabulary processing
   observeEvent(input$`main_search-btn_search`, {
     
-    # Record performance metric
+    # Record performance metric and track usage
     search_start_time <- Sys.time()
+    track_usage_event("search_query", list(
+      query = input$`main_search-search_query`,
+      has_filters = !is.null(input$`main_search-document_types`) || !is.null(input$`main_search-states_filter`)
+    ))
     
     create_toast("Iniciando busca avançada...", "info")
     
@@ -1024,6 +1118,200 @@ server <- function(input, output, session) {
   user_profile_server("main_user_profile", reactive({
     values$user_data
   }))
+  
+  # ========================================================================
+  # PERFORMANCE MONITORING AND ANALYTICS (Week 8)
+  # ========================================================================
+  
+  # System health status
+  output$system_health_status <- renderUI({
+    if (exists("monitoring_state") && !is.null(monitoring_state$health_status)) {
+      health_data <- monitoring_state$health_status
+      
+      status_color <- switch(health_data$overall_status,
+        "healthy" = "success",
+        "degraded" = "warning", 
+        "unhealthy" = "danger",
+        "secondary"
+      )
+      
+      tagList(
+        div(
+          class = paste("alert alert-", status_color),
+          h6(paste("System Status:", toupper(health_data$overall_status))),
+          p(paste("Components:", health_data$healthy_components, "/", health_data$total_components, "healthy")),
+          if (!is.null(health_data$duration_ms)) {
+            p(paste("Last check:", round(health_data$duration_ms), "ms"))
+          }
+        )
+      )
+    } else {
+      div(
+        class = "alert alert-secondary",
+        h6("Health Status: Unknown"),
+        p("No health check data available")
+      )
+    }
+  })
+  
+  # Performance metrics summary
+  output$performance_metrics_summary <- renderUI({
+    if (exists("get_performance_stats")) {
+      perf_stats <- get_performance_stats()
+      memory_usage <- perf_stats$memory$used_mb %||% 0
+      
+      tagList(
+        div(
+          class = "metric-row",
+          p(strong("Memory Usage:"), paste(round(memory_usage), "MB")),
+          if (!is.null(perf_stats$query_performance)) {
+            p(strong("Avg Query Time:"), paste(perf_stats$query_performance$avg_time_ms, "ms"))
+          },
+          p(strong("Cache Hit Rate:"), paste(perf_stats$query_cache$hit_rate %||% 0, "%")),
+          p(strong("Cache Size:"), paste(perf_stats$query_cache$size %||% 0, "entries"))
+        )
+      )
+    } else {
+      p("Performance metrics not available")
+    }
+  })
+  
+  # Analytics summary
+  output$analytics_summary <- renderUI({
+    if (exists("get_analytics_dashboard_data")) {
+      analytics_data <- get_analytics_dashboard_data()
+      
+      tagList(
+        div(
+          class = "metric-row",
+          p(strong("Events Today:"), analytics_data$usage_summary$total_events_today %||% 0),
+          p(strong("Events This Week:"), analytics_data$usage_summary$total_events_week %||% 0),
+          p(strong("Cost Today:"), paste("$", sprintf("%.4f", analytics_data$cost_summary$total_cost_today %||% 0))),
+          p(strong("Budget Used:"), paste(round(analytics_data$cost_summary$budget_utilization %||% 0, 1), "%"))
+        )
+      )
+    } else {
+      p("Analytics data not available")
+    }
+  })
+  
+  # Cache performance stats
+  output$cache_performance_stats <- renderUI({
+    if (exists("get_cache_statistics")) {
+      cache_stats <- get_cache_statistics()
+      
+      if (cache_stats$status == "redis_unavailable") {
+        div(
+          class = "alert alert-warning",
+          "Redis cache not available"
+        )
+      } else {
+        tagList(
+          h6("Redis Performance"),
+          p(paste("Memory Used:", cache_stats$redis_memory_used %||% "Unknown")),
+          p(paste("Connected Clients:", cache_stats$redis_connected_clients %||% "Unknown")),
+          
+          if (!is.null(cache_stats$search_results)) {
+            tagList(
+              h6("Search Cache"),
+              p(paste("Hit Rate:", cache_stats$search_results$hit_rate, "%")),
+              p(paste("Total Requests:", cache_stats$search_results$total_requests))
+            )
+          }
+        )
+      }
+    } else {
+      p("Cache statistics not available")
+    }
+  })
+  
+  # Recent alerts display
+  output$recent_alerts_display <- renderUI({
+    if (exists("monitoring_state") && !is.null(monitoring_state$alerts)) {
+      recent_alerts <- head(monitoring_state$alerts, 5)
+      
+      if (length(recent_alerts) == 0) {
+        div(
+          class = "alert alert-success",
+          "No recent alerts"
+        )
+      } else {
+        tagList(
+          lapply(recent_alerts, function(alert) {
+            alert_class <- switch(alert$severity,
+              "critical" = "danger",
+              "warning" = "warning",
+              "info" = "info",
+              "secondary"
+            )
+            
+            div(
+              class = paste("alert alert-", alert_class, "alert-sm"),
+              style = "margin-bottom: 5px;",
+              strong(paste("[", toupper(alert$severity), "]")),
+              " ", alert$message,
+              br(),
+              tags$small(format(alert$timestamp, "%H:%M:%S"))
+            )
+          })
+        )
+      }
+    } else {
+      div(
+        class = "alert alert-secondary",
+        "No alerts available"
+      )
+    }
+  })
+  
+  # Performance monitoring actions
+  observeEvent(input$btn_run_health_check, {
+    if (exists("perform_health_checks")) {
+      showNotification("Running health checks...", type = "message")
+      
+      future({
+        perform_health_checks()
+      }) %...>% {
+        showNotification("Health check completed", type = "success")
+      } %...!% {
+        showNotification("Health check failed", type = "error")
+      }
+    } else {
+      showNotification("Health check system not available", type = "error")
+    }
+  })
+  
+  observeEvent(input$btn_optimize_performance, {
+    if (exists("optimize_memory_usage")) {
+      showNotification("Optimizing performance...", type = "message")
+      
+      future({
+        optimize_memory_usage(aggressive = TRUE)
+      }) %...>% {
+        showNotification("Performance optimization completed", type = "success")
+      } %...!% {
+        showNotification("Performance optimization failed", type = "error")
+      }
+    } else {
+      showNotification("Performance optimization not available", type = "error")
+    }
+  })
+  
+  observeEvent(input$btn_generate_report, {
+    if (exists("generate_usage_report")) {
+      showNotification("Generating analytics report...", type = "message")
+      
+      future({
+        generate_usage_report("daily", "html")
+      }) %...>% {
+        showNotification("Analytics report generated", type = "success")
+      } %...!% {
+        showNotification("Report generation failed", type = "error")
+      }
+    } else {
+      showNotification("Analytics reporting not available", type = "error")
+    }
+  })
   
   # ========================================================================
   # EXPORT FUNCTIONALITY
