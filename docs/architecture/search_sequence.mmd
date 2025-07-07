@@ -10,6 +10,7 @@ sequenceDiagram
   FE->>BE: GET /api/v1/search?q=...
   BE->>DB: SELECT ...
   DB-->>BE: Rows
+  BE-->>FE: SSE push stream (search updates)
   BE->>FE: JSON results
   FE->>U: Render list / charts
   FE-->>RS: (optional) Embed dashboard iframe

@@ -11,7 +11,7 @@ A sophisticated academic research platform for monitoring Brazilian legislative 
 │   ├── package.json         # Frontend dependencies
 │   └── Dockerfile           # Frontend deployment
 │
-├── backend-python/          # Python FastAPI backend
+├── backend/          # Python FastAPI backend
 │   ├── src/                 # Backend source code
 │   ├── core/                # Core functionality
 │   ├── configs/             # Configuration files
@@ -50,15 +50,15 @@ npm run dev
 
 ### Backend (Railway)
 ```bash
-cd backend-python/
-pip install -r requirements.txt
-uvicorn src.main:app --reload
+cd backend/
+poetry install
+poetry run uvicorn src.main:app --reload
 ```
 
 ## Deployment
 
 - **Frontend**: Railway service pointing to `/frontend` directory
-- **Backend**: Railway service pointing to `/backend-python` directory
+- **Backend**: Railway service pointing to `/backend` directory
 - **Analytics**: Separate R Shiny deployment
 
 ## Key Features

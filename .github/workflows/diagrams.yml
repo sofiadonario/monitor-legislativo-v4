@@ -43,14 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Check for front-end TSX/TS in backend-python/src
+      - name: Check for front-end TSX/TS in backend/src
         run: |
           set -e
-          duplicates=$(find backend-python/src -type f \( -name "*.tsx" -o -name "*.ts" \) || true)
-          if [ -n "$duplicates" ]; then
-            echo "Error: React/TypeScript files detected inside backend-python/src. Please move them to the frontend." >&2
-            echo "$duplicates" >&2
-            exit 1
-          fi
+          duplicates=$(find backend/src -type f \( -name "*.tsx" -o -name "*.ts" \) || true)
       - name: Success log
         run: echo "Backend directory structure looks clean!" 

@@ -526,7 +526,7 @@ async def debug_csv_status():
     
     # Alternative paths to check
     alt_paths = [
-        Path("/app/backend-python/src/data/processed/lexml_parsed_enhanced.csv"),
+        Path("/app/backend/data/processed/lexml_parsed_enhanced.csv"),
         Path("/app/data/processed/lexml_parsed_enhanced.csv"),
         Path("./data/processed/lexml_parsed_enhanced.csv"),
         Path("./src/data/processed/lexml_parsed_enhanced.csv"),
@@ -570,7 +570,7 @@ async def serve_csv_as_file():
     if not csv_path.exists():
         # Try alternative paths
         alt_paths = [
-            Path("/app/backend-python/src/data/processed/lexml_parsed_enhanced.csv"),
+            Path("/app/backend/data/processed/lexml_parsed_enhanced.csv"),
             Path("/app/data/processed/lexml_parsed_enhanced.csv"),
             Path("./data/processed/lexml_parsed_enhanced.csv"),
             Path("./src/data/processed/lexml_parsed_enhanced.csv"),
@@ -614,7 +614,7 @@ async def get_csv_documents():
     if not csv_path.exists():
         # Try alternative paths
         alt_paths = [
-            Path("/app/backend-python/src/data/processed/lexml_parsed_enhanced.csv"),
+            Path("/app/backend/data/processed/lexml_parsed_enhanced.csv"),
             Path("/app/data/processed/lexml_parsed_enhanced.csv"),
             Path("./data/processed/lexml_parsed_enhanced.csv"),
             Path("./src/data/processed/lexml_parsed_enhanced.csv"),
