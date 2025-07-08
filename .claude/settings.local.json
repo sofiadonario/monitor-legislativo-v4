@@ -102,7 +102,9 @@
       "Bash(git push origin main)",
       "Bash(poetry add:*)",
       "Bash(poetry run alembic:*)",
-      "Bash(poetry show:*)"
+      "Bash(poetry show:*)",
+      "Bash(gh repo view:*)",
+      "Bash(cd:*)"
     ]
   },
   "enableAllProjectMcpServers": false

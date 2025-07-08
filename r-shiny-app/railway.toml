@@ -1,19 +1,33 @@
-# Complete Railway Config as Code for R Shiny Service
-# This file contains ALL configuration and overrides dashboard settings
+# Railway Production Configuration for Monitor Legislativo v4
+# Week 12: Production deployment with enhanced features
 
 [build]
 builder = "dockerfile"
-dockerfilePath = "r-shiny-app/Dockerfile"
-buildContext = "r-shiny-app"
+dockerfilePath = "Dockerfile.production"
+buildCommand = "echo 'Building production image...'"
+watchPatterns = ["app.R", "R/**", "*.yml", "*.toml", "scripts/**"]
 
 [deploy]
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 replicas = 1
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+startCommand = "R -e \"options(shiny.port = as.integer(Sys.getenv('PORT', '3838')), shiny.host = '0.0.0.0', shiny.maxRequestSize = 100*1024^2); source('app.R')\""
 
-# Environment variables for R Shiny
+# Environment variables for production
 [deploy.env]
 PORT = "3838"
+R_CONFIG_ACTIVE = "production"
 SHINY_LOG_LEVEL = "INFO"
+SHINY_LOG_FILE = "/app/logs/shiny.log"
 R_LIBS_USER = "/app/renv/library"
-ENVIRONMENT = "production" 
+ENVIRONMENT = "production"
+R_MAX_MEMORY = "2GB"
+SHINY_MAX_SESSIONS = "100"
+
+# Health check configuration
+[deploy.healthcheck]
+path = "/health"
+timeout = 30
+interval = 60 
