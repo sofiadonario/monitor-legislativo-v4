@@ -83,6 +83,9 @@ source("R/knowledge_graph.R")
 source("R/semantic_search.R")
 source("R/recommendation_engine.R")
 
+# Source Week 11 production deployment and monitoring modules
+source("R/prometheus_exporter.R")
+
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
 
@@ -121,6 +124,16 @@ cat(paste("  AI Integration:", if(ai_init_result$status == "success") "✅" else
 cat(paste("  Knowledge Graph:", if(kg_init_result$status == "success") "✅" else "❌", "\n"))
 cat(paste("  Semantic Search:", if(semantic_init_result$status == "success") "✅" else "❌", "\n"))
 cat(paste("  Recommendation Engine:", if(recommendation_init_result$status == "success") "✅" else "❌", "\n"))
+
+# Initialize Week 11 production deployment and monitoring systems
+prometheus_init_result <- initialize_prometheus_exporter()
+if (Sys.getenv("R_CONFIG_ACTIVE", "default") == "production") {
+  start_metrics_server()
+}
+
+cat("🚀 Production & Monitoring systems initialized:\n")
+cat(paste("  Prometheus Exporter:", if(prometheus_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  Metrics Server:", if(Sys.getenv("R_CONFIG_ACTIVE") == "production") "✅ (Started)" else "🔄 (Development Mode)", "\n"))
 
 # Initialize enhanced geographic data and performance monitoring  
 geographic_data <- load_enhanced_ibge_data(year = 2020, level = "state", simplified = TRUE)
