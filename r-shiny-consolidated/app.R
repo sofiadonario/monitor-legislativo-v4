@@ -77,6 +77,12 @@ source("R/external_integrations.R")
 source("R/batch_operations.R")
 source("R/data_pipeline.R")
 
+# Source Week 10 AI integration and advanced analytics modules
+source("R/ai_integration.R")
+source("R/knowledge_graph.R")
+source("R/semantic_search.R")
+source("R/recommendation_engine.R")
+
 # Initialize application
 cat("🚀 Starting Monitor Legislativo v4 - R Architecture\n")
 
@@ -103,6 +109,18 @@ cat(paste("  RestRserve API:", if(api_init_result$status == "success") "✅" els
 cat(paste("  External Integrations:", if(external_init_result$status == "success") "✅" else "❌", "\n"))
 cat(paste("  Batch Operations:", if(batch_init_result$status == "success") "✅" else "❌", "\n"))
 cat(paste("  Data Pipeline:", if(pipeline_init_result$status == "success") "✅" else "❌", "\n"))
+
+# Initialize Week 10 AI and advanced analytics systems
+ai_init_result <- initialize_ai_integration()
+kg_init_result <- initialize_knowledge_graph()
+semantic_init_result <- initialize_semantic_search()
+recommendation_init_result <- initialize_recommendation_engine()
+
+cat("🤖 AI & Advanced Analytics systems initialized:\n")
+cat(paste("  AI Integration:", if(ai_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  Knowledge Graph:", if(kg_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  Semantic Search:", if(semantic_init_result$status == "success") "✅" else "❌", "\n"))
+cat(paste("  Recommendation Engine:", if(recommendation_init_result$status == "success") "✅" else "❌", "\n"))
 
 # Initialize enhanced geographic data and performance monitoring  
 geographic_data <- load_enhanced_ibge_data(year = 2020, level = "state", simplified = TRUE)
@@ -823,6 +841,306 @@ ui <- page_navbar(
           p(paste("Versão:", app_config$app$version)),
           p(paste("Configuração:", config_env)),
           p(paste("Inicializado:", format(Sys.time(), "%d/%m/%Y %H:%M")))
+        )
+      )
+    )
+  ),
+  
+  # AI & Advanced Analytics Tab (Week 10)
+  nav_panel(
+    title = "🤖 IA & Analytics",
+    icon = icon("brain"),
+    
+    navset_card_tab(
+      id = "ai_analytics_tabs",
+      
+      # AI Integration Tab
+      nav_panel(
+        "🧠 Integração com IA",
+        layout_columns(
+          col_widths = c(6, 6),
+          
+          # AI Services Status
+          card(
+            card_header("🔧 Status dos Serviços de IA"),
+            card_body(
+              htmlOutput("ai_services_status"),
+              br(),
+              action_button(
+                "btn_test_ai_services",
+                "🧪 Testar Serviços",
+                class = "btn-primary btn-sm w-100"
+              )
+            )
+          ),
+          
+          # Document Summarization
+          card(
+            card_header("📝 Resumo de Documentos"),
+            card_body(
+              p("Gere resumos automáticos usando IA"),
+              selectInput(
+                "ai_summary_type",
+                "Tipo de resumo:",
+                choices = list(
+                  "Executivo" = "executive",
+                  "Técnico" = "technical", 
+                  "Jurídico" = "legal"
+                ),
+                selected = "executive"
+              ),
+              numericInput(
+                "ai_summary_length",
+                "Comprimento máximo:",
+                value = 300,
+                min = 100,
+                max = 1000,
+                step = 50
+              ),
+              action_button(
+                "btn_generate_summary",
+                "📄 Gerar Resumo",
+                class = "btn-success btn-sm w-100"
+              ),
+              br(), br(),
+              htmlOutput("ai_summary_result")
+            )
+          )
+        ),
+        
+        layout_columns(
+          col_widths = c(12),
+          
+          # Document Classification
+          card(
+            card_header("🏷️ Classificação de Documentos"),
+            card_body(
+              p("Classifique documentos automaticamente usando IA"),
+              htmlOutput("ai_classification_results"),
+              br(),
+              action_button(
+                "btn_classify_documents",
+                "🔄 Classificar Documentos",
+                class = "btn-info btn-sm"
+              )
+            )
+          )
+        )
+      ),
+      
+      # Semantic Search Tab
+      nav_panel(
+        "🔍 Busca Semântica",
+        layout_columns(
+          col_widths = c(8, 4),
+          
+          # Semantic Search Interface
+          card(
+            card_header("🔍 Busca Semântica Avançada"),
+            card_body(
+              p("Busque documentos usando significado e contexto, não apenas palavras-chave"),
+              textAreaInput(
+                "semantic_query",
+                "Consulta semântica:",
+                placeholder = "Ex: documentos sobre transparência na administração pública que tratam de acesso à informação...",
+                rows = 3,
+                width = "100%"
+              ),
+              
+              sliderInput(
+                "semantic_similarity_threshold",
+                "Limite de similaridade:",
+                min = 0.5,
+                max = 1.0,
+                value = 0.7,
+                step = 0.05
+              ),
+              
+              numericInput(
+                "semantic_max_results",
+                "Máximo de resultados:",
+                value = 20,
+                min = 5,
+                max = 100,
+                step = 5
+              ),
+              
+              action_button(
+                "btn_semantic_search",
+                "🔍 Buscar Semanticamente",
+                class = "btn-primary btn-lg w-100"
+              ),
+              
+              br(), br(),
+              
+              # Search Results
+              htmlOutput("semantic_search_results")
+            )
+          ),
+          
+          # Semantic Search Stats
+          card(
+            card_header("📊 Estatísticas da Busca Semântica"),
+            card_body(
+              htmlOutput("semantic_search_stats")
+            )
+          )
+        )
+      ),
+      
+      # Knowledge Graph Tab
+      nav_panel(
+        "🕸️ Grafo de Conhecimento",
+        layout_columns(
+          col_widths = c(12),
+          
+          # Knowledge Graph Visualization
+          card(
+            card_header("🗺️ Visualização do Grafo de Conhecimento"),
+            card_body(
+              p("Explore relações entre entidades no corpus legislativo"),
+              
+              # Graph Controls
+              layout_columns(
+                col_widths = c(3, 3, 3, 3),
+                
+                selectInput(
+                  "kg_entity_type",
+                  "Tipo de entidade:",
+                  choices = list(
+                    "Todas" = "",
+                    "Lei" = "LEI",
+                    "Decreto" = "DECRETO", 
+                    "Órgão" = "ORGAO",
+                    "Pessoa" = "PESSOA",
+                    "Conceito Jurídico" = "CONCEITO_JURIDICO"
+                  ),
+                  selected = ""
+                ),
+                
+                selectInput(
+                  "kg_relationship_type",
+                  "Tipo de relação:",
+                  choices = list(
+                    "Todas" = "",
+                    "Regulamenta" = "REGULAMENTA",
+                    "Revoga" = "REVOGA",
+                    "Altera" = "ALTERA",
+                    "Cita" = "CITA"
+                  ),
+                  selected = ""
+                ),
+                
+                sliderInput(
+                  "kg_confidence_threshold",
+                  "Confiança mínima:",
+                  min = 0.1,
+                  max = 1.0,
+                  value = 0.5,
+                  step = 0.1
+                ),
+                
+                action_button(
+                  "btn_update_knowledge_graph",
+                  "🔄 Atualizar Grafo",
+                  class = "btn-primary btn-sm w-100"
+                )
+              ),
+              
+              br(),
+              
+              # Graph Visualization
+              htmlOutput("knowledge_graph_viz"),
+              
+              br(),
+              
+              # Graph Statistics
+              htmlOutput("knowledge_graph_stats")
+            )
+          )
+        )
+      ),
+      
+      # Recommendations Tab
+      nav_panel(
+        "💡 Recomendações",
+        layout_columns(
+          col_widths = c(8, 4),
+          
+          # Recommendations Display
+          card(
+            card_header("💡 Documentos Recomendados"),
+            card_body(
+              p("Descubra documentos relevantes com base em suas interações"),
+              
+              # Recommendation Controls
+              checkboxInput(
+                "exclude_seen_docs",
+                "Excluir documentos já visualizados",
+                value = TRUE
+              ),
+              
+              numericInput(
+                "max_recommendations",
+                "Número de recomendações:",
+                value = 10,
+                min = 5,
+                max = 50,
+                step = 5
+              ),
+              
+              action_button(
+                "btn_generate_recommendations",
+                "✨ Gerar Recomendações",
+                class = "btn-success btn-lg w-100"
+              ),
+              
+              br(), br(),
+              
+              # Recommendations List
+              htmlOutput("recommendations_list")
+            )
+          ),
+          
+          # Recommendation Statistics
+          card(
+            card_header("📈 Estatísticas de Recomendação"),
+            card_body(
+              htmlOutput("recommendation_stats")
+            )
+          )
+        )
+      ),
+      
+      # AI Analytics Summary Tab
+      nav_panel(
+        "📊 Resumo de Analytics",
+        layout_columns(
+          col_widths = c(4, 4, 4),
+          
+          # AI Integration Summary
+          card(
+            card_header("🧠 Resumo da Integração com IA"),
+            card_body(
+              htmlOutput("ai_integration_summary")
+            )
+          ),
+          
+          # Knowledge Graph Summary
+          card(
+            card_header("🕸️ Resumo do Grafo de Conhecimento"),
+            card_body(
+              htmlOutput("knowledge_graph_summary")
+            )
+          ),
+          
+          # Semantic Search Summary
+          card(
+            card_header("🔍 Resumo da Busca Semântica"),
+            card_body(
+              htmlOutput("semantic_search_summary")
+            )
+          )
         )
       )
     )
@@ -1671,6 +1989,355 @@ server <- function(input, output, session) {
     create_toast(
       paste("Cache limpo:", round(cleanup_result$memory_freed_mb, 1), "MB liberados"),
       "success"
+    )
+  })
+  
+  # ========================================================================
+  # AI & ADVANCED ANALYTICS HANDLERS (Week 10)
+  # ========================================================================
+  
+  # AI Services Status
+  output$ai_services_status <- renderUI({
+    ai_stats <- get_ai_statistics()
+    
+    div(
+      h6("Status dos Provedores de IA"),
+      if (ai_stats$total_requests > 0) {
+        tagList(
+          p(paste("Total de requisições:", ai_stats$total_requests)),
+          p(paste("Cache hit ratio:", round(ai_stats$cache_hit_ratio * 100, 1), "%")),
+          p(paste("Features ativas:", ai_stats$enabled_features))
+        )
+      } else {
+        p("Nenhuma atividade de IA registrada", class = "text-muted")
+      },
+      
+      h6("Circuit Breakers"),
+      if (!is.null(ai_stats$circuit_breaker_status)) {
+        lapply(names(ai_stats$circuit_breaker_status), function(provider) {
+          status <- ai_stats$circuit_breaker_status[[provider]]
+          icon_class <- switch(status,
+            "closed" = "text-success",
+            "open" = "text-danger", 
+            "half-open" = "text-warning",
+            "text-muted"
+          )
+          p(icon("circle", class = icon_class), " ", provider, ": ", status)
+        })
+      } else {
+        p("Circuit breakers não disponíveis", class = "text-muted")
+      }
+    )
+  })
+  
+  # Test AI Services
+  observeEvent(input$btn_test_ai_services, {
+    create_toast("Testando serviços de IA...", "info")
+    
+    # Test basic AI functionality
+    test_text <- "Lei Federal sobre transparência na administração pública"
+    
+    # Test summarization
+    summary_result <- summarize_document(test_text, "executive", 100)
+    
+    if (!is.null(summary_result$summary)) {
+      create_toast("Serviços de IA funcionando corretamente", "success")
+    } else {
+      create_toast("Erro nos serviços de IA", "error")
+    }
+  })
+  
+  # Generate Document Summary
+  observeEvent(input$btn_generate_summary, {
+    if (is.null(values$selected_document)) {
+      create_toast("Selecione um documento primeiro", "warning")
+      return()
+    }
+    
+    create_toast("Gerando resumo com IA...", "info")
+    
+    doc_content <- values$selected_document$content %||% values$selected_document$texto
+    
+    if (is.null(doc_content) || doc_content == "") {
+      create_toast("Documento não possui conteúdo para resumir", "warning")
+      return()
+    }
+    
+    summary_result <- summarize_document(
+      doc_content,
+      input$ai_summary_type,
+      input$ai_summary_length
+    )
+    
+    if (!is.null(summary_result$summary)) {
+      output$ai_summary_result <- renderUI({
+        div(
+          class = "alert alert-success",
+          h6("Resumo Gerado"),
+          p(summary_result$summary),
+          hr(),
+          tags$small(
+            paste("Tamanho original:", summary_result$original_length, "caracteres"),
+            br(),
+            paste("Tamanho do resumo:", summary_result$summary_length, "caracteres"),
+            br(), 
+            paste("Taxa de compressão:", summary_result$compression_ratio),
+            br(),
+            paste("Provedor:", summary_result$provider)
+          )
+        )
+      })
+      
+      create_toast("Resumo gerado com sucesso", "success")
+    } else {
+      create_toast(paste("Erro ao gerar resumo:", summary_result$message), "error")
+    }
+  })
+  
+  # Semantic Search
+  observeEvent(input$btn_semantic_search, {
+    if (is.null(input$semantic_query) || input$semantic_query == "") {
+      create_toast("Digite uma consulta para busca semântica", "warning")
+      return()
+    }
+    
+    create_toast("Executando busca semântica...", "info")
+    
+    semantic_results <- semantic_search_query(
+      query = input$semantic_query,
+      options = list(
+        similarity_threshold = input$semantic_similarity_threshold,
+        max_results = input$semantic_max_results
+      )
+    )
+    
+    if (semantic_results$total_results > 0) {
+      output$semantic_search_results <- renderUI({
+        result_cards <- lapply(semantic_results$results, function(result) {
+          div(
+            class = "card mb-2",
+            div(
+              class = "card-body",
+              h6(class = "card-title", result$title),
+              p(class = "card-text", result$snippet),
+              div(
+                class = "d-flex justify-content-between",
+                tags$small(
+                  span(class = "badge bg-primary", paste("Similaridade:", round(result$similarity_score, 3))),
+                  " ",
+                  span(class = "badge bg-secondary", result$type),
+                  " ",
+                  span(class = "badge bg-info", result$estado)
+                ),
+                tags$small(class = "text-muted", result$data)
+              )
+            )
+          )
+        })
+        
+        div(
+          h6(paste("Encontrados", semantic_results$total_results, "documentos relevantes")),
+          result_cards
+        )
+      })
+      
+      create_toast(paste("Busca semântica concluída:", semantic_results$total_results, "resultados"), "success")
+    } else {
+      output$semantic_search_results <- renderUI({
+        div(
+          class = "alert alert-info",
+          "Nenhum documento encontrado com a similaridade especificada"
+        )
+      })
+      create_toast("Nenhum resultado encontrado", "info")
+    }
+  })
+  
+  # Generate Recommendations
+  observeEvent(input$btn_generate_recommendations, {
+    create_toast("Gerando recomendações...", "info")
+    
+    # Use a dummy user ID for demo purposes
+    user_id <- session$token %||% "demo_user"
+    
+    recommendations <- generate_recommendations(
+      user_id = user_id,
+      exclude_seen = input$exclude_seen_docs,
+      max_results = input$max_recommendations
+    )
+    
+    if (length(recommendations) > 0) {
+      output$recommendations_list <- renderUI({
+        rec_cards <- lapply(recommendations, function(rec) {
+          div(
+            class = "card mb-2",
+            div(
+              class = "card-body",
+              h6(class = "card-title", rec$title %||% "Documento"),
+              p(class = "card-text", rec$snippet %||% "Sem descrição disponível"),
+              div(
+                class = "d-flex justify-content-between",
+                tags$small(
+                  span(class = "badge bg-success", paste("Score:", round(rec$final_score, 3))),
+                  " ",
+                  span(class = "badge bg-secondary", rec$type %||% "Documento")
+                ),
+                tags$small(class = "text-muted", rec$explanation %||% "")
+              )
+            )
+          )
+        })
+        
+        div(
+          h6(paste("Geradas", length(recommendations), "recomendações")),
+          rec_cards
+        )
+      })
+      
+      create_toast(paste("Recomendações geradas:", length(recommendations)), "success")
+    } else {
+      output$recommendations_list <- renderUI({
+        div(
+          class = "alert alert-info",
+          "Nenhuma recomendação disponível no momento"
+        )
+      })
+      create_toast("Nenhuma recomendação gerada", "info")
+    }
+  })
+  
+  # Update Knowledge Graph
+  observeEvent(input$btn_update_knowledge_graph, {
+    create_toast("Atualizando grafo de conhecimento...", "info")
+    
+    kg_data <- query_knowledge_graph(
+      entity_type = if(input$kg_entity_type != "") input$kg_entity_type else NULL,
+      relationship_type = if(input$kg_relationship_type != "") input$kg_relationship_type else NULL,
+      min_confidence = input$kg_confidence_threshold
+    )
+    
+    if (nrow(kg_data$nodes) > 0) {
+      # Create knowledge graph visualization
+      kg_viz <- create_graph_visualization(kg_data)
+      
+      output$knowledge_graph_viz <- renderUI({
+        if (!is.null(kg_viz)) {
+          kg_viz
+        } else {
+          div(
+            class = "alert alert-info text-center",
+            icon("network-wired", class = "fa-3x text-muted mb-3"),
+            h5("Grafo de Conhecimento"),
+            p("Visualização do grafo será exibida aqui")
+          )
+        }
+      })
+      
+      output$knowledge_graph_stats <- renderUI({
+        div(
+          h6("Estatísticas do Grafo"),
+          p(paste("Entidades:", nrow(kg_data$nodes))),
+          p(paste("Relações:", nrow(kg_data$edges))),
+          p(paste("Densidade:", round(nrow(kg_data$edges) / (nrow(kg_data$nodes) * (nrow(kg_data$nodes) - 1)), 4)))
+        )
+      })
+      
+      create_toast("Grafo de conhecimento atualizado", "success")
+    } else {
+      output$knowledge_graph_viz <- renderUI({
+        div(
+          class = "alert alert-info",
+          "Nenhuma entidade encontrada com os filtros especificados"
+        )
+      })
+      create_toast("Nenhuma entidade encontrada", "info")
+    }
+  })
+  
+  # AI Analytics Summaries
+  output$ai_integration_summary <- renderUI({
+    ai_stats <- get_ai_statistics()
+    
+    div(
+      valueBox(
+        value = ai_stats$total_requests,
+        subtitle = "Requisições de IA",
+        icon = icon("brain"),
+        color = "primary"
+      ),
+      br(),
+      valueBox(
+        value = paste0(round(ai_stats$cache_hit_ratio * 100, 1), "%"),
+        subtitle = "Taxa de Cache Hit",
+        icon = icon("memory"),
+        color = "success"
+      )
+    )
+  })
+  
+  output$knowledge_graph_summary <- renderUI({
+    kg_stats <- get_knowledge_graph_statistics()
+    
+    div(
+      valueBox(
+        value = kg_stats$nodes,
+        subtitle = "Entidades",
+        icon = icon("sitemap"),
+        color = "info"
+      ),
+      br(),
+      valueBox(
+        value = kg_stats$edges,
+        subtitle = "Relações",
+        icon = icon("link"),
+        color = "warning"
+      )
+    )
+  })
+  
+  output$semantic_search_summary <- renderUI({
+    semantic_stats <- get_semantic_search_statistics()
+    
+    div(
+      valueBox(
+        value = semantic_stats$indexed_documents,
+        subtitle = "Documentos Indexados",
+        icon = icon("search"),
+        color = "secondary"
+      ),
+      br(),
+      valueBox(
+        value = semantic_stats$indexed_chunks,
+        subtitle = "Chunks Indexados",
+        icon = icon("puzzle-piece"),
+        color = "dark"
+      )
+    )
+  })
+  
+  output$semantic_search_stats <- renderUI({
+    semantic_stats <- get_semantic_search_statistics()
+    
+    div(
+      h6("Estatísticas da Busca Semântica"),
+      p(paste("Documentos indexados:", semantic_stats$indexed_documents)),
+      p(paste("Chunks indexados:", semantic_stats$indexed_chunks)),
+      p(paste("Dimensão dos embeddings:", semantic_stats$embedding_dimension)),
+      p(paste("Limite de similaridade:", semantic_stats$similarity_threshold)),
+      p(paste("Última atualização:", format(semantic_stats$last_index_update %||% Sys.time(), "%d/%m/%Y %H:%M")))
+    )
+  })
+  
+  output$recommendation_stats <- renderUI({
+    rec_stats <- get_recommendation_statistics()
+    
+    div(
+      h6("Estatísticas de Recomendação"),
+      p(paste("Usuários totais:", rec_stats$total_users)),
+      p(paste("Interações totais:", rec_stats$total_interactions)),
+      p(paste("Documentos populares:", rec_stats$popular_documents)),
+      p(paste("Algoritmos ativos:", rec_stats$algorithms_enabled)),
+      p(paste("Última atualização:", format(rec_stats$last_updated, "%d/%m/%Y %H:%M")))
     )
   })
   
