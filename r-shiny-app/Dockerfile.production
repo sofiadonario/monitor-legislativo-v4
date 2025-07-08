@@ -58,7 +58,7 @@ COPY --from=builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 COPY --from=builder /build/renv /app/renv
 
 # Copy application files
-COPY app_unified.R ./app.R
+COPY app.R ./
 COPY R/ ./R/
 COPY www/ ./www/
 COPY config.yml ./
