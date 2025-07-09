@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install R packages - force cache bust with timestamp
-ARG CACHE_BUST=3
+ARG CACHE_BUST=4
 RUN echo "Installing R packages at $(date)" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('DBI', 'RPostgres', 'pool', 'dbplyr'))" && \
@@ -33,7 +33,8 @@ WORKDIR /app
 RUN mkdir -p data/cache data/geographic www logs exports temp
 
 # Copy application files
-COPY app_minimal.R ./app.R
+COPY app.R ./
+COPY test_version.R ./
 COPY R/ ./R/
 COPY www/ ./www/
 COPY config.yml ./
@@ -48,5 +49,5 @@ ENV SHINY_LOG_LEVEL=INFO
 # Expose port
 EXPOSE ${PORT:-3838}
 
-# Start the application
-CMD ["R", "-e", "source('app.R')"]
+# Start the application with version test
+CMD ["R", "-e", "source('test_version.R'); source('app.R')"]
