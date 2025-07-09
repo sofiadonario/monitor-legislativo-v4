@@ -1,4 +1,4 @@
-# Optimized Dockerfile for Railway R Shiny deployment
+# Production Dockerfile for Monitor Legislativo v4
 FROM rocker/shiny:4.3.1
 
 # Install system dependencies
@@ -11,26 +11,34 @@ RUN apt-get update && apt-get install -y \
     libproj-dev \
     libgeos-dev \
     libsqlite3-dev \
+    libpq-dev \
+    libsodium-dev \
+    postgresql-client \
+    redis-tools \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install R packages directly
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT', 'leaflet', 'plotly', 'dplyr', 'jsonlite'), repos='https://cran.rstudio.com/')"
 
 # Set working directory
 WORKDIR /app
 
-# Copy R application files (paths relative to build context)
-COPY app-minimal.R ./app.R
-COPY .Rprofile ./
-
-# Install R packages
-RUN R -e "source('.Rprofile')"
+# Copy application files
+COPY app.R ./
+COPY R/ ./R/
+COPY www/ ./www/
+COPY config.yml ./
 
 # Create necessary directories
-RUN mkdir -p data/cache data/geographic www logs exports
+RUN mkdir -p data/cache data/geographic www logs exports temp
 
-# Set permissions
-RUN chown -R shiny:shiny /app
+# Set environment variables
+ENV R_CONFIG_ACTIVE=production
+ENV SHINY_LOG_LEVEL=INFO
 
 # Expose port
-EXPOSE 3838
+EXPOSE ${PORT:-3838}
 
-# Run the Shiny app with proper signal handling
-CMD ["R", "-e", "shiny::runApp('/app/app.R', host='0.0.0.0', port=as.integer(Sys.getenv('PORT', '3838')))"]
+# Start the application
+CMD ["R", "-e", "options(shiny.port = as.integer(Sys.getenv('PORT', '3838')), shiny.host = '0.0.0.0', shiny.maxRequestSize = 100*1024^2); shiny::runApp('app.R', launch.browser = FALSE)"]
