@@ -373,6 +373,13 @@ server <- function(input, output, session) {
           icon("info-circle"),
           strong(paste("Found", result_count, "documents")),
           if (result_count == 200) " (showing first 200 results)" else "",
+          if (!is.null(input$searchText) && nchar(input$searchText) > 0) {
+            div(
+              br(),
+              icon("star"),
+              em("Results ranked by relevance (title matches first, then content)")
+            )
+          },
           if (length(filter_parts) > 0) {
             div(
               br(),
@@ -426,7 +433,7 @@ server <- function(input, output, session) {
         return(DT::datatable(empty_data, options = list(searching = FALSE)))
       }
       
-      # Format search results
+      # Format search results with highlighting
       display_data <- data %>%
         select(titulo, tipo, estado, data_publicacao, urn) %>%
         rename(
@@ -437,13 +444,22 @@ server <- function(input, output, session) {
           "URN" = urn
         )
       
+      # Highlight search terms in titles if search text was provided
+      if (!is.null(input$searchText) && nchar(input$searchText) > 0) {
+        search_terms <- strsplit(input$searchText, "\\s+")[[1]]
+        display_data$Title <- sapply(display_data$Title, function(title) {
+          highlight_search_terms(title, search_terms)
+        })
+      }
+      
       DT::datatable(
         display_data,
         options = list(
           pageLength = 25,
           scrollX = TRUE
         ),
-        rownames = FALSE
+        rownames = FALSE,
+        escape = FALSE  # Allow HTML in cells for highlighting
       )
     }
   })

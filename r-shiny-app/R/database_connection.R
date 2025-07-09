@@ -230,28 +230,47 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
   }
   
   tryCatch({
-    # Build dynamic query
-    base_query <- "
-      SELECT 
-        id,
-        titulo,
-        tipo,
-        estado,
-        data_publicacao,
-        url,
-        urn,
-        conteudo
-      FROM documents 
-      WHERE 1=1"
+    # Build dynamic query with ranking
+    has_search_text <- nchar(search_text) > 0
     
-    params <- list()
-    param_count <- 0
-    
-    # Add text search condition
-    if (nchar(search_text) > 0) {
-      param_count <- param_count + 1
-      base_query <- paste(base_query, "AND (titulo ILIKE $", param_count, " OR conteudo ILIKE $", param_count, ")", sep="")
-      params[[param_count]] <- paste0("%", search_text, "%")
+    if (has_search_text) {
+      base_query <- "
+        SELECT 
+          id,
+          titulo,
+          tipo,
+          estado,
+          data_publicacao,
+          url,
+          urn,
+          conteudo,
+          CASE 
+            WHEN titulo ILIKE $1 THEN 3
+            WHEN conteudo ILIKE $1 THEN 1
+            ELSE 0
+          END as relevance_score
+        FROM documents 
+        WHERE (titulo ILIKE $1 OR conteudo ILIKE $1)"
+      
+      params <- list(paste0("%", search_text, "%"))
+      param_count <- 1
+    } else {
+      base_query <- "
+        SELECT 
+          id,
+          titulo,
+          tipo,
+          estado,
+          data_publicacao,
+          url,
+          urn,
+          conteudo,
+          0 as relevance_score
+        FROM documents 
+        WHERE 1=1"
+      
+      params <- list()
+      param_count <- 0
     }
     
     # Add document type filter
@@ -281,9 +300,13 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
       params[[param_count]] <- date_to
     }
     
-    # Add ordering and limit
+    # Add ordering and limit - rank by relevance first, then by date
     param_count <- param_count + 1
-    base_query <- paste(base_query, "ORDER BY data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+    if (has_search_text) {
+      base_query <- paste(base_query, "ORDER BY relevance_score DESC, data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+    } else {
+      base_query <- paste(base_query, "ORDER BY data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+    }
     params[[param_count]] <- limit
     
     # Debug: print query for troubleshooting
@@ -309,9 +332,12 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
       }
       result[is.na(result)] <- ""
       
-      # Remove content from display (too long for tables)
+      # Remove content and relevance score from display (too long for tables)
       if ("conteudo" %in% names(result)) {
         result$conteudo <- NULL
+      }
+      if ("relevance_score" %in% names(result)) {
+        result$relevance_score <- NULL
       }
       
       search_desc <- paste(
@@ -443,6 +469,28 @@ get_document_stats <- function() {
       connection_status = paste("Error:", e$message)
     ))
   })
+}
+
+#' Highlight search terms in text
+#' @param text The text to highlight
+#' @param search_terms Vector of terms to highlight
+#' @return HTML string with highlighted terms
+highlight_search_terms <- function(text, search_terms) {
+  if (is.null(search_terms) || length(search_terms) == 0 || is.null(text) || nchar(text) == 0) {
+    return(text)
+  }
+  
+  result <- text
+  for (term in search_terms) {
+    if (nchar(term) > 0) {
+      # Case-insensitive replacement with HTML highlighting
+      pattern <- paste0("(", term, ")")
+      replacement <- '<mark style="background-color: #ffff00; padding: 0 2px;">\\1</mark>'
+      result <- gsub(pattern, replacement, result, ignore.case = TRUE)
+    }
+  }
+  
+  return(result)
 }
 
 #' Close database connection pool
