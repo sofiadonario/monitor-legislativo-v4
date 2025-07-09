@@ -63,11 +63,30 @@ server <- function(input, output) {
   })
 }
 
-# Print startup message
+# Print startup information
 cat("Starting Monitor Legislativo v4 Shiny application...\n")
+cat("PORT env var:", Sys.getenv("PORT"), "\n")
+cat("Using port:", as.integer(Sys.getenv("PORT", "3838")), "\n")
+cat("Host: 0.0.0.0\n")
+cat("All env vars with PORT:\n")
+envs <- Sys.getenv()
+for(name in names(envs)) {
+  if(grepl("PORT", name, ignore.case = TRUE)) {
+    cat("  ", name, "=", envs[name], "\n")
+  }
+}
 
-# Run the application
-shinyApp(ui = ui, server = server, options = list(
-  host = "0.0.0.0",
-  port = as.integer(Sys.getenv("PORT", "3838"))
-))
+# Set options before running app
+options(
+  shiny.host = "0.0.0.0",
+  shiny.port = as.integer(Sys.getenv("PORT", "3838")),
+  shiny.launch.browser = FALSE,
+  shiny.autoreload = FALSE
+)
+
+# Run the application with explicit options
+cat("Starting Shiny app...\n")
+app <- shinyApp(ui = ui, server = server)
+
+# Add a print when server starts
+runApp(app, host = "0.0.0.0", port = as.integer(Sys.getenv("PORT", "3838")), launch.browser = FALSE)
