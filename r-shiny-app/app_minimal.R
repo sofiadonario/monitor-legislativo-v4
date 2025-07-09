@@ -63,9 +63,11 @@ server <- function(input, output) {
   })
 }
 
-# Health check endpoint
-addResourcePath("health", "/tmp")
-writeLines("OK", "/tmp/health")
+# Print startup message
+cat("Starting Monitor Legislativo v4 Shiny application...\n")
 
 # Run the application
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server, options = list(
+  host = "0.0.0.0",
+  port = as.integer(Sys.getenv("PORT", "3838"))
+))

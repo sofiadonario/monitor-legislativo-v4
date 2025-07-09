@@ -48,8 +48,5 @@ ENV SHINY_LOG_LEVEL=INFO
 # Expose port
 EXPOSE ${PORT:-3838}
 
-# Create health check
-RUN echo 'OK' > /tmp/health
-
 # Start the application
-CMD ["R", "-e", "options(shiny.port = as.integer(Sys.getenv('PORT', '3838')), shiny.host = '0.0.0.0', shiny.maxRequestSize = 100*1024^2); source('app.R')"]
+CMD ["R", "-e", "source('app.R')"]
