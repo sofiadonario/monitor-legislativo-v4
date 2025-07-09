@@ -10,6 +10,7 @@ library(jsonlite)
 library(plotly)
 library(ggplot2)
 library(shinyjs)
+library(shinycssloaders)
 library(leaflet)
 library(stringr)
 library(openxlsx)
@@ -75,6 +76,119 @@ ui <- dashboardPage(
   ),
   dashboardBody(
     useShinyjs(),
+    
+    # Custom CSS for better styling and animations
+    tags$head(
+      tags$style(HTML("
+        .content-wrapper, .right-side {
+          background-color: #f4f4f4;
+        }
+        
+        .box {
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          transition: all 0.3s ease;
+        }
+        
+        .box:hover {
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .btn {
+          border-radius: 4px;
+          transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        
+        .alert {
+          border-radius: 6px;
+          animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .progress-bar {
+          transition: width 0.3s ease;
+        }
+        
+        .tooltip {
+          font-size: 12px;
+        }
+        
+        .help-text {
+          font-size: 11px;
+          color: #666;
+          margin-top: 5px;
+        }
+        
+        .export-buttons {
+          animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        .cache-controls .btn {
+          margin-right: 5px;
+        }
+        
+        .search-controls {
+          margin-bottom: 20px;
+        }
+        
+        .history-item:hover {
+          background-color: #f8f9fa;
+          border-color: #007bff;
+        }
+        
+        .saved-search-item:hover {
+          background-color: #f8f9fa;
+          border-color: #28a745;
+        }
+        
+        .loading-overlay {
+          position: relative;
+        }
+        
+        .status-indicator {
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          margin-right: 5px;
+        }
+        
+        .status-connected {
+          background-color: #28a745;
+          animation: pulse 2s infinite;
+        }
+        
+        .status-disconnected {
+          background-color: #dc3545;
+        }
+        
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
+        }
+      "))
+    ),
+    
     tabItems(
       # Dashboard tab with statistics
       tabItem(tabName = "dashboard",
@@ -90,6 +204,7 @@ ui <- dashboardPage(
             br(),
             h5("Database Connection:"),
             p(
+              span(class = if(database_connected) "status-indicator status-connected" else "status-indicator status-disconnected"),
               icon(if(database_connected) "check-circle" else "exclamation-triangle"), 
               if(database_connected) "Connected to PostgreSQL" else database_error,
               style = paste0("color: ", if(database_connected) "green" else "orange")
@@ -97,7 +212,7 @@ ui <- dashboardPage(
             if(database_connected) {
               div(
                 h5("Database Statistics:"),
-                verbatimTextOutput("dbStats")
+                withSpinner(verbatimTextOutput("dbStats"), type = 4, color = "#3498db")
               )
             },
             br(),
@@ -130,7 +245,7 @@ ui <- dashboardPage(
             if(database_connected) {
               div(
                 h5("Document Types:"),
-                DT::dataTableOutput("typeStats", height = "200px")
+                withSpinner(DT::dataTableOutput("typeStats", height = "200px"), type = 4, color = "#17a2b8")
               )
             } else {
               p("Connect to database to see real statistics")
@@ -145,14 +260,16 @@ ui <- dashboardPage(
           solidHeader = TRUE, 
           width = 12,
           h5("Cache Statistics:"),
-          verbatimTextOutput("cacheStats"),
+          withSpinner(verbatimTextOutput("cacheStats"), type = 4, color = "#28a745"),
           br(),
           div(
             class = "cache-controls",
-            actionButton("clearCacheBtn", "Clear Cache", icon = icon("trash"), class = "btn-warning"),
-            " ",
-            actionButton("refreshCacheBtn", "Refresh Cache", icon = icon("refresh"), class = "btn-info")
-          )
+            actionButton("clearCacheBtn", "Clear Cache", icon = icon("trash"), class = "btn-warning",
+                        title = "Clear all cached data to free memory"),
+            actionButton("refreshCacheBtn", "Refresh Cache", icon = icon("refresh"), class = "btn-info",
+                        title = "Refresh all cached data from database")
+          ),
+          div(class = "help-text", "Cache improves performance by storing frequently accessed data")
         )
       ),
       
@@ -173,13 +290,15 @@ ui <- dashboardPage(
             div(
               class = "export-buttons",
               style = "margin-bottom: 15px; text-align: right;",
-              downloadButton("exportDocsCSV", "Export CSV", icon = icon("download"), class = "btn-success btn-sm"),
-              " ",
-              downloadButton("exportDocsExcel", "Export Excel", icon = icon("file-excel"), class = "btn-info btn-sm"),
-              " ",
-              downloadButton("exportDocsCitations", "Export Citations", icon = icon("quote-left"), class = "btn-warning btn-sm")
+              downloadButton("exportDocsCSV", "Export CSV", icon = icon("download"), class = "btn-success btn-sm",
+                            title = "Export all documents to CSV format"),
+              downloadButton("exportDocsExcel", "Export Excel", icon = icon("file-excel"), class = "btn-info btn-sm",
+                            title = "Export all documents to Excel format"),
+              downloadButton("exportDocsCitations", "Export Citations", icon = icon("quote-left"), class = "btn-warning btn-sm",
+                            title = "Export citations in ABNT format")
             ),
-            DT::dataTableOutput("documentsTable")
+            div(class = "help-text", "Click on column headers to sort. Use the search box to filter results."),
+            withSpinner(DT::dataTableOutput("documentsTable"), type = 1, color = "#007bff")
           )
         )
       ),
@@ -198,13 +317,15 @@ ui <- dashboardPage(
                 fluidRow(
                   column(6,
                     textInput("searchText", "Search Text:", 
-                             placeholder = "Enter keywords to search titles and content...")
+                             placeholder = "Enter keywords to search titles and content..."),
+                    div(class = "help-text", "Search will look for matches in document titles and content")
                   ),
                   column(6,
                     selectizeInput("documentTypes", "Document Types:", 
                                  choices = NULL, 
                                  multiple = TRUE,
-                                 options = list(placeholder = "Select document types (optional)"))
+                                 options = list(placeholder = "Select document types (optional)")),
+                    div(class = "help-text", "Filter by specific document types (laws, decrees, etc.)")
                   )
                 ),
                 fluidRow(
@@ -212,27 +333,31 @@ ui <- dashboardPage(
                     selectizeInput("states", "States:", 
                                  choices = NULL, 
                                  multiple = TRUE,
-                                 options = list(placeholder = "Select states (optional)"))
+                                 options = list(placeholder = "Select states (optional)")),
+                    div(class = "help-text", "Filter by Brazilian states")
                   ),
                   column(3,
                     dateInput("dateFrom", "Date From:", 
                              value = NULL,
-                             format = "yyyy-mm-dd")
+                             format = "yyyy-mm-dd"),
+                    div(class = "help-text", "Start date for filtering")
                   ),
                   column(3,
                     dateInput("dateTo", "Date To:", 
                              value = NULL,
-                             format = "yyyy-mm-dd")
+                             format = "yyyy-mm-dd"),
+                    div(class = "help-text", "End date for filtering")
                   )
                 ),
                 fluidRow(
                   column(12,
-                    div(class = "text-center",
-                      actionButton("searchBtn", "Search Documents", icon = icon("search"), class = "btn-primary btn-lg"),
-                      " ",
-                      actionButton("clearBtn", "Clear Filters", icon = icon("times"), class = "btn-secondary"),
-                      " ",
-                      actionButton("saveSearchBtn", "Save Search", icon = icon("star"), class = "btn-warning")
+                    div(class = "text-center search-controls",
+                      actionButton("searchBtn", "Search Documents", icon = icon("search"), class = "btn-primary btn-lg",
+                                  title = "Execute search with current filters"),
+                      actionButton("clearBtn", "Clear Filters", icon = icon("times"), class = "btn-secondary",
+                                  title = "Clear all search filters"),
+                      actionButton("saveSearchBtn", "Save Search", icon = icon("star"), class = "btn-warning",
+                                  title = "Save current search filters for later use")
                     )
                   )
                 ),
@@ -244,14 +369,15 @@ ui <- dashboardPage(
                     style = "margin-bottom: 15px; text-align: right;",
                     conditionalPanel(
                       condition = "output.searchResultsAvailable == true",
-                      downloadButton("exportSearchCSV", "Export CSV", icon = icon("download"), class = "btn-success btn-sm"),
-                      " ",
-                      downloadButton("exportSearchExcel", "Export Excel", icon = icon("file-excel"), class = "btn-info btn-sm"),
-                      " ",
-                      downloadButton("exportSearchCitations", "Export Citations", icon = icon("quote-left"), class = "btn-warning btn-sm")
+                      downloadButton("exportSearchCSV", "Export CSV", icon = icon("download"), class = "btn-success btn-sm",
+                                    title = "Export search results to CSV"),
+                      downloadButton("exportSearchExcel", "Export Excel", icon = icon("file-excel"), class = "btn-info btn-sm",
+                                    title = "Export search results to Excel"),
+                      downloadButton("exportSearchCitations", "Export Citations", icon = icon("quote-left"), class = "btn-warning btn-sm",
+                                    title = "Export search results as citations")
                     )
                   ),
-                  DT::dataTableOutput("searchResults")
+                  withSpinner(DT::dataTableOutput("searchResults"), type = 1, color = "#007bff")
                 )
               )
             } else {
@@ -273,7 +399,8 @@ ui <- dashboardPage(
             tabsetPanel(
               tabPanel("History", 
                 br(),
-                actionButton("clearHistoryBtn", "Clear History", icon = icon("trash"), class = "btn-sm btn-danger"),
+                actionButton("clearHistoryBtn", "Clear History", icon = icon("trash"), class = "btn-sm btn-danger",
+                            title = "Clear all search history"),
                 hr(),
                 div(id = "searchHistoryContainer",
                   uiOutput("searchHistoryList")
@@ -303,16 +430,16 @@ ui <- dashboardPage(
               div(
                 fluidRow(
                   column(3,
-                    valueBoxOutput("analyticsTotal", width = NULL)
+                    withSpinner(valueBoxOutput("analyticsTotal", width = NULL), type = 4, color = "#007bff")
                   ),
                   column(3,
-                    valueBoxOutput("analyticsStates", width = NULL)
+                    withSpinner(valueBoxOutput("analyticsStates", width = NULL), type = 4, color = "#28a745")
                   ),
                   column(3,
-                    valueBoxOutput("analyticsTypes", width = NULL)
+                    withSpinner(valueBoxOutput("analyticsTypes", width = NULL), type = 4, color = "#ffc107")
                   ),
                   column(3,
-                    valueBoxOutput("analyticsDateRange", width = NULL)
+                    withSpinner(valueBoxOutput("analyticsDateRange", width = NULL), type = 4, color = "#6f42c1")
                   )
                 )
               )
@@ -334,7 +461,7 @@ ui <- dashboardPage(
               status = "primary", 
               solidHeader = TRUE, 
               width = 6,
-              plotlyOutput("yearChart", height = "300px")
+              withSpinner(plotlyOutput("yearChart", height = "300px"), type = 2, color = "#3498db")
             ),
             
             # Documents by State Chart
@@ -343,7 +470,7 @@ ui <- dashboardPage(
               status = "success", 
               solidHeader = TRUE, 
               width = 6,
-              plotlyOutput("stateChart", height = "300px")
+              withSpinner(plotlyOutput("stateChart", height = "300px"), type = 2, color = "#27ae60")
             )
           )
         },
@@ -355,7 +482,7 @@ ui <- dashboardPage(
               status = "warning", 
               solidHeader = TRUE, 
               width = 6,
-              plotlyOutput("typeChart", height = "300px")
+              withSpinner(plotlyOutput("typeChart", height = "300px"), type = 2, color = "#f39c12")
             ),
             
             # Recent Documents
@@ -364,7 +491,7 @@ ui <- dashboardPage(
               status = "info", 
               solidHeader = TRUE, 
               width = 6,
-              DT::dataTableOutput("recentDocuments", height = "300px")
+              withSpinner(DT::dataTableOutput("recentDocuments", height = "300px"), type = 1, color = "#17a2b8")
             )
           )
         }
@@ -385,12 +512,13 @@ ui <- dashboardPage(
                   column(12,
                     div(class = "text-center",
                       p("Click on a state to filter documents by that state"),
-                      actionButton("resetMapFilter", "Reset Filter", icon = icon("refresh"), class = "btn-secondary")
+                      actionButton("resetMapFilter", "Reset Filter", icon = icon("refresh"), class = "btn-secondary",
+                                  title = "Reset state filter and show all documents")
                     )
                   )
                 ),
                 hr(),
-                leafletOutput("documentMap", height = "600px")
+                withSpinner(leafletOutput("documentMap", height = "600px"), type = 3, color = "#17a2b8")
               )
             } else {
               div(
@@ -410,7 +538,7 @@ ui <- dashboardPage(
               status = "primary", 
               solidHeader = TRUE, 
               width = 12,
-              DT::dataTableOutput("stateStatsTable")
+              withSpinner(DT::dataTableOutput("stateStatsTable"), type = 1, color = "#007bff")
             )
           )
         }
@@ -544,59 +672,106 @@ server <- function(input, output, session) {
   # Advanced search functionality
   observeEvent(input$searchBtn, {
     if (database_connected) {
+      # Disable search button during search
+      shinyjs::disable("searchBtn")
+      shinyjs::disable("clearBtn")
+      shinyjs::disable("saveSearchBtn")
+      
       withProgress(message = 'Searching documents...', value = 0, {
-        incProgress(0.3)
-        
-        # Get filter values
-        search_text <- input$searchText
-        doc_types <- input$documentTypes
-        states_filter <- input$states
-        date_from <- input$dateFrom
-        date_to <- input$dateTo
-        
-        incProgress(0.7)
-        
-        # Perform advanced search
-        values$search_results <- search_documents(
-          search_text = search_text,
-          document_types = doc_types,
-          states = states_filter,
-          date_from = date_from,
-          date_to = date_to,
-          limit = 200
-        )
-        
-        # Save to search history
-        search_params <- list(
-          search_text = search_text,
-          document_types = doc_types,
-          states = states_filter,
-          date_from = date_from,
-          date_to = date_to
-        )
-        
-        # Only save if search has any criteria
-        if (nchar(search_text) > 0 || !is.null(doc_types) || !is.null(states_filter) || 
-            !is.null(date_from) || !is.null(date_to)) {
-          session_id <- session$token
-          save_search_history(search_params, session_id)
-          # Reload search history
-          values$search_history <- get_search_history(session_id)
-        }
-        
-        incProgress(1)
+        tryCatch({
+          incProgress(0.2, detail = "Validating search parameters...")
+          
+          # Get filter values
+          search_text <- input$searchText
+          doc_types <- input$documentTypes
+          states_filter <- input$states
+          date_from <- input$dateFrom
+          date_to <- input$dateTo
+          
+          incProgress(0.4, detail = "Executing database query...")
+          
+          # Perform advanced search
+          values$search_results <- search_documents(
+            search_text = search_text,
+            document_types = doc_types,
+            states = states_filter,
+            date_from = date_from,
+            date_to = date_to,
+            limit = 200
+          )
+          
+          incProgress(0.8, detail = "Saving search to history...")
+          
+          # Save to search history
+          search_params <- list(
+            search_text = search_text,
+            document_types = doc_types,
+            states = states_filter,
+            date_from = date_from,
+            date_to = date_to
+          )
+          
+          # Only save if search has any criteria
+          if (nchar(search_text) > 0 || !is.null(doc_types) || !is.null(states_filter) || 
+              !is.null(date_from) || !is.null(date_to)) {
+            session_id <- session$token
+            save_search_history(search_params, session_id)
+            # Reload search history
+            values$search_history <- get_search_history(session_id)
+          }
+          
+          incProgress(1, detail = "Search completed successfully!")
+          
+          # Show success notification
+          result_count <- if (!is.null(values$search_results)) nrow(values$search_results) else 0
+          showNotification(
+            paste("Search completed!", result_count, "documents found."),
+            type = "success",
+            duration = 3
+          )
+        }, error = function(e) {
+          # Handle search errors gracefully
+          showNotification(
+            paste("Search failed:", e$message),
+            type = "error",
+            duration = 5
+          )
+          cat("Search error:", e$message, "\n")
+        })
       })
+      
+      # Re-enable buttons after search
+      shinyjs::enable("searchBtn")
+      shinyjs::enable("clearBtn")
+      shinyjs::enable("saveSearchBtn")
+    } else {
+      showNotification("Database not connected. Please check connection.", type = "error", duration = 5)
     }
   })
   
   # Clear filters functionality
   observeEvent(input$clearBtn, {
+    showModal(modalDialog(
+      title = "Clear Search Filters",
+      "Are you sure you want to clear all search filters and results?",
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("confirmClearFilters", "Clear All", class = "btn-warning")
+      )
+    ))
+  })
+  
+  # Confirm clear filters
+  observeEvent(input$confirmClearFilters, {
     updateTextInput(session, "searchText", value = "")
     updateSelectizeInput(session, "documentTypes", selected = NULL)
     updateSelectizeInput(session, "states", selected = NULL)
     updateDateInput(session, "dateFrom", value = NULL)
     updateDateInput(session, "dateTo", value = NULL)
     values$search_results <- NULL
+    
+    showNotification("Search filters cleared successfully!", type = "info", duration = 3)
+    removeModal()
   })
   
   # Search summary
@@ -733,23 +908,31 @@ server <- function(input, output, session) {
       paste0("legislative_documents_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv")
     },
     content = function(file) {
-      tryCatch({
-        data <- values$current_documents
-        if (is.null(data) || nrow(data) == 0) {
-          showNotification("No documents to export", type = "warning")
-          return()
-        }
-        
-        # Create temporary CSV file
-        temp_file <- export_to_csv(data, "legislative_documents")
-        if (!is.null(temp_file) && file.exists(temp_file)) {
-          file.copy(temp_file, file)
-          showNotification("Documents exported to CSV successfully!", type = "success")
-        } else {
-          showNotification("Error creating CSV export", type = "error")
-        }
-      }, error = function(e) {
-        showNotification(paste("Export error:", e$message), type = "error")
+      withProgress(message = 'Exporting to CSV...', value = 0, {
+        tryCatch({
+          incProgress(0.3, detail = "Preparing data...")
+          
+          data <- values$current_documents
+          if (is.null(data) || nrow(data) == 0) {
+            showNotification("No documents to export", type = "warning", duration = 3)
+            return()
+          }
+          
+          incProgress(0.7, detail = "Creating CSV file...")
+          
+          # Create temporary CSV file
+          temp_file <- export_to_csv(data, "legislative_documents")
+          if (!is.null(temp_file) && file.exists(temp_file)) {
+            file.copy(temp_file, file)
+            incProgress(1, detail = "Export completed!")
+            showNotification("Documents exported to CSV successfully!", type = "success", duration = 3)
+          } else {
+            showNotification("Error creating CSV export", type = "error", duration = 5)
+          }
+        }, error = function(e) {
+          showNotification(paste("Export error:", e$message), type = "error", duration = 5)
+          cat("CSV export error:", e$message, "\n")
+        })
       })
     }
   )
@@ -759,23 +942,31 @@ server <- function(input, output, session) {
       paste0("legislative_documents_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx")
     },
     content = function(file) {
-      tryCatch({
-        data <- values$current_documents
-        if (is.null(data) || nrow(data) == 0) {
-          showNotification("No documents to export", type = "warning")
-          return()
-        }
-        
-        # Create temporary Excel file
-        temp_file <- export_to_excel(data, "legislative_documents")
-        if (!is.null(temp_file) && file.exists(temp_file)) {
-          file.copy(temp_file, file)
-          showNotification("Documents exported to Excel successfully!", type = "success")
-        } else {
-          showNotification("Error creating Excel export", type = "error")
-        }
-      }, error = function(e) {
-        showNotification(paste("Export error:", e$message), type = "error")
+      withProgress(message = 'Exporting to Excel...', value = 0, {
+        tryCatch({
+          incProgress(0.3, detail = "Preparing data...")
+          
+          data <- values$current_documents
+          if (is.null(data) || nrow(data) == 0) {
+            showNotification("No documents to export", type = "warning", duration = 3)
+            return()
+          }
+          
+          incProgress(0.7, detail = "Creating Excel file...")
+          
+          # Create temporary Excel file
+          temp_file <- export_to_excel(data, "legislative_documents")
+          if (!is.null(temp_file) && file.exists(temp_file)) {
+            file.copy(temp_file, file)
+            incProgress(1, detail = "Export completed!")
+            showNotification("Documents exported to Excel successfully!", type = "success", duration = 3)
+          } else {
+            showNotification("Error creating Excel export", type = "error", duration = 5)
+          }
+        }, error = function(e) {
+          showNotification(paste("Export error:", e$message), type = "error", duration = 5)
+          cat("Excel export error:", e$message, "\n")
+        })
       })
     }
   )
@@ -785,23 +976,31 @@ server <- function(input, output, session) {
       paste0("legislative_citations_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".txt")
     },
     content = function(file) {
-      tryCatch({
-        data <- values$current_documents
-        if (is.null(data) || nrow(data) == 0) {
-          showNotification("No documents to export", type = "warning")
-          return()
-        }
-        
-        # Create temporary citation file
-        temp_file <- export_citations(data, "ABNT", "legislative_citations")
-        if (!is.null(temp_file) && file.exists(temp_file)) {
-          file.copy(temp_file, file)
-          showNotification("Citations exported successfully!", type = "success")
-        } else {
-          showNotification("Error creating citation export", type = "error")
-        }
-      }, error = function(e) {
-        showNotification(paste("Export error:", e$message), type = "error")
+      withProgress(message = 'Exporting citations...', value = 0, {
+        tryCatch({
+          incProgress(0.3, detail = "Preparing data...")
+          
+          data <- values$current_documents
+          if (is.null(data) || nrow(data) == 0) {
+            showNotification("No documents to export", type = "warning", duration = 3)
+            return()
+          }
+          
+          incProgress(0.7, detail = "Creating citation file...")
+          
+          # Create temporary citation file
+          temp_file <- export_citations(data, "ABNT", "legislative_citations")
+          if (!is.null(temp_file) && file.exists(temp_file)) {
+            file.copy(temp_file, file)
+            incProgress(1, detail = "Export completed!")
+            showNotification("Citations exported successfully!", type = "success", duration = 3)
+          } else {
+            showNotification("Error creating citation export", type = "error", duration = 5)
+          }
+        }, error = function(e) {
+          showNotification(paste("Export error:", e$message), type = "error", duration = 5)
+          cat("Citation export error:", e$message, "\n")
+        })
       })
     }
   )
@@ -812,23 +1011,31 @@ server <- function(input, output, session) {
       paste0("search_results_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv")
     },
     content = function(file) {
-      tryCatch({
-        data <- values$search_results
-        if (is.null(data) || nrow(data) == 0) {
-          showNotification("No search results to export", type = "warning")
-          return()
-        }
-        
-        # Create temporary CSV file
-        temp_file <- export_to_csv(data, "search_results")
-        if (!is.null(temp_file) && file.exists(temp_file)) {
-          file.copy(temp_file, file)
-          showNotification("Search results exported to CSV successfully!", type = "success")
-        } else {
-          showNotification("Error creating CSV export", type = "error")
-        }
-      }, error = function(e) {
-        showNotification(paste("Export error:", e$message), type = "error")
+      withProgress(message = 'Exporting search results...', value = 0, {
+        tryCatch({
+          incProgress(0.3, detail = "Preparing search results...")
+          
+          data <- values$search_results
+          if (is.null(data) || nrow(data) == 0) {
+            showNotification("No search results to export", type = "warning", duration = 3)
+            return()
+          }
+          
+          incProgress(0.7, detail = "Creating CSV file...")
+          
+          # Create temporary CSV file
+          temp_file <- export_to_csv(data, "search_results")
+          if (!is.null(temp_file) && file.exists(temp_file)) {
+            file.copy(temp_file, file)
+            incProgress(1, detail = "Export completed!")
+            showNotification("Search results exported to CSV successfully!", type = "success", duration = 3)
+          } else {
+            showNotification("Error creating CSV export", type = "error", duration = 5)
+          }
+        }, error = function(e) {
+          showNotification(paste("Export error:", e$message), type = "error", duration = 5)
+          cat("Search CSV export error:", e$message, "\n")
+        })
       })
     }
   )
@@ -838,23 +1045,31 @@ server <- function(input, output, session) {
       paste0("search_results_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx")
     },
     content = function(file) {
-      tryCatch({
-        data <- values$search_results
-        if (is.null(data) || nrow(data) == 0) {
-          showNotification("No search results to export", type = "warning")
-          return()
-        }
-        
-        # Create temporary Excel file
-        temp_file <- export_to_excel(data, "search_results")
-        if (!is.null(temp_file) && file.exists(temp_file)) {
-          file.copy(temp_file, file)
-          showNotification("Search results exported to Excel successfully!", type = "success")
-        } else {
-          showNotification("Error creating Excel export", type = "error")
-        }
-      }, error = function(e) {
-        showNotification(paste("Export error:", e$message), type = "error")
+      withProgress(message = 'Exporting search results...', value = 0, {
+        tryCatch({
+          incProgress(0.3, detail = "Preparing search results...")
+          
+          data <- values$search_results
+          if (is.null(data) || nrow(data) == 0) {
+            showNotification("No search results to export", type = "warning", duration = 3)
+            return()
+          }
+          
+          incProgress(0.7, detail = "Creating Excel file...")
+          
+          # Create temporary Excel file
+          temp_file <- export_to_excel(data, "search_results")
+          if (!is.null(temp_file) && file.exists(temp_file)) {
+            file.copy(temp_file, file)
+            incProgress(1, detail = "Export completed!")
+            showNotification("Search results exported to Excel successfully!", type = "success", duration = 3)
+          } else {
+            showNotification("Error creating Excel export", type = "error", duration = 5)
+          }
+        }, error = function(e) {
+          showNotification(paste("Export error:", e$message), type = "error", duration = 5)
+          cat("Search Excel export error:", e$message, "\n")
+        })
       })
     }
   )
@@ -864,23 +1079,31 @@ server <- function(input, output, session) {
       paste0("search_citations_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".txt")
     },
     content = function(file) {
-      tryCatch({
-        data <- values$search_results
-        if (is.null(data) || nrow(data) == 0) {
-          showNotification("No search results to export", type = "warning")
-          return()
-        }
-        
-        # Create temporary citation file
-        temp_file <- export_citations(data, "ABNT", "search_citations")
-        if (!is.null(temp_file) && file.exists(temp_file)) {
-          file.copy(temp_file, file)
-          showNotification("Search citations exported successfully!", type = "success")
-        } else {
-          showNotification("Error creating citation export", type = "error")
-        }
-      }, error = function(e) {
-        showNotification(paste("Export error:", e$message), type = "error")
+      withProgress(message = 'Exporting search citations...', value = 0, {
+        tryCatch({
+          incProgress(0.3, detail = "Preparing search results...")
+          
+          data <- values$search_results
+          if (is.null(data) || nrow(data) == 0) {
+            showNotification("No search results to export", type = "warning", duration = 3)
+            return()
+          }
+          
+          incProgress(0.7, detail = "Creating citation file...")
+          
+          # Create temporary citation file
+          temp_file <- export_citations(data, "ABNT", "search_citations")
+          if (!is.null(temp_file) && file.exists(temp_file)) {
+            file.copy(temp_file, file)
+            incProgress(1, detail = "Export completed!")
+            showNotification("Search citations exported successfully!", type = "success", duration = 3)
+          } else {
+            showNotification("Error creating citation export", type = "error", duration = 5)
+          }
+        }, error = function(e) {
+          showNotification(paste("Export error:", e$message), type = "error", duration = 5)
+          cat("Search citation export error:", e$message, "\n")
+        })
       })
     }
   )
@@ -1307,14 +1530,18 @@ server <- function(input, output, session) {
       
       showModal(modalDialog(
         title = "Save Search",
-        textInput("saveSearchName", "Search Name:", placeholder = "Enter a name for this search"),
+        div(
+          p("Save your current search criteria for quick access later."),
+          textInput("saveSearchName", "Search Name:", placeholder = "Enter a descriptive name for this search"),
+          div(class = "help-text", "Choose a name that will help you identify this search later.")
+        ),
         footer = tagList(
           modalButton("Cancel"),
-          actionButton("confirmSaveSearch", "Save", class = "btn-primary")
+          actionButton("confirmSaveSearch", "Save Search", class = "btn-primary", icon = icon("save"))
         )
       ))
     } else {
-      showNotification("Please enter search criteria before saving", type = "warning")
+      showNotification("Please enter search criteria before saving", type = "warning", duration = 3)
     }
   })
   
@@ -1323,40 +1550,73 @@ server <- function(input, output, session) {
     name <- input$saveSearchName
     
     if (nchar(name) > 0) {
-      search_params <- list(
-        search_text = input$searchText,
-        document_types = input$documentTypes,
-        states = input$states,
-        date_from = input$dateFrom,
-        date_to = input$dateTo
-      )
+      # Disable save button during save
+      shinyjs::disable("confirmSaveSearch")
       
-      session_id <- session$token
-      if (save_saved_search(search_params, name, session_id)) {
-        # Reload saved searches
-        values$saved_searches <- get_saved_searches(session_id)
-        showNotification("Search saved successfully!", type = "success")
-        removeModal()
-      } else {
-        showNotification("Error saving search", type = "error")
-      }
+      tryCatch({
+        search_params <- list(
+          search_text = input$searchText,
+          document_types = input$documentTypes,
+          states = input$states,
+          date_from = input$dateFrom,
+          date_to = input$dateTo
+        )
+        
+        session_id <- session$token
+        if (save_saved_search(search_params, name, session_id)) {
+          # Reload saved searches
+          values$saved_searches <- get_saved_searches(session_id)
+          showNotification("Search saved successfully!", type = "success", duration = 3)
+          removeModal()
+        } else {
+          showNotification("Error saving search - name may already exist", type = "error", duration = 5)
+        }
+      }, error = function(e) {
+        showNotification(paste("Error saving search:", e$message), type = "error", duration = 5)
+        cat("Save search error:", e$message, "\n")
+      })
+      
+      # Re-enable save button
+      shinyjs::enable("confirmSaveSearch")
     } else {
-      showNotification("Please enter a name for the search", type = "warning")
+      showNotification("Please enter a name for the search", type = "warning", duration = 3)
     }
   })
   
   # Delete saved search
   observeEvent(input$deleteSavedSearch, {
     name <- input$deleteSavedSearch
+    
+    showModal(modalDialog(
+      title = "Delete Saved Search",
+      paste("Are you sure you want to delete the saved search '", name, "'?"),
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("confirmDeleteSearch", "Delete", class = "btn-danger", 
+                    onclick = paste0("Shiny.setInputValue('confirmDeleteSearchName', '", name, "', {priority: 'event'})")),
+        tags$script("$('#confirmDeleteSearch').click(function() { $('#confirmDeleteSearchName').val('', name); });")
+      )
+    ))
+  })
+  
+  # Confirm delete saved search
+  observeEvent(input$confirmDeleteSearchName, {
+    name <- input$confirmDeleteSearchName
     session_id <- session$token
     
-    if (delete_saved_search(name, session_id)) {
-      # Reload saved searches
-      values$saved_searches <- get_saved_searches(session_id)
-      showNotification("Search deleted successfully", type = "success")
-    } else {
-      showNotification("Error deleting search", type = "error")
-    }
+    tryCatch({
+      if (delete_saved_search(name, session_id)) {
+        # Reload saved searches
+        values$saved_searches <- get_saved_searches(session_id)
+        showNotification("Search deleted successfully", type = "success", duration = 3)
+        removeModal()
+      } else {
+        showNotification("Error deleting search", type = "error", duration = 5)
+      }
+    }, error = function(e) {
+      showNotification(paste("Error deleting search:", e$message), type = "error", duration = 5)
+      cat("Delete search error:", e$message, "\n")
+    })
   })
   
   # Clear search history
@@ -1410,15 +1670,37 @@ server <- function(input, output, session) {
     click <- input$documentMap_marker_click
     if (!is.null(click$id)) {
       selected_state(click$id)
-      showNotification(paste("Filtering documents for state:", click$id), type = "info")
       
       # Update the documents table with filtered data
       if (database_connected) {
-        filtered_docs <- search_documents(states = click$id, limit = 50)
-        values$current_documents <- filtered_docs
-        
-        # Navigate to documents tab to show filtered results
-        updateTabItems(session, "sidebarMenu", selected = "documents")
+        withProgress(message = paste('Loading documents for', click$id, '...'), value = 0, {
+          tryCatch({
+            incProgress(0.5, detail = "Filtering documents...")
+            
+            filtered_docs <- search_documents(states = click$id, limit = 50)
+            values$current_documents <- filtered_docs
+            
+            incProgress(1, detail = "Filter applied successfully!")
+            
+            # Show success notification with document count
+            doc_count <- if (!is.null(filtered_docs)) nrow(filtered_docs) else 0
+            showNotification(
+              paste("Showing", doc_count, "documents for state:", click$id),
+              type = "info",
+              duration = 3
+            )
+            
+            # Navigate to documents tab to show filtered results
+            updateTabItems(session, "sidebarMenu", selected = "documents")
+          }, error = function(e) {
+            showNotification(
+              paste("Error filtering documents:", e$message),
+              type = "error",
+              duration = 5
+            )
+            cat("Map filter error:", e$message, "\n")
+          })
+        })
       }
     }
   })
@@ -1426,11 +1708,29 @@ server <- function(input, output, session) {
   # Reset map filter
   observeEvent(input$resetMapFilter, {
     selected_state(NULL)
-    showNotification("Filter reset - showing all documents", type = "info")
     
     # Reset documents to show all (cached)
     if (database_connected) {
-      values$current_documents <- cached_get_documents(50)
+      withProgress(message = 'Resetting filter...', value = 0, {
+        tryCatch({
+          incProgress(0.5, detail = "Loading all documents...")
+          
+          values$current_documents <- cached_get_documents(50)
+          
+          incProgress(1, detail = "Filter reset successfully!")
+          
+          showNotification("Filter reset - showing all documents", type = "info", duration = 3)
+        }, error = function(e) {
+          showNotification(
+            paste("Error resetting filter:", e$message),
+            type = "error",
+            duration = 5
+          )
+          cat("Reset filter error:", e$message, "\n")
+        })
+      })
+    } else {
+      showNotification("Database not connected", type = "warning", duration = 3)
     }
   })
   
@@ -1530,50 +1830,79 @@ server <- function(input, output, session) {
   
   # Confirm clear cache
   observeEvent(input$confirmClearCache, {
-    tryCatch({
-      clear_cache()
-      showNotification("Cache cleared successfully!", type = "success")
-      
-      # Refresh analytics data if database is connected
-      if (database_connected) {
-        values$analytics_data <- cached_get_search_analytics()
-        values$current_documents <- cached_get_documents(50)
-      }
-      
-      removeModal()
-    }, error = function(e) {
-      showNotification(paste("Error clearing cache:", e$message), type = "error")
+    # Disable cache buttons during clear
+    shinyjs::disable("clearCacheBtn")
+    shinyjs::disable("refreshCacheBtn")
+    
+    withProgress(message = 'Clearing cache...', value = 0, {
+      tryCatch({
+        incProgress(0.3, detail = "Clearing cache files...")
+        clear_cache()
+        
+        incProgress(0.7, detail = "Refreshing data...")
+        
+        # Refresh analytics data if database is connected
+        if (database_connected) {
+          values$analytics_data <- cached_get_search_analytics()
+          values$current_documents <- cached_get_documents(50)
+        }
+        
+        incProgress(1, detail = "Cache cleared successfully!")
+        showNotification("Cache cleared successfully!", type = "success", duration = 3)
+        
+        removeModal()
+      }, error = function(e) {
+        showNotification(paste("Error clearing cache:", e$message), type = "error", duration = 5)
+        cat("Cache clear error:", e$message, "\n")
+      })
     })
+    
+    # Re-enable cache buttons
+    shinyjs::enable("clearCacheBtn")
+    shinyjs::enable("refreshCacheBtn")
   })
   
   # Refresh cache button handler
   observeEvent(input$refreshCacheBtn, {
     if (database_connected) {
+      # Disable cache buttons during refresh
+      shinyjs::disable("refreshCacheBtn")
+      shinyjs::disable("clearCacheBtn")
+      
       withProgress(message = 'Refreshing cache...', value = 0, {
         tryCatch({
-          incProgress(0.3)
+          incProgress(0.2, detail = "Clearing old cache...")
           
           # Clear cache first
           clear_cache()
           
-          incProgress(0.6)
+          incProgress(0.5, detail = "Loading documents...")
           
           # Reload data with fresh cache
           values$current_documents <- cached_get_documents(50)
+          
+          incProgress(0.7, detail = "Loading analytics data...")
           values$analytics_data <- cached_get_search_analytics()
+          
+          incProgress(0.9, detail = "Updating filter options...")
           
           # Update filter choices
           updateSelectizeInput(session, "documentTypes", choices = cached_get_document_types())
           updateSelectizeInput(session, "states", choices = cached_get_states())
           
-          incProgress(1)
-          showNotification("Cache refreshed successfully!", type = "success")
+          incProgress(1, detail = "Cache refresh completed!")
+          showNotification("Cache refreshed successfully!", type = "success", duration = 3)
         }, error = function(e) {
-          showNotification(paste("Error refreshing cache:", e$message), type = "error")
+          showNotification(paste("Error refreshing cache:", e$message), type = "error", duration = 5)
+          cat("Cache refresh error:", e$message, "\n")
         })
       })
+      
+      # Re-enable cache buttons
+      shinyjs::enable("refreshCacheBtn")
+      shinyjs::enable("clearCacheBtn")
     } else {
-      showNotification("Database not connected - cannot refresh cache", type = "warning")
+      showNotification("Database not connected - cannot refresh cache", type = "warning", duration = 3)
     }
   })
   
