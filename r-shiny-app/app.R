@@ -8,9 +8,13 @@ library(dplyr)
 library(jsonlite)
 library(plotly)
 library(ggplot2)
+library(shinyjs)
+library(leaflet)
 
 # Load database connection module
 source("R/database_connection.R")
+# Load map generator module
+source("R/map_generator.R")
 
 # Initialize database connection
 database_connected <- FALSE
@@ -50,13 +54,16 @@ ui <- dashboardPage(
   dashboardHeader(title = "Monitor Legislativo v4"),
   dashboardSidebar(
     sidebarMenu(
+      id = "sidebarMenu",
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
       menuItem("Documents", tabName = "documents", icon = icon("file-text")),
       menuItem("Search", tabName = "search", icon = icon("search")),
-      menuItem("Analytics", tabName = "analytics", icon = icon("chart-bar"))
+      menuItem("Analytics", tabName = "analytics", icon = icon("chart-bar")),
+      menuItem("Map", tabName = "map", icon = icon("map"))
     )
   ),
   dashboardBody(
+    useShinyjs(),
     tabItems(
       # Dashboard tab with statistics
       tabItem(tabName = "dashboard",
@@ -131,7 +138,7 @@ ui <- dashboardPage(
             title = "Advanced Search Filters", 
             status = "primary", 
             solidHeader = TRUE, 
-            width = 12,
+            width = 8,
             if(database_connected) {
               div(
                 fluidRow(
@@ -169,7 +176,9 @@ ui <- dashboardPage(
                     div(class = "text-center",
                       actionButton("searchBtn", "Search Documents", icon = icon("search"), class = "btn-primary btn-lg"),
                       " ",
-                      actionButton("clearBtn", "Clear Filters", icon = icon("times"), class = "btn-secondary")
+                      actionButton("clearBtn", "Clear Filters", icon = icon("times"), class = "btn-secondary"),
+                      " ",
+                      actionButton("saveSearchBtn", "Save Search", icon = icon("star"), class = "btn-warning")
                     )
                   )
                 ),
@@ -187,6 +196,30 @@ ui <- dashboardPage(
                 p("Please check the database connection in the Dashboard tab.")
               )
             }
+          ),
+          
+          # Search History and Saved Searches panel
+          box(
+            title = "Search History & Saved Searches", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 4,
+            tabsetPanel(
+              tabPanel("History", 
+                br(),
+                actionButton("clearHistoryBtn", "Clear History", icon = icon("trash"), class = "btn-sm btn-danger"),
+                hr(),
+                div(id = "searchHistoryContainer",
+                  uiOutput("searchHistoryList")
+                )
+              ),
+              tabPanel("Saved Searches",
+                br(),
+                div(id = "savedSearchesContainer",
+                  uiOutput("savedSearchesList")
+                )
+              )
+            )
           )
         )
       ),
@@ -269,6 +302,52 @@ ui <- dashboardPage(
             )
           )
         }
+      ),
+      
+      # Map tab
+      tabItem(tabName = "map",
+        fluidRow(
+          # Map controls
+          box(
+            title = "Geographic Distribution of Documents", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 12,
+            if(database_connected) {
+              div(
+                fluidRow(
+                  column(12,
+                    div(class = "text-center",
+                      p("Click on a state to filter documents by that state"),
+                      actionButton("resetMapFilter", "Reset Filter", icon = icon("refresh"), class = "btn-secondary")
+                    )
+                  )
+                ),
+                hr(),
+                leafletOutput("documentMap", height = "600px")
+              )
+            } else {
+              div(
+                class = "alert alert-warning",
+                icon("database"), " Map visualization requires database connection.",
+                br(), br(),
+                p("Please check the database connection in the Dashboard tab.")
+              )
+            }
+          )
+        ),
+        if(database_connected) {
+          fluidRow(
+            # State statistics table
+            box(
+              title = "Document Count by State", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 12,
+              DT::dataTableOutput("stateStatsTable")
+            )
+          )
+        }
       )
     )
   )
@@ -281,7 +360,9 @@ server <- function(input, output, session) {
   values <- reactiveValues(
     current_documents = NULL,
     search_results = NULL,
-    analytics_data = NULL
+    analytics_data = NULL,
+    search_history = list(),
+    saved_searches = list()
   )
   
   # Initialize data on startup
@@ -296,6 +377,11 @@ server <- function(input, output, session) {
     } else {
       values$current_documents <- sample_documents
     }
+    
+    # Load search history and saved searches
+    session_id <- session$token
+    values$search_history <- get_search_history(session_id)
+    values$saved_searches <- get_saved_searches(session_id)
   })
   
   # Database statistics
@@ -413,6 +499,24 @@ server <- function(input, output, session) {
           date_to = date_to,
           limit = 200
         )
+        
+        # Save to search history
+        search_params <- list(
+          search_text = search_text,
+          document_types = doc_types,
+          states = states_filter,
+          date_from = date_from,
+          date_to = date_to
+        )
+        
+        # Only save if search has any criteria
+        if (nchar(search_text) > 0 || !is.null(doc_types) || !is.null(states_filter) || 
+            !is.null(date_from) || !is.null(date_to)) {
+          session_id <- session$token
+          save_search_history(search_params, session_id)
+          # Reload search history
+          values$search_history <- get_search_history(session_id)
+        }
         
         incProgress(1)
       })
@@ -779,6 +883,359 @@ server <- function(input, output, session) {
         # Show empty message
         empty_data <- data.frame(
           Message = "No recent documents found",
+          stringsAsFactors = FALSE
+        )
+        DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+      }
+    } else {
+      # Show connection error message
+      empty_data <- data.frame(
+        Message = "Database not connected",
+        stringsAsFactors = FALSE
+      )
+      DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+    }
+  })
+  
+  # === Search History and Saved Searches Section ===
+  
+  # Render search history list
+  output$searchHistoryList <- renderUI({
+    history <- values$search_history
+    
+    if (length(history) == 0) {
+      return(p("No search history yet", style = "color: #999;"))
+    }
+    
+    # Create history items
+    history_items <- lapply(seq_along(history), function(i) {
+      search <- history[[i]]
+      
+      # Format search description
+      desc_parts <- c()
+      if (!is.null(search$search_text) && nchar(search$search_text) > 0) {
+        desc_parts <- c(desc_parts, paste("Text:", search$search_text))
+      }
+      if (!is.null(search$document_types) && length(search$document_types) > 0) {
+        desc_parts <- c(desc_parts, paste("Types:", paste(search$document_types, collapse = ", ")))
+      }
+      if (!is.null(search$states) && length(search$states) > 0) {
+        desc_parts <- c(desc_parts, paste("States:", paste(search$states, collapse = ", ")))
+      }
+      if (!is.null(search$date_from) || !is.null(search$date_to)) {
+        date_part <- "Dates:"
+        if (!is.null(search$date_from)) date_part <- paste(date_part, search$date_from)
+        if (!is.null(search$date_to)) date_part <- paste(date_part, "to", search$date_to)
+        desc_parts <- c(desc_parts, date_part)
+      }
+      
+      description <- if (length(desc_parts) > 0) {
+        paste(desc_parts, collapse = " | ")
+      } else {
+        "All documents"
+      }
+      
+      # Format timestamp
+      time_ago <- difftime(Sys.time(), search$timestamp, units = "mins")
+      if (time_ago < 60) {
+        time_str <- paste(round(time_ago), "minutes ago")
+      } else if (time_ago < 1440) {
+        time_str <- paste(round(time_ago / 60), "hours ago")
+      } else {
+        time_str <- paste(round(time_ago / 1440), "days ago")
+      }
+      
+      div(
+        class = "history-item",
+        style = "margin-bottom: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;",
+        onclick = paste0("Shiny.setInputValue('loadHistorySearch', ", i, ", {priority: 'event'})"),
+        div(
+          strong(description),
+          style = "font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+        ),
+        div(
+          time_str,
+          style = "font-size: 11px; color: #666;"
+        )
+      )
+    })
+    
+    do.call(tagList, history_items)
+  })
+  
+  # Render saved searches list
+  output$savedSearchesList <- renderUI({
+    searches <- values$saved_searches
+    
+    if (length(searches) == 0) {
+      return(p("No saved searches yet", style = "color: #999;"))
+    }
+    
+    # Create saved search items
+    search_items <- lapply(names(searches), function(name) {
+      search <- searches[[name]]
+      
+      # Format search description
+      desc_parts <- c()
+      if (!is.null(search$search_text) && nchar(search$search_text) > 0) {
+        desc_parts <- c(desc_parts, paste("Text:", search$search_text))
+      }
+      if (!is.null(search$document_types) && length(search$document_types) > 0) {
+        desc_parts <- c(desc_parts, paste("Types:", paste(search$document_types, collapse = ", ")))
+      }
+      if (!is.null(search$states) && length(search$states) > 0) {
+        desc_parts <- c(desc_parts, paste("States:", paste(search$states, collapse = ", ")))
+      }
+      
+      description <- if (length(desc_parts) > 0) {
+        paste(desc_parts, collapse = " | ")
+      } else {
+        "All documents"
+      }
+      
+      div(
+        class = "saved-search-item",
+        style = "margin-bottom: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;",
+        div(
+          style = "display: flex; justify-content: space-between; align-items: center;",
+          div(
+            style = "flex: 1; cursor: pointer;",
+            onclick = paste0("Shiny.setInputValue('loadSavedSearch', '", name, "', {priority: 'event'})"),
+            div(
+              strong(name),
+              style = "font-size: 14px; color: #333;"
+            ),
+            div(
+              description,
+              style = "font-size: 11px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+            )
+          ),
+          actionButton(
+            inputId = paste0("deleteSaved_", gsub(" ", "_", name)),
+            label = "",
+            icon = icon("trash"),
+            class = "btn-xs btn-danger",
+            onclick = paste0("Shiny.setInputValue('deleteSavedSearch', '", name, "', {priority: 'event'})")
+          )
+        )
+      )
+    })
+    
+    do.call(tagList, search_items)
+  })
+  
+  # Load search from history
+  observeEvent(input$loadHistorySearch, {
+    index <- as.numeric(input$loadHistorySearch)
+    if (index <= length(values$search_history)) {
+      search <- values$search_history[[index]]
+      
+      # Update search filters
+      updateTextInput(session, "searchText", value = ifelse(is.null(search$search_text), "", search$search_text))
+      updateSelectizeInput(session, "documentTypes", selected = search$document_types)
+      updateSelectizeInput(session, "states", selected = search$states)
+      updateDateInput(session, "dateFrom", value = search$date_from)
+      updateDateInput(session, "dateTo", value = search$date_to)
+      
+      # Trigger search
+      shinyjs::click("searchBtn")
+    }
+  })
+  
+  # Load saved search
+  observeEvent(input$loadSavedSearch, {
+    name <- input$loadSavedSearch
+    if (name %in% names(values$saved_searches)) {
+      search <- values$saved_searches[[name]]
+      
+      # Update search filters
+      updateTextInput(session, "searchText", value = ifelse(is.null(search$search_text), "", search$search_text))
+      updateSelectizeInput(session, "documentTypes", selected = search$document_types)
+      updateSelectizeInput(session, "states", selected = search$states)
+      updateDateInput(session, "dateFrom", value = search$date_from)
+      updateDateInput(session, "dateTo", value = search$date_to)
+      
+      # Trigger search
+      shinyjs::click("searchBtn")
+    }
+  })
+  
+  # Save current search
+  observeEvent(input$saveSearchBtn, {
+    # Get current search parameters
+    search_text <- input$searchText
+    doc_types <- input$documentTypes
+    states_filter <- input$states
+    date_from <- input$dateFrom
+    date_to <- input$dateTo
+    
+    # Check if there are any search criteria
+    if (nchar(search_text) > 0 || !is.null(doc_types) || !is.null(states_filter) || 
+        !is.null(date_from) || !is.null(date_to)) {
+      
+      showModal(modalDialog(
+        title = "Save Search",
+        textInput("saveSearchName", "Search Name:", placeholder = "Enter a name for this search"),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton("confirmSaveSearch", "Save", class = "btn-primary")
+        )
+      ))
+    } else {
+      showNotification("Please enter search criteria before saving", type = "warning")
+    }
+  })
+  
+  # Confirm save search
+  observeEvent(input$confirmSaveSearch, {
+    name <- input$saveSearchName
+    
+    if (nchar(name) > 0) {
+      search_params <- list(
+        search_text = input$searchText,
+        document_types = input$documentTypes,
+        states = input$states,
+        date_from = input$dateFrom,
+        date_to = input$dateTo
+      )
+      
+      session_id <- session$token
+      if (save_saved_search(search_params, name, session_id)) {
+        # Reload saved searches
+        values$saved_searches <- get_saved_searches(session_id)
+        showNotification("Search saved successfully!", type = "success")
+        removeModal()
+      } else {
+        showNotification("Error saving search", type = "error")
+      }
+    } else {
+      showNotification("Please enter a name for the search", type = "warning")
+    }
+  })
+  
+  # Delete saved search
+  observeEvent(input$deleteSavedSearch, {
+    name <- input$deleteSavedSearch
+    session_id <- session$token
+    
+    if (delete_saved_search(name, session_id)) {
+      # Reload saved searches
+      values$saved_searches <- get_saved_searches(session_id)
+      showNotification("Search deleted successfully", type = "success")
+    } else {
+      showNotification("Error deleting search", type = "error")
+    }
+  })
+  
+  # Clear search history
+  observeEvent(input$clearHistoryBtn, {
+    showModal(modalDialog(
+      title = "Clear Search History",
+      "Are you sure you want to clear all search history?",
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("confirmClearHistory", "Clear", class = "btn-danger")
+      )
+    ))
+  })
+  
+  # Confirm clear history
+  observeEvent(input$confirmClearHistory, {
+    session_id <- session$token
+    
+    if (clear_search_history(session_id)) {
+      values$search_history <- list()
+      showNotification("Search history cleared", type = "success")
+      removeModal()
+    } else {
+      showNotification("Error clearing search history", type = "error")
+    }
+  })
+  
+  # === Map Section ===
+  
+  # Reactive value for selected state filter
+  selected_state <- reactiveVal(NULL)
+  
+  # Generate document map
+  output$documentMap <- renderLeaflet({
+    if (database_connected) {
+      # Get state document counts
+      state_counts <- get_state_document_counts()
+      
+      # Generate the map
+      map <- generate_document_map(state_counts)
+      
+      return(map)
+    } else {
+      # Return test map if no database
+      return(generate_test_map())
+    }
+  })
+  
+  # Handle map click events
+  observeEvent(input$documentMap_marker_click, {
+    click <- input$documentMap_marker_click
+    if (!is.null(click$id)) {
+      selected_state(click$id)
+      showNotification(paste("Filtering documents for state:", click$id), type = "info")
+      
+      # Update the documents table with filtered data
+      if (database_connected) {
+        filtered_docs <- search_documents(states = click$id, limit = 50)
+        values$current_documents <- filtered_docs
+        
+        # Navigate to documents tab to show filtered results
+        updateTabItems(session, "sidebarMenu", selected = "documents")
+      }
+    }
+  })
+  
+  # Reset map filter
+  observeEvent(input$resetMapFilter, {
+    selected_state(NULL)
+    showNotification("Filter reset - showing all documents", type = "info")
+    
+    # Reset documents to show all
+    if (database_connected) {
+      values$current_documents <- get_documents(50)
+    }
+  })
+  
+  # State statistics table
+  output$stateStatsTable <- DT::renderDataTable({
+    if (database_connected) {
+      state_counts <- get_state_document_counts()
+      
+      if (nrow(state_counts) > 0) {
+        # Join with state names
+        state_counts_with_names <- state_counts %>%
+          left_join(brazil_states %>% select(estado, estado_nome), by = "estado") %>%
+          select(estado, estado_nome, count) %>%
+          rename(
+            "State Code" = estado,
+            "State Name" = estado_nome,
+            "Document Count" = count
+          )
+        
+        DT::datatable(
+          state_counts_with_names,
+          options = list(
+            pageLength = 27,  # Show all Brazilian states
+            scrollX = TRUE,
+            columnDefs = list(
+              list(width = "20%", targets = 0),
+              list(width = "50%", targets = 1),
+              list(width = "30%", targets = 2)
+            )
+          ),
+          rownames = FALSE
+        ) %>%
+          formatCurrency("Document Count", currency = "", interval = 3, mark = ",", digits = 0)
+      } else {
+        # Empty data
+        empty_data <- data.frame(
+          Message = "No state data available",
           stringsAsFactors = FALSE
         )
         DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))

@@ -593,6 +593,216 @@ highlight_search_terms <- function(text, search_terms) {
   return(result)
 }
 
+#' Save a search to history
+#' @param search_params List containing search parameters
+#' @param session_id Session identifier
+#' @return TRUE if successful, FALSE otherwise
+save_search_history <- function(search_params, session_id) {
+  # Store search history in a local file per session
+  history_file <- paste0("search_history_", session_id, ".rds")
+  history_path <- file.path("data", history_file)
+  
+  # Ensure data directory exists
+  if (!dir.exists("data")) {
+    dir.create("data", showWarnings = FALSE)
+  }
+  
+  tryCatch({
+    # Load existing history or create new
+    if (file.exists(history_path)) {
+      history <- readRDS(history_path)
+    } else {
+      history <- list()
+    }
+    
+    # Add new search with timestamp
+    search_entry <- list(
+      timestamp = Sys.time(),
+      search_text = search_params$search_text,
+      document_types = search_params$document_types,
+      states = search_params$states,
+      date_from = search_params$date_from,
+      date_to = search_params$date_to
+    )
+    
+    # Add to beginning of list
+    history <- c(list(search_entry), history)
+    
+    # Keep only last 20 searches
+    if (length(history) > 20) {
+      history <- history[1:20]
+    }
+    
+    # Save updated history
+    saveRDS(history, history_path)
+    
+    return(TRUE)
+    
+  }, error = function(e) {
+    cat("Error saving search history:", e$message, "\n")
+    return(FALSE)
+  })
+}
+
+#' Get search history for a session
+#' @param session_id Session identifier
+#' @return List of search history entries
+get_search_history <- function(session_id) {
+  history_file <- paste0("search_history_", session_id, ".rds")
+  history_path <- file.path("data", history_file)
+  
+  tryCatch({
+    if (file.exists(history_path)) {
+      history <- readRDS(history_path)
+      return(history)
+    } else {
+      return(list())
+    }
+  }, error = function(e) {
+    cat("Error loading search history:", e$message, "\n")
+    return(list())
+  })
+}
+
+#' Save a search as favorite/saved search
+#' @param search_params List containing search parameters
+#' @param search_name Name for the saved search
+#' @param session_id Session identifier
+#' @return TRUE if successful, FALSE otherwise
+save_saved_search <- function(search_params, search_name, session_id) {
+  saved_file <- paste0("saved_searches_", session_id, ".rds")
+  saved_path <- file.path("data", saved_file)
+  
+  # Ensure data directory exists
+  if (!dir.exists("data")) {
+    dir.create("data", showWarnings = FALSE)
+  }
+  
+  tryCatch({
+    # Load existing saved searches or create new
+    if (file.exists(saved_path)) {
+      saved_searches <- readRDS(saved_path)
+    } else {
+      saved_searches <- list()
+    }
+    
+    # Add new saved search
+    saved_entry <- list(
+      name = search_name,
+      created_at = Sys.time(),
+      search_text = search_params$search_text,
+      document_types = search_params$document_types,
+      states = search_params$states,
+      date_from = search_params$date_from,
+      date_to = search_params$date_to
+    )
+    
+    # Save with name as key
+    saved_searches[[search_name]] <- saved_entry
+    
+    # Save updated list
+    saveRDS(saved_searches, saved_path)
+    
+    return(TRUE)
+    
+  }, error = function(e) {
+    cat("Error saving saved search:", e$message, "\n")
+    return(FALSE)
+  })
+}
+
+#' Get saved searches for a session
+#' @param session_id Session identifier
+#' @return List of saved searches
+get_saved_searches <- function(session_id) {
+  saved_file <- paste0("saved_searches_", session_id, ".rds")
+  saved_path <- file.path("data", saved_file)
+  
+  tryCatch({
+    if (file.exists(saved_path)) {
+      saved_searches <- readRDS(saved_path)
+      return(saved_searches)
+    } else {
+      return(list())
+    }
+  }, error = function(e) {
+    cat("Error loading saved searches:", e$message, "\n")
+    return(list())
+  })
+}
+
+#' Delete a saved search
+#' @param search_name Name of the saved search to delete
+#' @param session_id Session identifier
+#' @return TRUE if successful, FALSE otherwise
+delete_saved_search <- function(search_name, session_id) {
+  saved_file <- paste0("saved_searches_", session_id, ".rds")
+  saved_path <- file.path("data", saved_file)
+  
+  tryCatch({
+    if (file.exists(saved_path)) {
+      saved_searches <- readRDS(saved_path)
+      
+      # Remove the search
+      saved_searches[[search_name]] <- NULL
+      
+      # Save updated list
+      saveRDS(saved_searches, saved_path)
+      
+      return(TRUE)
+    } else {
+      return(FALSE)
+    }
+  }, error = function(e) {
+    cat("Error deleting saved search:", e$message, "\n")
+    return(FALSE)
+  })
+}
+
+#' Clear search history for a session
+#' @param session_id Session identifier
+#' @return TRUE if successful, FALSE otherwise
+clear_search_history <- function(session_id) {
+  history_file <- paste0("search_history_", session_id, ".rds")
+  history_path <- file.path("data", history_file)
+  
+  tryCatch({
+    if (file.exists(history_path)) {
+      file.remove(history_path)
+    }
+    return(TRUE)
+  }, error = function(e) {
+    cat("Error clearing search history:", e$message, "\n")
+    return(FALSE)
+  })
+}
+
+#' Get document counts by state for map visualization
+#' @return Data frame with state codes and document counts
+get_state_document_counts <- function() {
+  if (is.null(db_pool)) {
+    return(data.frame(estado = character(), count = numeric()))
+  }
+  
+  tryCatch({
+    result <- dbGetQuery(db_pool, "
+      SELECT 
+        estado,
+        COUNT(*) as count
+      FROM documents 
+      WHERE estado IS NOT NULL AND estado != ''
+      GROUP BY estado
+      ORDER BY count DESC
+    ")
+    
+    return(result)
+    
+  }, error = function(e) {
+    cat("Error getting state document counts:", e$message, "\n")
+    return(data.frame(estado = character(), count = numeric()))
+  })
+}
+
 #' Close database connection pool
 cleanup_database <- function() {
   if (!is.null(db_pool)) {

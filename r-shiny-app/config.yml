@@ -16,4 +16,3 @@ app:
 database:
   type: "SQLite"
   file: "data/legislative.db"
-
