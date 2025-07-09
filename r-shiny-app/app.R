@@ -395,8 +395,10 @@ server <- function(input, output, session) {
               "Try adjusting your filters."
             )
           } else {
-            br(),
-            "Try adding some search criteria."
+            div(
+              br(),
+              "Try adding some search criteria."
+            )
           }
         )
       }
