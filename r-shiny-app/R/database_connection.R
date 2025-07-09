@@ -288,11 +288,19 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
     
     # Debug: print query for troubleshooting
     cat("DEBUG: Generated query:\n", base_query, "\n")
-    cat("DEBUG: Query parameters:\n")
-    print(params)
+    cat("DEBUG: Query parameters count:", length(params), "\n")
+    for (i in seq_along(params)) {
+      cat("  Param", i, ":", as.character(params[[i]]), "\n")
+    }
     
-    # Execute query
-    result <- dbGetQuery(db_pool, base_query, params = params)
+    # Execute query with error handling
+    result <- tryCatch({
+      dbGetQuery(db_pool, base_query, params = params)
+    }, error = function(e) {
+      cat("ERROR: Query execution failed:", e$message, "\n")
+      cat("Query was:", base_query, "\n")
+      return(data.frame())  # Return empty data frame on error
+    })
     
     # Clean up the data
     if (nrow(result) > 0) {
@@ -340,16 +348,16 @@ get_document_types <- function() {
       ORDER BY tipo
     ")
     
-    cat("DEBUG: Found document types:", paste(result$tipo, collapse = ", "), "\n")
-    
     if (nrow(result) > 0) {
+      cat("DEBUG: Found document types:", paste(result$tipo, collapse = ", "), "\n")
       return(result$tipo)
     } else {
+      cat("DEBUG: No document types found in database, using defaults\n")
       return(c("lei", "decreto", "portaria"))
     }
     
   }, error = function(e) {
-    cat("Error getting document types:", e$message, "\n")
+    cat("ERROR getting document types:", e$message, "\n")
     return(c("lei", "decreto", "portaria"))
   })
 }
@@ -369,16 +377,16 @@ get_states <- function() {
       ORDER BY estado
     ")
     
-    cat("DEBUG: Found states:", paste(result$estado, collapse = ", "), "\n")
-    
     if (nrow(result) > 0) {
+      cat("DEBUG: Found states:", paste(result$estado, collapse = ", "), "\n")
       return(result$estado)
     } else {
+      cat("DEBUG: No states found in database, using defaults\n")
       return(c("SP", "RJ", "MG", "RS"))
     }
     
   }, error = function(e) {
-    cat("Error getting states:", e$message, "\n")
+    cat("ERROR getting states:", e$message, "\n")
     return(c("SP", "RJ", "MG", "RS"))
   })
 }
