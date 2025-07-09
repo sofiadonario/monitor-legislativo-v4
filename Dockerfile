@@ -24,14 +24,14 @@ RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT', 'leaflet', 'plotly
 # Set working directory
 WORKDIR /app
 
+# Create necessary directories first
+RUN mkdir -p data/cache data/geographic www logs exports temp
+
 # Copy application files
 COPY app.R ./
 COPY R/ ./R/
 COPY www/ ./www/
 COPY config.yml ./
-
-# Create necessary directories
-RUN mkdir -p data/cache data/geographic www logs exports temp
 
 # Set environment variables
 ENV R_CONFIG_ACTIVE=production
