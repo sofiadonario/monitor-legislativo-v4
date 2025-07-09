@@ -24,6 +24,8 @@ source("R/map_generator.R")
 source("R/export_utils.R")
 # Load cache utilities module
 source("R/cache_utils.R")
+# Load health check module
+source("R/health_check.R")
 
 # Initialize database connection
 database_connected <- FALSE
@@ -71,7 +73,8 @@ ui <- dashboardPage(
       menuItem("Documents", tabName = "documents", icon = icon("file-text")),
       menuItem("Search", tabName = "search", icon = icon("search")),
       menuItem("Analytics", tabName = "analytics", icon = icon("chart-bar")),
-      menuItem("Map", tabName = "map", icon = icon("map"))
+      menuItem("Map", tabName = "map", icon = icon("map")),
+      menuItem("Health Check", tabName = "health", icon = icon("heartbeat"))
     )
   ),
   dashboardBody(
@@ -186,6 +189,45 @@ ui <- dashboardPage(
           50% { opacity: 0.5; }
           100% { opacity: 1; }
         }
+        
+        .health-controls .btn {
+          margin-right: 10px;
+          margin-bottom: 5px;
+        }
+        
+        .health-overview {
+          margin-bottom: 20px;
+        }
+        
+        .status-healthy {
+          background-color: #28a745;
+          animation: pulse 2s infinite;
+        }
+        
+        .status-warning {
+          background-color: #ffc107;
+          animation: pulse 2s infinite;
+        }
+        
+        .status-critical {
+          background-color: #dc3545;
+          animation: pulse 1s infinite;
+        }
+        
+        .status-error {
+          background-color: #dc3545;
+          animation: pulse 1s infinite;
+        }
+      ")),
+      
+      # JavaScript for dynamic health indicator updates
+      tags$script(HTML("
+        Shiny.addCustomMessageHandler('updateHealthIndicator', function(status) {
+          var indicator = document.getElementById('healthStatusIndicator');
+          if (indicator) {
+            indicator.className = 'status-indicator status-' + status;
+          }
+        });
       "))
     ),
     
@@ -231,6 +273,20 @@ ui <- dashboardPage(
               strong("File Cache:"), 
               textOutput("fileCacheCount", inline = TRUE),
               style = "font-size: 12px;"
+            ),
+            br(),
+            h5("System Health:"),
+            p(
+              span(id = "healthStatusIndicator", class = "status-indicator status-connected"),
+              icon("heartbeat"), 
+              textOutput("healthStatusText", inline = TRUE),
+              style = "color: green"
+            ),
+            div(
+              class = "health-controls",
+              actionButton("refreshHealthBtn", "Refresh Health", icon = icon("refresh"), class = "btn-info btn-sm",
+                          title = "Refresh health status"),
+              style = "margin-top: 10px;"
             )
           ),
           
@@ -542,6 +598,104 @@ ui <- dashboardPage(
             )
           )
         }
+      ),
+      
+      # Health Check tab
+      tabItem(tabName = "health",
+        fluidRow(
+          # Health Status Overview
+          box(
+            title = "System Health Status", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 12,
+            div(
+              class = "health-overview",
+              style = "margin-bottom: 20px;",
+              fluidRow(
+                column(3,
+                  withSpinner(valueBoxOutput("healthOverallStatus", width = NULL), type = 4, color = "#007bff")
+                ),
+                column(3,
+                  withSpinner(valueBoxOutput("healthDatabaseStatus", width = NULL), type = 4, color = "#28a745")
+                ),
+                column(3,
+                  withSpinner(valueBoxOutput("healthCacheStatus", width = NULL), type = 4, color = "#ffc107")
+                ),
+                column(3,
+                  withSpinner(valueBoxOutput("healthMemoryStatus", width = NULL), type = 4, color = "#6f42c1")
+                )
+              )
+            ),
+            hr(),
+            div(
+              class = "health-controls",
+              actionButton("runHealthCheckBtn", "Run Health Check", icon = icon("play"), class = "btn-primary",
+                          title = "Run a comprehensive health check"),
+              actionButton("downloadHealthLogBtn", "Download Health Log", icon = icon("download"), class = "btn-secondary",
+                          title = "Download health check logs"),
+              actionButton("clearHealthLogBtn", "Clear Health Log", icon = icon("trash"), class = "btn-warning",
+                          title = "Clear health check logs"),
+              style = "margin-bottom: 20px;"
+            ),
+            div(
+              p(strong("Last Health Check:"), textOutput("lastHealthCheckTime", inline = TRUE), style = "margin-bottom: 10px;"),
+              p(strong("Check Duration:"), textOutput("healthCheckDuration", inline = TRUE), style = "margin-bottom: 10px;"),
+              p(strong("Automatic Checks:"), "Every 5 minutes", style = "margin-bottom: 10px;")
+            )
+          )
+        ),
+        
+        fluidRow(
+          # Detailed Health Metrics
+          box(
+            title = "Detailed Health Metrics", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 8,
+            tabsetPanel(
+              tabPanel("Database Health", 
+                br(),
+                withSpinner(verbatimTextOutput("databaseHealthDetails"), type = 4, color = "#28a745")
+              ),
+              tabPanel("Cache Health",
+                br(),
+                withSpinner(verbatimTextOutput("cacheHealthDetails"), type = 4, color = "#ffc107")
+              ),
+              tabPanel("File System Health",
+                br(),
+                withSpinner(verbatimTextOutput("filesystemHealthDetails"), type = 4, color = "#17a2b8")
+              ),
+              tabPanel("Memory Health",
+                br(),
+                withSpinner(verbatimTextOutput("memoryHealthDetails"), type = 4, color = "#6f42c1")
+              )
+            )
+          ),
+          
+          # Health Check History
+          box(
+            title = "Health Check History", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 4,
+            div(
+              style = "max-height: 400px; overflow-y: auto;",
+              withSpinner(verbatimTextOutput("healthCheckHistory"), type = 4, color = "#28a745")
+            )
+          )
+        ),
+        
+        fluidRow(
+          # Health Trends Chart
+          box(
+            title = "Health Trends", 
+            status = "warning", 
+            solidHeader = TRUE, 
+            width = 12,
+            withSpinner(plotlyOutput("healthTrendsChart", height = "300px"), type = 2, color = "#f39c12")
+          )
+        )
       )
     )
   )
@@ -556,7 +710,10 @@ server <- function(input, output, session) {
     search_results = NULL,
     analytics_data = NULL,
     search_history = list(),
-    saved_searches = list()
+    saved_searches = list(),
+    health_check_data = NULL,
+    health_check_history = list(),
+    last_health_check = NULL
   )
   
   # Initialize data on startup
@@ -576,6 +733,15 @@ server <- function(input, output, session) {
     session_id <- session$token
     values$search_history <- get_search_history(session_id)
     values$saved_searches <- get_saved_searches(session_id)
+    
+    # Perform initial health check
+    tryCatch({
+      values$health_check_data <- perform_health_check()
+      values$last_health_check <- Sys.time()
+      log_health_check(values$health_check_data)
+    }, error = function(e) {
+      cat("Initial health check failed:", e$message, "\n")
+    })
   })
   
   # Database statistics
@@ -1790,6 +1956,24 @@ server <- function(input, output, session) {
     cleanup_cache_files("data/cache", max_age_hours = 1)
   })
   
+  # Periodic health check every 5 minutes
+  observe({
+    invalidateTimer(300000)  # 5 minutes in milliseconds
+    tryCatch({
+      values$health_check_data <- perform_health_check()
+      values$last_health_check <- Sys.time()
+      log_health_check(values$health_check_data)
+      
+      # Store health check in history (keep last 20 checks)
+      values$health_check_history <- c(values$health_check_history, list(values$health_check_data))
+      if (length(values$health_check_history) > 20) {
+        values$health_check_history <- values$health_check_history[(length(values$health_check_history) - 19):length(values$health_check_history)]
+      }
+    }, error = function(e) {
+      cat("Periodic health check failed:", e$message, "\n")
+    })
+  })
+  
   # Cache statistics output (updates every 30 seconds)
   output$cacheStats <- renderText({
     invalidateTimer(30000)  # 30 seconds in milliseconds
@@ -1814,6 +1998,18 @@ server <- function(input, output, session) {
     invalidateTimer(30000)  # 30 seconds in milliseconds
     stats <- get_cache_stats()
     paste(stats$file_cache_entries, "entries (", stats$file_cache_size_mb, "MB)")
+  })
+  
+  # Health status text output
+  output$healthStatusText <- renderText({
+    if (!is.null(values$health_check_data)) {
+      status <- values$health_check_data$overall_status
+      # Update health indicator via JavaScript
+      session$sendCustomMessage("updateHealthIndicator", status)
+      paste("System", toupper(status))
+    } else {
+      "Checking..."
+    }
   })
   
   # Clear cache button handler
@@ -1906,6 +2102,351 @@ server <- function(input, output, session) {
     }
   })
   
+  # === Health Check Section ===
+  
+  # Health check value boxes
+  output$healthOverallStatus <- renderValueBox({
+    if (!is.null(values$health_check_data)) {
+      status <- values$health_check_data$overall_status
+      color <- switch(status,
+        "healthy" = "green",
+        "warning" = "yellow",
+        "critical" = "red",
+        "error" = "red"
+      )
+      icon_name <- switch(status,
+        "healthy" = "check-circle",
+        "warning" = "exclamation-triangle",
+        "critical" = "times-circle",
+        "error" = "times-circle"
+      )
+    } else {
+      status <- "unknown"
+      color <- "gray"
+      icon_name <- "question-circle"
+    }
+    
+    valueBox(
+      value = toupper(status),
+      subtitle = "Overall Status",
+      icon = icon(icon_name),
+      color = color
+    )
+  })
+  
+  output$healthDatabaseStatus <- renderValueBox({
+    if (!is.null(values$health_check_data)) {
+      status <- values$health_check_data$components$database$status
+      color <- switch(status,
+        "healthy" = "green",
+        "warning" = "yellow",
+        "critical" = "red",
+        "error" = "red"
+      )
+    } else {
+      status <- "unknown"
+      color <- "gray"
+    }
+    
+    valueBox(
+      value = toupper(status),
+      subtitle = "Database",
+      icon = icon("database"),
+      color = color
+    )
+  })
+  
+  output$healthCacheStatus <- renderValueBox({
+    if (!is.null(values$health_check_data)) {
+      status <- values$health_check_data$components$cache$status
+      color <- switch(status,
+        "healthy" = "green",
+        "warning" = "yellow",
+        "critical" = "red",
+        "error" = "red"
+      )
+    } else {
+      status <- "unknown"
+      color <- "gray"
+    }
+    
+    valueBox(
+      value = toupper(status),
+      subtitle = "Cache System",
+      icon = icon("server"),
+      color = color
+    )
+  })
+  
+  output$healthMemoryStatus <- renderValueBox({
+    if (!is.null(values$health_check_data)) {
+      status <- values$health_check_data$components$memory$status
+      color <- switch(status,
+        "healthy" = "green",
+        "warning" = "yellow",
+        "critical" = "red",
+        "error" = "red"
+      )
+    } else {
+      status <- "unknown"
+      color <- "gray"
+    }
+    
+    valueBox(
+      value = toupper(status),
+      subtitle = "Memory Usage",
+      icon = icon("memory"),
+      color = color
+    )
+  })
+  
+  # Health check detail outputs
+  output$databaseHealthDetails <- renderText({
+    if (!is.null(values$health_check_data)) {
+      db_health <- values$health_check_data$components$database
+      paste(
+        "Status:", db_health$status, "\n",
+        "Message:", db_health$message, "\n",
+        "Timestamp:", db_health$timestamp, "\n",
+        if (!is.null(db_health$document_count)) paste("Document Count:", db_health$document_count, "\n") else ""
+      )
+    } else {
+      "No health check data available"
+    }
+  })
+  
+  output$cacheHealthDetails <- renderText({
+    if (!is.null(values$health_check_data)) {
+      cache_health <- values$health_check_data$components$cache
+      paste(
+        "Status:", cache_health$status, "\n",
+        "Message:", cache_health$message, "\n",
+        "Timestamp:", cache_health$timestamp, "\n",
+        if (!is.null(cache_health$cache_stats)) {
+          paste(
+            "Memory Cache Entries:", cache_health$cache_stats$memory_cache_entries, "\n",
+            "File Cache Entries:", cache_health$cache_stats$file_cache_entries, "\n",
+            "File Cache Size:", cache_health$cache_stats$file_cache_size_mb, "MB\n"
+          )
+        } else ""
+      )
+    } else {
+      "No health check data available"
+    }
+  })
+  
+  output$filesystemHealthDetails <- renderText({
+    if (!is.null(values$health_check_data)) {
+      fs_health <- values$health_check_data$components$filesystem
+      paste(
+        "Status:", fs_health$status, "\n",
+        "Message:", fs_health$message, "\n",
+        "Timestamp:", fs_health$timestamp, "\n",
+        if (!is.null(fs_health$missing_directories)) {
+          paste("Missing Directories:", paste(fs_health$missing_directories, collapse = ", "), "\n")
+        } else ""
+      )
+    } else {
+      "No health check data available"
+    }
+  })
+  
+  output$memoryHealthDetails <- renderText({
+    if (!is.null(values$health_check_data)) {
+      mem_health <- values$health_check_data$components$memory
+      paste(
+        "Status:", mem_health$status, "\n",
+        "Message:", mem_health$message, "\n",
+        "Timestamp:", mem_health$timestamp, "\n",
+        if (!is.null(mem_health$used_memory_mb)) {
+          paste(
+            "Used Memory:", mem_health$used_memory_mb, "MB\n",
+            "Max Memory:", mem_health$max_memory_mb, "MB\n"
+          )
+        } else ""
+      )
+    } else {
+      "No health check data available"
+    }
+  })
+  
+  # Health check history output
+  output$healthCheckHistory <- renderText({
+    if (length(values$health_check_history) > 0) {
+      history_text <- sapply(values$health_check_history, function(check) {
+        paste0(
+          "[", format(check$timestamp, "%H:%M:%S"), "] ",
+          "Status: ", check$overall_status, 
+          " (", check$check_duration_ms, "ms)"
+        )
+      })
+      paste(rev(history_text), collapse = "\n")
+    } else {
+      "No health check history available"
+    }
+  })
+  
+  # Last health check time
+  output$lastHealthCheckTime <- renderText({
+    if (!is.null(values$last_health_check)) {
+      format(values$last_health_check, "%Y-%m-%d %H:%M:%S")
+    } else {
+      "Never"
+    }
+  })
+  
+  # Health check duration
+  output$healthCheckDuration <- renderText({
+    if (!is.null(values$health_check_data)) {
+      paste(values$health_check_data$check_duration_ms, "ms")
+    } else {
+      "N/A"
+    }
+  })
+  
+  # Health trends chart
+  output$healthTrendsChart <- renderPlotly({
+    if (length(values$health_check_history) > 0) {
+      # Create trend data
+      trend_data <- data.frame(
+        timestamp = sapply(values$health_check_history, function(x) x$timestamp),
+        status = sapply(values$health_check_history, function(x) x$overall_status),
+        duration = sapply(values$health_check_history, function(x) x$check_duration_ms),
+        stringsAsFactors = FALSE
+      )
+      
+      # Convert status to numeric for plotting
+      trend_data$status_numeric <- as.numeric(factor(trend_data$status, levels = c("healthy", "warning", "critical", "error")))
+      trend_data$timestamp <- as.POSIXct(trend_data$timestamp)
+      
+      p <- ggplot(trend_data, aes(x = timestamp, y = status_numeric, color = status)) +
+        geom_line(size = 1) +
+        geom_point(size = 2) +
+        scale_y_continuous(breaks = 1:4, labels = c("Healthy", "Warning", "Critical", "Error")) +
+        scale_color_manual(values = c("healthy" = "green", "warning" = "orange", "critical" = "red", "error" = "red")) +
+        theme_minimal() +
+        labs(
+          title = "Health Status Trends",
+          x = "Time",
+          y = "Status",
+          color = "Status"
+        )
+      
+      ggplotly(p, tooltip = c("x", "colour"))
+    } else {
+      # Empty plot
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = "No health trend data available"), size = 5) +
+        theme_void()
+      ggplotly(p)
+    }
+  })
+  
+  # Manual health check button
+  observeEvent(input$runHealthCheckBtn, {
+    # Disable button during check
+    shinyjs::disable("runHealthCheckBtn")
+    
+    withProgress(message = 'Running health check...', value = 0, {
+      tryCatch({
+        incProgress(0.3, detail = "Checking system health...")
+        
+        values$health_check_data <- perform_health_check()
+        values$last_health_check <- Sys.time()
+        log_health_check(values$health_check_data)
+        
+        # Add to history
+        values$health_check_history <- c(values$health_check_history, list(values$health_check_data))
+        if (length(values$health_check_history) > 20) {
+          values$health_check_history <- values$health_check_history[(length(values$health_check_history) - 19):length(values$health_check_history)]
+        }
+        
+        incProgress(1, detail = "Health check completed!")
+        
+        showNotification(
+          paste("Health check completed! Status:", values$health_check_data$overall_status),
+          type = if (values$health_check_data$overall_status == "healthy") "success" else "warning",
+          duration = 3
+        )
+      }, error = function(e) {
+        showNotification(paste("Health check failed:", e$message), type = "error", duration = 5)
+        cat("Manual health check error:", e$message, "\n")
+      })
+    })
+    
+    # Re-enable button
+    shinyjs::enable("runHealthCheckBtn")
+  })
+  
+  # Refresh health status button (dashboard)
+  observeEvent(input$refreshHealthBtn, {
+    # Disable button during refresh
+    shinyjs::disable("refreshHealthBtn")
+    
+    tryCatch({
+      values$health_check_data <- perform_health_check()
+      values$last_health_check <- Sys.time()
+      log_health_check(values$health_check_data)
+      
+      showNotification("Health status refreshed!", type = "success", duration = 2)
+    }, error = function(e) {
+      showNotification(paste("Health refresh failed:", e$message), type = "error", duration = 5)
+      cat("Health refresh error:", e$message, "\n")
+    })
+    
+    # Re-enable button
+    shinyjs::enable("refreshHealthBtn")
+  })
+  
+  # Download health log button
+  output$downloadHealthLogBtn <- downloadHandler(
+    filename = function() {
+      paste0("health_log_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".log")
+    },
+    content = function(file) {
+      tryCatch({
+        log_file <- file.path("logs", "health_check.log")
+        if (file.exists(log_file)) {
+          file.copy(log_file, file)
+        } else {
+          # Create empty log file
+          writeLines("No health check logs available", file)
+        }
+      }, error = function(e) {
+        writeLines(paste("Error accessing health log:", e$message), file)
+      })
+    }
+  )
+  
+  # Clear health log button
+  observeEvent(input$clearHealthLogBtn, {
+    showModal(modalDialog(
+      title = "Clear Health Log",
+      "Are you sure you want to clear the health check log file?",
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("confirmClearHealthLog", "Clear Log", class = "btn-warning")
+      )
+    ))
+  })
+  
+  # Confirm clear health log
+  observeEvent(input$confirmClearHealthLog, {
+    tryCatch({
+      log_file <- file.path("logs", "health_check.log")
+      if (file.exists(log_file)) {
+        file.remove(log_file)
+        showNotification("Health log cleared successfully!", type = "success", duration = 3)
+      } else {
+        showNotification("No health log file to clear", type = "info", duration = 3)
+      }
+      removeModal()
+    }, error = function(e) {
+      showNotification(paste("Error clearing health log:", e$message), type = "error", duration = 5)
+      cat("Clear health log error:", e$message, "\n")
+    })
+  })
+  
   # Clean up old export files on startup
   cleanup_old_exports()
   
@@ -1932,7 +2473,37 @@ options(
   shiny.autoreload = FALSE
 )
 
+# Create a simple health endpoint wrapper
+health_endpoint <- function(req, res) {
+  if (grepl("^/health", req$PATH_INFO)) {
+    tryCatch({
+      health_data <- perform_health_check()
+      status_code <- switch(health_data$overall_status,
+        "healthy" = 200,
+        "warning" = 200,
+        "critical" = 503,
+        "error" = 503
+      )
+      
+      res$status <- status_code
+      res$headers$`Content-Type` <- "application/json"
+      res$body <- toJSON(health_data, pretty = TRUE, auto_unbox = TRUE)
+    }, error = function(e) {
+      res$status <- 500
+      res$headers$`Content-Type` <- "application/json"
+      res$body <- toJSON(list(
+        overall_status = "error",
+        message = paste("Health check failed:", e$message),
+        timestamp = Sys.time()
+      ), auto_unbox = TRUE)
+    })
+    return(res)
+  }
+  return(NULL)
+}
+
 # Run the application
 cat("Starting Shiny app...\n")
+cat("Health check endpoint available at /health\n")
 app <- shinyApp(ui = ui, server = server)
 runApp(app, host = "0.0.0.0", port = as.integer(Sys.getenv("PORT", "3838")), launch.browser = FALSE)
