@@ -1,18 +1,8 @@
 # Map Generator Module for Monitor Legislativo v4
 # Creates interactive maps showing document distribution by state
 
+library(leaflet)
 library(dplyr)
-library(shiny)
-
-# Check if leaflet is available
-leaflet_available <- requireNamespace("leaflet", quietly = TRUE)
-
-if (leaflet_available) {
-  library(leaflet)
-  cat("Leaflet package loaded successfully\n")
-} else {
-  cat("Warning: Leaflet package not available. Map functionality will be limited.\n")
-}
 
 # Brazilian state coordinates for map markers
 brazil_states <- data.frame(
@@ -40,20 +30,8 @@ brazil_states <- data.frame(
 
 #' Generate interactive map with document counts by state
 #' @param document_stats Data frame with document counts by state
-#' @return Leaflet map object or fallback message
+#' @return Leaflet map object
 generate_document_map <- function(document_stats = NULL) {
-  
-  # Check if leaflet is available
-  if (!leaflet_available) {
-    # Return a simple HTML fallback
-    return(tags$div(
-      class = "alert alert-warning",
-      style = "text-align: center; padding: 50px;",
-      h4("Map functionality unavailable"),
-      p("The leaflet package could not be loaded. Map visualization is temporarily disabled."),
-      p("Document statistics are still available in the table below.")
-    ))
-  }
   
   # If no stats provided, create empty data
   if (is.null(document_stats)) {
@@ -67,20 +45,20 @@ generate_document_map <- function(document_stats = NULL) {
   }
   
   # Create color palette based on document counts
-  pal <- leaflet::colorNumeric(
+  pal <- colorNumeric(
     palette = c("#FFF7EC", "#FEE8C8", "#FDD49E", "#FDBB84", "#FC8D59", 
                 "#EF6548", "#D7301F", "#B30000", "#7F0000"),
     domain = c(0, max(map_data$count, 1))
   )
   
   # Create base map
-  map <- leaflet::leaflet(map_data) %>%
-    leaflet::setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-    leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron)
+  map <- leaflet(map_data) %>%
+    setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
+    addProviderTiles(providers$CartoDB.Positron)
   
   # Add circle markers for each state
   map <- map %>%
-    leaflet::addCircleMarkers(
+    addCircleMarkers(
       ~lng, ~lat,
       radius = ~sqrt(count) * 3 + 5,
       fillColor = ~pal(count),
@@ -98,7 +76,7 @@ generate_document_map <- function(document_stats = NULL) {
   
   # Add legend
   map <- map %>%
-    leaflet::addLegend(
+    addLegend(
       position = "bottomright",
       pal = pal,
       values = ~count,
@@ -138,22 +116,12 @@ calculate_state_statistics <- function(documents) {
 }
 
 #' Generate a simple Brazil map for testing
-#' @return Leaflet map object or fallback message
+#' @return Leaflet map object
 generate_test_map <- function() {
-  if (!leaflet_available) {
-    return(tags$div(
-      class = "alert alert-info",
-      style = "text-align: center; padding: 30px;",
-      h5("Test Map"),
-      p("Map functionality is currently unavailable."),
-      p("Brazil - Legislative Document Monitor")
-    ))
-  }
-  
-  leaflet::leaflet() %>%
-    leaflet::setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-    leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) %>%
-    leaflet::addMarkers(
+  leaflet() %>%
+    setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
+    addProviderTiles(providers$CartoDB.Positron) %>%
+    addMarkers(
       lng = -47.86, 
       lat = -15.83, 
       popup = "Brazil - Legislative Document Monitor"
