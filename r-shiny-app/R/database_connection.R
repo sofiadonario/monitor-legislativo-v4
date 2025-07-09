@@ -214,23 +214,24 @@ get_documents <- function(limit = 100) {
   })
 }
 
-#' Search documents by text
+#' Advanced search documents with filters
 #' @param search_text Text to search for
+#' @param document_types Vector of document types to filter (optional)
+#' @param states Vector of states to filter (optional) 
+#' @param date_from Start date for date range (optional)
+#' @param date_to End date for date range (optional)
 #' @param limit Maximum number of results
 #' @return Data frame with search results
-search_documents <- function(search_text = "", limit = 100) {
+search_documents <- function(search_text = "", document_types = NULL, states = NULL, 
+                            date_from = NULL, date_to = NULL, limit = 100) {
   if (is.null(db_pool)) {
     warning("Database not initialized")
     return(NULL)
   }
   
   tryCatch({
-    if (nchar(search_text) == 0) {
-      return(get_documents(limit))
-    }
-    
-    # Simple text search (can be enhanced later)
-    query <- "
+    # Build dynamic query
+    base_query <- "
       SELECT 
         id,
         titulo,
@@ -238,15 +239,63 @@ search_documents <- function(search_text = "", limit = 100) {
         estado,
         data_publicacao,
         url,
-        urn
+        urn,
+        conteudo
       FROM documents 
-      WHERE (titulo ILIKE $1 OR conteudo ILIKE $1)
-      ORDER BY data_publicacao DESC NULLS LAST
-      LIMIT $2
-    "
+      WHERE 1=1"
     
-    search_pattern <- paste0("%", search_text, "%")
-    result <- dbGetQuery(db_pool, query, params = list(search_pattern, limit))
+    params <- list()
+    param_count <- 0
+    
+    # Add text search condition
+    if (nchar(search_text) > 0) {
+      param_count <- param_count + 1
+      base_query <- paste(base_query, "AND (titulo ILIKE $", param_count, " OR conteudo ILIKE $", param_count, ")", sep="")
+      params[[param_count]] <- paste0("%", search_text, "%")
+    }
+    
+    # Add document type filter
+    if (!is.null(document_types) && length(document_types) > 0) {
+      param_count <- param_count + 1
+      placeholders <- paste0("$", param_count + 0:(length(document_types)-1), collapse = ", ")
+      base_query <- paste(base_query, "AND tipo IN (", placeholders, ")")
+      for (i in 1:length(document_types)) {
+        params[[param_count + i - 1]] <- document_types[i]
+      }
+      param_count <- param_count + length(document_types) - 1
+    }
+    
+    # Add state filter
+    if (!is.null(states) && length(states) > 0) {
+      param_count <- param_count + 1
+      placeholders <- paste0("$", param_count + 0:(length(states)-1), collapse = ", ")
+      base_query <- paste(base_query, "AND estado IN (", placeholders, ")")
+      for (i in 1:length(states)) {
+        params[[param_count + i - 1]] <- states[i]
+      }
+      param_count <- param_count + length(states) - 1
+    }
+    
+    # Add date range filter
+    if (!is.null(date_from)) {
+      param_count <- param_count + 1
+      base_query <- paste(base_query, "AND data_publicacao >= $", param_count, sep="")
+      params[[param_count]] <- date_from
+    }
+    
+    if (!is.null(date_to)) {
+      param_count <- param_count + 1
+      base_query <- paste(base_query, "AND data_publicacao <= $", param_count, sep="")
+      params[[param_count]] <- date_to
+    }
+    
+    # Add ordering and limit
+    param_count <- param_count + 1
+    base_query <- paste(base_query, "ORDER BY data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+    params[[param_count]] <- limit
+    
+    # Execute query
+    result <- dbGetQuery(db_pool, base_query, params = params)
     
     # Clean up the data
     if (nrow(result) > 0) {
@@ -255,14 +304,73 @@ search_documents <- function(search_text = "", limit = 100) {
       }
       result[is.na(result)] <- ""
       
-      cat("Search for '", search_text, "' returned", nrow(result), "documents\n")
+      # Remove content from display (too long for tables)
+      if ("conteudo" %in% names(result)) {
+        result$conteudo <- NULL
+      }
+      
+      search_desc <- paste(
+        "text:", ifelse(nchar(search_text) > 0, search_text, "any"),
+        "types:", ifelse(is.null(document_types), "any", paste(document_types, collapse=",")),
+        "states:", ifelse(is.null(states), "any", paste(states, collapse=",")),
+        "dates:", ifelse(is.null(date_from) && is.null(date_to), "any", 
+                        paste(date_from, "to", date_to))
+      )
+      
+      cat("Advanced search (", search_desc, ") returned", nrow(result), "documents\n")
     }
     
     return(result)
     
   }, error = function(e) {
-    cat("Error searching documents:", e$message, "\n")
+    cat("Error in advanced search:", e$message, "\n")
     return(NULL)
+  })
+}
+
+#' Get available document types for filter
+#' @return Vector of document types
+get_document_types <- function() {
+  if (is.null(db_pool)) {
+    return(c("lei", "decreto", "portaria"))
+  }
+  
+  tryCatch({
+    result <- dbGetQuery(db_pool, "
+      SELECT DISTINCT tipo 
+      FROM documents 
+      WHERE tipo IS NOT NULL AND tipo != '' 
+      ORDER BY tipo
+    ")
+    
+    return(result$tipo)
+    
+  }, error = function(e) {
+    cat("Error getting document types:", e$message, "\n")
+    return(c("lei", "decreto", "portaria"))
+  })
+}
+
+#' Get available states for filter
+#' @return Vector of states
+get_states <- function() {
+  if (is.null(db_pool)) {
+    return(c("SP", "RJ", "MG", "RS"))
+  }
+  
+  tryCatch({
+    result <- dbGetQuery(db_pool, "
+      SELECT DISTINCT estado 
+      FROM documents 
+      WHERE estado IS NOT NULL AND estado != '' 
+      ORDER BY estado
+    ")
+    
+    return(result$estado)
+    
+  }, error = function(e) {
+    cat("Error getting states:", e$message, "\n")
+    return(c("SP", "RJ", "MG", "RS"))
   })
 }
 

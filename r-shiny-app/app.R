@@ -123,25 +123,58 @@ ui <- dashboardPage(
       # Search tab
       tabItem(tabName = "search",
         fluidRow(
+          # Search filters
           box(
-            title = "Document Search", 
+            title = "Advanced Search Filters", 
             status = "primary", 
             solidHeader = TRUE, 
             width = 12,
             if(database_connected) {
               div(
                 fluidRow(
-                  column(8,
-                    textInput("searchText", "Search documents:", 
+                  column(6,
+                    textInput("searchText", "Search Text:", 
                              placeholder = "Enter keywords to search titles and content...")
                   ),
-                  column(4,
-                    br(),
-                    actionButton("searchBtn", "Search", icon = icon("search"), class = "btn-primary")
+                  column(6,
+                    selectizeInput("documentTypes", "Document Types:", 
+                                 choices = NULL, 
+                                 multiple = TRUE,
+                                 options = list(placeholder = "Select document types (optional)"))
+                  )
+                ),
+                fluidRow(
+                  column(6,
+                    selectizeInput("states", "States:", 
+                                 choices = NULL, 
+                                 multiple = TRUE,
+                                 options = list(placeholder = "Select states (optional)"))
+                  ),
+                  column(3,
+                    dateInput("dateFrom", "Date From:", 
+                             value = NULL,
+                             format = "yyyy-mm-dd")
+                  ),
+                  column(3,
+                    dateInput("dateTo", "Date To:", 
+                             value = NULL,
+                             format = "yyyy-mm-dd")
+                  )
+                ),
+                fluidRow(
+                  column(12,
+                    div(class = "text-center",
+                      actionButton("searchBtn", "Search Documents", icon = icon("search"), class = "btn-primary btn-lg"),
+                      " ",
+                      actionButton("clearBtn", "Clear Filters", icon = icon("times"), class = "btn-secondary")
+                    )
                   )
                 ),
                 hr(),
-                DT::dataTableOutput("searchResults")
+                div(id = "searchResultsContainer",
+                  uiOutput("searchSummary"),
+                  DT::dataTableOutput("searchResults")
+                )
               )
             } else {
               div(
@@ -171,6 +204,10 @@ server <- function(input, output, session) {
   observe({
     if (database_connected) {
       values$current_documents <- get_documents(50)  # Get first 50 documents
+      
+      # Populate filter choices
+      updateSelectizeInput(session, "documentTypes", choices = get_document_types())
+      updateSelectizeInput(session, "states", choices = get_states())
     } else {
       values$current_documents <- sample_documents
     }
@@ -267,14 +304,65 @@ server <- function(input, output, session) {
     )
   })
   
-  # Search functionality
+  # Advanced search functionality
   observeEvent(input$searchBtn, {
-    if (database_connected && nchar(input$searchText) > 0) {
+    if (database_connected) {
       withProgress(message = 'Searching documents...', value = 0, {
-        incProgress(0.5)
-        values$search_results <- search_documents(input$searchText, 100)
+        incProgress(0.3)
+        
+        # Get filter values
+        search_text <- input$searchText
+        doc_types <- input$documentTypes
+        states_filter <- input$states
+        date_from <- input$dateFrom
+        date_to <- input$dateTo
+        
+        incProgress(0.7)
+        
+        # Perform advanced search
+        values$search_results <- search_documents(
+          search_text = search_text,
+          document_types = doc_types,
+          states = states_filter,
+          date_from = date_from,
+          date_to = date_to,
+          limit = 200
+        )
+        
         incProgress(1)
       })
+    }
+  })
+  
+  # Clear filters functionality
+  observeEvent(input$clearBtn, {
+    updateTextInput(session, "searchText", value = "")
+    updateSelectizeInput(session, "documentTypes", selected = NULL)
+    updateSelectizeInput(session, "states", selected = NULL)
+    updateDateInput(session, "dateFrom", value = NULL)
+    updateDateInput(session, "dateTo", value = NULL)
+    values$search_results <- NULL
+  })
+  
+  # Search summary
+  output$searchSummary <- renderUI({
+    if (!is.null(values$search_results)) {
+      result_count <- nrow(values$search_results)
+      
+      if (result_count > 0) {
+        div(
+          class = "alert alert-info",
+          icon("info-circle"),
+          strong(paste("Found", result_count, "documents")),
+          if (result_count == 200) " (showing first 200 results)" else ""
+        )
+      } else {
+        div(
+          class = "alert alert-warning",
+          icon("exclamation-triangle"),
+          "No documents found matching your search criteria. Try adjusting your filters."
+        )
+      }
     }
   })
   
