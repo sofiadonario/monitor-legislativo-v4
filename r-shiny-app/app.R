@@ -523,7 +523,7 @@ ui <- dashboardPage(
               status = "primary", 
               solidHeader = TRUE, 
               width = 6,
-              withSpinner(plotlyOutput("yearChart", height = "300px"), type = 2, color = "#3498db")
+              withSpinner(plotlyOutput("yearChart", height = "300px"), type = 2, color = "#3498db", color.background = "#f4f4f4")
             ),
             
             # Documents by State Chart
@@ -532,7 +532,7 @@ ui <- dashboardPage(
               status = "success", 
               solidHeader = TRUE, 
               width = 6,
-              withSpinner(plotlyOutput("stateChart", height = "300px"), type = 2, color = "#27ae60")
+              withSpinner(plotlyOutput("stateChart", height = "300px"), type = 2, color = "#27ae60", color.background = "#f4f4f4")
             )
           )
         },
@@ -544,7 +544,7 @@ ui <- dashboardPage(
               status = "warning", 
               solidHeader = TRUE, 
               width = 6,
-              withSpinner(plotlyOutput("typeChart", height = "300px"), type = 2, color = "#f39c12")
+              withSpinner(plotlyOutput("typeChart", height = "300px"), type = 2, color = "#f39c12", color.background = "#f4f4f4")
             ),
             
             # Recent Documents
@@ -580,7 +580,7 @@ ui <- dashboardPage(
                   )
                 ),
                 hr(),
-                withSpinner(leafletOutput("documentMap", height = "600px"), type = 3, color = "#17a2b8")
+                withSpinner(leafletOutput("documentMap", height = "600px"), type = 3, color = "#17a2b8", color.background = "#f4f4f4")
               )
             } else {
               div(
@@ -699,7 +699,7 @@ ui <- dashboardPage(
             status = "warning", 
             solidHeader = TRUE, 
             width = 12,
-            withSpinner(plotlyOutput("healthTrendsChart", height = "300px"), type = 2, color = "#f39c12")
+            withSpinner(plotlyOutput("healthTrendsChart", height = "300px"), type = 2, color = "#f39c12", color.background = "#f4f4f4")
           )
         )
       )
