@@ -1,0 +1,19 @@
+apis:
+  federal:
+    camara:
+      name: "Câmara dos Deputados"
+      base_url: "https://dadosabertos.camara.leg.br/api/v2"
+      rate_limit: 60
+      endpoints:
+        proposicoes: "/proposicoes"
+
+app:
+  name: "Monitor Legislativo Acadêmico"
+  version: "1.0.0"
+  cache_duration: 24
+  max_results_per_query: 100
+
+database:
+  type: "SQLite"
+  file: "data/legislative.db"
+
