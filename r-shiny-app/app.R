@@ -11,7 +11,13 @@ library(plotly)
 library(ggplot2)
 library(shinyjs)
 library(shinycssloaders)
-library(leaflet)
+# Try to load leaflet, continue if not available
+if (requireNamespace("leaflet", quietly = TRUE)) {
+  library(leaflet)
+  cat("Leaflet loaded successfully\n")
+} else {
+  cat("Warning: Leaflet not available, map functionality will be limited\n")
+}
 library(stringr)
 library(openxlsx)
 library(readr)
@@ -574,7 +580,19 @@ ui <- dashboardPage(
                   )
                 ),
                 hr(),
-                withSpinner(leafletOutput("documentMap", height = "600px"), type = 3, color = "#17a2b8", color.background = "#f4f4f4")
+                # Conditional leaflet output based on availability
+                if (requireNamespace("leaflet", quietly = TRUE)) {
+                  withSpinner(leafletOutput("documentMap", height = "600px"), type = 3, color = "#17a2b8", color.background = "#f4f4f4")
+                } else {
+                  div(
+                    class = "alert alert-info",
+                    style = "margin-top: 20px;",
+                    icon("info-circle"), " Interactive map functionality requires the leaflet package.",
+                    br(), br(),
+                    p("To enable interactive maps, install the leaflet package:"),
+                    code("install.packages('leaflet')", style = "background-color: #eee; padding: 5px; border-radius: 3px;")
+                  )
+                }
               )
             } else {
               div(
@@ -1815,61 +1833,65 @@ server <- function(input, output, session) {
   # Reactive value for selected state filter
   selected_state <- reactiveVal(NULL)
   
-  # Generate document map
-  output$documentMap <- renderLeaflet({
-    if (database_connected) {
-      # Get state document counts (cached)
-      state_counts <- cached_get_state_document_counts()
-      
-      # Generate the map
-      map <- generate_document_map(state_counts)
-      
-      return(map)
-    } else {
-      # Return test map if no database
-      return(generate_test_map())
-    }
-  })
-  
-  # Handle map click events
-  observeEvent(input$documentMap_marker_click, {
-    click <- input$documentMap_marker_click
-    if (!is.null(click$id)) {
-      selected_state(click$id)
-      
-      # Update the documents table with filtered data
+  # Generate document map (conditional based on leaflet availability)
+  if (requireNamespace("leaflet", quietly = TRUE)) {
+    output$documentMap <- renderLeaflet({
       if (database_connected) {
-        withProgress(message = paste('Loading documents for', click$id, '...'), value = 0, {
-          tryCatch({
-            incProgress(0.5, detail = "Filtering documents...")
-            
-            filtered_docs <- search_documents(states = click$id, limit = 50)
-            values$current_documents <- filtered_docs
-            
-            incProgress(1, detail = "Filter applied successfully!")
-            
-            # Show success notification with document count
-            doc_count <- if (!is.null(filtered_docs)) nrow(filtered_docs) else 0
-            showNotification(
-              paste("Showing", doc_count, "documents for state:", click$id),
-              type = "info",
-              duration = 3
-            )
-            
-            # Navigate to documents tab to show filtered results
-            updateTabItems(session, "sidebarMenu", selected = "documents")
-          }, error = function(e) {
-            showNotification(
-              paste("Error filtering documents:", e$message),
-              type = "error",
-              duration = 5
-            )
-            cat("Map filter error:", e$message, "\n")
-          })
-        })
+        # Get state document counts (cached)
+        state_counts <- cached_get_state_document_counts()
+        
+        # Generate the map
+        map <- generate_document_map(state_counts)
+        
+        return(map)
+      } else {
+        # Return test map if no database
+        return(generate_test_map())
       }
-    }
-  })
+    })
+  }
+  
+  # Handle map click events (conditional based on leaflet availability)
+  if (requireNamespace("leaflet", quietly = TRUE)) {
+    observeEvent(input$documentMap_marker_click, {
+      click <- input$documentMap_marker_click
+      if (!is.null(click$id)) {
+        selected_state(click$id)
+        
+        # Update the documents table with filtered data
+        if (database_connected) {
+          withProgress(message = paste('Loading documents for', click$id, '...'), value = 0, {
+            tryCatch({
+              incProgress(0.5, detail = "Filtering documents...")
+              
+              filtered_docs <- search_documents(states = click$id, limit = 50)
+              values$current_documents <- filtered_docs
+              
+              incProgress(1, detail = "Filter applied successfully!")
+              
+              # Show success notification with document count
+              doc_count <- if (!is.null(filtered_docs)) nrow(filtered_docs) else 0
+              showNotification(
+                paste("Showing", doc_count, "documents for state:", click$id),
+                type = "info",
+                duration = 3
+              )
+              
+              # Navigate to documents tab to show filtered results
+              updateTabItems(session, "sidebarMenu", selected = "documents")
+            }, error = function(e) {
+              showNotification(
+                paste("Error filtering documents:", e$message),
+                type = "error",
+                duration = 5
+              )
+              cat("Map filter error:", e$message, "\n")
+            })
+          })
+        }
+      }
+    })
+  }
   
   # Reset map filter
   observeEvent(input$resetMapFilter, {

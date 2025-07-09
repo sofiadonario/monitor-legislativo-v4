@@ -1,7 +1,7 @@
 # Production Dockerfile for Monitor Legislativo v4
 FROM rocker/shiny:4.3.1
 
-# Install system dependencies
+# Install system dependencies including additional leaflet dependencies
 RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libssl-dev \
@@ -16,6 +16,12 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     redis-tools \
     curl \
+    gdal-bin \
+    libgeos++-dev \
+    libproj-dev \
+    proj-data \
+    proj-bin \
+    libgdal-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install R packages - force cache bust with timestamp
@@ -25,7 +31,7 @@ RUN echo "Installing R packages at $(date)" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('DBI', 'RPostgres', 'pool', 'dbplyr'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('config', 'httr', 'yaml', 'lubridate'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('plotly', 'ggplot2', 'futile.logger'))" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages('leaflet')" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages('leaflet', dependencies=TRUE, verbose=TRUE)" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('openxlsx', 'readr', 'digest', 'shinyjs', 'shinycssloaders'))" && \
     R -e "cat('Installed packages:\n'); print(installed.packages()[,c('Package', 'Version')])"
 
@@ -40,8 +46,10 @@ COPY app.R ./
 COPY R/ ./R/
 COPY config.yml ./
 
-# Verify required packages are installed
-RUN R -e "required_packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 'DBI', 'RPostgres', 'pool', 'plotly', 'ggplot2', 'leaflet'); missing <- required_packages[!required_packages %in% installed.packages()[,'Package']]; if(length(missing) > 0) { cat('Missing packages:', missing, '\n'); quit(status=1) } else { cat('All required packages installed\n') }"
+# Verify core packages are installed (leaflet is optional)
+RUN R -e "required_packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 'DBI', 'RPostgres', 'pool', 'plotly', 'ggplot2'); missing <- required_packages[!required_packages %in% installed.packages()[,'Package']]; if(length(missing) > 0) { cat('Missing packages:', missing, '\n'); quit(status=1) } else { cat('All required packages installed\n') }"
+# Check if leaflet is available
+RUN R -e "if('leaflet' %in% installed.packages()[,'Package']) { cat('Leaflet: AVAILABLE\n') } else { cat('Leaflet: NOT AVAILABLE - map functionality will be limited\n') }"
 
 # Set environment variables
 ENV R_CONFIG_ACTIVE=production

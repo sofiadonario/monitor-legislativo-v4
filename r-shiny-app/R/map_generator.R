@@ -1,8 +1,18 @@
 # Map Generator Module for Monitor Legislativo v4
 # Creates interactive maps showing document distribution by state
 
-library(leaflet)
 library(dplyr)
+library(shiny)
+
+# Check if leaflet is available
+leaflet_available <- requireNamespace("leaflet", quietly = TRUE)
+
+if (leaflet_available) {
+  library(leaflet)
+  cat("Leaflet package loaded successfully\n")
+} else {
+  cat("Warning: Leaflet package not available. Map functionality will be limited.\n")
+}
 
 # Brazilian state coordinates for map markers
 brazil_states <- data.frame(
@@ -30,8 +40,20 @@ brazil_states <- data.frame(
 
 #' Generate interactive map with document counts by state
 #' @param document_stats Data frame with document counts by state
-#' @return Leaflet map object
+#' @return Leaflet map object or HTML fallback
 generate_document_map <- function(document_stats = NULL) {
+  
+  # Check if leaflet is available
+  if (!leaflet_available) {
+    return(HTML(paste0(
+      "<div style='padding: 20px; text-align: center; border: 2px solid #ddd; border-radius: 10px; background-color: #f9f9f9;'>",
+      "<h4 style='color: #666; margin-bottom: 15px;'>Interactive Map Not Available</h4>",
+      "<p style='color: #888; margin-bottom: 10px;'>The leaflet package is required for interactive maps.</p>",
+      "<p style='color: #888; font-size: 14px;'>Please install leaflet to view document distribution maps.</p>",
+      "<code style='background-color: #eee; padding: 5px; border-radius: 3px;'>install.packages('leaflet')</code>",
+      "</div>"
+    )))
+  }
   
   # If no stats provided, create empty data
   if (is.null(document_stats)) {
@@ -90,7 +112,7 @@ generate_document_map <- function(document_stats = NULL) {
 #' Generate choropleth map with document density by state
 #' @param document_stats Data frame with document counts by state
 #' @param geojson_path Path to Brazil states GeoJSON (optional)
-#' @return Leaflet map object
+#' @return Leaflet map object or HTML fallback
 generate_choropleth_map <- function(document_stats = NULL, geojson_path = NULL) {
   
   # For now, use circle markers as choropleth requires GeoJSON data
@@ -116,8 +138,21 @@ calculate_state_statistics <- function(documents) {
 }
 
 #' Generate a simple Brazil map for testing
-#' @return Leaflet map object
+#' @return Leaflet map object or HTML fallback
 generate_test_map <- function() {
+  
+  # Check if leaflet is available
+  if (!leaflet_available) {
+    return(HTML(paste0(
+      "<div style='padding: 20px; text-align: center; border: 2px solid #ddd; border-radius: 10px; background-color: #f9f9f9;'>",
+      "<h4 style='color: #666; margin-bottom: 15px;'>Test Map Not Available</h4>",
+      "<p style='color: #888; margin-bottom: 10px;'>The leaflet package is required for interactive maps.</p>",
+      "<p style='color: #888; font-size: 14px;'>This would show a test map of Brazil with a marker at the center.</p>",
+      "<code style='background-color: #eee; padding: 5px; border-radius: 3px;'>install.packages('leaflet')</code>",
+      "</div>"
+    )))
+  }
+  
   leaflet() %>%
     setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
     addProviderTiles(providers$CartoDB.Positron) %>%
