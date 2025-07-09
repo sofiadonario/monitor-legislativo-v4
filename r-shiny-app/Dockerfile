@@ -18,8 +18,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install R packages directly
-RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT', 'leaflet', 'plotly', 'dplyr', 'jsonlite'), repos='https://cran.rstudio.com/')"
+# Install R packages with proper dependencies
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite'), repos='https://cran.rstudio.com/')" && \
+    R -e "install.packages(c('leaflet', 'plotly'), repos='https://cran.rstudio.com/')" && \
+    R -e "install.packages(c('RSQLite', 'DBI', 'config', 'httr', 'yaml'), repos='https://cran.rstudio.com/')"
 
 # Set working directory
 WORKDIR /app
