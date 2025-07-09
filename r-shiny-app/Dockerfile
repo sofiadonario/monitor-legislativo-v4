@@ -19,11 +19,11 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install R packages - force cache bust with timestamp
-ARG CACHE_BUST=1
+ARG CACHE_BUST=2
 RUN echo "Installing R packages at $(date)" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite'))" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('leaflet', 'plotly'))" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('RSQLite', 'DBI', 'config', 'httr', 'yaml'))" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('DBI', 'RPostgres', 'pool', 'dbplyr'))" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('config', 'httr', 'yaml', 'lubridate'))" && \
     R -e "cat('Installed packages:\n'); print(installed.packages()[,c('Package', 'Version')])"
 
 # Set working directory
