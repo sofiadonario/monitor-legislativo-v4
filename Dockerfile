@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install R packages - force cache bust with timestamp
-ARG CACHE_BUST=2
+ARG CACHE_BUST=3
 RUN echo "Installing R packages at $(date)" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('DBI', 'RPostgres', 'pool', 'dbplyr'))" && \
@@ -38,8 +38,8 @@ COPY R/ ./R/
 COPY www/ ./www/
 COPY config.yml ./
 
-# Verify minimal required packages are installed
-RUN R -e "required_packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite'); missing <- required_packages[!required_packages %in% installed.packages()[,'Package']]; if(length(missing) > 0) { cat('Missing packages:', missing, '\n'); quit(status=1) } else { cat('All required packages installed\n') }"
+# Verify required packages are installed
+RUN R -e "required_packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 'DBI', 'RPostgres', 'pool'); missing <- required_packages[!required_packages %in% installed.packages()[,'Package']]; if(length(missing) > 0) { cat('Missing packages:', missing, '\n'); quit(status=1) } else { cat('All required packages installed\n') }"
 
 # Set environment variables
 ENV R_CONFIG_ACTIVE=production

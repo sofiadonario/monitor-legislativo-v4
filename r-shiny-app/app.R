@@ -328,11 +328,13 @@ server <- function(input, output, session) {
 }
 
 # Print startup information
+cat("=== Monitor Legislativo v4 with Database - Version 2.0 ===\n")
 cat("Starting Monitor Legislativo v4 Shiny application...\n")
 cat("PORT env var:", Sys.getenv("PORT"), "\n")
 cat("Using port:", as.integer(Sys.getenv("PORT", "3838")), "\n")
 cat("Host: 0.0.0.0\n")
 cat("Database connected:", database_connected, "\n")
+cat("App version: Database-enabled (", Sys.time(), ")\n")
 
 # Set options before running app
 options(
