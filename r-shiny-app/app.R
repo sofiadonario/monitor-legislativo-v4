@@ -2457,7 +2457,7 @@ server <- function(input, output, session) {
 }
 
 # Print startup information
-cat("=== Monitor Legislativo v4 with Database - Version 2.0 ===\n")
+cat("=== Monitor Legislativo v4 with Database - Version 2.1 ===\n")
 cat("Starting Monitor Legislativo v4 Shiny application...\n")
 cat("PORT env var:", Sys.getenv("PORT"), "\n")
 cat("Using port:", as.integer(Sys.getenv("PORT", "3838")), "\n")
