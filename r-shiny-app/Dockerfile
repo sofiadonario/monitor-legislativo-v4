@@ -24,6 +24,7 @@ RUN echo "Installing R packages at $(date)" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('DBI', 'RPostgres', 'pool', 'dbplyr'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('config', 'httr', 'yaml', 'lubridate'))" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('plotly', 'ggplot2', 'futile.logger'))" && \
     R -e "cat('Installed packages:\n'); print(installed.packages()[,c('Package', 'Version')])"
 
 # Set working directory
@@ -34,13 +35,11 @@ RUN mkdir -p data/cache data/geographic www logs exports temp
 
 # Copy application files
 COPY app.R ./
-COPY test_version.R ./
 COPY R/ ./R/
-COPY www/ ./www/
 COPY config.yml ./
 
 # Verify required packages are installed
-RUN R -e "required_packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 'DBI', 'RPostgres', 'pool'); missing <- required_packages[!required_packages %in% installed.packages()[,'Package']]; if(length(missing) > 0) { cat('Missing packages:', missing, '\n'); quit(status=1) } else { cat('All required packages installed\n') }"
+RUN R -e "required_packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 'DBI', 'RPostgres', 'pool', 'plotly', 'ggplot2'); missing <- required_packages[!required_packages %in% installed.packages()[,'Package']]; if(length(missing) > 0) { cat('Missing packages:', missing, '\n'); quit(status=1) } else { cat('All required packages installed\n') }"
 
 # Set environment variables
 ENV R_CONFIG_ACTIVE=production
@@ -49,5 +48,5 @@ ENV SHINY_LOG_LEVEL=INFO
 # Expose port
 EXPOSE ${PORT:-3838}
 
-# Start the application with version test
-CMD ["R", "-e", "source('test_version.R'); source('app.R')"]
+# Start the application
+CMD ["R", "-e", "source('app.R')"]

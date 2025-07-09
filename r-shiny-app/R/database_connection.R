@@ -471,6 +471,106 @@ get_document_stats <- function() {
   })
 }
 
+#' Get search analytics and statistics
+#' @return List with search-related statistics
+get_search_analytics <- function() {
+  if (is.null(db_pool)) {
+    return(list(
+      total_documents = 0,
+      documents_by_year = data.frame(),
+      documents_by_state = data.frame(),
+      documents_by_type = data.frame(),
+      recent_documents = data.frame(),
+      date_range = list(min = NA, max = NA)
+    ))
+  }
+  
+  tryCatch({
+    # Total documents
+    total <- dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count
+    
+    # Documents by year
+    by_year <- dbGetQuery(db_pool, "
+      SELECT 
+        EXTRACT(YEAR FROM data_publicacao) as year,
+        COUNT(*) as count
+      FROM documents 
+      WHERE data_publicacao IS NOT NULL
+      GROUP BY EXTRACT(YEAR FROM data_publicacao)
+      ORDER BY year DESC
+      LIMIT 10
+    ")
+    
+    # Documents by state (top 10)
+    by_state <- dbGetQuery(db_pool, "
+      SELECT 
+        estado,
+        COUNT(*) as count
+      FROM documents 
+      WHERE estado IS NOT NULL AND estado != ''
+      GROUP BY estado
+      ORDER BY count DESC
+      LIMIT 10
+    ")
+    
+    # Documents by type
+    by_type <- dbGetQuery(db_pool, "
+      SELECT 
+        tipo,
+        COUNT(*) as count
+      FROM documents 
+      WHERE tipo IS NOT NULL AND tipo != ''
+      GROUP BY tipo
+      ORDER BY count DESC
+    ")
+    
+    # Recent documents (last 30 days)
+    recent <- dbGetQuery(db_pool, "
+      SELECT 
+        titulo,
+        tipo,
+        estado,
+        data_publicacao
+      FROM documents 
+      WHERE data_publicacao >= CURRENT_DATE - INTERVAL '30 days'
+      ORDER BY data_publicacao DESC
+      LIMIT 10
+    ")
+    
+    # Date range
+    date_range <- dbGetQuery(db_pool, "
+      SELECT 
+        MIN(data_publicacao) as min_date,
+        MAX(data_publicacao) as max_date
+      FROM documents 
+      WHERE data_publicacao IS NOT NULL
+    ")
+    
+    return(list(
+      total_documents = total,
+      documents_by_year = by_year,
+      documents_by_state = by_state,
+      documents_by_type = by_type,
+      recent_documents = recent,
+      date_range = list(
+        min = date_range$min_date,
+        max = date_range$max_date
+      )
+    ))
+    
+  }, error = function(e) {
+    cat("Error getting search analytics:", e$message, "\n")
+    return(list(
+      total_documents = 0,
+      documents_by_year = data.frame(),
+      documents_by_state = data.frame(),
+      documents_by_type = data.frame(),
+      recent_documents = data.frame(),
+      date_range = list(min = NA, max = NA)
+    ))
+  })
+}
+
 #' Highlight search terms in text
 #' @param text The text to highlight
 #' @param search_terms Vector of terms to highlight

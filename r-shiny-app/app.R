@@ -6,6 +6,8 @@ library(shinydashboard)
 library(DT)
 library(dplyr)
 library(jsonlite)
+library(plotly)
+library(ggplot2)
 
 # Load database connection module
 source("R/database_connection.R")
@@ -50,7 +52,8 @@ ui <- dashboardPage(
     sidebarMenu(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
       menuItem("Documents", tabName = "documents", icon = icon("file-text")),
-      menuItem("Search", tabName = "search", icon = icon("search"))
+      menuItem("Search", tabName = "search", icon = icon("search")),
+      menuItem("Analytics", tabName = "analytics", icon = icon("chart-bar"))
     )
   ),
   dashboardBody(
@@ -186,6 +189,86 @@ ui <- dashboardPage(
             }
           )
         )
+      ),
+      
+      # Analytics tab
+      tabItem(tabName = "analytics",
+        fluidRow(
+          # Analytics overview
+          box(
+            title = "Analytics Overview", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 12,
+            if(database_connected) {
+              div(
+                fluidRow(
+                  column(3,
+                    valueBoxOutput("analyticsTotal", width = NULL)
+                  ),
+                  column(3,
+                    valueBoxOutput("analyticsStates", width = NULL)
+                  ),
+                  column(3,
+                    valueBoxOutput("analyticsTypes", width = NULL)
+                  ),
+                  column(3,
+                    valueBoxOutput("analyticsDateRange", width = NULL)
+                  )
+                )
+              )
+            } else {
+              div(
+                class = "alert alert-warning",
+                icon("database"), " Analytics require database connection.",
+                br(), br(),
+                p("Please check the database connection in the Dashboard tab.")
+              )
+            }
+          )
+        ),
+        if(database_connected) {
+          fluidRow(
+            # Documents by Year Chart
+            box(
+              title = "Documents by Year", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 6,
+              plotlyOutput("yearChart", height = "300px")
+            ),
+            
+            # Documents by State Chart
+            box(
+              title = "Documents by State (Top 10)", 
+              status = "success", 
+              solidHeader = TRUE, 
+              width = 6,
+              plotlyOutput("stateChart", height = "300px")
+            )
+          )
+        },
+        if(database_connected) {
+          fluidRow(
+            # Documents by Type Chart
+            box(
+              title = "Documents by Type", 
+              status = "warning", 
+              solidHeader = TRUE, 
+              width = 6,
+              plotlyOutput("typeChart", height = "300px")
+            ),
+            
+            # Recent Documents
+            box(
+              title = "Recent Documents (Last 30 days)", 
+              status = "info", 
+              solidHeader = TRUE, 
+              width = 6,
+              DT::dataTableOutput("recentDocuments", height = "300px")
+            )
+          )
+        }
       )
     )
   )
@@ -197,13 +280,15 @@ server <- function(input, output, session) {
   # Reactive values
   values <- reactiveValues(
     current_documents = NULL,
-    search_results = NULL
+    search_results = NULL,
+    analytics_data = NULL
   )
   
   # Initialize data on startup
   observe({
     if (database_connected) {
       values$current_documents <- get_documents(50)  # Get first 50 documents
+      values$analytics_data <- get_search_analytics()  # Load analytics data
       
       # Populate filter choices
       updateSelectizeInput(session, "documentTypes", choices = get_document_types())
@@ -461,6 +546,250 @@ server <- function(input, output, session) {
         rownames = FALSE,
         escape = FALSE  # Allow HTML in cells for highlighting
       )
+    }
+  })
+  
+  # === Analytics Section ===
+  
+  # Analytics value boxes
+  output$analyticsTotal <- renderValueBox({
+    if (database_connected && !is.null(values$analytics_data)) {
+      count <- values$analytics_data$total_documents
+      status_color <- "blue"
+    } else {
+      count <- 0
+      status_color <- "red"
+    }
+    
+    valueBox(
+      value = count,
+      subtitle = "Total Documents",
+      icon = icon("file-text"),
+      color = status_color
+    )
+  })
+  
+  output$analyticsStates <- renderValueBox({
+    if (database_connected && !is.null(values$analytics_data)) {
+      count <- nrow(values$analytics_data$documents_by_state)
+      status_color <- "green"
+    } else {
+      count <- 0
+      status_color <- "red"
+    }
+    
+    valueBox(
+      value = count,
+      subtitle = "States",
+      icon = icon("map"),
+      color = status_color
+    )
+  })
+  
+  output$analyticsTypes <- renderValueBox({
+    if (database_connected && !is.null(values$analytics_data)) {
+      count <- nrow(values$analytics_data$documents_by_type)
+      status_color <- "yellow"
+    } else {
+      count <- 0
+      status_color <- "red"
+    }
+    
+    valueBox(
+      value = count,
+      subtitle = "Document Types",
+      icon = icon("tags"),
+      color = status_color
+    )
+  })
+  
+  output$analyticsDateRange <- renderValueBox({
+    if (database_connected && !is.null(values$analytics_data)) {
+      min_date <- values$analytics_data$date_range$min
+      max_date <- values$analytics_data$date_range$max
+      if (!is.na(min_date) && !is.na(max_date)) {
+        years <- as.numeric(format(max_date, "%Y")) - as.numeric(format(min_date, "%Y"))
+        subtitle <- paste(years, "Years")
+        status_color <- "purple"
+      } else {
+        subtitle <- "N/A"
+        status_color <- "red"
+      }
+    } else {
+      subtitle <- "N/A"
+      status_color <- "red"
+    }
+    
+    valueBox(
+      value = ifelse(subtitle == "N/A", "N/A", years),
+      subtitle = subtitle,
+      icon = icon("calendar"),
+      color = status_color
+    )
+  })
+  
+  # Documents by Year Chart
+  output$yearChart <- renderPlotly({
+    if (database_connected && !is.null(values$analytics_data)) {
+      data <- values$analytics_data$documents_by_year
+      
+      if (nrow(data) > 0) {
+        p <- ggplot(data, aes(x = year, y = count)) +
+          geom_line(color = "#3498db", size = 1.2) +
+          geom_point(color = "#2980b9", size = 3) +
+          theme_minimal() +
+          labs(
+            title = "Documents Published by Year",
+            x = "Year",
+            y = "Number of Documents"
+          ) +
+          theme(
+            plot.title = element_text(size = 14, face = "bold"),
+            axis.title = element_text(size = 12),
+            axis.text = element_text(size = 10)
+          )
+        
+        ggplotly(p, tooltip = c("x", "y"))
+      } else {
+        # Empty plot
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No data available"), size = 5) +
+          theme_void()
+        ggplotly(p)
+      }
+    } else {
+      # Empty plot
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = "Database not connected"), size = 5) +
+        theme_void()
+      ggplotly(p)
+    }
+  })
+  
+  # Documents by State Chart
+  output$stateChart <- renderPlotly({
+    if (database_connected && !is.null(values$analytics_data)) {
+      data <- values$analytics_data$documents_by_state
+      
+      if (nrow(data) > 0) {
+        p <- ggplot(data, aes(x = reorder(estado, count), y = count)) +
+          geom_bar(stat = "identity", fill = "#27ae60") +
+          coord_flip() +
+          theme_minimal() +
+          labs(
+            title = "Documents by State (Top 10)",
+            x = "State",
+            y = "Number of Documents"
+          ) +
+          theme(
+            plot.title = element_text(size = 14, face = "bold"),
+            axis.title = element_text(size = 12),
+            axis.text = element_text(size = 10)
+          )
+        
+        ggplotly(p, tooltip = c("x", "y"))
+      } else {
+        # Empty plot
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No data available"), size = 5) +
+          theme_void()
+        ggplotly(p)
+      }
+    } else {
+      # Empty plot
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = "Database not connected"), size = 5) +
+        theme_void()
+      ggplotly(p)
+    }
+  })
+  
+  # Documents by Type Chart
+  output$typeChart <- renderPlotly({
+    if (database_connected && !is.null(values$analytics_data)) {
+      data <- values$analytics_data$documents_by_type
+      
+      if (nrow(data) > 0) {
+        p <- ggplot(data, aes(x = "", y = count, fill = tipo)) +
+          geom_bar(stat = "identity", width = 1) +
+          coord_polar("y", start = 0) +
+          theme_void() +
+          labs(
+            title = "Documents by Type",
+            fill = "Type"
+          ) +
+          theme(
+            plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+            legend.title = element_text(size = 12),
+            legend.text = element_text(size = 10)
+          ) +
+          scale_fill_brewer(palette = "Set3")
+        
+        ggplotly(p, tooltip = c("fill", "y"))
+      } else {
+        # Empty plot
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No data available"), size = 5) +
+          theme_void()
+        ggplotly(p)
+      }
+    } else {
+      # Empty plot
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = "Database not connected"), size = 5) +
+        theme_void()
+      ggplotly(p)
+    }
+  })
+  
+  # Recent Documents Table
+  output$recentDocuments <- DT::renderDataTable({
+    if (database_connected && !is.null(values$analytics_data)) {
+      data <- values$analytics_data$recent_documents
+      
+      if (nrow(data) > 0) {
+        # Format the data for display
+        display_data <- data %>%
+          rename(
+            "Title" = titulo,
+            "Type" = tipo,
+            "State" = estado,
+            "Date" = data_publicacao
+          ) %>%
+          mutate(
+            Date = as.Date(Date)
+          )
+        
+        DT::datatable(
+          display_data,
+          options = list(
+            pageLength = 10,
+            scrollX = TRUE,
+            searching = FALSE,
+            paging = FALSE,
+            info = FALSE,
+            columnDefs = list(
+              list(width = "50%", targets = 0),  # Title column wider
+              list(width = "15%", targets = 1:3)  # Type, State, Date
+            )
+          ),
+          rownames = FALSE
+        )
+      } else {
+        # Show empty message
+        empty_data <- data.frame(
+          Message = "No recent documents found",
+          stringsAsFactors = FALSE
+        )
+        DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+      }
+    } else {
+      # Show connection error message
+      empty_data <- data.frame(
+        Message = "Database not connected",
+        stringsAsFactors = FALSE
+      )
+      DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
     }
   })
   
