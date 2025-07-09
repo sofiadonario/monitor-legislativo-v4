@@ -11,7 +11,13 @@ library(plotly)
 library(ggplot2)
 library(shinyjs)
 library(shinycssloaders)
-library(leaflet)
+# Try to load leaflet, continue if not available
+if (requireNamespace("leaflet", quietly = TRUE)) {
+  library(leaflet)
+  cat("Leaflet loaded successfully\n")
+} else {
+  cat("Warning: Leaflet not available, map functionality will be limited\n")
+}
 library(stringr)
 library(openxlsx)
 library(readr)
