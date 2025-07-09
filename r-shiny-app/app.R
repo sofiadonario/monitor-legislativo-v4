@@ -349,18 +349,55 @@ server <- function(input, output, session) {
     if (!is.null(values$search_results)) {
       result_count <- nrow(values$search_results)
       
+      # Build filter summary
+      filter_parts <- c()
+      if (!is.null(input$searchText) && nchar(input$searchText) > 0) {
+        filter_parts <- c(filter_parts, paste("Text:", input$searchText))
+      }
+      if (!is.null(input$documentTypes) && length(input$documentTypes) > 0) {
+        filter_parts <- c(filter_parts, paste("Types:", paste(input$documentTypes, collapse = ", ")))
+      }
+      if (!is.null(input$states) && length(input$states) > 0) {
+        filter_parts <- c(filter_parts, paste("States:", paste(input$states, collapse = ", ")))
+      }
+      if (!is.null(input$dateFrom) || !is.null(input$dateTo)) {
+        date_part <- "Date range:"
+        if (!is.null(input$dateFrom)) date_part <- paste(date_part, "from", input$dateFrom)
+        if (!is.null(input$dateTo)) date_part <- paste(date_part, "to", input$dateTo)
+        filter_parts <- c(filter_parts, date_part)
+      }
+      
       if (result_count > 0) {
         div(
           class = "alert alert-info",
           icon("info-circle"),
           strong(paste("Found", result_count, "documents")),
-          if (result_count == 200) " (showing first 200 results)" else ""
+          if (result_count == 200) " (showing first 200 results)" else "",
+          if (length(filter_parts) > 0) {
+            div(
+              br(),
+              strong("Applied filters: "),
+              paste(filter_parts, collapse = " | ")
+            )
+          }
         )
       } else {
         div(
           class = "alert alert-warning",
           icon("exclamation-triangle"),
-          "No documents found matching your search criteria. Try adjusting your filters."
+          "No documents found matching your search criteria.",
+          if (length(filter_parts) > 0) {
+            div(
+              br(),
+              strong("Applied filters: "),
+              paste(filter_parts, collapse = " | "),
+              br(),
+              "Try adjusting your filters."
+            )
+          } else {
+            br(),
+            "Try adding some search criteria."
+          }
         )
       }
     }

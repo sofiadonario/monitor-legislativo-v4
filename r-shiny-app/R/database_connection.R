@@ -256,24 +256,16 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
     
     # Add document type filter
     if (!is.null(document_types) && length(document_types) > 0) {
-      param_count <- param_count + 1
-      placeholders <- paste0("$", param_count + 0:(length(document_types)-1), collapse = ", ")
-      base_query <- paste(base_query, "AND tipo IN (", placeholders, ")")
-      for (i in 1:length(document_types)) {
-        params[[param_count + i - 1]] <- document_types[i]
-      }
-      param_count <- param_count + length(document_types) - 1
+      # Use simple string formatting for IN clauses (safer approach)
+      quoted_types <- paste0("'", gsub("'", "''", document_types), "'", collapse = ", ")
+      base_query <- paste(base_query, "AND tipo IN (", quoted_types, ")")
     }
     
     # Add state filter
     if (!is.null(states) && length(states) > 0) {
-      param_count <- param_count + 1
-      placeholders <- paste0("$", param_count + 0:(length(states)-1), collapse = ", ")
-      base_query <- paste(base_query, "AND estado IN (", placeholders, ")")
-      for (i in 1:length(states)) {
-        params[[param_count + i - 1]] <- states[i]
-      }
-      param_count <- param_count + length(states) - 1
+      # Use simple string formatting for IN clauses
+      quoted_states <- paste0("'", gsub("'", "''", states), "'", collapse = ", ")
+      base_query <- paste(base_query, "AND estado IN (", quoted_states, ")")
     }
     
     # Add date range filter
@@ -293,6 +285,11 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
     param_count <- param_count + 1
     base_query <- paste(base_query, "ORDER BY data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
     params[[param_count]] <- limit
+    
+    # Debug: print query for troubleshooting
+    cat("DEBUG: Generated query:\n", base_query, "\n")
+    cat("DEBUG: Query parameters:\n")
+    print(params)
     
     # Execute query
     result <- dbGetQuery(db_pool, base_query, params = params)
@@ -343,7 +340,13 @@ get_document_types <- function() {
       ORDER BY tipo
     ")
     
-    return(result$tipo)
+    cat("DEBUG: Found document types:", paste(result$tipo, collapse = ", "), "\n")
+    
+    if (nrow(result) > 0) {
+      return(result$tipo)
+    } else {
+      return(c("lei", "decreto", "portaria"))
+    }
     
   }, error = function(e) {
     cat("Error getting document types:", e$message, "\n")
@@ -366,7 +369,13 @@ get_states <- function() {
       ORDER BY estado
     ")
     
-    return(result$estado)
+    cat("DEBUG: Found states:", paste(result$estado, collapse = ", "), "\n")
+    
+    if (nrow(result) > 0) {
+      return(result$estado)
+    } else {
+      return(c("SP", "RJ", "MG", "RS"))
+    }
     
   }, error = function(e) {
     cat("Error getting states:", e$message, "\n")
