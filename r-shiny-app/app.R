@@ -1,5 +1,6 @@
 # Monitor Legislativo v4 - R Shiny Application with Database
 # Railway Production Deployment - Connected to PostgreSQL with real data
+# Enhanced with intelligent caching system for improved performance
 
 library(shiny)
 library(shinydashboard)
@@ -20,6 +21,8 @@ source("R/database_connection.R")
 source("R/map_generator.R")
 # Load export utilities module
 source("R/export_utils.R")
+# Load cache utilities module
+source("R/cache_utils.R")
 
 # Initialize database connection
 database_connected <- FALSE
@@ -34,6 +37,9 @@ if (nchar(Sys.getenv("DATABASE_URL")) > 0) {
   cat("DATABASE_URL (masked):", url_masked, "\n")
 }
 database_connected <- init_database()
+
+# Initialize cache system
+init_cache()
 
 if (!database_connected) {
   database_error <- "Failed to connect to database - using sample data"
@@ -93,7 +99,24 @@ ui <- dashboardPage(
                 h5("Database Statistics:"),
                 verbatimTextOutput("dbStats")
               )
-            }
+            },
+            br(),
+            h5("Cache Status:"),
+            p(
+              icon("server"), 
+              "Cache system active",
+              style = "color: green"
+            ),
+            p(
+              strong("Memory Cache:"), 
+              textOutput("memoryCacheCount", inline = TRUE),
+              style = "font-size: 12px;"
+            ),
+            p(
+              strong("File Cache:"), 
+              textOutput("fileCacheCount", inline = TRUE),
+              style = "font-size: 12px;"
+            )
           ),
           
           # Quick stats
@@ -112,6 +135,23 @@ ui <- dashboardPage(
             } else {
               p("Connect to database to see real statistics")
             }
+          )
+        ),
+        
+        # Cache management section
+        box(
+          title = "Cache Management", 
+          status = "success", 
+          solidHeader = TRUE, 
+          width = 12,
+          h5("Cache Statistics:"),
+          verbatimTextOutput("cacheStats"),
+          br(),
+          div(
+            class = "cache-controls",
+            actionButton("clearCacheBtn", "Clear Cache", icon = icon("trash"), class = "btn-warning"),
+            " ",
+            actionButton("refreshCacheBtn", "Refresh Cache", icon = icon("refresh"), class = "btn-info")
           )
         )
       ),
@@ -394,12 +434,12 @@ server <- function(input, output, session) {
   # Initialize data on startup
   observe({
     if (database_connected) {
-      values$current_documents <- get_documents(50)  # Get first 50 documents
-      values$analytics_data <- get_search_analytics()  # Load analytics data
+      values$current_documents <- cached_get_documents(50)  # Get first 50 documents (cached)
+      values$analytics_data <- cached_get_search_analytics()  # Load analytics data (cached)
       
-      # Populate filter choices
-      updateSelectizeInput(session, "documentTypes", choices = get_document_types())
-      updateSelectizeInput(session, "states", choices = get_states())
+      # Populate filter choices (cached)
+      updateSelectizeInput(session, "documentTypes", choices = cached_get_document_types())
+      updateSelectizeInput(session, "states", choices = cached_get_states())
     } else {
       values$current_documents <- sample_documents
     }
@@ -413,7 +453,7 @@ server <- function(input, output, session) {
   # Database statistics
   output$dbStats <- renderText({
     if (database_connected) {
-      stats <- get_document_stats()
+      stats <- cached_get_document_stats()
       paste(
         "Total Documents:", stats$total_documents, "\n",
         "Connection Status:", stats$connection_status
@@ -426,7 +466,7 @@ server <- function(input, output, session) {
   # Total documents value box
   output$totalDocs <- renderValueBox({
     if (database_connected) {
-      stats <- get_document_stats()
+      stats <- cached_get_document_stats()
       count <- stats$total_documents
       status_color <- "green"
     } else {
@@ -445,7 +485,7 @@ server <- function(input, output, session) {
   # Document type statistics table
   output$typeStats <- DT::renderDataTable({
     if (database_connected) {
-      stats <- get_document_stats()
+      stats <- cached_get_document_stats()
       if (nrow(stats$document_types) > 0) {
         DT::datatable(
           stats$document_types,
@@ -1352,8 +1392,8 @@ server <- function(input, output, session) {
   # Generate document map
   output$documentMap <- renderLeaflet({
     if (database_connected) {
-      # Get state document counts
-      state_counts <- get_state_document_counts()
+      # Get state document counts (cached)
+      state_counts <- cached_get_state_document_counts()
       
       # Generate the map
       map <- generate_document_map(state_counts)
@@ -1388,16 +1428,16 @@ server <- function(input, output, session) {
     selected_state(NULL)
     showNotification("Filter reset - showing all documents", type = "info")
     
-    # Reset documents to show all
+    # Reset documents to show all (cached)
     if (database_connected) {
-      values$current_documents <- get_documents(50)
+      values$current_documents <- cached_get_documents(50)
     }
   })
   
   # State statistics table
   output$stateStatsTable <- DT::renderDataTable({
     if (database_connected) {
-      state_counts <- get_state_document_counts()
+      state_counts <- cached_get_state_document_counts()
       
       if (nrow(state_counts) > 0) {
         # Join with state names
@@ -1439,6 +1479,101 @@ server <- function(input, output, session) {
         stringsAsFactors = FALSE
       )
       DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+    }
+  })
+  
+  # === Cache Management Section ===
+  
+  # Periodic cache cleanup every 30 minutes
+  observe({
+    invalidateTimer(1800000)  # 30 minutes in milliseconds
+    cleanup_cache_files("data/cache", max_age_hours = 1)
+  })
+  
+  # Cache statistics output (updates every 30 seconds)
+  output$cacheStats <- renderText({
+    invalidateTimer(30000)  # 30 seconds in milliseconds
+    stats <- get_cache_stats()
+    paste(
+      "Memory Cache Entries:", stats$memory_cache_entries, "\n",
+      "File Cache Entries:", stats$file_cache_entries, "\n",
+      "File Cache Size:", stats$file_cache_size_mb, "MB\n",
+      "Cache Directory:", stats$cache_directory, "\n",
+      "Last Updated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+    )
+  })
+  
+  # Cache count outputs for system status box
+  output$memoryCacheCount <- renderText({
+    invalidateTimer(30000)  # 30 seconds in milliseconds
+    stats <- get_cache_stats()
+    paste(stats$memory_cache_entries, "entries")
+  })
+  
+  output$fileCacheCount <- renderText({
+    invalidateTimer(30000)  # 30 seconds in milliseconds
+    stats <- get_cache_stats()
+    paste(stats$file_cache_entries, "entries (", stats$file_cache_size_mb, "MB)")
+  })
+  
+  # Clear cache button handler
+  observeEvent(input$clearCacheBtn, {
+    showModal(modalDialog(
+      title = "Clear Cache",
+      "Are you sure you want to clear all cached data? This will temporarily slow down the application until the cache is rebuilt.",
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("confirmClearCache", "Clear Cache", class = "btn-danger")
+      )
+    ))
+  })
+  
+  # Confirm clear cache
+  observeEvent(input$confirmClearCache, {
+    tryCatch({
+      clear_cache()
+      showNotification("Cache cleared successfully!", type = "success")
+      
+      # Refresh analytics data if database is connected
+      if (database_connected) {
+        values$analytics_data <- cached_get_search_analytics()
+        values$current_documents <- cached_get_documents(50)
+      }
+      
+      removeModal()
+    }, error = function(e) {
+      showNotification(paste("Error clearing cache:", e$message), type = "error")
+    })
+  })
+  
+  # Refresh cache button handler
+  observeEvent(input$refreshCacheBtn, {
+    if (database_connected) {
+      withProgress(message = 'Refreshing cache...', value = 0, {
+        tryCatch({
+          incProgress(0.3)
+          
+          # Clear cache first
+          clear_cache()
+          
+          incProgress(0.6)
+          
+          # Reload data with fresh cache
+          values$current_documents <- cached_get_documents(50)
+          values$analytics_data <- cached_get_search_analytics()
+          
+          # Update filter choices
+          updateSelectizeInput(session, "documentTypes", choices = cached_get_document_types())
+          updateSelectizeInput(session, "states", choices = cached_get_states())
+          
+          incProgress(1)
+          showNotification("Cache refreshed successfully!", type = "success")
+        }, error = function(e) {
+          showNotification(paste("Error refreshing cache:", e$message), type = "error")
+        })
+      })
+    } else {
+      showNotification("Database not connected - cannot refresh cache", type = "warning")
     }
   })
   
