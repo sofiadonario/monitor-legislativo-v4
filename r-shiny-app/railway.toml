@@ -3,9 +3,6 @@
 
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile"
-buildCommand = "echo 'Building production image...'"
-watchPatterns = ["app.R", "R/**", "*.yml", "*.toml", "scripts/**"]
 
 [deploy]
 restartPolicyType = "on_failure"
