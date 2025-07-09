@@ -15,6 +15,13 @@ database_connected <- FALSE
 database_error <- ""
 
 cat("Attempting to initialize database connection...\n")
+cat("DATABASE_URL present:", nchar(Sys.getenv("DATABASE_URL")) > 0, "\n")
+cat("DATABASE_URL length:", nchar(Sys.getenv("DATABASE_URL")), "\n")
+if (nchar(Sys.getenv("DATABASE_URL")) > 0) {
+  # Show partial URL for debugging (hide password)
+  url_masked <- gsub(":[^:@]+@", ":***@", Sys.getenv("DATABASE_URL"))
+  cat("DATABASE_URL (masked):", url_masked, "\n")
+}
 database_connected <- init_database()
 
 if (!database_connected) {
