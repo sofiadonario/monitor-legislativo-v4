@@ -26,6 +26,7 @@ RUN echo "Installing R packages at $(date)" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('config', 'httr', 'yaml', 'lubridate'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('plotly', 'ggplot2', 'futile.logger'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('leaflet', 'sf', 'geobr'))" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('openxlsx', 'readr'))" && \
     R -e "cat('Installed packages:\n'); print(installed.packages()[,c('Package', 'Version')])"
 
 # Set working directory

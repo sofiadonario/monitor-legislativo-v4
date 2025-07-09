@@ -10,11 +10,16 @@ library(plotly)
 library(ggplot2)
 library(shinyjs)
 library(leaflet)
+library(stringr)
+library(openxlsx)
+library(readr)
 
 # Load database connection module
 source("R/database_connection.R")
 # Load map generator module
 source("R/map_generator.R")
+# Load export utilities module
+source("R/export_utils.R")
 
 # Initialize database connection
 database_connected <- FALSE
@@ -125,6 +130,15 @@ ui <- dashboardPage(
                 icon("exclamation-triangle"), " Using sample data. Database connection failed."
               )
             },
+            div(
+              class = "export-buttons",
+              style = "margin-bottom: 15px; text-align: right;",
+              downloadButton("exportDocsCSV", "Export CSV", icon = icon("download"), class = "btn-success btn-sm"),
+              " ",
+              downloadButton("exportDocsExcel", "Export Excel", icon = icon("file-excel"), class = "btn-info btn-sm"),
+              " ",
+              downloadButton("exportDocsCitations", "Export Citations", icon = icon("quote-left"), class = "btn-warning btn-sm")
+            ),
             DT::dataTableOutput("documentsTable")
           )
         )
@@ -185,6 +199,18 @@ ui <- dashboardPage(
                 hr(),
                 div(id = "searchResultsContainer",
                   uiOutput("searchSummary"),
+                  div(
+                    class = "export-buttons",
+                    style = "margin-bottom: 15px; text-align: right;",
+                    conditionalPanel(
+                      condition = "output.searchResultsAvailable == true",
+                      downloadButton("exportSearchCSV", "Export CSV", icon = icon("download"), class = "btn-success btn-sm"),
+                      " ",
+                      downloadButton("exportSearchExcel", "Export Excel", icon = icon("file-excel"), class = "btn-info btn-sm"),
+                      " ",
+                      downloadButton("exportSearchCitations", "Export Citations", icon = icon("quote-left"), class = "btn-warning btn-sm")
+                    )
+                  ),
                   DT::dataTableOutput("searchResults")
                 )
               )
@@ -601,6 +627,12 @@ server <- function(input, output, session) {
     }
   })
   
+  # Search results availability output for conditional panel
+  output$searchResultsAvailable <- reactive({
+    !is.null(values$search_results) && nrow(values$search_results) > 0
+  })
+  outputOptions(output, "searchResultsAvailable", suspendWhenHidden = FALSE)
+  
   # Search results table
   output$searchResults <- DT::renderDataTable({
     if (database_connected) {
@@ -652,6 +684,166 @@ server <- function(input, output, session) {
       )
     }
   })
+  
+  # === Export Functionality ===
+  
+  # Documents export handlers
+  output$exportDocsCSV <- downloadHandler(
+    filename = function() {
+      paste0("legislative_documents_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv")
+    },
+    content = function(file) {
+      tryCatch({
+        data <- values$current_documents
+        if (is.null(data) || nrow(data) == 0) {
+          showNotification("No documents to export", type = "warning")
+          return()
+        }
+        
+        # Create temporary CSV file
+        temp_file <- export_to_csv(data, "legislative_documents")
+        if (!is.null(temp_file) && file.exists(temp_file)) {
+          file.copy(temp_file, file)
+          showNotification("Documents exported to CSV successfully!", type = "success")
+        } else {
+          showNotification("Error creating CSV export", type = "error")
+        }
+      }, error = function(e) {
+        showNotification(paste("Export error:", e$message), type = "error")
+      })
+    }
+  )
+  
+  output$exportDocsExcel <- downloadHandler(
+    filename = function() {
+      paste0("legislative_documents_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx")
+    },
+    content = function(file) {
+      tryCatch({
+        data <- values$current_documents
+        if (is.null(data) || nrow(data) == 0) {
+          showNotification("No documents to export", type = "warning")
+          return()
+        }
+        
+        # Create temporary Excel file
+        temp_file <- export_to_excel(data, "legislative_documents")
+        if (!is.null(temp_file) && file.exists(temp_file)) {
+          file.copy(temp_file, file)
+          showNotification("Documents exported to Excel successfully!", type = "success")
+        } else {
+          showNotification("Error creating Excel export", type = "error")
+        }
+      }, error = function(e) {
+        showNotification(paste("Export error:", e$message), type = "error")
+      })
+    }
+  )
+  
+  output$exportDocsCitations <- downloadHandler(
+    filename = function() {
+      paste0("legislative_citations_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".txt")
+    },
+    content = function(file) {
+      tryCatch({
+        data <- values$current_documents
+        if (is.null(data) || nrow(data) == 0) {
+          showNotification("No documents to export", type = "warning")
+          return()
+        }
+        
+        # Create temporary citation file
+        temp_file <- export_citations(data, "ABNT", "legislative_citations")
+        if (!is.null(temp_file) && file.exists(temp_file)) {
+          file.copy(temp_file, file)
+          showNotification("Citations exported successfully!", type = "success")
+        } else {
+          showNotification("Error creating citation export", type = "error")
+        }
+      }, error = function(e) {
+        showNotification(paste("Export error:", e$message), type = "error")
+      })
+    }
+  )
+  
+  # Search results export handlers
+  output$exportSearchCSV <- downloadHandler(
+    filename = function() {
+      paste0("search_results_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv")
+    },
+    content = function(file) {
+      tryCatch({
+        data <- values$search_results
+        if (is.null(data) || nrow(data) == 0) {
+          showNotification("No search results to export", type = "warning")
+          return()
+        }
+        
+        # Create temporary CSV file
+        temp_file <- export_to_csv(data, "search_results")
+        if (!is.null(temp_file) && file.exists(temp_file)) {
+          file.copy(temp_file, file)
+          showNotification("Search results exported to CSV successfully!", type = "success")
+        } else {
+          showNotification("Error creating CSV export", type = "error")
+        }
+      }, error = function(e) {
+        showNotification(paste("Export error:", e$message), type = "error")
+      })
+    }
+  )
+  
+  output$exportSearchExcel <- downloadHandler(
+    filename = function() {
+      paste0("search_results_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx")
+    },
+    content = function(file) {
+      tryCatch({
+        data <- values$search_results
+        if (is.null(data) || nrow(data) == 0) {
+          showNotification("No search results to export", type = "warning")
+          return()
+        }
+        
+        # Create temporary Excel file
+        temp_file <- export_to_excel(data, "search_results")
+        if (!is.null(temp_file) && file.exists(temp_file)) {
+          file.copy(temp_file, file)
+          showNotification("Search results exported to Excel successfully!", type = "success")
+        } else {
+          showNotification("Error creating Excel export", type = "error")
+        }
+      }, error = function(e) {
+        showNotification(paste("Export error:", e$message), type = "error")
+      })
+    }
+  )
+  
+  output$exportSearchCitations <- downloadHandler(
+    filename = function() {
+      paste0("search_citations_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".txt")
+    },
+    content = function(file) {
+      tryCatch({
+        data <- values$search_results
+        if (is.null(data) || nrow(data) == 0) {
+          showNotification("No search results to export", type = "warning")
+          return()
+        }
+        
+        # Create temporary citation file
+        temp_file <- export_citations(data, "ABNT", "search_citations")
+        if (!is.null(temp_file) && file.exists(temp_file)) {
+          file.copy(temp_file, file)
+          showNotification("Search citations exported successfully!", type = "success")
+        } else {
+          showNotification("Error creating citation export", type = "error")
+        }
+      }, error = function(e) {
+        showNotification(paste("Export error:", e$message), type = "error")
+      })
+    }
+  )
   
   # === Analytics Section ===
   
@@ -1249,6 +1441,9 @@ server <- function(input, output, session) {
       DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
     }
   })
+  
+  # Clean up old export files on startup
+  cleanup_old_exports()
   
   # Cleanup on session end
   session$onSessionEnded(function() {
