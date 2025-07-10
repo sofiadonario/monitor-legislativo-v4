@@ -19,10 +19,10 @@ RUN apt-get update && apt-get install -y \
 # COMPREHENSIVE LEAFLET INSTALLATION STRATEGY
 # Using multiple approaches to ensure leaflet installs successfully
 
-# Strategy 1: Install all packages using binary packages from RStudio Package Manager
-ARG CACHE_BUST=8
+# Strategy 1: Install ALL packages using binary packages from RStudio Package Manager
+ARG CACHE_BUST=9
 RUN echo "=== STRATEGY 1: Binary packages from RStudio Package Manager ===" && \
-    R -e "options(repos = c(CRAN = 'https://packagemanager.rstudio.com/all/latest')); \
+    R -e "options(repos = c(CRAN = 'https://packagemanager.rstudio.com/all/latest'), timeout = 600); \
           packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', \
                        'DBI', 'RPostgres', 'pool', 'dbplyr', \
                        'config', 'httr', 'yaml', 'lubridate', \
@@ -31,19 +31,35 @@ RUN echo "=== STRATEGY 1: Binary packages from RStudio Package Manager ===" && \
                        'openxlsx', 'readr', 'digest', 'shinyjs', 'shinycssloaders', \
                        'RColorBrewer', 'viridis', 'scales', \
                        'base64enc', 'png', 'leaflet'); \
-          install.packages(packages, type = 'binary', dependencies = FALSE); \
-          cat('Strategy 1 completed\\n')" || echo "Strategy 1 failed, continuing..."
+          for(pkg in packages) { \
+            tryCatch({ \
+              install.packages(pkg, type = 'binary', dependencies = FALSE); \
+              cat('✓ Installed:', pkg, '\\n') \
+            }, error = function(e) { \
+              cat('✗ Failed:', pkg, '-', conditionMessage(e), '\\n'); \
+              install.packages(pkg, dependencies = TRUE) \
+            }) \
+          }; \
+          cat('Strategy 1 completed - installed:', length(intersect(packages, installed.packages()[,\"Package\"])), 'of', length(packages), '\\n')" || echo "Strategy 1 failed, continuing..."
 
-# Strategy 2: If leaflet is not installed, try with minimal dependencies
-RUN echo "=== STRATEGY 2: Leaflet with minimal dependencies ===" && \
-    R -e "if(!'leaflet' %in% installed.packages()[,'Package']) { \
+# Strategy 2: Install any missing packages from Strategy 1
+RUN echo "=== STRATEGY 2: Install missing packages ===" && \
+    R -e "required <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', \
+                       'DBI', 'RPostgres', 'pool', 'plotly', 'ggplot2', 'leaflet'); \
+          installed <- installed.packages()[,'Package']; \
+          missing <- required[!required %in% installed]; \
+          if(length(missing) > 0) { \
+            cat('Installing missing packages:', missing, '\\n'); \
             options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
-            install.packages(c('htmltools', 'htmlwidgets'), dependencies = TRUE); \
-            install.packages('leaflet', dependencies = FALSE); \
-            cat('Strategy 2 completed\\n') \
+            for(pkg in missing) { \
+              tryCatch({ \
+                install.packages(pkg, dependencies = TRUE); \
+                cat('✓ Installed missing:', pkg, '\\n') \
+              }, error = function(e) cat('✗ Failed to install:', pkg, '\\n')) \
+            } \
           } else { \
-            cat('Leaflet already installed via Strategy 1\\n') \
-          }" || echo "Strategy 2 failed, continuing..."
+            cat('All required packages already installed\\n') \
+          }"
 
 # Strategy 3: If still not installed, try different CRAN mirrors
 RUN echo "=== STRATEGY 3: Different CRAN mirrors ===" && \

@@ -18,9 +18,9 @@ RUN apt-get update && apt-get install -y \
 
 # BULLETPROOF LEAFLET INSTALLATION
 # Using RStudio Package Manager for binary packages to avoid compilation
-ARG CACHE_BUST=9
-RUN echo "Installing packages with binary from RStudio Package Manager..." && \
-    R -e "options(repos = c(CRAN = 'https://packagemanager.rstudio.com/all/latest'), timeout = 300); \
+ARG CACHE_BUST=10
+RUN echo "Installing ALL packages with binary from RStudio Package Manager..." && \
+    R -e "options(repos = c(CRAN = 'https://packagemanager.rstudio.com/all/latest'), timeout = 600); \
           packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', \
                        'DBI', 'RPostgres', 'pool', 'dbplyr', \
                        'config', 'httr', 'yaml', 'lubridate', \
@@ -28,45 +28,30 @@ RUN echo "Installing packages with binary from RStudio Package Manager..." && \
                        'htmltools', 'htmlwidgets', 'crosstalk', 'magrittr', \
                        'openxlsx', 'readr', 'digest', 'shinyjs', 'shinycssloaders', \
                        'RColorBrewer', 'viridis', 'scales', \
-                       'base64enc', 'png'); \
-          install.packages(packages, type = 'binary', dependencies = FALSE); \
-          cat('Core packages installed\\n')"
+                       'base64enc', 'png', 'leaflet'); \
+          for(pkg in packages) { \
+            tryCatch({ \
+              install.packages(pkg, type = 'binary', dependencies = FALSE); \
+              cat('✓', pkg, 'installed\\n') \
+            }, error = function(e) { \
+              cat('Binary failed for', pkg, '- trying with dependencies\\n'); \
+              install.packages(pkg, dependencies = TRUE) \
+            }) \
+          }; \
+          cat('ALL packages installation completed\\n')"
 
-# Install leaflet specifically with multiple fallbacks
-RUN echo "Installing leaflet with fallback strategies..." && \
-    R -e "success <- FALSE; \
-          # Strategy 1: Binary from RStudio Package Manager \
-          tryCatch({ \
-            options(repos = c(CRAN = 'https://packagemanager.rstudio.com/all/latest')); \
-            install.packages('leaflet', type = 'binary', dependencies = FALSE); \
-            library(leaflet); \
-            success <- TRUE; \
-            cat('SUCCESS: Leaflet installed via binary packages\\n') \
-          }, error = function(e) cat('Binary install failed:', conditionMessage(e), '\\n')); \
-          \
-          # Strategy 2: Regular CRAN if binary failed \
-          if(!success) { \
-            tryCatch({ \
-              options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
-              install.packages('leaflet', dependencies = TRUE); \
-              library(leaflet); \
-              success <- TRUE; \
-              cat('SUCCESS: Leaflet installed via CRAN\\n') \
-            }, error = function(e) cat('CRAN install failed:', conditionMessage(e), '\\n')) \
+# Verify all packages were installed successfully
+RUN echo "Verifying package installation..." && \
+    R -e "required <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', \
+                       'DBI', 'RPostgres', 'pool', 'plotly', 'ggplot2', 'leaflet'); \
+          installed <- installed.packages()[,'Package']; \
+          missing <- required[!required %in% installed]; \
+          if(length(missing) > 0) { \
+            cat('Installing missing packages via CRAN:', missing, '\\n'); \
+            options(repos = 'https://cran.rstudio.com/'); \
+            install.packages(missing, dependencies = TRUE) \
           }; \
-          \
-          # Strategy 3: Cloud R-Project \
-          if(!success) { \
-            tryCatch({ \
-              options(repos = c(CRAN = 'https://cloud.r-project.org/')); \
-              install.packages('leaflet', dependencies = TRUE); \
-              library(leaflet); \
-              success <- TRUE; \
-              cat('SUCCESS: Leaflet installed via cloud.r-project.org\\n') \
-            }, error = function(e) cat('Cloud install failed:', conditionMessage(e), '\\n')) \
-          }; \
-          \
-          if(!success) stop('CRITICAL ERROR: All leaflet installation strategies failed')"
+          cat('Package verification completed\\n')"
 
 # Test leaflet functionality
 RUN echo "Testing leaflet functionality..." && \
