@@ -767,13 +767,27 @@ server <- function(input, output, session) {
       layout(title = "Loading health trends...", showlegend = FALSE)
   })
   
-  # Initialize renderLeaflet output
-  output$documentMap <- renderLeaflet({
-    leaflet() %>%
-      addTiles() %>%
-      setView(lng = -55.0, lat = -10.0, zoom = 4) %>%
-      addControl("Loading document map...", position = "topright")
-  })
+  # Initialize renderLeaflet output (conditional based on leaflet availability)
+  if (requireNamespace("leaflet", quietly = TRUE)) {
+    output$documentMap <- renderLeaflet({
+      leaflet() %>%
+        addTiles() %>%
+        setView(lng = -55.0, lat = -10.0, zoom = 4) %>%
+        addControl("Loading document map...", position = "topright")
+    })
+  } else {
+    # When leaflet is not available, create a placeholder output to prevent stuck spinners
+    output$documentMap <- renderUI({
+      div(
+        class = "alert alert-info",
+        style = "margin-top: 20px;",
+        icon("info-circle"), " Interactive map functionality requires the leaflet package.",
+        br(), br(),
+        p("To enable interactive maps, install the leaflet package:"),
+        code("install.packages('leaflet')", style = "background-color: #eee; padding: 5px; border-radius: 3px;")
+      )
+    })
+  }
   
   # Initialize renderValueBox outputs
   output$analyticsTotal <- renderValueBox({
