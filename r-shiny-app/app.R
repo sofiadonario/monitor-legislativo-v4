@@ -2,6 +2,11 @@
 # Railway Production Deployment - Connected to PostgreSQL with real data
 # Enhanced with intelligent caching system for improved performance
 
+# Run startup diagnostics
+if (file.exists("startup_diagnostics.R")) {
+  source("startup_diagnostics.R")
+}
+
 library(shiny)
 library(shinydashboard)
 library(DT)

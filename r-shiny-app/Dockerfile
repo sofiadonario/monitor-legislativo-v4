@@ -120,6 +120,7 @@ RUN mkdir -p data/cache data/geographic www logs exports temp
 COPY app.R ./
 COPY R/ ./R/
 COPY config.yml ./
+COPY startup_diagnostics.R ./
 
 # Final package verification
 RUN echo "=== FINAL VERIFICATION ===" && \
