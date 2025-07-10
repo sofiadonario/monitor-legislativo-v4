@@ -22,18 +22,36 @@ RUN apt-get update && apt-get install -y \
     proj-data \
     proj-bin \
     libgdal-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libmagick++-dev \
+    librsvg2-dev \
+    libwebp-dev \
+    libtiff5-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libfribidi-dev \
+    libharfbuzz-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install R packages - force cache bust with timestamp
-ARG CACHE_BUST=5
-RUN echo "Installing R packages at $(date)" && \
+# Install core R packages first
+ARG CACHE_BUST=7
+RUN echo "Installing core R packages at $(date)" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('DBI', 'RPostgres', 'pool', 'dbplyr'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('config', 'httr', 'yaml', 'lubridate'))" && \
     R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('plotly', 'ggplot2', 'futile.logger'))" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('htmltools', 'htmlwidgets', 'crosstalk'), dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages('leaflet', dependencies=TRUE, verbose=TRUE, type='source')" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('openxlsx', 'readr', 'digest', 'shinyjs', 'shinycssloaders'))" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('openxlsx', 'readr', 'digest', 'shinyjs', 'shinycssloaders'))"
+
+# Install leaflet dependencies separately
+RUN echo "Installing leaflet dependencies..." && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('htmltools', 'htmlwidgets', 'crosstalk', 'magrittr', 'base64enc', 'png', 'raster', 'sp', 'sf', 'RColorBrewer', 'viridis', 'scales'), dependencies=TRUE)"
+
+# Install leaflet with multiple fallback methods
+RUN echo "Installing leaflet package..." && \
+    (R -e "options(repos='https://cran.rstudio.com/'); install.packages('leaflet', dependencies=TRUE)" || \
+     R -e "options(repos='https://cloud.r-project.org/'); install.packages('leaflet', dependencies=TRUE)" || \
+     R -e "install.packages('leaflet', repos='https://cran.microsoft.com/snapshot/2023-10-01/', dependencies=TRUE)") && \
     R -e "cat('Installed packages:\n'); print(installed.packages()[,c('Package', 'Version')])"
 
 # Set working directory
