@@ -1,7 +1,7 @@
-# Production Dockerfile for Monitor Legislativo v4
+# Production Dockerfile for Monitor Legislativo v4 - Comprehensive Leaflet Fix
 FROM rocker/shiny:4.3.1
 
-# Install system dependencies including additional leaflet dependencies
+# Install system dependencies (minimal but comprehensive set)
 RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libssl-dev \
@@ -12,88 +12,92 @@ RUN apt-get update && apt-get install -y \
     libgeos-dev \
     libsqlite3-dev \
     libpq-dev \
-    libsodium-dev \
     postgresql-client \
-    redis-tools \
     curl \
-    gdal-bin \
-    libgeos++-dev \
-    libgeos-c1v5 \
-    libproj-dev \
-    proj-data \
-    proj-bin \
-    libgdal-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libmagick++-dev \
-    librsvg2-dev \
-    libwebp-dev \
-    libtiff5-dev \
-    libfontconfig1-dev \
-    libfreetype6-dev \
-    libfribidi-dev \
-    libharfbuzz-dev \
-    # Additional dependencies for terra and s2
-    g++ \
-    gcc \
-    libc6-dev \
-    make \
-    libglpk-dev \
-    libgmp3-dev \
-    libicu-dev \
-    libnetcdf-dev \
-    libopenblas-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install core R packages first
-ARG CACHE_BUST=7
-RUN echo "Installing core R packages at $(date)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite'))" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('DBI', 'RPostgres', 'pool', 'dbplyr'))" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('config', 'httr', 'yaml', 'lubridate'))" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('plotly', 'ggplot2', 'futile.logger'))" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('openxlsx', 'readr', 'digest', 'shinyjs', 'shinycssloaders'))"
+# COMPREHENSIVE LEAFLET INSTALLATION STRATEGY
+# Using multiple approaches to ensure leaflet installs successfully
 
-# Install spatial dependencies first (required by leaflet)
-RUN echo "Installing spatial dependencies..." && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages('sp', dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages('units', dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages('classInt', dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages('s2', dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages('sf', dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages('terra', dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages('raster', dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('png', 'base64enc'), dependencies=TRUE)"
+# Strategy 1: Install all packages using binary packages from RStudio Package Manager
+ARG CACHE_BUST=8
+RUN echo "=== STRATEGY 1: Binary packages from RStudio Package Manager ===" && \
+    R -e "options(repos = c(CRAN = 'https://packagemanager.rstudio.com/all/latest')); \
+          packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', \
+                       'DBI', 'RPostgres', 'pool', 'dbplyr', \
+                       'config', 'httr', 'yaml', 'lubridate', \
+                       'plotly', 'ggplot2', 'futile.logger', \
+                       'htmltools', 'htmlwidgets', 'crosstalk', 'magrittr', \
+                       'openxlsx', 'readr', 'digest', 'shinyjs', 'shinycssloaders', \
+                       'RColorBrewer', 'viridis', 'scales', \
+                       'base64enc', 'png', 'leaflet'); \
+          install.packages(packages, type = 'binary', dependencies = FALSE); \
+          cat('Strategy 1 completed\\n')" || echo "Strategy 1 failed, continuing..."
 
-# Install htmlwidgets ecosystem (required by leaflet)
-RUN echo "Installing htmlwidgets dependencies..." && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('htmltools', 'htmlwidgets'), dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('crosstalk', 'magrittr'), dependencies=TRUE)"
+# Strategy 2: If leaflet is not installed, try with minimal dependencies
+RUN echo "=== STRATEGY 2: Leaflet with minimal dependencies ===" && \
+    R -e "if(!'leaflet' %in% installed.packages()[,'Package']) { \
+            options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
+            install.packages(c('htmltools', 'htmlwidgets'), dependencies = TRUE); \
+            install.packages('leaflet', dependencies = FALSE); \
+            cat('Strategy 2 completed\\n') \
+          } else { \
+            cat('Leaflet already installed via Strategy 1\\n') \
+          }" || echo "Strategy 2 failed, continuing..."
 
-# Install additional visualization dependencies
-RUN echo "Installing visualization dependencies..." && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('RColorBrewer', 'viridis', 'scales'), dependencies=TRUE)"
+# Strategy 3: If still not installed, try different CRAN mirrors
+RUN echo "=== STRATEGY 3: Different CRAN mirrors ===" && \
+    R -e "if(!'leaflet' %in% installed.packages()[,'Package']) { \
+            mirrors <- c('https://cloud.r-project.org/', \
+                        'https://cran.microsoft.com/', \
+                        'https://cran.case.edu/'); \
+            for(mirror in mirrors) { \
+              cat('Trying mirror:', mirror, '\\n'); \
+              tryCatch({ \
+                options(repos = mirror); \
+                install.packages('leaflet', dependencies = TRUE); \
+                if('leaflet' %in% installed.packages()[,'Package']) { \
+                  cat('Success with mirror:', mirror, '\\n'); \
+                  break \
+                } \
+              }, error = function(e) cat('Failed with:', mirror, '\\n')) \
+            } \
+          } else { \
+            cat('Leaflet already installed\\n') \
+          }"
 
-# Install leaflet with retries and verbose output
-RUN echo "Installing leaflet package..." && \
-    R -e "options(repos='https://cran.rstudio.com/', download.file.method='libcurl'); \
-          for(i in 1:3) { \
-            tryCatch({ \
-              install.packages('leaflet', dependencies=TRUE, verbose=TRUE); \
-              library(leaflet); \
-              cat('Leaflet installed successfully\n'); \
-              break \
-            }, error = function(e) { \
-              cat('Attempt', i, 'failed:', conditionMessage(e), '\n'); \
-              if(i == 3) stop('Failed to install leaflet after 3 attempts') \
-            }) \
-          }" && \
-    R -e "cat('Installed packages:\n'); print(installed.packages()[,c('Package', 'Version')])"
+# Strategy 4: Install from GitHub as last resort
+RUN echo "=== STRATEGY 4: GitHub installation (last resort) ===" && \
+    R -e "if(!'leaflet' %in% installed.packages()[,'Package']) { \
+            if(!'remotes' %in% installed.packages()[,'Package']) { \
+              install.packages('remotes') \
+            }; \
+            remotes::install_github('rstudio/leaflet'); \
+            cat('Strategy 4 completed\\n') \
+          } else { \
+            cat('Leaflet already installed\\n') \
+          }" || echo "All strategies attempted"
+
+# Verification and testing
+RUN echo "=== LEAFLET VERIFICATION ===" && \
+    R -e "packages <- installed.packages()[,'Package']; \
+          cat('Total packages installed:', length(packages), '\\n'); \
+          cat('Leaflet installed:', 'leaflet' %in% packages, '\\n'); \
+          if('leaflet' %in% packages) { \
+            library(leaflet); \
+            cat('Leaflet version:', as.character(packageVersion('leaflet')), '\\n'); \
+            m <- leaflet() %>% addTiles(); \
+            cat('✅ Leaflet functionality test PASSED\\n') \
+          } else { \
+            cat('❌ LEAFLET INSTALLATION FAILED\\n'); \
+            cat('Available packages:', head(sort(packages), 20), '\\n'); \
+            stop('CRITICAL: Leaflet installation failed after all strategies') \
+          }"
 
 # Set working directory
 WORKDIR /app
 
-# Create necessary directories first
+# Create necessary directories
 RUN mkdir -p data/cache data/geographic www logs exports temp
 
 # Copy application files
@@ -101,20 +105,27 @@ COPY app.R ./
 COPY R/ ./R/
 COPY config.yml ./
 
-# Verify all required packages are installed (including leaflet)
-RUN R -e "required_packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 'DBI', 'RPostgres', 'pool', 'plotly', 'ggplot2', 'leaflet'); \
-         installed <- installed.packages()[,'Package']; \
-         missing <- required_packages[!required_packages %in% installed]; \
-         if(length(missing) > 0) { \
-           cat('ERROR: Missing required packages:', missing, '\n'); \
-           cat('Installed packages:', sort(installed), '\n'); \
-           quit(status=1) \
-         } else { \
-           cat('✅ All required packages installed successfully\n'); \
-           cat('Total packages installed:', length(installed), '\n') \
-         }"
-# Verify leaflet functionality
-RUN R -e "library(leaflet); cat('✅ Leaflet library loaded successfully - map functionality enabled\n')"
+# Final package verification
+RUN echo "=== FINAL VERIFICATION ===" && \
+    R -e "required <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', \
+                       'DBI', 'RPostgres', 'pool', 'plotly', 'ggplot2', 'leaflet'); \
+          installed <- installed.packages()[,'Package']; \
+          missing <- required[!required %in% installed]; \
+          if(length(missing) > 0) { \
+            cat('❌ MISSING PACKAGES:', missing, '\\n'); \
+            quit(status=1) \
+          } else { \
+            cat('✅ ALL REQUIRED PACKAGES VERIFIED\\n'); \
+            for(pkg in required) { \
+              tryCatch({ \
+                library(pkg, character.only=TRUE); \
+                cat('✓', pkg, 'loads successfully\\n') \
+              }, error = function(e) { \
+                cat('✗', pkg, 'FAILED to load:', conditionMessage(e), '\\n'); \
+                quit(status=1) \
+              }) \
+            } \
+          }"
 
 # Set environment variables
 ENV R_CONFIG_ACTIVE=production
