@@ -584,14 +584,7 @@ ui <- dashboardPage(
                 if (requireNamespace("leaflet", quietly = TRUE)) {
                   withSpinner(leafletOutput("documentMap", height = "600px"), type = 3, color = "#17a2b8", color.background = "#f4f4f4")
                 } else {
-                  div(
-                    class = "alert alert-info",
-                    style = "margin-top: 20px;",
-                    icon("info-circle"), " Interactive map functionality requires the leaflet package.",
-                    br(), br(),
-                    p("To enable interactive maps, install the leaflet package:"),
-                    code("install.packages('leaflet')", style = "background-color: #eee; padding: 5px; border-radius: 3px;")
-                  )
+                  withSpinner(uiOutput("documentMap"), type = 3, color = "#17a2b8", color.background = "#f4f4f4")
                 }
               )
             } else {
@@ -765,11 +758,15 @@ server <- function(input, output, session) {
   # Database statistics
   output$dbStats <- renderText({
     if (database_connected) {
-      stats <- cached_get_document_stats()
-      paste(
-        "Total Documents:", stats$total_documents, "\n",
-        "Connection Status:", stats$connection_status
-      )
+      tryCatch({
+        stats <- cached_get_document_stats()
+        paste(
+          "Total Documents:", stats$total_documents, "\n",
+          "Connection Status:", stats$connection_status
+        )
+      }, error = function(e) {
+        paste("Error loading database statistics:", e$message)
+      })
     } else {
       "Database not connected"
     }
@@ -810,7 +807,23 @@ server <- function(input, output, session) {
           rownames = FALSE,
           colnames = c("Type", "Count")
         )
+      } else {
+        # Return empty table when no data
+        empty_data <- data.frame(
+          Type = "No data",
+          Count = 0,
+          stringsAsFactors = FALSE
+        )
+        DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE, info = FALSE))
       }
+    } else {
+      # Return empty table when database not connected
+      empty_data <- data.frame(
+        Type = "Database not connected",
+        Count = 0,
+        stringsAsFactors = FALSE
+      )
+      DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE, info = FALSE))
     }
   })
   
@@ -1028,6 +1041,7 @@ server <- function(input, output, session) {
   
   # Search results availability output for conditional panel
   output$searchResultsAvailable <- reactive({
+    req(values$search_results)
     !is.null(values$search_results) && nrow(values$search_results) > 0
   })
   outputOptions(output, "searchResultsAvailable", suspendWhenHidden = FALSE)
@@ -1849,6 +1863,19 @@ server <- function(input, output, session) {
         return(generate_test_map())
       }
     })
+  } else {
+    # When leaflet is not available, create a placeholder output to prevent stuck spinners
+    # This ensures the withSpinner has something to render and won't get stuck
+    output$documentMap <- renderUI({
+      div(
+        class = "alert alert-info",
+        style = "margin-top: 20px;",
+        icon("info-circle"), " Interactive map functionality requires the leaflet package.",
+        br(), br(),
+        p("To enable interactive maps, install the leaflet package:"),
+        code("install.packages('leaflet')", style = "background-color: #eee; padding: 5px; border-radius: 3px;")
+      )
+    })
   }
   
   # Handle map click events (conditional based on leaflet availability)
@@ -1999,39 +2026,55 @@ server <- function(input, output, session) {
   # Cache statistics output (updates every 30 seconds)
   output$cacheStats <- renderText({
     invalidateLater(30000)  # 30 seconds in milliseconds
-    stats <- get_cache_stats()
-    paste(
-      "Memory Cache Entries:", stats$memory_cache_entries, "\n",
-      "File Cache Entries:", stats$file_cache_entries, "\n",
-      "File Cache Size:", stats$file_cache_size_mb, "MB\n",
-      "Cache Directory:", stats$cache_directory, "\n",
-      "Last Updated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-    )
+    tryCatch({
+      stats <- get_cache_stats()
+      paste(
+        "Memory Cache Entries:", stats$memory_cache_entries, "\n",
+        "File Cache Entries:", stats$file_cache_entries, "\n",
+        "File Cache Size:", stats$file_cache_size_mb, "MB\n",
+        "Cache Directory:", stats$cache_directory, "\n",
+        "Last Updated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+      )
+    }, error = function(e) {
+      paste("Error loading cache statistics:", e$message)
+    })
   })
   
   # Cache count outputs for system status box
   output$memoryCacheCount <- renderText({
     invalidateLater(30000)  # 30 seconds in milliseconds
-    stats <- get_cache_stats()
-    paste(stats$memory_cache_entries, "entries")
+    tryCatch({
+      stats <- get_cache_stats()
+      paste(stats$memory_cache_entries, "entries")
+    }, error = function(e) {
+      "Error loading cache data"
+    })
   })
   
   output$fileCacheCount <- renderText({
     invalidateLater(30000)  # 30 seconds in milliseconds
-    stats <- get_cache_stats()
-    paste(stats$file_cache_entries, "entries (", stats$file_cache_size_mb, "MB)")
+    tryCatch({
+      stats <- get_cache_stats()
+      paste(stats$file_cache_entries, "entries (", stats$file_cache_size_mb, "MB)")
+    }, error = function(e) {
+      "Error loading cache data"
+    })
   })
   
   # Health status text output
   output$healthStatusText <- renderText({
-    if (!is.null(values$health_check_data)) {
-      status <- values$health_check_data$overall_status
-      # Update health indicator via JavaScript
-      session$sendCustomMessage("updateHealthIndicator", status)
-      paste("System", toupper(status))
-    } else {
-      "Checking..."
-    }
+    tryCatch({
+      if (!is.null(values$health_check_data)) {
+        status <- values$health_check_data$overall_status
+        # Update health indicator via JavaScript
+        session$sendCustomMessage("updateHealthIndicator", status)
+        paste("System", toupper(status))
+      } else {
+        "Checking..."
+      }
+    }, error = function(e) {
+      "Error checking health status"
+    })
   })
   
   # Clear cache button handler
@@ -2224,106 +2267,134 @@ server <- function(input, output, session) {
   
   # Health check detail outputs
   output$databaseHealthDetails <- renderText({
-    if (!is.null(values$health_check_data)) {
-      db_health <- values$health_check_data$components$database
-      paste(
-        "Status:", db_health$status, "\n",
-        "Message:", db_health$message, "\n",
-        "Timestamp:", db_health$timestamp, "\n",
-        if (!is.null(db_health$document_count)) paste("Document Count:", db_health$document_count, "\n") else ""
-      )
-    } else {
-      "No health check data available"
-    }
+    tryCatch({
+      if (!is.null(values$health_check_data)) {
+        db_health <- values$health_check_data$components$database
+        paste(
+          "Status:", db_health$status, "\n",
+          "Message:", db_health$message, "\n",
+          "Timestamp:", db_health$timestamp, "\n",
+          if (!is.null(db_health$document_count)) paste("Document Count:", db_health$document_count, "\n") else ""
+        )
+      } else {
+        "No health check data available"
+      }
+    }, error = function(e) {
+      paste("Error loading database health details:", e$message)
+    })
   })
   
   output$cacheHealthDetails <- renderText({
-    if (!is.null(values$health_check_data)) {
-      cache_health <- values$health_check_data$components$cache
-      paste(
-        "Status:", cache_health$status, "\n",
-        "Message:", cache_health$message, "\n",
-        "Timestamp:", cache_health$timestamp, "\n",
-        if (!is.null(cache_health$cache_stats)) {
-          paste(
-            "Memory Cache Entries:", cache_health$cache_stats$memory_cache_entries, "\n",
-            "File Cache Entries:", cache_health$cache_stats$file_cache_entries, "\n",
-            "File Cache Size:", cache_health$cache_stats$file_cache_size_mb, "MB\n"
-          )
-        } else ""
-      )
-    } else {
-      "No health check data available"
-    }
+    tryCatch({
+      if (!is.null(values$health_check_data)) {
+        cache_health <- values$health_check_data$components$cache
+        paste(
+          "Status:", cache_health$status, "\n",
+          "Message:", cache_health$message, "\n",
+          "Timestamp:", cache_health$timestamp, "\n",
+          if (!is.null(cache_health$cache_stats)) {
+            paste(
+              "Memory Cache Entries:", cache_health$cache_stats$memory_cache_entries, "\n",
+              "File Cache Entries:", cache_health$cache_stats$file_cache_entries, "\n",
+              "File Cache Size:", cache_health$cache_stats$file_cache_size_mb, "MB\n"
+            )
+          } else ""
+        )
+      } else {
+        "No health check data available"
+      }
+    }, error = function(e) {
+      paste("Error loading cache health details:", e$message)
+    })
   })
   
   output$filesystemHealthDetails <- renderText({
-    if (!is.null(values$health_check_data)) {
-      fs_health <- values$health_check_data$components$filesystem
-      paste(
-        "Status:", fs_health$status, "\n",
-        "Message:", fs_health$message, "\n",
-        "Timestamp:", fs_health$timestamp, "\n",
-        if (!is.null(fs_health$missing_directories)) {
-          paste("Missing Directories:", paste(fs_health$missing_directories, collapse = ", "), "\n")
-        } else ""
-      )
-    } else {
-      "No health check data available"
-    }
+    tryCatch({
+      if (!is.null(values$health_check_data)) {
+        fs_health <- values$health_check_data$components$filesystem
+        paste(
+          "Status:", fs_health$status, "\n",
+          "Message:", fs_health$message, "\n",
+          "Timestamp:", fs_health$timestamp, "\n",
+          if (!is.null(fs_health$missing_directories)) {
+            paste("Missing Directories:", paste(fs_health$missing_directories, collapse = ", "), "\n")
+          } else ""
+        )
+      } else {
+        "No health check data available"
+      }
+    }, error = function(e) {
+      paste("Error loading filesystem health details:", e$message)
+    })
   })
   
   output$memoryHealthDetails <- renderText({
-    if (!is.null(values$health_check_data)) {
-      mem_health <- values$health_check_data$components$memory
-      paste(
-        "Status:", mem_health$status, "\n",
-        "Message:", mem_health$message, "\n",
-        "Timestamp:", mem_health$timestamp, "\n",
-        if (!is.null(mem_health$used_memory_mb)) {
-          paste(
-            "Used Memory:", mem_health$used_memory_mb, "MB\n",
-            "Max Memory:", mem_health$max_memory_mb, "MB\n"
-          )
-        } else ""
-      )
-    } else {
-      "No health check data available"
-    }
+    tryCatch({
+      if (!is.null(values$health_check_data)) {
+        mem_health <- values$health_check_data$components$memory
+        paste(
+          "Status:", mem_health$status, "\n",
+          "Message:", mem_health$message, "\n",
+          "Timestamp:", mem_health$timestamp, "\n",
+          if (!is.null(mem_health$used_memory_mb)) {
+            paste(
+              "Used Memory:", mem_health$used_memory_mb, "MB\n",
+              "Max Memory:", mem_health$max_memory_mb, "MB\n"
+            )
+          } else ""
+        )
+      } else {
+        "No health check data available"
+      }
+    }, error = function(e) {
+      paste("Error loading memory health details:", e$message)
+    })
   })
   
   # Health check history output
   output$healthCheckHistory <- renderText({
-    if (length(values$health_check_history) > 0) {
-      history_text <- sapply(values$health_check_history, function(check) {
-        paste0(
-          "[", format(check$timestamp, "%H:%M:%S"), "] ",
-          "Status: ", check$overall_status, 
-          " (", check$check_duration_ms, "ms)"
-        )
-      })
-      paste(rev(history_text), collapse = "\n")
-    } else {
-      "No health check history available"
-    }
+    tryCatch({
+      if (length(values$health_check_history) > 0) {
+        history_text <- sapply(values$health_check_history, function(check) {
+          paste0(
+            "[", format(check$timestamp, "%H:%M:%S"), "] ",
+            "Status: ", check$overall_status, 
+            " (", check$check_duration_ms, "ms)"
+          )
+        })
+        paste(rev(history_text), collapse = "\n")
+      } else {
+        "No health check history available"
+      }
+    }, error = function(e) {
+      paste("Error loading health check history:", e$message)
+    })
   })
   
   # Last health check time
   output$lastHealthCheckTime <- renderText({
-    if (!is.null(values$last_health_check)) {
-      format(values$last_health_check, "%Y-%m-%d %H:%M:%S")
-    } else {
-      "Never"
-    }
+    tryCatch({
+      if (!is.null(values$last_health_check)) {
+        format(values$last_health_check, "%Y-%m-%d %H:%M:%S")
+      } else {
+        "Never"
+      }
+    }, error = function(e) {
+      "Error getting check time"
+    })
   })
   
   # Health check duration
   output$healthCheckDuration <- renderText({
-    if (!is.null(values$health_check_data)) {
-      paste(values$health_check_data$check_duration_ms, "ms")
-    } else {
-      "N/A"
-    }
+    tryCatch({
+      if (!is.null(values$health_check_data)) {
+        paste(values$health_check_data$check_duration_ms, "ms")
+      } else {
+        "N/A"
+      }
+    }, error = function(e) {
+      "Error getting duration"
+    })
   })
   
   # Health trends chart
