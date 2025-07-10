@@ -7,6 +7,14 @@ if (file.exists("startup_diagnostics.R")) {
   source("startup_diagnostics.R")
 }
 
+# Simple logging function
+log_message <- function(...) {
+  # Using stderr for logging is a good practice in containers
+  cat(paste0("[", Sys.time(), "] ", ..., "\n"), file = stderr())
+}
+
+log_message("Starting app.R...")
+
 library(shiny)
 library(shinydashboard)
 library(DT)
@@ -21,16 +29,32 @@ library(stringr)
 library(openxlsx)
 library(readr)
 
+log_message("Libraries loaded.")
+
 # Load database connection module
+log_message("Loading R/database_connection.R...")
 source("R/database_connection.R")
+log_message("Loaded R/database_connection.R.")
+
 # Load map generator module
+log_message("Loading R/map_generator.R...")
 source("R/map_generator.R")
+log_message("Loaded R/map_generator.R.")
+
 # Load export utilities module
+log_message("Loading R/export_utils.R...")
 source("R/export_utils.R")
+log_message("Loaded R/export_utils.R.")
+
 # Load cache utilities module
+log_message("Loading R/cache_utils.R...")
 source("R/cache_utils.R")
+log_message("Loaded R/cache_utils.R.")
+
 # Load health check module
+log_message("Loading R/health_check.R...")
 source("R/health_check.R")
+log_message("Loaded R/health_check.R.")
 
 # Initialize database connection
 database_connected <- FALSE
@@ -45,6 +69,7 @@ cat("  ENABLE_DATABASE:", enable_database, "\n")
 cat("  DATABASE_URL present:", database_url_present, "\n")
 
 if (enable_database && database_url_present) {
+  log_message("Attempting to initialize database pool...")
   cat("Attempting to initialize database connection...\n")
   if (database_url_present) {
     # Show partial URL for debugging (hide password)
@@ -56,16 +81,23 @@ if (enable_database && database_url_present) {
   database_connected <- tryCatch({
     init_database()
   }, error = function(e) {
+    log_message("Database initialization FAILED: ", e$message)
     cat("Database initialization failed:", e$message, "\n")
     FALSE
   })
+  if(isTRUE(database_connected)) {
+    log_message("Database pool initialized successfully.")
+  }
 } else {
+  log_message("Database is disabled or DATABASE_URL is not set. Skipping connection.")
   cat("⚠️ Database disabled or DATABASE_URL not set - using sample data\n")
   database_connected <- FALSE
 }
 
 # Initialize cache system
+log_message("Initializing cache system...")
 init_cache()
+log_message("Cache system initialized.")
 
 if (!database_connected) {
   database_error <- "Failed to connect to database - using sample data"
@@ -83,6 +115,7 @@ if (!database_connected) {
     stringsAsFactors = FALSE
   )
 } else {
+  log_message("Database connection seems successful. Final verification passed.")
   cat("✅ Database connected successfully!\n")
 }
 
@@ -2685,5 +2718,9 @@ health_endpoint <- function(req, res) {
 # Run the application
 cat("Starting Shiny app...\n")
 cat("Health check endpoint available at /health\n")
+
+log_message("Starting Shiny server...")
+
+# Run the application 
 app <- shinyApp(ui = ui, server = server)
-runApp(app, host = "0.0.0.0", port = as.integer(Sys.getenv("PORT", "3838")), launch.browser = FALSE)
+runApp(app, host = getOption("shiny.host", "0.0.0.0"), port = getOption("shiny.port", 3838))
