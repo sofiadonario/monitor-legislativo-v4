@@ -715,6 +715,92 @@ ui <- dashboardPage(
 # Server logic
 server <- function(input, output, session) {
   
+  # Initialize outputs immediately to prevent stuck spinners
+  # These outputs will be updated with real data once available
+  
+  # Initialize renderText outputs
+  output$dbStats <- renderText({ "Initializing database statistics..." })
+  output$cacheStats <- renderText({ "Initializing cache statistics..." })
+  output$databaseHealthDetails <- renderText({ "Initializing database health check..." })
+  output$cacheHealthDetails <- renderText({ "Initializing cache health check..." })
+  output$filesystemHealthDetails <- renderText({ "Initializing filesystem health check..." })
+  output$memoryHealthDetails <- renderText({ "Initializing memory health check..." })
+  output$healthCheckHistory <- renderText({ "Initializing health check history..." })
+  
+  # Initialize renderDataTable outputs with empty data
+  output$typeStats <- DT::renderDataTable({
+    DT::datatable(data.frame(Type = character(), Count = numeric()),
+                  options = list(pageLength = 5, searching = FALSE, paging = FALSE, info = FALSE))
+  })
+  output$documentsTable <- DT::renderDataTable({
+    DT::datatable(data.frame(Title = character(), Type = character(), State = character()),
+                  options = list(pageLength = 10, searching = FALSE))
+  })
+  output$searchResults <- DT::renderDataTable({
+    DT::datatable(data.frame(Title = character(), Type = character(), State = character()),
+                  options = list(pageLength = 10, searching = FALSE))
+  })
+  output$recentDocuments <- DT::renderDataTable({
+    DT::datatable(data.frame(Title = character(), Type = character(), Date = character()),
+                  options = list(pageLength = 5, searching = FALSE, paging = FALSE, info = FALSE))
+  })
+  output$stateStatsTable <- DT::renderDataTable({
+    DT::datatable(data.frame(State = character(), Documents = numeric()),
+                  options = list(pageLength = 10, searching = FALSE))
+  })
+  
+  # Initialize renderPlotly outputs with empty plots
+  output$yearChart <- renderPlotly({
+    plot_ly(type = "scatter", mode = "lines") %>%
+      layout(title = "Loading year distribution...", showlegend = FALSE)
+  })
+  output$stateChart <- renderPlotly({
+    plot_ly(type = "bar") %>%
+      layout(title = "Loading state distribution...", showlegend = FALSE)
+  })
+  output$typeChart <- renderPlotly({
+    plot_ly(type = "bar") %>%
+      layout(title = "Loading document type distribution...", showlegend = FALSE)
+  })
+  output$healthTrendsChart <- renderPlotly({
+    plot_ly(type = "scatter", mode = "lines") %>%
+      layout(title = "Loading health trends...", showlegend = FALSE)
+  })
+  
+  # Initialize renderLeaflet output
+  output$documentMap <- renderLeaflet({
+    leaflet() %>%
+      addTiles() %>%
+      setView(lng = -55.0, lat = -10.0, zoom = 4) %>%
+      addControl("Loading document map...", position = "topright")
+  })
+  
+  # Initialize renderValueBox outputs
+  output$analyticsTotal <- renderValueBox({
+    valueBox(value = "...", subtitle = "Total Searches", icon = icon("search"), color = "blue")
+  })
+  output$analyticsStates <- renderValueBox({
+    valueBox(value = "...", subtitle = "States Covered", icon = icon("map"), color = "green")
+  })
+  output$analyticsTypes <- renderValueBox({
+    valueBox(value = "...", subtitle = "Document Types", icon = icon("file"), color = "yellow")
+  })
+  output$analyticsDateRange <- renderValueBox({
+    valueBox(value = "...", subtitle = "Date Range", icon = icon("calendar"), color = "purple")
+  })
+  output$healthOverallStatus <- renderValueBox({
+    valueBox(value = "Checking...", subtitle = "Overall Health", icon = icon("heartbeat"), color = "blue")
+  })
+  output$healthDatabaseStatus <- renderValueBox({
+    valueBox(value = "Checking...", subtitle = "Database", icon = icon("database"), color = "green")
+  })
+  output$healthCacheStatus <- renderValueBox({
+    valueBox(value = "Checking...", subtitle = "Cache", icon = icon("memory"), color = "yellow")
+  })
+  output$healthMemoryStatus <- renderValueBox({
+    valueBox(value = "Checking...", subtitle = "Memory", icon = icon("microchip"), color = "purple")
+  })
+  
   # Reactive values
   values <- reactiveValues(
     current_documents = NULL,
@@ -757,19 +843,23 @@ server <- function(input, output, session) {
   
   # Database statistics
   output$dbStats <- renderText({
-    if (database_connected) {
-      tryCatch({
+    tryCatch({
+      if (database_connected) {
         stats <- cached_get_document_stats()
-        paste(
-          "Total Documents:", stats$total_documents, "\n",
-          "Connection Status:", stats$connection_status
-        )
-      }, error = function(e) {
-        paste("Error loading database statistics:", e$message)
-      })
-    } else {
-      "Database not connected"
-    }
+        if (!is.null(stats) && !is.null(stats$total_documents)) {
+          paste(
+            "Total Documents:", stats$total_documents, "\n",
+            "Connection Status:", if(!is.null(stats$connection_status)) stats$connection_status else "Unknown"
+          )
+        } else {
+          "Loading database statistics..."
+        }
+      } else {
+        "Database not connected"
+      }
+    }, error = function(e) {
+      paste("Error loading database statistics:", e$message)
+    })
   })
   
   # Total documents value box
@@ -2028,13 +2118,17 @@ server <- function(input, output, session) {
     invalidateLater(30000)  # 30 seconds in milliseconds
     tryCatch({
       stats <- get_cache_stats()
-      paste(
-        "Memory Cache Entries:", stats$memory_cache_entries, "\n",
-        "File Cache Entries:", stats$file_cache_entries, "\n",
-        "File Cache Size:", stats$file_cache_size_mb, "MB\n",
-        "Cache Directory:", stats$cache_directory, "\n",
-        "Last Updated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-      )
+      if (!is.null(stats)) {
+        paste(
+          "Memory Cache Entries:", if(!is.null(stats$memory_cache_entries)) stats$memory_cache_entries else 0, "\n",
+          "File Cache Entries:", if(!is.null(stats$file_cache_entries)) stats$file_cache_entries else 0, "\n",
+          "File Cache Size:", if(!is.null(stats$file_cache_size_mb)) stats$file_cache_size_mb else 0, "MB\n",
+          "Cache Directory:", if(!is.null(stats$cache_directory)) stats$cache_directory else "Not available", "\n",
+          "Last Updated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+        )
+      } else {
+        "Loading cache statistics..."
+      }
     }, error = function(e) {
       paste("Error loading cache statistics:", e$message)
     })
@@ -2409,6 +2503,10 @@ server <- function(input, output, session) {
       )
       
       # Convert status to numeric for plotting
+      # Ensure no NAs by providing a default for unknown statuses
+      trend_data$status <- ifelse(trend_data$status %in% c("healthy", "warning", "critical", "error"), 
+                                   trend_data$status, 
+                                   "error")
       trend_data$status_numeric <- as.numeric(factor(trend_data$status, levels = c("healthy", "warning", "critical", "error")))
       trend_data$timestamp <- as.POSIXct(trend_data$timestamp)
       
