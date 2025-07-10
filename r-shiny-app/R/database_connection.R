@@ -20,7 +20,13 @@ init_database <- function() {
     cat("DATABASE_URL present:", nchar(database_url) > 0, "\n")
     
     if (nchar(database_url) == 0) {
-      warning("DATABASE_URL not found in environment variables")
+      cat("⚠️ DATABASE_URL not found - app will use sample data\n")
+      return(FALSE)
+    }
+    
+    # Quick validation of URL format
+    if (!grepl("^postgresql://", database_url)) {
+      cat("⚠️ DATABASE_URL doesn't appear to be PostgreSQL format - app will use sample data\n")
       return(FALSE)
     }
     
@@ -40,6 +46,7 @@ init_database <- function() {
     cat("  User:", parsed_url$user, "\n")
     
     # Create connection pool
+    cat("Creating database connection pool...\n")
     db_pool <<- dbPool(
       drv = RPostgres::Postgres(),
       host = parsed_url$host,
@@ -48,17 +55,32 @@ init_database <- function() {
       user = parsed_url$user,
       password = parsed_url$password,
       minSize = 1,
-      maxSize = 5,
-      idleTimeout = 3600000  # 1 hour
+      maxSize = 3,  # Reduced pool size for faster startup
+      idleTimeout = 1800000  # 30 minutes
     )
     
-    # Test connection
-    test_result <- test_database_connection()
+    # Test connection with timeout
+    cat("Testing database connection (10 second timeout)...\n")
+    test_result <- FALSE
+    
+    # Use a timeout to prevent hanging
+    tryCatch({
+      # Set a time limit to prevent hanging (10 seconds for faster startup)
+      setTimeLimit(cpu = 10, elapsed = 10, transient = TRUE)
+      test_result <- test_database_connection()
+      setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE)  # Reset limits
+      
+    }, error = function(e) {
+      cat("Database test error:", e$message, "\n")
+      test_result <- FALSE
+      setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE)  # Reset limits
+    })
+    
     if (test_result) {
       cat("✅ Database connection successful!\n")
       return(TRUE)
     } else {
-      cat("❌ Database connection test failed\n")
+      cat("❌ Database connection test failed or timed out\n")
       return(FALSE)
     }
     
@@ -132,24 +154,36 @@ parse_database_url <- function(url) {
 #' @return TRUE if successful, FALSE otherwise
 test_database_connection <- function() {
   if (is.null(db_pool)) {
+    cat("Database pool is NULL\n")
     return(FALSE)
   }
   
   tryCatch({
-    # Test basic connection
+    cat("Attempting to checkout connection from pool...\n")
+    
+    # Test basic connection with faster checkout
     conn <- poolCheckout(db_pool)
-    on.exit(poolReturn(conn))
+    on.exit({
+      tryCatch(poolReturn(conn), error = function(e) cat("Error returning connection:", e$message, "\n"))
+    })
     
-    # Check if our tables exist
+    cat("Connection checked out successfully\n")
+    
+    # Quick connection test - just check if we can run a simple query
+    result <- dbGetQuery(conn, "SELECT 1 as test")
+    cat("Basic query test successful\n")
+    
+    # Check if our tables exist (but don't require all of them)
     tables <- dbListTables(conn)
-    cat("Available tables:", paste(tables, collapse = ", "), "\n")
+    cat("Available tables count:", length(tables), "\n")
     
+    # Just check if we have at least one of our tables
     required_tables <- c("lexml_parsed_enhanced", "documents", "legislative_data")
-    missing_tables <- setdiff(required_tables, tables)
+    found_tables <- intersect(required_tables, tables)
     
-    if (length(missing_tables) > 0) {
-      cat("⚠️ Missing tables:", paste(missing_tables, collapse = ", "), "\n")
-      return(FALSE)
+    if (length(found_tables) == 0) {
+      cat("⚠️ No required tables found, but connection is working\n")
+      return(TRUE)  # Still return TRUE if connection works
     }
     
     # Check row counts

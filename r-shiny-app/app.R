@@ -31,15 +31,33 @@ source("R/health_check.R")
 database_connected <- FALSE
 database_error <- ""
 
-cat("Attempting to initialize database connection...\n")
-cat("DATABASE_URL present:", nchar(Sys.getenv("DATABASE_URL")) > 0, "\n")
-cat("DATABASE_URL length:", nchar(Sys.getenv("DATABASE_URL")), "\n")
-if (nchar(Sys.getenv("DATABASE_URL")) > 0) {
-  # Show partial URL for debugging (hide password)
-  url_masked <- gsub(":[^:@]+@", ":***@", Sys.getenv("DATABASE_URL"))
-  cat("DATABASE_URL (masked):", url_masked, "\n")
+# Check if database should be enabled
+enable_database <- Sys.getenv("ENABLE_DATABASE", "true") == "true"
+database_url_present <- nchar(Sys.getenv("DATABASE_URL")) > 0
+
+cat("Database initialization settings:\n")
+cat("  ENABLE_DATABASE:", enable_database, "\n")
+cat("  DATABASE_URL present:", database_url_present, "\n")
+
+if (enable_database && database_url_present) {
+  cat("Attempting to initialize database connection...\n")
+  if (database_url_present) {
+    # Show partial URL for debugging (hide password)
+    url_masked <- gsub(":[^:@]+@", ":***@", Sys.getenv("DATABASE_URL"))
+    cat("DATABASE_URL (masked):", url_masked, "\n")
+  }
+  
+  # Try database initialization with timeout protection
+  database_connected <- tryCatch({
+    init_database()
+  }, error = function(e) {
+    cat("Database initialization failed:", e$message, "\n")
+    FALSE
+  })
+} else {
+  cat("⚠️ Database disabled or DATABASE_URL not set - using sample data\n")
+  database_connected <- FALSE
 }
-database_connected <- init_database()
 
 # Initialize cache system
 init_cache()
