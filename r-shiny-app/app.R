@@ -11,13 +11,7 @@ library(plotly)
 library(ggplot2)
 library(shinyjs)
 library(shinycssloaders)
-# Try to load leaflet, continue if not available
-if (requireNamespace("leaflet", quietly = TRUE)) {
-  library(leaflet)
-  cat("Leaflet loaded successfully\n")
-} else {
-  cat("Warning: Leaflet not available, map functionality will be limited\n")
-}
+library(leaflet)
 library(stringr)
 library(openxlsx)
 library(readr)
@@ -580,12 +574,8 @@ ui <- dashboardPage(
                   )
                 ),
                 hr(),
-                # Conditional leaflet output based on availability
-                if (requireNamespace("leaflet", quietly = TRUE)) {
-                  withSpinner(leafletOutput("documentMap", height = "600px"), type = 3, color = "#17a2b8", color.background = "#f4f4f4")
-                } else {
-                  withSpinner(uiOutput("documentMap"), type = 3, color = "#17a2b8", color.background = "#f4f4f4")
-                }
+                # Document map visualization
+                withSpinner(leafletOutput("documentMap", height = "600px"), type = 3, color = "#17a2b8", color.background = "#f4f4f4")
               )
             } else {
               div(
@@ -767,27 +757,6 @@ server <- function(input, output, session) {
       layout(title = "Loading health trends...", showlegend = FALSE)
   })
   
-  # Initialize renderLeaflet output (conditional based on leaflet availability)
-  if (requireNamespace("leaflet", quietly = TRUE)) {
-    output$documentMap <- renderLeaflet({
-      leaflet() %>%
-        addTiles() %>%
-        setView(lng = -55.0, lat = -10.0, zoom = 4) %>%
-        addControl("Loading document map...", position = "topright")
-    })
-  } else {
-    # When leaflet is not available, create a placeholder output to prevent stuck spinners
-    output$documentMap <- renderUI({
-      div(
-        class = "alert alert-info",
-        style = "margin-top: 20px;",
-        icon("info-circle"), " Interactive map functionality requires the leaflet package.",
-        br(), br(),
-        p("To enable interactive maps, install the leaflet package:"),
-        code("install.packages('leaflet')", style = "background-color: #eee; padding: 5px; border-radius: 3px;")
-      )
-    })
-  }
   
   # Initialize renderValueBox outputs
   output$analyticsTotal <- renderValueBox({
@@ -1951,40 +1920,24 @@ server <- function(input, output, session) {
   # Reactive value for selected state filter
   selected_state <- reactiveVal(NULL)
   
-  # Generate document map (conditional based on leaflet availability)
-  if (requireNamespace("leaflet", quietly = TRUE)) {
-    output$documentMap <- renderLeaflet({
-      if (database_connected) {
-        # Get state document counts (cached)
-        state_counts <- cached_get_state_document_counts()
-        
-        # Generate the map
-        map <- generate_document_map(state_counts)
-        
-        return(map)
-      } else {
-        # Return test map if no database
-        return(generate_test_map())
-      }
-    })
-  } else {
-    # When leaflet is not available, create a placeholder output to prevent stuck spinners
-    # This ensures the withSpinner has something to render and won't get stuck
-    output$documentMap <- renderUI({
-      div(
-        class = "alert alert-info",
-        style = "margin-top: 20px;",
-        icon("info-circle"), " Interactive map functionality requires the leaflet package.",
-        br(), br(),
-        p("To enable interactive maps, install the leaflet package:"),
-        code("install.packages('leaflet')", style = "background-color: #eee; padding: 5px; border-radius: 3px;")
-      )
-    })
-  }
+  # Generate document map
+  output$documentMap <- renderLeaflet({
+    if (database_connected) {
+      # Get state document counts (cached)
+      state_counts <- cached_get_state_document_counts()
+      
+      # Generate the map
+      map <- generate_document_map(state_counts)
+      
+      return(map)
+    } else {
+      # Return test map if no database
+      return(generate_test_map())
+    }
+  })
   
-  # Handle map click events (conditional based on leaflet availability)
-  if (requireNamespace("leaflet", quietly = TRUE)) {
-    observeEvent(input$documentMap_marker_click, {
+  # Handle map click events
+  observeEvent(input$documentMap_marker_click, {
       click <- input$documentMap_marker_click
       if (!is.null(click$id)) {
         selected_state(click$id)
@@ -2022,7 +1975,6 @@ server <- function(input, output, session) {
         }
       }
     })
-  }
   
   # Reset map filter
   observeEvent(input$resetMapFilter, {
