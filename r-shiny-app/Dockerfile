@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     gdal-bin \
     libgeos++-dev \
+    libgeos-c1v5 \
     libproj-dev \
     proj-data \
     proj-bin \
@@ -32,6 +33,16 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libfribidi-dev \
     libharfbuzz-dev \
+    # Additional dependencies for terra and s2
+    g++ \
+    gcc \
+    libc6-dev \
+    make \
+    libglpk-dev \
+    libgmp3-dev \
+    libicu-dev \
+    libnetcdf-dev \
+    libopenblas-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install core R packages first
@@ -45,8 +56,14 @@ RUN echo "Installing core R packages at $(date)" && \
 
 # Install spatial dependencies first (required by leaflet)
 RUN echo "Installing spatial dependencies..." && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('sp', 'sf'), dependencies=TRUE)" && \
-    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('raster', 'png', 'base64enc'), dependencies=TRUE)"
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages('sp', dependencies=TRUE)" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages('units', dependencies=TRUE)" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages('classInt', dependencies=TRUE)" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages('s2', dependencies=TRUE)" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages('sf', dependencies=TRUE)" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages('terra', dependencies=TRUE)" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages('raster', dependencies=TRUE)" && \
+    R -e "options(repos='https://cran.rstudio.com/'); install.packages(c('png', 'base64enc'), dependencies=TRUE)"
 
 # Install htmlwidgets ecosystem (required by leaflet)
 RUN echo "Installing htmlwidgets dependencies..." && \
