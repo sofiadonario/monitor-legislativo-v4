@@ -90,6 +90,44 @@ load_brazil_geography <- function(year = 2022, cache_data = TRUE) {
   })
 }
 
+#' Create fallback geographic data when geobr fails
+#' @return List with minimal Brazilian state boundaries
+create_fallback_geography <- function() {
+  flog.info("Creating simple fallback geographic data")
+  
+  # Create a simple polygon for Brazil as fallback
+  # This is a very basic representation
+  brazil_bbox <- list(
+    xmin = -73.99, xmax = -28.84,
+    ymin = -33.75, ymax = 5.27
+  )
+  
+  # Create simple state data
+  states_data <- data.frame(
+    abbrev_state = c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", 
+                     "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", 
+                     "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
+    name_state = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará", 
+                   "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão", 
+                   "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará", 
+                   "Paraíba", "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro", 
+                   "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia", 
+                   "Roraima", "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"),
+    area_km2 = c(164123, 27768, 142815, 1559159, 564733, 148886, 5760, 46095, 
+                 340087, 331937, 903358, 357125, 586528, 1247690, 56440, 199315, 
+                 98312, 251529, 43696, 52797, 281748, 237591, 224300, 95346, 
+                 248219, 21910, 277621),
+    stringsAsFactors = FALSE
+  )
+  
+  # Return minimal structure compatible with the mapping function
+  return(list(
+    states = states_data,
+    regions = data.frame(),
+    brazil_country = data.frame()
+  ))
+}
+
 #' Load specific municipality boundaries for detailed analysis
 #' @param state_code Two-letter state code (e.g., "SP", "RJ")
 #' @param year Year of boundaries
@@ -176,6 +214,9 @@ create_legislative_map <- function(legislative_data, geography_data,
   
   states <- geography_data$states
   
+  # Check if we have spatial data or just fallback data
+  is_spatial_data <- inherits(states, "sf")
+  
   # Aggregate legislative data by state using mapped state codes
   state_stats <- legislative_data %>%
     filter(!is.na(abbrev_state)) %>%
@@ -186,6 +227,18 @@ create_legislative_map <- function(legislative_data, geography_data,
       .groups = "drop"
     )
   
+  # Ensure states have area_km2 field
+  if (!"area_km2" %in% names(states)) {
+    if (is_spatial_data) {
+      states <- states %>%
+        mutate(area_km2 = as.numeric(st_area(.) / 1000000))
+    } else {
+      # For fallback data, add default area
+      states <- states %>%
+        mutate(area_km2 = ifelse(is.na(area_km2), 100000, area_km2))
+    }
+  }
+  
   # Join with geographic data
   map_data <- states %>%
     left_join(state_stats, by = "abbrev_state") %>%
@@ -193,7 +246,7 @@ create_legislative_map <- function(legislative_data, geography_data,
       # Fill missing values
       documento_count = coalesce(documento_count, 0),
       latest_date = coalesce(latest_date, as.Date("1900-01-01")),
-      density = documento_count / area_km2 * 1000  # Documents per 1000 km²
+      density = ifelse(is.na(area_km2) | area_km2 == 0, 0, documento_count / area_km2 * 1000)  # Documents per 1000 km²
     )
   
   # Set up color palette based on selected variable
@@ -233,7 +286,38 @@ create_legislative_map <- function(legislative_data, geography_data,
     zoom_level <- 4
   }
   
-  # Create base map
+  # Handle non-spatial fallback data
+  if (!is_spatial_data) {
+    flog.warn("No spatial data available, creating simple text-based map")
+    
+    # Create a basic leaflet map with state information as markers
+    map <- leaflet() %>%
+      addTiles() %>%
+      setView(lng = -47.9292, lat = -15.7801, zoom = 4)
+    
+    # Add text overlay showing state data
+    state_summary <- map_data %>%
+      filter(documento_count > 0) %>%
+      arrange(desc(documento_count)) %>%
+      head(10)
+    
+    if (nrow(state_summary) > 0) {
+      map <- map %>%
+        addControl(
+          html = paste0(
+            "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 200px;'>",
+            "<h4>Documents by State</h4>",
+            paste(state_summary$abbrev_state, ": ", state_summary$documento_count, collapse = "<br>"),
+            "</div>"
+          ),
+          position = "topright"
+        )
+    }
+    
+    return(map)
+  }
+  
+  # Create base map with spatial data
   map <- leaflet(map_data) %>%
     # Add base tile layer
     addProviderTiles(

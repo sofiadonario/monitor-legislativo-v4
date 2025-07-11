@@ -295,9 +295,9 @@ server <- function(input, output, session) {
       values$current_documents <- get_documents(50)  # Get first 50 documents
       values$analytics_data <- get_search_analytics()  # Load analytics data
       
-      # Load geographic data for map
+      # Load geographic data for map (use 2020 - latest available year)
       tryCatch({
-        values$geographic_data <- load_brazil_geography(year = 2022, cache_data = TRUE)
+        values$geographic_data <- load_brazil_geography(year = 2020, cache_data = TRUE)
       }, error = function(e) {
         cat("Error loading geographic data:", e$message, "\n")
         values$geographic_data <- NULL
