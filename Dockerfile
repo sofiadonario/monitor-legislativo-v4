@@ -1,47 +1,43 @@
-# Optimized Production Dockerfile for Monitor Legislativo v4
-FROM rocker/shiny:4.3.1
+# Optimized Dockerfile with Leaflet Support for Monitor Legislativo v4
+FROM rocker/geospatial:4.3.1
 
-# Install system dependencies in single layer
+# Install additional required system dependencies
 RUN apt-get update && apt-get install -y \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    libxml2-dev \
-    libgdal-dev \
-    libudunits2-dev \
-    libproj-dev \
-    libgeos-dev \
-    libsqlite3-dev \
     libpq-dev \
     postgresql-client \
-    curl \
+    libcurl4-openssl-dev \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables early for better caching
+# Set environment variables
 ENV R_CONFIG_ACTIVE=production
 ENV SHINY_LOG_LEVEL=INFO
 
-# Install R packages efficiently using RStudio Package Manager
-RUN R -e "options(repos = c(CRAN = 'https://packagemanager.rstudio.com/all/latest'), timeout = 300); \
-    packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', \
-                  'DBI', 'RPostgres', 'pool', 'dbplyr', 'config', 'httr', 'yaml', \
-                  'lubridate', 'plotly', 'ggplot2', 'futile.logger', 'htmltools', \
-                  'htmlwidgets', 'crosstalk', 'magrittr', 'openxlsx', 'readr', \
-                  'digest', 'shinyjs', 'shinycssloaders', 'RColorBrewer', 'viridis', \
-                  'scales', 'base64enc', 'png', 'leaflet'); \
-    install.packages(packages, dependencies = TRUE); \
-    cat('✅ All packages installed successfully\\n')"
+# Install R packages in logical groups for better caching and faster builds
 
-# Verify essential packages are installed
-RUN R -e "required <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', \
-                       'DBI', 'RPostgres', 'pool', 'plotly', 'ggplot2', 'leaflet'); \
-          installed <- installed.packages()[,'Package']; \
-          missing <- required[!required %in% installed]; \
-          if(length(missing) > 0) { \
-            cat('❌ MISSING PACKAGES:', missing, '\\n'); \
-            quit(status=1) \
-          } else { \
-            cat('✅ ALL REQUIRED PACKAGES VERIFIED\\n') \
-          }"
+# Group 1: Core Shiny packages
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT'), \
+    repos='https://cloud.r-project.org/')"
+
+# Group 2: Data manipulation and database packages
+RUN R -e "install.packages(c('dplyr', 'jsonlite', 'DBI', 'RPostgres', 'pool', 'dbplyr'), \
+    repos='https://cloud.r-project.org/')"
+
+# Group 3: Spatial and visualization packages (including leaflet)
+RUN R -e "install.packages(c('leaflet', 'plotly', 'ggplot2'), \
+    repos='https://cloud.r-project.org/')"
+
+# Group 4: Utility packages
+RUN R -e "install.packages(c('config', 'httr', 'yaml', 'lubridate', 'futile.logger'), \
+    repos='https://cloud.r-project.org/')"
+
+# Group 5: Additional packages
+RUN R -e "install.packages(c('htmltools', 'htmlwidgets', 'magrittr', 'readr', 'digest'), \
+    repos='https://cloud.r-project.org/')"
+
+# Group 6: UI enhancement packages
+RUN R -e "install.packages(c('shinyjs', 'shinycssloaders'), \
+    repos='https://cloud.r-project.org/')"
 
 # Set working directory and create necessary directories
 WORKDIR /app
