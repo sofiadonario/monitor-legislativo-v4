@@ -32,11 +32,21 @@ RUN R -e "install.packages(c('config', 'httr', 'yaml', 'lubridate', 'futile.logg
     repos='https://cloud.r-project.org/')"
 
 # Group 5: Additional packages
-RUN R -e "install.packages(c('htmltools', 'htmlwidgets', 'magrittr', 'readr', 'digest'), \
+RUN R -e "install.packages(c('htmltools', 'htmlwidgets', 'magrittr', 'readr', 'digest', \
+    'crosstalk', 'viridis', 'scales', 'base64enc', 'png'), \
     repos='https://cloud.r-project.org/')"
 
-# Group 6: UI enhancement packages
-RUN R -e "install.packages(c('shinyjs', 'shinycssloaders'), \
+# Group 6: UI enhancement and export packages
+RUN R -e "install.packages(c('shinyjs', 'shinycssloaders', 'openxlsx', 'xml2', \
+    'knitr', 'rmarkdown'), \
+    repos='https://cloud.r-project.org/')"
+
+# Group 7: Spatial and text processing packages
+RUN R -e "install.packages(c('sf', 'geobr', 'RColorBrewer', 'stringr', 'textclean'), \
+    repos='https://cloud.r-project.org/')"
+
+# Group 8: Additional database packages
+RUN R -e "install.packages(c('RSQLite', 'RPostgreSQL'), \
     repos='https://cloud.r-project.org/')"
 
 # Set working directory and create necessary directories
