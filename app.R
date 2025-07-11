@@ -648,22 +648,37 @@ server <- function(input, output, session) {
       data <- values$analytics_data$documents_by_year
       
       if (nrow(data) > 0) {
-        p <- ggplot(data, aes(x = year, y = count)) +
-          geom_line(color = "#3498db", size = 1.2) +
-          geom_point(color = "#2980b9", size = 3) +
-          theme_minimal() +
-          labs(
-            title = "Documents Published by Year",
-            x = "Year",
-            y = "Number of Documents"
-          ) +
-          theme(
-            plot.title = element_text(size = 14, face = "bold"),
-            axis.title = element_text(size = 12),
-            axis.text = element_text(size = 10)
-          )
+        # Ensure data is properly formatted
+        data$count <- as.numeric(data$count)
+        data$year <- as.numeric(data$year)
         
-        ggplotly(p, tooltip = c("x", "y"))
+        # Remove any invalid years
+        data <- data[!is.na(data$year) & !is.na(data$count), ]
+        
+        if (nrow(data) > 0) {
+          p <- ggplot(data, aes(x = year, y = count)) +
+            geom_line(color = "#3498db", size = 1.2) +
+            geom_point(color = "#2980b9", size = 3) +
+            theme_minimal() +
+            labs(
+              title = "Documents Published by Year",
+              x = "Year",
+              y = "Number of Documents"
+            ) +
+            theme(
+              plot.title = element_text(size = 14, face = "bold"),
+              axis.title = element_text(size = 12),
+              axis.text = element_text(size = 10)
+            )
+          
+          ggplotly(p, tooltip = c("x", "y"))
+        } else {
+          # Empty plot
+          p <- ggplot() + 
+            geom_text(aes(x = 0, y = 0, label = "No valid data available"), size = 5) +
+            theme_void()
+          ggplotly(p)
+        }
       } else {
         # Empty plot
         p <- ggplot() + 
@@ -734,22 +749,27 @@ server <- function(input, output, session) {
       data <- values$analytics_data$documents_by_type
       
       if (nrow(data) > 0) {
-        p <- ggplot(data, aes(x = "", y = count, fill = tipo)) +
-          geom_bar(stat = "identity", width = 1) +
-          coord_polar("y", start = 0) +
-          theme_void() +
+        # Ensure data is properly formatted
+        data$count <- as.numeric(data$count)
+        data$tipo <- as.character(data$tipo)
+        
+        # Create a simple bar chart instead of pie chart to avoid plotly issues
+        p <- ggplot(data, aes(x = reorder(tipo, count), y = count, fill = tipo)) +
+          geom_bar(stat = "identity") +
+          coord_flip() +
+          theme_minimal() +
           labs(
             title = "Documents by Type",
-            fill = "Type"
+            x = "Document Type",
+            y = "Count"
           ) +
           theme(
-            plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-            legend.title = element_text(size = 12),
-            legend.text = element_text(size = 10)
+            plot.title = element_text(size = 14, face = "bold"),
+            legend.position = "none"
           ) +
           scale_fill_brewer(palette = "Set3")
         
-        ggplotly(p, tooltip = c("fill", "y"))
+        ggplotly(p, tooltip = c("x", "y"))
       } else {
         # Empty plot
         p <- ggplot() + 

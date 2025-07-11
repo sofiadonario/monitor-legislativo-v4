@@ -43,10 +43,15 @@ load_brazil_geography <- function(year = 2022, cache_data = TRUE) {
     # Load Brazil country boundary
     brazil_country <- read_country(year = year, showProgress = FALSE)
     
-    # Validate geometries
+    # Validate geometries and ensure consistent CRS
     states <- st_make_valid(states)
     regions <- st_make_valid(regions)
     brazil_country <- st_make_valid(brazil_country)
+    
+    # Transform to WGS84 for consistency
+    states <- st_transform(states, crs = 4326)
+    regions <- st_transform(regions, crs = 4326)
+    brazil_country <- st_transform(brazil_country, crs = 4326)
     
     # Simplify geometries for better performance
     states <- st_simplify(states, dTolerance = 1000)
@@ -253,14 +258,15 @@ create_legislative_map <- function(legislative_data, geography_data,
         avg_days_since = 0
       )
   } else {
-    # Create empty data
+    # Create empty data with proper structure
     state_stats <- data.frame(
       abbrev_state = character(0),
       documento_count = integer(0),
       latest_date = as.Date(character(0)),
       latest_title = character(0),
       tipos_count = integer(0),
-      avg_days_since = numeric(0)
+      avg_days_since = numeric(0),
+      stringsAsFactors = FALSE
     )
   }
   
@@ -425,43 +431,63 @@ create_legislative_map <- function(legislative_data, geography_data,
   
   # Add markers for recent legislation
   if (!is.null(legislative_data) && nrow(legislative_data) > 0) {
-    recent_docs <- legislative_data %>%
-      filter(!is.na(estado), !is.na(data)) %>%
-      arrange(desc(data)) %>%
-      slice_head(n = 50)  # Show top 50 most recent
+    # Handle different date column names
+    date_col <- if ("data_publicacao" %in% names(legislative_data)) {
+      "data_publicacao"
+    } else if ("data" %in% names(legislative_data)) {
+      "data"
+    } else {
+      NULL
+    }
+    
+    if (!is.null(date_col) && "estado" %in% names(legislative_data)) {
+      recent_docs <- legislative_data %>%
+        filter(!is.na(estado), !is.na(.data[[date_col]])) %>%
+        arrange(desc(.data[[date_col]])) %>%
+        slice_head(n = 50)  # Show top 50 most recent
+    } else {
+      recent_docs <- data.frame()
+    }
     
     if (nrow(recent_docs) > 0) {
       # Get state coordinates for markers
-      state_coords <- map_data %>%
-        st_drop_geometry() %>%
-        select(abbrev_state, lon, lat) %>%
-        distinct()
-      
-      marker_data <- recent_docs %>%
-        left_join(state_coords, by = c("estado" = "abbrev_state")) %>%
-        filter(!is.na(lon), !is.na(lat))
-      
-      if (nrow(marker_data) > 0) {
-        map <- map %>%
-          addCircleMarkers(
-            data = marker_data,
-            lng = ~lon + runif(n(), -1, 1),  # Add small random offset
-            lat = ~lat + runif(n(), -0.5, 0.5),
-            radius = 5,
-            fillColor = "red",
-            fillOpacity = 0.8,
-            color = "darkred",
-            weight = 1,
-            popup = ~paste0("<b>", titulo, "</b><br>",
-                           "Tipo: ", tipo, "<br>",
-                           "Data: ", format(as.Date(data), "%d/%m/%Y"), "<br>",
-                           "Estado: ", estado),
-            group = "Documentos Recentes"
-          ) %>%
-          addLayersControl(
-            overlayGroups = c("Municípios", "Documentos Recentes"),
-            options = layersControlOptions(collapsed = FALSE)
+      if (is_spatial_data) {
+        state_coords <- map_data %>%
+          st_drop_geometry() %>%
+          select(abbrev_state, lon, lat) %>%
+          distinct()
+        
+        marker_data <- recent_docs %>%
+          left_join(state_coords, by = c("estado" = "abbrev_state")) %>%
+          filter(!is.na(lon), !is.na(lat))
+        
+        if (nrow(marker_data) > 0) {
+          # Create popup content safely
+          popup_content <- paste0(
+            "<b>", ifelse(is.na(marker_data$titulo), "Document", marker_data$titulo), "</b><br>",
+            "Tipo: ", ifelse(is.na(marker_data$tipo), "N/A", marker_data$tipo), "<br>",
+            "Data: ", format(as.Date(marker_data[[date_col]]), "%d/%m/%Y"), "<br>",
+            "Estado: ", marker_data$estado
           )
+          
+          map <- map %>%
+            addCircleMarkers(
+              data = marker_data,
+              lng = ~lon + runif(n(), -1, 1),  # Add small random offset
+              lat = ~lat + runif(n(), -0.5, 0.5),
+              radius = 5,
+              fillColor = "red",
+              fillOpacity = 0.8,
+              color = "darkred",
+              weight = 1,
+              popup = popup_content,
+              group = "Documentos Recentes"
+            ) %>%
+            addLayersControl(
+              overlayGroups = c("Municípios", "Documentos Recentes"),
+              options = layersControlOptions(collapsed = FALSE)
+            )
+        }
       }
     }
   }
@@ -483,18 +509,42 @@ aggregate_legislative_by_state <- function(legislative_data) {
     ))
   }
   
-  state_stats <- legislative_data %>%
-    filter(!is.na(estado)) %>%
-    group_by(estado) %>%
-    summarise(
-      documento_count = n(),
-      latest_date = max(as.Date(data), na.rm = TRUE),
-      latest_title = first(titulo[which(as.Date(data) == max(as.Date(data), na.rm = TRUE))]),
-      tipos_count = n_distinct(tipo),
-      avg_days_since = mean(dias_desde_publicacao, na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
-    arrange(desc(documento_count))
+  # Handle different date column names safely
+  date_col <- if ("data_publicacao" %in% names(legislative_data)) {
+    "data_publicacao"
+  } else if ("data" %in% names(legislative_data)) {
+    "data"
+  } else {
+    NULL
+  }
+  
+  if (!is.null(date_col)) {
+    state_stats <- legislative_data %>%
+      filter(!is.na(estado)) %>%
+      group_by(estado) %>%
+      summarise(
+        documento_count = n(),
+        latest_date = max(as.Date(.data[[date_col]]), na.rm = TRUE),
+        latest_title = first(titulo[which(as.Date(.data[[date_col]]) == max(as.Date(.data[[date_col]]), na.rm = TRUE))]),
+        tipos_count = n_distinct(tipo),
+        avg_days_since = if("dias_desde_publicacao" %in% names(legislative_data)) mean(dias_desde_publicacao, na.rm = TRUE) else 0,
+        .groups = "drop"
+      ) %>%
+      arrange(desc(documento_count))
+  } else {
+    state_stats <- legislative_data %>%
+      filter(!is.na(estado)) %>%
+      group_by(estado) %>%
+      summarise(
+        documento_count = n(),
+        latest_date = Sys.Date(),
+        latest_title = first(titulo),
+        tipos_count = n_distinct(tipo),
+        avg_days_since = 0,
+        .groups = "drop"
+      ) %>%
+      arrange(desc(documento_count))
+  }
   
   return(state_stats)
 }
@@ -511,14 +561,34 @@ aggregate_legislative_by_municipality <- function(legislative_data, state_code) 
     ))
   }
   
-  muni_stats <- legislative_data %>%
-    filter(!is.na(municipio), estado == state_code) %>%
-    group_by(municipio) %>%
-    summarise(
-      documento_count = n(),
-      latest_date = max(as.Date(data), na.rm = TRUE),
-      .groups = "drop"
-    )
+  # Handle different date column names safely
+  date_col <- if ("data_publicacao" %in% names(legislative_data)) {
+    "data_publicacao"
+  } else if ("data" %in% names(legislative_data)) {
+    "data"
+  } else {
+    NULL
+  }
+  
+  if (!is.null(date_col)) {
+    muni_stats <- legislative_data %>%
+      filter(!is.na(municipio), estado == state_code) %>%
+      group_by(municipio) %>%
+      summarise(
+        documento_count = n(),
+        latest_date = max(as.Date(.data[[date_col]]), na.rm = TRUE),
+        .groups = "drop"
+      )
+  } else {
+    muni_stats <- legislative_data %>%
+      filter(!is.na(municipio), estado == state_code) %>%
+      group_by(municipio) %>%
+      summarise(
+        documento_count = n(),
+        latest_date = Sys.Date(),
+        .groups = "drop"
+      )
+  }
   
   return(muni_stats)
 }
