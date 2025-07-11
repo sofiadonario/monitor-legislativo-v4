@@ -154,7 +154,7 @@ test_database_connection <- function() {
     
     # Check row counts
     for (table in required_tables) {
-      count <- dbGetQuery(conn, paste("SELECT COUNT(*) as count FROM", table))$count
+      count <- as.numeric(dbGetQuery(conn, paste("SELECT COUNT(*) as count FROM", table))$count)
       cat("  ", table, ":", count, "rows\n")
     }
     
@@ -431,7 +431,7 @@ get_document_stats <- function() {
   
   tryCatch({
     # Total documents
-    total <- dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count
+    total <- as.numeric(dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count)
     
     # Document types
     types <- dbGetQuery(db_pool, "
@@ -487,7 +487,7 @@ get_search_analytics <- function() {
   
   tryCatch({
     # Total documents
-    total <- dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count
+    total <- as.numeric(dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count)
     
     # Documents by year
     by_year <- dbGetQuery(db_pool, "
@@ -501,6 +501,12 @@ get_search_analytics <- function() {
       LIMIT 10
     ")
     
+    # Convert integer64 to numeric
+    if (nrow(by_year) > 0) {
+      by_year$count <- as.numeric(by_year$count)
+      by_year$year <- as.numeric(by_year$year)
+    }
+    
     # Documents by state (top 10)
     by_state <- dbGetQuery(db_pool, "
       SELECT 
@@ -513,6 +519,11 @@ get_search_analytics <- function() {
       LIMIT 10
     ")
     
+    # Convert integer64 to numeric
+    if (nrow(by_state) > 0) {
+      by_state$count <- as.numeric(by_state$count)
+    }
+    
     # Documents by type
     by_type <- dbGetQuery(db_pool, "
       SELECT 
@@ -523,6 +534,11 @@ get_search_analytics <- function() {
       GROUP BY tipo
       ORDER BY count DESC
     ")
+    
+    # Convert integer64 to numeric to fix plotly issues
+    if (nrow(by_type) > 0) {
+      by_type$count <- as.numeric(by_type$count)
+    }
     
     # Recent documents (last 30 days)
     recent <- dbGetQuery(db_pool, "
