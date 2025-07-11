@@ -58,7 +58,7 @@ def create_migration_from_csv():
     """Create PostgreSQL migration from CSV file"""
     print("🔄 Converting CSV to PostgreSQL migration...")
     
-    csv_file = 'data/processed/lexml_parsed_enhanced_fixed.csv'
+    csv_file = 'data/processed/lexml_parsed_enhanced_fixed_cleaned.csv'
     
     try:
         with open(csv_file, 'r', encoding='utf-8') as f:
@@ -134,7 +134,7 @@ CREATE TABLE documents (
 CREATE TABLE legislative_data (
     id SERIAL PRIMARY KEY,
     titulo TEXT,
-    numero VARCHAR(50),
+    numero TEXT,
     tipo VARCHAR(100),
     data DATE,
     estado VARCHAR(100),
@@ -191,7 +191,7 @@ SELECT
         ELSE 'outros'
     END as tipo,
     CASE 
-        WHEN promulgation_date ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN promulgation_date::date
+        WHEN promulgation_date::text ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN promulgation_date::date
         ELSE NULL
     END as data_publicacao,
     COALESCE(state, 'BR') as estado,
@@ -239,7 +239,7 @@ SELECT
         ELSE 'outros'
     END as tipo,
     CASE 
-        WHEN promulgation_date ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN promulgation_date::date
+        WHEN promulgation_date::text ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN promulgation_date::date
         ELSE NULL
     END as data,
     COALESCE(state, 'BR') as estado,
@@ -253,7 +253,7 @@ SELECT
     'LexML' as fonte_original,
     url,
     CASE 
-        WHEN promulgation_date ~ '^\\d{4}' THEN EXTRACT(YEAR FROM promulgation_date::date)
+        WHEN promulgation_date::text ~ '^\\d{4}' THEN EXTRACT(YEAR FROM promulgation_date::date)
         ELSE NULL
     END as ano
 FROM lexml_parsed_enhanced
