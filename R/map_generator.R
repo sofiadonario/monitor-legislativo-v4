@@ -8,6 +8,7 @@ library(dplyr)
 library(RColorBrewer)
 library(htmltools)
 library(futile.logger)
+library(stringr)
 
 # Global variable for cached geographic data
 .brazil_geography <- new.env()
@@ -186,7 +187,7 @@ create_legislative_map <- function(legislative_data, geography_data,
     return(NULL)
   }
   
-  # Create state name to code mapping
+  # Create comprehensive state name to code mapping
   state_mapping <- data.frame(
     estado = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "BR", "Ceará", 
                "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão", 
@@ -194,14 +195,22 @@ create_legislative_map <- function(legislative_data, geography_data,
                "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro", "Rio.Janeiro",
                "Rio Grande do Norte", "Rio.Grande.Norte", "Rio Grande do Sul", 
                "Rio.Grande.Sul", "Rondônia", "Roraima", "Santa Catarina", 
-               "São Paulo", "Sergipe", "Tocantins"),
+               "São Paulo", "Sergipe", "Tocantins",
+               # Additional variations from the logs
+               "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
+               "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
+               "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
     abbrev_state = c("AC", "AL", "AP", "AM", "BA", "BR", "CE", 
                      "DF", "ES", "GO", "MA", 
                      "MT", "MS", "MG", "PA", "PB", 
                      "PR", "PE", "PI", "RJ", "RJ",
                      "RN", "RN", "RS", 
                      "RS", "RO", "RR", "SC", 
-                     "SP", "SE", "TO"),
+                     "SP", "SE", "TO",
+                     # Direct mappings for abbreviations
+                     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
+                     "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
+                     "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
     stringsAsFactors = FALSE
   )
   
@@ -529,7 +538,10 @@ create_state_popup <- function(state_name, state_abbrev, doc_count,
   latest_date <- ifelse(is.na(latest_date), "Não disponível", 
                        format(as.Date(latest_date), "%d/%m/%Y"))
   latest_title <- ifelse(is.na(latest_title) | latest_title == "", 
-                        "Nenhum documento", str_trunc(latest_title, 80))
+                        "Nenhum documento", 
+                        ifelse(nchar(latest_title) > 80, 
+                               paste0(substr(latest_title, 1, 77), "..."), 
+                               latest_title))
   
   popup_html <- paste0(
     "<div style='font-family: Arial, sans-serif; width: 280px;'>",

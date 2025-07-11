@@ -9,6 +9,7 @@ library(jsonlite)
 library(plotly)
 library(ggplot2)
 library(leaflet)
+library(stringr)
 
 # Load database connection module
 source("R/database_connection.R")
