@@ -239,13 +239,13 @@ ui <- dashboardPage(
               plotlyOutput("yearChart", height = "300px")
             ),
             
-            # Documents by State Map
+            # Documents by Month Chart (Last 12 Months)
             box(
-              title = "Interactive Map - Documents by State", 
+              title = "Documents by Month (Last 12 Months)", 
               status = "success", 
               solidHeader = TRUE, 
               width = 6,
-              leafletOutput("stateMap", height = "300px")
+              plotlyOutput("monthChart", height = "300px")
             )
           )
         },
@@ -866,51 +866,71 @@ server <- function(input, output, session) {
     }
   })
   
-  # Interactive Map - Documents by State (Analytics Tab)
-  output$stateMap <- renderLeaflet({
-    if (database_connected && !is.null(values$analytics_data) && !is.null(values$geographic_data)) {
-      data <- values$analytics_data$documents_by_state
+  # Documents by Month Chart (Last 12 Months)
+  output$monthChart <- renderPlotly({
+    if (database_connected && !is.null(values$analytics_data)) {
+      data <- values$analytics_data$documents_by_month
       
-      if (nrow(data) > 0 && !is.null(values$geographic_data)) {
-        # Transform data to match map expectations
-        map_data <- data %>%
-          rename(documento_count = count) %>%
-          select(estado, documento_count)
+      if (nrow(data) > 0) {
+        # Ensure data is properly formatted
+        data$count <- as.numeric(data$count)
+        data$year <- as.numeric(data$year)
+        data$month <- as.numeric(data$month)
         
-        # Create the legislative map
-        map <- create_legislative_map(
-          legislative_data = map_data,
-          geography_data = values$geographic_data,
-          focus_state = NULL,
-          color_by = "count"
-        )
+        # Create month labels for better display
+        month_names <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
         
-        return(map)
+        data <- data %>%
+          mutate(
+            month_label = month_names[month],
+            year_month_label = paste(month_label, year),
+            date_for_sort = as.Date(paste(year, month, "01", sep = "-"))
+          ) %>%
+          arrange(date_for_sort) %>%
+          mutate(year_month_label = factor(year_month_label, levels = year_month_label))
+        
+        # Remove any invalid data
+        data <- data[!is.na(data$year) & !is.na(data$month) & !is.na(data$count), ]
+        
+        if (nrow(data) > 0) {
+          p <- ggplot(data, aes(x = year_month_label, y = count, group = 1)) +
+            geom_line(color = "#2ecc71", size = 1.2) +
+            geom_point(color = "#27ae60", size = 3) +
+            theme_minimal() +
+            labs(
+              title = "Documents Published by Month",
+              x = "Month",
+              y = "Number of Documents"
+            ) +
+            theme(
+              plot.title = element_text(size = 14, face = "bold"),
+              axis.title = element_text(size = 12),
+              axis.text = element_text(size = 10),
+              axis.text.x = element_text(angle = 45, hjust = 1)
+            )
+          
+          ggplotly(p, tooltip = c("x", "y"))
+        } else {
+          # Empty plot
+          p <- ggplot() + 
+            geom_text(aes(x = 0, y = 0, label = "No valid monthly data available"), size = 5) +
+            theme_void()
+          ggplotly(p)
+        }
       } else {
-        # Show empty map with Brazil boundaries
-        leaflet() %>%
-          addTiles() %>%
-          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-          addControl(
-            html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
-                    <b>No data available</b><br>
-                    Geographic data is loading...
-                    </div>",
-            position = "topright"
-          )
+        # Empty plot
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No monthly data available"), size = 5) +
+          theme_void()
+        ggplotly(p)
       }
     } else {
-      # Show basic map when not connected
-      leaflet() %>%
-        addTiles() %>%
-        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-        addControl(
-          html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
-                  <b>Database not connected</b><br>
-                  Connect to see legislative data by state
-                  </div>",
-          position = "topright"
-        )
+      # Empty plot
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = "Database not connected"), size = 5) +
+        theme_void()
+      ggplotly(p)
     }
   })
   
