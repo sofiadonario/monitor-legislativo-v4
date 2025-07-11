@@ -50,7 +50,7 @@ if (!database_connected) {
   cat("✅ Database connected successfully!\n")
 }
 
-# UI with enhanced features
+# UI with enhanced features and custom styling
 ui <- dashboardPage(
   dashboardHeader(title = "Monitor Legislativo v4"),
   dashboardSidebar(
@@ -63,6 +63,47 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
+    # Custom CSS for color scheme
+    tags$head(
+      tags$style(HTML("
+        /* Primary color #e1001e */
+        .main-header .navbar { background-color: #e1001e !important; }
+        .main-header .logo { background-color: #c50019 !important; }
+        .main-header .logo:hover { background-color: #a80016 !important; }
+        
+        /* Sidebar styling */
+        .sidebar-menu > li.active > a { background-color: #e1001e !important; }
+        .sidebar-menu > li:hover > a { background-color: #f0ccce !important; }
+        
+        /* Box headers */
+        .box.box-primary > .box-header { background-color: #e1001e !important; border-bottom-color: #c50019 !important; }
+        .box.box-success > .box-header { background-color: #28a745 !important; }
+        .box.box-warning > .box-header { background-color: #ffc107 !important; }
+        .box.box-info > .box-header { background-color: #17a2b8 !important; }
+        
+        /* Buttons */
+        .btn-primary { background-color: #e1001e !important; border-color: #c50019 !important; }
+        .btn-primary:hover { background-color: #c50019 !important; border-color: #a80016 !important; }
+        .btn-lg { padding: 10px 20px !important; }
+        
+        /* Value boxes */
+        .small-box.bg-red { background-color: #e1001e !important; }
+        .small-box.bg-blue { background-color: #d63384 !important; }
+        .small-box.bg-green { background-color: #20c997 !important; }
+        .small-box.bg-yellow { background-color: #fd7e14 !important; }
+        .small-box.bg-purple { background-color: #6f42c1 !important; }
+        
+        /* Links and accents */
+        a { color: #e1001e !important; }
+        a:hover { color: #c50019 !important; }
+        
+        /* Progress bars */
+        .progress-bar { background-color: #e1001e !important; }
+        
+        /* Active tab styling */
+        .nav-tabs-custom > .nav-tabs > li.active { border-top-color: #e1001e !important; }
+      "))
+    ),
     tabItems(
       # Dashboard tab with interactive map and overview
       tabItem(tabName = "dashboard",
@@ -388,7 +429,7 @@ server <- function(input, output, session) {
     if (database_connected) {
       stats <- get_document_stats()
       count <- stats$total_documents
-      status_color <- "blue"
+      status_color <- "red"
     } else {
       count <- nrow(sample_documents)
       status_color <- "yellow"
@@ -692,7 +733,7 @@ server <- function(input, output, session) {
   output$analyticsTotal <- renderValueBox({
     if (database_connected && !is.null(values$analytics_data)) {
       count <- values$analytics_data$total_documents
-      status_color <- "blue"
+      status_color <- "red"
     } else {
       count <- 0
       status_color <- "red"
@@ -780,8 +821,8 @@ server <- function(input, output, session) {
         
         if (nrow(data) > 0) {
           p <- ggplot(data, aes(x = year, y = count)) +
-            geom_line(color = "#3498db", size = 1.2) +
-            geom_point(color = "#2980b9", size = 3) +
+            geom_line(color = "#e1001e", size = 1.2) +
+            geom_point(color = "#c50019", size = 3) +
             theme_minimal() +
             labs(
               title = "Documents Published by Year",
@@ -958,7 +999,7 @@ server <- function(input, output, session) {
             plot.title = element_text(size = 14, face = "bold"),
             legend.position = "none"
           ) +
-          scale_fill_brewer(palette = "Set3")
+          scale_fill_manual(values = c("#e1001e", "#f5737a", "#fbb3b8", "#c50019", "#a80016", "#8b0013"))
         
         ggplotly(p, tooltip = c("x", "y"))
       } else {
