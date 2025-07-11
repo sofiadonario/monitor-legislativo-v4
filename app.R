@@ -8,9 +8,13 @@ library(dplyr)
 library(jsonlite)
 library(plotly)
 library(ggplot2)
+library(leaflet)
 
 # Load database connection module
 source("R/database_connection.R")
+
+# Load map generator module for geographic visualization
+source("R/map_generator.R")
 
 # Initialize database connection
 database_connected <- FALSE
@@ -238,13 +242,13 @@ ui <- dashboardPage(
               plotlyOutput("yearChart", height = "300px")
             ),
             
-            # Documents by State Chart
+            # Documents by State Map
             box(
-              title = "Documents by State (Top 10)", 
+              title = "Interactive Map - Documents by State", 
               status = "success", 
               solidHeader = TRUE, 
               width = 6,
-              plotlyOutput("stateChart", height = "300px")
+              leafletOutput("stateMap", height = "300px")
             )
           )
         },
@@ -281,7 +285,8 @@ server <- function(input, output, session) {
   values <- reactiveValues(
     current_documents = NULL,
     search_results = NULL,
-    analytics_data = NULL
+    analytics_data = NULL,
+    geographic_data = NULL
   )
   
   # Initialize data on startup
@@ -289,6 +294,14 @@ server <- function(input, output, session) {
     if (database_connected) {
       values$current_documents <- get_documents(50)  # Get first 50 documents
       values$analytics_data <- get_search_analytics()  # Load analytics data
+      
+      # Load geographic data for map
+      tryCatch({
+        values$geographic_data <- load_brazil_geography(year = 2022, cache_data = TRUE)
+      }, error = function(e) {
+        cat("Error loading geographic data:", e$message, "\n")
+        values$geographic_data <- NULL
+      })
       
       # Populate filter choices
       updateSelectizeInput(session, "documentTypes", choices = get_document_types())
@@ -666,41 +679,46 @@ server <- function(input, output, session) {
     }
   })
   
-  # Documents by State Chart
-  output$stateChart <- renderPlotly({
-    if (database_connected && !is.null(values$analytics_data)) {
+  # Interactive Map - Documents by State
+  output$stateMap <- renderLeaflet({
+    if (database_connected && !is.null(values$analytics_data) && !is.null(values$geographic_data)) {
       data <- values$analytics_data$documents_by_state
       
-      if (nrow(data) > 0) {
-        p <- ggplot(data, aes(x = reorder(estado, count), y = count)) +
-          geom_bar(stat = "identity", fill = "#27ae60") +
-          coord_flip() +
-          theme_minimal() +
-          labs(
-            title = "Documents by State (Top 10)",
-            x = "State",
-            y = "Number of Documents"
-          ) +
-          theme(
-            plot.title = element_text(size = 14, face = "bold"),
-            axis.title = element_text(size = 12),
-            axis.text = element_text(size = 10)
-          )
+      if (nrow(data) > 0 && !is.null(values$geographic_data)) {
+        # Create the legislative map
+        map <- create_legislative_map(
+          legislative_data = data,
+          geography_data = values$geographic_data,
+          focus_state = NULL,
+          color_by = "count"
+        )
         
-        ggplotly(p, tooltip = c("x", "y"))
+        return(map)
       } else {
-        # Empty plot
-        p <- ggplot() + 
-          geom_text(aes(x = 0, y = 0, label = "No data available"), size = 5) +
-          theme_void()
-        ggplotly(p)
+        # Show empty map with Brazil boundaries
+        leaflet() %>%
+          addTiles() %>%
+          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+          addControl(
+            html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
+                    <b>No data available</b><br>
+                    Geographic data is loading...
+                    </div>",
+            position = "topright"
+          )
       }
     } else {
-      # Empty plot
-      p <- ggplot() + 
-        geom_text(aes(x = 0, y = 0, label = "Database not connected"), size = 5) +
-        theme_void()
-      ggplotly(p)
+      # Show basic map when not connected
+      leaflet() %>%
+        addTiles() %>%
+        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+        addControl(
+          html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
+                  <b>Database not connected</b><br>
+                  Connect to see legislative data by state
+                  </div>",
+          position = "topright"
+        )
     }
   })
   

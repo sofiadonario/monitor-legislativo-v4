@@ -148,14 +148,47 @@ create_legislative_map <- function(legislative_data, geography_data,
     return(NULL)
   }
   
+  # Create state name to code mapping
+  state_mapping <- data.frame(
+    estado = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "BR", "Ceará", 
+               "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão", 
+               "Mato Grosso", "Mato.Grosso.Sul", "Minas Gerais", "Pará", "Paraíba", 
+               "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro", "Rio.Janeiro",
+               "Rio Grande do Norte", "Rio.Grande.Norte", "Rio Grande do Sul", 
+               "Rio.Grande.Sul", "Rondônia", "Roraima", "Santa Catarina", 
+               "São Paulo", "Sergipe", "Tocantins"),
+    abbrev_state = c("AC", "AL", "AP", "AM", "BA", "BR", "CE", 
+                     "DF", "ES", "GO", "MA", 
+                     "MT", "MS", "MG", "PA", "PB", 
+                     "PR", "PE", "PI", "RJ", "RJ",
+                     "RN", "RN", "RS", 
+                     "RS", "RO", "RR", "SC", 
+                     "SP", "SE", "TO"),
+    stringsAsFactors = FALSE
+  )
+  
+  # Map state names to codes in legislative data
+  if ("estado" %in% names(legislative_data)) {
+    legislative_data <- legislative_data %>%
+      left_join(state_mapping, by = "estado") %>%
+      mutate(abbrev_state = ifelse(is.na(abbrev_state), estado, abbrev_state))
+  }
+  
   states <- geography_data$states
   
-  # Aggregate legislative data by state
-  state_stats <- aggregate_legislative_by_state(legislative_data)
+  # Aggregate legislative data by state using mapped state codes
+  state_stats <- legislative_data %>%
+    filter(!is.na(abbrev_state)) %>%
+    group_by(abbrev_state) %>%
+    summarise(
+      documento_count = sum(count, na.rm = TRUE),
+      latest_date = Sys.Date(),
+      .groups = "drop"
+    )
   
   # Join with geographic data
   map_data <- states %>%
-    left_join(state_stats, by = c("abbrev_state" = "estado")) %>%
+    left_join(state_stats, by = "abbrev_state") %>%
     mutate(
       # Fill missing values
       documento_count = coalesce(documento_count, 0),
