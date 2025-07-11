@@ -28,7 +28,7 @@ RUN R -e "options(repos = c(CRAN = 'https://packagemanager.rstudio.com/all/lates
                   'htmlwidgets', 'crosstalk', 'magrittr', 'openxlsx', 'readr', \
                   'digest', 'shinyjs', 'shinycssloaders', 'RColorBrewer', 'viridis', \
                   'scales', 'base64enc', 'png', 'leaflet'); \
-    install.packages(packages, dependencies = TRUE, type = 'binary'); \
+    install.packages(packages, dependencies = TRUE); \
     cat('✅ All packages installed successfully\\n')"
 
 # Verify essential packages are installed
