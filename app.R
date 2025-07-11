@@ -91,7 +91,7 @@ ui <- dashboardPage(
             width = 12,
             height = "600px",
             if(database_connected) {
-              leafletOutput("stateMap", height = "550px")
+              leafletOutput("dashboardMap", height = "550px")
             } else {
               div(
                 class = "alert alert-warning",
@@ -818,7 +818,55 @@ server <- function(input, output, session) {
     }
   })
   
-  # Interactive Map - Documents by State
+  # Dashboard Map - Main Interactive Map
+  output$dashboardMap <- renderLeaflet({
+    if (database_connected && !is.null(values$analytics_data) && !is.null(values$geographic_data)) {
+      data <- values$analytics_data$documents_by_state
+      
+      if (nrow(data) > 0 && !is.null(values$geographic_data)) {
+        # Transform data to match map expectations
+        map_data <- data %>%
+          rename(documento_count = count) %>%
+          select(estado, documento_count)
+        
+        # Create the legislative map
+        map <- create_legislative_map(
+          legislative_data = map_data,
+          geography_data = values$geographic_data,
+          focus_state = NULL,
+          color_by = "count"
+        )
+        
+        return(map)
+      } else {
+        # Show empty map with Brazil boundaries
+        leaflet() %>%
+          addTiles() %>%
+          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+          addControl(
+            html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
+                    <b>No data available</b><br>
+                    Geographic data is loading...
+                    </div>",
+            position = "topright"
+          )
+      }
+    } else {
+      # Show basic map when not connected
+      leaflet() %>%
+        addTiles() %>%
+        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+        addControl(
+          html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
+                  <b>Database not connected</b><br>
+                  Connect to see legislative data by state
+                  </div>",
+          position = "topright"
+        )
+    }
+  })
+  
+  # Interactive Map - Documents by State (Analytics Tab)
   output$stateMap <- renderLeaflet({
     if (database_connected && !is.null(values$analytics_data) && !is.null(values$geographic_data)) {
       data <- values$analytics_data$documents_by_state
