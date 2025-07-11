@@ -139,8 +139,14 @@ check_memory_health <- function() {
     
     # Get current memory usage
     used_memory <- sum(memory_info[, "used"])
-    max_memory <- as.numeric(Sys.getenv("R_MAX_MEMORY", "2048"))  # Default 2GB
     
+    # Safely get max_memory from environment variable
+    max_memory_env <- Sys.getenv("R_MAX_MEMORY", "2048")
+    max_memory <- as.numeric(max_memory_env)
+    if (is.na(max_memory) || max_memory <= 0) {
+      max_memory <- 2048 # Fallback to 2GB if env var is invalid
+    }
+
     memory_percent <- (used_memory / (max_memory * 1024)) * 100
     
     status <- if (memory_percent > 90) {
