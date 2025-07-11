@@ -1,4 +1,4 @@
-# Monitor Legislativo v4 - R Shiny Application with Database
+# MackMonitor - R Shiny Application with Database
 # Railway Production Deployment - Connected to PostgreSQL with real data
 
 library(shiny)
@@ -52,7 +52,7 @@ if (!database_connected) {
 
 # UI with enhanced features and custom styling
 ui <- dashboardPage(
-  dashboardHeader(title = "Monitor Legislativo v4"),
+  dashboardHeader(title = "MackMonitor"),
   dashboardSidebar(
     sidebarMenu(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
@@ -72,8 +72,10 @@ ui <- dashboardPage(
         .main-header .logo:hover { background-color: #a80016 !important; }
         
         /* Sidebar styling */
-        .sidebar-menu > li.active > a { background-color: #e1001e !important; }
-        .sidebar-menu > li:hover > a { background-color: #f0ccce !important; }
+        .skin-blue .main-sidebar { background-color: #fae6e8 !important; }
+        .sidebar-menu > li.active > a { background-color: #e1001e !important; color: white !important; }
+        .sidebar-menu > li:hover > a { background-color: #f0ccce !important; color: #e1001e !important; }
+        .sidebar-menu > li > a { color: #8b0013 !important; }
         
         /* Box headers */
         .box.box-primary > .box-header { background-color: #e1001e !important; border-bottom-color: #c50019 !important; }
@@ -310,10 +312,11 @@ ui <- dashboardPage(
               DT::dataTableOutput("recentDocuments", height = "300px")
             )
           )
-        },
-        
-        # About tab with system status
-        tabItem(tabName = "about",
+        )
+      ),
+      
+      # About tab with system status  
+      tabItem(tabName = "about",
           fluidRow(
             # System Status
             box(
@@ -321,7 +324,7 @@ ui <- dashboardPage(
               status = if(database_connected) "success" else "warning", 
               solidHeader = TRUE, 
               width = 6,
-              h4("Monitor Legislativo v4"),
+              h4("MackMonitor"),
               p("Production deployment on Railway"),
               br(),
               h5("Database Connection:"),
@@ -1076,8 +1079,8 @@ server <- function(input, output, session) {
 }
 
 # Print startup information
-cat("=== Monitor Legislativo v4 with Database - Version 2.0 ===\n")
-cat("Starting Monitor Legislativo v4 Shiny application...\n")
+cat("=== MackMonitor with Database - Version 2.0 ===\n")
+cat("Starting MackMonitor Shiny application...\n")
 cat("PORT env var:", Sys.getenv("PORT"), "\n")
 cat("Using port:", as.integer(Sys.getenv("PORT", "3838")), "\n")
 cat("Host: 0.0.0.0\n")
