@@ -1,77 +1,159 @@
-# Monitor Legislativo v4
+# Miscellaneous Files - Archive
 
-A sophisticated academic research platform for monitoring Brazilian legislative data with transport-focused legislation analysis.
+📋 **MISCELLANEOUS DOCUMENTATION & SCRIPTS** - This directory contains various documentation files, reports, and scripts that were scattered throughout the project during the architecture migration.
 
-## Repository Structure
+## 📁 Contents Overview
 
-```
-├── frontend/                 # React TypeScript frontend
-│   ├── src/                 # React components and services
-│   ├── public/              # Static assets
-│   ├── package.json         # Frontend dependencies
-│   └── Dockerfile           # Frontend deployment
-│
-├── backend/          # Python FastAPI backend
-│   ├── src/                 # Backend source code
-│   ├── core/                # Core functionality
-│   ├── configs/             # Configuration files
-│   ├── requirements.txt     # Python dependencies
-│   └── nixpacks.toml        # Build configuration
-│
-├── r-shiny-app/            # R Shiny analytics
-│   └── ...                 # R application files
-│
-├── docs/                   # Documentation
-│   ├── deployment/         # Deployment guides
-│   ├── guides/             # Integration guides
-│   ├── reports/            # Technical reports
-│   └── CLAUDE.md           # Development instructions
-│
-├── config/                 # Configuration files
-│   ├── .env.*              # Environment configurations
-│   ├── docker-compose.yml  # Container orchestration
-│   └── *.json              # Various config files
-│
-├── scripts/                # Utility scripts
-│   └── *.sh, *.py          # Deployment and test scripts
-│
-└── assets/                 # Images and static files
-    └── *.png, *.jpg        # Screenshots and diagrams
-```
+This directory contains files moved from the project root during the house organization phase. These files represent different stages of the project development and migration process.
 
-## Quick Start
+## 📄 Documentation Files
 
-### Frontend (Railway)
+### **Migration & Refactoring Reports**
+- `FEATURE_REIMPLEMENTATION_PLAN.md` - Plan for feature reimplementation during migration
+- `REFACTOR_MIGRATION_STATUS.md` - Status tracking during architecture refactoring
+- `ARCHITECTURE_MIGRATION.md` - Comprehensive migration documentation (if moved here)
+
+### **Infrastructure Reports**
+- `RAILWAY_HANGING_ISSUE_REPORT.md` - Railway deployment troubleshooting documentation
+- `REDIS_INTEGRATION_COMPLETE.md` - Redis integration completion report
+- `REDIS_SETUP_GUIDE.md` - Redis configuration and setup guide
+
+### **Data Migration Documentation**
+- `MANUAL_DATA_MIGRATION_COMMANDS.md` - Database migration procedures and commands
+- `project_report.md` - Comprehensive project analysis and status report
+
+## 🐍 Python Scripts
+
+### **Database Management**
+- `check_data_lengths.py` - Data validation and length checking utility
+- `fix_schema_and_migrate.py` - Database schema fixes and migration utility
+- `populate_tables.py` - Database population script
+- `simple_migrate.py` - Simple migration utility script
+
+### **Testing & Validation**
+- `test_redis_connection.py` - Redis connectivity testing utility
+
+## 🔧 Build & Task Configuration
+
+### **Task Runners**
+- `justfile` - Task runner configuration using Just
+- `Makefile` - Build automation and task configuration
+
+### **Purpose**
+These files provided build automation and task management during different phases of the project development.
+
+## 📊 File Categories
+
+| Category | Files | Purpose |
+|----------|-------|---------|
+| **Migration Reports** | 4 files | Documentation of architecture changes |
+| **Infrastructure** | 3 files | Deployment and infrastructure documentation |
+| **Data Scripts** | 5 files | Database management and validation |
+| **Build Tools** | 2 files | Task automation and build configuration |
+
+## 🔍 File Details
+
+### **Key Documentation Files**
+
+**`project_report.md`**
+- Comprehensive project analysis
+- Architecture overview and status
+- Feature documentation
+- Technical specifications
+
+**`REFACTOR_MIGRATION_STATUS.md`**
+- Migration progress tracking
+- Status of different components
+- Completion checklist
+
+**`REDIS_SETUP_GUIDE.md`**
+- Redis configuration instructions
+- Integration with Railway
+- Performance optimization guidelines
+
+### **Important Scripts**
+
+**`fix_schema_and_migrate.py`**
+- Database schema corrections
+- Migration utilities
+- Data consistency fixes
+
+**`populate_tables.py`**
+- Database population procedures
+- Data seeding scripts
+- Initial data setup
+
+**`test_redis_connection.py`**
+- Redis connectivity testing
+- Connection validation
+- Performance testing
+
+## 🗂️ Historical Context
+
+These files represent various stages of the Monitor Legislativo v4 development:
+
+1. **Early Development**: Planning and feature documentation
+2. **Migration Phase**: Architecture changes and refactoring
+3. **Infrastructure Setup**: Railway deployment and Redis integration
+4. **Data Migration**: Database setup and population
+5. **Testing & Validation**: Connection testing and validation
+
+## 🔄 Migration Origins
+
+Files moved from various locations during house organization:
+
 ```bash
-cd frontend/
-npm install
-npm run dev
+# From project root
+project_report.md → archive/miscellaneous/
+REDIS_SETUP_GUIDE.md → archive/miscellaneous/
+*.py → archive/miscellaneous/
+justfile → archive/miscellaneous/
+Makefile → archive/miscellaneous/
+
+# From scattered locations
+REFACTOR_MIGRATION_STATUS.md → archive/miscellaneous/
+RAILWAY_HANGING_ISSUE_REPORT.md → archive/miscellaneous/
 ```
 
-### Backend (Railway)
-```bash
-cd backend/
-poetry install
-poetry run uvicorn src.main:app --reload
-```
+## 📚 Usage Guidelines
 
-## Deployment
+### **For Reference**
+- Use documentation files to understand project history
+- Review migration reports for architectural decisions
+- Check scripts for database management patterns
 
-- **Frontend**: Railway service pointing to `/frontend` directory
-- **Backend**: Railway service pointing to `/backend` directory
-- **Analytics**: Separate R Shiny deployment
+### **For Recovery**
+- Scripts can be adapted for similar migration tasks
+- Documentation provides context for decisions made
+- Configuration files show build patterns used
 
-## Key Features
+### **Important Notes**
+- Scripts may need updates for current environment
+- Documentation reflects historical states
+- Configuration files may contain outdated settings
 
-- Real-time legislative document search
-- Geographic analysis and mapping
-- Advanced analytics dashboard
-- Multi-source data integration
-- Academic citation generation
+## 🔒 Security Status
 
-## Documentation
+- **✅ Safe for Archive**: No credentials or sensitive data
+- **✅ Historical Reference**: Suitable for documentation
+- **⚠️ Review Before Use**: Scripts should be reviewed before execution
+- **⚠️ Outdated Dependencies**: May reference old package versions
 
-See `docs/` directory for detailed guides:
-- `docs/deployment/` - Deployment instructions
-- `docs/guides/` - Integration guides
-- `docs/CLAUDE.md` - Development rules and guidelines
+## 📖 Related Documentation
+
+- **Main Archive**: `../README.md`
+- **Legacy Services**: `../../legacy/README.md`
+- **Current Service**: `../../README.md`
+- **Architecture Migration**: `../../ARCHITECTURE_MIGRATION.md`
+
+## 🎯 Current Status
+
+These files are **archived for reference only**. The current active service uses:
+- **Main Application**: `../../app.R`
+- **Current Documentation**: `../../README.md`
+- **Active Configuration**: `../../config.yml`
+- **Development Tools**: `../../dev-tools/`
+
+---
+
+**Archive Purpose**: Preserving project development history and providing reference materials for understanding the evolution of Monitor Legislativo v4.
