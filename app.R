@@ -58,52 +58,48 @@ ui <- dashboardPage(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
       menuItem("Documents", tabName = "documents", icon = icon("file-text")),
       menuItem("Search", tabName = "search", icon = icon("search")),
-      menuItem("Analytics", tabName = "analytics", icon = icon("chart-bar"))
+      menuItem("Analytics", tabName = "analytics", icon = icon("chart-bar")),
+      menuItem("About", tabName = "about", icon = icon("info-circle"))
     )
   ),
   dashboardBody(
     tabItems(
-      # Dashboard tab with statistics
+      # Dashboard tab with interactive map and overview
       tabItem(tabName = "dashboard",
         fluidRow(
-          # Connection status
-          box(
-            title = "System Status", 
-            status = if(database_connected) "success" else "warning", 
-            solidHeader = TRUE, 
-            width = 6,
-            h4("Monitor Legislativo v4"),
-            p("Production deployment on Railway"),
-            br(),
-            h5("Database Connection:"),
-            p(
-              icon(if(database_connected) "check-circle" else "exclamation-triangle"), 
-              if(database_connected) "Connected to PostgreSQL" else database_error,
-              style = paste0("color: ", if(database_connected) "green" else "orange")
-            ),
-            if(database_connected) {
-              div(
-                h5("Database Statistics:"),
-                verbatimTextOutput("dbStats")
-              )
-            }
-          ),
-          
-          # Quick stats
+          # Document Overview Bar
           box(
             title = "Document Overview", 
-            status = "info", 
+            status = "primary", 
             solidHeader = TRUE, 
-            width = 6,
-            valueBoxOutput("totalDocs", width = NULL),
-            br(),
+            width = 12,
+            height = "120px",
+            fluidRow(
+              column(3, valueBoxOutput("totalDocs", width = NULL)),
+              column(3, valueBoxOutput("totalStates", width = NULL)),
+              column(3, valueBoxOutput("totalTypes", width = NULL)),
+              column(3, valueBoxOutput("dateRange", width = NULL))
+            )
+          )
+        ),
+        fluidRow(
+          # Interactive Map - Main Feature
+          box(
+            title = "Interactive Map - Legislative Documents by State", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 12,
+            height = "600px",
             if(database_connected) {
-              div(
-                h5("Document Types:"),
-                DT::dataTableOutput("typeStats", height = "200px")
-              )
+              leafletOutput("stateMap", height = "550px")
             } else {
-              p("Connect to database to see real statistics")
+              div(
+                class = "alert alert-warning",
+                style = "text-align: center; margin-top: 200px;",
+                h4(icon("database"), " Database Connection Required"),
+                p("Connect to the database to see the interactive legislative map."),
+                p("Check the About tab for connection details.")
+              )
             }
           )
         )
@@ -273,7 +269,69 @@ ui <- dashboardPage(
               DT::dataTableOutput("recentDocuments", height = "300px")
             )
           )
-        }
+        },
+        
+        # About tab with system status
+        tabItem(tabName = "about",
+          fluidRow(
+            # System Status
+            box(
+              title = "System Status", 
+              status = if(database_connected) "success" else "warning", 
+              solidHeader = TRUE, 
+              width = 6,
+              h4("Monitor Legislativo v4"),
+              p("Production deployment on Railway"),
+              br(),
+              h5("Database Connection:"),
+              p(
+                icon(if(database_connected) "check-circle" else "exclamation-triangle"), 
+                if(database_connected) "Connected to PostgreSQL" else database_error,
+                style = paste0("color: ", if(database_connected) "green" else "orange")
+              ),
+              if(database_connected) {
+                div(
+                  h5("Database Statistics:"),
+                  verbatimTextOutput("dbStats")
+                )
+              }
+            ),
+            
+            # Application Information
+            box(
+              title = "Application Information", 
+              status = "info", 
+              solidHeader = TRUE, 
+              width = 6,
+              h5("Version Information:"),
+              p(strong("Version: "), "4.0 - Unified R-Shiny Service"),
+              p(strong("Platform: "), "Railway Cloud Platform"),
+              p(strong("Database: "), "PostgreSQL with Redis Cache"),
+              p(strong("Geographic Data: "), "IBGE via geobr package"),
+              br(),
+              h5("Features:"),
+              tags$ul(
+                tags$li("Interactive Brazilian legislative map"),
+                tags$li("Advanced document search with filters"),
+                tags$li("Real-time analytics and visualizations"),
+                tags$li("Document type and state-based filtering"),
+                tags$li("Responsive design for all devices")
+              )
+            )
+          ),
+          if(database_connected) {
+            fluidRow(
+              # Document Types Distribution
+              box(
+                title = "Document Types Distribution", 
+                status = "primary", 
+                solidHeader = TRUE, 
+                width = 12,
+                DT::dataTableOutput("typeStats", height = "300px")
+              )
+            )
+          }
+        )
       )
     )
   )
@@ -293,7 +351,7 @@ server <- function(input, output, session) {
   # Initialize data on startup
   observe({
     if (database_connected) {
-      values$current_documents <- get_documents(50)  # Get first 50 documents
+      values$current_documents <- get_documents()  # Get all documents
       values$analytics_data <- get_search_analytics()  # Load analytics data
       
       # Load geographic data for map (use 2020 - latest available year)
@@ -330,7 +388,7 @@ server <- function(input, output, session) {
     if (database_connected) {
       stats <- get_document_stats()
       count <- stats$total_documents
-      status_color <- "green"
+      status_color <- "blue"
     } else {
       count <- nrow(sample_documents)
       status_color <- "yellow"
@@ -340,6 +398,71 @@ server <- function(input, output, session) {
       value = count,
       subtitle = "Total Documents",
       icon = icon("file-text"),
+      color = status_color
+    )
+  })
+  
+  # Total states value box
+  output$totalStates <- renderValueBox({
+    if (database_connected && !is.null(values$analytics_data)) {
+      count <- nrow(values$analytics_data$documents_by_state)
+      status_color <- "green"
+    } else {
+      count <- 0
+      status_color <- "red"
+    }
+    
+    valueBox(
+      value = count,
+      subtitle = "States",
+      icon = icon("map"),
+      color = status_color
+    )
+  })
+  
+  # Total types value box
+  output$totalTypes <- renderValueBox({
+    if (database_connected && !is.null(values$analytics_data)) {
+      count <- nrow(values$analytics_data$documents_by_type)
+      status_color <- "yellow"
+    } else {
+      count <- 0
+      status_color <- "red"
+    }
+    
+    valueBox(
+      value = count,
+      subtitle = "Document Types",
+      icon = icon("tags"),
+      color = status_color
+    )
+  })
+  
+  # Date range value box
+  output$dateRange <- renderValueBox({
+    if (database_connected && !is.null(values$analytics_data)) {
+      min_date <- values$analytics_data$date_range$min
+      max_date <- values$analytics_data$date_range$max
+      if (!is.na(min_date) && !is.na(max_date)) {
+        years <- as.numeric(format(max_date, "%Y")) - as.numeric(format(min_date, "%Y"))
+        value <- years
+        subtitle <- paste(years, "Years")
+        status_color <- "purple"
+      } else {
+        value <- "N/A"
+        subtitle <- "Date Range"
+        status_color <- "red"
+      }
+    } else {
+      value <- "N/A"
+      subtitle <- "Date Range"
+      status_color <- "red"
+    }
+    
+    valueBox(
+      value = value,
+      subtitle = subtitle,
+      icon = icon("calendar"),
       color = status_color
     )
   })

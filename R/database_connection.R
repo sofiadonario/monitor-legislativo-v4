@@ -152,10 +152,16 @@ test_database_connection <- function() {
       return(FALSE)
     }
     
-    # Check row counts
+    # Check row counts and columns
     for (table in required_tables) {
       count <- as.numeric(dbGetQuery(conn, paste("SELECT COUNT(*) as count FROM", table))$count)
       cat("  ", table, ":", count, "rows\n")
+      
+      # Show column names for documents table to verify date fields
+      if (table == "documents") {
+        columns <- dbListFields(conn, table)
+        cat("  ", table, "columns:", paste(columns, collapse = ", "), "\n")
+      }
     }
     
     return(TRUE)
@@ -167,31 +173,47 @@ test_database_connection <- function() {
 }
 
 #' Get all documents from the database
-#' @param limit Maximum number of documents to return (default: 100)
+#' @param limit Maximum number of documents to return (default: NULL for all)
 #' @return Data frame with documents or NULL if error
-get_documents <- function(limit = 100) {
+get_documents <- function(limit = NULL) {
   if (is.null(db_pool)) {
     warning("Database not initialized")
     return(NULL)
   }
   
   tryCatch({
-    query <- "
-      SELECT 
-        id,
-        titulo,
-        tipo,
-        estado,
-        data_publicacao,
-        url,
-        urn
-      FROM documents 
-      WHERE titulo IS NOT NULL 
-      ORDER BY data_publicacao DESC NULLS LAST
-      LIMIT $1
-    "
-    
-    result <- dbGetQuery(db_pool, query, params = list(limit))
+    if (is.null(limit)) {
+      query <- "
+        SELECT 
+          id,
+          titulo,
+          tipo,
+          estado,
+          data_publicacao,
+          url,
+          urn
+        FROM documents 
+        WHERE titulo IS NOT NULL 
+        ORDER BY data_publicacao DESC NULLS LAST
+      "
+      result <- dbGetQuery(db_pool, query)
+    } else {
+      query <- "
+        SELECT 
+          id,
+          titulo,
+          tipo,
+          estado,
+          data_publicacao,
+          url,
+          urn
+        FROM documents 
+        WHERE titulo IS NOT NULL 
+        ORDER BY data_publicacao DESC NULLS LAST
+        LIMIT $1
+      "
+      result <- dbGetQuery(db_pool, query, params = list(limit))
+    }
     
     # Clean up the data
     if (nrow(result) > 0) {
@@ -478,6 +500,8 @@ get_search_analytics <- function() {
     return(list(
       total_documents = 0,
       documents_by_year = data.frame(),
+      documents_by_month = data.frame(),
+      documents_by_day = data.frame(),
       documents_by_state = data.frame(),
       documents_by_type = data.frame(),
       recent_documents = data.frame(),
@@ -489,7 +513,7 @@ get_search_analytics <- function() {
     # Total documents
     total <- as.numeric(dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count)
     
-    # Documents by year
+    # Documents by year - enhanced with flexible date handling
     by_year <- dbGetQuery(db_pool, "
       SELECT 
         EXTRACT(YEAR FROM data_publicacao) as year,
@@ -505,6 +529,48 @@ get_search_analytics <- function() {
     if (nrow(by_year) > 0) {
       by_year$count <- as.numeric(by_year$count)
       by_year$year <- as.numeric(by_year$year)
+    }
+    
+    # Documents by month (last 12 months)
+    by_month <- dbGetQuery(db_pool, "
+      SELECT 
+        EXTRACT(YEAR FROM data_publicacao) as year,
+        EXTRACT(MONTH FROM data_publicacao) as month,
+        COUNT(*) as count,
+        TO_CHAR(data_publicacao, 'YYYY-MM') as year_month
+      FROM documents 
+      WHERE data_publicacao IS NOT NULL 
+        AND data_publicacao >= CURRENT_DATE - INTERVAL '12 months'
+      GROUP BY EXTRACT(YEAR FROM data_publicacao), EXTRACT(MONTH FROM data_publicacao), TO_CHAR(data_publicacao, 'YYYY-MM')
+      ORDER BY year DESC, month DESC
+      LIMIT 12
+    ")
+    
+    # Convert integer64 to numeric
+    if (nrow(by_month) > 0) {
+      by_month$count <- as.numeric(by_month$count)
+      by_month$year <- as.numeric(by_month$year)
+      by_month$month <- as.numeric(by_month$month)
+    }
+    
+    # Documents by day (last 30 days)
+    by_day <- dbGetQuery(db_pool, "
+      SELECT 
+        data_publicacao::date as day,
+        COUNT(*) as count,
+        TO_CHAR(data_publicacao, 'YYYY-MM-DD') as formatted_date
+      FROM documents 
+      WHERE data_publicacao IS NOT NULL 
+        AND data_publicacao >= CURRENT_DATE - INTERVAL '30 days'
+      GROUP BY data_publicacao::date, TO_CHAR(data_publicacao, 'YYYY-MM-DD')
+      ORDER BY day DESC
+      LIMIT 30
+    ")
+    
+    # Convert integer64 to numeric
+    if (nrow(by_day) > 0) {
+      by_day$count <- as.numeric(by_day$count)
+      by_day$day <- as.Date(by_day$day)
     }
     
     # Documents by state (top 10)
@@ -565,6 +631,8 @@ get_search_analytics <- function() {
     return(list(
       total_documents = total,
       documents_by_year = by_year,
+      documents_by_month = by_month,
+      documents_by_day = by_day,
       documents_by_state = by_state,
       documents_by_type = by_type,
       recent_documents = recent,
@@ -579,6 +647,8 @@ get_search_analytics <- function() {
     return(list(
       total_documents = 0,
       documents_by_year = data.frame(),
+      documents_by_month = data.frame(),
+      documents_by_day = data.frame(),
       documents_by_state = data.frame(),
       documents_by_type = data.frame(),
       recent_documents = data.frame(),
