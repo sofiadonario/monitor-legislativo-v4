@@ -685,9 +685,14 @@ server <- function(input, output, session) {
       data <- values$analytics_data$documents_by_state
       
       if (nrow(data) > 0 && !is.null(values$geographic_data)) {
+        # Transform data to match map expectations
+        map_data <- data %>%
+          rename(documento_count = count) %>%
+          select(estado, documento_count)
+        
         # Create the legislative map
         map <- create_legislative_map(
-          legislative_data = data,
+          legislative_data = map_data,
           geography_data = values$geographic_data,
           focus_state = NULL,
           color_by = "count"

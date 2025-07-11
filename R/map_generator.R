@@ -218,14 +218,42 @@ create_legislative_map <- function(legislative_data, geography_data,
   is_spatial_data <- inherits(states, "sf")
   
   # Aggregate legislative data by state using mapped state codes
-  state_stats <- legislative_data %>%
-    filter(!is.na(abbrev_state)) %>%
-    group_by(abbrev_state) %>%
-    summarise(
-      documento_count = sum(count, na.rm = TRUE),
-      latest_date = Sys.Date(),
-      .groups = "drop"
+  # Handle different data structures
+  if ("count" %in% names(legislative_data)) {
+    # Data from database analytics (has count field)
+    state_stats <- legislative_data %>%
+      filter(!is.na(abbrev_state)) %>%
+      group_by(abbrev_state) %>%
+      summarise(
+        documento_count = sum(count, na.rm = TRUE),
+        latest_date = Sys.Date(),
+        latest_title = "Legislative Document",
+        tipos_count = 1,
+        avg_days_since = 0,
+        .groups = "drop"
+      )
+  } else if ("documento_count" %in% names(legislative_data)) {
+    # Data already processed
+    state_stats <- legislative_data %>%
+      filter(!is.na(abbrev_state)) %>%
+      select(abbrev_state, documento_count) %>%
+      mutate(
+        latest_date = Sys.Date(),
+        latest_title = "Legislative Document",
+        tipos_count = 1,
+        avg_days_since = 0
+      )
+  } else {
+    # Create empty data
+    state_stats <- data.frame(
+      abbrev_state = character(0),
+      documento_count = integer(0),
+      latest_date = as.Date(character(0)),
+      latest_title = character(0),
+      tipos_count = integer(0),
+      avg_days_since = numeric(0)
     )
+  }
   
   # Ensure states have area_km2 field
   if (!"area_km2" %in% names(states)) {
