@@ -222,7 +222,7 @@ get_documents <- function(limit = NULL) {
     if (title_check$with_title == 0) {
       cat("WARNING: No documents with non-null titles found!\n")
       # Try to get some sample data anyway
-      sample_query <- "SELECT id, titulo, tipo, estado, data_publicacao FROM documents LIMIT 5"
+      sample_query <- "SELECT id, titulo, tipo, estado, data_publicacao, metadata->>'promulgation_date' as promulgation_date, metadata->>'publication_date' as publication_date FROM documents LIMIT 5"
       sample_data <- dbGetQuery(db_pool, sample_query)
       cat("Sample data from documents table:\n")
       print(sample_data)
@@ -240,13 +240,23 @@ get_documents <- function(limit = NULL) {
                    CASE WHEN d.estado = 'SP' THEN 'São Paulo'
                         WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
                         ELSE NULL END) as municipio,
-          d.data_publicacao,
+          COALESCE(
+            d.data_publicacao,
+            d.metadata->>'promulgation_date',
+            d.metadata->>'publication_date',
+            d.created_at::date
+          ) as enacting_date,
           d.url,
           d.urn
         FROM documents d
         LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
         WHERE d.titulo IS NOT NULL 
-        ORDER BY d.data_publicacao DESC NULLS LAST
+        ORDER BY COALESCE(
+          d.data_publicacao,
+          d.metadata->>'promulgation_date',
+          d.metadata->>'publication_date',
+          d.created_at::date
+        ) DESC NULLS LAST
       "
       result <- dbGetQuery(db_pool, query)
     } else {
@@ -261,13 +271,23 @@ get_documents <- function(limit = NULL) {
                    CASE WHEN d.estado = 'SP' THEN 'São Paulo'
                         WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
                         ELSE NULL END) as municipio,
-          d.data_publicacao,
+          COALESCE(
+            d.data_publicacao,
+            d.metadata->>'promulgation_date',
+            d.metadata->>'publication_date',
+            d.created_at::date
+          ) as enacting_date,
           d.url,
           d.urn
         FROM documents d
         LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
         WHERE d.titulo IS NOT NULL 
-        ORDER BY d.data_publicacao DESC NULLS LAST
+        ORDER BY COALESCE(
+          d.data_publicacao,
+          d.metadata->>'promulgation_date',
+          d.metadata->>'publication_date',
+          d.created_at::date
+        ) DESC NULLS LAST
         LIMIT $1
       "
       result <- dbGetQuery(db_pool, query, params = list(limit))
@@ -278,8 +298,8 @@ get_documents <- function(limit = NULL) {
     # Clean up the data
     if (nrow(result) > 0) {
       # Convert dates
-      if ("data_publicacao" %in% names(result)) {
-        result$data_publicacao <- as.Date(result$data_publicacao)
+      if ("enacting_date" %in% names(result)) {
+        result$enacting_date <- as.Date(result$enacting_date)
       }
       
       # Clean up missing values
@@ -296,7 +316,12 @@ get_documents <- function(limit = NULL) {
           COALESCE(d.titulo, 'Untitled Document') as titulo,
           d.tipo,
           d.estado,
-          d.data_publicacao,
+          COALESCE(
+            d.data_publicacao,
+            d.metadata->>'promulgation_date',
+            d.metadata->>'publication_date',
+            d.created_at::date
+          ) as enacting_date,
           d.url,
           d.urn
         FROM documents d
@@ -308,8 +333,8 @@ get_documents <- function(limit = NULL) {
       
       if (nrow(result) > 0) {
         # Convert dates
-        if ("data_publicacao" %in% names(result)) {
-          result$data_publicacao <- as.Date(result$data_publicacao)
+        if ("enacting_date" %in% names(result)) {
+          result$enacting_date <- as.Date(result$enacting_date)
         }
         result[is.na(result)] <- ""
       }
@@ -356,7 +381,12 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
                    CASE WHEN d.estado = 'SP' THEN 'São Paulo'
                         WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
                         ELSE NULL END) as municipio,
-          d.data_publicacao,
+          COALESCE(
+            d.data_publicacao,
+            d.metadata->>'promulgation_date',
+            d.metadata->>'publication_date',
+            d.created_at::date
+          ) as enacting_date,
           d.url,
           d.urn,
           d.conteudo,
@@ -383,7 +413,12 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
                    CASE WHEN d.estado = 'SP' THEN 'São Paulo'
                         WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
                         ELSE NULL END) as municipio,
-          d.data_publicacao,
+          COALESCE(
+            d.data_publicacao,
+            d.metadata->>'promulgation_date',
+            d.metadata->>'publication_date',
+            d.created_at::date
+          ) as enacting_date,
           d.url,
           d.urn,
           d.conteudo,
@@ -410,25 +445,30 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
       base_query <- paste(base_query, "AND d.estado IN (", quoted_states, ")")
     }
     
-    # Add date range filter - using data_publicacao
+    # Add date range filter - using enacting_date
     if (!is.null(date_from)) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND d.data_publicacao >= $", param_count, sep="")
+      base_query <- paste(base_query, "AND COALESCE(d.data_publicacao, d.metadata->>'promulgation_date', d.metadata->>'publication_date', d.created_at::date) >= $", param_count, sep="")
       params[[param_count]] <- date_from
     }
     
     if (!is.null(date_to)) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND d.data_publicacao <= $", param_count, sep="")
+      base_query <- paste(base_query, "AND COALESCE(d.data_publicacao, d.metadata->>'promulgation_date', d.metadata->>'publication_date', d.created_at::date) <= $", param_count, sep="")
       params[[param_count]] <- date_to
     }
     
-    # Add ordering and limit - rank by relevance first, then by date using data_publicacao
+    # Add ordering and limit - rank by relevance first, then by enacting_date
     param_count <- param_count + 1
     if (has_search_text) {
-      base_query <- paste(base_query, "ORDER BY relevance_score DESC, d.data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+      base_query <- paste(base_query, "ORDER BY relevance_score DESC, COALESCE(d.data_publicacao, d.metadata->>'promulgation_date', d.metadata->>'publication_date', d.created_at::date) DESC NULLS LAST LIMIT $", param_count, sep="")
     } else {
-      base_query <- paste(base_query, "ORDER BY d.data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+      base_query <- paste(base_query, "ORDER BY COALESCE(
+          d.data_publicacao,
+          d.metadata->>'promulgation_date',
+          d.metadata->>'publication_date',
+          d.created_at::date
+        ) DESC NULLS LAST LIMIT $", param_count, sep="")
     }
     params[[param_count]] <- limit
     
@@ -450,8 +490,8 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
     
     # Clean up the data
     if (nrow(result) > 0) {
-      if ("data_publicacao" %in% names(result)) {
-        result$data_publicacao <- as.Date(result$data_publicacao)
+      if ("enacting_date" %in% names(result)) {
+        result$enacting_date <- as.Date(result$enacting_date)
       }
       result[is.na(result)] <- ""
       
@@ -616,14 +656,29 @@ get_search_analytics <- function() {
     # Total documents
     total <- as.numeric(dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count)
     
-    # Documents by year - using data_publicacao
+    # Documents by year - using enacting_date
     by_year <- dbGetQuery(db_pool, "
       SELECT 
-        EXTRACT(YEAR FROM data_publicacao) as year,
+        EXTRACT(YEAR FROM COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        )) as year,
         COUNT(*) as count
       FROM documents 
-      WHERE data_publicacao IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM data_publicacao)
+      WHERE COALESCE(
+        data_publicacao,
+        metadata->>'promulgation_date',
+        metadata->>'publication_date',
+        created_at::date
+      ) IS NOT NULL
+      GROUP BY EXTRACT(YEAR FROM COALESCE(
+        data_publicacao,
+        metadata->>'promulgation_date',
+        metadata->>'publication_date',
+        created_at::date
+      ))
       ORDER BY year DESC
       LIMIT 10
     ")
@@ -634,16 +689,51 @@ get_search_analytics <- function() {
       by_year$year <- as.numeric(by_year$year)
     }
     
-    # Documents by month (all available months) - using data_publicacao
+    # Documents by month (all available months) - using enacting_date
     by_month <- dbGetQuery(db_pool, "
       SELECT 
-        EXTRACT(YEAR FROM data_publicacao) as year,
-        EXTRACT(MONTH FROM data_publicacao) as month,
+        EXTRACT(YEAR FROM COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        )) as year,
+        EXTRACT(MONTH FROM COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        )) as month,
         COUNT(*) as count,
-        TO_CHAR(data_publicacao, 'YYYY-MM') as year_month
+        TO_CHAR(COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        ), 'YYYY-MM') as year_month
       FROM documents 
-      WHERE data_publicacao IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM data_publicacao), EXTRACT(MONTH FROM data_publicacao), TO_CHAR(data_publicacao, 'YYYY-MM')
+      WHERE COALESCE(
+        data_publicacao,
+        metadata->>'promulgation_date',
+        metadata->>'publication_date',
+        created_at::date
+      ) IS NOT NULL
+      GROUP BY EXTRACT(YEAR FROM COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        )), EXTRACT(MONTH FROM COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        )), TO_CHAR(COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        ), 'YYYY-MM')
       ORDER BY year DESC, month DESC
       LIMIT 12
     ")
@@ -655,15 +745,40 @@ get_search_analytics <- function() {
       by_month$month <- as.numeric(by_month$month)
     }
     
-    # Documents by day (all available days) - using data_publicacao
+    # Documents by day (all available days) - using enacting_date
     by_day <- dbGetQuery(db_pool, "
       SELECT 
-        data_publicacao::date as day,
+        COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        )::date as day,
         COUNT(*) as count,
-        TO_CHAR(data_publicacao, 'YYYY-MM-DD') as formatted_date
+        TO_CHAR(COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        ), 'YYYY-MM-DD') as formatted_date
       FROM documents 
-      WHERE data_publicacao IS NOT NULL
-      GROUP BY data_publicacao::date, TO_CHAR(data_publicacao, 'YYYY-MM-DD')
+      WHERE COALESCE(
+        data_publicacao,
+        metadata->>'promulgation_date',
+        metadata->>'publication_date',
+        created_at::date
+      ) IS NOT NULL
+      GROUP BY COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        )::date, TO_CHAR(COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        ), 'YYYY-MM-DD')
       ORDER BY day DESC
       LIMIT 30
     ")
@@ -721,18 +836,38 @@ get_search_analytics <- function() {
         d.data_publicacao
       FROM documents d
       LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
-      WHERE d.data_publicacao IS NOT NULL
+      WHERE COALESCE(
+          d.data_publicacao,
+          d.metadata->>'promulgation_date',
+          d.metadata->>'publication_date',
+          d.created_at::date
+        ) IS NOT NULL
       ORDER BY d.data_publicacao DESC
       LIMIT 10
     ")
     
-    # Date range - using data_publicacao
+    # Date range - using enacting_date
     date_range <- dbGetQuery(db_pool, "
       SELECT 
-        MIN(data_publicacao) as min_date,
-        MAX(data_publicacao) as max_date
+        MIN(COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        )) as min_date,
+        MAX(COALESCE(
+          data_publicacao,
+          metadata->>'promulgation_date',
+          metadata->>'publication_date',
+          created_at::date
+        )) as max_date
       FROM documents 
-      WHERE data_publicacao IS NOT NULL
+      WHERE COALESCE(
+        data_publicacao,
+        metadata->>'promulgation_date',
+        metadata->>'publication_date',
+        created_at::date
+      ) IS NOT NULL
     ")
     
     return(list(

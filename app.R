@@ -41,7 +41,7 @@ if (!database_connected) {
     titulo = paste("Sample Document", 1:10),
     tipo = sample(c("lei", "decreto", "portaria"), 10, replace = TRUE),
     estado = sample(c("SP", "RJ", "MG", "RS"), 10, replace = TRUE),
-    data_publicacao = Sys.Date() - sample(1:365, 10),
+    enacting_date = Sys.Date() - sample(1:365, 10),
     url = paste0("https://example.com/doc/", 1:10),
     urn = paste0("urn:lex:br:sample:", 1:10),
     stringsAsFactors = FALSE
@@ -545,12 +545,12 @@ server <- function(input, output, session) {
     
     # Format the data for display
     display_data <- data %>%
-      select(titulo, tipo, estado, data_publicacao, urn) %>%
+      select(titulo, tipo, estado, enacting_date, urn) %>%
       rename(
         "Title" = titulo,
         "Type" = tipo, 
         "State" = estado,
-        "Date" = data_publicacao,
+        "Enacting Date" = enacting_date,
         "URN" = urn
       )
     
@@ -700,12 +700,12 @@ server <- function(input, output, session) {
       
       # Format search results with highlighting
       display_data <- data %>%
-        select(titulo, tipo, estado, data_publicacao, urn) %>%
+        select(titulo, tipo, estado, enacting_date, urn) %>%
         rename(
           "Title" = titulo,
           "Type" = tipo,
           "State" = estado, 
-          "Date" = data_publicacao,
+          "Enacting Date" = enacting_date,
           "URN" = urn
         )
       
@@ -1032,7 +1032,7 @@ server <- function(input, output, session) {
             "Title" = titulo,
             "Type" = tipo,
             "State" = estado,
-            "Date" = data_publicacao
+            "Enacting Date" = enacting_date
           ) %>%
           mutate(
             Date = as.Date(Date)
