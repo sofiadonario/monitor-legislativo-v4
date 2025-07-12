@@ -706,18 +706,32 @@ get_search_analytics <- function() {
     total <- as.numeric(dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count)
     cat("DEBUG: Total documents found:", total, "\n")
     
-    # Documents by year - using official promulgation_date from lexml_parsed_enhanced_fixed
-    by_year <- dbGetQuery(db_pool, "
-      SELECT 
-        EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as year,
-        COUNT(*) as count
-      FROM documents d
-      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
-      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date))
-      ORDER BY year DESC
-      LIMIT 10
-    ")
+    # Documents by year - try enhanced table first, fallback to simple approach
+    by_year <- tryCatch({
+      dbGetQuery(db_pool, "
+        SELECT 
+          EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as year,
+          COUNT(*) as count
+        FROM documents d
+        LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+        WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
+        GROUP BY EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date))
+        ORDER BY year DESC
+        LIMIT 10
+      ")
+    }, error = function(e) {
+      cat("DEBUG: Enhanced table query failed, using fallback:", e$message, "\n")
+      dbGetQuery(db_pool, "
+        SELECT 
+          EXTRACT(YEAR FROM COALESCE(d.data_publicacao, d.created_at::date)) as year,
+          COUNT(*) as count
+        FROM documents d
+        WHERE COALESCE(d.data_publicacao, d.created_at::date) IS NOT NULL
+        GROUP BY EXTRACT(YEAR FROM COALESCE(d.data_publicacao, d.created_at::date))
+        ORDER BY year DESC
+        LIMIT 10
+      ")
+    })
     cat("DEBUG: Year query got", nrow(by_year), "rows\n")
     
     # Convert integer64 to numeric
@@ -729,22 +743,40 @@ get_search_analytics <- function() {
       cat("DEBUG: No year data found\n")
     }
     
-    # Documents by month - using official promulgation_date from lexml_parsed_enhanced_fixed
-    by_month <- dbGetQuery(db_pool, "
-      SELECT 
-        EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as year,
-        EXTRACT(MONTH FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as month,
-        COUNT(*) as count,
-        TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM') as year_month
-      FROM documents d
-      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
-      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)), 
-               EXTRACT(MONTH FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)),
-               TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM')
-      ORDER BY year DESC, month DESC
-      LIMIT 12
-    ")
+    # Documents by month - try enhanced table first, fallback to simple approach
+    by_month <- tryCatch({
+      dbGetQuery(db_pool, "
+        SELECT 
+          EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as year,
+          EXTRACT(MONTH FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as month,
+          COUNT(*) as count,
+          TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM') as year_month
+        FROM documents d
+        LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+        WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
+        GROUP BY EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)), 
+                 EXTRACT(MONTH FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)),
+                 TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM')
+        ORDER BY year DESC, month DESC
+        LIMIT 12
+      ")
+    }, error = function(e) {
+      cat("DEBUG: Enhanced table query failed, using fallback:", e$message, "\n")
+      dbGetQuery(db_pool, "
+        SELECT 
+          EXTRACT(YEAR FROM COALESCE(d.data_publicacao, d.created_at::date)) as year,
+          EXTRACT(MONTH FROM COALESCE(d.data_publicacao, d.created_at::date)) as month,
+          COUNT(*) as count,
+          TO_CHAR(COALESCE(d.data_publicacao, d.created_at::date), 'YYYY-MM') as year_month
+        FROM documents d
+        WHERE COALESCE(d.data_publicacao, d.created_at::date) IS NOT NULL
+        GROUP BY EXTRACT(YEAR FROM COALESCE(d.data_publicacao, d.created_at::date)), 
+                 EXTRACT(MONTH FROM COALESCE(d.data_publicacao, d.created_at::date)),
+                 TO_CHAR(COALESCE(d.data_publicacao, d.created_at::date), 'YYYY-MM')
+        ORDER BY year DESC, month DESC
+        LIMIT 12
+      ")
+    })
     cat("DEBUG: Month query got", nrow(by_month), "rows\n")
     
     # Convert integer64 to numeric
@@ -754,20 +786,36 @@ get_search_analytics <- function() {
       by_month$month <- as.numeric(by_month$month)
     }
     
-    # Documents by day - using official promulgation_date from lexml_parsed_enhanced_fixed
-    by_day <- dbGetQuery(db_pool, "
-      SELECT 
-        COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)::date as day,
-        COUNT(*) as count,
-        TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM-DD') as formatted_date
-      FROM documents d
-      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
-      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
-      GROUP BY COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)::date,
-               TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM-DD')
-      ORDER BY day DESC
-      LIMIT 30
-    ")
+    # Documents by day - try enhanced table first, fallback to simple approach
+    by_day <- tryCatch({
+      dbGetQuery(db_pool, "
+        SELECT 
+          COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)::date as day,
+          COUNT(*) as count,
+          TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM-DD') as formatted_date
+        FROM documents d
+        LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+        WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
+        GROUP BY COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)::date,
+                 TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM-DD')
+        ORDER BY day DESC
+        LIMIT 30
+      ")
+    }, error = function(e) {
+      cat("DEBUG: Enhanced table query failed, using fallback:", e$message, "\n")
+      dbGetQuery(db_pool, "
+        SELECT 
+          COALESCE(d.data_publicacao, d.created_at::date)::date as day,
+          COUNT(*) as count,
+          TO_CHAR(COALESCE(d.data_publicacao, d.created_at::date), 'YYYY-MM-DD') as formatted_date
+        FROM documents d
+        WHERE COALESCE(d.data_publicacao, d.created_at::date) IS NOT NULL
+        GROUP BY COALESCE(d.data_publicacao, d.created_at::date)::date,
+                 TO_CHAR(COALESCE(d.data_publicacao, d.created_at::date), 'YYYY-MM-DD')
+        ORDER BY day DESC
+        LIMIT 30
+      ")
+    })
     cat("DEBUG: Day query got", nrow(by_day), "rows\n")
     
     # Convert integer64 to numeric
@@ -811,31 +859,58 @@ get_search_analytics <- function() {
       by_type$count <- as.numeric(by_type$count)
     }
     
-    # Recent documents - using official promulgation_date from lexml_parsed_enhanced_fixed
-    recent <- dbGetQuery(db_pool, "
-      SELECT 
-        d.titulo,
-        d.tipo,
-        d.estado,
-        COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) as enacting_date
-      FROM documents d
-      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
-      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
-        AND d.titulo IS NOT NULL
-      ORDER BY COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) DESC
-      LIMIT 10
-    ")
+    # Recent documents - try enhanced table first, fallback to simple approach
+    recent <- tryCatch({
+      dbGetQuery(db_pool, "
+        SELECT 
+          d.titulo,
+          d.tipo,
+          d.estado,
+          COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) as enacting_date
+        FROM documents d
+        LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+        WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
+          AND d.titulo IS NOT NULL
+        ORDER BY COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) DESC
+        LIMIT 10
+      ")
+    }, error = function(e) {
+      cat("DEBUG: Enhanced table query failed, using fallback:", e$message, "\n")
+      dbGetQuery(db_pool, "
+        SELECT 
+          d.titulo,
+          d.tipo,
+          d.estado,
+          COALESCE(d.data_publicacao, d.created_at::date) as enacting_date
+        FROM documents d
+        WHERE COALESCE(d.data_publicacao, d.created_at::date) IS NOT NULL
+          AND d.titulo IS NOT NULL
+        ORDER BY COALESCE(d.data_publicacao, d.created_at::date) DESC
+        LIMIT 10
+      ")
+    })
     cat("DEBUG: Recent query got", nrow(recent), "rows\n")
     
-    # Date range - using official promulgation_date from lexml_parsed_enhanced_fixed
-    date_range <- dbGetQuery(db_pool, "
-      SELECT 
-        MIN(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as min_date,
-        MAX(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as max_date
-      FROM documents d
-      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
-      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
-    ")
+    # Date range - try enhanced table first, fallback to simple approach
+    date_range <- tryCatch({
+      dbGetQuery(db_pool, "
+        SELECT 
+          MIN(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as min_date,
+          MAX(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as max_date
+        FROM documents d
+        LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+        WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
+      ")
+    }, error = function(e) {
+      cat("DEBUG: Enhanced table query failed, using fallback:", e$message, "\n")
+      dbGetQuery(db_pool, "
+        SELECT 
+          MIN(COALESCE(d.data_publicacao, d.created_at::date)) as min_date,
+          MAX(COALESCE(d.data_publicacao, d.created_at::date)) as max_date
+        FROM documents d
+        WHERE COALESCE(d.data_publicacao, d.created_at::date) IS NOT NULL
+      ")
+    })
     cat("DEBUG: Date range query completed\n")
     
     result <- list(
