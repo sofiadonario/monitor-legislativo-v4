@@ -454,6 +454,49 @@ server <- function(input, output, session) {
     }
   })
   
+  # Debug information
+  output$debugInfo <- renderText({
+    if (database_connected) {
+      # Get actual query results for debugging
+      tryCatch({
+        # Test direct query to see what's actually in the database
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        
+        # Check documents table
+        doc_count <- dbGetQuery(conn, "SELECT COUNT(*) as count FROM documents")$count
+        doc_with_titles <- dbGetQuery(conn, "SELECT COUNT(*) as count FROM documents WHERE titulo IS NOT NULL")$count
+        
+        # Check for Amazonas specifically
+        amazonas_count <- dbGetQuery(conn, "SELECT COUNT(*) as count FROM documents WHERE estado = 'Amazonas'")$count
+        
+        # Check for the corrected table
+        corrected_count <- tryCatch({
+          dbGetQuery(conn, "SELECT COUNT(*) as count FROM lexml_parsed_enhanced_fixed")$count
+        }, error = function(e) {
+          "Table not found"
+        })
+        
+        paste(
+          "=== DEBUG INFORMATION ===\n",
+          "Documents table total:", doc_count, "\n",
+          "Documents with titles:", doc_with_titles, "\n",
+          "Amazonas documents:", amazonas_count, "\n",
+          "Corrected table count:", corrected_count, "\n",
+          "Current documents loaded:", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents)), "\n",
+          "Analytics data loaded:", ifelse(is.null(values$analytics_data), "No", "Yes"), "\n",
+          "Database pool active:", !is.null(db_pool), "\n",
+          "Force refresh enabled:", FORCE_REFRESH, "\n",
+          "Time:", Sys.time()
+        )
+      }, error = function(e) {
+        paste("Error getting debug info:", e$message)
+      })
+    } else {
+      "Database not connected - no debug info available"
+    }
+  })
+  
   # Total documents value box
   output$totalDocs <- renderValueBox({
     if (database_connected) {
