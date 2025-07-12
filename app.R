@@ -434,6 +434,7 @@ server <- function(input, output, session) {
         cat("📊 Geographic data loaded\n")
       }, error = function(e) {
         cat("Error loading geographic data:", e$message, "\n")
+        cat("🔄 Creating simple fallback map...\n")
         values$geographic_data <- NULL
       })
       
@@ -894,10 +895,20 @@ server <- function(input, output, session) {
   
   # === Analytics Section ===
   
-  # Analytics value boxes
+  # Analytics value boxes - with direct database queries
   output$analyticsTotal <- renderValueBox({
-    if (database_connected && !is.null(values$analytics_data)) {
-      count <- values$analytics_data$total_documents
+    # Force reactive update by checking current documents
+    current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
+    
+    if (database_connected) {
+      # Use direct database query for accurate count
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(*) as count FROM documents")$count)
+      }, error = function(e) {
+        count <- current_count
+      })
       status_color <- "red"
     } else {
       count <- 0
@@ -913,8 +924,18 @@ server <- function(input, output, session) {
   })
   
   output$analyticsStates <- renderValueBox({
-    if (database_connected && !is.null(values$analytics_data)) {
-      count <- nrow(values$analytics_data$documents_by_state)
+    # Force reactive update by checking current documents
+    current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
+    
+    if (database_connected) {
+      # Use direct database query for accurate count
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL AND estado != ''")$count)
+      }, error = function(e) {
+        count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_state))
+      })
       status_color <- "green"
     } else {
       count <- 0
@@ -930,8 +951,18 @@ server <- function(input, output, session) {
   })
   
   output$analyticsTypes <- renderValueBox({
-    if (database_connected && !is.null(values$analytics_data)) {
-      count <- nrow(values$analytics_data$documents_by_type)
+    # Force reactive update by checking current documents
+    current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
+    
+    if (database_connected) {
+      # Use direct database query for accurate count
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT tipo) as count FROM documents WHERE tipo IS NOT NULL AND tipo != ''")$count)
+      }, error = function(e) {
+        count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_type))
+      })
       status_color <- "yellow"
     } else {
       count <- 0
@@ -1024,51 +1055,121 @@ server <- function(input, output, session) {
     }
   })
   
-  # Dashboard Map - Main Interactive Map
+  # Dashboard Map - Main Interactive Map with direct database queries
   output$dashboardMap <- renderLeaflet({
-    if (database_connected && !is.null(values$analytics_data) && !is.null(values$geographic_data)) {
-      data <- values$analytics_data$documents_by_state
-      
-      if (nrow(data) > 0 && !is.null(values$geographic_data)) {
-        # Transform data to match map expectations
-        map_data <- data %>%
-          rename(documento_count = count) %>%
-          select(estado, documento_count)
+    if (database_connected && !is.null(values$geographic_data)) {
+      # Use direct database query for map data
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
         
-        # Create the legislative map
-        map <- create_legislative_map(
-          legislative_data = map_data,
-          geography_data = values$geographic_data,
-          focus_state = NULL,
-          color_by = "count"
-        )
+        # Get state data directly from database
+        map_data <- dbGetQuery(conn, "
+          SELECT 
+            estado,
+            COUNT(*) as documento_count
+          FROM documents 
+          WHERE estado IS NOT NULL AND estado != ''
+          GROUP BY estado
+          ORDER BY documento_count DESC
+        ")
         
-        return(map)
-      } else {
-        # Show empty map with Brazil boundaries
+        cat("🔄 Map data loaded:", nrow(map_data), "states\n")
+        
+        if (nrow(map_data) > 0 && !is.null(values$geographic_data)) {
+          # Create the legislative map
+          map <- create_legislative_map(
+            legislative_data = map_data,
+            geography_data = values$geographic_data,
+            focus_state = NULL,
+            color_by = "count"
+          )
+          
+          return(map)
+        } else {
+          # Show empty map with Brazil boundaries
+          leaflet() %>%
+            addTiles() %>%
+            setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+            addControl(
+              html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
+                      <b>No state data available</b><br>
+                      Geographic data loaded but no documents found
+                      </div>",
+              position = "topright"
+            )
+        }
+      }, error = function(e) {
+        cat("❌ Error loading map data:", e$message, "\n")
+        # Show error map
         leaflet() %>%
           addTiles() %>%
           setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
           addControl(
             html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
-                    <b>No data available</b><br>
-                    Geographic data is loading...
+                    <b>Error loading map data</b><br>
+                    ", e$message, "
                     </div>",
             position = "topright"
           )
-      }
+      })
     } else {
-      # Show basic map when not connected
-      leaflet() %>%
-        addTiles() %>%
-        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-        addControl(
-          html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
-                  <b>Database not connected</b><br>
-                  Connect to see legislative data by state
-                  </div>",
-          position = "topright"
-        )
+      # Show basic map when not connected or geographic data missing
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        
+        # Get state data for simple map
+        map_data <- dbGetQuery(conn, "
+          SELECT 
+            estado,
+            COUNT(*) as documento_count
+          FROM documents 
+          WHERE estado IS NOT NULL AND estado != ''
+          GROUP BY estado
+          ORDER BY documento_count DESC
+        ")
+        
+        if (nrow(map_data) > 0) {
+          # Create simple map with markers
+          leaflet() %>%
+            addTiles() %>%
+            setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+            addControl(
+              html = paste0("<div style='padding: 10px; background: white; border-radius: 5px;'>
+                      <b>Legislative Documents by State</b><br>
+                      Total: ", sum(map_data$documento_count), " documents<br>
+                      States: ", nrow(map_data), " states<br>
+                      Amazonas: ", map_data$documento_count[map_data$estado == "Amazonas"], " documents
+                      </div>"),
+              position = "topright"
+            )
+        } else {
+          # Show basic map
+          leaflet() %>%
+            addTiles() %>%
+            setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+            addControl(
+              html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
+                      <b>Database not connected</b><br>
+                      Connect to see legislative data by state
+                      </div>",
+              position = "topright"
+            )
+        }
+      }, error = function(e) {
+        # Show basic map on error
+        leaflet() %>%
+          addTiles() %>%
+          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+          addControl(
+            html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
+                    <b>Database not connected</b><br>
+                    Connect to see legislative data by state
+                    </div>",
+            position = "topright"
+          )
+      })
     }
   })
   
