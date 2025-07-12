@@ -144,7 +144,7 @@ test_database_connection <- function() {
     tables <- dbListTables(conn)
     cat("Available tables:", paste(tables, collapse = ", "), "\n")
     
-    required_tables <- c("lexml_parsed_enhanced", "documents", "legislative_data")
+    required_tables <- c("lexml_parsed_enhanced", "documents")
     missing_tables <- setdiff(required_tables, tables)
     
     if (length(missing_tables) > 0) {
@@ -185,33 +185,43 @@ get_documents <- function(limit = NULL) {
     if (is.null(limit)) {
       query <- "
         SELECT 
-          id,
-          titulo,
-          tipo,
-          estado,
-          municipio,
-          data_publicacao,
-          url,
-          urn
-        FROM documents 
-        WHERE titulo IS NOT NULL 
-        ORDER BY data_publicacao DESC NULLS LAST
+          d.id,
+          d.titulo,
+          d.tipo,
+          d.estado,
+          COALESCE(lpe.municipality, 
+                   d.metadata->>'municipality', 
+                   CASE WHEN d.estado = 'SP' THEN 'São Paulo'
+                        WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
+                        ELSE NULL END) as municipio,
+          d.data_publicacao,
+          d.url,
+          d.urn
+        FROM documents d
+        LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+        WHERE d.titulo IS NOT NULL 
+        ORDER BY d.data_publicacao DESC NULLS LAST
       "
       result <- dbGetQuery(db_pool, query)
     } else {
       query <- "
         SELECT 
-          id,
-          titulo,
-          tipo,
-          estado,
-          municipio,
-          data_publicacao,
-          url,
-          urn
-        FROM documents 
-        WHERE titulo IS NOT NULL 
-        ORDER BY data_publicacao DESC NULLS LAST
+          d.id,
+          d.titulo,
+          d.tipo,
+          d.estado,
+          COALESCE(lpe.municipality, 
+                   d.metadata->>'municipality', 
+                   CASE WHEN d.estado = 'SP' THEN 'São Paulo'
+                        WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
+                        ELSE NULL END) as municipio,
+          d.data_publicacao,
+          d.url,
+          d.urn
+        FROM documents d
+        LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+        WHERE d.titulo IS NOT NULL 
+        ORDER BY d.data_publicacao DESC NULLS LAST
         LIMIT $1
       "
       result <- dbGetQuery(db_pool, query, params = list(limit))
@@ -260,39 +270,49 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
     if (has_search_text) {
       base_query <- "
         SELECT 
-          id,
-          titulo,
-          tipo,
-          estado,
-          municipio,
-          data_publicacao,
-          url,
-          urn,
-          conteudo,
+          d.id,
+          d.titulo,
+          d.tipo,
+          d.estado,
+          COALESCE(lpe.municipality, 
+                   d.metadata->>'municipality', 
+                   CASE WHEN d.estado = 'SP' THEN 'São Paulo'
+                        WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
+                        ELSE NULL END) as municipio,
+          d.data_publicacao,
+          d.url,
+          d.urn,
+          d.conteudo,
           CASE 
-            WHEN titulo ILIKE $1 THEN 3
-            WHEN conteudo ILIKE $1 THEN 1
+            WHEN d.titulo ILIKE $1 THEN 3
+            WHEN d.conteudo ILIKE $1 THEN 1
             ELSE 0
           END as relevance_score
-        FROM documents 
-        WHERE (titulo ILIKE $1 OR conteudo ILIKE $1)"
+        FROM documents d
+        LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+        WHERE (d.titulo ILIKE $1 OR d.conteudo ILIKE $1)"
       
       params <- list(paste0("%", search_text, "%"))
       param_count <- 1
     } else {
       base_query <- "
         SELECT 
-          id,
-          titulo,
-          tipo,
-          estado,
-          municipio,
-          data_publicacao,
-          url,
-          urn,
-          conteudo,
+          d.id,
+          d.titulo,
+          d.tipo,
+          d.estado,
+          COALESCE(lpe.municipality, 
+                   d.metadata->>'municipality', 
+                   CASE WHEN d.estado = 'SP' THEN 'São Paulo'
+                        WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
+                        ELSE NULL END) as municipio,
+          d.data_publicacao,
+          d.url,
+          d.urn,
+          d.conteudo,
           0 as relevance_score
-        FROM documents 
+        FROM documents d
+        LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
         WHERE 1=1"
       
       params <- list()
@@ -303,35 +323,35 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
     if (!is.null(document_types) && length(document_types) > 0) {
       # Use simple string formatting for IN clauses (safer approach)
       quoted_types <- paste0("'", gsub("'", "''", document_types), "'", collapse = ", ")
-      base_query <- paste(base_query, "AND tipo IN (", quoted_types, ")")
+      base_query <- paste(base_query, "AND d.tipo IN (", quoted_types, ")")
     }
     
     # Add state filter
     if (!is.null(states) && length(states) > 0) {
       # Use simple string formatting for IN clauses
       quoted_states <- paste0("'", gsub("'", "''", states), "'", collapse = ", ")
-      base_query <- paste(base_query, "AND estado IN (", quoted_states, ")")
+      base_query <- paste(base_query, "AND d.estado IN (", quoted_states, ")")
     }
     
     # Add date range filter - using data_publicacao
     if (!is.null(date_from)) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND data_publicacao >= $", param_count, sep="")
+      base_query <- paste(base_query, "AND d.data_publicacao >= $", param_count, sep="")
       params[[param_count]] <- date_from
     }
     
     if (!is.null(date_to)) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND data_publicacao <= $", param_count, sep="")
+      base_query <- paste(base_query, "AND d.data_publicacao <= $", param_count, sep="")
       params[[param_count]] <- date_to
     }
     
     # Add ordering and limit - rank by relevance first, then by date using data_publicacao
     param_count <- param_count + 1
     if (has_search_text) {
-      base_query <- paste(base_query, "ORDER BY relevance_score DESC, data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+      base_query <- paste(base_query, "ORDER BY relevance_score DESC, d.data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
     } else {
-      base_query <- paste(base_query, "ORDER BY data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+      base_query <- paste(base_query, "ORDER BY d.data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
     }
     params[[param_count]] <- limit
     
@@ -611,14 +631,19 @@ get_search_analytics <- function() {
     # Recent documents (all available) - using data_publicacao
     recent <- dbGetQuery(db_pool, "
       SELECT 
-        titulo,
-        tipo,
-        estado,
-        municipio,
-        data_publicacao
-      FROM documents 
-      WHERE data_publicacao IS NOT NULL
-      ORDER BY data_publicacao DESC
+        d.titulo,
+        d.tipo,
+        d.estado,
+        COALESCE(lpe.municipality, 
+                 d.metadata->>'municipality', 
+                 CASE WHEN d.estado = 'SP' THEN 'São Paulo'
+                      WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
+                      ELSE NULL END) as municipio,
+        d.data_publicacao
+      FROM documents d
+      LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+      WHERE d.data_publicacao IS NOT NULL
+      ORDER BY d.data_publicacao DESC
       LIMIT 10
     ")
     
