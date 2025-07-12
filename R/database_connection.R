@@ -8,24 +8,39 @@ library(dplyr)
 
 # Helper function to create date parsing SQL
 create_date_coalesce_sql <- function(prefix = "d") {
+  # Handle empty prefix case
+  table_prefix <- ifelse(nchar(prefix) > 0, paste0(prefix, "."), "")
+  
   paste0("
     COALESCE(
-      ", prefix, ".data_publicacao,
+      ", table_prefix, "data_publicacao,
       CASE 
-        WHEN ", prefix, ".metadata->>'promulgation_date' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN (", prefix, ".metadata->>'promulgation_date')::date
-        WHEN ", prefix, ".metadata->>'promulgation_date' ~ '^[0-9]{4}-[0-9]{2}$' THEN (", prefix, ".metadata->>'promulgation_date' || '-01')::date
-        WHEN ", prefix, ".metadata->>'promulgation_date' ~ '^[0-9]{4}$' THEN (", prefix, ".metadata->>'promulgation_date' || '-01-01')::date
+        WHEN LENGTH(", table_prefix, "metadata->>'promulgation_date') = 10 AND ", table_prefix, "metadata->>'promulgation_date' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' 
+          THEN (", table_prefix, "metadata->>'promulgation_date')::date
+        WHEN LENGTH(", table_prefix, "metadata->>'promulgation_date') = 7 AND ", table_prefix, "metadata->>'promulgation_date' ~ '^[0-9]{4}-[0-9]{2}$' 
+          THEN (", table_prefix, "metadata->>'promulgation_date' || '-01')::date
+        WHEN LENGTH(", table_prefix, "metadata->>'promulgation_date') = 4 AND ", table_prefix, "metadata->>'promulgation_date' ~ '^[0-9]{4}$' 
+          THEN (", table_prefix, "metadata->>'promulgation_date' || '-01-01')::date
         ELSE NULL
       END,
       CASE 
-        WHEN ", prefix, ".metadata->>'publication_date' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN (", prefix, ".metadata->>'publication_date')::date
-        WHEN ", prefix, ".metadata->>'publication_date' ~ '^[0-9]{4}-[0-9]{2}$' THEN (", prefix, ".metadata->>'publication_date' || '-01')::date
-        WHEN ", prefix, ".metadata->>'publication_date' ~ '^[0-9]{4}$' THEN (", prefix, ".metadata->>'publication_date' || '-01-01')::date
+        WHEN LENGTH(", table_prefix, "metadata->>'publication_date') = 10 AND ", table_prefix, "metadata->>'publication_date' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' 
+          THEN (", table_prefix, "metadata->>'publication_date')::date
+        WHEN LENGTH(", table_prefix, "metadata->>'publication_date') = 7 AND ", table_prefix, "metadata->>'publication_date' ~ '^[0-9]{4}-[0-9]{2}$' 
+          THEN (", table_prefix, "metadata->>'publication_date' || '-01')::date
+        WHEN LENGTH(", table_prefix, "metadata->>'publication_date') = 4 AND ", table_prefix, "metadata->>'publication_date' ~ '^[0-9]{4}$' 
+          THEN (", table_prefix, "metadata->>'publication_date' || '-01-01')::date
         ELSE NULL
       END,
-      ", prefix, ".created_at::date
+      ", table_prefix, "created_at::date
     )
   ")
+}
+
+# Simpler fallback function for basic date handling
+create_simple_date_coalesce_sql <- function(prefix = "d") {
+  table_prefix <- ifelse(nchar(prefix) > 0, paste0(prefix, "."), "")
+  paste0("COALESCE(", table_prefix, "data_publicacao, ", table_prefix, "created_at::date)")
 }
 
 # Global connection pool
@@ -154,13 +169,19 @@ parse_database_url <- function(url) {
 #' @return TRUE if successful, FALSE otherwise
 test_database_connection <- function() {
   if (is.null(db_pool)) {
+    cat("ERROR: Database pool is NULL\n")
     return(FALSE)
   }
   
   tryCatch({
-    # Test basic connection
+    # Test basic connection first
+    cat("Testing basic database connection...\n")
     conn <- poolCheckout(db_pool)
     on.exit(poolReturn(conn))
+    
+    # Simple test query first
+    simple_test <- dbGetQuery(conn, "SELECT 1 as test")
+    cat("✅ Basic database connection successful\n")
     
     # Check if our tables exist
     tables <- dbListTables(conn)
@@ -177,43 +198,58 @@ test_database_connection <- function() {
     
     # Check row counts and columns for available tables
     for (table in available_tables) {
-      count <- as.numeric(dbGetQuery(conn, paste("SELECT COUNT(*) as count FROM", table))$count)
-      cat("  ", table, ":", count, "rows\n")
-      
-      # Show column names and sample data
-      if (table == "documents") {
-        columns <- dbListFields(conn, table)
-        cat("  ", table, "columns:", paste(columns, collapse = ", "), "\n")
+      tryCatch({
+        count <- as.numeric(dbGetQuery(conn, paste("SELECT COUNT(*) as count FROM", table))$count)
+        cat("  ", table, ":", count, "rows\n")
         
-        # Check for NULL titles
-        null_check <- dbGetQuery(conn, "SELECT COUNT(*) as null_titles FROM documents WHERE titulo IS NULL")
-        cat("    Documents with NULL titles:", null_check$null_titles, "\n")
-        
-        # Get a sample row to see data structure
-        sample <- dbGetQuery(conn, "SELECT * FROM documents LIMIT 1")
-        if (nrow(sample) > 0) {
-          cat("    Sample document structure:\n")
-          for (col in names(sample)) {
-            val <- sample[[col]][1]
-            if (is.null(val)) {
-              cat("      ", col, ": NULL\n")
-            } else if (is.na(val)) {
-              cat("      ", col, ": NA\n")
-            } else {
-              cat("      ", col, ": ", substr(as.character(val), 1, 50), 
-                  ifelse(nchar(as.character(val)) > 50, "...", ""), "\n")
+        # Show column names and sample data
+        if (table == "documents") {
+          columns <- dbListFields(conn, table)
+          cat("  ", table, "columns:", paste(columns, collapse = ", "), "\n")
+          
+          # Check for NULL titles with error handling
+          tryCatch({
+            null_check <- dbGetQuery(conn, "SELECT COUNT(*) as null_titles FROM documents WHERE titulo IS NULL")
+            cat("    Documents with NULL titles:", null_check$null_titles, "\n")
+          }, error = function(e2) {
+            cat("    Error checking NULL titles:", e2$message, "\n")
+          })
+          
+          # Get a sample row to see data structure
+          tryCatch({
+            sample <- dbGetQuery(conn, "SELECT * FROM documents LIMIT 1")
+            if (nrow(sample) > 0) {
+              cat("    Sample document structure:\n")
+              for (col in names(sample)) {
+                val <- sample[[col]][1]
+                if (is.null(val)) {
+                  cat("      ", col, ": NULL\n")
+                } else if (is.na(val)) {
+                  cat("      ", col, ": NA\n")
+                } else {
+                  cat("      ", col, ": ", substr(as.character(val), 1, 50), 
+                      ifelse(nchar(as.character(val)) > 50, "...", ""), "\n")
+                }
+              }
             }
-          }
+          }, error = function(e3) {
+            cat("    Error getting sample data:", e3$message, "\n")
+          })
         }
-      }
+      }, error = function(e1) {
+        cat("  ERROR checking table", table, ":", e1$message, "\n")
+      })
     }
     
     # If documents table exists, always return TRUE to allow app to continue
     # The app can handle empty results
-    return("documents" %in% tables)
+    result <- "documents" %in% tables
+    cat("Connection test result:", result, "\n")
+    return(result)
     
   }, error = function(e) {
-    cat("Database test error:", e$message, "\n")
+    cat("❌ Database test error:", e$message, "\n")
+    cat("Error class:", class(e), "\n")
     cat("Error details:\n")
     print(e)
     return(FALSE)
@@ -251,27 +287,54 @@ get_documents <- function(limit = NULL) {
     }
     
     if (is.null(limit)) {
-      date_sql <- create_date_coalesce_sql("d")
-      query <- paste0("
-        SELECT 
-          d.id,
-          d.titulo,
-          d.tipo,
-          d.estado,
-          COALESCE(lpe.municipality, 
-                   d.metadata->>'municipality', 
-                   CASE WHEN d.estado = 'SP' THEN 'São Paulo'
-                        WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
-                        ELSE NULL END) as municipio,
-          (", date_sql, ") as enacting_date,
-          d.url,
-          d.urn
-        FROM documents d
-        LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
-        WHERE d.titulo IS NOT NULL 
-        ORDER BY (", date_sql, ") DESC NULLS LAST
-      ")
-      result <- dbGetQuery(db_pool, query)
+      # Try complex date parsing first, fall back to simple if it fails
+      tryCatch({
+        date_sql <- create_date_coalesce_sql("d")
+        query <- paste0("
+          SELECT 
+            d.id,
+            d.titulo,
+            d.tipo,
+            d.estado,
+            COALESCE(lpe.municipality, 
+                     d.metadata->>'municipality', 
+                     CASE WHEN d.estado = 'SP' THEN 'São Paulo'
+                          WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
+                          ELSE NULL END) as municipio,
+            (", date_sql, ") as enacting_date,
+            d.url,
+            d.urn
+          FROM documents d
+          LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+          WHERE d.titulo IS NOT NULL 
+          ORDER BY (", date_sql, ") DESC NULLS LAST
+        ")
+        result <- dbGetQuery(db_pool, query)
+      }, error = function(e) {
+        cat("Complex date query failed, trying simple fallback:", e$message, "\n")
+        # Fall back to simple date handling
+        simple_date_sql <- create_simple_date_coalesce_sql("d")
+        query <- paste0("
+          SELECT 
+            d.id,
+            d.titulo,
+            d.tipo,
+            d.estado,
+            COALESCE(lpe.municipality, 
+                     d.metadata->>'municipality', 
+                     CASE WHEN d.estado = 'SP' THEN 'São Paulo'
+                          WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
+                          ELSE NULL END) as municipio,
+            (", simple_date_sql, ") as enacting_date,
+            d.url,
+            d.urn
+          FROM documents d
+          LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+          WHERE d.titulo IS NOT NULL 
+          ORDER BY (", simple_date_sql, ") DESC NULLS LAST
+        ")
+        result <<- dbGetQuery(db_pool, query)
+      })
     } else {
       date_sql <- create_date_coalesce_sql("d")
       query <- paste0("
