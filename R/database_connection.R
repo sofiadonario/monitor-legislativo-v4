@@ -189,12 +189,12 @@ get_documents <- function(limit = NULL) {
           titulo,
           tipo,
           estado,
-          COALESCE(promulgation_date, data_publicacao) as data_publicacao,
+          data_publicacao,
           url,
           urn
         FROM documents 
         WHERE titulo IS NOT NULL 
-        ORDER BY COALESCE(promulgation_date, data_publicacao) DESC NULLS LAST
+        ORDER BY data_publicacao DESC NULLS LAST
       "
       result <- dbGetQuery(db_pool, query)
     } else {
@@ -204,12 +204,12 @@ get_documents <- function(limit = NULL) {
           titulo,
           tipo,
           estado,
-          COALESCE(promulgation_date, data_publicacao) as data_publicacao,
+          data_publicacao,
           url,
           urn
         FROM documents 
         WHERE titulo IS NOT NULL 
-        ORDER BY COALESCE(promulgation_date, data_publicacao) DESC NULLS LAST
+        ORDER BY data_publicacao DESC NULLS LAST
         LIMIT $1
       "
       result <- dbGetQuery(db_pool, query, params = list(limit))
@@ -262,7 +262,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
           titulo,
           tipo,
           estado,
-          COALESCE(promulgation_date, data_publicacao) as data_publicacao,
+          data_publicacao,
           url,
           urn,
           conteudo,
@@ -283,7 +283,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
           titulo,
           tipo,
           estado,
-          COALESCE(promulgation_date, data_publicacao) as data_publicacao,
+          data_publicacao,
           url,
           urn,
           conteudo,
@@ -309,25 +309,25 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
       base_query <- paste(base_query, "AND estado IN (", quoted_states, ")")
     }
     
-    # Add date range filter - using promulgation_date (actual legislative date)
+    # Add date range filter - using data_publicacao
     if (!is.null(date_from)) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND COALESCE(promulgation_date, data_publicacao) >= $", param_count, sep="")
+      base_query <- paste(base_query, "AND data_publicacao >= $", param_count, sep="")
       params[[param_count]] <- date_from
     }
     
     if (!is.null(date_to)) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND COALESCE(promulgation_date, data_publicacao) <= $", param_count, sep="")
+      base_query <- paste(base_query, "AND data_publicacao <= $", param_count, sep="")
       params[[param_count]] <- date_to
     }
     
-    # Add ordering and limit - rank by relevance first, then by date using promulgation_date
+    # Add ordering and limit - rank by relevance first, then by date using data_publicacao
     param_count <- param_count + 1
     if (has_search_text) {
-      base_query <- paste(base_query, "ORDER BY relevance_score DESC, COALESCE(promulgation_date, data_publicacao) DESC NULLS LAST LIMIT $", param_count, sep="")
+      base_query <- paste(base_query, "ORDER BY relevance_score DESC, data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
     } else {
-      base_query <- paste(base_query, "ORDER BY COALESCE(promulgation_date, data_publicacao) DESC NULLS LAST LIMIT $", param_count, sep="")
+      base_query <- paste(base_query, "ORDER BY data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
     }
     params[[param_count]] <- limit
     
@@ -513,14 +513,14 @@ get_search_analytics <- function() {
     # Total documents
     total <- as.numeric(dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count)
     
-    # Documents by year - enhanced with flexible date handling using promulgation_date (actual legislative date)
+    # Documents by year - using data_publicacao
     by_year <- dbGetQuery(db_pool, "
       SELECT 
-        EXTRACT(YEAR FROM COALESCE(promulgation_date, data_publicacao)) as year,
+        EXTRACT(YEAR FROM data_publicacao) as year,
         COUNT(*) as count
       FROM documents 
-      WHERE COALESCE(promulgation_date, data_publicacao) IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM COALESCE(promulgation_date, data_publicacao))
+      WHERE data_publicacao IS NOT NULL
+      GROUP BY EXTRACT(YEAR FROM data_publicacao)
       ORDER BY year DESC
       LIMIT 10
     ")
@@ -531,17 +531,17 @@ get_search_analytics <- function() {
       by_year$year <- as.numeric(by_year$year)
     }
     
-    # Documents by month (last 12 months) - using promulgation_date (actual legislative date)
+    # Documents by month (last 12 months) - using data_publicacao
     by_month <- dbGetQuery(db_pool, "
       SELECT 
-        EXTRACT(YEAR FROM COALESCE(promulgation_date, data_publicacao)) as year,
-        EXTRACT(MONTH FROM COALESCE(promulgation_date, data_publicacao)) as month,
+        EXTRACT(YEAR FROM data_publicacao) as year,
+        EXTRACT(MONTH FROM data_publicacao) as month,
         COUNT(*) as count,
-        TO_CHAR(COALESCE(promulgation_date, data_publicacao), 'YYYY-MM') as year_month
+        TO_CHAR(data_publicacao, 'YYYY-MM') as year_month
       FROM documents 
-      WHERE COALESCE(promulgation_date, data_publicacao) IS NOT NULL 
-        AND COALESCE(promulgation_date, data_publicacao) >= CURRENT_DATE - INTERVAL '12 months'
-      GROUP BY EXTRACT(YEAR FROM COALESCE(promulgation_date, data_publicacao)), EXTRACT(MONTH FROM COALESCE(promulgation_date, data_publicacao)), TO_CHAR(COALESCE(promulgation_date, data_publicacao), 'YYYY-MM')
+      WHERE data_publicacao IS NOT NULL 
+        AND data_publicacao >= CURRENT_DATE - INTERVAL '12 months'
+      GROUP BY EXTRACT(YEAR FROM data_publicacao), EXTRACT(MONTH FROM data_publicacao), TO_CHAR(data_publicacao, 'YYYY-MM')
       ORDER BY year DESC, month DESC
       LIMIT 12
     ")
@@ -553,16 +553,16 @@ get_search_analytics <- function() {
       by_month$month <- as.numeric(by_month$month)
     }
     
-    # Documents by day (last 30 days) - using promulgation_date (actual legislative date)
+    # Documents by day (last 30 days) - using data_publicacao
     by_day <- dbGetQuery(db_pool, "
       SELECT 
-        COALESCE(promulgation_date, data_publicacao)::date as day,
+        data_publicacao::date as day,
         COUNT(*) as count,
-        TO_CHAR(COALESCE(promulgation_date, data_publicacao), 'YYYY-MM-DD') as formatted_date
+        TO_CHAR(data_publicacao, 'YYYY-MM-DD') as formatted_date
       FROM documents 
-      WHERE COALESCE(promulgation_date, data_publicacao) IS NOT NULL 
-        AND COALESCE(promulgation_date, data_publicacao) >= CURRENT_DATE - INTERVAL '30 days'
-      GROUP BY COALESCE(promulgation_date, data_publicacao)::date, TO_CHAR(COALESCE(promulgation_date, data_publicacao), 'YYYY-MM-DD')
+      WHERE data_publicacao IS NOT NULL 
+        AND data_publicacao >= CURRENT_DATE - INTERVAL '30 days'
+      GROUP BY data_publicacao::date, TO_CHAR(data_publicacao, 'YYYY-MM-DD')
       ORDER BY day DESC
       LIMIT 30
     ")
@@ -606,26 +606,26 @@ get_search_analytics <- function() {
       by_type$count <- as.numeric(by_type$count)
     }
     
-    # Recent documents (last 30 days) - using promulgation_date (actual legislative date)
+    # Recent documents (last 30 days) - using data_publicacao
     recent <- dbGetQuery(db_pool, "
       SELECT 
         titulo,
         tipo,
         estado,
-        COALESCE(promulgation_date, data_publicacao) as data_publicacao
+        data_publicacao
       FROM documents 
-      WHERE COALESCE(promulgation_date, data_publicacao) >= CURRENT_DATE - INTERVAL '30 days'
-      ORDER BY COALESCE(promulgation_date, data_publicacao) DESC
+      WHERE data_publicacao >= CURRENT_DATE - INTERVAL '30 days'
+      ORDER BY data_publicacao DESC
       LIMIT 10
     ")
     
-    # Date range - using promulgation_date (actual legislative date)
+    # Date range - using data_publicacao
     date_range <- dbGetQuery(db_pool, "
       SELECT 
-        MIN(COALESCE(promulgation_date, data_publicacao)) as min_date,
-        MAX(COALESCE(promulgation_date, data_publicacao)) as max_date
+        MIN(data_publicacao) as min_date,
+        MAX(data_publicacao) as max_date
       FROM documents 
-      WHERE COALESCE(promulgation_date, data_publicacao) IS NOT NULL
+      WHERE data_publicacao IS NOT NULL
     ")
     
     return(list(
