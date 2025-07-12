@@ -130,7 +130,14 @@ ui <- dashboardPage(
               column(3, valueBoxOutput("totalStates", width = NULL)),
               column(3, valueBoxOutput("totalTypes", width = NULL)),
               column(3, valueBoxOutput("dateRange", width = NULL))
-            )
+            ),
+            # Add refresh button
+            if(database_connected) {
+              div(
+                style = "text-align: center; margin-top: 10px;",
+                actionButton("refreshData", "🔄 Refresh Data", class = "btn-primary btn-sm")
+              )
+            }
           )
         ),
         fluidRow(
@@ -435,9 +442,23 @@ server <- function(input, output, session) {
       updateSelectizeInput(session, "documentTypes", choices = get_document_types())
       updateSelectizeInput(session, "states", choices = get_states())
       cat("✅ Application initialization complete\n")
+      
+      # Force UI refresh by triggering reactive updates
+      cat("🔄 Triggering UI refresh...\n")
+      invalidateLater(1000)  # Force refresh after 1 second
     } else {
       cat("⚠️ Using sample data due to database connection failure\n")
       values$current_documents <- sample_documents
+    }
+  })
+  
+  # Add reactive trigger to force UI updates
+  observe({
+    # This will trigger whenever current_documents changes
+    if (!is.null(values$current_documents)) {
+      cat("🔄 UI refresh triggered - documents count:", nrow(values$current_documents), "\n")
+      # Force all UI components to refresh
+      invalidateLater(500)
     }
   })
   
@@ -497,11 +518,20 @@ server <- function(input, output, session) {
     }
   })
   
-  # Total documents value box
+  # Total documents value box - with reactive trigger
   output$totalDocs <- renderValueBox({
+    # Force reactive update by checking current documents
+    current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
+    
     if (database_connected) {
-      stats <- get_document_stats()
-      count <- stats$total_documents
+      # Use direct database query for accurate count
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(*) as count FROM documents")$count)
+      }, error = function(e) {
+        count <- current_count
+      })
       status_color <- "red"
     } else {
       count <- nrow(sample_documents)
@@ -516,10 +546,20 @@ server <- function(input, output, session) {
     )
   })
   
-  # Total states value box
+  # Total states value box - with reactive trigger
   output$totalStates <- renderValueBox({
-    if (database_connected && !is.null(values$analytics_data)) {
-      count <- nrow(values$analytics_data$documents_by_state)
+    # Force reactive update by checking current documents
+    current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
+    
+    if (database_connected) {
+      # Use direct database query for accurate count
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL AND estado != ''")$count)
+      }, error = function(e) {
+        count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_state))
+      })
       status_color <- "green"
     } else {
       count <- 0
@@ -534,10 +574,20 @@ server <- function(input, output, session) {
     )
   })
   
-  # Total types value box
+  # Total types value box - with reactive trigger
   output$totalTypes <- renderValueBox({
-    if (database_connected && !is.null(values$analytics_data)) {
-      count <- nrow(values$analytics_data$documents_by_type)
+    # Force reactive update by checking current documents
+    current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
+    
+    if (database_connected) {
+      # Use direct database query for accurate count
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT tipo) as count FROM documents WHERE tipo IS NOT NULL AND tipo != ''")$count)
+      }, error = function(e) {
+        count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_type))
+      })
       status_color <- "yellow"
     } else {
       count <- 0
@@ -678,6 +728,48 @@ server <- function(input, output, session) {
     updateDateInput(session, "dateFrom", value = NULL)
     updateDateInput(session, "dateTo", value = NULL)
     values$search_results <- NULL
+  })
+  
+  # Refresh data functionality
+  observeEvent(input$refreshData, {
+    if (database_connected) {
+      cat("🔄 Manual refresh triggered by user...\n")
+      
+      # Force refresh database connection
+      force_refresh_database()
+      
+      # Reload all data
+      withProgress(message = 'Refreshing data...', value = 0, {
+        incProgress(0.3)
+        
+        # Reload documents
+        values$current_documents <- get_documents()
+        cat("📊 Reloaded", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents)), "documents\n")
+        
+        incProgress(0.3)
+        
+        # Reload analytics
+        values$analytics_data <- get_search_analytics()
+        cat("📊 Reloaded analytics data\n")
+        
+        incProgress(0.3)
+        
+        # Reload geographic data
+        tryCatch({
+          values$geographic_data <- load_brazil_geography(year = 2020, cache_data = TRUE)
+          cat("📊 Reloaded geographic data\n")
+        }, error = function(e) {
+          cat("Error reloading geographic data:", e$message, "\n")
+        })
+        
+        incProgress(1)
+      })
+      
+      # Show success message
+      showNotification("Data refreshed successfully!", type = "success")
+    } else {
+      showNotification("Database not connected!", type = "error")
+    }
   })
   
   # Search summary
