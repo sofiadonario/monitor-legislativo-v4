@@ -104,7 +104,8 @@
       "Bash(poetry run alembic:*)",
       "Bash(poetry show:*)",
       "Bash(gh repo view:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: Resolve syntax error in app.R causing deployment failure\n\n- Fix missing closing brace for if(database_connected) condition in Analytics tab\n- Remove extra closing parenthesis causing unexpected '')'' error\n- Ensure proper UI structure nesting for stable deployment\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ]
   },
   "enableAllProjectMcpServers": false

@@ -33,8 +33,8 @@ load_brazil_geography <- function(year = 2022, cache_data = TRUE) {
     flog.info("Downloading state boundaries from IBGE...")
     states <- read_state(year = year, showProgress = FALSE)
     
-    # Load municipalities (optional - large dataset)
-    # municipalities <- read_municipality(year = year, showProgress = FALSE)
+    # Load municipalities for top states (to keep dataset manageable)
+    # We'll load municipalities on-demand for states with significant document counts
     
     # Load regions for context
     flog.info("Downloading region boundaries from IBGE...")
@@ -295,20 +295,20 @@ create_legislative_map <- function(legislative_data, geography_data,
   # Set up color palette based on selected variable
   if (color_by == "count") {
     color_var <- map_data$documento_count
-    palette_name <- "Blues"
+    # Use custom red palette matching the app theme
     legend_title <- "Número de Documentos"
   } else if (color_by == "density") {
     color_var <- map_data$density
-    palette_name <- "Greens"
     legend_title <- "Densidade (docs/1000km²)"
   } else {
     color_var <- as.numeric(map_data$latest_date)
-    palette_name <- "Reds"
     legend_title <- "Data Mais Recente"
   }
   
-  # Create color palette
-  pal <- colorNumeric(palette = palette_name, domain = color_var, na.color = "#E5E5E5")
+  # Create custom red color palette matching the app theme (#e1001e)
+  # Create a gradient from light pink to deep red
+  red_colors <- c("#fff0f0", "#ffd4d4", "#ffb3b3", "#ff8080", "#ff4d4d", "#e1001e", "#c50019", "#a80016", "#8b0013")
+  pal <- colorNumeric(palette = red_colors, domain = color_var, na.color = "#E5E5E5")
   
   # Determine map center and zoom
   if (!is.null(focus_state)) {
@@ -398,7 +398,8 @@ create_legislative_map <- function(legislative_data, geography_data,
       position = "bottomright"
     )
   
-  # Add municipalities layer if focusing on specific state
+  # Add municipalities layer for states with significant document counts
+  # First, check if we're focusing on a specific state
   if (!is.null(focus_state)) {
     municipalities <- load_state_municipalities(focus_state)
     if (!is.null(municipalities)) {
@@ -410,13 +411,17 @@ create_legislative_map <- function(legislative_data, geography_data,
         left_join(muni_stats, by = c("name_muni" = "municipio")) %>%
         mutate(documento_count = coalesce(documento_count, 0))
       
-      # Add municipality layer
+      # Add municipality layer with red color scheme
+      # Create a lighter red palette for municipalities
+      muni_red_colors <- c("#ffe6e6", "#ffcccc", "#ffb3b3", "#ff9999", "#ff8080", "#ff6666", "#ff4d4d")
+      muni_pal <- colorNumeric(palette = muni_red_colors, domain = muni_data$documento_count)
+      
       map <- map %>%
         addPolygons(
           data = muni_data,
-          fillColor = ~colorNumeric("Oranges", documento_count)(documento_count),
+          fillColor = ~muni_pal(documento_count),
           fillOpacity = 0.5,
-          color = "orange",
+          color = "#e1001e",
           weight = 1,
           popup = ~paste0("<b>", name_muni, "</b><br>",
                          "Documentos: ", documento_count),
@@ -427,6 +432,75 @@ create_legislative_map <- function(legislative_data, geography_data,
           options = layersControlOptions(collapsed = FALSE)
         )
     }
+  } else if (!is.null(legislative_data) && nrow(legislative_data) > 0) {
+    # Auto-load municipalities for top 2 states with most documents (for overview map)
+    tryCatch({
+      if ("count" %in% names(legislative_data)) {
+        top_states <- legislative_data %>%
+          arrange(desc(count)) %>%
+          head(2) %>%
+          pull(estado)
+      } else {
+        state_counts <- legislative_data %>%
+          group_by(estado) %>%
+          summarise(count = n(), .groups = "drop") %>%
+          arrange(desc(count)) %>%
+          head(2)
+        top_states <- state_counts$estado
+      }
+      
+      # Load municipalities for top states
+      all_muni_layers <- list()
+      for (state in top_states) {
+        if (!is.null(state) && !is.na(state) && nchar(state) > 0) {
+          municipalities <- load_state_municipalities(state)
+          if (!is.null(municipalities)) {
+            muni_stats <- aggregate_legislative_by_municipality(legislative_data, state)
+            
+            muni_data <- municipalities %>%
+              left_join(muni_stats, by = c("name_muni" = "municipio")) %>%
+              mutate(
+                documento_count = coalesce(documento_count, 0),
+                state_code = state
+              )
+            
+            if (nrow(muni_data) > 0) {
+              all_muni_layers[[state]] <- muni_data
+            }
+          }
+        }
+      }
+      
+      # Add all municipality layers to the map
+      if (length(all_muni_layers) > 0) {
+        combined_muni_data <- bind_rows(all_muni_layers)
+        
+        if (nrow(combined_muni_data) > 0) {
+          # Create a lighter red palette for municipalities
+          muni_red_colors <- c("#ffe6e6", "#ffcccc", "#ffb3b3", "#ff9999", "#ff8080", "#ff6666", "#ff4d4d")
+          muni_pal <- colorNumeric(palette = muni_red_colors, domain = combined_muni_data$documento_count)
+          
+          map <- map %>%
+            addPolygons(
+              data = combined_muni_data,
+              fillColor = ~muni_pal(documento_count),
+              fillOpacity = 0.3,
+              color = "#e1001e",
+              weight = 0.5,
+              popup = ~paste0("<b>", name_muni, "</b><br>",
+                             "Estado: ", state_code, "<br>",
+                             "Documentos: ", documento_count),
+              group = "Municípios (Top States)"
+            ) %>%
+            addLayersControl(
+              overlayGroups = c("Municípios (Top States)"),
+              options = layersControlOptions(collapsed = FALSE)
+            )
+        }
+      }
+    }, error = function(e) {
+      flog.warn("Could not load municipalities for overview: %s", e$message)
+    })
   }
   
   # Add markers for recent legislation
@@ -484,7 +558,7 @@ create_legislative_map <- function(legislative_data, geography_data,
               group = "Documentos Recentes"
             ) %>%
             addLayersControl(
-              overlayGroups = c("Municípios", "Documentos Recentes"),
+              overlayGroups = c("Municípios", "Municípios (Top States)", "Documentos Recentes"),
               options = layersControlOptions(collapsed = FALSE)
             )
         }

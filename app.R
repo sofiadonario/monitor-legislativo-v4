@@ -312,6 +312,18 @@ ui <- dashboardPage(
               DT::dataTableOutput("recentDocuments", height = "300px")
             )
           )
+        },
+        if(database_connected) {
+          fluidRow(
+            # Document Types Distribution Table
+            box(
+              title = "Document Types Distribution - Detailed View", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 12,
+              DT::dataTableOutput("typeStats", height = "300px")
+            )
+          )
         }
       ),
       
@@ -362,19 +374,7 @@ ui <- dashboardPage(
                 tags$li("Responsive design for all devices")
               )
             )
-          ),
-          if(database_connected) {
-            fluidRow(
-              # Document Types Distribution
-              box(
-                title = "Document Types Distribution", 
-                status = "primary", 
-                solidHeader = TRUE, 
-                width = 12,
-                DT::dataTableOutput("typeStats", height = "300px")
-              )
-            )
-          }
+          )
         )
       )
     )
