@@ -704,74 +704,46 @@ get_search_analytics <- function() {
   tryCatch({
     # Total documents
     total <- as.numeric(dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count)
+    cat("DEBUG: Total documents found:", total, "\n")
     
-    # Documents by year - using enacting_date
-    date_sql <- create_date_coalesce_sql("")  # No prefix for this query
-    by_year <- dbGetQuery(db_pool, paste0("
+    # Documents by year - simple approach
+    by_year <- dbGetQuery(db_pool, "
       SELECT 
-        EXTRACT(YEAR FROM (", date_sql, ")) as year,
+        EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)) as year,
         COUNT(*) as count
       FROM documents 
-      WHERE (", date_sql, ") IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM (", date_sql, "))
+      WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
+      GROUP BY EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date))
       ORDER BY year DESC
       LIMIT 10
-    "))
+    ")
+    cat("DEBUG: Year query got", nrow(by_year), "rows\n")
     
     # Convert integer64 to numeric
     if (nrow(by_year) > 0) {
       by_year$count <- as.numeric(by_year$count)
       by_year$year <- as.numeric(by_year$year)
+      cat("DEBUG: Years data:", paste(by_year$year, collapse = ", "), "\n")
+    } else {
+      cat("DEBUG: No year data found\n")
     }
     
-    # Documents by month (all available months) - using enacting_date
+    # Documents by month - simple approach
     by_month <- dbGetQuery(db_pool, "
       SELECT 
-        EXTRACT(YEAR FROM COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        )) as year,
-        EXTRACT(MONTH FROM COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        )) as month,
+        EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)) as year,
+        EXTRACT(MONTH FROM COALESCE(data_publicacao, created_at::date)) as month,
         COUNT(*) as count,
-        TO_CHAR(COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        ), 'YYYY-MM') as year_month
+        TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM') as year_month
       FROM documents 
-      WHERE COALESCE(
-        data_publicacao,
-        metadata->>'promulgation_date',
-        metadata->>'publication_date',
-        created_at::date
-      ) IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        )), EXTRACT(MONTH FROM COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        )), TO_CHAR(COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        ), 'YYYY-MM')
+      WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
+      GROUP BY EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)), 
+               EXTRACT(MONTH FROM COALESCE(data_publicacao, created_at::date)),
+               TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM')
       ORDER BY year DESC, month DESC
       LIMIT 12
     ")
+    cat("DEBUG: Month query got", nrow(by_month), "rows\n")
     
     # Convert integer64 to numeric
     if (nrow(by_month) > 0) {
@@ -780,43 +752,20 @@ get_search_analytics <- function() {
       by_month$month <- as.numeric(by_month$month)
     }
     
-    # Documents by day (all available days) - using enacting_date
+    # Documents by day - simple approach
     by_day <- dbGetQuery(db_pool, "
       SELECT 
-        COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        )::date as day,
+        COALESCE(data_publicacao, created_at::date)::date as day,
         COUNT(*) as count,
-        TO_CHAR(COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        ), 'YYYY-MM-DD') as formatted_date
+        TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM-DD') as formatted_date
       FROM documents 
-      WHERE COALESCE(
-        data_publicacao,
-        metadata->>'promulgation_date',
-        metadata->>'publication_date',
-        created_at::date
-      ) IS NOT NULL
-      GROUP BY COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        )::date, TO_CHAR(COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        ), 'YYYY-MM-DD')
+      WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
+      GROUP BY COALESCE(data_publicacao, created_at::date)::date,
+               TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM-DD')
       ORDER BY day DESC
       LIMIT 30
     ")
+    cat("DEBUG: Day query got", nrow(by_day), "rows\n")
     
     # Convert integer64 to numeric
     if (nrow(by_day) > 0) {
@@ -835,6 +784,7 @@ get_search_analytics <- function() {
       ORDER BY count DESC
       LIMIT 10
     ")
+    cat("DEBUG: State query got", nrow(by_state), "rows\n")
     
     # Convert integer64 to numeric
     if (nrow(by_state) > 0) {
@@ -851,61 +801,39 @@ get_search_analytics <- function() {
       GROUP BY tipo
       ORDER BY count DESC
     ")
+    cat("DEBUG: Type query got", nrow(by_type), "rows\n")
     
-    # Convert integer64 to numeric to fix plotly issues
+    # Convert integer64 to numeric
     if (nrow(by_type) > 0) {
       by_type$count <- as.numeric(by_type$count)
     }
     
-    # Recent documents (all available) - using enacting_date
+    # Recent documents - simple approach
     recent <- dbGetQuery(db_pool, "
       SELECT 
         d.titulo,
         d.tipo,
         d.estado,
-        COALESCE(lpe.municipality, 
-                 d.metadata->>'municipality', 
-                 CASE WHEN d.estado = 'SP' THEN 'São Paulo'
-                      WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
-                      ELSE NULL END) as municipio,
-        d.data_publicacao
+        COALESCE(d.data_publicacao, d.created_at::date) as enacting_date
       FROM documents d
-      LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
-      WHERE COALESCE(
-          d.data_publicacao,
-          d.metadata->>'promulgation_date',
-          d.metadata->>'publication_date',
-          d.created_at::date
-        ) IS NOT NULL
-      ORDER BY d.data_publicacao DESC
+      WHERE COALESCE(d.data_publicacao, d.created_at::date) IS NOT NULL
+        AND d.titulo IS NOT NULL
+      ORDER BY COALESCE(d.data_publicacao, d.created_at::date) DESC
       LIMIT 10
     ")
+    cat("DEBUG: Recent query got", nrow(recent), "rows\n")
     
-    # Date range - using enacting_date
+    # Date range - simple approach
     date_range <- dbGetQuery(db_pool, "
       SELECT 
-        MIN(COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        )) as min_date,
-        MAX(COALESCE(
-          data_publicacao,
-          metadata->>'promulgation_date',
-          metadata->>'publication_date',
-          created_at::date
-        )) as max_date
+        MIN(COALESCE(data_publicacao, created_at::date)) as min_date,
+        MAX(COALESCE(data_publicacao, created_at::date)) as max_date
       FROM documents 
-      WHERE COALESCE(
-        data_publicacao,
-        metadata->>'promulgation_date',
-        metadata->>'publication_date',
-        created_at::date
-      ) IS NOT NULL
+      WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
     ")
+    cat("DEBUG: Date range query completed\n")
     
-    return(list(
+    result <- list(
       total_documents = total,
       documents_by_year = by_year,
       documents_by_month = by_month,
@@ -917,10 +845,15 @@ get_search_analytics <- function() {
         min = date_range$min_date,
         max = date_range$max_date
       )
-    ))
+    )
+    
+    cat("DEBUG: Analytics completed successfully\n")
+    return(result)
     
   }, error = function(e) {
-    cat("Error getting search analytics:", e$message, "\n")
+    cat("ERROR in get_search_analytics():", e$message, "\n")
+    cat("Stack trace:\n")
+    print(e)
     return(list(
       total_documents = 0,
       documents_by_year = data.frame(),
