@@ -312,7 +312,7 @@ ui <- dashboardPage(
               DT::dataTableOutput("recentDocuments", height = "300px")
             )
           )
-        )
+        }
       ),
       
       # About tab with system status  
@@ -379,7 +379,6 @@ ui <- dashboardPage(
       )
     )
   )
-)
 
 # Server logic
 server <- function(input, output, session) {
