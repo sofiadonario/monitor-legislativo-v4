@@ -1,10 +1,13 @@
 # Database Connection Module for Monitor Legislativo v4
-# Connects to Railway PostgreSQL with 889 real documents
+# Connects to Railway PostgreSQL with updated 1,904 documents
 
 library(DBI)
 library(RPostgres)
 library(pool)
 library(dplyr)
+
+# Force refresh flag to ensure we get latest data
+FORCE_REFRESH <- TRUE
 
 # Helper function to create date parsing SQL
 create_date_coalesce_sql <- function(prefix = "d") {
@@ -53,7 +56,7 @@ init_database <- function() {
     # Get DATABASE_URL from environment
     database_url <- Sys.getenv("DATABASE_URL")
     
-    cat("Initializing database connection...\n")
+    cat("🔄 Initializing database connection with FORCE_REFRESH =", FORCE_REFRESH, "\n")
     cat("DATABASE_URL present:", nchar(database_url) > 0, "\n")
     
     if (nchar(database_url) == 0) {
@@ -76,7 +79,7 @@ init_database <- function() {
     cat("  Database:", parsed_url$database, "\n")
     cat("  User:", parsed_url$user, "\n")
     
-    # Create connection pool
+    # Create connection pool with shorter timeout for faster refresh
     db_pool <<- dbPool(
       drv = RPostgres::Postgres(),
       host = parsed_url$host,
@@ -86,7 +89,7 @@ init_database <- function() {
       password = parsed_url$password,
       minSize = 1,
       maxSize = 5,
-      idleTimeout = 3600000  # 1 hour
+      idleTimeout = 300000  # 5 minutes for faster refresh
     )
     
     # Test connection
@@ -187,13 +190,13 @@ test_database_connection <- function() {
     tables <- dbListTables(conn)
     cat("Available tables:", paste(tables, collapse = ", "), "\n")
     
-    required_tables <- c("lexml_parsed_enhanced_fixed", "documents")
-    available_tables <- intersect(required_tables, tables)
-    missing_tables <- setdiff(required_tables, tables)
+    # Check for the corrected tables/views
+    corrected_tables <- c("lexml_parsed_enhanced_fixed", "documents", "lexml_documents_corrected")
+    available_tables <- intersect(corrected_tables, tables)
+    missing_tables <- setdiff(corrected_tables, tables)
     
     if (length(missing_tables) > 0) {
-      cat("⚠️ Missing tables:", paste(missing_tables, collapse = ", "), "\n")
-      # Don't fail immediately, let's check what we have
+      cat("⚠️ Missing corrected tables:", paste(missing_tables, collapse = ", "), "\n")
     }
     
     # Check row counts and columns for available tables
@@ -256,7 +259,7 @@ test_database_connection <- function() {
   })
 }
 
-#' Get all documents from the database
+#' Get all documents from the database with FORCE_REFRESH
 #' @param limit Maximum number of documents to return (default: NULL for all)
 #' @return Data frame with documents or NULL if error
 get_documents <- function(limit = NULL) {
@@ -265,6 +268,7 @@ get_documents <- function(limit = NULL) {
     return(NULL)
   }
   
+  cat("🔄 get_documents() called with FORCE_REFRESH =", FORCE_REFRESH, "\n")
   cat("DEBUG: get_documents() called with limit:", ifelse(is.null(limit), "NULL", limit), "\n")
   
   tryCatch({
@@ -305,7 +309,7 @@ get_documents <- function(limit = NULL) {
             d.url,
             d.urn
           FROM documents d
-          LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+          LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
           WHERE d.titulo IS NOT NULL 
           ORDER BY (", date_sql, ") DESC NULLS LAST
         ")
@@ -329,7 +333,7 @@ get_documents <- function(limit = NULL) {
             d.url,
             d.urn
           FROM documents d
-          LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+          LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
           WHERE d.titulo IS NOT NULL 
           ORDER BY (", simple_date_sql, ") DESC NULLS LAST
         ")
@@ -352,7 +356,7 @@ get_documents <- function(limit = NULL) {
           d.url,
           d.urn
         FROM documents d
-        LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+        LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
         WHERE d.titulo IS NOT NULL 
         ORDER BY (", date_sql, ") DESC NULLS LAST
         LIMIT $1
@@ -455,7 +459,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
             ELSE 0
           END as relevance_score
         FROM documents d
-        LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+        LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
         WHERE (d.titulo ILIKE $1 OR d.conteudo ILIKE $1)")
       
       params <- list(paste0("%", search_text, "%"))
@@ -478,7 +482,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
           d.conteudo,
           0 as relevance_score
         FROM documents d
-        LEFT JOIN lexml_parsed_enhanced lpe ON d.urn = lpe.urn
+        LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
         WHERE 1=1")
       
       params <- list()
@@ -964,6 +968,35 @@ highlight_search_terms <- function(text, search_terms) {
       replacement <- '<mark style="background-color: #ffff00; padding: 0 2px;">\\1</mark>'
       result <- gsub(pattern, replacement, result, ignore.case = TRUE)
     }
+  }
+  
+  return(result)
+}
+
+#' Force refresh database connection and clear cache
+force_refresh_database <- function() {
+  cat("🔄 Force refreshing database connection...\n")
+  
+  # Close existing connection
+  if (!is.null(db_pool)) {
+    poolClose(db_pool)
+    db_pool <<- NULL
+    cat("Closed existing database pool\n")
+  }
+  
+  # Clear any cached data
+  if (exists("values", envir = .GlobalEnv)) {
+    rm(list = c("current_documents", "analytics_data", "geographic_data"), 
+       envir = get("values", envir = .GlobalEnv), inherits = TRUE)
+    cat("Cleared cached data\n")
+  }
+  
+  # Reinitialize connection
+  result <- init_database()
+  if (result) {
+    cat("✅ Database connection refreshed successfully\n")
+  } else {
+    cat("❌ Failed to refresh database connection\n")
   }
   
   return(result)

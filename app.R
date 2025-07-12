@@ -17,11 +17,11 @@ source("R/database_connection.R")
 # Load map generator module for geographic visualization
 source("R/map_generator.R")
 
-# Initialize database connection
+# Initialize database connection with force refresh
 database_connected <- FALSE
 database_error <- ""
 
-cat("Attempting to initialize database connection...\n")
+cat("🔄 Attempting to initialize database connection with force refresh...\n")
 cat("DATABASE_URL present:", nchar(Sys.getenv("DATABASE_URL")) > 0, "\n")
 cat("DATABASE_URL length:", nchar(Sys.getenv("DATABASE_URL")), "\n")
 if (nchar(Sys.getenv("DATABASE_URL")) > 0) {
@@ -29,7 +29,15 @@ if (nchar(Sys.getenv("DATABASE_URL")) > 0) {
   url_masked <- gsub(":[^:@]+@", ":***@", Sys.getenv("DATABASE_URL"))
   cat("DATABASE_URL (masked):", url_masked, "\n")
 }
+
+# Force refresh database connection to ensure we get latest data
 database_connected <- init_database()
+
+# If connection failed, try force refresh
+if (!database_connected) {
+  cat("⚠️ Initial connection failed, trying force refresh...\n")
+  database_connected <- force_refresh_database()
+}
 
 if (!database_connected) {
   database_error <- "Failed to connect to database - using sample data"
@@ -348,7 +356,10 @@ ui <- dashboardPage(
               if(database_connected) {
                 div(
                   h5("Database Statistics:"),
-                  verbatimTextOutput("dbStats")
+                  verbatimTextOutput("dbStats"),
+                  hr(),
+                  h5("Debug Information:"),
+                  verbatimTextOutput("debugInfo")
                 )
               }
             ),
@@ -391,24 +402,41 @@ server <- function(input, output, session) {
     geographic_data = NULL
   )
   
-  # Initialize data on startup
+  # Initialize data on startup with force refresh
   observe({
+    cat("🔄 Initializing application data with force refresh...\n")
+    
     if (database_connected) {
+      # Force refresh to ensure we get latest data
+      cat("🔄 Force refreshing database queries...\n")
+      
+      # Get documents with debug logging
+      cat("🔄 Loading documents...\n")
       values$current_documents <- get_documents()  # Get all documents
+      cat("📊 Loaded", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents)), "documents\n")
+      
+      # Get analytics data
+      cat("🔄 Loading analytics data...\n")
       values$analytics_data <- get_search_analytics()  # Load analytics data
+      cat("📊 Analytics data loaded\n")
       
       # Load geographic data for map (use 2020 - latest available year)
       tryCatch({
+        cat("🔄 Loading geographic data...\n")
         values$geographic_data <- load_brazil_geography(year = 2020, cache_data = TRUE)
+        cat("📊 Geographic data loaded\n")
       }, error = function(e) {
         cat("Error loading geographic data:", e$message, "\n")
         values$geographic_data <- NULL
       })
       
       # Populate filter choices
+      cat("🔄 Populating filter choices...\n")
       updateSelectizeInput(session, "documentTypes", choices = get_document_types())
       updateSelectizeInput(session, "states", choices = get_states())
+      cat("✅ Application initialization complete\n")
     } else {
+      cat("⚠️ Using sample data due to database connection failure\n")
       values$current_documents <- sample_documents
     }
   })
