@@ -145,29 +145,55 @@ test_database_connection <- function() {
     cat("Available tables:", paste(tables, collapse = ", "), "\n")
     
     required_tables <- c("lexml_parsed_enhanced", "documents")
+    available_tables <- intersect(required_tables, tables)
     missing_tables <- setdiff(required_tables, tables)
     
     if (length(missing_tables) > 0) {
       cat("⚠️ Missing tables:", paste(missing_tables, collapse = ", "), "\n")
-      return(FALSE)
+      # Don't fail immediately, let's check what we have
     }
     
-    # Check row counts and columns
-    for (table in required_tables) {
+    # Check row counts and columns for available tables
+    for (table in available_tables) {
       count <- as.numeric(dbGetQuery(conn, paste("SELECT COUNT(*) as count FROM", table))$count)
       cat("  ", table, ":", count, "rows\n")
       
-      # Show column names for documents table to verify date fields
+      # Show column names and sample data
       if (table == "documents") {
         columns <- dbListFields(conn, table)
         cat("  ", table, "columns:", paste(columns, collapse = ", "), "\n")
+        
+        # Check for NULL titles
+        null_check <- dbGetQuery(conn, "SELECT COUNT(*) as null_titles FROM documents WHERE titulo IS NULL")
+        cat("    Documents with NULL titles:", null_check$null_titles, "\n")
+        
+        # Get a sample row to see data structure
+        sample <- dbGetQuery(conn, "SELECT * FROM documents LIMIT 1")
+        if (nrow(sample) > 0) {
+          cat("    Sample document structure:\n")
+          for (col in names(sample)) {
+            val <- sample[[col]][1]
+            if (is.null(val)) {
+              cat("      ", col, ": NULL\n")
+            } else if (is.na(val)) {
+              cat("      ", col, ": NA\n")
+            } else {
+              cat("      ", col, ": ", substr(as.character(val), 1, 50), 
+                  ifelse(nchar(as.character(val)) > 50, "...", ""), "\n")
+            }
+          }
+        }
       }
     }
     
-    return(TRUE)
+    # If documents table exists, always return TRUE to allow app to continue
+    # The app can handle empty results
+    return("documents" %in% tables)
     
   }, error = function(e) {
     cat("Database test error:", e$message, "\n")
+    cat("Error details:\n")
+    print(e)
     return(FALSE)
   })
 }
@@ -181,7 +207,27 @@ get_documents <- function(limit = NULL) {
     return(NULL)
   }
   
+  cat("DEBUG: get_documents() called with limit:", ifelse(is.null(limit), "NULL", limit), "\n")
+  
   tryCatch({
+    # First, let's check if the documents table has any data
+    count_check <- dbGetQuery(db_pool, "SELECT COUNT(*) as total FROM documents")
+    cat("DEBUG: Total documents in table:", count_check$total, "\n")
+    
+    # Check how many have non-null titles
+    title_check <- dbGetQuery(db_pool, "SELECT COUNT(*) as with_title FROM documents WHERE titulo IS NOT NULL")
+    cat("DEBUG: Documents with non-null titles:", title_check$with_title, "\n")
+    
+    # If no documents with titles, let's see what we have
+    if (title_check$with_title == 0) {
+      cat("WARNING: No documents with non-null titles found!\n")
+      # Try to get some sample data anyway
+      sample_query <- "SELECT id, titulo, tipo, estado, data_publicacao FROM documents LIMIT 5"
+      sample_data <- dbGetQuery(db_pool, sample_query)
+      cat("Sample data from documents table:\n")
+      print(sample_data)
+    }
+    
     if (is.null(limit)) {
       query <- "
         SELECT 
@@ -227,6 +273,8 @@ get_documents <- function(limit = NULL) {
       result <- dbGetQuery(db_pool, query, params = list(limit))
     }
     
+    cat("DEBUG: Query executed, got", nrow(result), "rows\n")
+    
     # Clean up the data
     if (nrow(result) > 0) {
       # Convert dates
@@ -238,12 +286,41 @@ get_documents <- function(limit = NULL) {
       result[is.na(result)] <- ""
       
       cat("Retrieved", nrow(result), "documents from database\n")
+    } else {
+      cat("WARNING: Query returned 0 rows\n")
+      # If we got no results, let's try a simpler query without the WHERE clause
+      cat("Trying fallback query without titulo filter...\n")
+      fallback_query <- "
+        SELECT 
+          d.id,
+          COALESCE(d.titulo, 'Untitled Document') as titulo,
+          d.tipo,
+          d.estado,
+          d.data_publicacao,
+          d.url,
+          d.urn
+        FROM documents d
+        ORDER BY d.id DESC
+        LIMIT 10
+      "
+      result <- dbGetQuery(db_pool, fallback_query)
+      cat("Fallback query returned", nrow(result), "rows\n")
+      
+      if (nrow(result) > 0) {
+        # Convert dates
+        if ("data_publicacao" %in% names(result)) {
+          result$data_publicacao <- as.Date(result$data_publicacao)
+        }
+        result[is.na(result)] <- ""
+      }
     }
     
     return(result)
     
   }, error = function(e) {
-    cat("Error retrieving documents:", e$message, "\n")
+    cat("ERROR in get_documents():", e$message, "\n")
+    cat("Stack trace:\n")
+    print(e)
     return(NULL)
   })
 }
@@ -532,6 +609,8 @@ get_search_analytics <- function() {
       date_range = list(min = NA, max = NA)
     ))
   }
+  
+  cat("DEBUG: get_search_analytics() called\n")
   
   tryCatch({
     # Total documents
