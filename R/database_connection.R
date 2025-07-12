@@ -189,6 +189,7 @@ get_documents <- function(limit = NULL) {
           titulo,
           tipo,
           estado,
+          municipio,
           data_publicacao,
           url,
           urn
@@ -204,6 +205,7 @@ get_documents <- function(limit = NULL) {
           titulo,
           tipo,
           estado,
+          municipio,
           data_publicacao,
           url,
           urn
@@ -262,6 +264,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
           titulo,
           tipo,
           estado,
+          municipio,
           data_publicacao,
           url,
           urn,
@@ -283,6 +286,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
           titulo,
           tipo,
           estado,
+          municipio,
           data_publicacao,
           url,
           urn,
@@ -531,7 +535,7 @@ get_search_analytics <- function() {
       by_year$year <- as.numeric(by_year$year)
     }
     
-    # Documents by month (last 12 months) - using data_publicacao
+    # Documents by month (all available months) - using data_publicacao
     by_month <- dbGetQuery(db_pool, "
       SELECT 
         EXTRACT(YEAR FROM data_publicacao) as year,
@@ -539,8 +543,7 @@ get_search_analytics <- function() {
         COUNT(*) as count,
         TO_CHAR(data_publicacao, 'YYYY-MM') as year_month
       FROM documents 
-      WHERE data_publicacao IS NOT NULL 
-        AND data_publicacao >= CURRENT_DATE - INTERVAL '12 months'
+      WHERE data_publicacao IS NOT NULL
       GROUP BY EXTRACT(YEAR FROM data_publicacao), EXTRACT(MONTH FROM data_publicacao), TO_CHAR(data_publicacao, 'YYYY-MM')
       ORDER BY year DESC, month DESC
       LIMIT 12
@@ -553,15 +556,14 @@ get_search_analytics <- function() {
       by_month$month <- as.numeric(by_month$month)
     }
     
-    # Documents by day (last 30 days) - using data_publicacao
+    # Documents by day (all available days) - using data_publicacao
     by_day <- dbGetQuery(db_pool, "
       SELECT 
         data_publicacao::date as day,
         COUNT(*) as count,
         TO_CHAR(data_publicacao, 'YYYY-MM-DD') as formatted_date
       FROM documents 
-      WHERE data_publicacao IS NOT NULL 
-        AND data_publicacao >= CURRENT_DATE - INTERVAL '30 days'
+      WHERE data_publicacao IS NOT NULL
       GROUP BY data_publicacao::date, TO_CHAR(data_publicacao, 'YYYY-MM-DD')
       ORDER BY day DESC
       LIMIT 30
@@ -606,15 +608,16 @@ get_search_analytics <- function() {
       by_type$count <- as.numeric(by_type$count)
     }
     
-    # Recent documents (last 30 days) - using data_publicacao
+    # Recent documents (all available) - using data_publicacao
     recent <- dbGetQuery(db_pool, "
       SELECT 
         titulo,
         tipo,
         estado,
+        municipio,
         data_publicacao
       FROM documents 
-      WHERE data_publicacao >= CURRENT_DATE - INTERVAL '30 days'
+      WHERE data_publicacao IS NOT NULL
       ORDER BY data_publicacao DESC
       LIMIT 10
     ")
