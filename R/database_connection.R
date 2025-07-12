@@ -187,7 +187,7 @@ test_database_connection <- function() {
     tables <- dbListTables(conn)
     cat("Available tables:", paste(tables, collapse = ", "), "\n")
     
-    required_tables <- c("lexml_parsed_enhanced", "documents")
+    required_tables <- c("lexml_parsed_enhanced_fixed", "documents")
     available_tables <- intersect(required_tables, tables)
     missing_tables <- setdiff(required_tables, tables)
     
@@ -706,14 +706,15 @@ get_search_analytics <- function() {
     total <- as.numeric(dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count)
     cat("DEBUG: Total documents found:", total, "\n")
     
-    # Documents by year - simple approach
+    # Documents by year - using official promulgation_date from lexml_parsed_enhanced_fixed
     by_year <- dbGetQuery(db_pool, "
       SELECT 
-        EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)) as year,
+        EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as year,
         COUNT(*) as count
-      FROM documents 
-      WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date))
+      FROM documents d
+      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
+      GROUP BY EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date))
       ORDER BY year DESC
       LIMIT 10
     ")
@@ -728,18 +729,19 @@ get_search_analytics <- function() {
       cat("DEBUG: No year data found\n")
     }
     
-    # Documents by month - simple approach
+    # Documents by month - using official promulgation_date from lexml_parsed_enhanced_fixed
     by_month <- dbGetQuery(db_pool, "
       SELECT 
-        EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)) as year,
-        EXTRACT(MONTH FROM COALESCE(data_publicacao, created_at::date)) as month,
+        EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as year,
+        EXTRACT(MONTH FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as month,
         COUNT(*) as count,
-        TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM') as year_month
-      FROM documents 
-      WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)), 
-               EXTRACT(MONTH FROM COALESCE(data_publicacao, created_at::date)),
-               TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM')
+        TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM') as year_month
+      FROM documents d
+      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
+      GROUP BY EXTRACT(YEAR FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)), 
+               EXTRACT(MONTH FROM COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)),
+               TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM')
       ORDER BY year DESC, month DESC
       LIMIT 12
     ")
@@ -752,16 +754,17 @@ get_search_analytics <- function() {
       by_month$month <- as.numeric(by_month$month)
     }
     
-    # Documents by day - simple approach
+    # Documents by day - using official promulgation_date from lexml_parsed_enhanced_fixed
     by_day <- dbGetQuery(db_pool, "
       SELECT 
-        COALESCE(data_publicacao, created_at::date)::date as day,
+        COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)::date as day,
         COUNT(*) as count,
-        TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM-DD') as formatted_date
-      FROM documents 
-      WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
-      GROUP BY COALESCE(data_publicacao, created_at::date)::date,
-               TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM-DD')
+        TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM-DD') as formatted_date
+      FROM documents d
+      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
+      GROUP BY COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)::date,
+               TO_CHAR(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date), 'YYYY-MM-DD')
       ORDER BY day DESC
       LIMIT 30
     ")
@@ -808,28 +811,30 @@ get_search_analytics <- function() {
       by_type$count <- as.numeric(by_type$count)
     }
     
-    # Recent documents - simple approach
+    # Recent documents - using official promulgation_date from lexml_parsed_enhanced_fixed
     recent <- dbGetQuery(db_pool, "
       SELECT 
         d.titulo,
         d.tipo,
         d.estado,
-        COALESCE(d.data_publicacao, d.created_at::date) as enacting_date
+        COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) as enacting_date
       FROM documents d
-      WHERE COALESCE(d.data_publicacao, d.created_at::date) IS NOT NULL
+      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
         AND d.titulo IS NOT NULL
-      ORDER BY COALESCE(d.data_publicacao, d.created_at::date) DESC
+      ORDER BY COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) DESC
       LIMIT 10
     ")
     cat("DEBUG: Recent query got", nrow(recent), "rows\n")
     
-    # Date range - simple approach
+    # Date range - using official promulgation_date from lexml_parsed_enhanced_fixed
     date_range <- dbGetQuery(db_pool, "
       SELECT 
-        MIN(COALESCE(data_publicacao, created_at::date)) as min_date,
-        MAX(COALESCE(data_publicacao, created_at::date)) as max_date
-      FROM documents 
-      WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
+        MIN(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as min_date,
+        MAX(COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date)) as max_date
+      FROM documents d
+      LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
+      WHERE COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) IS NOT NULL
     ")
     cat("DEBUG: Date range query completed\n")
     
