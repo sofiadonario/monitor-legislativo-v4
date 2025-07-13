@@ -1329,9 +1329,6 @@ server <- function(input, output, session) {
             "Type" = tipo,
             "State" = estado,
             "Enacting Date" = enacting_date
-          ) %>%
-          mutate(
-            Date = as.Date(Date)
           )
         
         DT::datatable(
