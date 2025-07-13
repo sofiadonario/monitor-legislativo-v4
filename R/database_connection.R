@@ -294,24 +294,51 @@ get_documents <- function(limit = NULL) {
       # Try simple query first without complex joins or date parsing
       tryCatch({
         cat("DEBUG: Trying basic query without joins...\n")
-        query <- "
-          SELECT 
-            id,
-            titulo,
-            tipo,
-            estado,
-            CASE 
-              WHEN estado_codigo IS NOT NULL THEN estado_codigo
-              ELSE estado 
-            END as estado_codigo,
-            '' as municipio,
-            COALESCE(data_publicacao, created_at::date) as enacting_date,
-            url,
-            urn
-          FROM documents 
-          WHERE titulo IS NOT NULL 
-          ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
-        "
+        # First check if estado_codigo column exists
+        has_estado_codigo <- tryCatch({
+          dbGetQuery(db_pool, "SELECT estado_codigo FROM documents LIMIT 1")
+          TRUE
+        }, error = function(e) {
+          cat("DEBUG: estado_codigo column not found, using estado instead\n")
+          FALSE
+        })
+        
+        if (has_estado_codigo) {
+          query <- "
+            SELECT 
+              id,
+              titulo,
+              tipo,
+              estado,
+              CASE 
+                WHEN estado_codigo IS NOT NULL THEN estado_codigo
+                ELSE estado 
+              END as estado_codigo,
+              '' as municipio,
+              COALESCE(data_publicacao, created_at::date) as enacting_date,
+              url,
+              urn
+            FROM documents 
+            WHERE titulo IS NOT NULL 
+            ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
+          "
+        } else {
+          query <- "
+            SELECT 
+              id,
+              titulo,
+              tipo,
+              estado,
+              estado as estado_codigo,
+              '' as municipio,
+              COALESCE(data_publicacao, created_at::date) as enacting_date,
+              url,
+              urn
+            FROM documents 
+            WHERE titulo IS NOT NULL 
+            ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
+          "
+        }
         result <- dbGetQuery(db_pool, query)
         cat("DEBUG: Basic query returned", nrow(result), "rows\n")
         
@@ -350,25 +377,54 @@ get_documents <- function(limit = NULL) {
     } else {
       # Limited query - use simple approach
       cat("DEBUG: Using limited query with limit:", limit, "\n")
-      query <- paste0("
-        SELECT 
-          id,
-          titulo,
-          tipo,
-          estado,
-          CASE 
-            WHEN estado_codigo IS NOT NULL THEN estado_codigo
-            ELSE estado 
-          END as estado_codigo,
-          '' as municipio,
-          COALESCE(data_publicacao, created_at::date) as enacting_date,
-          url,
-          urn
-        FROM documents 
-        WHERE titulo IS NOT NULL 
-        ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
-        LIMIT ", limit
-      )
+      
+      # Check if estado_codigo column exists for limited query too
+      has_estado_codigo <- tryCatch({
+        dbGetQuery(db_pool, "SELECT estado_codigo FROM documents LIMIT 1")
+        TRUE
+      }, error = function(e) {
+        cat("DEBUG: estado_codigo column not found for limited query\n")
+        FALSE
+      })
+      
+      if (has_estado_codigo) {
+        query <- paste0("
+          SELECT 
+            id,
+            titulo,
+            tipo,
+            estado,
+            CASE 
+              WHEN estado_codigo IS NOT NULL THEN estado_codigo
+              ELSE estado 
+            END as estado_codigo,
+            '' as municipio,
+            COALESCE(data_publicacao, created_at::date) as enacting_date,
+            url,
+            urn
+          FROM documents 
+          WHERE titulo IS NOT NULL 
+          ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
+          LIMIT ", limit
+        )
+      } else {
+        query <- paste0("
+          SELECT 
+            id,
+            titulo,
+            tipo,
+            estado,
+            estado as estado_codigo,
+            '' as municipio,
+            COALESCE(data_publicacao, created_at::date) as enacting_date,
+            url,
+            urn
+          FROM documents 
+          WHERE titulo IS NOT NULL 
+          ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
+          LIMIT ", limit
+        )
+      }
       result <- dbGetQuery(db_pool, query)
       cat("DEBUG: Limited query returned", nrow(result), "rows\n")
     }
