@@ -1075,6 +1075,11 @@ server <- function(input, output, session) {
         ")
         
         cat("🔄 Map data loaded:", nrow(map_data), "states\n")
+        cat("🔄 State names in database:", paste(map_data$estado, collapse = ", "), "\n")
+        
+        # Check for Amazonas specifically
+        amazonas_count <- map_data$documento_count[map_data$estado == "Amazonas"]
+        cat("🔄 Amazonas count in map data:", ifelse(length(amazonas_count) > 0, amazonas_count, "NOT FOUND"), "\n")
         
         if (nrow(map_data) > 0 && !is.null(values$geographic_data)) {
           # Create the legislative map
@@ -1084,6 +1089,24 @@ server <- function(input, output, session) {
             focus_state = NULL,
             color_by = "count"
           )
+          
+          # Add debug overlay to show data
+          if (!is.null(map)) {
+            map <- map %>%
+              addControl(
+                html = paste0(
+                  "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 250px;'>",
+                  "<h4>Debug: Map Data</h4>",
+                  "<strong>Total States:</strong> ", nrow(map_data), "<br>",
+                  "<strong>Total Documents:</strong> ", sum(map_data$documento_count), "<br>",
+                  "<strong>Amazonas:</strong> ", map_data$documento_count[map_data$estado == "Amazonas"], " docs<br>",
+                  "<strong>Top 5 States:</strong><br>",
+                  paste(head(map_data, 5)$estado, ": ", head(map_data, 5)$documento_count, collapse = "<br>"),
+                  "</div>"
+                ),
+                position = "topleft"
+              )
+          }
           
           return(map)
         } else {
@@ -1132,18 +1155,27 @@ server <- function(input, output, session) {
         
         if (nrow(map_data) > 0) {
           # Create simple map with markers
-          leaflet() %>%
+          map <- leaflet() %>%
             addTiles() %>%
-            setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+            setView(lng = -47.9292, lat = -15.7801, zoom = 4)
+          
+          # Add detailed data overlay
+          map <- map %>%
             addControl(
-              html = paste0("<div style='padding: 10px; background: white; border-radius: 5px;'>
-                      <b>Legislative Documents by State</b><br>
-                      Total: ", sum(map_data$documento_count), " documents<br>
-                      States: ", nrow(map_data), " states<br>
-                      Amazonas: ", map_data$documento_count[map_data$estado == "Amazonas"], " documents
-                      </div>"),
+              html = paste0(
+                "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 300px;'>",
+                "<h4>Legislative Documents by State</h4>",
+                "<strong>Total Documents:</strong> ", sum(map_data$documento_count), "<br>",
+                "<strong>Total States:</strong> ", nrow(map_data), "<br>",
+                "<strong>Amazonas:</strong> ", map_data$documento_count[map_data$estado == "Amazonas"], " documents<br><br>",
+                "<strong>Top 10 States:</strong><br>",
+                paste(head(map_data, 10)$estado, ": ", head(map_data, 10)$documento_count, collapse = "<br>"),
+                "</div>"
+              ),
               position = "topright"
             )
+          
+          return(map)
         } else {
           # Show basic map
           leaflet() %>%
