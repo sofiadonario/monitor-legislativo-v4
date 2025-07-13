@@ -10,7 +10,8 @@ sample_documents <- data.frame(
     "Resolução CNJ 432/2021",
     "Medida Provisória 1.090/2021"
   ),
-  tipo = c("lei", "decreto", "portaria", "resolução", "medida provisória"),
+  tipo = c("legislation", "legislation", "legislation", "legislation", "legislation"),
+  species = c("Lei Ordinária", "Decreto", "Portaria", "Resolução", "Medida Provisória"),
   estado = c("Federal", "São Paulo", "Federal", "Federal", "Federal"),
   estado_codigo = c("BR", "SP", "BR", "BR", "BR"),
   municipio = c("", "São Paulo", "", "", ""),

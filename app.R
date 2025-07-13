@@ -17,6 +17,9 @@ source("R/database_connection.R")
 # Load map generator module for geographic visualization
 source("R/map_generator.R")
 
+# Load enhanced search functionality
+source("R/enhanced_search.R")
+
 # Initialize database connection with force refresh
 database_connected <- FALSE
 database_error <- ""
@@ -194,15 +197,29 @@ ui <- dashboardPage(
             if(database_connected) {
               div(
                 fluidRow(
-                  column(6,
+                  column(12,
                     textInput("searchText", "Search Text:", 
                              placeholder = "Enter keywords to search titles and content...")
+                  )
+                ),
+                fluidRow(
+                  column(4,
+                    selectizeInput("genderFilter", "Gender:", 
+                                 choices = list("All" = "", "Legislation" = "legislation", "Jurisprudence" = "jurisprudence"), 
+                                 selected = "",
+                                 options = list(placeholder = "Select gender (optional)"))
                   ),
-                  column(6,
-                    selectizeInput("documentTypes", "Document Types:", 
+                  column(4,
+                    selectizeInput("speciesFilter", "Species:", 
                                  choices = NULL, 
                                  multiple = TRUE,
-                                 options = list(placeholder = "Select document types (optional)"))
+                                 options = list(placeholder = "Select species (optional)"))
+                  ),
+                  column(4,
+                    selectizeInput("documentTypes", "Legacy Types:", 
+                                 choices = NULL, 
+                                 multiple = TRUE,
+                                 options = list(placeholder = "Select legacy types (optional)"))
                   )
                 ),
                 fluidRow(
@@ -1374,6 +1391,50 @@ server <- function(input, output, session) {
     }
   })
   
+  # === Gender/Species Enhancement ===
+  
+  # Update species choices based on gender selection
+  observeEvent(input$genderFilter, {
+    if (database_connected && !is.null(db_pool)) {
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        
+        # Get species choices based on selected gender
+        if (input$genderFilter == "") {
+          # All species from both genders
+          species_query <- "SELECT DISTINCT species FROM documents WHERE species IS NOT NULL AND species != '' ORDER BY species"
+        } else {
+          # Species from selected gender only
+          species_query <- paste0("SELECT DISTINCT species FROM documents WHERE tipo = '", input$genderFilter, "' AND species IS NOT NULL AND species != '' ORDER BY species")
+        }
+        
+        species_choices <- dbGetQuery(conn, species_query)$species
+        updateSelectizeInput(session, "speciesFilter", choices = species_choices)
+        
+      }, error = function(e) {
+        cat("Error updating species choices:", e$message, "\n")
+      })
+    }
+  })
+  
+  # Initialize species filter choices on startup
+  observe({
+    if (database_connected && !is.null(db_pool)) {
+      tryCatch({
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
+        
+        # Get all available species
+        species_choices <- dbGetQuery(conn, "SELECT DISTINCT species FROM documents WHERE species IS NOT NULL AND species != '' ORDER BY species")$species
+        updateSelectizeInput(session, "speciesFilter", choices = species_choices)
+        
+      }, error = function(e) {
+        cat("Error initializing species choices:", e$message, "\n")
+      })
+    }
+  })
+
   # Cleanup on session end
   session$onSessionEnded(function() {
     cleanup_database()

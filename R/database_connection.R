@@ -309,6 +309,7 @@ get_documents <- function(limit = NULL) {
               id,
               titulo,
               tipo,
+              COALESCE(species, 'Não Classificado') as species,
               estado,
               CASE 
                 WHEN estado_codigo IS NOT NULL THEN estado_codigo
@@ -328,6 +329,7 @@ get_documents <- function(limit = NULL) {
               id,
               titulo,
               tipo,
+              COALESCE(species, 'Não Classificado') as species,
               estado,
               estado as estado_codigo,
               '' as municipio,

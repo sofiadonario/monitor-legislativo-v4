@@ -1,0 +1,229 @@
+              analysis               
+-------------------------------------
+ CURRENT DOCUMENT TYPES (tipo field)
+(1 row)
+
+     tipo      | count 
+---------------+-------
+ legislation   |  1328
+ jurisprudence |   575
+               |     1
+(3 rows)
+
+           analysis           
+------------------------------
+ DOCUMENT TYPES FROM METADATA
+(1 row)
+
+ gender | document_type_metadata | count 
+--------+------------------------+-------
+(0 rows)
+
+                   analysis                   
+----------------------------------------------
+ DOCUMENT TYPES FROM document_type_full FIELD
+(1 row)
+
+    gender     |                                 document_type_full                                  | count 
+---------------+-------------------------------------------------------------------------------------+-------
+ jurisprudence | Acordao                                                                             |   326
+ jurisprudence | Acordao;Resp                                                                        |    48
+ jurisprudence | Acordao;Rr                                                                          |    48
+ jurisprudence | Acordao;Airr                                                                        |    47
+ jurisprudence | Acordao;Ag                                                                          |    26
+ jurisprudence | Acordao;Re                                                                          |    17
+ jurisprudence | Acordao;Ms                                                                          |    17
+ jurisprudence | Acordao;Aresp                                                                       |    14
+ jurisprudence | Acordao;Ed                                                                          |     4
+ jurisprudence | Acordao;Rms                                                                         |     4
+ jurisprudence | Acordao;Ro                                                                          |     4
+ jurisprudence | Acordao;Arr                                                                         |     4
+ jurisprudence | Instrucao.Normativa                                                                 |     3
+ jurisprudence | Acordao;Hc                                                                          |     3
+ jurisprudence | Acordao;E                                                                           |     1
+ jurisprudence | Acordao;Mi                                                                          |     1
+ jurisprudence | Acordao;Eresp                                                                       |     1
+ jurisprudence | Acordao;Rodc                                                                        |     1
+ jurisprudence | Acordao;Ai                                                                          |     1
+ jurisprudence | Acordao;Roaa                                                                        |     1
+ jurisprudence | Acordao;Agr                                                                         |     1
+ jurisprudence | Acordao;Roms                                                                        |     1
+ jurisprudence | Acordao;Sls                                                                         |     1
+ jurisprudence | Acordao;Adi                                                                         |     1
+ legislation   | Federal                                                                             |   403
+ legislation   | Municipal                                                                           |   198
+ legislation   | Agencia Nacional Energia Eletrica                                                   |   165
+ legislation   | Estadual                                                                            |   127
+ legislation   | Senado Federal                                                                      |   111
+ legislation   | Congresso Nacional                                                                  |    89
+ legislation   | Camara Deputados                                                                    |    67
+ legislation   | Distrital                                                                           |    49
+ legislation   | Ministerio Fazenda;Secretaria Receita Federal Brasil                                |    18
+ legislation   | Camara Municipal                                                                    |    14
+ legislation   | Ministerio Planejamento Orcamento Gestao                                            |    13
+ legislation   | Advocacia Geral Uniao;Procuradoria Geral Federal                                    |     9
+ legislation   | Ministerio Administracao Federal Reforma Estado                                     |     7
+ legislation   | Advocacia Geral Uniao                                                               |     6
+ legislation   | Presidencia Republica;Secretaria Administracao Federal                              |     5
+ legislation   | Ministerio Fazenda;Secretaria Receita Federal                                       |     5
+ legislation   | Instituto Nacional Seguro Social                                                    |     3
+ legislation   | Ministerio Planejamento Orcamento                                                   |     2
+ legislation   | Presidencia Republica;Gabinete Seguranca Institucional                              |     2
+ legislation   | Ministerio Educacao                                                                 |     2
+ legislation   | Advocacia Geral Uniao;Consultoria Geral Uniao                                       |     2
+ legislation   | Ministerio Planejamento Orcamento Gestao;Secretaria Logistica Tecnologia Informacao |     2
+ legislation   | Ministerio Planejamento Orcamento Gestao;Secretaria Recursos Humanos                |     1
+ legislation   | Departamento Administrativo Servico Publico                                         |     1
+ legislation   | Ministerio Orcamento Gestao;Secretaria Gestao                                       |     1
+ legislation   | Advocacia Geral Uniao;Corregedoria Geral Agu                                        |     1
+(50 rows)
+
+            analysis             
+---------------------------------
+ AUTHORITIES PRODUCING DOCUMENTS
+(1 row)
+
+    gender     |                                 authority                                 | count 
+---------------+---------------------------------------------------------------------------+-------
+ jurisprudence | Tribunal Superior do Trabalho. 7ª Turma                                   |    27
+ jurisprudence | Tribunal Regional do Trabalho. 2ª Turma                                   |    27
+ jurisprudence | Tribunal Regional do Trabalho. 7ª Turma                                   |    25
+ jurisprudence | Tribunal Regional do Trabalho. 3ª Turma                                   |    24
+ jurisprudence | Superior Tribunal de Justiça. 2ª Turma                                    |    24
+ jurisprudence | Tribunal Superior do Trabalho. 3ª Turma                                   |    23
+ jurisprudence | Tribunal Regional do Trabalho. 9ª Turma                                   |    21
+ jurisprudence | Tribunal de Contas da União. Plenário                                     |    19
+ jurisprudence | Tribunal Regional do Trabalho. 1ª Turma                                   |    18
+ jurisprudence | Superior Tribunal de Justiça. 1ª Turma                                    |    17
+ jurisprudence | Tribunal Regional do Trabalho. 5ª Turma                                   |    16
+ jurisprudence | Tribunal Superior do Trabalho. 6ª Turma                                   |    16
+ jurisprudence | Tribunal Regional do Trabalho. 8ª Turma                                   |    15
+ jurisprudence | Superior Tribunal de Justiça. 3ª Turma                                    |    15
+ jurisprudence | Tribunal de Justiça do Distrito Federal e dos Territórios. 6ª Turma Cível |    14
+ jurisprudence | Tribunal Superior do Trabalho. 2ª Turma                                   |    13
+ jurisprudence | Tribunal Superior do Trabalho. 8ª Turma                                   |    13
+ jurisprudence | Supremo Tribunal Federal. 1ª Turma                                        |    13
+ jurisprudence | Tribunal Superior do Trabalho. 4ª Turma                                   |    11
+ jurisprudence | Superior Tribunal de Justiça. 4ª Turma                                    |    11
+ jurisprudence | Supremo Tribunal Federal. 2ª Turma                                        |    11
+ jurisprudence | Tribunal Regional do Trabalho. 4ª Turma                                   |    10
+ jurisprudence | Tribunal Superior do Trabalho. 5ª Turma                                   |    10
+ jurisprudence | Tribunal Regional do Trabalho. Turma Recursal de Juiz de Fora             |    10
+ jurisprudence | Tribunal Superior do Trabalho. 1ª Turma                                   |    10
+ jurisprudence | Tribunal de Justiça do Distrito Federal e dos Territórios. 3ª Turma Cível |     9
+ jurisprudence | Tribunal Regional do Trabalho. 6ª Turma                                   |     9
+ jurisprudence | Tribunal Regional do Trabalho.1ª Turma                                    |     8
+ jurisprudence | Tribunal de Justiça do Distrito Federal e dos Territórios. 4ª Turma Cível |     8
+ jurisprudence | Primeiro Conselho de Contribuintes. 2ª Câmara. Turma Ordinária            |     7
+(30 rows)
+
+                analysis                 
+-----------------------------------------
+ LEGISLATION SPECIES FROM TITLE PATTERNS
+(1 row)
+
+        species        | count 
+-----------------------+-------
+ Outros                |   888
+ Resolução             |   204
+ Medida Provisória     |    99
+ Portaria              |    46
+ Lei Ordinária         |    37
+ Decreto-Lei           |    33
+ Decreto Legislativo   |     9
+ Lei Complementar      |     7
+ Circular              |     2
+ Emenda Constitucional |     2
+ Constituição          |     1
+(11 rows)
+
+                   analysis                    
+-----------------------------------------------
+ JURISPRUDENCE SPECIES FROM AUTHORITY PATTERNS
+(1 row)
+
+               species               | count 
+-------------------------------------+-------
+ TRT - Tribunal Regional do Trabalho |   200
+ Tribunais Superiores                |   135
+ STJ - Superior Tribunal de Justiça  |    81
+ TJ - Tribunal de Justiça            |    62
+ Turmas e Câmaras                    |    43
+ STF - Supremo Tribunal Federal      |    30
+ Outros Órgãos Judiciários           |    24
+(7 rows)
+
+              analysis              
+------------------------------------
+ SPECIES FROM URN PATTERNS (SAMPLE)
+(1 row)
+
+    gender     |      urn_document_type      | count 
+---------------+-----------------------------+-------
+ jurisprudence | acordao                     |   313
+ jurisprudence |                             |   262
+ legislation   |                             |   391
+ legislation   | decreto                     |   228
+ legislation   | medida.provisoria           |   127
+ legislation   | projeto.lei                 |   117
+ legislation   | lei                         |    86
+ legislation   | resolucao                   |    79
+ legislation   | portaria                    |    45
+ legislation   | projeto.lei.conversao       |    44
+ legislation   | resolucao.homologatoria     |    44
+ legislation   | resolucao.autorizativa      |    40
+ legislation   | instrucao.normativa         |    37
+ legislation   | decreto.lei                 |    28
+ legislation   | resolucao.normativa         |    24
+ legislation   | orientacao.normativa        |    16
+ legislation   | projeto.decreto.legislativo |     5
+ legislation   | decreto.legislativo         |     5
+ legislation   | lei.complementar            |     4
+ legislation   | projeto.resolucao           |     2
+ legislation   | emenda.constitucional       |     2
+ legislation   | oficio.circular             |     2
+ legislation   | portaria.interministerial   |     1
+ legislation   | acordao                     |     1
+(24 rows)
+
+           analysis            
+-------------------------------
+ SUMMARY - GENDER DISTRIBUTION
+(1 row)
+
+    gender     | total_documents | states_covered | unique_authorities | oldest_document | newest_document 
+---------------+-----------------+----------------+--------------------+-----------------+-----------------
+ jurisprudence |             575 |              8 |                 87 | 1951-04-24      | 2025-03-12
+ legislation   |            1328 |             14 |                 35 | 1856-04-25      | 2025-01-22
+               |               1 |              0 |                  0 | 2005-01-01      | 2005-01-01
+(3 rows)
+
+           analysis           
+------------------------------
+ PROPOSED LEGISLATION SPECIES
+(1 row)
+
+        species         | count 
+------------------------+-------
+ Outros Atos Normativos |   527
+ Decreto                |   372
+ Resolução              |   204
+ Medida Provisória      |   128
+ Portaria               |    46
+ Decreto-Lei            |    33
+ Decreto Legislativo    |     9
+ Lei Complementar       |     7
+ Emenda Constitucional  |     2
+(9 rows)
+
+            analysis            
+--------------------------------
+ PROPOSED JURISPRUDENCE SPECIES
+(1 row)
+
+          species          | count 
+---------------------------+-------
+ Acórdão                   |   572
+ Outras Decisões Judiciais |     3
+(2 rows)
+
