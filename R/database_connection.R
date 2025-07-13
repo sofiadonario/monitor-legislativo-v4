@@ -291,80 +291,86 @@ get_documents <- function(limit = NULL) {
     }
     
     if (is.null(limit)) {
-      # Try complex date parsing first, fall back to simple if it fails
+      # Try simple query first without complex joins or date parsing
       tryCatch({
-        date_sql <- create_date_coalesce_sql("d")
-        query <- paste0("
+        cat("DEBUG: Trying basic query without joins...\n")
+        query <- "
           SELECT 
-            d.id,
-            d.titulo,
-            d.tipo,
-            d.estado,
-            d.estado_codigo,
-            COALESCE(lpe.municipality, 
-                     d.metadata->>'municipality', 
-                     CASE WHEN d.estado = 'SP' THEN 'São Paulo'
-                          WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
-                          ELSE NULL END) as municipio,
-            (", date_sql, ") as enacting_date,
-            d.url,
-            d.urn
-          FROM documents d
-          LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
-          WHERE d.titulo IS NOT NULL 
-          ORDER BY (", date_sql, ") DESC NULLS LAST
-        ")
+            id,
+            titulo,
+            tipo,
+            estado,
+            CASE 
+              WHEN estado_codigo IS NOT NULL THEN estado_codigo
+              ELSE estado 
+            END as estado_codigo,
+            '' as municipio,
+            COALESCE(data_publicacao, created_at::date) as enacting_date,
+            url,
+            urn
+          FROM documents 
+          WHERE titulo IS NOT NULL 
+          ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
+        "
         result <- dbGetQuery(db_pool, query)
+        cat("DEBUG: Basic query returned", nrow(result), "rows\n")
+        
+        # If basic query fails, try even simpler
+        if (nrow(result) == 0) {
+          cat("DEBUG: Basic query returned 0, trying minimal query...\n")
+          query <- "
+            SELECT 
+              id,
+              titulo,
+              tipo,
+              estado,
+              estado as estado_codigo,
+              '' as municipio,
+              created_at::date as enacting_date,
+              url,
+              urn
+            FROM documents 
+            ORDER BY id DESC
+          "
+          result <- dbGetQuery(db_pool, query)
+          cat("DEBUG: Minimal query returned", nrow(result), "rows\n")
+        }
       }, error = function(e) {
-        cat("Complex date query failed, trying simple fallback:", e$message, "\n")
-        # Fall back to simple date handling
-        simple_date_sql <- create_simple_date_coalesce_sql("d")
-        query <- paste0("
-          SELECT 
-            d.id,
-            d.titulo,
-            d.tipo,
-            d.estado,
-            d.estado_codigo,
-            COALESCE(lpe.municipality, 
-                     d.metadata->>'municipality', 
-                     CASE WHEN d.estado = 'SP' THEN 'São Paulo'
-                          WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
-                          ELSE NULL END) as municipio,
-            (", simple_date_sql, ") as enacting_date,
-            d.url,
-            d.urn
-          FROM documents d
-          LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
-          WHERE d.titulo IS NOT NULL 
-          ORDER BY (", simple_date_sql, ") DESC NULLS LAST
-        ")
-        result <<- dbGetQuery(db_pool, query)
+        cat("ERROR: All queries failed:", e$message, "\n")
+        # Ultimate fallback: just get basic data
+        cat("DEBUG: Trying ultimate fallback query...\n")
+        query <- "SELECT id, titulo, tipo, estado FROM documents LIMIT 100"
+        result <<- tryCatch({
+          dbGetQuery(db_pool, query)
+        }, error = function(e2) {
+          cat("ERROR: Even fallback failed:", e2$message, "\n")
+          data.frame()
+        })
       })
     } else {
-      date_sql <- create_date_coalesce_sql("d")
+      # Limited query - use simple approach
+      cat("DEBUG: Using limited query with limit:", limit, "\n")
       query <- paste0("
         SELECT 
-          d.id,
-          d.titulo,
-          d.tipo,
-          d.estado,
-          d.estado_codigo,
-          COALESCE(lpe.municipality, 
-                   d.metadata->>'municipality', 
-                   CASE WHEN d.estado = 'SP' THEN 'São Paulo'
-                        WHEN d.estado = 'RJ' THEN 'Rio de Janeiro'
-                        ELSE NULL END) as municipio,
-          (", date_sql, ") as enacting_date,
-          d.url,
-          d.urn
-        FROM documents d
-        LEFT JOIN lexml_parsed_enhanced_fixed lpe ON d.urn = lpe.urn
-        WHERE d.titulo IS NOT NULL 
-        ORDER BY (", date_sql, ") DESC NULLS LAST
-        LIMIT $1
-      ")
-      result <- dbGetQuery(db_pool, query, params = list(limit))
+          id,
+          titulo,
+          tipo,
+          estado,
+          CASE 
+            WHEN estado_codigo IS NOT NULL THEN estado_codigo
+            ELSE estado 
+          END as estado_codigo,
+          '' as municipio,
+          COALESCE(data_publicacao, created_at::date) as enacting_date,
+          url,
+          urn
+        FROM documents 
+        WHERE titulo IS NOT NULL 
+        ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
+        LIMIT ", limit
+      )
+      result <- dbGetQuery(db_pool, query)
+      cat("DEBUG: Limited query returned", nrow(result), "rows\n")
     }
     
     cat("DEBUG: Query executed, got", nrow(result), "rows\n")
@@ -382,22 +388,23 @@ get_documents <- function(limit = NULL) {
       cat("Retrieved", nrow(result), "documents from database\n")
     } else {
       cat("WARNING: Query returned 0 rows\n")
-      # If we got no results, let's try a simpler query without the WHERE clause
-      cat("Trying fallback query without titulo filter...\n")
-      date_sql <- create_date_coalesce_sql("d")
-      fallback_query <- paste0("
+      # If we got no results, let's try the simplest possible query
+      cat("Trying ultra-simple fallback query...\n")
+      fallback_query <- "
         SELECT 
-          d.id,
-          COALESCE(d.titulo, 'Untitled Document') as titulo,
-          d.tipo,
-          d.estado,
-          (", date_sql, ") as enacting_date,
-          d.url,
-          d.urn
-        FROM documents d
-        ORDER BY d.id DESC
-        LIMIT 10
-      ")
+          id,
+          titulo,
+          tipo,
+          estado,
+          estado as estado_codigo,
+          '' as municipio,
+          created_at::date as enacting_date,
+          url,
+          urn
+        FROM documents 
+        ORDER BY id DESC
+        LIMIT 100
+      "
       result <- dbGetQuery(db_pool, fallback_query)
       cat("Fallback query returned", nrow(result), "rows\n")
       
