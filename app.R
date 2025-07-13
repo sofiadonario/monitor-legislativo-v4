@@ -1101,37 +1101,39 @@ server <- function(input, output, session) {
     }
   })
   
-  # Dashboard Map - Main Interactive Map with direct database queries
+  # Dashboard Map - Simplified map rendering using cached data
   output$dashboardMap <- renderLeaflet({
-    if (database_connected && !is.null(values$geographic_data)) {
-      # Use direct database query for map data
+    cat("🔄 Dashboard map rendering triggered\n")
+    
+    # Use cached documents data instead of direct database queries
+    if (!is.null(values$current_documents) && nrow(values$current_documents) > 0) {
+      cat("🔄 Using cached documents data:", nrow(values$current_documents), "documents\n")
+      
+      # Aggregate data by state using cached documents
       tryCatch({
-        conn <- poolCheckout(db_pool)
-        on.exit(poolReturn(conn))
+        # Get state data with estado_codigo if available
+        if ("estado_codigo" %in% names(values$current_documents)) {
+          map_data <- values$current_documents %>%
+            filter(!is.na(estado), estado != '', !is.na(estado_codigo), estado_codigo != '') %>%
+            group_by(estado, estado_codigo) %>%
+            summarise(documento_count = n(), .groups = "drop") %>%
+            arrange(desc(documento_count))
+        } else {
+          map_data <- values$current_documents %>%
+            filter(!is.na(estado), estado != '') %>%
+            group_by(estado) %>%
+            summarise(documento_count = n(), .groups = "drop") %>%
+            arrange(desc(documento_count))
+        }
         
-        # Get state data directly from database
-        map_data <- dbGetQuery(conn, "
-          SELECT 
-            estado,
-            COUNT(*) as documento_count
-          FROM documents 
-          WHERE estado IS NOT NULL AND estado != ''
-          GROUP BY estado
-          ORDER BY documento_count DESC
-        ")
+        cat("🔄 Map data aggregated:", nrow(map_data), "states\n")
+        cat("🔄 Total documents for map:", sum(map_data$documento_count), "\n")
         
-        cat("🔄 Map data loaded:", nrow(map_data), "states\n")
-        cat("🔄 State names in database:", paste(map_data$estado, collapse = ", "), "\n")
-        
-        # Check for Amazonas specifically
-        amazonas_count <- map_data$documento_count[map_data$estado == "Amazonas"]
-        cat("🔄 Amazonas count in map data:", ifelse(length(amazonas_count) > 0, amazonas_count, "NOT FOUND"), "\n")
-        
-        if (nrow(map_data) > 0 && !is.null(values$geographic_data)) {
-          cat("🔄 Creating legislative map with", nrow(map_data), "states\n")
-          
-          # Create the legislative map with error handling
-          tryCatch({
+        if (nrow(map_data) > 0) {
+          # Create map with geographic data if available
+          if (!is.null(values$geographic_data)) {
+            cat("🔄 Creating map with geographic boundaries\n")
+            
             map <- create_legislative_map(
               legislative_data = map_data,
               geography_data = values$geographic_data,
@@ -1139,144 +1141,73 @@ server <- function(input, output, session) {
               color_by = "count"
             )
             
-            cat("✅ Map created successfully\n")
-            
-            # Add debug overlay to show data
+            # If map creation succeeds, return it
             if (!is.null(map)) {
-              map <- map %>%
-                addControl(
-                  html = paste0(
-                    "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 250px;'>",
-                    "<h4>Debug: Map Data</h4>",
-                    "<strong>Total States:</strong> ", nrow(map_data), "<br>",
-                    "<strong>Total Documents:</strong> ", sum(map_data$documento_count), "<br>",
-                    "<strong>Amazonas:</strong> ", map_data$documento_count[map_data$estado == "Amazonas"], " docs<br>",
-                    "<strong>Top 5 States:</strong><br>",
-                    paste(head(map_data, 5)$estado, ": ", head(map_data, 5)$documento_count, collapse = "<br>"),
-                    "</div>"
-                  ),
-                  position = "topleft"
-                )
+              cat("✅ Map with boundaries created successfully\n")
+              return(map)
             }
-            
-            return(map)
-          }, error = function(e) {
-            cat("❌ Error creating map:", e$message, "\n")
-            cat("❌ Error details:", e, "\n")
-            
-            # Return fallback map with error message
-            leaflet() %>%
-              addTiles() %>%
-              setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-              addControl(
-                html = paste0(
-                  "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 300px;'>",
-                  "<h4>Map Error</h4>",
-                  "<strong>Error:</strong> ", e$message, "<br><br>",
-                  "<strong>Map Data Available:</strong><br>",
-                  "<strong>Total States:</strong> ", nrow(map_data), "<br>",
-                  "<strong>Total Documents:</strong> ", sum(map_data$documento_count), "<br>",
-                  "<strong>Amazonas:</strong> ", map_data$documento_count[map_data$estado == "Amazonas"], " docs<br>",
-                  "<strong>Top 5 States:</strong><br>",
-                  paste(head(map_data, 5)$estado, ": ", head(map_data, 5)$documento_count, collapse = "<br>"),
-                  "</div>"
-                ),
-                position = "topright"
-              )
-          })
-        } else {
-          # Show empty map with Brazil boundaries
+          }
+          
+          # Fallback: create simple map with data overlay
+          cat("🔄 Creating fallback map with data overlay\n")
           leaflet() %>%
             addTiles() %>%
             setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-            addControl(
-              html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
-                      <b>No state data available</b><br>
-                      Geographic data loaded but no documents found
-                      </div>",
-              position = "topright"
-            )
-        }
-      }, error = function(e) {
-        cat("❌ Error loading map data:", e$message, "\n")
-        # Show error map
-        leaflet() %>%
-          addTiles() %>%
-          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-          addControl(
-            html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
-                    <b>Error loading map data</b><br>
-                    ", e$message, "
-                    </div>",
-            position = "topright"
-          )
-      })
-    } else {
-      # Show basic map when not connected or geographic data missing
-      tryCatch({
-        conn <- poolCheckout(db_pool)
-        on.exit(poolReturn(conn))
-        
-        # Get state data for simple map
-        map_data <- dbGetQuery(conn, "
-          SELECT 
-            estado,
-            COUNT(*) as documento_count
-          FROM documents 
-          WHERE estado IS NOT NULL AND estado != ''
-          GROUP BY estado
-          ORDER BY documento_count DESC
-        ")
-        
-        if (nrow(map_data) > 0) {
-          # Create simple map with markers
-          map <- leaflet() %>%
-            addTiles() %>%
-            setView(lng = -47.9292, lat = -15.7801, zoom = 4)
-          
-          # Add detailed data overlay
-          map <- map %>%
             addControl(
               html = paste0(
                 "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 300px;'>",
                 "<h4>Legislative Documents by State</h4>",
                 "<strong>Total Documents:</strong> ", sum(map_data$documento_count), "<br>",
-                "<strong>Total States:</strong> ", nrow(map_data), "<br>",
-                "<strong>Amazonas:</strong> ", map_data$documento_count[map_data$estado == "Amazonas"], " documents<br><br>",
+                "<strong>Total States:</strong> ", nrow(map_data), "<br><br>",
                 "<strong>Top 10 States:</strong><br>",
                 paste(head(map_data, 10)$estado, ": ", head(map_data, 10)$documento_count, collapse = "<br>"),
                 "</div>"
               ),
               position = "topright"
             )
-          
-          return(map)
         } else {
-          # Show basic map
+          # No data available
           leaflet() %>%
             addTiles() %>%
             setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
             addControl(
               html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
-                      <b>Database not connected</b><br>
-                      Connect to see legislative data by state
+                      <b>No state data available</b><br>
+                      No documents found in database
                       </div>",
               position = "topright"
             )
         }
       }, error = function(e) {
-        # Show basic map on error
+        cat("❌ Error processing map data:", e$message, "\n")
+        
+        # Error fallback map
         leaflet() %>%
           addTiles() %>%
           setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
           addControl(
-            html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
-                    <b>Database not connected</b><br>
-                    Connect to see legislative data by state
-                    </div>",
+            html = paste0(
+              "<div style='padding: 10px; background: white; border-radius: 5px;'>",
+              "<b>Map Error</b><br>",
+              "Error: ", e$message,
+              "</div>"
+            ),
             position = "topright"
           )
       })
+    } else {
+      # No cached data available
+      cat("⚠️ No cached documents data available\n")
+      leaflet() %>%
+        addTiles() %>%
+        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+        addControl(
+          html = "<div style='padding: 10px; background: white; border-radius: 5px;'>
+                  <b>Loading data...</b><br>
+                  Please wait while data loads
+                  </div>",
+          position = "topright"
+        )
     }
   })
   

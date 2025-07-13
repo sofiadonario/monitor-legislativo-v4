@@ -192,38 +192,45 @@ create_legislative_map <- function(legislative_data, geography_data,
     return(NULL)
   }
   
-  # Create comprehensive state name to code mapping
-  state_mapping <- data.frame(
-    estado = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "BR", "Ceará", 
-               "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão", 
-               "Mato Grosso", "Mato.Grosso.Sul", "Minas Gerais", "Pará", "Paraíba", 
-               "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro", "Rio.Janeiro",
-               "Rio Grande do Norte", "Rio.Grande.Norte", "Rio Grande do Sul", 
-               "Rio.Grande.Sul", "Rondônia", "Roraima", "Santa Catarina", 
-               "São Paulo", "Sergipe", "Tocantins",
-               # Additional variations from the logs
-               "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
-               "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
-               "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
-    abbrev_state = c("AC", "AL", "AP", "AM", "BA", "BR", "CE", 
-                     "DF", "ES", "GO", "MA", 
-                     "MT", "MS", "MG", "PA", "PB", 
-                     "PR", "PE", "PI", "RJ", "RJ",
-                     "RN", "RN", "RS", 
-                     "RS", "RO", "RR", "SC", 
-                     "SP", "SE", "TO",
-                     # Direct mappings for abbreviations
-                     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
-                     "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
-                     "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
-    stringsAsFactors = FALSE
-  )
-  
-  # Map state names to codes in legislative data
-  if ("estado" %in% names(legislative_data)) {
+  # Simple state mapping - use estado_codigo from database if available, otherwise map estado
+  if ("estado_codigo" %in% names(legislative_data)) {
+    # Use the standardized state codes from database
     legislative_data <- legislative_data %>%
-      left_join(state_mapping, by = "estado") %>%
-      mutate(abbrev_state = ifelse(is.na(abbrev_state), estado, abbrev_state))
+      mutate(abbrev_state = coalesce(estado_codigo, estado))
+  } else if ("estado" %in% names(legislative_data)) {
+    # Simple mapping for standardized state names
+    legislative_data <- legislative_data %>%
+      mutate(abbrev_state = case_when(
+        estado == "Acre" ~ "AC",
+        estado == "Alagoas" ~ "AL", 
+        estado == "Amapá" ~ "AP",
+        estado == "Amazonas" ~ "AM",
+        estado == "Bahia" ~ "BA",
+        estado == "Ceará" ~ "CE",
+        estado == "Distrito Federal" ~ "DF",
+        estado == "Espírito Santo" ~ "ES",
+        estado == "Goiás" ~ "GO",
+        estado == "Maranhão" ~ "MA",
+        estado == "Mato Grosso" ~ "MT",
+        estado == "Mato Grosso do Sul" ~ "MS",
+        estado == "Minas Gerais" ~ "MG",
+        estado == "Pará" ~ "PA",
+        estado == "Paraíba" ~ "PB",
+        estado == "Paraná" ~ "PR",
+        estado == "Pernambuco" ~ "PE",
+        estado == "Piauí" ~ "PI",
+        estado == "Rio de Janeiro" ~ "RJ",
+        estado == "Rio Grande do Norte" ~ "RN",
+        estado == "Rio Grande do Sul" ~ "RS",
+        estado == "Rondônia" ~ "RO",
+        estado == "Roraima" ~ "RR",
+        estado == "Santa Catarina" ~ "SC",
+        estado == "São Paulo" ~ "SP",
+        estado == "Sergipe" ~ "SE",
+        estado == "Tocantins" ~ "TO",
+        estado %in% c("Federal", "Brasil", "BR") ~ "BR",
+        TRUE ~ estado  # Keep original if no match
+      ))
   }
   
   states <- geography_data$states

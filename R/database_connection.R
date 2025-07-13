@@ -300,6 +300,7 @@ get_documents <- function(limit = NULL) {
             d.titulo,
             d.tipo,
             d.estado,
+            d.estado_codigo,
             COALESCE(lpe.municipality, 
                      d.metadata->>'municipality', 
                      CASE WHEN d.estado = 'SP' THEN 'São Paulo'
@@ -324,6 +325,7 @@ get_documents <- function(limit = NULL) {
             d.titulo,
             d.tipo,
             d.estado,
+            d.estado_codigo,
             COALESCE(lpe.municipality, 
                      d.metadata->>'municipality', 
                      CASE WHEN d.estado = 'SP' THEN 'São Paulo'
@@ -347,6 +349,7 @@ get_documents <- function(limit = NULL) {
           d.titulo,
           d.tipo,
           d.estado,
+          d.estado_codigo,
           COALESCE(lpe.municipality, 
                    d.metadata->>'municipality', 
                    CASE WHEN d.estado = 'SP' THEN 'São Paulo'
