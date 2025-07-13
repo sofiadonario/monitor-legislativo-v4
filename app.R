@@ -460,7 +460,8 @@ server <- function(input, output, session) {
           cat("❌ Failed to reinitialize database pool:", e$message, "\n")
         })
       }
-      values$current_documents <- sample_documents
+      # Don't use sample_documents here - it may not be defined
+      values$current_documents <- data.frame()
     }
   })
   
