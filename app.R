@@ -413,7 +413,7 @@ server <- function(input, output, session) {
   observe({
     cat("🔄 Initializing application data with force refresh...\n")
     
-    if (database_connected) {
+    if (database_connected && !is.null(db_pool)) {
       # Force refresh to ensure we get latest data
       cat("🔄 Force refreshing database queries...\n")
       
@@ -448,7 +448,18 @@ server <- function(input, output, session) {
       cat("🔄 Triggering UI refresh...\n")
       invalidateLater(1000)  # Force refresh after 1 second
     } else {
-      cat("⚠️ Using sample data due to database connection failure\n")
+      cat("⚠️ Database not connected or pool is NULL. Database connected:", database_connected, "Pool exists:", !is.null(db_pool), "\n")
+      if (database_connected && is.null(db_pool)) {
+        cat("🔄 Attempting to reinitialize database pool...\n")
+        # Try to reinitialize the database pool
+        tryCatch({
+          force_refresh_database()
+          # Wait a moment and try again
+          invalidateLater(2000)
+        }, error = function(e) {
+          cat("❌ Failed to reinitialize database pool:", e$message, "\n")
+        })
+      }
       values$current_documents <- sample_documents
     }
   })
@@ -465,20 +476,30 @@ server <- function(input, output, session) {
   
   # Database statistics
   output$dbStats <- renderText({
-    if (database_connected) {
-      stats <- get_document_stats()
-      paste(
-        "Total Documents:", stats$total_documents, "\n",
-        "Connection Status:", stats$connection_status
-      )
+    if (database_connected && !is.null(db_pool)) {
+      tryCatch({
+        stats <- get_document_stats()
+        paste(
+          "Total Documents:", stats$total_documents, "\n",
+          "Connection Status:", stats$connection_status
+        )
+      }, error = function(e) {
+        paste(
+          "Total Documents: 0\n",
+          "Connection Status: Error -", e$message
+        )
+      })
     } else {
-      "Database not connected"
+      paste(
+        "Total Documents: 0\n",
+        "Connection Status: No database connection"
+      )
     }
   })
   
   # Debug information
   output$debugInfo <- renderText({
-    if (database_connected) {
+    if (database_connected && !is.null(db_pool)) {
       # Get actual query results for debugging
       tryCatch({
         # Test direct query to see what's actually in the database
@@ -515,7 +536,12 @@ server <- function(input, output, session) {
         paste("Error getting debug info:", e$message)
       })
     } else {
-      "Database not connected - no debug info available"
+      paste(
+        "Database not connected - no debug info available\n",
+        "Database connected:", database_connected, "\n",
+        "Database pool exists:", !is.null(db_pool), "\n",
+        "Current documents loaded:", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
+      )
     }
   })
   
@@ -524,18 +550,19 @@ server <- function(input, output, session) {
     # Force reactive update by checking current documents
     current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
     
-    if (database_connected) {
+    if (database_connected && !is.null(db_pool)) {
       # Use direct database query for accurate count
       tryCatch({
         conn <- poolCheckout(db_pool)
         on.exit(poolReturn(conn))
         count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(*) as count FROM documents")$count)
+        status_color <- "green"
       }, error = function(e) {
         count <- current_count
+        status_color <- "red"
       })
-      status_color <- "red"
     } else {
-      count <- nrow(sample_documents)
+      count <- current_count
       status_color <- "yellow"
     }
     
@@ -552,16 +579,17 @@ server <- function(input, output, session) {
     # Force reactive update by checking current documents
     current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
     
-    if (database_connected) {
+    if (database_connected && !is.null(db_pool)) {
       # Use direct database query for accurate count
       tryCatch({
         conn <- poolCheckout(db_pool)
         on.exit(poolReturn(conn))
         count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL AND estado != ''")$count)
+        status_color <- "green"
       }, error = function(e) {
         count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_state))
+        status_color <- "red"
       })
-      status_color <- "green"
     } else {
       count <- 0
       status_color <- "red"
@@ -580,16 +608,17 @@ server <- function(input, output, session) {
     # Force reactive update by checking current documents
     current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
     
-    if (database_connected) {
+    if (database_connected && !is.null(db_pool)) {
       # Use direct database query for accurate count
       tryCatch({
         conn <- poolCheckout(db_pool)
         on.exit(poolReturn(conn))
         count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT tipo) as count FROM documents WHERE tipo IS NOT NULL AND tipo != ''")$count)
+        status_color <- "yellow"
       }, error = function(e) {
         count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_type))
+        status_color <- "red"
       })
-      status_color <- "yellow"
     } else {
       count <- 0
       status_color <- "red"
@@ -733,7 +762,7 @@ server <- function(input, output, session) {
   
   # Refresh data functionality
   observeEvent(input$refreshData, {
-    if (database_connected) {
+    if (database_connected && !is.null(db_pool)) {
       cat("🔄 Manual refresh triggered by user...\n")
       
       # Force refresh database connection
@@ -769,7 +798,21 @@ server <- function(input, output, session) {
       # Show success message
       showNotification("Data refreshed successfully!", type = "success")
     } else {
-      showNotification("Database not connected!", type = "error")
+      cat("⚠️ Cannot refresh - database not connected or pool is NULL\n")
+      cat("Database connected:", database_connected, "Pool exists:", !is.null(db_pool), "\n")
+      
+      # Try to reinitialize database
+      if (database_connected && is.null(db_pool)) {
+        cat("🔄 Attempting to reinitialize database pool...\n")
+        tryCatch({
+          force_refresh_database()
+          showNotification("Database reconnected! Please refresh again.", type = "info")
+        }, error = function(e) {
+          showNotification(paste("Failed to reconnect database:", e$message), type = "error")
+        })
+      } else {
+        showNotification("Database not connected!", type = "error")
+      }
     }
   })
   
@@ -900,18 +943,19 @@ server <- function(input, output, session) {
     # Force reactive update by checking current documents
     current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
     
-    if (database_connected) {
+    if (database_connected && !is.null(db_pool)) {
       # Use direct database query for accurate count
       tryCatch({
         conn <- poolCheckout(db_pool)
         on.exit(poolReturn(conn))
         count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(*) as count FROM documents")$count)
+        status_color <- "green"
       }, error = function(e) {
         count <- current_count
+        status_color <- "red"
       })
-      status_color <- "red"
     } else {
-      count <- 0
+      count <- current_count
       status_color <- "red"
     }
     
@@ -927,16 +971,17 @@ server <- function(input, output, session) {
     # Force reactive update by checking current documents
     current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
     
-    if (database_connected) {
+    if (database_connected && !is.null(db_pool)) {
       # Use direct database query for accurate count
       tryCatch({
         conn <- poolCheckout(db_pool)
         on.exit(poolReturn(conn))
         count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL AND estado != ''")$count)
+        status_color <- "green"
       }, error = function(e) {
         count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_state))
+        status_color <- "red"
       })
-      status_color <- "green"
     } else {
       count <- 0
       status_color <- "red"
@@ -954,16 +999,17 @@ server <- function(input, output, session) {
     # Force reactive update by checking current documents
     current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
     
-    if (database_connected) {
+    if (database_connected && !is.null(db_pool)) {
       # Use direct database query for accurate count
       tryCatch({
         conn <- poolCheckout(db_pool)
         on.exit(poolReturn(conn))
         count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT tipo) as count FROM documents WHERE tipo IS NOT NULL AND tipo != ''")$count)
+        status_color <- "yellow"
       }, error = function(e) {
         count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_type))
+        status_color <- "red"
       })
-      status_color <- "yellow"
     } else {
       count <- 0
       status_color <- "red"
@@ -1082,21 +1128,52 @@ server <- function(input, output, session) {
         cat("🔄 Amazonas count in map data:", ifelse(length(amazonas_count) > 0, amazonas_count, "NOT FOUND"), "\n")
         
         if (nrow(map_data) > 0 && !is.null(values$geographic_data)) {
-          # Create the legislative map
-          map <- create_legislative_map(
-            legislative_data = map_data,
-            geography_data = values$geographic_data,
-            focus_state = NULL,
-            color_by = "count"
-          )
+          cat("🔄 Creating legislative map with", nrow(map_data), "states\n")
           
-          # Add debug overlay to show data
-          if (!is.null(map)) {
-            map <- map %>%
+          # Create the legislative map with error handling
+          tryCatch({
+            map <- create_legislative_map(
+              legislative_data = map_data,
+              geography_data = values$geographic_data,
+              focus_state = NULL,
+              color_by = "count"
+            )
+            
+            cat("✅ Map created successfully\n")
+            
+            # Add debug overlay to show data
+            if (!is.null(map)) {
+              map <- map %>%
+                addControl(
+                  html = paste0(
+                    "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 250px;'>",
+                    "<h4>Debug: Map Data</h4>",
+                    "<strong>Total States:</strong> ", nrow(map_data), "<br>",
+                    "<strong>Total Documents:</strong> ", sum(map_data$documento_count), "<br>",
+                    "<strong>Amazonas:</strong> ", map_data$documento_count[map_data$estado == "Amazonas"], " docs<br>",
+                    "<strong>Top 5 States:</strong><br>",
+                    paste(head(map_data, 5)$estado, ": ", head(map_data, 5)$documento_count, collapse = "<br>"),
+                    "</div>"
+                  ),
+                  position = "topleft"
+                )
+            }
+            
+            return(map)
+          }, error = function(e) {
+            cat("❌ Error creating map:", e$message, "\n")
+            cat("❌ Error details:", e, "\n")
+            
+            # Return fallback map with error message
+            leaflet() %>%
+              addTiles() %>%
+              setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
               addControl(
                 html = paste0(
-                  "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 250px;'>",
-                  "<h4>Debug: Map Data</h4>",
+                  "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 300px;'>",
+                  "<h4>Map Error</h4>",
+                  "<strong>Error:</strong> ", e$message, "<br><br>",
+                  "<strong>Map Data Available:</strong><br>",
                   "<strong>Total States:</strong> ", nrow(map_data), "<br>",
                   "<strong>Total Documents:</strong> ", sum(map_data$documento_count), "<br>",
                   "<strong>Amazonas:</strong> ", map_data$documento_count[map_data$estado == "Amazonas"], " docs<br>",
@@ -1104,11 +1181,9 @@ server <- function(input, output, session) {
                   paste(head(map_data, 5)$estado, ": ", head(map_data, 5)$documento_count, collapse = "<br>"),
                   "</div>"
                 ),
-                position = "topleft"
+                position = "topright"
               )
-          }
-          
-          return(map)
+          })
         } else {
           # Show empty map with Brazil boundaries
           leaflet() %>%
@@ -1329,6 +1404,9 @@ server <- function(input, output, session) {
             "Type" = tipo,
             "State" = estado,
             "Enacting Date" = enacting_date
+          ) %>%
+          mutate(
+            `Enacting Date` = as.Date(`Enacting Date`)
           )
         
         DT::datatable(
