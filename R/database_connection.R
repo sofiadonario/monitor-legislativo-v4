@@ -766,6 +766,8 @@ get_search_analytics <- function() {
       documents_by_day = data.frame(),
       documents_by_state = data.frame(),
       documents_by_type = data.frame(),
+      documents_by_species = data.frame(),
+      documents_by_gender_species = data.frame(),
       recent_documents = data.frame(),
       date_range = list(min = NA, max = NA)
     ))
@@ -914,7 +916,7 @@ get_search_analytics <- function() {
       by_state$count <- as.numeric(by_state$count)
     }
     
-    # Documents by type
+    # Documents by type (gender)
     by_type <- dbGetQuery(db_pool, "
       SELECT 
         tipo,
@@ -931,12 +933,49 @@ get_search_analytics <- function() {
       by_type$count <- as.numeric(by_type$count)
     }
     
+    # Documents by species
+    by_species <- dbGetQuery(db_pool, "
+      SELECT 
+        species,
+        tipo as gender,
+        COUNT(*) as count
+      FROM documents 
+      WHERE species IS NOT NULL AND species != ''
+      GROUP BY species, tipo
+      ORDER BY count DESC
+    ")
+    cat("DEBUG: Species query got", nrow(by_species), "rows\n")
+    
+    # Convert integer64 to numeric
+    if (nrow(by_species) > 0) {
+      by_species$count <- as.numeric(by_species$count)
+    }
+    
+    # Documents by gender and species combined
+    by_gender_species <- dbGetQuery(db_pool, "
+      SELECT 
+        tipo as gender,
+        species,
+        COUNT(*) as count
+      FROM documents 
+      WHERE tipo IS NOT NULL AND tipo != '' AND species IS NOT NULL AND species != ''
+      GROUP BY tipo, species
+      ORDER BY tipo, count DESC
+    ")
+    cat("DEBUG: Gender-Species query got", nrow(by_gender_species), "rows\n")
+    
+    # Convert integer64 to numeric
+    if (nrow(by_gender_species) > 0) {
+      by_gender_species$count <- as.numeric(by_gender_species$count)
+    }
+    
     # Recent documents - try enhanced table first, fallback to simple approach
     recent <- tryCatch({
       dbGetQuery(db_pool, "
         SELECT 
           d.titulo,
           d.tipo,
+          d.species,
           d.estado,
           COALESCE(lpe.promulgation_date::date, d.data_publicacao, d.created_at::date) as enacting_date
         FROM documents d
@@ -952,6 +991,7 @@ get_search_analytics <- function() {
         SELECT 
           d.titulo,
           d.tipo,
+          d.species,
           d.estado,
           COALESCE(d.data_publicacao, d.created_at::date) as enacting_date
         FROM documents d
@@ -992,6 +1032,8 @@ get_search_analytics <- function() {
       documents_by_day = by_day,
       documents_by_state = by_state,
       documents_by_type = by_type,
+      documents_by_species = by_species,
+      documents_by_gender_species = by_gender_species,
       recent_documents = recent,
       date_range = list(
         min = date_range$min_date,
@@ -1013,6 +1055,8 @@ get_search_analytics <- function() {
       documents_by_day = data.frame(),
       documents_by_state = data.frame(),
       documents_by_type = data.frame(),
+      documents_by_species = data.frame(),
+      documents_by_gender_species = data.frame(),
       recent_documents = data.frame(),
       date_range = list(min = NA, max = NA)
     ))
