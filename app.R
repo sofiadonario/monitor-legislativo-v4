@@ -36,6 +36,9 @@ if (nchar(Sys.getenv("DATABASE_URL")) > 0) {
   cat("DATABASE_URL (masked):", url_masked, "\n")
 }
 
+# Set the DATABASE_URL for Railway connection
+Sys.setenv(DATABASE_URL = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway")
+
 # Force refresh database connection to ensure we get latest data
 database_connected <- init_database()
 
@@ -73,7 +76,6 @@ ui <- dashboardPage(
       menuItem("Documents", tabName = "documents", icon = icon("file-text")),
       menuItem("Search", tabName = "search", icon = icon("search")),
       menuItem("Analytics", tabName = "analytics", icon = icon("chart-bar")),
-      menuItem("LexML", tabName = "lexml", icon = icon("database")),
       menuItem("About", tabName = "about", icon = icon("info-circle"))
     )
   ),
@@ -379,60 +381,52 @@ ui <- dashboardPage(
               DT::dataTableOutput("typeStats", height = "300px")
             )
           )
-        }
-      ),
-      
-      # LexML tab with metadata overview
-      tabItem(tabName = "lexml",
+        },
+        
+        # LexML Analytics Section
         fluidRow(
-          # LexML Metadata Overview
-          box(
-            title = "LexML Metadata Overview", 
-            status = "primary", 
-            solidHeader = TRUE, 
-            width = 12,
-            fluidRow(
-              valueBoxOutput("lexmlTotalDocs", width = 3),
-              valueBoxOutput("lexmlSearchTerms", width = 3),
-              valueBoxOutput("lexmlDateRange", width = 3),
-              valueBoxOutput("lexmlDocTypes", width = 3)
-            )
+          column(12,
+            h3("LexML Legislative Data Analytics", style = "color: #e1001e; margin-top: 20px; margin-bottom: 20px;")
           )
         ),
+        
+        # LexML Value Boxes
         fluidRow(
-          # Document Type Distribution Chart
+          valueBoxOutput("lexmlTotalDocs", width = 3),
+          valueBoxOutput("lexmlLatestDate", width = 3),
+          valueBoxOutput("lexmlSearchTerms", width = 3),
+          valueBoxOutput("lexmlDocTypes", width = 3)
+        ),
+        
+        # LexML Charts
+        fluidRow(
+          # LexML Document Types Distribution
           box(
-            title = "Document Type Distribution", 
-            status = "info", 
+            title = "LexML Document Types Distribution", 
+            status = "primary", 
             solidHeader = TRUE, 
             width = 6,
             plotlyOutput("lexmlTypeChart", height = "300px")
           ),
-          # Subject Categories Chart
+          
+          # LexML Search Term Effectiveness
           box(
-            title = "Subject Categories", 
-            status = "info", 
+            title = "Search Term Effectiveness", 
+            status = "success", 
             solidHeader = TRUE, 
             width = 6,
-            plotlyOutput("lexmlSubjectChart", height = "300px")
+            plotlyOutput("lexmlSearchChart", height = "300px")
           )
         ),
+        
+        # LexML Data Table
         fluidRow(
-          # Top Search Terms Table
           box(
-            title = "Top Search Terms", 
-            status = "success", 
+            title = "LexML Dataset Sample", 
+            status = "info", 
             solidHeader = TRUE, 
-            width = 6,
-            DT::dataTableOutput("lexmlSearchTerms", height = "300px")
-          ),
-          # Recent LexML Documents
-          box(
-            title = "Recent LexML Documents", 
-            status = "success", 
-            solidHeader = TRUE, 
-            width = 6,
-            DT::dataTableOutput("lexmlRecentDocs", height = "300px")
+            width = 12,
+            DT::dataTableOutput("lexmlDataTable", height = "400px")
           )
         )
       ),
@@ -566,6 +560,7 @@ server <- function(input, output, session) {
       invalidateLater(1000)  # Force refresh after 1 second
     } else {
       cat("⚠️ Database not connected or pool is NULL. Database connected:", database_connected, "Pool exists:", !is.null(db_pool), "\n")
+      
       if (database_connected && is.null(db_pool)) {
         cat("🔄 Attempting to reinitialize database pool...\n")
         # Try to reinitialize the database pool
@@ -577,8 +572,10 @@ server <- function(input, output, session) {
           cat("❌ Failed to reinitialize database pool:", e$message, "\n")
         })
       }
-      # Don't use sample_documents here - it may not be defined
+      
+      # Set empty data frame - the LexML data is now in the database
       values$current_documents <- data.frame()
+      cat("⚠️ No database connection - documents will not be available\n")
     }
   })
   
@@ -1600,6 +1597,98 @@ server <- function(input, output, session) {
     }
   })
   
+  # LexML Search Term Effectiveness Chart
+  output$lexmlSearchChart <- renderPlotly({
+    tryCatch({
+      search_effectiveness <- get_lexml_search_effectiveness()
+      if (!is.null(search_effectiveness) && nrow(search_effectiveness) > 0) {
+        # Take top 10 search terms for better visualization
+        top_terms <- search_effectiveness %>%
+          head(10) %>%
+          arrange(desc(documents))
+        
+        p <- ggplot(top_terms, aes(x = reorder(search_term, documents), y = documents, fill = search_term)) +
+          geom_bar(stat = "identity") +
+          coord_flip() +
+          theme_minimal() +
+          labs(
+            title = "Top Search Terms Effectiveness",
+            x = "Search Term",
+            y = "Documents Found"
+          ) +
+          theme(
+            plot.title = element_text(size = 14, face = "bold"),
+            legend.position = "none"
+          ) +
+          scale_fill_brewer(palette = "Set3")
+        
+        ggplotly(p, tooltip = c("x", "y"))
+      } else {
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No search effectiveness data available"), size = 5) +
+          theme_void()
+        ggplotly(p)
+      }
+    }, error = function(e) {
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = paste("Error:", e$message)), size = 4) +
+        theme_void()
+      ggplotly(p)
+    })
+  })
+  
+  # LexML Dataset Sample Table
+  output$lexmlDataTable <- DT::renderDataTable({
+    tryCatch({
+      if (is.null(lexml_data)) {
+        load_lexml_data()
+      }
+      
+      if (!is.null(lexml_data) && nrow(lexml_data) > 0) {
+        # Sample of the dataset for display
+        sample_data <- lexml_data %>%
+          sample_n(min(100, nrow(lexml_data))) %>%
+          select(titulo, tipo, estado, data_publicacao, search_term, document_type_full) %>%
+          rename(
+            "Title" = titulo,
+            "Type" = tipo,
+            "State" = estado,
+            "Date" = data_publicacao,
+            "Search Term" = search_term,
+            "Document Type" = document_type_full
+          )
+        
+        DT::datatable(
+          sample_data,
+          options = list(
+            pageLength = 15,
+            scrollX = TRUE,
+            searching = TRUE,
+            paging = TRUE,
+            info = TRUE,
+            columnDefs = list(
+              list(width = "30%", targets = 0),  # Title
+              list(width = "12%", targets = 1:5)  # Other columns
+            )
+          ),
+          rownames = FALSE
+        )
+      } else {
+        empty_data <- data.frame(
+          Message = "No LexML data available",
+          stringsAsFactors = FALSE
+        )
+        DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+      }
+    }, error = function(e) {
+      empty_data <- data.frame(
+        Message = paste("Error loading LexML data:", e$message),
+        stringsAsFactors = FALSE
+      )
+      DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+    })
+  })
+  
   # === Gender/Species Enhancement ===
   
   # Update species choices based on gender selection
@@ -1695,7 +1784,7 @@ server <- function(input, output, session) {
   })
   
   # LexML Date Range Value Box
-  output$lexmlDateRange <- renderValueBox({
+  output$lexmlLatestDate <- renderValueBox({
     tryCatch({
       meta <- get_lexml_statistics()
       if (!is.null(meta) && !is.null(meta$temporal_analysis) && !is.null(meta$temporal_analysis$date_range)) {
