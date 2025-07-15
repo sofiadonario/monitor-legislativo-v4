@@ -15,25 +15,29 @@ lexml_statistics <- NULL
 lexml_display_data <- NULL
 
 #' Load LexML data from CSV file with enhanced processing
-#' @param csv_path Path to the CSV file (optional, defaults to data/processed/lexml_latest_results.csv)
+#' @param csv_path Path to the CSV file (optional, defaults to enhanced data)
 #' @return Data frame with LexML documents or NULL if failed
 load_lexml_data <- function(csv_path = NULL) {
   tryCatch({
-    # Default path if not provided
+    # Default path if not provided - try enhanced data first, fallback to original
     if (is.null(csv_path)) {
-      csv_path <- file.path("lexml_overview", "data", "processed", "lexml_latest_results.csv")
+      enhanced_path <- file.path("lexml_overview", "data", "processed", "lexml_enhanced_results.csv")
+      original_path <- file.path("lexml_overview", "data", "processed", "lexml_latest_results.csv")
+      
+      if (file.exists(enhanced_path)) {
+        csv_path <- enhanced_path
+        cat("📊 Using enhanced LexML dataset\n")
+      } else if (file.exists(original_path)) {
+        csv_path <- original_path
+        cat("📊 Using original LexML dataset\n")
+      } else {
+        cat("❌ No LexML data file found\n")
+        return(NULL)
+      }
     }
     
-    cat("📄 Loading enhanced LexML data from:", csv_path, "\n")
-    
-    # Check if file exists
-    if (!file.exists(csv_path)) {
-      warning(paste("LexML CSV file not found:", csv_path))
-      return(NULL)
-    }
-    
-    # Read CSV file with enhanced column types
-    data <- read_csv(csv_path, 
+    # Read CSV with proper column specifications
+    data <- read_csv(csv_path,
                      col_types = cols(
                        search_term = col_character(),
                        date_searched = col_date(format = "%Y-%m-%d"),
@@ -57,8 +61,9 @@ load_lexml_data <- function(csv_path = NULL) {
     # Enhanced data processing based on LexML Refinado v2.0
     data <- data %>%
       mutate(
-        # Clean state codes
+        # Use enhanced state codes if available, otherwise clean original
         estado = case_when(
+          "estado" %in% colnames(data) & !is.na(estado) & estado != "" ~ estado,
           !is.na(state) & nchar(state) == 2 ~ toupper(state),
           TRUE ~ NA_character_
         ),
@@ -81,8 +86,9 @@ load_lexml_data <- function(csv_path = NULL) {
         titulo = title,
         # Add source identifier
         fonte = "LexML",
-        # Add transport category based on search terms
+        # Use enhanced transport category if available, otherwise derive from search terms
         transport_category = case_when(
+          "transport_category" %in% colnames(data) & !is.na(transport_category) ~ transport_category,
           grepl("combustível|energia|diesel|gasolina|etanol|GNV|hidrogênio", search_term, ignore.case = TRUE) ~ "combustiveis_energia",
           grepl("transporte|logística|carga|caminhão|navio|trem", search_term, ignore.case = TRUE) ~ "transporte_geral",
           grepl("tecnologia|inovacao|elétrico|autônomo", search_term, ignore.case = TRUE) ~ "tecnologia_inovacao",
@@ -94,8 +100,9 @@ load_lexml_data <- function(csv_path = NULL) {
           grepl("operação|serviço|manutenção", search_term, ignore.case = TRUE) ~ "operacoes_servicos",
           TRUE ~ "outros"
         ),
-        # Add decade for temporal analysis
+        # Use enhanced decade if available, otherwise derive from date
         decada = case_when(
+          "decada" %in% colnames(data) & !is.na(decada) & decada != "" ~ decada,
           !is.na(data_publicacao) ~ paste0(substr(as.character(data_publicacao), 1, 3), "0s"),
           TRUE ~ NA_character_
         ),
@@ -156,6 +163,107 @@ load_lexml_metadata <- function() {
     
   }, error = function(e) {
     cat("❌ Error loading LexML metadata:", e$message, "\n")
+    return(NULL)
+  })
+}
+
+#' Get LexML statistics for dashboard display
+#' @return List with statistics or NULL if failed
+get_lexml_statistics <- function() {
+  if (is.null(lexml_data)) {
+    load_lexml_data()
+  }
+  
+  if (is.null(lexml_data)) {
+    return(NULL)
+  }
+  
+  tryCatch({
+    # Basic statistics
+    total_docs <- nrow(lexml_data)
+    unique_search_terms <- length(unique(lexml_data$search_term))
+    date_range <- range(lexml_data$data_publicacao, na.rm = TRUE)
+    
+    # Document type distribution
+    type_dist <- lexml_data %>%
+      count(tipo, name = "count") %>%
+      arrange(desc(count))
+    
+    # State distribution
+    state_dist <- lexml_data %>%
+      filter(!is.na(estado) & estado != "") %>%
+      count(estado, name = "count") %>%
+      arrange(desc(count))
+    
+    return(list(
+      collection_info = list(
+        total_documents = total_docs,
+        unique_search_terms = unique_search_terms
+      ),
+      temporal_analysis = list(
+        date_range = list(
+          earliest = as.character(date_range[1]),
+          latest = as.character(date_range[2])
+        )
+      ),
+      document_distribution = list(
+        by_type = setNames(type_dist$count, type_dist$tipo)
+      ),
+      state_distribution = list(
+        by_state = setNames(state_dist$count, state_dist$estado)
+      )
+    ))
+    
+  }, error = function(e) {
+    cat("❌ Error generating LexML statistics:", e$message, "\n")
+    return(NULL)
+  })
+}
+
+#' Get LexML type distribution
+#' @return Data frame with type distribution
+get_lexml_type_distribution <- function() {
+  if (is.null(lexml_data)) {
+    load_lexml_data()
+  }
+  
+  if (is.null(lexml_data)) {
+    return(NULL)
+  }
+  
+  tryCatch({
+    lexml_data %>%
+      count(tipo, name = "count") %>%
+      arrange(desc(count))
+  }, error = function(e) {
+    cat("❌ Error getting LexML type distribution:", e$message, "\n")
+    return(NULL)
+  })
+}
+
+#' Get LexML search effectiveness
+#' @return Data frame with search effectiveness
+get_lexml_search_effectiveness <- function() {
+  if (is.null(lexml_data)) {
+    load_lexml_data()
+  }
+  
+  if (is.null(lexml_data)) {
+    return(NULL)
+  }
+  
+  tryCatch({
+    lexml_data %>%
+      group_by(search_term) %>%
+      summarise(
+        documents = n(),
+        unique_types = n_distinct(tipo),
+        .groups = "drop"
+      ) %>%
+      arrange(desc(documents)) %>%
+      head(10)
+  }, error = function(e) {
+    cat("❌ Error getting LexML search effectiveness:", e$message, "\n")
     return(NULL)
   })
 }
@@ -235,47 +343,6 @@ get_enhanced_lexml_analytics <- function() {
   })
 }
 
-#' Get LexML subject categories analysis
-#' @return Data frame with subject categories
-get_lexml_subject_categories <- function() {
-  if (is.null(lexml_statistics)) {
-    load_lexml_metadata()
-  }
-  
-  if (!is.null(lexml_statistics) && !is.null(lexml_statistics$content_analysis) && 
-      !is.null(lexml_statistics$content_analysis$subject_categories)) {
-    
-    categories <- lexml_statistics$content_analysis$subject_categories
-    
-    # Convert to data frame
-    subject_data <- data.frame(
-      category = names(categories),
-      count = as.numeric(unlist(categories)),
-      stringsAsFactors = FALSE
-    ) %>%
-      arrange(desc(count))
-    
-    return(subject_data)
-  }
-  
-  return(NULL)
-}
-
-#' Get LexML regulatory agencies analysis
-#' @return Vector of regulatory agencies
-get_lexml_regulatory_agencies <- function() {
-  if (is.null(lexml_statistics)) {
-    load_lexml_metadata()
-  }
-  
-  if (!is.null(lexml_statistics) && !is.null(lexml_statistics$content_analysis) && 
-      !is.null(lexml_statistics$content_analysis$regulatory_agencies)) {
-    return(lexml_statistics$content_analysis$regulatory_agencies)
-  }
-  
-  return(NULL)
-}
-
 #' Get LexML quality metrics
 #' @return List with quality metrics
 get_lexml_quality_metrics <- function() {
@@ -345,6 +412,62 @@ get_lexml_quality_metrics <- function() {
   })
 }
 
+#' Get LexML subject categories
+#' @return Data frame with subject categories
+get_lexml_subject_categories <- function() {
+  if (is.null(lexml_data)) {
+    load_lexml_data()
+  }
+  
+  if (is.null(lexml_data)) {
+    return(NULL)
+  }
+  
+  tryCatch({
+    lexml_data %>%
+      count(transport_category, name = "count") %>%
+      arrange(desc(count))
+  }, error = function(e) {
+    cat("❌ Error getting LexML subject categories:", e$message, "\n")
+    return(NULL)
+  })
+}
+
+#' Get LexML regulatory agencies
+#' @return Data frame with regulatory agencies
+get_lexml_regulatory_agencies <- function() {
+  if (is.null(lexml_data)) {
+    load_lexml_data()
+  }
+  
+  if (is.null(lexml_data)) {
+    return(NULL)
+  }
+  
+  tryCatch({
+    # Extract agencies from URNs and titles
+    agencies_data <- lexml_data %>%
+      mutate(
+        agency = case_when(
+          grepl("agencia.nacional", urn, ignore.case = TRUE) ~ "ANTAQ",
+          grepl("agencia.nacional.energia", urn, ignore.case = TRUE) ~ "ANEEL",
+          grepl("agencia.nacional.petroleo", urn, ignore.case = TRUE) ~ "ANP",
+          grepl("ministerio.transportes", urn, ignore.case = TRUE) ~ "Ministério dos Transportes",
+          grepl("ministerio.minas.energia", urn, ignore.case = TRUE) ~ "Ministério de Minas e Energia",
+          TRUE ~ "Outros"
+        )
+      ) %>%
+      count(agency, name = "documents") %>%
+      arrange(desc(documents))
+    
+    return(agencies_data)
+    
+  }, error = function(e) {
+    cat("❌ Error getting LexML regulatory agencies:", e$message, "\n")
+    return(NULL)
+  })
+}
+
 # Keep existing functions for backward compatibility
 get_combined_documents <- function(include_lexml = TRUE, limit = NULL) {
   # Get database documents if available
@@ -402,46 +525,4 @@ get_combined_documents <- function(include_lexml = TRUE, limit = NULL) {
   }
   
   return(NULL)
-}
-
-get_lexml_statistics <- function() {
-  if (is.null(lexml_statistics)) {
-    load_lexml_metadata()
-  }
-  return(lexml_statistics)
-}
-
-get_lexml_type_distribution <- function() {
-  if (is.null(lexml_data)) {
-    load_lexml_data()
-  }
-  
-  if (!is.null(lexml_data)) {
-    return(lexml_data %>%
-      count(urn_type, name = "count") %>%
-      arrange(desc(count)))
-  }
-  
-  return(NULL)
-}
-
-get_lexml_search_effectiveness <- function() {
-  if (is.null(lexml_data)) {
-    load_lexml_data()
-  }
-  
-  if (!is.null(lexml_data)) {
-    return(lexml_data %>%
-      group_by(search_term) %>%
-      summarise(
-        documents = n(),
-        unique_types = n_distinct(urn_type),
-        date_range = paste(min(data_publicacao, na.rm = TRUE), 
-                          "-", 
-                          max(data_publicacao, na.rm = TRUE))
-      ) %>%
-      arrange(desc(documents)))
-  }
-  
-  return(NULL)
-}
+} 
