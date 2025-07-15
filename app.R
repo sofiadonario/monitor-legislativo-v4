@@ -20,6 +20,9 @@ source("R/map_generator.R")
 # Load enhanced search functionality
 source("R/enhanced_search.R")
 
+# Load LexML data loader module
+source("R/lexml_data_loader.R")
+
 # Initialize database connection with force refresh
 database_connected <- FALSE
 database_error <- ""
@@ -70,6 +73,7 @@ ui <- dashboardPage(
       menuItem("Documents", tabName = "documents", icon = icon("file-text")),
       menuItem("Search", tabName = "search", icon = icon("search")),
       menuItem("Analytics", tabName = "analytics", icon = icon("chart-bar")),
+      menuItem("LexML", tabName = "lexml", icon = icon("database")),
       menuItem("About", tabName = "about", icon = icon("info-circle"))
     )
   ),
@@ -380,6 +384,61 @@ ui <- dashboardPage(
         }
       ),
       
+      # LexML tab with metadata overview
+      tabItem(tabName = "lexml",
+        fluidRow(
+          # LexML Metadata Overview
+          box(
+            title = "LexML Metadata Overview", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 12,
+            fluidRow(
+              valueBoxOutput("lexmlTotalDocs", width = 3),
+              valueBoxOutput("lexmlSearchTerms", width = 3),
+              valueBoxOutput("lexmlDateRange", width = 3),
+              valueBoxOutput("lexmlDocTypes", width = 3)
+            )
+          )
+        ),
+        fluidRow(
+          # Document Type Distribution Chart
+          box(
+            title = "Document Type Distribution", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlTypeChart", height = "300px")
+          ),
+          # Subject Categories Chart
+          box(
+            title = "Subject Categories", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlSubjectChart", height = "300px")
+          )
+        ),
+        fluidRow(
+          # Top Search Terms Table
+          box(
+            title = "Top Search Terms", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 6,
+            DT::dataTableOutput("lexmlSearchTerms", height = "300px")
+          ),
+          # Recent LexML Documents
+          box(
+            title = "Recent LexML Documents", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 6,
+            DT::dataTableOutput("lexmlRecentDocs", height = "300px")
+          )
+        )
+      ),
+      
       # About tab with system status  
       tabItem(tabName = "about",
           fluidRow(
@@ -457,8 +516,30 @@ server <- function(input, output, session) {
       
       # Get documents with debug logging
       cat("🔄 Loading documents...\n")
-      values$current_documents <- get_documents()  # Get all documents
-      cat("📊 Loaded", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents)), "documents\n")
+      
+      # Try to get combined data from database and LexML
+      tryCatch({
+        # Load LexML data if not already loaded
+        cat("🔄 Loading LexML data...\n")
+        lexml_data_loaded <- load_lexml_data()
+        if (!is.null(lexml_data_loaded)) {
+          cat("📊 Loaded", nrow(lexml_data_loaded), "LexML documents\n")
+        }
+        
+        # Get combined documents from both sources
+        values$current_documents <- get_combined_documents(include_lexml = TRUE)
+        cat("📊 Loaded", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents)), "total documents (database + LexML)\n")
+        
+        # Also load LexML metadata and statistics
+        lexml_meta <- load_lexml_metadata()
+        if (!is.null(lexml_meta)) {
+          cat("📊 Loaded LexML metadata and statistics\n")
+        }
+      }, error = function(e) {
+        cat("⚠️ Error loading combined data, falling back to database only:", e$message, "\n")
+        values$current_documents <- get_documents()  # Get all documents
+        cat("📊 Loaded", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents)), "documents from database\n")
+      })
       
       # Get analytics data
       cat("🔄 Loading analytics data...\n")
@@ -1556,6 +1637,294 @@ server <- function(input, output, session) {
         cat("Error initializing species choices:", e$message, "\n")
       })
     }
+  })
+  
+  # === LexML Tab Outputs ===
+  
+  # LexML Total Documents Value Box
+  output$lexmlTotalDocs <- renderValueBox({
+    tryCatch({
+      meta <- get_lexml_statistics()
+      if (!is.null(meta) && !is.null(meta$collection_info)) {
+        value <- meta$collection_info$total_documents
+        color <- "green"
+      } else {
+        value <- "N/A"
+        color <- "red"
+      }
+    }, error = function(e) {
+      value <- "Error"
+      color <- "red"
+    })
+    
+    valueBox(
+      value = value,
+      subtitle = "LexML Documents",
+      icon = icon("file-text"),
+      color = color
+    )
+  })
+  
+  # LexML Search Terms Value Box
+  output$lexmlSearchTerms <- renderValueBox({
+    tryCatch({
+      meta <- get_lexml_statistics()
+      if (!is.null(meta) && !is.null(meta$collection_info)) {
+        value <- meta$collection_info$unique_search_terms
+        color <- "blue"
+      } else {
+        value <- "N/A"
+        color <- "red"
+      }
+    }, error = function(e) {
+      value <- "Error"
+      color <- "red"
+    })
+    
+    valueBox(
+      value = value,
+      subtitle = "Search Terms",
+      icon = icon("search"),
+      color = color
+    )
+  })
+  
+  # LexML Date Range Value Box
+  output$lexmlDateRange <- renderValueBox({
+    tryCatch({
+      meta <- get_lexml_statistics()
+      if (!is.null(meta) && !is.null(meta$temporal_analysis) && !is.null(meta$temporal_analysis$date_range)) {
+        earliest <- meta$temporal_analysis$date_range$earliest
+        latest <- meta$temporal_analysis$date_range$latest
+        if (!is.null(earliest) && !is.null(latest)) {
+          earliest_year <- substr(earliest, 1, 4)
+          latest_year <- substr(latest, 1, 4)
+          value <- paste(earliest_year, "-", latest_year)
+          color <- "purple"
+        } else {
+          value <- "N/A"
+          color <- "red"
+        }
+      } else {
+        value <- "N/A"
+        color <- "red"
+      }
+    }, error = function(e) {
+      value <- "Error"
+      color <- "red"
+    })
+    
+    valueBox(
+      value = value,
+      subtitle = "Date Range",
+      icon = icon("calendar"),
+      color = color
+    )
+  })
+  
+  # LexML Document Types Value Box
+  output$lexmlDocTypes <- renderValueBox({
+    tryCatch({
+      meta <- get_lexml_statistics()
+      if (!is.null(meta) && !is.null(meta$document_distribution) && !is.null(meta$document_distribution$by_type)) {
+        value <- length(meta$document_distribution$by_type)
+        color <- "yellow"
+      } else {
+        value <- "N/A"
+        color <- "red"
+      }
+    }, error = function(e) {
+      value <- "Error"
+      color <- "red"
+    })
+    
+    valueBox(
+      value = value,
+      subtitle = "Document Types",
+      icon = icon("tags"),
+      color = color
+    )
+  })
+  
+  # LexML Document Type Distribution Chart
+  output$lexmlTypeChart <- renderPlotly({
+    tryCatch({
+      type_dist <- get_lexml_type_distribution()
+      if (!is.null(type_dist) && nrow(type_dist) > 0) {
+        p <- ggplot(type_dist, aes(x = reorder(urn_type, count), y = count, fill = urn_type)) +
+          geom_bar(stat = "identity") +
+          coord_flip() +
+          theme_minimal() +
+          labs(
+            title = "LexML Document Types",
+            x = "Document Type",
+            y = "Count"
+          ) +
+          theme(
+            plot.title = element_text(size = 14, face = "bold"),
+            legend.position = "none"
+          ) +
+          scale_fill_manual(values = c("#e1001e", "#17a2b8", "#28a745", "#ffc107"))
+        
+        ggplotly(p, tooltip = c("x", "y"))
+      } else {
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No LexML data available"), size = 5) +
+          theme_void()
+        ggplotly(p)
+      }
+    }, error = function(e) {
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = paste("Error:", e$message)), size = 4) +
+        theme_void()
+      ggplotly(p)
+    })
+  })
+  
+  # LexML Subject Categories Chart
+  output$lexmlSubjectChart <- renderPlotly({
+    tryCatch({
+      meta <- get_lexml_statistics()
+      if (!is.null(meta) && !is.null(meta$content_analysis) && !is.null(meta$content_analysis$subject_categories)) {
+        categories <- meta$content_analysis$subject_categories
+        
+        # Convert to data frame
+        subject_data <- data.frame(
+          category = names(categories),
+          count = as.numeric(unlist(categories)),
+          stringsAsFactors = FALSE
+        )
+        
+        if (nrow(subject_data) > 0) {
+          p <- ggplot(subject_data, aes(x = reorder(category, count), y = count, fill = category)) +
+            geom_bar(stat = "identity") +
+            coord_flip() +
+            theme_minimal() +
+            labs(
+              title = "LexML Subject Categories",
+              x = "Subject Category",
+              y = "Count"
+            ) +
+            theme(
+              plot.title = element_text(size = 14, face = "bold"),
+              legend.position = "none"
+            ) +
+            scale_fill_brewer(palette = "Set3")
+          
+          ggplotly(p, tooltip = c("x", "y"))
+        } else {
+          p <- ggplot() + 
+            geom_text(aes(x = 0, y = 0, label = "No subject data available"), size = 5) +
+            theme_void()
+          ggplotly(p)
+        }
+      } else {
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No LexML metadata available"), size = 5) +
+          theme_void()
+        ggplotly(p)
+      }
+    }, error = function(e) {
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = paste("Error:", e$message)), size = 4) +
+        theme_void()
+      ggplotly(p)
+    })
+  })
+  
+  # LexML Search Terms Table
+  output$lexmlSearchTerms <- DT::renderDataTable({
+    tryCatch({
+      search_effectiveness <- get_lexml_search_effectiveness()
+      if (!is.null(search_effectiveness) && nrow(search_effectiveness) > 0) {
+        # Take top 20 search terms
+        display_data <- search_effectiveness %>%
+          head(20) %>%
+          select(search_term, documents, unique_types) %>%
+          rename(
+            "Search Term" = search_term,
+            "Documents" = documents,
+            "Document Types" = unique_types
+          )
+        
+        DT::datatable(
+          display_data,
+          options = list(
+            pageLength = 10,
+            scrollX = TRUE,
+            searching = FALSE,
+            paging = TRUE,
+            info = FALSE
+          ),
+          rownames = FALSE
+        )
+      } else {
+        empty_data <- data.frame(
+          Message = "No search term data available",
+          stringsAsFactors = FALSE
+        )
+        DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+      }
+    }, error = function(e) {
+      empty_data <- data.frame(
+        Message = paste("Error loading search terms:", e$message),
+        stringsAsFactors = FALSE
+      )
+      DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+    })
+  })
+  
+  # LexML Recent Documents Table
+  output$lexmlRecentDocs <- DT::renderDataTable({
+    tryCatch({
+      if (is.null(lexml_data)) {
+        load_lexml_data()
+      }
+      
+      if (!is.null(lexml_data) && nrow(lexml_data) > 0) {
+        # Get recent documents (top 20 by date)
+        recent_docs <- lexml_data %>%
+          filter(!is.na(data_publicacao)) %>%
+          arrange(desc(data_publicacao)) %>%
+          head(20) %>%
+          select(titulo, tipo, estado, data_publicacao, search_term) %>%
+          rename(
+            "Title" = titulo,
+            "Type" = tipo,
+            "State" = estado,
+            "Date" = data_publicacao,
+            "Search Term" = search_term
+          )
+        
+        DT::datatable(
+          recent_docs,
+          options = list(
+            pageLength = 10,
+            scrollX = TRUE,
+            searching = FALSE,
+            paging = TRUE,
+            info = FALSE,
+            columnDefs = list(
+              list(width = "40%", targets = 0),  # Title column wider
+              list(width = "15%", targets = 1:4)  # Other columns
+            )
+          ),
+          rownames = FALSE
+        )
+      } else {
+        empty_data <- data.frame(
+          Message = "No LexML documents available",
+          stringsAsFactors = FALSE
+        )
+        DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+      }
+    }, error = function(e) {
+      empty_data <- data.frame(
+        Message = paste("Error loading recent documents:", e$message),
+        stringsAsFactors = FALSE
+      )
+      DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+    })
   })
 
   # Cleanup on session end
