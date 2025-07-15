@@ -1,12 +1,16 @@
 # Optimized Dockerfile with Leaflet Support for Monitor Legislativo v4
 FROM rocker/geospatial:4.3.1
 
-# Install additional required system dependencies
+# Install additional required system dependencies including Python
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     postgresql-client \
     libcurl4-openssl-dev \
     libssl-dev \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
@@ -48,6 +52,14 @@ RUN R -e "install.packages(c('sf', 'geobr', 'RColorBrewer', 'stringr', 'textclea
 # Group 8: Additional database packages
 RUN R -e "install.packages(c('RSQLite', 'RPostgreSQL'), \
     repos='https://cloud.r-project.org/')"
+
+# Group 9: Advanced analytics packages (reticulate for Python integration)
+RUN R -e "install.packages(c('reticulate', 'wordcloud2'), \
+    repos='https://cloud.r-project.org/')"
+
+# Install Python dependencies for advanced analytics
+COPY lexml_overview/use_version/requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
 # Set working directory and create necessary directories
 WORKDIR /app
