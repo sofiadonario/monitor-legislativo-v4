@@ -61,18 +61,8 @@ load_lexml_data <- function(csv_path = NULL) {
     # Enhanced data processing based on LexML Refinado v2.0
     data <- data %>%
       mutate(
-        # Use enhanced state codes if available, otherwise clean original
-        estado = case_when(
-          "estado" %in% colnames(data) & !is.na(estado) & estado != "" ~ estado,
-          !is.na(state) & nchar(state) == 2 ~ toupper(state),
-          TRUE ~ NA_character_
-        ),
         # Parse enacting date with multiple formats
-        data_publicacao = case_when(
-          !is.na(enacting_date) & grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", enacting_date) ~ as.Date(enacting_date),
-          !is.na(enacting_date) & grepl("^[0-9]{2}/[0-9]{2}/[0-9]{4}$", enacting_date) ~ as.Date(enacting_date, format = "%d/%m/%Y"),
-          TRUE ~ NA_Date_
-        ),
+        data_publicacao = as.Date(enacting_date, format = "%d/%m/%Y"),
         # Enhanced document type mapping
         tipo = case_when(
           urn_type == "legislation" ~ "lei",
@@ -84,28 +74,8 @@ load_lexml_data <- function(csv_path = NULL) {
         id = row_number(),
         # Rename title column
         titulo = title,
-        # Add source identifier
-        fonte = "LexML",
-        # Use enhanced transport category if available, otherwise derive from search terms
-        transport_category = case_when(
-          "transport_category" %in% colnames(data) & !is.na(transport_category) ~ transport_category,
-          grepl("combustível|energia|diesel|gasolina|etanol|GNV|hidrogênio", search_term, ignore.case = TRUE) ~ "combustiveis_energia",
-          grepl("transporte|logística|carga|caminhão|navio|trem", search_term, ignore.case = TRUE) ~ "transporte_geral",
-          grepl("tecnologia|inovacao|elétrico|autônomo", search_term, ignore.case = TRUE) ~ "tecnologia_inovacao",
-          grepl("infraestrutura|rodovia|porto|ferrovia", search_term, ignore.case = TRUE) ~ "infraestrutura",
-          grepl("regulamentação|norma|padrão", search_term, ignore.case = TRUE) ~ "regulamentacao_normas",
-          grepl("incentivo|tributação|imposto|subsídio", search_term, ignore.case = TRUE) ~ "incentivos_tributacao",
-          grepl("programa|política|governo", search_term, ignore.case = TRUE) ~ "programas_governamentais",
-          grepl("máquina|equipamento|veículo", search_term, ignore.case = TRUE) ~ "maquinas_equipamentos",
-          grepl("operação|serviço|manutenção", search_term, ignore.case = TRUE) ~ "operacoes_servicos",
-          TRUE ~ "outros"
-        ),
-        # Use enhanced decade if available, otherwise derive from date
-        decada = case_when(
-          "decada" %in% colnames(data) & !is.na(decada) & decada != "" ~ decada,
-          !is.na(data_publicacao) ~ paste0(substr(as.character(data_publicacao), 1, 3), "0s"),
-          TRUE ~ NA_character_
-        ),
+        # Add source identifier if not present
+        fonte = ifelse("fonte" %in% colnames(data), fonte, "LexML"),
         # Add year for analysis
         ano = case_when(
           !is.na(data_publicacao) ~ as.numeric(format(data_publicacao, "%Y")),
