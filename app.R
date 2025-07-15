@@ -174,16 +174,14 @@ ui <- dashboardPage(
       tabItem(tabName = "documents",
         fluidRow(
           box(
-            title = if(database_connected) "Legislative Documents (Real Data)" else "Sample Documents", 
+            title = "Latest LexML Legislative Documents", 
             status = "primary", 
             solidHeader = TRUE, 
             width = 12,
-            if(!database_connected) {
-              div(
-                class = "alert alert-warning",
-                icon("exclamation-triangle"), " Using sample data. Database connection failed."
-              )
-            },
+            div(
+              class = "alert alert-info",
+              icon("info-circle"), " Showing latest LexML dataset with 1,949 Brazilian legislative documents focused on transport and energy."
+            ),
             DT::dataTableOutput("documentsTable")
           )
         )
@@ -801,28 +799,31 @@ server <- function(input, output, session) {
     }
   })
   
-  # Main documents table
+  # Main documents table - showing only LexML data
   output$documentsTable <- DT::renderDataTable({
-    data <- values$current_documents
+    # Load LexML data directly
+    lexml_data <- load_lexml_data()
     
-    if (is.null(data) || nrow(data) == 0) {
+    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
       # Show empty table
       empty_data <- data.frame(
-        Message = "No documents available",
+        Message = "No LexML documents available",
         stringsAsFactors = FALSE
       )
       return(DT::datatable(empty_data, options = list(searching = FALSE)))
     }
     
-    # Format the data for display
-    display_data <- data %>%
-      select(titulo, tipo, estado, enacting_date, urn) %>%
+    # Format the LexML data for display
+    display_data <- lexml_data %>%
+      select(titulo, tipo, estado, data_publicacao, urn, search_term, document_type_full) %>%
       rename(
         "Title" = titulo,
         "Type" = tipo, 
         "State" = estado,
-        "Enacting Date" = enacting_date,
-        "URN" = urn
+        "Enacting Date" = data_publicacao,
+        "URN" = urn,
+        "Search Term" = search_term,
+        "Document Type" = document_type_full
       )
     
     DT::datatable(
@@ -831,9 +832,13 @@ server <- function(input, output, session) {
         pageLength = 25,
         scrollX = TRUE,
         columnDefs = list(
-          list(width = "40%", targets = 0),  # Title column wider
-          list(width = "15%", targets = 1:3), # Type, State, Date
-          list(width = "30%", targets = 4)   # URN column
+          list(width = "25%", targets = 0),  # Title column
+          list(width = "10%", targets = 1),  # Type
+          list(width = "8%", targets = 2),   # State
+          list(width = "12%", targets = 3),  # Date
+          list(width = "20%", targets = 4),  # URN
+          list(width = "15%", targets = 5),  # Search Term
+          list(width = "10%", targets = 6)   # Document Type
         )
       ),
       rownames = FALSE
