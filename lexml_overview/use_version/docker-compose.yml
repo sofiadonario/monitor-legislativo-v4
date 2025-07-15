@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  lexml-analytics:
+    build: .
+    ports:
+      - "8501:8501"
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./exports:/app/exports
+    environment:
+      - DASHBOARD_HOST=0.0.0.0
+      - DASHBOARD_PORT=8501
+    restart: unless-stopped
+
+  lexml-api:
+    build: .
+    command: uvicorn api:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - lexml-analytics
+    restart: unless-stopped
+
+volumes:
+  lexml-data:
+  lexml-logs:
