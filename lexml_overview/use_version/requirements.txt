@@ -23,7 +23,7 @@ gensim>=4.2.0
 
 # Network Analysis
 networkx>=2.8.0
-community>=0.16.0
+python-louvain>=0.16
 
 # Visualization
 plotly>=5.10.0
