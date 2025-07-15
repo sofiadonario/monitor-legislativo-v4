@@ -428,6 +428,83 @@ ui <- dashboardPage(
             width = 12,
             DT::dataTableOutput("lexmlDataTable", height = "400px")
           )
+        ),
+        
+        # Enhanced LexML Analytics Section
+        fluidRow(
+          column(12,
+            h3("Enhanced LexML Analytics - Transport & Energy Focus", style = "color: #e1001e; margin-top: 20px; margin-bottom: 20px;")
+          )
+        ),
+        
+        # LexML Quality Metrics
+        fluidRow(
+          valueBoxOutput("lexmlQualityScore", width = 3),
+          valueBoxOutput("lexmlCompleteness", width = 3),
+          valueBoxOutput("lexmlRelevance", width = 3),
+          valueBoxOutput("lexmlConsistency", width = 3)
+        ),
+        
+        # LexML Transport Categories
+        fluidRow(
+          box(
+            title = "LexML Transport Categories Distribution", 
+            status = "warning", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlCategoryChart", height = "300px")
+          ),
+          
+          # LexML Subject Categories
+          box(
+            title = "LexML Subject Categories", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlSubjectChart", height = "300px")
+          )
+        ),
+        
+        # LexML Temporal Analysis
+        fluidRow(
+          box(
+            title = "LexML Documents by Decade", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlDecadeChart", height = "300px")
+          ),
+          
+          # LexML State Distribution
+          box(
+            title = "LexML Documents by State", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlStateChart", height = "300px")
+          )
+        ),
+        
+        # LexML Regulatory Agencies
+        fluidRow(
+          box(
+            title = "LexML Regulatory Agencies", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 12,
+            DT::dataTableOutput("lexmlAgenciesTable", height = "200px")
+          )
+        ),
+        
+        # LexML Recent Documents
+        fluidRow(
+          box(
+            title = "Recent LexML Documents (Last 30 Days)", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 12,
+            DT::dataTableOutput("lexmlRecentDocs", height = "300px")
+          )
         )
       ),
       
@@ -478,7 +555,18 @@ ui <- dashboardPage(
                 tags$li("Advanced document search with filters"),
                 tags$li("Real-time analytics and visualizations"),
                 tags$li("Document type and state-based filtering"),
+                tags$li("Enhanced LexML integration with transport focus"),
+                tags$li("Quality metrics and regulatory analysis"),
                 tags$li("Responsive design for all devices")
+              ),
+              br(),
+              h5("LexML Integration:"),
+              tags$ul(
+                tags$li("1,949 Brazilian legislative documents"),
+                tags$li("Transport and energy regulation focus"),
+                tags$li("Quality assessment and metrics"),
+                tags$li("Regulatory agencies analysis"),
+                tags$li("Temporal and geographic distribution")
               )
             )
           )
@@ -2015,6 +2103,260 @@ server <- function(input, output, session) {
     }, error = function(e) {
       empty_data <- data.frame(
         Message = paste("Error loading recent documents:", e$message),
+        stringsAsFactors = FALSE
+      )
+      DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+    })
+  })
+  
+  # === Enhanced LexML Analytics Outputs ===
+  
+  # LexML Quality Score Value Box
+  output$lexmlQualityScore <- renderValueBox({
+    tryCatch({
+      quality_metrics <- get_lexml_quality_metrics()
+      if (!is.null(quality_metrics)) {
+        score <- round(quality_metrics$quality_score * 100, 1)
+        grade <- quality_metrics$quality_grade
+        color <- case_when(
+          grade %in% c("A+", "A") ~ "green",
+          grade == "B" ~ "yellow",
+          grade == "C" ~ "orange",
+          TRUE ~ "red"
+        )
+      } else {
+        score <- "N/A"
+        grade <- "N/A"
+        color <- "red"
+      }
+    }, error = function(e) {
+      score <- "Error"
+      grade <- "Error"
+      color <- "red"
+    })
+    
+    valueBox(
+      value = paste0(score, "%"),
+      subtitle = paste("Quality Grade:", grade),
+      icon = icon("star"),
+      color = color
+    )
+  })
+  
+  # LexML Completeness Value Box
+  output$lexmlCompleteness <- renderValueBox({
+    tryCatch({
+      quality_metrics <- get_lexml_quality_metrics()
+      if (!is.null(quality_metrics)) {
+        completeness <- round(quality_metrics$completeness$overall_completeness * 100, 1)
+        color <- ifelse(completeness >= 80, "green", ifelse(completeness >= 60, "yellow", "red"))
+      } else {
+        completeness <- "N/A"
+        color <- "red"
+      }
+    }, error = function(e) {
+      completeness <- "Error"
+      color <- "red"
+    })
+    
+    valueBox(
+      value = paste0(completeness, "%"),
+      subtitle = "Data Completeness",
+      icon = icon("check-circle"),
+      color = color
+    )
+  })
+  
+  # LexML Relevance Value Box
+  output$lexmlRelevance <- renderValueBox({
+    tryCatch({
+      quality_metrics <- get_lexml_quality_metrics()
+      if (!is.null(quality_metrics)) {
+        relevance <- round(quality_metrics$relevance$transport_related * 100, 1)
+        color <- ifelse(relevance >= 70, "green", ifelse(relevance >= 50, "yellow", "red"))
+      } else {
+        relevance <- "N/A"
+        color <- "red"
+      }
+    }, error = function(e) {
+      relevance <- "Error"
+      color <- "red"
+    })
+    
+    valueBox(
+      value = paste0(relevance, "%"),
+      subtitle = "Transport Relevance",
+      icon = icon("truck"),
+      color = color
+    )
+  })
+  
+  # LexML Consistency Value Box
+  output$lexmlConsistency <- renderValueBox({
+    tryCatch({
+      quality_metrics <- get_lexml_quality_metrics()
+      if (!is.null(quality_metrics)) {
+        consistency <- round(mean(c(quality_metrics$consistency$valid_dates, 
+                                   quality_metrics$consistency$valid_urns)) * 100, 1)
+        color <- ifelse(consistency >= 90, "green", ifelse(consistency >= 70, "yellow", "red"))
+      } else {
+        consistency <- "N/A"
+        color <- "red"
+      }
+    }, error = function(e) {
+      consistency <- "Error"
+      color <- "red"
+    })
+    
+    valueBox(
+      value = paste0(consistency, "%"),
+      subtitle = "Data Consistency",
+      icon = icon("database"),
+      color = color
+    )
+  })
+  
+  # LexML Transport Categories Chart
+  output$lexmlCategoryChart <- renderPlotly({
+    tryCatch({
+      analytics <- get_enhanced_lexml_analytics()
+      if (!is.null(analytics) && !is.null(analytics$category_distribution) && nrow(analytics$category_distribution) > 0) {
+        p <- ggplot(analytics$category_distribution, aes(x = reorder(transport_category, count), y = count, fill = transport_category)) +
+          geom_bar(stat = "identity") +
+          coord_flip() +
+          theme_minimal() +
+          labs(
+            title = "LexML Transport Categories",
+            x = "Transport Category",
+            y = "Number of Documents"
+          ) +
+          theme(
+            plot.title = element_text(size = 14, face = "bold"),
+            legend.position = "none"
+          ) +
+          scale_fill_brewer(palette = "Set3")
+        
+        ggplotly(p, tooltip = c("x", "y"))
+      } else {
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No transport category data available"), size = 5) +
+          theme_void()
+        ggplotly(p)
+      }
+    }, error = function(e) {
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = paste("Error:", e$message)), size = 4) +
+        theme_void()
+      ggplotly(p)
+    })
+  })
+  
+  # LexML Decade Chart
+  output$lexmlDecadeChart <- renderPlotly({
+    tryCatch({
+      analytics <- get_enhanced_lexml_analytics()
+      if (!is.null(analytics) && !is.null(analytics$decade_distribution) && nrow(analytics$decade_distribution) > 0) {
+        p <- ggplot(analytics$decade_distribution, aes(x = decada, y = count, fill = decada)) +
+          geom_bar(stat = "identity") +
+          theme_minimal() +
+          labs(
+            title = "LexML Documents by Decade",
+            x = "Decade",
+            y = "Number of Documents"
+          ) +
+          theme(
+            plot.title = element_text(size = 14, face = "bold"),
+            legend.position = "none",
+            axis.text.x = element_text(angle = 45, hjust = 1)
+          ) +
+          scale_fill_brewer(palette = "Set3")
+        
+        ggplotly(p, tooltip = c("x", "y"))
+      } else {
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No decade data available"), size = 5) +
+          theme_void()
+        ggplotly(p)
+      }
+    }, error = function(e) {
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = paste("Error:", e$message)), size = 4) +
+        theme_void()
+      ggplotly(p)
+    })
+  })
+  
+  # LexML State Chart
+  output$lexmlStateChart <- renderPlotly({
+    tryCatch({
+      analytics <- get_enhanced_lexml_analytics()
+      if (!is.null(analytics) && !is.null(analytics$state_distribution) && nrow(analytics$state_distribution) > 0) {
+        # Take top 10 states for better visualization
+        top_states <- analytics$state_distribution %>%
+          head(10) %>%
+          arrange(desc(count))
+        
+        p <- ggplot(top_states, aes(x = reorder(estado, count), y = count, fill = estado)) +
+          geom_bar(stat = "identity") +
+          coord_flip() +
+          theme_minimal() +
+          labs(
+            title = "Top 10 States by LexML Documents",
+            x = "State",
+            y = "Number of Documents"
+          ) +
+          theme(
+            plot.title = element_text(size = 14, face = "bold"),
+            legend.position = "none"
+          ) +
+          scale_fill_brewer(palette = "Set3")
+        
+        ggplotly(p, tooltip = c("x", "y"))
+      } else {
+        p <- ggplot() + 
+          geom_text(aes(x = 0, y = 0, label = "No state data available"), size = 5) +
+          theme_void()
+        ggplotly(p)
+      }
+    }, error = function(e) {
+      p <- ggplot() + 
+        geom_text(aes(x = 0, y = 0, label = paste("Error:", e$message)), size = 4) +
+        theme_void()
+      ggplotly(p)
+    })
+  })
+  
+  # LexML Regulatory Agencies Table
+  output$lexmlAgenciesTable <- DT::renderDataTable({
+    tryCatch({
+      agencies <- get_lexml_regulatory_agencies()
+      if (!is.null(agencies) && length(agencies) > 0) {
+        agencies_data <- data.frame(
+          "Regulatory Agency" = agencies,
+          stringsAsFactors = FALSE
+        )
+        
+        DT::datatable(
+          agencies_data,
+          options = list(
+            pageLength = 10,
+            scrollX = TRUE,
+            searching = FALSE,
+            paging = TRUE,
+            info = FALSE
+          ),
+          rownames = FALSE
+        )
+      } else {
+        empty_data <- data.frame(
+          Message = "No regulatory agencies data available",
+          stringsAsFactors = FALSE
+        )
+        DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
+      }
+    }, error = function(e) {
+      empty_data <- data.frame(
+        Message = paste("Error loading regulatory agencies:", e$message),
         stringsAsFactors = FALSE
       )
       DT::datatable(empty_data, options = list(searching = FALSE, paging = FALSE))
