@@ -70,6 +70,8 @@ COPY app.R ./
 COPY R/ ./R/
 COPY config.yml ./
 COPY dev-tools/startup_diagnostics.R ./
+# Copy LexML data directory with CSV file
+COPY lexml_overview/ ./lexml_overview/
 
 # Expose port
 EXPOSE ${PORT:-3838}

@@ -21,14 +21,34 @@ load_lexml_data <- function(csv_path = NULL) {
   tryCatch({
     # Default path if not provided - use the new CSV from use_version
     if (is.null(csv_path)) {
-      # Primary path: use_version CSV file
-      use_version_path <- file.path("lexml_overview", "use_version", "Geral.csv")
+      # Debug: Show current working directory and file existence
+      cat("DEBUG: Current working directory:", getwd(), "\n")
+      
+      # Try multiple path variations to handle different deployment environments
+      possible_paths <- c(
+        file.path("lexml_overview", "use_version", "Geral.csv"),
+        file.path(".", "lexml_overview", "use_version", "Geral.csv"),
+        file.path("..", "lexml_overview", "use_version", "Geral.csv"),
+        "Geral.csv",
+        file.path("use_version", "Geral.csv")
+      )
+      
+      use_version_path <- NULL
+      for (path in possible_paths) {
+        cat("DEBUG: Checking path:", path, "- exists:", file.exists(path), "\n")
+        if (file.exists(path)) {
+          use_version_path <- path
+          break
+        }
+      }
+      
+      # Fallback paths
       enhanced_path <- file.path("lexml_overview", "data", "processed", "lexml_enhanced_results.csv")
       original_path <- file.path("lexml_overview", "data", "processed", "lexml_latest_results.csv")
       
-      if (file.exists(use_version_path)) {
+      if (!is.null(use_version_path)) {
         csv_path <- use_version_path
-        cat("📊 Using LexML dataset from use_version (1957 documents)\n")
+        cat("📊 Using LexML dataset from use_version (1957 documents) at:", csv_path, "\n")
       } else if (file.exists(enhanced_path)) {
         csv_path <- enhanced_path
         cat("📊 Using enhanced LexML dataset\n")
@@ -37,6 +57,9 @@ load_lexml_data <- function(csv_path = NULL) {
         cat("📊 Using original LexML dataset\n")
       } else {
         cat("❌ No LexML data file found\n")
+        cat("DEBUG: Files in current directory:\n")
+        files <- list.files(".", recursive = TRUE, pattern = "*.csv")
+        cat("DEBUG: CSV files found:", paste(files, collapse = ", "), "\n")
         return(NULL)
       }
     }
