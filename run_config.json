@@ -1,0 +1,52 @@
+{
+  "system_name": "LexML Monitor Legislativo v4 - Full Run",
+  "version": "3.0 Final",
+  "description": "Sistema completo de monitoramento legislativo para transporte de carga",
+  
+  "output_dir": "data/processed",
+  "data_dir": "data",
+  "logs_dir": "logs",
+  
+  "scraping": {
+    "max_results_per_term": null,
+    "rate_limit_delay": 2.0,
+    "retry_attempts": 3,
+    "timeout": 45,
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  },
+  
+  "processing": {
+    "enable_classification": true,
+    "enable_parsing": true,
+    "enable_analytics": false,
+    "batch_size": 50,
+    "min_confidence_threshold": 0.6
+  },
+  
+  "output_formats": ["csv", "json"],
+  
+  "search_categories": [
+    "transporte_geral",
+    "combustiveis_energia",
+    "eficiencia_emissoes",
+    "tecnologia_inovacao",
+    "infraestrutura",
+    "regulamentacao_normas",
+    "incentivos_tributacao",
+    "programas_governamentais",
+    "maquinas_equipamentos",
+    "operacoes_servicos"
+  ],
+  
+  "classification": {
+    "confidence_threshold": 0.7,
+    "enable_hierarchical": true,
+    "enable_thematic_subtypes": true
+  },
+  
+  "parsing": {
+    "enable_quality_control": true,
+    "min_extraction_confidence": 0.5,
+    "use_specialized_prompts": true
+  }
+}

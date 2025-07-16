@@ -100,7 +100,11 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nfix: Resolve syntax error in app.R causing deployment failure\n\n- Fix missing closing brace for if(database_connected) condition in Analytics tab\n- Remove extra closing parenthesis causing unexpected '')'' error\n- Ensure proper UI structure nesting for stable deployment\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(export DATABASE_URL=\"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway\")",
       "Bash(psql:*)",
-      "Bash(PGPASSWORD=smNCedRjMKeNsoqpurLWXjGEUZxORwVY psql -h nozomi.proxy.rlwy.net -U postgres -p 44844 -d railway -f implementation/add_species_column.sql)"
+      "Bash(PGPASSWORD=smNCedRjMKeNsoqpurLWXjGEUZxORwVY psql -h nozomi.proxy.rlwy.net -U postgres -p 44844 -d railway -f implementation/add_species_column.sql)",
+      "Bash(./run_background.sh)",
+      "Bash(kill:*)",
+      "Bash(./run_corrected_background.sh:*)",
+      "Bash(echo:*)"
     ]
   },
   "enableAllProjectMcpServers": false

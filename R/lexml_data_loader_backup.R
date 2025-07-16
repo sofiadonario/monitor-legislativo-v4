@@ -19,17 +19,12 @@ lexml_display_data <- NULL
 #' @return Data frame with LexML documents or NULL if failed
 load_lexml_data <- function(csv_path = NULL) {
   tryCatch({
-    # Default path if not provided - use the new CSV from use_version
+    # Default path if not provided - try enhanced data first, fallback to original
     if (is.null(csv_path)) {
-      # Primary path: use_version CSV file
-      use_version_path <- file.path("lexml_overview", "use_version", "Geral.csv")
       enhanced_path <- file.path("lexml_overview", "data", "processed", "lexml_enhanced_results.csv")
       original_path <- file.path("lexml_overview", "data", "processed", "lexml_latest_results.csv")
       
-      if (file.exists(use_version_path)) {
-        csv_path <- use_version_path
-        cat("📊 Using LexML dataset from use_version (1957 documents)\n")
-      } else if (file.exists(enhanced_path)) {
+      if (file.exists(enhanced_path)) {
         csv_path <- enhanced_path
         cat("📊 Using enhanced LexML dataset\n")
       } else if (file.exists(original_path)) {
@@ -41,65 +36,84 @@ load_lexml_data <- function(csv_path = NULL) {
       }
     }
     
-    # Read CSV with proper column specifications (case-sensitive column names)
-    data <- read_csv(csv_path,
+    cat("📄 Loading enhanced LexML data from:", csv_path, "\n")
+    
+    # Check if file exists
+    if (!file.exists(csv_path)) {
+      warning(paste("LexML CSV file not found:", csv_path))
+      return(NULL)
+    }
+    
+    # Read CSV file with enhanced column types
+    data <- read_csv(csv_path, 
                      col_types = cols(
-                       Search_term = col_character(),
-                       Date_searched = col_date(format = "%Y-%m-%d"),
-                       Url = col_character(),
-                       Title = col_character(),
-                       Urn = col_character(),
-                       Urn_type = col_character(),
-                       Country = col_character(),
-                       State = col_character(),
-                       Municipality = col_character(),
-                       Justice = col_character(),
-                       Region = col_character(),
-                       Court_class = col_character(),
-                       Document_type_full = col_character(),
-                       Enacting_date = col_datetime(format = "%Y-%m-%d %H:%M:%S"),
-                       Document_description = col_character(),
-                       Document_summary = col_character()
+                       search_term = col_character(),
+                       date_searched = col_date(format = "%Y-%m-%d"),
+                       url = col_character(),
+                       title = col_character(),
+                       urn = col_character(),
+                       urn_type = col_character(),
+                       country = col_character(),
+                       state = col_character(),
+                       municipality = col_character(),
+                       justice = col_character(),
+                       region = col_character(),
+                       court_class = col_character(),
+                       document_type_full = col_character(),
+                       enacting_date = col_character(),
+                       document_description = col_character(),
+                       document_summary = col_character()
                      ),
                      locale = locale(encoding = "UTF-8"))
     
     # Enhanced data processing based on LexML Refinado v2.0
     data <- data %>%
       mutate(
-        # Convert column names to lowercase for consistency
-        search_term = Search_term,
-        date_searched = Date_searched,
-        url = Url,
-        title = Title,
-        urn = Urn,
-        urn_type = Urn_type,
-        country = Country,
-        state = State,
-        municipality = Municipality,
-        justice = Justice,
-        region = Region,
-        court_class = Court_class,
-        document_type_full = Document_type_full,
-        enacting_date = Enacting_date,
-        document_description = Document_description,
-        document_summary = Document_summary,
-        # Parse enacting date 
-        data_publicacao = as.Date(Enacting_date),
+        # Use enhanced state codes if available, otherwise clean original
+        estado = case_when(
+          "estado" %in% colnames(data) & !is.na(estado) & estado != "" ~ estado,
+          !is.na(state) & nchar(state) == 2 ~ toupper(state),
+          TRUE ~ NA_character_
+        ),
+        # Parse enacting date with multiple formats
+        data_publicacao = case_when(
+          !is.na(enacting_date) & grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", enacting_date) ~ as.Date(enacting_date),
+          !is.na(enacting_date) & grepl("^[0-9]{2}/[0-9]{2}/[0-9]{4}$", enacting_date) ~ as.Date(enacting_date, format = "%d/%m/%Y"),
+          TRUE ~ NA_Date_
+        ),
         # Enhanced document type mapping
         tipo = case_when(
-          Urn_type == "legislation" ~ "lei",
-          Urn_type == "jurisprudence" ~ "jurisprudencia",
-          Urn_type == "doutrina" ~ "doutrina",
+          urn_type == "legislation" ~ "lei",
+          urn_type == "jurisprudence" ~ "jurisprudencia",
+          urn_type == "doutrina" ~ "doutrina",
           TRUE ~ "outro"
         ),
         # Create ID if not present
         id = row_number(),
-        # Set title column
-        titulo = Title,
-        # Set state column
-        estado = State,
-        # Add source identifier if not present
-        fonte = ifelse("fonte" %in% colnames(data), fonte, "LexML"),
+        # Rename title column
+        titulo = title,
+        # Add source identifier
+        fonte = "LexML",
+        # Use enhanced transport category if available, otherwise derive from search terms
+        transport_category = case_when(
+          "transport_category" %in% colnames(data) & !is.na(transport_category) ~ transport_category,
+          grepl("combustível|energia|diesel|gasolina|etanol|GNV|hidrogênio", search_term, ignore.case = TRUE) ~ "combustiveis_energia",
+          grepl("transporte|logística|carga|caminhão|navio|trem", search_term, ignore.case = TRUE) ~ "transporte_geral",
+          grepl("tecnologia|inovacao|elétrico|autônomo", search_term, ignore.case = TRUE) ~ "tecnologia_inovacao",
+          grepl("infraestrutura|rodovia|porto|ferrovia", search_term, ignore.case = TRUE) ~ "infraestrutura",
+          grepl("regulamentação|norma|padrão", search_term, ignore.case = TRUE) ~ "regulamentacao_normas",
+          grepl("incentivo|tributação|imposto|subsídio", search_term, ignore.case = TRUE) ~ "incentivos_tributacao",
+          grepl("programa|política|governo", search_term, ignore.case = TRUE) ~ "programas_governamentais",
+          grepl("máquina|equipamento|veículo", search_term, ignore.case = TRUE) ~ "maquinas_equipamentos",
+          grepl("operação|serviço|manutenção", search_term, ignore.case = TRUE) ~ "operacoes_servicos",
+          TRUE ~ "outros"
+        ),
+        # Use enhanced decade if available, otherwise derive from date
+        decada = case_when(
+          "decada" %in% colnames(data) & !is.na(decada) & decada != "" ~ decada,
+          !is.na(data_publicacao) ~ paste0(substr(as.character(data_publicacao), 1, 3), "0s"),
+          TRUE ~ NA_character_
+        ),
         # Add year for analysis
         ano = case_when(
           !is.na(data_publicacao) ~ as.numeric(format(data_publicacao, "%Y")),
@@ -109,6 +123,7 @@ load_lexml_data <- function(csv_path = NULL) {
     
     cat("✅ Enhanced LexML data loaded:", nrow(data), "documents\n")
     cat("📊 Document types:", paste(unique(data$tipo), collapse = ", "), "\n")
+    cat("📊 Transport categories:", paste(unique(data$transport_category), collapse = ", "), "\n")
     
     # Store in global variable
     lexml_data <<- data
@@ -348,55 +363,31 @@ get_lexml_quality_metrics <- function() {
   }
   
   tryCatch({
-    # Calculate quality metrics based on LexML Refinado v2.0
+    # Calculate quality metrics
     total_docs <- nrow(lexml_data)
     
-    # Completeness (presence of required fields)
-    completeness <- lexml_data %>%
-      summarise(
-        has_title = sum(!is.na(titulo) & titulo != "", na.rm = TRUE) / total_docs,
-        has_urn = sum(!is.na(urn) & urn != "", na.rm = TRUE) / total_docs,
-        has_date = sum(!is.na(data_publicacao), na.rm = TRUE) / total_docs,
-        has_type = sum(!is.na(tipo) & tipo != "", na.rm = TRUE) / total_docs
-      ) %>%
-      mutate(overall_completeness = (has_title + has_urn + has_date + has_type) / 4)
+    # Completeness: documents with all required fields
+    complete_docs <- sum(!is.na(lexml_data$titulo) & 
+                        !is.na(lexml_data$tipo) & 
+                        !is.na(lexml_data$data_publicacao))
+    completeness <- round(complete_docs / total_docs * 100, 1)
     
-    # Relevance (transport-related content)
-    relevance <- lexml_data %>%
-      summarise(
-        transport_related = sum(grepl("transporte|carga|logística|combustível|energia", 
-                                     paste(titulo, document_description, document_summary), 
-                                     ignore.case = TRUE), na.rm = TRUE) / total_docs
-      )
+    # Relevance: documents with transport-related terms
+    relevant_docs <- sum(lexml_data$transport_category != "outros")
+    relevance <- round(relevant_docs / total_docs * 100, 1)
     
-    # Consistency (data consistency checks)
-    consistency <- lexml_data %>%
-      summarise(
-        valid_dates = sum(!is.na(data_publicacao) & data_publicacao > as.Date("1800-01-01") & 
-                         data_publicacao <= Sys.Date(), na.rm = TRUE) / total_docs,
-        valid_urns = sum(grepl("^urn:lex:", urn, ignore.case = TRUE), na.rm = TRUE) / total_docs
-      )
+    # Consistency: documents with valid state codes
+    consistent_docs <- sum(!is.na(lexml_data$estado) & lexml_data$estado != "")
+    consistency <- round(consistent_docs / total_docs * 100, 1)
     
     # Overall quality score
-    quality_score <- (completeness$overall_completeness + relevance$transport_related + 
-                     consistency$valid_dates + consistency$valid_urns) / 4
-    
-    # Quality grade
-    quality_grade <- case_when(
-      quality_score >= 0.9 ~ "A+",
-      quality_score >= 0.8 ~ "A",
-      quality_score >= 0.7 ~ "B",
-      quality_score >= 0.6 ~ "C",
-      quality_score >= 0.5 ~ "D",
-      TRUE ~ "F"
-    )
+    quality_score <- round((completeness + relevance + consistency) / 3, 1)
     
     return(list(
+      quality_score = quality_score,
       completeness = completeness,
       relevance = relevance,
-      consistency = consistency,
-      quality_score = quality_score,
-      quality_grade = quality_grade
+      consistency = consistency
     ))
     
   }, error = function(e) {
@@ -460,6 +451,122 @@ get_lexml_regulatory_agencies <- function() {
     return(NULL)
   })
 }
+    
+  }, error = function(e) {
+    cat("❌ Error generating enhanced LexML analytics:", e$message, "\n")
+    return(NULL)
+  })
+}
+
+#' Get LexML subject categories analysis
+#' @return Data frame with subject categories
+get_lexml_subject_categories <- function() {
+  if (is.null(lexml_statistics)) {
+    load_lexml_metadata()
+  }
+  
+  if (!is.null(lexml_statistics) && !is.null(lexml_statistics$content_analysis) && 
+      !is.null(lexml_statistics$content_analysis$subject_categories)) {
+    
+    categories <- lexml_statistics$content_analysis$subject_categories
+    
+    # Convert to data frame
+    subject_data <- data.frame(
+      category = names(categories),
+      count = as.numeric(unlist(categories)),
+      stringsAsFactors = FALSE
+    ) %>%
+      arrange(desc(count))
+    
+    return(subject_data)
+  }
+  
+  return(NULL)
+}
+
+#' Get LexML regulatory agencies analysis
+#' @return Vector of regulatory agencies
+get_lexml_regulatory_agencies <- function() {
+  if (is.null(lexml_statistics)) {
+    load_lexml_metadata()
+  }
+  
+  if (!is.null(lexml_statistics) && !is.null(lexml_statistics$content_analysis) && 
+      !is.null(lexml_statistics$content_analysis$regulatory_agencies)) {
+    return(lexml_statistics$content_analysis$regulatory_agencies)
+  }
+  
+  return(NULL)
+}
+
+#' Get LexML quality metrics
+#' @return List with quality metrics
+get_lexml_quality_metrics <- function() {
+  if (is.null(lexml_data)) {
+    load_lexml_data()
+  }
+  
+  if (is.null(lexml_data)) {
+    return(NULL)
+  }
+  
+  tryCatch({
+    # Calculate quality metrics based on LexML Refinado v2.0
+    total_docs <- nrow(lexml_data)
+    
+    # Completeness (presence of required fields)
+    completeness <- lexml_data %>%
+      summarise(
+        has_title = sum(!is.na(titulo) & titulo != "", na.rm = TRUE) / total_docs,
+        has_urn = sum(!is.na(urn) & urn != "", na.rm = TRUE) / total_docs,
+        has_date = sum(!is.na(data_publicacao), na.rm = TRUE) / total_docs,
+        has_type = sum(!is.na(tipo) & tipo != "", na.rm = TRUE) / total_docs
+      ) %>%
+      mutate(overall_completeness = (has_title + has_urn + has_date + has_type) / 4)
+    
+    # Relevance (transport-related content)
+    relevance <- lexml_data %>%
+      summarise(
+        transport_related = sum(grepl("transporte|carga|logística|combustível|energia", 
+                                     paste(titulo, document_description, document_summary), 
+                                     ignore.case = TRUE), na.rm = TRUE) / total_docs
+      )
+    
+    # Consistency (data consistency checks)
+    consistency <- lexml_data %>%
+      summarise(
+        valid_dates = sum(!is.na(data_publicacao) & data_publicacao > as.Date("1800-01-01") & 
+                         data_publicacao <= Sys.Date(), na.rm = TRUE) / total_docs,
+        valid_urns = sum(grepl("^urn:lex:", urn, ignore.case = TRUE), na.rm = TRUE) / total_docs
+      )
+    
+    # Overall quality score
+    quality_score <- (completeness$overall_completeness + relevance$transport_related + 
+                     consistency$valid_dates + consistency$valid_urns) / 4
+    
+    # Quality grade
+    quality_grade <- case_when(
+      quality_score >= 0.9 ~ "A+",
+      quality_score >= 0.8 ~ "A",
+      quality_score >= 0.7 ~ "B",
+      quality_score >= 0.6 ~ "C",
+      quality_score >= 0.5 ~ "D",
+      TRUE ~ "F"
+    )
+    
+    return(list(
+      completeness = completeness,
+      relevance = relevance,
+      consistency = consistency,
+      quality_score = quality_score,
+      quality_grade = quality_grade
+    ))
+    
+  }, error = function(e) {
+    cat("❌ Error calculating LexML quality metrics:", e$message, "\n")
+    return(NULL)
+  })
+}
 
 # Keep existing functions for backward compatibility
 get_combined_documents <- function(include_lexml = TRUE, limit = NULL) {
@@ -520,173 +627,44 @@ get_combined_documents <- function(include_lexml = TRUE, limit = NULL) {
   return(NULL)
 }
 
-#' Get search analytics from LexML data
-#' @return List with analytics data
-get_lexml_search_analytics <- function() {
-  if (is.null(lexml_data)) {
-    load_lexml_data()
+get_lexml_statistics <- function() {
+  if (is.null(lexml_statistics)) {
+    load_lexml_metadata()
   }
-  
-  if (is.null(lexml_data)) {
-    return(list(
-      total_documents = 0,
-      documents_by_year = data.frame(),
-      documents_by_month = data.frame(),
-      documents_by_day = data.frame(),
-      documents_by_state = data.frame(),
-      documents_by_type = data.frame(),
-      documents_by_species = data.frame(),
-      documents_by_gender_species = data.frame(),
-      recent_documents = data.frame(),
-      date_range = list(min = NA, max = NA)
-    ))
-  }
-  
-  cat("DEBUG: get_lexml_search_analytics() called\n")
-  
-  tryCatch({
-    # Total documents
-    total <- nrow(lexml_data)
-    cat("DEBUG: Total documents found:", total, "\n")
-    
-    # Documents by year
-    by_year <- lexml_data %>%
-      filter(!is.na(data_publicacao)) %>%
-      mutate(year = as.numeric(format(data_publicacao, "%Y"))) %>%
-      count(year, name = "count") %>%
-      arrange(desc(year)) %>%
-      head(10)
-    cat("DEBUG: Year query got", nrow(by_year), "rows\n")
-    
-    # Documents by month
-    current_year <- as.numeric(format(Sys.Date(), "%Y"))
-    by_month <- lexml_data %>%
-      filter(!is.na(data_publicacao)) %>%
-      filter(format(data_publicacao, "%Y") == as.character(current_year)) %>%
-      mutate(month = as.numeric(format(data_publicacao, "%m"))) %>%
-      count(month, name = "count") %>%
-      arrange(month)
-    cat("DEBUG: Month query got", nrow(by_month), "rows\n")
-    
-    # Documents by day (last 30 days)
-    by_day <- lexml_data %>%
-      filter(!is.na(data_publicacao)) %>%
-      filter(data_publicacao >= Sys.Date() - 30) %>%
-      mutate(day = format(data_publicacao, "%Y-%m-%d")) %>%
-      count(day, name = "count") %>%
-      arrange(day)
-    cat("DEBUG: Day query got", nrow(by_day), "rows\n")
-    
-    # Documents by state
-    by_state <- lexml_data %>%
-      filter(!is.na(estado) & estado != "") %>%
-      count(estado, name = "count") %>%
-      arrange(desc(count)) %>%
-      head(10)
-    names(by_state) <- c("state", "count")
-    cat("DEBUG: State query got", nrow(by_state), "rows\n")
-    
-    # Documents by type
-    by_type <- lexml_data %>%
-      count(tipo, name = "count") %>%
-      arrange(desc(count))
-    names(by_type) <- c("type", "count")
-    cat("DEBUG: Type query got", nrow(by_type), "rows\n")
-    
-    # Documents by species (empty for now)
-    by_species <- data.frame(species = character(), count = numeric())
-    cat("DEBUG: Species query got", nrow(by_species), "rows\n")
-    
-    # Gender species (empty for now)
-    by_gender_species <- data.frame(month = numeric(), gender_ratio = numeric())
-    cat("DEBUG: Gender-Species query got", nrow(by_gender_species), "rows\n")
-    
-    # Recent documents
-    recent <- lexml_data %>%
-      arrange(desc(data_publicacao)) %>%
-      head(10) %>%
-      select(id, titulo, tipo, estado, data_publicacao, url)
-    cat("DEBUG: Recent query got", nrow(recent), "rows\n")
-    
-    # Date range
-    date_range <- range(lexml_data$data_publicacao, na.rm = TRUE)
-    cat("DEBUG: Date range query completed\n")
-    
-    cat("DEBUG: Analytics completed successfully\n")
-    
-    return(list(
-      total_documents = total,
-      documents_by_year = by_year,
-      documents_by_month = by_month,
-      documents_by_day = by_day,
-      documents_by_state = by_state,
-      documents_by_type = by_type,
-      documents_by_species = by_species,
-      documents_by_gender_species = by_gender_species,
-      recent_documents = recent,
-      date_range = list(
-        min = as.character(date_range[1]),
-        max = as.character(date_range[2])
-      )
-    ))
-    
-  }, error = function(e) {
-    cat("ERROR in get_lexml_search_analytics:", e$message, "\n")
-    return(list(
-      total_documents = 0,
-      documents_by_year = data.frame(),
-      documents_by_month = data.frame(),
-      documents_by_day = data.frame(),
-      documents_by_state = data.frame(),
-      documents_by_type = data.frame(),
-      documents_by_species = data.frame(),
-      documents_by_gender_species = data.frame(),
-      recent_documents = data.frame(),
-      date_range = list(min = NA, max = NA)
-    ))
-  })
+  return(lexml_statistics)
 }
 
-#' Get unique document types from LexML data
-#' @return Character vector of document types
-get_lexml_document_types <- function() {
+get_lexml_type_distribution <- function() {
   if (is.null(lexml_data)) {
     load_lexml_data()
   }
   
-  if (is.null(lexml_data)) {
-    return(character())
+  if (!is.null(lexml_data)) {
+    return(lexml_data %>%
+      count(urn_type, name = "count") %>%
+      arrange(desc(count)))
   }
   
-  tryCatch({
-    types <- unique(lexml_data$tipo)
-    types <- types[!is.na(types) & types != ""]
-    cat("DEBUG: Found document types:", paste(types, collapse = ", "), "\n")
-    return(sort(types))
-  }, error = function(e) {
-    cat("ERROR in get_lexml_document_types:", e$message, "\n")
-    return(character())
-  })
+  return(NULL)
 }
 
-#' Get unique states from LexML data
-#' @return Character vector of states
-get_lexml_states <- function() {
+get_lexml_search_effectiveness <- function() {
   if (is.null(lexml_data)) {
     load_lexml_data()
   }
   
-  if (is.null(lexml_data)) {
-    return(character())
+  if (!is.null(lexml_data)) {
+    return(lexml_data %>%
+      group_by(search_term) %>%
+      summarise(
+        documents = n(),
+        unique_types = n_distinct(urn_type),
+        date_range = paste(min(data_publicacao, na.rm = TRUE), 
+                          "-", 
+                          max(data_publicacao, na.rm = TRUE))
+      ) %>%
+      arrange(desc(documents)))
   }
   
-  tryCatch({
-    states <- unique(lexml_data$estado)
-    states <- states[!is.na(states) & states != ""]
-    cat("DEBUG: Found states:", paste(states, collapse = ", "), "\n")
-    return(sort(states))
-  }, error = function(e) {
-    cat("ERROR in get_lexml_states:", e$message, "\n")
-    return(character())
-  })
-} 
+  return(NULL)
+}
