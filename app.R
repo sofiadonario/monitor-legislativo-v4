@@ -20,8 +20,45 @@ source("R/map_generator.R")
 # Load enhanced search functionality
 source("R/enhanced_search.R")
 
-# Load LexML data loader module
-source("R/lexml_data_loader.R")
+  # Load LexML data loader module
+  source("R/lexml_data_loader.R")
+  
+  # Helper function to render document tables
+  render_document_table <- function(data, title) {
+    if (is.null(data) || nrow(data) == 0) {
+      empty_data <- data.frame(Message = paste("No", title, "documents available"), stringsAsFactors = FALSE)
+      return(DT::datatable(empty_data, options = list(searching = FALSE)))
+    }
+    
+    # Prepare data for display
+    display_data <- data %>%
+      select(titulo, estado, data_publicacao, urn, document_type_full, document_description) %>%
+      rename(
+        "Title" = titulo,
+        "State" = estado,
+        "Date" = data_publicacao,
+        "URN" = urn,
+        "Document Type" = document_type_full,
+        "Description" = document_description
+      )
+    
+    DT::datatable(
+      display_data,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        columnDefs = list(
+          list(width = "40%", targets = 0),  # Title
+          list(width = "10%", targets = 1),  # State
+          list(width = "12%", targets = 2),  # Date
+          list(width = "20%", targets = 3),  # URN
+          list(width = "15%", targets = 4),  # Document Type
+          list(width = "30%", targets = 5)   # Description
+        )
+      ),
+      rownames = FALSE
+    )
+  }
 
 # Load advanced analytics module
 tryCatch({
@@ -199,7 +236,12 @@ ui <- dashboardPage(
               class = "alert alert-info",
               icon("gavel"), " Brazilian legislative documents (Laws, Decrees, Regulations) from LexML database."
             ),
-            DT::dataTableOutput("legislationTable")
+            tabsetPanel(
+              tabPanel("Geral", DT::dataTableOutput("legislationGeralTable")),
+              tabPanel("Aéreo", DT::dataTableOutput("legislationAereoTable")),
+              tabPanel("Rodoviário", DT::dataTableOutput("legislationRodoviarioTable")),
+              tabPanel("Marítimo", DT::dataTableOutput("legislationMaritimoTable"))
+            )
           )
         )
       ),
@@ -216,7 +258,12 @@ ui <- dashboardPage(
               class = "alert alert-success",
               icon("balance-scale"), " Court decisions and legal precedents from Brazilian judicial system."
             ),
-            DT::dataTableOutput("jurisprudenceTable")
+            tabsetPanel(
+              tabPanel("Geral", DT::dataTableOutput("jurisprudenceGeralTable")),
+              tabPanel("Aéreo", DT::dataTableOutput("jurisprudenceAereoTable")),
+              tabPanel("Rodoviário", DT::dataTableOutput("jurisprudenceRodoviarioTable")),
+              tabPanel("Marítimo", DT::dataTableOutput("jurisprudenceMaritimoTable"))
+            )
           )
         )
       ),
@@ -233,7 +280,12 @@ ui <- dashboardPage(
               class = "alert alert-warning",
               icon("book"), " Academic papers, legal doctrine, and scholarly works on transport and energy law."
             ),
-            DT::dataTableOutput("libraryTable")
+            tabsetPanel(
+              tabPanel("Geral", DT::dataTableOutput("libraryGeralTable")),
+              tabPanel("Aéreo", DT::dataTableOutput("libraryAereoTable")),
+              tabPanel("Rodoviário", DT::dataTableOutput("libraryRodoviarioTable")),
+              tabPanel("Marítimo", DT::dataTableOutput("libraryMaritimoTable"))
+            )
           )
         )
       ),
@@ -889,245 +941,70 @@ server <- function(input, output, session) {
     )
   })
   
-  # Legislation table - filtered for legislation documents
-  output$legislationTable <- DT::renderDataTable({
-    lexml_data <- load_lexml_data()
-    
-    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
-      empty_data <- data.frame(Message = "No legislative documents available", stringsAsFactors = FALSE)
-      return(DT::datatable(empty_data, options = list(searching = FALSE)))
-    }
-    
-    # Filter for legislation only
-    legislation_data <- lexml_data %>%
-      filter(tipo == "lei") %>%
-      select(titulo, estado, data_publicacao, urn, document_type_full, document_description) %>%
-      rename(
-        "Title" = titulo,
-        "State" = estado,
-        "Enacting Date" = data_publicacao,
-        "URN" = urn,
-        "Document Type" = document_type_full,
-        "Description" = document_description
-      )
-    
-    DT::datatable(
-      legislation_data,
-      options = list(
-        pageLength = 25,
-        scrollX = TRUE,
-        columnDefs = list(
-          list(width = "40%", targets = 0),  # Title
-          list(width = "10%", targets = 1),  # State
-          list(width = "12%", targets = 2),  # Date
-          list(width = "20%", targets = 3),  # URN
-          list(width = "15%", targets = 4),  # Document Type
-          list(width = "30%", targets = 5)   # Description
-        )
-      ),
-      rownames = FALSE
-    )
+  # Legislation tables for different transport modes
+  output$legislationGeralTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "geral")
+    render_document_table(lexml_data, "Legislation - Geral")
   })
   
-  # Jurisprudence table - filtered for jurisprudence documents
-  output$jurisprudenceTable <- DT::renderDataTable({
-    lexml_data <- load_lexml_data()
-    
-    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
-      empty_data <- data.frame(Message = "No jurisprudence documents available", stringsAsFactors = FALSE)
-      return(DT::datatable(empty_data, options = list(searching = FALSE)))
-    }
-    
-    # Filter for jurisprudence only
-    jurisprudence_data <- lexml_data %>%
-      filter(tipo == "jurisprudencia") %>%
-      select(titulo, estado, data_publicacao, urn, court_class, document_description) %>%
-      rename(
-        "Title" = titulo,
-        "State" = estado,
-        "Decision Date" = data_publicacao,
-        "URN" = urn,
-        "Court" = court_class,
-        "Description" = document_description
-      )
-    
-    DT::datatable(
-      jurisprudence_data,
-      options = list(
-        pageLength = 25,
-        scrollX = TRUE,
-        columnDefs = list(
-          list(width = "35%", targets = 0),  # Title
-          list(width = "10%", targets = 1),  # State
-          list(width = "12%", targets = 2),  # Date
-          list(width = "20%", targets = 3),  # URN
-          list(width = "15%", targets = 4),  # Court
-          list(width = "30%", targets = 5)   # Description
-        )
-      ),
-      rownames = FALSE
-    )
+  output$legislationAereoTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "aéreo")
+    render_document_table(lexml_data, "Legislation - Aéreo")
   })
   
-  # Library table - filtered for doctrine documents
-  output$libraryTable <- DT::renderDataTable({
-    lexml_data <- load_lexml_data()
-    
-    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
-      empty_data <- data.frame(Message = "No doctrine documents available", stringsAsFactors = FALSE)
-      return(DT::datatable(empty_data, options = list(searching = FALSE)))
-    }
-    
-    # Filter for doctrine only
-    doctrine_data <- lexml_data %>%
-      filter(tipo == "doutrina") %>%
-      select(titulo, estado, data_publicacao, urn, search_term, document_summary) %>%
-      rename(
-        "Title" = titulo,
-        "State" = estado,
-        "Publication Date" = data_publicacao,
-        "URN" = urn,
-        "Topic" = search_term,
-        "Summary" = document_summary
-      )
-    
-    DT::datatable(
-      doctrine_data,
-      options = list(
-        pageLength = 25,
-        scrollX = TRUE,
-        columnDefs = list(
-          list(width = "35%", targets = 0),  # Title
-          list(width = "10%", targets = 1),  # State
-          list(width = "12%", targets = 2),  # Date
-          list(width = "20%", targets = 3),  # URN
-          list(width = "15%", targets = 4),  # Topic
-          list(width = "30%", targets = 5)   # Summary
-        )
-      ),
-      rownames = FALSE
-    )
+  output$legislationRodoviarioTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "rodoviário")
+    render_document_table(lexml_data, "Legislation - Rodoviário")
   })
   
-  # Legislation table - filtered for legislation documents
-  output$legislationTable <- DT::renderDataTable({
-    lexml_data <- load_lexml_data()
-    
-    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
-      empty_data <- data.frame(Message = "No legislative documents available", stringsAsFactors = FALSE)
-      return(DT::datatable(empty_data, options = list(searching = FALSE)))
-    }
-    
-    # Filter for legislation only
-    legislation_data <- lexml_data %>%
-      filter(tipo == "lei") %>%
-      select(titulo, estado, data_publicacao, urn, document_type_full, document_description) %>%
-      rename(
-        "Title" = titulo,
-        "State" = estado,
-        "Enacting Date" = data_publicacao,
-        "URN" = urn,
-        "Document Type" = document_type_full,
-        "Description" = document_description
-      )
-    
-    DT::datatable(
-      legislation_data,
-      options = list(
-        pageLength = 25,
-        scrollX = TRUE,
-        columnDefs = list(
-          list(width = "40%", targets = 0),  # Title
-          list(width = "10%", targets = 1),  # State
-          list(width = "12%", targets = 2),  # Date
-          list(width = "20%", targets = 3),  # URN
-          list(width = "15%", targets = 4),  # Document Type
-          list(width = "30%", targets = 5)   # Description
-        )
-      ),
-      rownames = FALSE
-    )
+  output$legislationMaritimoTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "marítimo")
+    render_document_table(lexml_data, "Legislation - Marítimo")
   })
   
-  # Jurisprudence table - filtered for jurisprudence documents
-  output$jurisprudenceTable <- DT::renderDataTable({
-    lexml_data <- load_lexml_data()
-    
-    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
-      empty_data <- data.frame(Message = "No jurisprudence documents available", stringsAsFactors = FALSE)
-      return(DT::datatable(empty_data, options = list(searching = FALSE)))
-    }
-    
-    # Filter for jurisprudence only
-    jurisprudence_data <- lexml_data %>%
-      filter(tipo == "jurisprudencia") %>%
-      select(titulo, estado, data_publicacao, urn, court_class, document_description) %>%
-      rename(
-        "Title" = titulo,
-        "State" = estado,
-        "Decision Date" = data_publicacao,
-        "URN" = urn,
-        "Court" = court_class,
-        "Description" = document_description
-      )
-    
-    DT::datatable(
-      jurisprudence_data,
-      options = list(
-        pageLength = 25,
-        scrollX = TRUE,
-        columnDefs = list(
-          list(width = "35%", targets = 0),  # Title
-          list(width = "10%", targets = 1),  # State
-          list(width = "12%", targets = 2),  # Date
-          list(width = "20%", targets = 3),  # URN
-          list(width = "15%", targets = 4),  # Court
-          list(width = "30%", targets = 5)   # Description
-        )
-      ),
-      rownames = FALSE
-    )
+  # Jurisprudence tables for different transport modes
+  output$jurisprudenceGeralTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "geral")
+    render_document_table(lexml_data, "Jurisprudence - Geral")
   })
   
-  # Library table - filtered for doctrine documents
-  output$libraryTable <- DT::renderDataTable({
-    lexml_data <- load_lexml_data()
-    
-    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
-      empty_data <- data.frame(Message = "No doctrine documents available", stringsAsFactors = FALSE)
-      return(DT::datatable(empty_data, options = list(searching = FALSE)))
-    }
-    
-    # Filter for doctrine only
-    doctrine_data <- lexml_data %>%
-      filter(tipo == "doutrina") %>%
-      select(titulo, estado, data_publicacao, urn, search_term, document_summary) %>%
-      rename(
-        "Title" = titulo,
-        "State" = estado,
-        "Publication Date" = data_publicacao,
-        "URN" = urn,
-        "Topic" = search_term,
-        "Summary" = document_summary
-      )
-    
-    DT::datatable(
-      doctrine_data,
-      options = list(
-        pageLength = 25,
-        scrollX = TRUE,
-        columnDefs = list(
-          list(width = "35%", targets = 0),  # Title
-          list(width = "10%", targets = 1),  # State
-          list(width = "12%", targets = 2),  # Date
-          list(width = "20%", targets = 3),  # URN
-          list(width = "15%", targets = 4),  # Topic
-          list(width = "30%", targets = 5)   # Summary
-        )
-      ),
-      rownames = FALSE
-    )
-  })  # Advanced search functionality
+  output$jurisprudenceAereoTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "aéreo")
+    render_document_table(lexml_data, "Jurisprudence - Aéreo")
+  })
+  
+  output$jurisprudenceRodoviarioTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "rodoviário")
+    render_document_table(lexml_data, "Jurisprudence - Rodoviário")
+  })
+  
+  output$jurisprudenceMaritimoTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "marítimo")
+    render_document_table(lexml_data, "Jurisprudence - Marítimo")
+  })
+
+  # Doctrine (Library) tables for different transport modes
+  output$libraryGeralTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "doctrine", transport_mode = "geral")
+    render_document_table(lexml_data, "Doctrine - Geral")
+  })
+  
+  output$libraryAereoTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "doctrine", transport_mode = "aéreo")
+    render_document_table(lexml_data, "Doctrine - Aéreo")
+  })
+  
+  output$libraryRodoviarioTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "doctrine", transport_mode = "rodoviário")
+    render_document_table(lexml_data, "Doctrine - Rodoviário")
+  })
+  
+  output$libraryMaritimoTable <- DT::renderDataTable({
+    lexml_data <- load_specific_lexml_data(category = "doctrine", transport_mode = "marítimo")
+    render_document_table(lexml_data, "Doctrine - Marítimo")
+  })
+  
+  # Advanced search functionality
   observeEvent(input$searchBtn, {
     if (database_connected) {
       withProgress(message = 'Searching documents...', value = 0, {
@@ -1622,16 +1499,16 @@ server <- function(input, output, session) {
         )
     }
   })
-  # Legislative Map - filtered for legislation documents only
+  # Legislative Map - using Legislação___Geral.csv
   output$legislativeMap <- renderLeaflet({
     cat("🔄 Legislative map rendering triggered\n")
     
-    lexml_data <- load_lexml_data()
+    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "geral")
     
     if (!is.null(lexml_data) && nrow(lexml_data) > 0) {
-      # Filter for legislation documents only
+      # Use all legislation data from the specific file
       legislation_data <- lexml_data %>%
-        filter(tipo == "lei", !is.na(estado), estado != "")
+        filter(!is.na(estado), estado != "")
       
       if (nrow(legislation_data) > 0) {
         # Aggregate by state
@@ -1697,16 +1574,16 @@ server <- function(input, output, session) {
     }
   })
   
-  # Jurisprudence Map - filtered for jurisprudence documents only
+  # Jurisprudence Map - using Jurisprudência___Geral.csv
   output$jurisprudenceMap <- renderLeaflet({
     cat("🔄 Jurisprudence map rendering triggered\n")
     
-    lexml_data <- load_lexml_data()
+    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "geral")
     
     if (!is.null(lexml_data) && nrow(lexml_data) > 0) {
-      # Filter for jurisprudence documents only
+      # Use all jurisprudence data from the specific file
       jurisprudence_data <- lexml_data %>%
-        filter(tipo == "jurisprudencia", !is.na(estado), estado != "")
+        filter(!is.na(estado), estado != "")
       
       if (nrow(jurisprudence_data) > 0) {
         # Aggregate by state

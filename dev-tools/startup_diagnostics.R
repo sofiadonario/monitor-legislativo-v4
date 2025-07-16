@@ -15,7 +15,7 @@ cat("  R_CONFIG_ACTIVE:", Sys.getenv("R_CONFIG_ACTIVE", "not set"), "\n")
 
 # Check required directories
 cat("\nDirectory Check:\n")
-dirs_to_check <- c("R", "data/cache", "www", "logs")
+  dirs_to_check <- c("R", "data_current/cache", "www", "logs")
 for (dir in dirs_to_check) {
   cat("  ", dir, ":", ifelse(dir.exists(dir), "✓ exists", "✗ missing"), "\n")
 }

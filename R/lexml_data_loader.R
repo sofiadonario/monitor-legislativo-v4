@@ -26,6 +26,12 @@ load_lexml_data <- function(csv_path = NULL) {
       
       # Try multiple path variations to handle different deployment environments
       possible_paths <- c(
+        file.path("data_current", "processed", "Geral.csv"),
+        file.path(".", "data_current", "processed", "Geral.csv"),
+        file.path("..", "data_current", "processed", "Geral.csv"),
+        file.path("data_current", "raw", "Geral.csv"),
+        file.path(".", "data_current", "raw", "Geral.csv"),
+        file.path("..", "data_current", "raw", "Geral.csv"),
         file.path("lexml_overview", "use_version", "Geral.csv"),
         file.path(".", "lexml_overview", "use_version", "Geral.csv"),
         file.path("..", "lexml_overview", "use_version", "Geral.csv"),
@@ -43,8 +49,8 @@ load_lexml_data <- function(csv_path = NULL) {
       }
       
       # Fallback paths
-      enhanced_path <- file.path("lexml_overview", "data", "processed", "lexml_enhanced_results.csv")
-      original_path <- file.path("lexml_overview", "data", "processed", "lexml_latest_results.csv")
+      enhanced_path <- file.path("data_current", "processed", "lexml_enhanced_results.csv")
+      original_path <- file.path("data_current", "processed", "lexml_latest_results.csv")
       
       if (!is.null(use_version_path)) {
         csv_path <- use_version_path
@@ -149,9 +155,9 @@ load_lexml_data <- function(csv_path = NULL) {
 load_lexml_metadata <- function() {
   tryCatch({
     # Load metadata JSON files
-    metadata_path <- file.path("lexml_overview", "data", "processed", "lexml_metadata.json")
-    statistics_path <- file.path("lexml_overview", "data", "processed", "lexml_statistics.json")
-    display_path <- file.path("lexml_overview", "data", "processed", "lexml_display_data.json")
+    metadata_path <- file.path("data_current", "processed", "lexml_metadata.json")
+    statistics_path <- file.path("data_current", "processed", "lexml_statistics.json")
+    display_path <- file.path("data_current", "processed", "lexml_display_data.json")
     
     metadata <- NULL
     statistics <- NULL
@@ -484,6 +490,146 @@ get_lexml_regulatory_agencies <- function() {
   })
 }
 
+#' Load specific LexML data file for different categories and transport modes
+#' @param category Category of documents ("legislation", "jurisprudence", "doctrine", "outros")
+#' @param transport_mode Transport mode ("geral", "aéreo", "rodoviário", "marítimo")
+#' @return Data frame with LexML documents or NULL if failed
+load_specific_lexml_data <- function(category = "legislation", transport_mode = "geral") {
+  tryCatch({
+    # Map category to file name
+    category_mapping <- list(
+      "legislation" = "Legislação",
+      "jurisprudence" = "Jurisprudência", 
+      "doctrine" = "Doutrina",
+      "outros" = "Outros"
+    )
+    
+    # Map transport mode to file suffix
+    mode_mapping <- list(
+      "geral" = "Geral",
+      "aéreo" = "Aéreo",
+      "rodoviário" = "Rodoviário", 
+      "marítimo" = "Marítimo"
+    )
+    
+    if (!category %in% names(category_mapping)) {
+      cat("❌ Invalid category:", category, "\n")
+      return(NULL)
+    }
+    
+    if (!transport_mode %in% names(mode_mapping)) {
+      cat("❌ Invalid transport mode:", transport_mode, "\n")
+      return(NULL)
+    }
+    
+    # Construct file name
+    file_name <- paste0(category_mapping[[category]], "___", mode_mapping[[transport_mode]], ".csv")
+    
+    # Try multiple path variations
+    possible_paths <- c(
+      file.path("data_current", "processed", file_name),
+      file.path(".", "data_current", "processed", file_name),
+      file.path("..", "data_current", "processed", file_name),
+      file.path("data_current", "raw", file_name),
+      file.path(".", "data_current", "raw", file_name),
+      file.path("..", "data_current", "raw", file_name)
+    )
+    
+    csv_path <- NULL
+    for (path in possible_paths) {
+      cat("DEBUG: Checking path:", path, "- exists:", file.exists(path), "\n")
+      if (file.exists(path)) {
+        csv_path <- path
+        break
+      }
+    }
+    
+    if (is.null(csv_path)) {
+      cat("❌ File not found:", file_name, "\n")
+      return(NULL)
+    }
+    
+    cat("📊 Loading specific LexML data:", file_name, "from:", csv_path, "\n")
+    
+    # Read CSV with proper column specifications
+    data <- read_csv(csv_path,
+                     col_types = cols(
+                       Search_term = col_character(),
+                       Date_searched = col_date(format = "%Y-%m-%d"),
+                       Url = col_character(),
+                       Title = col_character(),
+                       Urn = col_character(),
+                       Urn_type = col_character(),
+                       Country = col_character(),
+                       State = col_character(),
+                       Municipality = col_character(),
+                       Justice = col_character(),
+                       Region = col_character(),
+                       Court_class = col_character(),
+                       Document_type_full = col_character(),
+                       Enacting_date = col_datetime(format = "%Y-%m-%d %H:%M:%S"),
+                       Document_description = col_character(),
+                       Document_summary = col_character()
+                     ),
+                     locale = locale(encoding = "UTF-8"))
+    
+    # Enhanced data processing
+    data <- data %>%
+      mutate(
+        # Convert column names to lowercase for consistency
+        search_term = Search_term,
+        date_searched = Date_searched,
+        url = Url,
+        title = Title,
+        urn = Urn,
+        urn_type = Urn_type,
+        country = Country,
+        state = State,
+        municipality = Municipality,
+        justice = Justice,
+        region = Region,
+        court_class = Court_class,
+        document_type_full = Document_type_full,
+        enacting_date = Enacting_date,
+        document_description = Document_description,
+        document_summary = Document_summary,
+        # Parse enacting date 
+        data_publicacao = as.Date(Enacting_date),
+        # Enhanced document type mapping
+        tipo = case_when(
+          Urn_type == "legislation" ~ "lei",
+          Urn_type == "jurisprudence" ~ "jurisprudencia",
+          Urn_type == "doutrina" ~ "doutrina",
+          TRUE ~ "outro"
+        ),
+        # Create ID if not present
+        id = row_number(),
+        # Set title column
+        titulo = Title,
+        # Set state column
+        estado = State,
+        # Add source identifier
+        fonte = "LexML",
+        # Add category and transport mode for filtering
+        category = category,
+        transport_mode = transport_mode,
+        # Add year for analysis
+        ano = case_when(
+          !is.na(data_publicacao) ~ as.numeric(format(data_publicacao, "%Y")),
+          TRUE ~ NA_real_
+        )
+      )
+    
+    cat("✅ Specific LexML data loaded:", nrow(data), "documents from", file_name, "\n")
+    
+    return(data)
+    
+  }, error = function(e) {
+    cat("❌ Error loading specific LexML data:", e$message, "\n")
+    return(NULL)
+  })
+}
+
 # Keep existing functions for backward compatibility
 get_combined_documents <- function(include_lexml = TRUE, limit = NULL) {
   # Get database documents if available
@@ -713,3 +859,143 @@ get_lexml_states <- function() {
     return(character())
   })
 } 
+
+#' Load specific LexML data file for different categories and transport modes
+#' @param category Category of documents ("legislation", "jurisprudence", "doctrine", "outros")
+#' @param transport_mode Transport mode ("geral", "aéreo", "rodoviário", "marítimo")
+#' @return Data frame with LexML documents or NULL if failed
+load_specific_lexml_data <- function(category = "legislation", transport_mode = "geral") {
+  tryCatch({
+    # Map category to file name
+    category_mapping <- list(
+      "legislation" = "Legislação",
+      "jurisprudence" = "Jurisprudência", 
+      "doctrine" = "Doutrina",
+      "outros" = "Outros"
+    )
+    
+    # Map transport mode to file suffix
+    mode_mapping <- list(
+      "geral" = "Geral",
+      "aéreo" = "Aéreo",
+      "rodoviário" = "Rodoviário", 
+      "marítimo" = "Marítimo"
+    )
+    
+    if (!category %in% names(category_mapping)) {
+      cat("❌ Invalid category:", category, "\n")
+      return(NULL)
+    }
+    
+    if (!transport_mode %in% names(mode_mapping)) {
+      cat("❌ Invalid transport mode:", transport_mode, "\n")
+      return(NULL)
+    }
+    
+    # Construct file name
+    file_name <- paste0(category_mapping[[category]], "___", mode_mapping[[transport_mode]], ".csv")
+    
+    # Try multiple path variations
+    possible_paths <- c(
+      file.path("data_current", "processed", file_name),
+      file.path(".", "data_current", "processed", file_name),
+      file.path("..", "data_current", "processed", file_name),
+      file.path("data_current", "raw", file_name),
+      file.path(".", "data_current", "raw", file_name),
+      file.path("..", "data_current", "raw", file_name)
+    )
+    
+    csv_path <- NULL
+    for (path in possible_paths) {
+      cat("DEBUG: Checking path:", path, "- exists:", file.exists(path), "\n")
+      if (file.exists(path)) {
+        csv_path <- path
+        break
+      }
+    }
+    
+    if (is.null(csv_path)) {
+      cat("❌ File not found:", file_name, "\n")
+      return(NULL)
+    }
+    
+    cat("📊 Loading specific LexML data:", file_name, "from:", csv_path, "\n")
+    
+    # Read CSV with proper column specifications
+    data <- read_csv(csv_path,
+                     col_types = cols(
+                       Search_term = col_character(),
+                       Date_searched = col_date(format = "%Y-%m-%d"),
+                       Url = col_character(),
+                       Title = col_character(),
+                       Urn = col_character(),
+                       Urn_type = col_character(),
+                       Country = col_character(),
+                       State = col_character(),
+                       Municipality = col_character(),
+                       Justice = col_character(),
+                       Region = col_character(),
+                       Court_class = col_character(),
+                       Document_type_full = col_character(),
+                       Enacting_date = col_datetime(format = "%Y-%m-%d %H:%M:%S"),
+                       Document_description = col_character(),
+                       Document_summary = col_character()
+                     ),
+                     locale = locale(encoding = "UTF-8"))
+    
+    # Enhanced data processing
+    data <- data %>%
+      mutate(
+        # Convert column names to lowercase for consistency
+        search_term = Search_term,
+        date_searched = Date_searched,
+        url = Url,
+        title = Title,
+        urn = Urn,
+        urn_type = Urn_type,
+        country = Country,
+        state = State,
+        municipality = Municipality,
+        justice = Justice,
+        region = Region,
+        court_class = Court_class,
+        document_type_full = Document_type_full,
+        enacting_date = Enacting_date,
+        document_description = Document_description,
+        document_summary = Document_summary,
+        # Parse enacting date 
+        data_publicacao = as.Date(Enacting_date),
+        # Enhanced document type mapping
+        tipo = case_when(
+          Urn_type == "legislation" ~ "lei",
+          Urn_type == "jurisprudence" ~ "jurisprudencia",
+          Urn_type == "doutrina" ~ "doutrina",
+          TRUE ~ "outro"
+        ),
+        # Create ID if not present
+        id = row_number(),
+        # Set title column
+        titulo = Title,
+        # Set state column
+        estado = State,
+        # Add source identifier
+        fonte = "LexML",
+        # Add category and transport mode for filtering
+        category = category,
+        transport_mode = transport_mode,
+        # Add year for analysis
+        ano = case_when(
+          !is.na(data_publicacao) ~ as.numeric(format(data_publicacao, "%Y")),
+          TRUE ~ NA_real_
+        )
+      )
+    
+    cat("✅ Specific LexML data loaded:", nrow(data), "documents from", file_name, "\n")
+    
+    return(data)
+    
+  }, error = function(e) {
+    cat("❌ Error loading specific LexML data:", e$message, "\n")
+    return(NULL)
+  })
+}

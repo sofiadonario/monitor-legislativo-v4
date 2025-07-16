@@ -111,7 +111,7 @@ extract_state_from_content <- function(title, description, summary) {
 analyze_and_fix_lexml_data <- function() {
   cat("🔄 Loading LexML data...\n")
   
-  csv_path <- "lexml_overview/data/processed/lexml_latest_results.csv"
+  csv_path <- "data_current/processed/lexml_latest_results.csv"
   
   if (!file.exists(csv_path)) {
     cat("❌ LexML CSV file not found:", csv_path, "\n")
@@ -249,7 +249,7 @@ analyze_and_fix_lexml_data <- function() {
     enhanced_data$fonte <- "LexML"
     
     # Save enhanced data
-    output_path <- "lexml_overview/data/processed/lexml_enhanced_results.csv"
+    output_path <- "data_current/processed/lexml_enhanced_results.csv"
     cat("- Saving enhanced data to:", output_path, "\n")
     
     if (require(readr, quietly = TRUE)) {

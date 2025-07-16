@@ -62,8 +62,8 @@ setup_directories <- function() {
   
   dirs <- list(
     "data" = "Main data directory",
-    "data/cache" = "API cache storage",
-    "data/geographic" = "Geographic data cache",
+    "data_current/cache" = "API cache storage",
+    "data_current/geographic" = "Geographic data cache",
     "www" = "Static assets",
     "logs" = "Application logs",
     "exports" = "User exports"
@@ -123,7 +123,7 @@ setup_database <- function() {
     return(TRUE)
   }
   
-  db_path <- "data/legislative.db"
+  db_path <- "data_current/legislative.db"
   
   if (file.exists(db_path)) {
     cat("📊 Database already exists at:", db_path, "\n")

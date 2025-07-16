@@ -8,7 +8,7 @@ app_cache <- new.env()
 
 #' Initialize cache system
 #' @param cache_dir Directory for file-based cache (optional)
-init_cache <- function(cache_dir = "data/cache") {
+init_cache <- function(cache_dir = "data_current/cache") {
   if (!dir.exists(cache_dir)) {
     dir.create(cache_dir, recursive = TRUE)
   }
@@ -49,7 +49,7 @@ get_cached_result <- function(cache_key, use_file_cache = FALSE) {
   
   # Try file cache if enabled
   if (use_file_cache) {
-    cache_file <- file.path("data/cache", paste0(cache_key, ".rds"))
+    cache_file <- file.path("data_current/cache", paste0(cache_key, ".rds"))
     if (file.exists(cache_file)) {
       file_info <- file.info(cache_file)
       
@@ -93,7 +93,7 @@ store_cached_result <- function(cache_key, data, use_file_cache = FALSE) {
   
   # Store in file cache if enabled
   if (use_file_cache) {
-    cache_file <- file.path("data/cache", paste0(cache_key, ".rds"))
+    cache_file <- file.path("data_current/cache", paste0(cache_key, ".rds"))
     tryCatch({
       saveRDS(data, cache_file)
       cat("Data cached (file):", cache_key, "\n")
@@ -111,7 +111,7 @@ clear_cache <- function() {
   rm(list = ls(envir = app_cache), envir = app_cache)
   
   # Clear file cache
-  cache_dir <- "data/cache"
+  cache_dir <- "data_current/cache"
   if (dir.exists(cache_dir)) {
     files <- list.files(cache_dir, pattern = "\\.rds$", full.names = TRUE)
     unlink(files)

@@ -112,4 +112,6 @@ secrets/
 !lexml_overview/use_version/Geral.csv
 data/exports/
 data/cache/
-data/temp/ .env.production
+data/temp/
+old_data/
+.env.production

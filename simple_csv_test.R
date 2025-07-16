@@ -3,7 +3,7 @@
 # Simple test to check if we can read the CSV without complex dependencies
 cat("Testing basic CSV reading...\n")
 
-csv_path <- "lexml_overview/data/processed/lexml_latest_results.csv"
+csv_path <- "data_current/processed/lexml_latest_results.csv"
 
 if (file.exists(csv_path)) {
   cat("✅ CSV file exists at:", csv_path, "\n")

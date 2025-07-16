@@ -96,7 +96,7 @@ is_safe_input <- function(input) {
 #' Initialize database and create tables
 #' @param db_path Path to SQLite database file
 #' @return TRUE if successful, FALSE otherwise
-init_database <- function(db_path = "data/legislative.db") {
+init_database <- function(db_path = "data_current/legislative.db") {
   
   flog.info("Initializing database: %s", db_path)
   
@@ -622,7 +622,7 @@ backup_database <- function(backup_path = NULL) {
   
   if (is.null(backup_path)) {
     timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
-    backup_path <- paste0("data/backup_", timestamp, ".db")
+    backup_path <- paste0("data_current/backup_", timestamp, ".db")
   }
   
   if (is.null(.db_connection$con)) {

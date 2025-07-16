@@ -29,7 +29,7 @@ tryCatch({
 
 # Test 4: Check directories
 cat("\n4. Checking required directories:\n")
-dirs <- c("data", "data/cache", "data/geographic", "www", "logs", "exports", "R")
+  dirs <- c("data_current", "data_current/cache", "data_current/geographic", "www", "logs", "exports", "R")
 for (dir in dirs) {
   if (dir.exists(dir)) {
     cat(paste("✓", dir, "exists\n"))

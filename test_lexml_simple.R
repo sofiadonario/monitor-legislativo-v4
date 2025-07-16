@@ -5,9 +5,9 @@
 cat("=== Simple LexML Integration Test ===\n")
 
 # Test 1: Check if LexML data files exist
-csv_path <- "lexml_overview/data/processed/lexml_latest_results.csv"
-metadata_path <- "lexml_overview/data/processed/lexml_metadata.json"
-statistics_path <- "lexml_overview/data/processed/lexml_statistics.json"
+csv_path <- "data_current/processed/lexml_latest_results.csv"
+metadata_path <- "data_current/processed/lexml_metadata.json"
+statistics_path <- "data_current/processed/lexml_statistics.json"
 
 cat("🔄 Checking LexML data files...\n")
 

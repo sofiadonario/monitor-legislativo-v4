@@ -71,7 +71,7 @@ app:
 
 database:
   type: "SQLite"
-  file: "data/legislative.db"
+        file: "data_current/legislative.db"
 '
 
 # Backup and replace config

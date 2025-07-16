@@ -90,7 +90,7 @@ check_cache_health <- function() {
 check_filesystem_health <- function() {
   tryCatch({
     # Check required directories
-    required_dirs <- c("data", "data/cache", "exports", "logs", "temp")
+    required_dirs <- c("data_current", "data_current/cache", "exports", "logs", "temp")
     missing_dirs <- c()
     
     for (dir in required_dirs) {

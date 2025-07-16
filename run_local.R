@@ -29,7 +29,7 @@ check_packages <- function() {
 check_directories <- function() {
   cat("\n📁 Checking directory structure...\n")
   
-  dirs_to_check <- c("data", "data/cache", "data/geographic", "www")
+  dirs_to_check <- c("data_current", "data_current/cache", "data_current/geographic", "www")
   
   for (dir in dirs_to_check) {
     if (!dir.exists(dir)) {

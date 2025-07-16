@@ -104,7 +104,8 @@
       "Bash(./run_background.sh)",
       "Bash(kill:*)",
       "Bash(./run_corrected_background.sh:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(awk:*)"
     ]
   },
   "enableAllProjectMcpServers": false

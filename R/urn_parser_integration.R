@@ -13,7 +13,7 @@ library(futile.logger)
 #' @param data_source Path to CSV file or database connection
 #' @param limit Maximum number of records to load
 #' @return Data frame with parsed URN components
-load_parsed_urn_data <- function(data_source = "./data/processed/lexml_parsed_enhanced.csv", limit = NULL) {
+load_parsed_urn_data <- function(data_source = "./data_current/processed/lexml_parsed_enhanced.csv", limit = NULL) {
   
   flog.info("Loading parsed URN data from: %s", data_source)
   
