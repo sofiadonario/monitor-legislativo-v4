@@ -642,3 +642,108 @@ backup_database <- function(backup_path = NULL) {
     return(FALSE)
   })
 }
+
+#' Populate database with new CSV data structure
+#' @param db_path Path to SQLite database file
+#' @return TRUE if successful, FALSE otherwise
+populate_database_with_csv_data <- function(db_path = "data_current/legislative.db") {
+  
+  flog.info("Populating database with new CSV data structure")
+  
+  tryCatch({
+    # Initialize database if not exists
+    if (!init_database(db_path)) {
+      flog.error("Failed to initialize database")
+      return(FALSE)
+    }
+    
+    # Load all CSV files from data_current/processed/
+    csv_files <- list.files("data_current/processed/", pattern = "*.csv", full.names = TRUE)
+    
+    if (length(csv_files) == 0) {
+      flog.warn("No CSV files found in data_current/processed/")
+      return(FALSE)
+    }
+    
+    flog.info("Found %d CSV files to process", length(csv_files))
+    
+    total_records <- 0
+    
+    for (csv_file in csv_files) {
+      flog.info("Processing file: %s", basename(csv_file))
+      
+      # Load CSV data
+      data <- read_csv(csv_file,
+                       col_types = cols(
+                         Search_term = col_character(),
+                         Date_searched = col_date(format = "%Y-%m-%d"),
+                         Url = col_character(),
+                         Title = col_character(),
+                         Urn = col_character(),
+                         Urn_type = col_character(),
+                         Country = col_character(),
+                         State = col_character(),
+                         Municipality = col_character(),
+                         Justice = col_character(),
+                         Region = col_character(),
+                         Court_class = col_character(),
+                         Document_type_full = col_character(),
+                         Enacting_date = col_datetime(format = "%Y-%m-%d %H:%M:%S"),
+                         Document_description = col_character(),
+                         Document_summary = col_character()
+                       ),
+                       locale = locale(encoding = "UTF-8"))
+      
+      if (nrow(data) == 0) {
+        flog.warn("No data in file: %s", basename(csv_file))
+        next
+      }
+      
+      # Transform data to match database schema
+      db_data <- data %>%
+        mutate(
+          id_unico = Urn,
+          titulo = Title,
+          tipo = case_when(
+            Urn_type == "legislation" ~ "lei",
+            Urn_type == "jurisprudence" ~ "jurisprudencia",
+            Urn_type == "doutrina" ~ "doutrina",
+            TRUE ~ "outro"
+          ),
+          numero = NA_character_,
+          data = as.Date(Enacting_date),
+          ano = as.numeric(format(as.Date(Enacting_date), "%Y")),
+          resumo = Document_summary,
+          autor = NA_character_,
+          status = "ativo",
+          estado = State,
+          municipio = Municipality,
+          nivel_governo = "federal",
+          fonte_original = "LexML",
+          url = Url,
+          citacao = Urn,
+          palavras_chave = Search_term,
+          dias_desde_publicacao = as.numeric(Sys.Date() - as.Date(Enacting_date)),
+          data_processamento = Sys.time()
+        ) %>%
+        select(
+          id_unico, titulo, tipo, numero, data, ano, resumo, autor, status,
+          estado, municipio, nivel_governo, fonte_original, url, citacao,
+          palavras_chave, dias_desde_publicacao, data_processamento
+        )
+      
+      # Save to database
+      records_saved <- save_legislative_data(db_data, overwrite = FALSE)
+      total_records <- total_records + records_saved
+      
+      flog.info("Saved %d records from %s", records_saved, basename(csv_file))
+    }
+    
+    flog.info("Database population completed. Total records: %d", total_records)
+    return(TRUE)
+    
+  }, error = function(e) {
+    flog.error("Error populating database: %s", e$message)
+    return(FALSE)
+  })
+}

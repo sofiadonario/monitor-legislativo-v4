@@ -20,45 +20,8 @@ source("R/map_generator.R")
 # Load enhanced search functionality
 source("R/enhanced_search.R")
 
-  # Load LexML data loader module
-  source("R/lexml_data_loader.R")
-  
-  # Helper function to render document tables
-  render_document_table <- function(data, title) {
-    if (is.null(data) || nrow(data) == 0) {
-      empty_data <- data.frame(Message = paste("No", title, "documents available"), stringsAsFactors = FALSE)
-      return(DT::datatable(empty_data, options = list(searching = FALSE)))
-    }
-    
-    # Prepare data for display
-    display_data <- data %>%
-      select(titulo, estado, data_publicacao, urn, document_type_full, document_description) %>%
-      rename(
-        "Title" = titulo,
-        "State" = estado,
-        "Date" = data_publicacao,
-        "URN" = urn,
-        "Document Type" = document_type_full,
-        "Description" = document_description
-      )
-    
-    DT::datatable(
-      display_data,
-      options = list(
-        pageLength = 25,
-        scrollX = TRUE,
-        columnDefs = list(
-          list(width = "40%", targets = 0),  # Title
-          list(width = "10%", targets = 1),  # State
-          list(width = "12%", targets = 2),  # Date
-          list(width = "20%", targets = 3),  # URN
-          list(width = "15%", targets = 4),  # Document Type
-          list(width = "30%", targets = 5)   # Description
-        )
-      ),
-      rownames = FALSE
-    )
-  }
+# Load LexML data loader module
+source("R/lexml_data_loader.R")
 
 # Load advanced analytics module
 tryCatch({
@@ -91,17 +54,6 @@ database_connected <- init_database()
 if (!database_connected) {
   cat("⚠️ Initial connection failed, trying force refresh...\n")
   database_connected <- force_refresh_database()
-}
-
-# Populate database with new CSV data structure
-if (database_connected) {
-  cat("🔄 Populating database with new CSV data structure...\n")
-  populate_success <- populate_database_with_csv_data()
-  if (populate_success) {
-    cat("✅ Database populated successfully with new CSV data\n")
-  } else {
-    cat("⚠️ Database population failed, using existing data\n")
-  }
 }
 
 if (!database_connected) {
@@ -210,27 +162,24 @@ ui <- dashboardPage(
           )
         ),
         fluidRow(
-          # Legislative Documents Map
-          column(6,
-            box(
-              title = "Legislative Documents by State", 
-              status = "primary", 
-              solidHeader = TRUE, 
-              width = 12,
-              height = "500px",
-              leafletOutput("legislativeMap", height = "420px")
-            )
-          ),
-          # Jurisprudence Documents Map  
-          column(6,
-            box(
-              title = "Jurisprudence Documents by State", 
-              status = "success", 
-              solidHeader = TRUE, 
-              width = 12,
-              height = "500px",
-              leafletOutput("jurisprudenceMap", height = "420px")
-            )
+          # Interactive Map - Main Feature
+          box(
+            title = "Interactive Map - Legislative Documents by State", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 12,
+            height = "600px",
+            if(database_connected) {
+              leafletOutput("dashboardMap", height = "550px")
+            } else {
+              div(
+                class = "alert alert-warning",
+                style = "text-align: center; margin-top: 200px;",
+                h4(icon("database"), " Database Connection Required"),
+                p("Connect to the database to see the interactive legislative map."),
+                p("Check the About tab for connection details.")
+              )
+            }
           )
         )
       ),
@@ -247,12 +196,7 @@ ui <- dashboardPage(
               class = "alert alert-info",
               icon("gavel"), " Brazilian legislative documents (Laws, Decrees, Regulations) from LexML database."
             ),
-            tabsetPanel(
-              tabPanel("Geral", DT::dataTableOutput("legislationGeralTable")),
-              tabPanel("Aéreo", DT::dataTableOutput("legislationAereoTable")),
-              tabPanel("Rodoviário", DT::dataTableOutput("legislationRodoviarioTable")),
-              tabPanel("Marítimo", DT::dataTableOutput("legislationMaritimoTable"))
-            )
+            DT::dataTableOutput("legislationTable")
           )
         )
       ),
@@ -269,12 +213,7 @@ ui <- dashboardPage(
               class = "alert alert-success",
               icon("balance-scale"), " Court decisions and legal precedents from Brazilian judicial system."
             ),
-            tabsetPanel(
-              tabPanel("Geral", DT::dataTableOutput("jurisprudenceGeralTable")),
-              tabPanel("Aéreo", DT::dataTableOutput("jurisprudenceAereoTable")),
-              tabPanel("Rodoviário", DT::dataTableOutput("jurisprudenceRodoviarioTable")),
-              tabPanel("Marítimo", DT::dataTableOutput("jurisprudenceMaritimoTable"))
-            )
+            DT::dataTableOutput("jurisprudenceTable")
           )
         )
       ),
@@ -291,12 +230,7 @@ ui <- dashboardPage(
               class = "alert alert-warning",
               icon("book"), " Academic papers, legal doctrine, and scholarly works on transport and energy law."
             ),
-            tabsetPanel(
-              tabPanel("Geral", DT::dataTableOutput("libraryGeralTable")),
-              tabPanel("Aéreo", DT::dataTableOutput("libraryAereoTable")),
-              tabPanel("Rodoviário", DT::dataTableOutput("libraryRodoviarioTable")),
-              tabPanel("Marítimo", DT::dataTableOutput("libraryMaritimoTable"))
-            )
+            DT::dataTableOutput("libraryTable")
           )
         )
       ),
@@ -384,6 +318,241 @@ ui <- dashboardPage(
       ),
       
       # Analytics tab
+      tabItem(tabName = "analytics",
+        fluidRow(
+          # Analytics overview
+          box(
+            title = "Analytics Overview", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 12,
+            if(database_connected) {
+              div(
+                fluidRow(
+                  column(3,
+                    valueBoxOutput("analyticsTotal", width = NULL)
+                  ),
+                  column(3,
+                    valueBoxOutput("analyticsStates", width = NULL)
+                  ),
+                  column(3,
+                    valueBoxOutput("analyticsTypes", width = NULL)
+                  ),
+                  column(3,
+                    valueBoxOutput("analyticsDateRange", width = NULL)
+                  )
+                )
+              )
+            } else {
+              div(
+                class = "alert alert-warning",
+                icon("database"), " Analytics require database connection.",
+                br(), br(),
+                p("Please check the database connection in the Dashboard tab.")
+              )
+            }
+          )
+        ),
+        if(database_connected) {
+          fluidRow(
+            # Documents by Year Chart
+            box(
+              title = "Documents by Year", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 6,
+              plotlyOutput("yearChart", height = "300px")
+            ),
+            
+            # Documents by Month Chart (Last 12 Months)
+            box(
+              title = "Documents by Month (Last 12 Months)", 
+              status = "success", 
+              solidHeader = TRUE, 
+              width = 6,
+              plotlyOutput("monthChart", height = "300px")
+            )
+          )
+        },
+        if(database_connected) {
+          fluidRow(
+            # Documents by Type Chart
+            box(
+              title = "Documents by Type", 
+              status = "warning", 
+              solidHeader = TRUE, 
+              width = 6,
+              plotlyOutput("typeChart", height = "300px")
+            ),
+            
+            # Recent Documents
+            box(
+              title = "Recent Documents (Last 30 days)", 
+              status = "info", 
+              solidHeader = TRUE, 
+              width = 6,
+              DT::dataTableOutput("recentDocuments", height = "300px")
+            )
+          )
+        },
+        if(database_connected) {
+          fluidRow(
+            # Documents by Species Chart
+            box(
+              title = "Documents by Species", 
+              status = "success", 
+              solidHeader = TRUE, 
+              width = 6,
+              plotlyOutput("speciesChart", height = "300px")
+            ),
+            
+            # Gender vs Species Distribution Chart
+            box(
+              title = "Gender vs Species Distribution", 
+              status = "info", 
+              solidHeader = TRUE, 
+              width = 6,
+              plotlyOutput("genderSpeciesChart", height = "300px")
+            )
+          )
+        },
+        if(database_connected) {
+          fluidRow(
+            # Document Types Distribution Table
+            box(
+              title = "Document Types Distribution - Detailed View", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 12,
+              DT::dataTableOutput("typeStats", height = "300px")
+            )
+          )
+        },
+        
+        # LexML Analytics Section
+        fluidRow(
+          column(12,
+            h3("LexML Legislative Data Analytics", style = "color: #e1001e; margin-top: 20px; margin-bottom: 20px;")
+          )
+        ),
+        
+        # LexML Value Boxes
+        fluidRow(
+          valueBoxOutput("lexmlTotalDocs", width = 3),
+          valueBoxOutput("lexmlLatestDate", width = 3),
+          valueBoxOutput("lexmlSearchTerms", width = 3),
+          valueBoxOutput("lexmlDocTypes", width = 3)
+        ),
+        
+        # LexML Charts
+        fluidRow(
+          # LexML Document Types Distribution
+          box(
+            title = "LexML Document Types Distribution", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlTypeChart", height = "300px")
+          ),
+          
+          # LexML Search Term Effectiveness
+          box(
+            title = "Search Term Effectiveness", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlSearchChart", height = "300px")
+          )
+        ),
+        
+        # LexML Data Table
+        fluidRow(
+          box(
+            title = "LexML Dataset Sample", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 12,
+            DT::dataTableOutput("lexmlDataTable", height = "400px")
+          )
+        ),
+        
+        # Enhanced LexML Analytics Section
+        fluidRow(
+          column(12,
+            h3("Enhanced LexML Analytics - Transport & Energy Focus", style = "color: #e1001e; margin-top: 20px; margin-bottom: 20px;")
+          )
+        ),
+        
+        # LexML Quality Metrics
+        fluidRow(
+          valueBoxOutput("lexmlQualityScore", width = 3),
+          valueBoxOutput("lexmlCompleteness", width = 3),
+          valueBoxOutput("lexmlRelevance", width = 3),
+          valueBoxOutput("lexmlConsistency", width = 3)
+        ),
+        
+        # LexML Transport Categories
+        fluidRow(
+          box(
+            title = "LexML Transport Categories Distribution", 
+            status = "warning", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlCategoryChart", height = "300px")
+          ),
+          
+          # LexML Subject Categories
+          box(
+            title = "LexML Subject Categories", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlSubjectChart", height = "300px")
+          )
+        ),
+        
+        # LexML Temporal Analysis
+        fluidRow(
+          box(
+            title = "LexML Documents by Decade", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlDecadeChart", height = "300px")
+          ),
+          
+          # LexML State Distribution
+          box(
+            title = "LexML Documents by State", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 6,
+            plotlyOutput("lexmlStateChart", height = "300px")
+          )
+        ),
+        
+        # LexML Regulatory Agencies
+        fluidRow(
+          box(
+            title = "LexML Regulatory Agencies", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 12,
+            DT::dataTableOutput("lexmlAgenciesTable", height = "200px")
+          )
+        ),
+        
+        # LexML Recent Documents
+        fluidRow(
+          box(
+            title = "Recent LexML Documents (Last 30 Days)", 
+            status = "success", 
+            solidHeader = TRUE, 
+            width = 12,
+            DT::dataTableOutput("lexmlRecentDocs", height = "300px")
+          )
+        )
+      ),
       
       # Advanced Analytics tab with LexML enhancements
       tabItem(tabName = "advanced_analytics",
@@ -952,70 +1121,245 @@ server <- function(input, output, session) {
     )
   })
   
-  # Legislation tables for different transport modes
-  output$legislationGeralTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "geral")
-    render_document_table(lexml_data, "Legislation - Geral")
+  # Legislation table - filtered for legislation documents
+  output$legislationTable <- DT::renderDataTable({
+    lexml_data <- load_lexml_data()
+    
+    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
+      empty_data <- data.frame(Message = "No legislative documents available", stringsAsFactors = FALSE)
+      return(DT::datatable(empty_data, options = list(searching = FALSE)))
+    }
+    
+    # Filter for legislation only
+    legislation_data <- lexml_data %>%
+      filter(tipo == "lei") %>%
+      select(titulo, estado, data_publicacao, urn, document_type_full, document_description) %>%
+      rename(
+        "Title" = titulo,
+        "State" = estado,
+        "Enacting Date" = data_publicacao,
+        "URN" = urn,
+        "Document Type" = document_type_full,
+        "Description" = document_description
+      )
+    
+    DT::datatable(
+      legislation_data,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        columnDefs = list(
+          list(width = "40%", targets = 0),  # Title
+          list(width = "10%", targets = 1),  # State
+          list(width = "12%", targets = 2),  # Date
+          list(width = "20%", targets = 3),  # URN
+          list(width = "15%", targets = 4),  # Document Type
+          list(width = "30%", targets = 5)   # Description
+        )
+      ),
+      rownames = FALSE
+    )
   })
   
-  output$legislationAereoTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "aéreo")
-    render_document_table(lexml_data, "Legislation - Aéreo")
+  # Jurisprudence table - filtered for jurisprudence documents
+  output$jurisprudenceTable <- DT::renderDataTable({
+    lexml_data <- load_lexml_data()
+    
+    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
+      empty_data <- data.frame(Message = "No jurisprudence documents available", stringsAsFactors = FALSE)
+      return(DT::datatable(empty_data, options = list(searching = FALSE)))
+    }
+    
+    # Filter for jurisprudence only
+    jurisprudence_data <- lexml_data %>%
+      filter(tipo == "jurisprudencia") %>%
+      select(titulo, estado, data_publicacao, urn, court_class, document_description) %>%
+      rename(
+        "Title" = titulo,
+        "State" = estado,
+        "Decision Date" = data_publicacao,
+        "URN" = urn,
+        "Court" = court_class,
+        "Description" = document_description
+      )
+    
+    DT::datatable(
+      jurisprudence_data,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        columnDefs = list(
+          list(width = "35%", targets = 0),  # Title
+          list(width = "10%", targets = 1),  # State
+          list(width = "12%", targets = 2),  # Date
+          list(width = "20%", targets = 3),  # URN
+          list(width = "15%", targets = 4),  # Court
+          list(width = "30%", targets = 5)   # Description
+        )
+      ),
+      rownames = FALSE
+    )
   })
   
-  output$legislationRodoviarioTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "rodoviário")
-    render_document_table(lexml_data, "Legislation - Rodoviário")
+  # Library table - filtered for doctrine documents
+  output$libraryTable <- DT::renderDataTable({
+    lexml_data <- load_lexml_data()
+    
+    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
+      empty_data <- data.frame(Message = "No doctrine documents available", stringsAsFactors = FALSE)
+      return(DT::datatable(empty_data, options = list(searching = FALSE)))
+    }
+    
+    # Filter for doctrine only
+    doctrine_data <- lexml_data %>%
+      filter(tipo == "doutrina") %>%
+      select(titulo, estado, data_publicacao, urn, search_term, document_summary) %>%
+      rename(
+        "Title" = titulo,
+        "State" = estado,
+        "Publication Date" = data_publicacao,
+        "URN" = urn,
+        "Topic" = search_term,
+        "Summary" = document_summary
+      )
+    
+    DT::datatable(
+      doctrine_data,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        columnDefs = list(
+          list(width = "35%", targets = 0),  # Title
+          list(width = "10%", targets = 1),  # State
+          list(width = "12%", targets = 2),  # Date
+          list(width = "20%", targets = 3),  # URN
+          list(width = "15%", targets = 4),  # Topic
+          list(width = "30%", targets = 5)   # Summary
+        )
+      ),
+      rownames = FALSE
+    )
   })
   
-  output$legislationMaritimoTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "marítimo")
-    render_document_table(lexml_data, "Legislation - Marítimo")
+  # Legislation table - filtered for legislation documents
+  output$legislationTable <- DT::renderDataTable({
+    lexml_data <- load_lexml_data()
+    
+    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
+      empty_data <- data.frame(Message = "No legislative documents available", stringsAsFactors = FALSE)
+      return(DT::datatable(empty_data, options = list(searching = FALSE)))
+    }
+    
+    # Filter for legislation only
+    legislation_data <- lexml_data %>%
+      filter(tipo == "lei") %>%
+      select(titulo, estado, data_publicacao, urn, document_type_full, document_description) %>%
+      rename(
+        "Title" = titulo,
+        "State" = estado,
+        "Enacting Date" = data_publicacao,
+        "URN" = urn,
+        "Document Type" = document_type_full,
+        "Description" = document_description
+      )
+    
+    DT::datatable(
+      legislation_data,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        columnDefs = list(
+          list(width = "40%", targets = 0),  # Title
+          list(width = "10%", targets = 1),  # State
+          list(width = "12%", targets = 2),  # Date
+          list(width = "20%", targets = 3),  # URN
+          list(width = "15%", targets = 4),  # Document Type
+          list(width = "30%", targets = 5)   # Description
+        )
+      ),
+      rownames = FALSE
+    )
   })
   
-  # Jurisprudence tables for different transport modes
-  output$jurisprudenceGeralTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "geral")
-    render_document_table(lexml_data, "Jurisprudence - Geral")
+  # Jurisprudence table - filtered for jurisprudence documents
+  output$jurisprudenceTable <- DT::renderDataTable({
+    lexml_data <- load_lexml_data()
+    
+    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
+      empty_data <- data.frame(Message = "No jurisprudence documents available", stringsAsFactors = FALSE)
+      return(DT::datatable(empty_data, options = list(searching = FALSE)))
+    }
+    
+    # Filter for jurisprudence only
+    jurisprudence_data <- lexml_data %>%
+      filter(tipo == "jurisprudencia") %>%
+      select(titulo, estado, data_publicacao, urn, court_class, document_description) %>%
+      rename(
+        "Title" = titulo,
+        "State" = estado,
+        "Decision Date" = data_publicacao,
+        "URN" = urn,
+        "Court" = court_class,
+        "Description" = document_description
+      )
+    
+    DT::datatable(
+      jurisprudence_data,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        columnDefs = list(
+          list(width = "35%", targets = 0),  # Title
+          list(width = "10%", targets = 1),  # State
+          list(width = "12%", targets = 2),  # Date
+          list(width = "20%", targets = 3),  # URN
+          list(width = "15%", targets = 4),  # Court
+          list(width = "30%", targets = 5)   # Description
+        )
+      ),
+      rownames = FALSE
+    )
   })
   
-  output$jurisprudenceAereoTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "aéreo")
-    render_document_table(lexml_data, "Jurisprudence - Aéreo")
-  })
-  
-  output$jurisprudenceRodoviarioTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "rodoviário")
-    render_document_table(lexml_data, "Jurisprudence - Rodoviário")
-  })
-  
-  output$jurisprudenceMaritimoTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "marítimo")
-    render_document_table(lexml_data, "Jurisprudence - Marítimo")
-  })
-
-  # Doctrine (Library) tables for different transport modes
-  output$libraryGeralTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "doctrine", transport_mode = "geral")
-    render_document_table(lexml_data, "Doctrine - Geral")
-  })
-  
-  output$libraryAereoTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "doctrine", transport_mode = "aéreo")
-    render_document_table(lexml_data, "Doctrine - Aéreo")
-  })
-  
-  output$libraryRodoviarioTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "doctrine", transport_mode = "rodoviário")
-    render_document_table(lexml_data, "Doctrine - Rodoviário")
-  })
-  
-  output$libraryMaritimoTable <- DT::renderDataTable({
-    lexml_data <- load_specific_lexml_data(category = "doctrine", transport_mode = "marítimo")
-    render_document_table(lexml_data, "Doctrine - Marítimo")
-  })
-  
-  # Advanced search functionality
+  # Library table - filtered for doctrine documents
+  output$libraryTable <- DT::renderDataTable({
+    lexml_data <- load_lexml_data()
+    
+    if (is.null(lexml_data) || nrow(lexml_data) == 0) {
+      empty_data <- data.frame(Message = "No doctrine documents available", stringsAsFactors = FALSE)
+      return(DT::datatable(empty_data, options = list(searching = FALSE)))
+    }
+    
+    # Filter for doctrine only
+    doctrine_data <- lexml_data %>%
+      filter(tipo == "doutrina") %>%
+      select(titulo, estado, data_publicacao, urn, search_term, document_summary) %>%
+      rename(
+        "Title" = titulo,
+        "State" = estado,
+        "Publication Date" = data_publicacao,
+        "URN" = urn,
+        "Topic" = search_term,
+        "Summary" = document_summary
+      )
+    
+    DT::datatable(
+      doctrine_data,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        columnDefs = list(
+          list(width = "35%", targets = 0),  # Title
+          list(width = "10%", targets = 1),  # State
+          list(width = "12%", targets = 2),  # Date
+          list(width = "20%", targets = 3),  # URN
+          list(width = "15%", targets = 4),  # Topic
+          list(width = "30%", targets = 5)   # Summary
+        )
+      ),
+      rownames = FALSE
+    )
+  })  # Advanced search functionality
   observeEvent(input$searchBtn, {
     if (database_connected) {
       withProgress(message = 'Searching documents...', value = 0, {
@@ -1510,155 +1854,8 @@ server <- function(input, output, session) {
         )
     }
   })
-  # Legislative Map - using Legislação___Geral.csv
-  output$legislativeMap <- renderLeaflet({
-    cat("🔄 Legislative map rendering triggered\n")
-    
-    lexml_data <- load_specific_lexml_data(category = "legislation", transport_mode = "geral")
-    
-    if (!is.null(lexml_data) && nrow(lexml_data) > 0) {
-      # Use all legislation data from the specific file
-      legislation_data <- lexml_data %>%
-        filter(!is.na(estado), estado != "")
-      
-      if (nrow(legislation_data) > 0) {
-        # Aggregate by state
-        map_data <- legislation_data %>%
-          group_by(estado) %>%
-          summarise(documento_count = n(), .groups = "drop") %>%
-          arrange(desc(documento_count))
-        
-        cat("🔄 Legislative map data:", nrow(map_data), "states,", sum(map_data$documento_count), "total docs\n")
-        
-        # Use the same approach as dashboardMap with geographic data
-        if (!is.null(values$geographic_data)) {
-          cat("🔄 Creating legislative map with geographic boundaries\n")
-          
-          map <- create_legislative_map(
-            legislative_data = map_data,
-            geography_data = values$geographic_data,
-            focus_state = NULL,
-            color_by = "count"
-          )
-          
-          if (!is.null(map)) {
-            cat("✅ Legislative map with boundaries created successfully\n")
-            return(map)
-          }
-        }
-        
-        # Fallback: create simple map with data overlay
-        cat("🔄 Creating fallback legislative map with data overlay\n")
-        leaflet() %>%
-          addTiles() %>%
-          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-          addControl(
-            html = paste0(
-              "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>",
-              "<h4 style='margin: 0; color: #2c3e50;'>Legislative Documents</h4>",
-              "<strong>Total:</strong> ", sum(map_data$documento_count), "<br>",
-              "<strong>States:</strong> ", nrow(map_data), "<br>",
-              "<strong>Top State:</strong> ", map_data$estado[1], " (", map_data$documento_count[1], ")",
-              "</div>"
-            ),
-            position = "topright"
-          )
-      } else {
-        # Empty map if no legislation data
-        leaflet() %>%
-          addTiles() %>%
-          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-          addControl(
-            html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>No legislative documents found</div>",
-            position = "topright"
-          )
-      }
-    } else {
-      # Fallback empty map
-      leaflet() %>%
-        addTiles() %>%
-        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-        addControl(
-          html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>Loading legislative data...</div>",
-          position = "topright"
-        )
-    }
-  })
   
-  # Jurisprudence Map - using Jurisprudência___Geral.csv
-  output$jurisprudenceMap <- renderLeaflet({
-    cat("🔄 Jurisprudence map rendering triggered\n")
-    
-    lexml_data <- load_specific_lexml_data(category = "jurisprudence", transport_mode = "geral")
-    
-    if (!is.null(lexml_data) && nrow(lexml_data) > 0) {
-      # Use all jurisprudence data from the specific file
-      jurisprudence_data <- lexml_data %>%
-        filter(!is.na(estado), estado != "")
-      
-      if (nrow(jurisprudence_data) > 0) {
-        # Aggregate by state
-        map_data <- jurisprudence_data %>%
-          group_by(estado) %>%
-          summarise(documento_count = n(), .groups = "drop") %>%
-          arrange(desc(documento_count))
-        
-        cat("🔄 Jurisprudence map data:", nrow(map_data), "states,", sum(map_data$documento_count), "total docs\n")
-        
-        # Use the same approach as dashboardMap with geographic data
-        if (!is.null(values$geographic_data)) {
-          cat("🔄 Creating jurisprudence map with geographic boundaries\n")
-          
-          map <- create_legislative_map(
-            legislative_data = map_data,
-            geography_data = values$geographic_data,
-            focus_state = NULL,
-            color_by = "count"
-          )
-          
-          if (!is.null(map)) {
-            cat("✅ Jurisprudence map with boundaries created successfully\n")
-            return(map)
-          }
-        }
-        
-        # Fallback: create simple map with data overlay
-        cat("🔄 Creating fallback jurisprudence map with data overlay\n")
-        leaflet() %>%
-          addTiles() %>%
-          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-          addControl(
-            html = paste0(
-              "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>",
-              "<h4 style='margin: 0; color: #27ae60;'>Jurisprudence Documents</h4>",
-              "<strong>Total:</strong> ", sum(map_data$documento_count), "<br>",
-              "<strong>States:</strong> ", nrow(map_data), "<br>",
-              "<strong>Top State:</strong> ", map_data$estado[1], " (", map_data$documento_count[1], ")",
-              "</div>"
-            ),
-            position = "topright"
-          )
-      } else {
-        # Empty map if no jurisprudence data
-        leaflet() %>%
-          addTiles() %>%
-          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-          addControl(
-            html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>No jurisprudence documents found</div>",
-            position = "topright"
-          )
-      }
-    } else {
-      # Fallback empty map
-      leaflet() %>%
-        addTiles() %>%
-        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-        addControl(
-          html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>Loading jurisprudence data...</div>",
-          position = "topright"
-        )
-    }
-  })  # Documents by Month Chart (Last 12 Months)
+  # Documents by Month Chart (Last 12 Months)
   output$monthChart <- renderPlotly({
     if (database_connected && !is.null(values$analytics_data)) {
       data <- values$analytics_data$documents_by_month
@@ -1727,119 +1924,6 @@ server <- function(input, output, session) {
   })
   
   # Documents by Type Chart
-  # Year Chart - Documents by Year
-  output$yearChart <- renderPlotly({
-    tryCatch({
-      if (is.null(values$analytics_data) || is.null(values$analytics_data$documents_by_year)) {
-        empty_plot <- plot_ly() %>%
-          add_annotations(
-            text = "No year data available",
-            xref = "paper", yref = "paper",
-            x = 0.5, y = 0.5, showarrow = FALSE
-          ) %>%
-          layout(
-            title = "No Year Data",
-            xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
-            yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
-          )
-        return(empty_plot)
-      }
-      
-      year_data <- values$analytics_data$documents_by_year
-      if (nrow(year_data) == 0) {
-        empty_plot <- plot_ly() %>%
-          add_annotations(
-            text = "No year data available",
-            xref = "paper", yref = "paper",
-            x = 0.5, y = 0.5, showarrow = FALSE
-          )
-        return(empty_plot)
-      }
-      
-      # Create bar plot
-      p <- plot_ly(year_data, 
-                   x = ~year, 
-                   y = ~count,
-                   type = 'bar',
-                   marker = list(color = '#e74c3c'),
-                   text = ~paste("Year:", year, "<br>Count:", count),
-                   hovertemplate = "%{text}<extra></extra>") %>%
-        layout(
-          title = list(text = "Documents by Year", font = list(size = 16)),
-          xaxis = list(title = "Year"),
-          yaxis = list(title = "Number of Documents"),
-          showlegend = FALSE,
-          margin = list(b = 50, l = 50, r = 50, t = 50)
-        ) %>%
-        config(displayModeBar = FALSE)
-      
-      return(p)
-    }, error = function(e) {
-      cat("Error in yearChart:", e$message, "\n")
-      return(plot_ly() %>% add_annotations(text = paste("Error:", e$message), 
-                                          x = 0.5, y = 0.5))
-    })
-  })
-
-  # Month Chart - Documents by Month (Current Year)
-  output$monthChart <- renderPlotly({
-    tryCatch({
-      if (is.null(values$analytics_data) || is.null(values$analytics_data$documents_by_month)) {
-        empty_plot <- plot_ly() %>%
-          add_annotations(
-            text = "No month data available",
-            xref = "paper", yref = "paper",
-            x = 0.5, y = 0.5, showarrow = FALSE
-          ) %>%
-          layout(
-            title = "No Month Data",
-            xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
-            yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
-          )
-        return(empty_plot)
-      }
-      
-      month_data <- values$analytics_data$documents_by_month
-      if (nrow(month_data) == 0) {
-        empty_plot <- plot_ly() %>%
-          add_annotations(
-            text = "No month data available",
-            xref = "paper", yref = "paper",
-            x = 0.5, y = 0.5, showarrow = FALSE
-          )
-        return(empty_plot)
-      }
-      
-      # Add month names
-      month_names <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-      month_data$month_name <- month_names[month_data$month]
-      
-      # Create bar plot
-      p <- plot_ly(month_data, 
-                   x = ~month_name, 
-                   y = ~count,
-                   type = 'bar',
-                   marker = list(color = '#2ecc71'),
-                   text = ~paste("Month:", month_name, "<br>Count:", count),
-                   hovertemplate = "%{text}<extra></extra>") %>%
-        layout(
-          title = list(text = "Documents by Month (Current Year)", font = list(size = 16)),
-          xaxis = list(title = "Month"),
-          yaxis = list(title = "Number of Documents"),
-          showlegend = FALSE,
-          margin = list(b = 50, l = 50, r = 50, t = 50)
-        ) %>%
-        config(displayModeBar = FALSE)
-      
-      return(p)
-    }, error = function(e) {
-      cat("Error in monthChart:", e$message, "\n")
-      return(plot_ly() %>% add_annotations(text = paste("Error:", e$message), 
-                                          x = 0.5, y = 0.5))
-    })
-  })
-  
   output$typeChart <- renderPlotly({
     if (database_connected && !is.null(values$analytics_data)) {
       data <- values$analytics_data$documents_by_type
