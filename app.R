@@ -11,11 +11,8 @@ library(ggplot2)
 library(leaflet)
 library(stringr)
 
-# Load database connection module
+# Load database connection module (PostgreSQL)
 source("R/database_connection.R")
-
-# Load database utilities module
-source("R/database.R")
 
 # Load map generator module for geographic visualization
 source("R/map_generator.R")
