@@ -108,6 +108,8 @@ secrets/
 *.xls
 # Allow processed CSVs inside src/data/processed
 !src/data/processed/*.csv
+# Allow the main LexML dataset
+!lexml_overview/use_version/Geral.csv
 data/exports/
 data/cache/
 data/temp/ .env.production
