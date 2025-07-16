@@ -1887,7 +1887,9 @@ server <- function(input, output, session) {
       return(plot_ly() %>% add_annotations(text = paste("Error:", e$message), 
                                           x = 0.5, y = 0.5))
     })
-  })  output$typeChart <- renderPlotly({
+  })
+  
+  output$typeChart <- renderPlotly({
     if (database_connected && !is.null(values$analytics_data)) {
       data <- values$analytics_data$documents_by_type
       
