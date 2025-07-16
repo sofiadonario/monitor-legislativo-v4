@@ -1642,26 +1642,58 @@ server <- function(input, output, session) {
         
         cat("🔄 Legislative map data:", nrow(map_data), "states,", sum(map_data$documento_count), "total docs\n")
         
-        # Create basic leaflet map centered on Brazil
+        # Use the same approach as dashboardMap with geographic data
+        if (!is.null(values$geographic_data)) {
+          cat("🔄 Creating legislative map with geographic boundaries\n")
+          
+          map <- create_legislative_map(
+            legislative_data = map_data,
+            geography_data = values$geographic_data,
+            focus_state = NULL,
+            color_by = "count"
+          )
+          
+          if (!is.null(map)) {
+            cat("✅ Legislative map with boundaries created successfully\n")
+            return(map)
+          }
+        }
+        
+        # Fallback: create simple map with data overlay
+        cat("🔄 Creating fallback legislative map with data overlay\n")
         leaflet() %>%
           addTiles() %>%
           setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-          addMarkers(
-            lng = c(-46.6333, -43.1729, -43.9378, -51.2177),
-            lat = c(-23.5505, -22.9068, -19.9208, -30.0346),
-            popup = paste0("Legislative Docs: ", c(200, 150, 100, 80))
+          addControl(
+            html = paste0(
+              "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>",
+              "<h4 style='margin: 0; color: #2c3e50;'>Legislative Documents</h4>",
+              "<strong>Total:</strong> ", sum(map_data$documento_count), "<br>",
+              "<strong>States:</strong> ", nrow(map_data), "<br>",
+              "<strong>Top State:</strong> ", map_data$estado[1], " (", map_data$documento_count[1], ")",
+              "</div>"
+            ),
+            position = "topright"
           )
       } else {
         # Empty map if no legislation data
         leaflet() %>%
           addTiles() %>%
-          setView(lng = -47.9292, lat = -15.7801, zoom = 4)
+          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+          addControl(
+            html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>No legislative documents found</div>",
+            position = "topright"
+          )
       }
     } else {
       # Fallback empty map
       leaflet() %>%
         addTiles() %>%
-        setView(lng = -47.9292, lat = -15.7801, zoom = 4)
+        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+        addControl(
+          html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>Loading legislative data...</div>",
+          position = "topright"
+        )
     }
   })
   
@@ -1685,29 +1717,60 @@ server <- function(input, output, session) {
         
         cat("🔄 Jurisprudence map data:", nrow(map_data), "states,", sum(map_data$documento_count), "total docs\n")
         
-        # Create basic leaflet map centered on Brazil
+        # Use the same approach as dashboardMap with geographic data
+        if (!is.null(values$geographic_data)) {
+          cat("🔄 Creating jurisprudence map with geographic boundaries\n")
+          
+          map <- create_legislative_map(
+            legislative_data = map_data,
+            geography_data = values$geographic_data,
+            focus_state = NULL,
+            color_by = "count"
+          )
+          
+          if (!is.null(map)) {
+            cat("✅ Jurisprudence map with boundaries created successfully\n")
+            return(map)
+          }
+        }
+        
+        # Fallback: create simple map with data overlay
+        cat("🔄 Creating fallback jurisprudence map with data overlay\n")
         leaflet() %>%
           addTiles() %>%
           setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-          addMarkers(
-            lng = c(-46.6333, -43.1729, -43.9378, -51.2177, -38.5014),
-            lat = c(-23.5505, -22.9068, -19.9208, -30.0346, -12.9714),
-            popup = paste0("Jurisprudence Docs: ", c(50, 30, 25, 20, 15))
+          addControl(
+            html = paste0(
+              "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>",
+              "<h4 style='margin: 0; color: #27ae60;'>Jurisprudence Documents</h4>",
+              "<strong>Total:</strong> ", sum(map_data$documento_count), "<br>",
+              "<strong>States:</strong> ", nrow(map_data), "<br>",
+              "<strong>Top State:</strong> ", map_data$estado[1], " (", map_data$documento_count[1], ")",
+              "</div>"
+            ),
+            position = "topright"
           )
       } else {
         # Empty map if no jurisprudence data
         leaflet() %>%
           addTiles() %>%
-          setView(lng = -47.9292, lat = -15.7801, zoom = 4)
+          setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+          addControl(
+            html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>No jurisprudence documents found</div>",
+            position = "topright"
+          )
       }
     } else {
       # Fallback empty map
       leaflet() %>%
         addTiles() %>%
-        setView(lng = -47.9292, lat = -15.7801, zoom = 4)
+        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
+        addControl(
+          html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>Loading jurisprudence data...</div>",
+          position = "topright"
+        )
     }
-  })  
-  # Documents by Month Chart (Last 12 Months)
+  })  # Documents by Month Chart (Last 12 Months)
   output$monthChart <- renderPlotly({
     if (database_connected && !is.null(values$analytics_data)) {
       data <- values$analytics_data$documents_by_month
