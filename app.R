@@ -88,7 +88,7 @@ if (nchar(Sys.getenv("DATABASE_URL")) > 0) {
 Sys.setenv(DATABASE_URL = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway")
 
 # Force refresh database connection to ensure we get latest data
-database_connected <- init_database()
+database_connected <- init_database_connection()
 
 # If connection failed, try force refresh
 if (!database_connected) {

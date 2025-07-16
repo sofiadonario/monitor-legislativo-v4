@@ -5,6 +5,7 @@ library(DBI)
 library(RPostgres)
 library(pool)
 library(dplyr)
+library(jsonlite)
 
 # Force refresh flag to ensure we get latest data
 FORCE_REFRESH <- TRUE
@@ -48,6 +49,144 @@ create_simple_date_coalesce_sql <- function(prefix = "d") {
 
 # Global connection pool
 db_pool <- NULL
+
+#' Populate PostgreSQL database with CSV data from data_current/processed/
+#' @return TRUE if successful, FALSE otherwise
+populate_database_with_csv_data <- function() {
+  cat("🔄 Populating PostgreSQL database with CSV data from data_current/processed/\n")
+  
+  tryCatch({
+    if (is.null(db_pool)) {
+      cat("❌ Database pool is NULL\n")
+      return(FALSE)
+    }
+    
+    # Load all CSV files from data_current/processed/
+    csv_files <- list.files("data_current/processed/", pattern = "*.csv", full.names = TRUE)
+    
+    if (length(csv_files) == 0) {
+      cat("⚠️ No CSV files found in data_current/processed/\n")
+      return(FALSE)
+    }
+    
+    cat("Found", length(csv_files), "CSV files to process\n")
+    
+    conn <- poolCheckout(db_pool)
+    on.exit(poolReturn(conn))
+    
+    total_records <- 0
+    
+    for (csv_file in csv_files) {
+      cat("Processing file:", basename(csv_file), "\n")
+      
+      # Load CSV data
+      data <- read.csv(csv_file, stringsAsFactors = FALSE, fileEncoding = "UTF-8")
+      
+      if (nrow(data) == 0) {
+        cat("⚠️ No data in file:", basename(csv_file), "\n")
+        next
+      }
+      
+      # Transform data to match PostgreSQL schema
+      db_data <- data %>%
+        mutate(
+          id = row_number(),
+          urn = coalesce(Urn, ""),
+          titulo = coalesce(Title, ""),
+          conteudo = coalesce(Document_summary, ""),
+          tipo = case_when(
+            grepl("legislation", Urn_type, ignore.case = TRUE) ~ "legislation",
+            grepl("jurisprudence", Urn_type, ignore.case = TRUE) ~ "jurisprudence",
+            grepl("doutrina", Urn_type, ignore.case = TRUE) ~ "library",
+            TRUE ~ "other"
+          ),
+          data_publicacao = as.Date(Enacting_date),
+          estado = coalesce(State, ""),
+          autor = "",
+          fonte = "LexML",
+          url = coalesce(Url, ""),
+          metadata = toJSON(list(
+            search_term = Search_term,
+            urn_type = Urn_type,
+            country = Country,
+            municipality = Municipality,
+            justice = Justice,
+            region = Region,
+            court_class = Court_class,
+            document_type_full = Document_type_full,
+            document_description = Document_description
+          ), auto_unbox = TRUE),
+          transport_category = case_when(
+            grepl("aereo|aéreo", Search_term, ignore.case = TRUE) ~ "aereo",
+            grepl("rodoviario|rodoviário", Search_term, ignore.case = TRUE) ~ "rodoviario",
+            grepl("maritimo|marítimo", Search_term, ignore.case = TRUE) ~ "maritimo",
+            TRUE ~ "geral"
+          ),
+          created_at = Sys.time(),
+          updated_at = Sys.time(),
+          municipality = coalesce(Municipality, ""),
+          justice = coalesce(Justice, ""),
+          region = coalesce(Region, ""),
+          court_class = coalesce(Court_class, ""),
+          document_type_full = coalesce(Document_type_full, ""),
+          document_description = coalesce(Document_description, ""),
+          document_summary = coalesce(Document_summary, ""),
+          search_term = coalesce(Search_term, ""),
+          locality = coalesce(Municipality, ""),
+          authority = "",
+          authority_level = "",
+          document_number = "",
+          estado_codigo = "",
+          species = ""
+        ) %>%
+        select(
+          id, urn, titulo, conteudo, tipo, data_publicacao, estado, autor, fonte, url,
+          metadata, transport_category, created_at, updated_at, municipality, justice,
+          region, court_class, document_type_full, document_description, document_summary,
+          search_term, locality, authority, authority_level, document_number, estado_codigo, species
+        )
+      
+      # Clear existing data for this file type
+      file_type <- unique(db_data$tipo)[1]
+      delete_sql <- "DELETE FROM documents WHERE tipo = $1"
+      dbExecute(conn, delete_sql, list(file_type))
+      
+      # Insert new data
+      insert_sql <- "
+        INSERT INTO documents (
+          urn, titulo, conteudo, tipo, data_publicacao, estado, autor, fonte, url,
+          metadata, transport_category, created_at, updated_at, municipality, justice,
+          region, court_class, document_type_full, document_description, document_summary,
+          search_term, locality, authority, authority_level, document_number, estado_codigo, species
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27
+        )
+      "
+      
+      records_inserted <- 0
+      for (i in 1:nrow(db_data)) {
+        row <- db_data[i, ]
+        result <- dbExecute(conn, insert_sql, list(
+          row$urn, row$titulo, row$conteudo, row$tipo, row$data_publicacao, row$estado, row$autor, row$fonte, row$url,
+          row$metadata, row$transport_category, row$created_at, row$updated_at, row$municipality, row$justice,
+          row$region, row$court_class, row$document_type_full, row$document_description, row$document_summary,
+          row$search_term, row$locality, row$authority, row$authority_level, row$document_number, row$estado_codigo, row$species
+        ))
+        records_inserted <- records_inserted + result
+      }
+      
+      total_records <- total_records + records_inserted
+      cat("✅ Saved", records_inserted, "records from", basename(csv_file), "\n")
+    }
+    
+    cat("✅ Database population completed. Total records:", total_records, "\n")
+    return(TRUE)
+    
+  }, error = function(e) {
+    cat("❌ Error populating database:", e$message, "\n")
+    return(FALSE)
+  })
+}
 
 #' Initialize database connection pool
 #' @return TRUE if successful, FALSE otherwise
