@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
 # Set environment variables
 ENV R_CONFIG_ACTIVE=production
 ENV SHINY_LOG_LEVEL=INFO
+ENV DEPLOYMENT_TIMESTAMP=2025-07-18T10:40:00Z
 
 # Install R packages in logical groups for better caching and faster builds
 
