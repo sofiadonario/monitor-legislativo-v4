@@ -67,11 +67,13 @@ RUN mkdir -p data/cache data/geographic www logs exports temp
 
 # Copy application files
 COPY app.R ./
-COPY R/ ./R/
+COPY scripts/R/ ./scripts/R/
 COPY config.yml ./
 COPY dev-tools/startup_diagnostics.R ./
 # Copy LexML data directory with CSV file
 COPY lexml_overview/ ./lexml_overview/
+# Copy data_current directory with processed data
+COPY data_current/ ./data_current/
 
 # Expose port
 EXPOSE ${PORT:-3838}
