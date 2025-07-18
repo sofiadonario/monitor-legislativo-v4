@@ -42,7 +42,7 @@ RUN R -e "install.packages(c('htmltools', 'htmlwidgets', 'magrittr', 'readr', 'd
 
 # Group 6: UI enhancement and export packages
 RUN R -e "install.packages(c('shinyjs', 'shinycssloaders', 'openxlsx', 'xml2', \
-    'knitr', 'rmarkdown'), \
+    'knitr', 'rmarkdown', 'markdown'), \
     repos='https://cloud.r-project.org/')"
 
 # Group 7: Spatial and text processing packages
