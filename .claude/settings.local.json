@@ -105,7 +105,11 @@
       "Bash(kill:*)",
       "Bash(./run_corrected_background.sh:*)",
       "Bash(echo:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(./temp_venv/bin/python:*)",
+      "Bash(for tipo in executivo tecnico academico cop30)",
+      "Bash(do echo \"=== Gerando relatório $tipo ===\")",
+      "Bash(done)"
     ]
   },
   "enableAllProjectMcpServers": false
