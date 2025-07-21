@@ -14,14 +14,42 @@ lexml_metadata <- NULL
 lexml_statistics <- NULL
 lexml_display_data <- NULL
 
-#' Load LexML data from CSV file with enhanced processing
-#' @param csv_path Path to the CSV file (optional, defaults to enhanced data)
+#' Load LexML data from PostgreSQL database with enhanced processing
+#' @param use_csv Force use CSV fallback (optional, defaults to FALSE)
 #' @return Data frame with LexML documents or NULL if failed
-load_lexml_data <- function(csv_path = NULL) {
+load_lexml_data <- function(use_csv = FALSE) {
   tryCatch({
-    # Default path if not provided - use the new CSV from use_version
-    if (is.null(csv_path)) {
-      # Debug: Show current working directory and file existence
+    # First, try to load from PostgreSQL database
+    if (!use_csv && exists("get_documents") && exists("db_pool") && !is.null(db_pool)) {
+      cat("🔄 Loading LexML data from PostgreSQL database...\n")
+      
+      # Get documents from database
+      lexml_data <- get_documents()
+      
+      if (!is.null(lexml_data) && nrow(lexml_data) > 0) {
+        cat("✅ Enhanced LexML data loaded from database:", nrow(lexml_data), "documents\n")
+        cat("📊 Document types:", paste(unique(lexml_data$tipo), collapse = ", "), "\n")
+        
+        # Transform to expected format for compatibility
+        lexml_processed <- lexml_data %>%
+          mutate(
+            State = estado,
+            Municipality = ifelse(is.na(municipio) | municipio == "", municipality, municipio),
+            Title = titulo,
+            Enacting_date = enacting_date,
+            Urn_type = tipo,
+            Document_summary = ifelse(is.null(conteudo), "", conteudo)
+          )
+        
+        return(lexml_processed)
+      } else {
+        cat("⚠️ No data returned from database, falling back to CSV\n")
+      }
+    }
+    
+    # Fallback to CSV if database unavailable
+    if (use_csv || !exists("db_pool") || is.null(db_pool)) {
+      cat("🔄 Loading LexML data from CSV fallback...\n")
       cat("DEBUG: Current working directory:", getwd(), "\n")
       
       # Try multiple path variations to handle different deployment environments

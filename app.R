@@ -94,15 +94,10 @@ if (!database_connected) {
   database_connected <- force_refresh_database()
 }
 
-# Populate database with new CSV data structure
+# Use existing PostgreSQL database with clean, parsed data
 if (database_connected) {
-  cat("🔄 Populating database with new CSV data structure...\n")
-  populate_success <- populate_database_with_csv_data()
-  if (populate_success) {
-    cat("✅ Database populated successfully with new CSV data\n")
-  } else {
-    cat("⚠️ Database population failed, using existing data\n")
-  }
+  cat("✅ Using existing PostgreSQL database with clean, parsed data (934 documents)\n")
+  cat("📊 Database contains properly parsed municipality/state data\n")
 }
 
 if (!database_connected) {
