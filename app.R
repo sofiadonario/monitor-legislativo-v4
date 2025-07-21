@@ -648,20 +648,54 @@ server <- function(input, output, session) {
   observe({
     cat("🔄 Initializing application data with force refresh...\n")
     
-    # Always load LexML data from CSV regardless of database connection
+    # Load data from PostgreSQL database (preferred) or CSV fallback
     tryCatch({
-      # Load LexML data from use_version CSV
-      cat("🔄 Loading LexML data from CSV...\n")
-      lexml_data_loaded <- load_lexml_data()
-      if (!is.null(lexml_data_loaded)) {
-        cat("📊 Loaded", nrow(lexml_data_loaded), "LexML documents from CSV\n")
-        values$current_documents <- lexml_data_loaded
+      if (database_connected && !is.null(db_pool)) {
+        # Load data from PostgreSQL database
+        cat("🔄 Loading data from PostgreSQL database...\n")
+        documents_from_db <- get_documents()
+        if (!is.null(documents_from_db) && nrow(documents_from_db) > 0) {
+          cat("📊 Loaded", nrow(documents_from_db), "documents from PostgreSQL database\n")
+          
+          # Transform database data to match expected structure
+          lexml_data_loaded <- documents_from_db %>%
+            mutate(
+              State = estado,
+              Municipality = ifelse(is.na(municipio) | municipio == "", "", municipio),
+              Title = titulo,
+              Enacting_date = enacting_date,
+              Urn_type = tipo,
+              Document_summary = ifelse(is.null(conteudo), "", as.character(conteudo)),
+              Document_description = ifelse(is.null(document_type_full), "", as.character(document_type_full)),
+              Search_term = ifelse(is.null(search_term), "", as.character(search_term)),
+              Urn = ifelse(is.null(urn), "", as.character(urn)),
+              Url = ifelse(is.null(url), "", as.character(url)),
+              Country = "br",
+              Justice = "",
+              Region = "",
+              Court_class = "",
+              Document_type_full = ifelse(is.null(document_type_full), "", as.character(document_type_full))
+            )
+          
+          values$current_documents <- lexml_data_loaded
+        } else {
+          cat("❌ No data found in PostgreSQL database\n")
+          values$current_documents <- data.frame()
+        }
       } else {
-        cat("❌ No LexML data file found\n")
-        values$current_documents <- data.frame()
+        # Fallback to CSV loading
+        cat("🔄 Database not available, loading LexML data from CSV...\n")
+        lexml_data_loaded <- load_lexml_data()
+        if (!is.null(lexml_data_loaded)) {
+          cat("📊 Loaded", nrow(lexml_data_loaded), "LexML documents from CSV\n")
+          values$current_documents <- lexml_data_loaded
+        } else {
+          cat("❌ No LexML data file found\n")
+          values$current_documents <- data.frame()
+        }
       }
       
-      cat("📊 Loaded", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents)), "total documents (LexML only)\n")
+      cat("📊 Loaded", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents)), "total documents\n")
       
       # Also load LexML metadata and statistics
       lexml_meta <- load_lexml_metadata()
@@ -674,10 +708,16 @@ server <- function(input, output, session) {
       cat("📊 No documents loaded\n")
     })
     
-    # Get analytics data from LexML
+    # Get analytics data from database or LexML fallback
     cat("🔄 Loading analytics data...\n")
-    values$analytics_data <- get_lexml_search_analytics()  # Load analytics data from LexML
-    cat("📊 Analytics data loaded\n")
+    if (database_connected && !is.null(db_pool)) {
+      values$analytics_data <- get_search_analytics()  # Load analytics data from PostgreSQL
+      cat("📊 Analytics data loaded from PostgreSQL database\n")
+    } else {
+      values$analytics_data <- get_lexml_search_analytics()  # Fallback to CSV data
+      cat("📊 Analytics data loaded from CSV fallback\n")
+    }
+    cat("📊 Analytics data loading complete\n")
     
     # Load geographic data for map (use 2020 - latest available year)
     tryCatch({
@@ -692,8 +732,15 @@ server <- function(input, output, session) {
     
     # Populate filter choices
     cat("🔄 Populating filter choices...\n")
-    updateSelectizeInput(session, "documentTypes", choices = get_lexml_document_types())
-    updateSelectizeInput(session, "states", choices = get_lexml_states())
+    if (database_connected && !is.null(db_pool)) {
+      updateSelectizeInput(session, "documentTypes", choices = get_document_types())
+      updateSelectizeInput(session, "states", choices = get_states())
+      cat("📊 Filter choices populated from PostgreSQL database\n")
+    } else {
+      updateSelectizeInput(session, "documentTypes", choices = get_lexml_document_types())
+      updateSelectizeInput(session, "states", choices = get_lexml_states())
+      cat("📊 Filter choices populated from CSV fallback\n")
+    }
     cat("✅ Application initialization complete\n")
     
     # Force UI refresh by triggering reactive updates
@@ -1097,8 +1144,13 @@ server <- function(input, output, session) {
         incProgress(0.3)
         
         # Reload analytics
-        values$analytics_data <- get_lexml_search_analytics()
-        cat("📊 Reloaded analytics data\n")
+        if (database_connected && !is.null(db_pool)) {
+          values$analytics_data <- get_search_analytics()
+          cat("📊 Reloaded analytics data from PostgreSQL database\n")
+        } else {
+          values$analytics_data <- get_lexml_search_analytics()
+          cat("📊 Reloaded analytics data from CSV fallback\n")
+        }
         
         incProgress(0.3)
         
