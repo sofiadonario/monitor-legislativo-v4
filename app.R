@@ -23,6 +23,7 @@ source("scripts/R/enhanced_search.R")
 
   # Load LexML data loader module
   source("scripts/R/lexml_data_loader.R")
+  source("scripts/R/final_csv_loader.R")
   
   # Helper function to render document tables
   render_document_table <- function(data, title) {
@@ -719,6 +720,21 @@ server <- function(input, output, session) {
     }
     cat("📊 Analytics data loading complete\n")
     
+    # Initialize refined CSV data for dashboard
+    cat("🔄 Loading refined CSV data from ./data_current/processed/...\n")
+    tryCatch({
+      initialize_final_csv_data()
+      values$document_overview_stats <- final_dashboard_stats
+      values$legislation_layers <- legislation_layers
+      values$final_jurisprudence_layers <- final_jurisprudence_layers
+      cat("✅ Refined CSV data loaded successfully\n")
+    }, error = function(e) {
+      cat("❌ Error loading refined CSV data:", e$message, "\n")
+      values$document_overview_stats <- NULL
+      values$legislation_layers <- NULL
+      values$final_jurisprudence_layers <- NULL
+    })
+    
     # Load geographic data for map (use 2020 - latest available year)
     tryCatch({
       cat("🔄 Loading geographic data...\n")
@@ -835,24 +851,25 @@ server <- function(input, output, session) {
     }
   })
   
-  # Total documents value box - with reactive trigger
+  # Total documents value box - now using refined CSV data
   output$totalDocs <- renderValueBox({
-    # Force reactive update by checking current documents
-    current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
-    
-    if (database_connected && !is.null(db_pool)) {
-      # Use direct database query for accurate count
+    # Use refined CSV data from Geral.csv
+    if (!is.null(values$document_overview_stats)) {
+      count <- values$document_overview_stats$total_documents
+      status_color <- "blue"  # Blue for CSV data
+    } else if (database_connected && !is.null(db_pool)) {
+      # Fallback to database query
       tryCatch({
         conn <- poolCheckout(db_pool)
         on.exit(poolReturn(conn))
         count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(*) as count FROM documents")$count)
         status_color <- "green"
       }, error = function(e) {
-        count <- current_count
+        count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
         status_color <- "red"
       })
     } else {
-      count <- current_count
+      count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
       status_color <- "yellow"
     }
     
