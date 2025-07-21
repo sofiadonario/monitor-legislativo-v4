@@ -109,7 +109,11 @@
       "Bash(./temp_venv/bin/python:*)",
       "Bash(for tipo in executivo tecnico academico cop30)",
       "Bash(do echo \"=== Gerando relatório $tipo ===\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(cut:*)",
+      "Bash(sqlite3:*)",
+      "Bash(./run_deployment.sh)",
+      "Bash(./verify_fix.sh:*)"
     ]
   },
   "enableAllProjectMcpServers": false
