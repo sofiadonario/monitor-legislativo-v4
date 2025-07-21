@@ -34,11 +34,20 @@ load_lexml_data <- function(use_csv = FALSE) {
         lexml_processed <- lexml_data %>%
           mutate(
             State = estado,
-            Municipality = ifelse(is.na(municipio) | municipio == "", municipality, municipio),
+            Municipality = ifelse(is.na(municipio) | municipio == "", "", municipio),
             Title = titulo,
             Enacting_date = enacting_date,
             Urn_type = tipo,
-            Document_summary = ifelse(is.null(conteudo), "", conteudo)
+            Document_summary = ifelse(is.null(conteudo), "", as.character(conteudo)),
+            Document_description = ifelse(is.null(document_type_full), "", as.character(document_type_full)),
+            Search_term = ifelse(is.null(search_term), "", as.character(search_term)),
+            Urn = ifelse(is.null(urn), "", as.character(urn)),
+            Url = ifelse(is.null(url), "", as.character(url)),
+            Country = "br",
+            Justice = "",
+            Region = "",
+            Court_class = "",
+            Document_type_full = ifelse(is.null(document_type_full), "", as.character(document_type_full))
           )
         
         return(lexml_processed)

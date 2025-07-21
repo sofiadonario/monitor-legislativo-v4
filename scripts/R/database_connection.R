@@ -454,10 +454,14 @@ get_documents <- function(limit = NULL) {
                 WHEN estado_codigo IS NOT NULL THEN estado_codigo
                 ELSE estado 
               END as estado_codigo,
-              '' as municipio,
+              COALESCE(municipality, '') as municipio,
               COALESCE(data_publicacao, created_at::date) as enacting_date,
               url,
-              urn
+              urn,
+              conteudo,
+              document_summary,
+              document_type_full,
+              search_term
             FROM documents 
             WHERE titulo IS NOT NULL 
             ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
@@ -471,10 +475,14 @@ get_documents <- function(limit = NULL) {
               COALESCE(species, 'Não Classificado') as species,
               estado,
               estado as estado_codigo,
-              '' as municipio,
+              COALESCE(municipality, '') as municipio,
               COALESCE(data_publicacao, created_at::date) as enacting_date,
               url,
-              urn
+              urn,
+              conteudo,
+              document_summary,
+              document_type_full,
+              search_term
             FROM documents 
             WHERE titulo IS NOT NULL 
             ORDER BY COALESCE(data_publicacao, created_at::date) DESC NULLS LAST
@@ -493,7 +501,7 @@ get_documents <- function(limit = NULL) {
               tipo,
               estado,
               estado as estado_codigo,
-              '' as municipio,
+              COALESCE(municipality, '') as municipio,
               created_at::date as enacting_date,
               url,
               urn
@@ -539,7 +547,7 @@ get_documents <- function(limit = NULL) {
               WHEN estado_codigo IS NOT NULL THEN estado_codigo
               ELSE estado 
             END as estado_codigo,
-            '' as municipio,
+            COALESCE(municipality, '') as municipio,
             COALESCE(data_publicacao, created_at::date) as enacting_date,
             url,
             urn
@@ -556,7 +564,7 @@ get_documents <- function(limit = NULL) {
             tipo,
             estado,
             estado as estado_codigo,
-            '' as municipio,
+            COALESCE(municipality, '') as municipio,
             COALESCE(data_publicacao, created_at::date) as enacting_date,
             url,
             urn
@@ -594,7 +602,7 @@ get_documents <- function(limit = NULL) {
           tipo,
           estado,
           estado as estado_codigo,
-          '' as municipio,
+          COALESCE(municipality, '') as municipio,
           created_at::date as enacting_date,
           url,
           urn
