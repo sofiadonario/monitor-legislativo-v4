@@ -1,5 +1,6 @@
 # Geographic Data and Map Generation Module
 # Uses REAL Brazilian boundaries from IBGE via geobr package
+# Enhanced with multi-layer support for LexML data
 
 library(sf)
 library(geobr)
@@ -9,6 +10,9 @@ library(RColorBrewer)
 library(htmltools)
 library(futile.logger)
 library(stringr)
+
+# Load LexML geographic analytics
+source("scripts/R/lexml_geographic_analytics.R")
 
 # Global variable for cached geographic data
 .brazil_geography <- new.env()
@@ -766,3 +770,250 @@ export_map_image <- function(map, filename = "legislative_map.png",
     return(FALSE)
   })
 }
+
+#' Create multi-layer LexML interactive map
+#' @param db_pool Database connection pool
+#' @param category Category filter: NULL (all), "Legislação", "Jurisprudência"  
+#' @param initial_layer Initial layer to display: "federal", "regional", "state", "municipal"
+#' @param map_id Unique identifier for this map instance
+#' @return Leaflet map object
+create_lexml_multilayer_map <- function(db_pool = NULL, category = NULL, 
+                                       initial_layer = "state", map_id = "map1") {
+  
+  cat("🗺️ Creating LexML multi-layer map with category:", category %||% "all", "\n")
+  
+  tryCatch({
+    # Load Brazilian geography
+    geo_data <- load_brazil_geography()
+    
+    if (is.null(geo_data) || is.null(geo_data$states)) {
+      cat("⚠️ Geographic data not available, creating fallback map\n")
+      return(create_fallback_lexml_map())
+    }
+    
+    # Initialize base map
+    map <- leaflet() %>%
+      addTiles(group = "OpenStreetMap") %>%
+      addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
+      setView(lng = -54.0, lat = -14.0, zoom = 4) %>%
+      addLayersControl(
+        baseGroups = c("CartoDB", "OpenStreetMap"),
+        position = "topright"
+      )
+    
+    # Add federal layer data
+    federal_data <- get_lexml_geographic_data(db_pool, "federal", category)
+    if (nrow(federal_data) > 0) {
+      map <- map %>%
+        addPolygons(
+          data = geo_data$country,
+          fillColor = "#e74c3c",
+          fillOpacity = 0.3,
+          color = "#c0392b",
+          weight = 2,
+          popup = paste0("Federal Documents: ", federal_data$doc_count[1]),
+          group = "Federal",
+          layerId = paste0(map_id, "_federal")
+        )
+    }
+    
+    # Add regional layer data  
+    regional_data <- get_lexml_geographic_data(db_pool, "regional", category)
+    if (nrow(regional_data) > 0 && !is.null(geo_data$regions)) {
+      # Create color palette for regions
+      region_pal <- colorNumeric(
+        palette = "YlOrRd",
+        domain = regional_data$doc_count,
+        na.color = "#cccccc"
+      )
+      
+      # Merge regional data with geography
+      geo_regions <- geo_data$regions %>%
+        left_join(regional_data, by = c("name_region" = "name"))
+      
+      map <- map %>%
+        addPolygons(
+          data = geo_regions,
+          fillColor = ~region_pal(doc_count),
+          fillOpacity = 0.7,
+          color = "#ffffff",
+          weight = 1,
+          popup = ~paste0(
+            "<strong>", name_region, "</strong><br>",
+            "Documents: ", ifelse(is.na(doc_count), 0, doc_count)
+          ),
+          group = "Regional",
+          layerId = paste0(map_id, "_", name_region)
+        ) %>%
+        addLegend(
+          pal = region_pal,
+          values = regional_data$doc_count,
+          title = "Regional Documents",
+          position = "bottomright",
+          group = "Regional"
+        )
+    }
+    
+    # Add state layer data
+    state_data <- get_lexml_geographic_data(db_pool, "state", category)
+    if (nrow(state_data) > 0) {
+      # Create color palette for states
+      state_pal <- colorNumeric(
+        palette = "Blues",
+        domain = state_data$doc_count,
+        na.color = "#f0f0f0"
+      )
+      
+      # Merge state data with geography
+      geo_states <- geo_data$states %>%
+        left_join(state_data, by = c("name_state" = "name"))
+      
+      map <- map %>%
+        addPolygons(
+          data = geo_states,
+          fillColor = ~state_pal(doc_count),
+          fillOpacity = 0.8,
+          color = "#ffffff",
+          weight = 1,
+          popup = ~paste0(
+            "<strong>", name_state, "</strong><br>",
+            "Documents: ", ifelse(is.na(doc_count), 0, doc_count), "<br>",
+            "<button onclick='Shiny.setInputValue(\"", map_id, "_state_selected\", \"", 
+            abbrev_state, "\", {priority: \"event\"});'>View Municipalities</button>"
+          ),
+          group = "State",
+          layerId = paste0(map_id, "_", abbrev_state)
+        ) %>%
+        addLegend(
+          pal = state_pal,
+          values = state_data$doc_count,
+          title = "State Documents",
+          position = "bottomright",
+          group = "State"
+        )
+    }
+    
+    # Add layer group controls
+    map <- map %>%
+      addLayersControl(
+        baseGroups = c("CartoDB", "OpenStreetMap"),
+        overlayGroups = c("Federal", "Regional", "State"),
+        options = layersControlOptions(collapsed = FALSE),
+        position = "topleft"
+      )
+    
+    # Show initial layer
+    if (initial_layer == "federal") {
+      map <- map %>% showGroup("Federal") %>% hideGroup(c("Regional", "State"))
+    } else if (initial_layer == "regional") {
+      map <- map %>% showGroup("Regional") %>% hideGroup(c("Federal", "State"))
+    } else {
+      map <- map %>% showGroup("State") %>% hideGroup(c("Federal", "Regional"))
+    }
+    
+    cat("✅ Multi-layer map created successfully\n")
+    return(map)
+    
+  }, error = function(e) {
+    cat("❌ Error creating multi-layer map:", e$message, "\n")
+    return(create_fallback_lexml_map())
+  })
+}
+
+#' Add municipal layer to existing map
+#' @param map Existing leaflet map
+#' @param db_pool Database connection pool
+#' @param selected_state State to show municipalities for
+#' @param category Category filter
+#' @param map_id Map instance identifier
+#' @return Updated leaflet map with municipal layer
+add_municipal_layer <- function(map, db_pool, selected_state, category = NULL, map_id = "map1") {
+  
+  cat("🏘️ Adding municipal layer for state:", selected_state, "\n")
+  
+  tryCatch({
+    # Get municipal data
+    municipal_data <- get_lexml_geographic_data(db_pool, "municipal", category, selected_state)
+    
+    if (nrow(municipal_data) == 0) {
+      cat("⚠️ No municipal data found for", selected_state, "\n")
+      return(map)
+    }
+    
+    # Load municipal boundaries for the selected state
+    geo_munis <- tryCatch({
+      read_municipality(code_state = selected_state, year = 2022, showProgress = FALSE) %>%
+        st_make_valid() %>%
+        st_transform(crs = 4326) %>%
+        st_simplify(dTolerance = 500)
+    }, error = function(e) {
+      cat("⚠️ Could not load municipal boundaries:", e$message, "\n")
+      return(NULL)
+    })
+    
+    if (!is.null(geo_munis)) {
+      # Create municipal color palette
+      muni_pal <- colorNumeric(
+        palette = "Greens",
+        domain = municipal_data$doc_count,
+        na.color = "#f0f0f0"
+      )
+      
+      # Merge municipal data with geography
+      geo_munis <- geo_munis %>%
+        left_join(municipal_data, by = c("name_muni" = "name"))
+      
+      # Add municipal polygons
+      map <- map %>%
+        addPolygons(
+          data = geo_munis,
+          fillColor = ~muni_pal(doc_count),
+          fillOpacity = 0.7,
+          color = "#ffffff",
+          weight = 0.5,
+          popup = ~paste0(
+            "<strong>", name_muni, "</strong><br>",
+            "Documents: ", ifelse(is.na(doc_count), 0, doc_count)
+          ),
+          group = "Municipal",
+          layerId = paste0(map_id, "_", code_muni)
+        ) %>%
+        addLegend(
+          pal = muni_pal,
+          values = municipal_data$doc_count,
+          title = "Municipal Documents",
+          position = "bottomleft",
+          group = "Municipal"
+        ) %>%
+        showGroup("Municipal")
+      
+      # Zoom to state bounds
+      state_bounds <- st_bbox(geo_munis)
+      map <- map %>% fitBounds(
+        lng1 = state_bounds[1], lat1 = state_bounds[2],
+        lng2 = state_bounds[3], lat2 = state_bounds[4]
+      )
+    }
+    
+    cat("✅ Municipal layer added for", selected_state, "\n")
+    return(map)
+    
+  }, error = function(e) {
+    cat("❌ Error adding municipal layer:", e$message, "\n")
+    return(map)
+  })
+}
+
+#' Create fallback map when geographic data fails
+#' @return Basic leaflet map
+create_fallback_lexml_map <- function() {
+  leaflet() %>%
+    addTiles() %>%
+    setView(lng = -54.0, lat = -14.0, zoom = 4) %>%
+    addMarkers(
+      lng = -54.0, lat = -14.0,
+      popup = "Geographic data temporarily unavailable. Please try again later."
+    )
+}
+
+cat("✅ Enhanced map generator with multi-layer support loaded\n")
