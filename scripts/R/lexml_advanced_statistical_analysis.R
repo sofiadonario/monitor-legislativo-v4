@@ -7,13 +7,8 @@
 if (!require("pacman")) install.packages("pacman")
 
 pacman::p_load(
-  # Statistical Testing
-  automatedtests,      # Automated statistical test selection
-  
   # Cluster Analysis  
-  tidyclust,          # Clustering with tidy syntax
   NbClust,            # Optimal number of clusters
-  clusterWebApp,      # Interactive clustering interface
   cluster,            # Classic clustering methods
   factoextra,         # Clustering visualization
   
@@ -22,8 +17,8 @@ pacman::p_load(
   tm,                 # Text mining
   wordcloud2,         # Interactive word clouds
   
-  # Count Data Analysis
-  countfitteR,        # Distribution fitting for count data
+  # Count Data Analysis (optional)
+  # countfitteR,        # Distribution fitting for count data
   
   # Visualization & Graphics
   ggplot2,            # Professional graphics
@@ -50,7 +45,7 @@ pacman::p_load(
 # 1. AUTOMATED STATISTICAL TESTING FOR LEGISLATIVE DATA
 # ====================================================================
 
-#' Perform automated statistical analysis on LexML data
+#' Perform statistical analysis on LexML data using base R methods
 #' @param db_pool Database connection pool
 #' @param analysis_type Type of analysis to perform
 #' @return List with test results and interpretations
@@ -77,17 +72,16 @@ perform_lexml_statistical_tests <- function(db_pool = NULL, analysis_type = "com
       cat("📊 Testing document distribution by category...\n")
       
       category_counts <- table(lexml_data$categoria)
-      category_test <- automatical_test(
-        names(category_counts), 
-        as.numeric(category_counts)
-      )
+      # Use base R chi-square test
+      category_test <- chisq.test(category_counts)
       
       results$category_analysis <- list(
-        test = category_test$get_test(),
-        result = category_test$get_result(),
-        significant = category_test$is_significant(),
+        test = "Chi-square goodness of fit",
+        p_value = category_test$p.value,
+        statistic = category_test$statistic,
+        significant = category_test$p.value < 0.05,
         interpretation = ifelse(
-          category_test$is_significant(),
+          category_test$p.value < 0.05,
           "Significant differences in document distribution across categories",
           "No significant differences in document distribution across categories"
         )
@@ -106,21 +100,23 @@ perform_lexml_statistical_tests <- function(db_pool = NULL, analysis_type = "com
         arrange(year)
       
       if (nrow(yearly_counts) > 5) {
-        temporal_test <- automatical_test(yearly_counts$year, yearly_counts$n)
+        # Use correlation test for trend analysis
+        cor_test <- cor.test(yearly_counts$year, yearly_counts$n)
         
         results$temporal_analysis <- list(
-          test = temporal_test$get_test(),
-          result = temporal_test$get_result(),
-          significant = temporal_test$is_significant(),
+          test = "Pearson correlation test",
+          correlation = cor_test$estimate,
+          p_value = cor_test$p.value,
+          significant = cor_test$p.value < 0.05,
           trend_direction = ifelse(
-            cor(yearly_counts$year, yearly_counts$n) > 0,
+            cor_test$estimate > 0,
             "Increasing trend over time",
             "Decreasing trend over time"
           ),
           interpretation = paste(
             "Legislative activity shows",
-            ifelse(temporal_test$is_significant(), "significant", "no significant"),
-            "temporal variation"
+            ifelse(cor_test$p.value < 0.05, "significant", "no significant"),
+            "temporal correlation"
           )
         )
       }
@@ -253,28 +249,34 @@ perform_lexml_cluster_analysis <- function(db_pool = NULL, method = "auto", max_
       results$optimal_clusters <- optimal_k
     }
     
-    # Perform K-means clustering using tidyclust
+    # Perform K-means clustering using base R
     cat("🔄 Performing cluster analysis...\n")
     
-    mod_kmeans <- k_means(num_clusters = optimal_k) %>%
-      set_engine("stats")
+    set.seed(123)
+    kmeans_result <- kmeans(numeric_data, centers = optimal_k, nstart = 25)
     
-    fit_kmeans <- fit(mod_kmeans, ~., data = as.data.frame(numeric_data))
+    # Create predictions data frame
+    cluster_predictions <- data.frame(
+      numeric_data,
+      .pred_cluster = paste0("Cluster", kmeans_result$cluster)
+    )
     
-    # Get cluster predictions
-    cluster_predictions <- augment(fit_kmeans, new_data = as.data.frame(numeric_data))
+    # Get centroids
+    centroids <- data.frame(
+      .cluster = paste0("Cluster", 1:optimal_k),
+      kmeans_result$centers
+    )
     
-    # Extract centroids
-    centroids <- extract_centroids(fit_kmeans)
+    # Calculate quality metrics using base R
+    sil <- silhouette(kmeans_result$cluster, dist(numeric_data))
+    sil_avg <- mean(sil[, 3])
     
-    # Calculate quality metrics
-    dists <- dist(numeric_data)
-    
-    results$model <- fit_kmeans
+    results$model <- kmeans_result
     results$predictions <- cluster_predictions
     results$centroids <- centroids
-    results$silhouette_score <- silhouette_avg(fit_kmeans, dists = dists)
-    results$sse_ratio <- sse_ratio(fit_kmeans)
+    results$silhouette_score <- sil_avg
+    results$within_ss <- kmeans_result$tot.withinss
+    results$total_ss <- kmeans_result$totss
     
     # Create cluster summary
     cluster_summary <- cluster_predictions %>%
