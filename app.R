@@ -24,8 +24,8 @@ source("scripts/R/enhanced_search.R")
 # Load LexML geographic analytics
 source("scripts/R/lexml_geographic_analytics.R")
 
-# Load LexML geographic analytics
-source("scripts/R/lexml_geographic_analytics.R")
+# Load LexML advanced statistical analysis
+source("scripts/R/lexml_advanced_statistical_analysis.R")
 
   # Load LexML data loader module
   source("scripts/R/lexml_data_loader.R")
