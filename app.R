@@ -156,8 +156,12 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
-    # Custom CSS for color scheme
+    # Fix CSP and accessibility issues
     tags$head(
+      # Content Security Policy to allow JavaScript evaluation (needed for plotly/DT)
+      tags$meta(`http-equiv` = "Content-Security-Policy", 
+                content = "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.plot.ly https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:;"),
+      
       tags$style(HTML("
         /* Primary color #e1001e */
         .main-header .navbar { background-color: #e1001e !important; }
@@ -810,11 +814,26 @@ server <- function(input, output, session) {
     # Get analytics data from database or LexML fallback
     cat("🔄 Loading analytics data...\n")
     if (database_connected && !is.null(db_pool)) {
+      cat("🔄 Loading analytics data from PostgreSQL database...\n")
       values$analytics_data <- get_search_analytics()  # Load analytics data from PostgreSQL
-      cat("📊 Analytics data loaded from PostgreSQL database\n")
+      if (!is.null(values$analytics_data)) {
+        cat("✅ Analytics data loaded successfully:", values$analytics_data$total_documents, "total documents\n")
+      } else {
+        cat("❌ Failed to load analytics data from database\n")
+      }
     } else {
-      values$analytics_data <- get_lexml_search_analytics()  # Fallback to CSV data
-      cat("📊 Analytics data loaded from CSV fallback\n")
+      cat("⚠️ Database not connected, using empty analytics data\n")
+      values$analytics_data <- list(
+        total_documents = 0,
+        documents_by_year = data.frame(),
+        documents_by_month = data.frame(),
+        documents_by_state = data.frame(),
+        documents_by_type = data.frame(),
+        documents_by_species = data.frame(),
+        documents_by_gender_species = data.frame(),
+        recent_documents = data.frame(),
+        date_range = list(min = NA, max = NA)
+      )
     }
     cat("📊 Analytics data loading complete\n")
     
@@ -1090,15 +1109,19 @@ server <- function(input, output, session) {
     }
   })
   
-  # Main documents table - showing only LexML data
+  # Main documents table - showing database data
   output$documentsTable <- DT::renderDataTable({
-    # Load LexML data directly
-    lexml_data <- load_lexml_data()
+    # Load data from database instead of CSV
+    if (database_connected) {
+      lexml_data <- get_documents(limit = 1000)  # Get first 1000 documents
+    } else {
+      lexml_data <- NULL
+    }
     
     if (is.null(lexml_data) || nrow(lexml_data) == 0) {
       # Show empty table
       empty_data <- data.frame(
-        Message = "No LexML documents available",
+        Message = "No documents available - check database connection",
         stringsAsFactors = FALSE
       )
       return(DT::datatable(empty_data, options = list(searching = FALSE)))
