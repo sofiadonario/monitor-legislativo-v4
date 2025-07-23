@@ -47,8 +47,9 @@ COPY config.yml ./
 COPY simple_dashboard_fix.R ./
 COPY dashboard_debug_fix.R ./
 
-# Copy R scripts directory
+# Copy R scripts directory - prioritize fixed database connection
 COPY scripts/R/database_connection_fixed.R ./scripts/R/
+COPY scripts/R/database_connection.R ./scripts/R/
 COPY scripts/R/map_generator.R ./scripts/R/
 COPY scripts/R/enhanced_search.R ./scripts/R/
 COPY scripts/R/lexml_geographic_analytics.R ./scripts/R/
