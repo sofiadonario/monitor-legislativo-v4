@@ -84,9 +84,9 @@ init_database <- function() {
     cat("DATABASE_URL present:", nchar(database_url) > 0, "\n")
     
     if (nchar(database_url) == 0) {
-      # Fallback to Railway PostgreSQL URL
-      database_url <- "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway"
-      cat("⚠️ Using fallback DATABASE_URL\n")
+      # Fallback to Railway PostgreSQL URL (internal network)
+      database_url <- "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@postgres.railway.internal:5432/railway"
+      cat("⚠️ Using fallback DATABASE_URL (internal Railway network)\n")
     }
     
     # Parse DATABASE_URL
