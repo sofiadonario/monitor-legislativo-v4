@@ -50,6 +50,8 @@ COPY senior_engineer_functions.R ./
 COPY app_senior_patch.R ./
 COPY fix_location_and_maps.R ./
 COPY app_location_map_patch.R ./
+COPY updated_location_functions.R ./
+COPY final_location_patch.R ./
 
 # Copy R scripts directory - prioritize fixed database connection
 COPY scripts/R/database_connection_fixed.R ./scripts/R/
