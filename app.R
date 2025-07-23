@@ -58,7 +58,15 @@ source("scripts/R/lexml_geographic_analytics.R")
 
   # Load LexML data loader module
   source("scripts/R/lexml_data_loader.R")
-  source("scripts/R/final_csv_loader.R")
+  
+  # Load correct CSV loader that uses the actual data file
+  if (file.exists("correct_csv_loader.R")) {
+    source("correct_csv_loader.R")
+    cat("✅ Using correct CSV loader\n")
+  } else if (file.exists("scripts/R/final_csv_loader.R")) {
+    source("scripts/R/final_csv_loader.R")
+    cat("⚠️ Using original final CSV loader\n")
+  }
   
   # Helper function to render document tables
   render_document_table <- function(data, title) {
