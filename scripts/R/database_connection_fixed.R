@@ -662,34 +662,106 @@ get_document_types <- function() {
   })
 }
 
-#' Get states for filter
-#' @return Vector of states
+#' Get states for filter with proper names and coordinates
+#' @return Data frame with state info
 get_states <- function() {
   if (is.null(db_pool)) {
-    return(c("BR", "Estado"))
+    return(data.frame(abbrev = c("BR"), name = c("Federal"), count = c(0)))
   }
   
   tryCatch({
-    tables <- dbListTables(db_pool)
+    # Get state counts from documents
+    state_counts <- dbGetQuery(db_pool, "
+      SELECT 
+        d.estado as abbrev,
+        COUNT(*) as count
+      FROM documents d
+      WHERE d.estado IS NOT NULL 
+      GROUP BY d.estado
+      ORDER BY count DESC
+    ")
     
-    if ("documents" %in% tables) {
+    # Join with Brazilian states reference for proper names
+    if ("brazilian_states" %in% dbListTables(db_pool)) {
       result <- dbGetQuery(db_pool, "
-        SELECT DISTINCT estado 
-        FROM documents 
-        WHERE estado IS NOT NULL 
-        ORDER BY estado
+        SELECT 
+          bs.abbrev,
+          bs.name,
+          bs.region,
+          bs.lat,
+          bs.lng,
+          COALESCE(sc.count, 0) as count
+        FROM brazilian_states bs
+        LEFT JOIN (
+          SELECT estado as abbrev, COUNT(*) as count
+          FROM documents 
+          WHERE estado IS NOT NULL
+          GROUP BY estado
+        ) sc ON bs.abbrev = sc.abbrev
+        WHERE COALESCE(sc.count, 0) > 0
+        ORDER BY count DESC
       ")
       
       if (nrow(result) > 0) {
-        return(result$estado)
+        return(result)
       }
     }
     
-    return(c("BR", "Estado"))
+    # Fallback: return just the counts with abbreviations
+    return(state_counts)
     
   }, error = function(e) {
     cat("ERROR getting states:", e$message, "\n")
-    return(c("BR", "Estado"))
+    return(data.frame(abbrev = c("BR"), name = c("Federal"), count = c(0)))
+  })
+}
+
+#' Get simple map data for Brazilian states
+#' @return Data frame with state data for mapping
+get_simple_map_data <- function() {
+  if (is.null(db_pool)) {
+    return(data.frame())
+  }
+  
+  tryCatch({
+    # Get comprehensive state data for mapping
+    result <- dbGetQuery(db_pool, "
+      SELECT 
+        bs.abbrev,
+        bs.name,
+        bs.region,
+        bs.capital,
+        bs.lat,
+        bs.lng,
+        COALESCE(doc_counts.total_docs, 0) as total_docs,
+        COALESCE(doc_counts.legislacao, 0) as legislacao,
+        COALESCE(doc_counts.jurisprudencia, 0) as jurisprudencia,
+        COALESCE(doc_counts.doutrina, 0) as doutrina,
+        COALESCE(doc_counts.outros, 0) as outros,
+        COALESCE(doc_counts.proposicoes, 0) as proposicoes
+      FROM brazilian_states bs
+      LEFT JOIN (
+        SELECT 
+          estado as abbrev,
+          COUNT(*) as total_docs,
+          SUM(CASE WHEN categoria = 'Legislacao' THEN 1 ELSE 0 END) as legislacao,
+          SUM(CASE WHEN categoria = 'Jurisprudencia' THEN 1 ELSE 0 END) as jurisprudencia,
+          SUM(CASE WHEN categoria = 'Doutrina' THEN 1 ELSE 0 END) as doutrina,
+          SUM(CASE WHEN categoria = 'Outros' THEN 1 ELSE 0 END) as outros,
+          SUM(CASE WHEN categoria = 'Proposicoes' THEN 1 ELSE 0 END) as proposicoes
+        FROM documents 
+        WHERE estado IS NOT NULL
+        GROUP BY estado
+      ) doc_counts ON bs.abbrev = doc_counts.abbrev
+      WHERE COALESCE(doc_counts.total_docs, 0) > 0
+      ORDER BY total_docs DESC
+    ")
+    
+    return(result)
+    
+  }, error = function(e) {
+    cat("ERROR getting map data:", e$message, "\n")
+    return(data.frame())
   })
 }
 
