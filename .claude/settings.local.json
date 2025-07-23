@@ -129,7 +129,8 @@
       "Bash(psql \"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway\" -c \"SELECT DISTINCT tipo, COUNT(*) as count FROM documents WHERE tipo IS NOT NULL AND tipo != '''' GROUP BY tipo ORDER BY count DESC LIMIT 10;\")",
       "Bash(psql \"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway\" -c \"SELECT DISTINCT tipo, COUNT(*) as count FROM documents WHERE tipo IS NOT NULL AND tipo <> '''' GROUP BY tipo ORDER BY count DESC LIMIT 10;\")",
       "Bash(psql \"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway\" -c \"SELECT table_name FROM information_schema.tables WHERE table_name LIKE ''%enhanced%'' OR table_name LIKE ''%parsed%'';\")",
-      "Bash(psql \"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway\" -f database_table_fix.sql)"
+      "Bash(psql \"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway\" -f database_table_fix.sql)",
+      "Bash(git mv:*)"
     ]
   },
   "enableAllProjectMcpServers": false
