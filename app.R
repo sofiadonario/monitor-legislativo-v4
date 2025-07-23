@@ -379,6 +379,45 @@ ui <- dashboardPage(
               )
             )
           )
+        ),
+        
+        # Analytics Charts Row
+        fluidRow(
+          box(
+            title = "📈 Document Analytics Overview", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 12,
+            fluidRow(
+              column(6, 
+                div(style = "height: 350px;",
+                  h5("📅 Documents by Year", style = "text-align: center; margin-bottom: 15px;"),
+                  plotlyOutput("yearChart", height = "300px")
+                )
+              ),
+              column(6, 
+                div(style = "height: 350px;",
+                  h5("📊 Documents by Type", style = "text-align: center; margin-bottom: 15px;"),
+                  plotlyOutput("typeChart", height = "300px")
+                )
+              )
+            ),
+            hr(),
+            fluidRow(
+              column(6, 
+                div(style = "height: 350px;",
+                  h5("🗓️ Documents by Month", style = "text-align: center; margin-bottom: 15px;"),
+                  plotlyOutput("monthChart", height = "300px")
+                )
+              ),
+              column(6, 
+                div(style = "height: 350px;",
+                  h5("🌎 Documents by State", style = "text-align: center; margin-bottom: 15px;"),
+                  plotlyOutput("stateChart", height = "300px")
+                )
+              )
+            )
+          )
         )
       ),
       
