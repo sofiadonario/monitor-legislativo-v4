@@ -46,7 +46,8 @@ COPY config.yml ./
 # Copy debug and utility files
 COPY simple_dashboard_fix.R ./
 COPY dashboard_debug_fix.R ./
-COPY correct_csv_loader.R ./
+COPY database_only_loader.R ./
+COPY app_database_only_patch.R ./
 
 # Copy R scripts directory - prioritize fixed database connection
 COPY scripts/R/database_connection_fixed.R ./scripts/R/
