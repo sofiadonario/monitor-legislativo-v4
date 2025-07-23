@@ -12,13 +12,20 @@ library(leaflet)
 library(stringr)
 library(markdown)
 
-# Load database connection module (PostgreSQL)
+# Load database connection module (PostgreSQL) - Force use of fixed version
+cat("🔍 Checking for database_connection_fixed.R...\n")
 if (file.exists("scripts/R/database_connection_fixed.R")) {
+  cat("✅ Found database_connection_fixed.R - loading it\n")
   source("scripts/R/database_connection_fixed.R")
-  cat("✅ Using fixed database connection module\n")
+  cat("✅ Using fixed database connection module (without lexml_parsed_enhanced_fixed joins)\n")
 } else {
-  source("scripts/R/database_connection.R")
-  cat("⚠️ Using original database connection module\n")
+  cat("❌ database_connection_fixed.R not found, checking original...\n")
+  if (file.exists("scripts/R/database_connection.R")) {
+    cat("⚠️ Using original database connection module (may have JOIN issues)\n")
+    source("scripts/R/database_connection.R")
+  } else {
+    cat("❌ No database connection module found!\n")
+  }
 }
 
 # Load simple dashboard functions for reliable data loading
