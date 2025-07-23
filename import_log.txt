@@ -1,0 +1,52 @@
+Starting import from: /mnt/c/Users/Sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/data_current/processed/lexml_dataset_final_completo/lexml_dataset_limpo_classificado_20250722_102507.csv
+Collecting unique terms...
+Inserting 103 unique terms...
+Importing main dataset...
+Error in batch: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (1, Agências Reguladoras de Transportes (ANTTe ANTAQ) e DNIT, Livro, 2021-01-01, null, null, Autor: Nakamura, André Luiz dos Santos; Agência reguladora, le..., null, null, null, null, null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, geral).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (2, Agências Reguladoras de Transportes (ANTTe ANTAQ) e DNIT, Livro, 2021-01-01, null, null, Autor: Nakamura, André Luiz dos Santos; Agência reguladora, le..., null, null, null, null, null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, geral).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (3, Agências irmãs? Semelhanças e diferenças na institucionaliza..., Artigo de revista, 2017-01-01, null, null, Autor: Miranda, Luciana de Oliveira; Ouvidoria, Brasil.; Classif..., null, null, null, null, null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, geral).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (4, Da ilegalidade da taxa de fiscalização daANTTinstituída pela ..., Artigo de revista, 2017-01-01, null, null, Autor: Bortoli, Igor Monteiro de; Competência tributária, Bras..., null, null, null, null, null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Legislação, rodoviário).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (12, Coletânea de legislação básica, Livro, 2005-01-01, null, null, Autor: Agência Nacional de Transportes Terrestres (Brasil) (ANT..., null, null, null, null, null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, rodoviário).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (90, Poder normativo e regulação ferroviária no Brasil, Artigo de revista, 2018-01-01, null, null, Autor: Costa, Adriano Soares da; Agência reguladora, poder norm..., null, null, null, Sumário:O poder normativo das agências reguladoras -- O poder ..., null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Legislação, rodoviário).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (129, A formação de uma operação multimodal, Artigo de revista, 2015-01-01, null, null, Autor: Souza, Sávio Ferreira de; Responsabilidade do transporta..., null, null, null, Resumo:Apresenta tabelas com as principais operadoras de contein..., null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, marítimo).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (185, A gênese das agências reguladoras de transportes, Livro, 2012-01-01, null, null, Autor: Gomide, Alexandre de Ávila; Institucionalismo, Brasil. {..., null, null, null, Resumo:Explica o processo político-institucional que resultou n..., null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, marítimo).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (227, Desafios do agronegócio em artigos e pareceres, Livro, 2020-01-01, null, null, Autor: Favacho, Frederico; Direito agrário. {Direito agrário; ..., null, null, null, Sumário:pt. 1. Tributos: Inconstitucionalidade da exigência de..., null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, marítimo).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (323, Arbitragem tributária no Brasil, Livro, 2017-01-01, null, null, Autor: Escobar, Marcelo Ricardo; Administração pública, Brasi..., null, null, null, Sumário:Arbitragem na administração pública: Conceitos. Aind..., null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, rodoviário).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (324, O papel das agências reguladoras frente à proteção do meio a..., Artigo de revista, 2014-01-01, null, null, Autor: Freitas, Vladimir Passos de, 1945; Agência reguladora, c..., null, null, null, Resumo:As Agências Reguladoras vêm exercendo um importante pap..., null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, geral).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (325, Regulamentação das penalidades e valores de multas, Artigo de revista, 2019-01-01, null, null, Autor: Ribeiro, Hugo Alves Silva; Regulação, Brasil. Sanção ..., null, null, null, Resumo:"Propósito - Apresentar uma proposta sistemática deregu..., null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, rodoviário).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (357, Curso prático de arbitragem e administração pública, Livro, 2019-01-01, null, null, Autor: Oliveira, Gustavo Justino de, 1970; Arbitragem. Administr..., null, null, null, Resumo:Estudo comparado sobre arbitragem e administração públ..., null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, rodoviário).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (415, Direito do petróleo e do gás, Livro, 2021-01-01, null, null, Autor: Aragão, Alexandre Santos de, 1969; Indústria petrolífe..., null, null, null, Sumário:Princípios de direito regulatório do petróleo -- Alg..., null, null, null, null, ANTT, 2025-07-22 00:37:06, extração_principal, Doutrina, rodoviário).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (469, Renovação daCNHe inconstitucionalidade do curso de direção d..., Artigo de revista, 2006-01-01, null, null, Autor: Leal, João José; Carteira de habilitação, Brasil. {Ca..., null, null, null, Sumário:Uma norma juridicamente vazia -- Uma exigência tardiam..., null, null, null, null, CNH, 2025-07-22 00:37:06, extração_principal, Doutrina, rodoviário).
+
+Error inserting record: null value in column "urn" of relation "lexml_documents" violates not-null constraint
+DETAIL:  Failing row contains (470, O caso da suspensão daCNHpor dívida, Artigo de revista, 2019-01-01, null, null, Autor: Pereira, Ricardo Diego Nunes; Carteira nacional de habili..., null, null, null, null, null, null, null, null, CNH, 2025-07-22 00:37:06, extração_principal, Doutrina, rodoviário).
+

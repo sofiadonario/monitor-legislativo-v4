@@ -13,13 +13,7 @@ library(stringr)
 library(markdown)
 
 # Load database connection module (PostgreSQL)
-if (file.exists("scripts/R/database_connection_fixed.R")) {
-  source("scripts/R/database_connection_fixed.R")
-  cat("✅ Using fixed database connection module\n")
-} else {
-  source("scripts/R/database_connection.R")
-  cat("⚠️ Using original database connection module\n")
-}
+source("scripts/R/database_connection.R")
 
 # Load map generator module for geographic visualization
 source("scripts/R/map_generator.R")
@@ -29,9 +23,6 @@ source("scripts/R/enhanced_search.R")
 
 # Load LexML geographic analytics
 source("scripts/R/lexml_geographic_analytics.R")
-
-# Load LexML advanced statistical analysis
-source("scripts/R/lexml_advanced_statistical_analysis.R")
 
   # Load LexML data loader module
   source("scripts/R/lexml_data_loader.R")
@@ -95,14 +86,8 @@ if (nchar(Sys.getenv("DATABASE_URL")) > 0) {
   cat("DATABASE_URL (masked):", url_masked, "\n")
 }
 
-# DATABASE_URL should be set by Railway environment
-# If not set, you can manually set it here for local testing
-if (nchar(Sys.getenv("DATABASE_URL")) == 0) {
-  cat("⚠️ DATABASE_URL not set in environment\n")
-  # For Railway, this should be automatically set
-  # Only uncomment for local testing:
-  # Sys.setenv(DATABASE_URL = "postgresql://user:pass@host:port/db")
-}
+# Set the DATABASE_URL for Railway connection
+Sys.setenv(DATABASE_URL = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway")
 
 # Force refresh database connection to ensure we get latest data
 database_connected <- init_database()
@@ -201,129 +186,50 @@ ui <- dashboardPage(
     tabItems(
       # Dashboard tab with interactive map and overview
       tabItem(tabName = "dashboard",
-        # Enhanced Dashboard with LexML Data
         fluidRow(
-          # Updated Document Overview with LexML Metrics
+          # Document Overview Bar
           box(
-            title = "📊 LexML Document Overview", 
+            title = "Document Overview", 
             status = "primary", 
             solidHeader = TRUE, 
             width = 12,
             height = "120px",
             fluidRow(
-              column(3, valueBoxOutput("lexmlTotalDocs", width = NULL)),
-              column(3, valueBoxOutput("lexmlStatesPercentage", width = NULL)),
-              column(3, valueBoxOutput("lexmlMunicipalitiesPercentage", width = NULL)),
-              column(3, valueBoxOutput("lexmlDateRange", width = NULL))
+              column(3, valueBoxOutput("totalDocs", width = NULL)),
+              column(3, valueBoxOutput("totalStates", width = NULL)),
+              column(3, valueBoxOutput("totalTypes", width = NULL)),
+              column(3, valueBoxOutput("dateRange", width = NULL))
             ),
             # Add refresh button
             if(database_connected) {
               div(
                 style = "text-align: center; margin-top: 10px;",
-                actionButton("refreshLexmlData", "🔄 Refresh LexML Data", class = "btn-primary btn-sm")
+                actionButton("refreshData", "🔄 Refresh Data", class = "btn-primary btn-sm")
               )
             }
           )
         ),
-        
-        # Interactive Map 1: Total Documents with 4 toggleable layers
         fluidRow(
-          column(12,
+          # Legislative Documents Map
+          column(6,
             box(
-              title = "🗺️ Interactive Map 1: Total Documents Found", 
+              title = "Legislative Documents by State", 
               status = "primary", 
               solidHeader = TRUE, 
               width = 12,
-              height = "600px",
-              fluidRow(
-                column(9, leafletOutput("totalDocumentsMap", height = "500px")),
-                column(3, 
-                  wellPanel(
-                    h5("🎛️ Map Controls"),
-                    radioButtons("totalMapLayer", "Jurisdiction Level:",
-                                 choices = list("Federal" = "federal",
-                                              "Regional" = "regional", 
-                                              "State" = "state",
-                                              "Municipal" = "municipal"),
-                                 selected = "state"),
-                    conditionalPanel(
-                      condition = "input.totalMapLayer == 'municipal'",
-                      selectInput("totalMapSelectedState", "Select State:", 
-                                  choices = NULL, selected = NULL)
-                    ),
-                    hr(),
-                    div(style = "font-size: 11px; color: #666;",
-                        p("• Federal: National-level documents"),
-                        p("• Regional: 5 Brazilian regions"),
-                        p("• State: All 26 states + DF"),
-                        p("• Municipal: Select state first")
-                    )
-                  )
-                )
-              )
-            )
-          )
-        ),
-        
-        # Interactive Maps 2 & 3: Legislation and Jurisprudence side by side
-        fluidRow(
-          # Interactive Map 2: Legislation Documents
-          column(6,
-            box(
-              title = "🏛️ Interactive Map 2: Legislation Documents", 
-              status = "warning", 
-              solidHeader = TRUE, 
-              width = 12,
-              height = "600px",
-              leafletOutput("legislationMap", height = "400px"),
-              br(),
-              div(style = "padding: 5px;",
-                fluidRow(
-                  column(6,
-                    radioButtons("legislationMapLayer", "Layer:",
-                                 choices = list("Federal" = "federal", "Regional" = "regional", 
-                                              "State" = "state", "Municipal" = "municipal"),
-                                 selected = "state", inline = TRUE)
-                  ),
-                  column(6,
-                    conditionalPanel(
-                      condition = "input.legislationMapLayer == 'municipal'",
-                      selectInput("legislationMapSelectedState", "State:", 
-                                  choices = NULL, selected = NULL)
-                    )
-                  )
-                )
-              )
+              height = "500px",
+              leafletOutput("legislativeMap", height = "420px")
             )
           ),
-          
-          # Interactive Map 3: Jurisprudence Documents
+          # Jurisprudence Documents Map  
           column(6,
             box(
-              title = "⚖️ Interactive Map 3: Jurisprudence Documents", 
+              title = "Jurisprudence Documents by State", 
               status = "success", 
               solidHeader = TRUE, 
               width = 12,
-              height = "600px",
-              leafletOutput("jurisprudenceMap", height = "400px"),
-              br(),
-              div(style = "padding: 5px;",
-                fluidRow(
-                  column(6,
-                    radioButtons("jurisprudenceMapLayer", "Layer:",
-                                 choices = list("Federal" = "federal", "Regional" = "regional",
-                                              "State" = "state", "Municipal" = "municipal"),
-                                 selected = "state", inline = TRUE)
-                  ),
-                  column(6,
-                    conditionalPanel(
-                      condition = "input.jurisprudenceMapLayer == 'municipal'",
-                      selectInput("jurisprudenceMapSelectedState", "State:", 
-                                  choices = NULL, selected = NULL)
-                    )
-                  )
-                )
-              )
+              height = "500px",
+              leafletOutput("jurisprudenceMap", height = "420px")
             )
           )
         )
@@ -3939,279 +3845,6 @@ server <- function(input, output, session) {
       )
   })
   
-  # === LEXML DASHBOARD OUTPUTS ===
-  
-  # LexML Dashboard Metrics (Value Boxes)
-  lexml_metrics <- reactive({
-    if (database_connected && !is.null(db_pool)) {
-      get_lexml_dashboard_metrics(db_pool)
-    } else {
-      list(
-        total_documents = 0,
-        states_percentage = 0,
-        municipalities_percentage = 0,
-        date_range_years = 0,
-        last_updated = NA
-      )
-    }
-  })
-  
-  output$lexmlTotalDocs <- renderValueBox({
-    metrics <- lexml_metrics()
-    valueBox(
-      value = format(metrics$total_documents, big.mark = ","),
-      subtitle = "Documents Collected",
-      icon = icon("file-alt"),
-      color = "blue"
-    )
-  })
-  
-  output$lexmlStatesPercentage <- renderValueBox({
-    metrics <- lexml_metrics()
-    valueBox(
-      value = paste0(metrics$states_percentage, "%"),
-      subtitle = "States with Documents",
-      icon = icon("map-marked-alt"),
-      color = "green"
-    )
-  })
-  
-  output$lexmlMunicipalitiesPercentage <- renderValueBox({
-    metrics <- lexml_metrics()
-    valueBox(
-      value = paste0(metrics$municipalities_percentage, "%"),
-      subtitle = "Municipalities with Documents",
-      icon = icon("city"),
-      color = "orange"
-    )
-  })
-  
-  output$lexmlDateRange <- renderValueBox({
-    metrics <- lexml_metrics()
-    valueBox(
-      value = paste0(metrics$date_range_years, " years"),
-      subtitle = "Date Range Coverage",
-      icon = icon("calendar-alt"),
-      color = "purple"
-    )
-  })
-  
-  # LexML Interactive Maps
-  output$lexmlTotalMap <- renderLeaflet({
-    if (database_connected && !is.null(db_pool)) {
-      create_lexml_multilayer_map(
-        db_pool = db_pool,
-        category = NULL,
-        initial_layer = "state",
-        map_id = "lexmlTotalMap"
-      )
-    } else {
-      leaflet() %>%
-        addTiles() %>%
-        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-        addControl(
-          html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>Database not connected</div>",
-          position = "topright"
-        )
-    }
-  })
-  
-  output$lexmlLegislationMap <- renderLeaflet({
-    if (database_connected && !is.null(db_pool)) {
-      create_lexml_multilayer_map(
-        db_pool = db_pool,
-        category = "Legislação",
-        initial_layer = "state",
-        map_id = "lexmlLegislationMap"
-      )
-    } else {
-      leaflet() %>%
-        addTiles() %>%
-        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-        addControl(
-          html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>Database not connected</div>",
-          position = "topright"
-        )
-    }
-  })
-  
-  output$lexmlJurisprudenceMap <- renderLeaflet({
-    if (database_connected && !is.null(db_pool)) {
-      create_lexml_multilayer_map(
-        db_pool = db_pool,
-        category = "Jurisprudência",
-        initial_layer = "state",
-        map_id = "lexmlJurisprudenceMap"
-      )
-    } else {
-      leaflet() %>%
-        addTiles() %>%
-        setView(lng = -47.9292, lat = -15.7801, zoom = 4) %>%
-        addControl(
-          html = "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>Database not connected</div>",
-          position = "topright"
-        )
-    }
-  })
-  
-  # LexML Map Layer Observers
-  observeEvent(input$lexmlTotalMapLayer, {
-    if (database_connected && !is.null(db_pool)) {
-      leafletProxy("lexmlTotalMap") %>%
-        clearShapes() %>%
-        clearMarkers()
-      
-      # Load data for selected layer
-      data <- get_lexml_geographic_data(
-        db_pool = db_pool,
-        layer = input$lexmlTotalMapLayer,
-        category = NULL,
-        selected_state = input$lexmlTotalMapState
-      )
-      
-      # Update map with new layer data
-      if (nrow(data) > 0) {
-        # Implementation depends on layer type - would need geographic boundaries
-        # For now, add simple markers
-        leafletProxy("lexmlTotalMap") %>%
-          addControl(
-            html = paste0(
-              "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>",
-              "<h4>", input$lexmlTotalMapLayer, " Layer</h4>",
-              "<strong>Entities:</strong> ", nrow(data), "<br>",
-              "<strong>Total Docs:</strong> ", sum(data$doc_count, na.rm = TRUE),
-              "</div>"
-            ),
-            position = "topright"
-          )
-      }
-    }
-  })
-  
-  # Similar observers for other maps
-  observeEvent(input$lexmlLegislationMapLayer, {
-    if (database_connected && !is.null(db_pool)) {
-      leafletProxy("lexmlLegislationMap") %>%
-        clearShapes() %>%
-        clearMarkers()
-      
-      data <- get_lexml_geographic_data(
-        db_pool = db_pool,
-        layer = input$lexmlLegislationMapLayer,
-        category = "Legislação",
-        selected_state = input$lexmlLegislationMapState
-      )
-      
-      if (nrow(data) > 0) {
-        leafletProxy("lexmlLegislationMap") %>%
-          addControl(
-            html = paste0(
-              "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>",
-              "<h4>Legislation - ", input$lexmlLegislationMapLayer, "</h4>",
-              "<strong>Entities:</strong> ", nrow(data), "<br>",
-              "<strong>Total Docs:</strong> ", sum(data$doc_count, na.rm = TRUE),
-              "</div>"
-            ),
-            position = "topright"
-          )
-      }
-    }
-  })
-  
-  observeEvent(input$lexmlJurisprudenceMapLayer, {
-    if (database_connected && !is.null(db_pool)) {
-      leafletProxy("lexmlJurisprudenceMap") %>%
-        clearShapes() %>%
-        clearMarkers()
-      
-      data <- get_lexml_geographic_data(
-        db_pool = db_pool,
-        layer = input$lexmlJurisprudenceMapLayer,
-        category = "Jurisprudência",
-        selected_state = input$lexmlJurisprudenceMapState
-      )
-      
-      if (nrow(data) > 0) {
-        leafletProxy("lexmlJurisprudenceMap") %>%
-          addControl(
-            html = paste0(
-              "<div style='background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;'>",
-              "<h4>Jurisprudence - ", input$lexmlJurisprudenceMapLayer, "</h4>",
-              "<strong>Entities:</strong> ", nrow(data), "<br>",
-              "<strong>Total Docs:</strong> ", sum(data$doc_count, na.rm = TRUE),
-              "</div>"
-            ),
-            position = "topright"
-          )
-      }
-    }
-  })
-  
-  # Update state choices when needed
-  observe({
-    if (database_connected && !is.null(db_pool)) {
-      states <- get_available_states(db_pool)
-      
-      updateSelectInput(session, "lexmlTotalMapState", 
-                       choices = c("All States" = "", states))
-      updateSelectInput(session, "lexmlLegislationMapState", 
-                       choices = c("All States" = "", states))
-      updateSelectInput(session, "lexmlJurisprudenceMapState", 
-                       choices = c("All States" = "", states))
-    }
-  })
-  
-  # LexML About Tab Content
-  output$lexmlUpdateSummary <- renderUI({
-    if (database_connected && !is.null(db_pool)) {
-      summary <- get_lexml_update_summary(db_pool)
-      
-      div(
-        h4("Latest Update Summary"),
-        tags$hr(),
-        p(strong("Last Updated: "), 
-          ifelse(is.na(summary$last_updated), "Unknown", 
-                 format(as.POSIXct(summary$last_updated), "%Y-%m-%d %H:%M:%S UTC"))),
-        p(strong("Total Records: "), format(summary$total_records, big.mark = ",")),
-        p(strong("Date Coverage: "), 
-          paste(summary$earliest_date, "to", summary$latest_date)),
-        
-        h5("Document Categories:"),
-        if(nrow(summary$categories) > 0) {
-          div(
-            lapply(1:nrow(summary$categories), function(i) {
-              cat <- summary$categories[i,]
-              p(paste0("• ", cat$categoria, ": ", 
-                      format(cat$count, big.mark = ","), 
-                      " (", cat$percentage, "%)"))
-            })
-          )
-        } else {
-          p("No category data available")
-        },
-        
-        h5("Jurisdictions:"),
-        if(nrow(summary$jurisdictions) > 0) {
-          div(
-            lapply(1:nrow(summary$jurisdictions), function(i) {
-              jur <- summary$jurisdictions[i,]
-              p(paste0("• ", jur$jurisdicao, ": ", 
-                      format(jur$count, big.mark = ","), 
-                      " (", jur$percentage, "%)"))
-            })
-          )
-        } else {
-          p("No jurisdiction data available")
-        }
-      )
-    } else {
-      div(
-        h4("Database Connection Required"),
-        p("Please connect to the database to view update summary.")
-      )
-    }
-  })
-
   # Sync Data Action
   observeEvent(input$syncData, {
     showNotification("Syncing external data sources...", type = "message", duration = 3)

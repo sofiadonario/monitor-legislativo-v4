@@ -113,7 +113,13 @@
       "Bash(cut:*)",
       "Bash(sqlite3:*)",
       "Bash(./run_deployment.sh)",
-      "Bash(./verify_fix.sh:*)"
+      "Bash(./verify_fix.sh:*)",
+      "Bash(PGPASSWORD=smNCedRjMKeNsoqpurLWXjGEUZxORwVY psql -h nozomi.proxy.rlwy.net -U postgres -p 44844 -d railway -c \"SELECT COUNT(*) FROM lexml_documents;\")",
+      "Bash(PGPASSWORD=smNCedRjMKeNsoqpurLWXjGEUZxORwVY psql -h nozomi.proxy.rlwy.net -U postgres -p 44844 -d railway -c \"DROP VIEW IF EXISTS documents CASCADE;\")",
+      "Bash(PGPASSWORD=smNCedRjMKeNsoqpurLWXjGEUZxORwVY psql -h nozomi.proxy.rlwy.net -U postgres -p 44844 -d railway -c \"DROP VIEW documents;\")",
+      "Bash(PGPASSWORD=smNCedRjMKeNsoqpurLWXjGEUZxORwVY psql -h nozomi.proxy.rlwy.net -U postgres -p 44844 -d railway -c \"SELECT COUNT(*) FROM lexml_documents;\")",
+      "Bash(PGPASSWORD=smNCedRjMKeNsoqpurLWXjGEUZxORwVY psql -h nozomi.proxy.rlwy.net -U postgres -p 44844 -d railway -c \"\\d lexml_documents\")",
+      "Bash(PGPASSWORD=smNCedRjMKeNsoqpurLWXjGEUZxORwVY psql -h nozomi.proxy.rlwy.net -U postgres -p 44844 -d railway -c \"CREATE VIEW documents AS SELECT id, titulo, tipo, ''Não Classificado'' as species, COALESCE(jurisdicao, localidade, ''BR'') as estado, COALESCE(jurisdicao, localidade, ''BR'') as estado_codigo, COALESCE(localidade, '''') as municipality, data as data_publicacao, url, urn, COALESCE(ementa, '''') as conteudo, COALESCE(ementa, '''') as document_summary, COALESCE(tipo, '''') || '' - '' || COALESCE(classificacao, '''') as document_type_full, termo_busca as search_term, autor, ''LexML'' as fonte, classificacao as transport_category, data_coleta as created_at, data_coleta as updated_at, localidade as locality, autoridade as authority, jurisdicao as authority_level, CAST(numero AS TEXT) as document_number, jurisdicao as justice, '''' as region, '''' as court_class, ementa as document_description, ''{}'' as metadata FROM lexml_documents;\")"
     ]
   },
   "enableAllProjectMcpServers": false
