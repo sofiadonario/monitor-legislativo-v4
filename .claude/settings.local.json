@@ -131,7 +131,8 @@
       "Bash(psql \"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway\" -c \"SELECT table_name FROM information_schema.tables WHERE table_name LIKE ''%enhanced%'' OR table_name LIKE ''%parsed%'';\")",
       "Bash(psql \"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway\" -f database_table_fix.sql)",
       "Bash(git mv:*)",
-      "Bash(./process_all_csvs.sh:*)"
+      "Bash(./process_all_csvs.sh:*)",
+      "Bash(PGPASSWORD:*)"
     ]
   },
   "enableAllProjectMcpServers": false
