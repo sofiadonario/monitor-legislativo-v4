@@ -41,15 +41,19 @@ RUN mkdir -p data/cache data/geographic www logs exports temp
 
 # Copy only essential files
 COPY app.R ./
+COPY config.yml ./
+
+# Copy debug and utility files
 COPY simple_dashboard_fix.R ./
 COPY dashboard_debug_fix.R ./
+
+# Copy R scripts directory
 COPY scripts/R/database_connection_fixed.R ./scripts/R/
 COPY scripts/R/map_generator.R ./scripts/R/
 COPY scripts/R/enhanced_search.R ./scripts/R/
 COPY scripts/R/lexml_geographic_analytics.R ./scripts/R/
 COPY scripts/R/lexml_data_loader.R ./scripts/R/
 COPY scripts/R/final_csv_loader.R ./scripts/R/
-COPY config.yml ./
 
 # Copy data directory if needed
 COPY data_current/ ./data_current/

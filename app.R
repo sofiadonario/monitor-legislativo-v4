@@ -22,10 +22,20 @@ if (file.exists("scripts/R/database_connection_fixed.R")) {
 }
 
 # Load simple dashboard functions for reliable data loading
-source("simple_dashboard_fix.R")
+if (file.exists("simple_dashboard_fix.R")) {
+  source("simple_dashboard_fix.R")
+  cat("✅ Simple dashboard fix loaded\n")
+} else {
+  cat("⚠️ simple_dashboard_fix.R not found - using fallback functions\n")
+}
 
 # Load debug dashboard functions with extensive logging
-source("dashboard_debug_fix.R")
+if (file.exists("dashboard_debug_fix.R")) {
+  source("dashboard_debug_fix.R")
+  cat("✅ Debug dashboard functions loaded\n")
+} else {
+  cat("⚠️ dashboard_debug_fix.R not found - using standard functions\n")
+}
 
 # Load map generator module for geographic visualization
 source("scripts/R/map_generator.R")
