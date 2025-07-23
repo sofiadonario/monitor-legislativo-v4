@@ -4248,4 +4248,10 @@ options(
 # Run the application
 cat("Starting Shiny app...\n")
 app <- shinyApp(ui = ui, server = server)
+
+# Add startup confirmation for Railway
+cat("🚀 MackMonitor is ready and listening on port", as.integer(Sys.getenv("PORT", "3838")), "\n")
+cat("✅ Database connection status:", database_connected, "\n")
+cat("📊 App startup completed successfully\n")
+
 runApp(app, host = "0.0.0.0", port = as.integer(Sys.getenv("PORT", "3838")), launch.browser = FALSE)
