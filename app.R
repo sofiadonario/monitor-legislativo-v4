@@ -1002,17 +1002,17 @@ server <- function(input, output, session) {
     )
   })
   
-  # Total states value box - with reactive trigger
+  # Total jurisdictions value box - with reactive trigger  
   output$totalStates <- renderValueBox({
     # Force reactive update by checking current documents
     current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
     
     if (database_connected && !is.null(db_pool)) {
-      # Use direct database query for accurate count
+      # Count distinct jurisdictional levels (Federal, Municipal, State, Distrital)
       tryCatch({
         conn <- poolCheckout(db_pool)
         on.exit(poolReturn(conn))
-        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL AND estado != ''")$count)
+        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL")$count)
         status_color <- "green"
       }, error = function(e) {
         count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_state))
@@ -1025,7 +1025,7 @@ server <- function(input, output, session) {
     
     valueBox(
       value = count,
-      subtitle = "States",
+      subtitle = "Jurisdiction Levels",
       icon = icon("map"),
       color = status_color
     )
@@ -1613,32 +1613,29 @@ server <- function(input, output, session) {
     }
   })
   
-  # Dashboard Map - Simplified map rendering using cached data
+  # Dashboard Map - Load data directly from database
   output$dashboardMap <- renderLeaflet({
     cat("🔄 Dashboard map rendering triggered\n")
     
-    # Use cached documents data instead of direct database queries
-    if (!is.null(values$current_documents) && nrow(values$current_documents) > 0) {
-      cat("🔄 Using cached documents data:", nrow(values$current_documents), "documents\n")
-      
-      # Aggregate data by state using cached documents
+    # Load data directly from database for real-time results
+    if (database_connected && !is.null(db_pool)) {
       tryCatch({
-        # Get state data with estado_codigo if available
-        if ("estado_codigo" %in% names(values$current_documents)) {
-          map_data <- values$current_documents %>%
-            filter(!is.na(estado), estado != '', !is.na(estado_codigo), estado_codigo != '') %>%
-            group_by(estado, estado_codigo) %>%
-            summarise(documento_count = n(), .groups = "drop") %>%
-            arrange(desc(documento_count))
-        } else {
-          map_data <- values$current_documents %>%
-            filter(!is.na(estado), estado != '') %>%
-            group_by(estado) %>%
-            summarise(documento_count = n(), .groups = "drop") %>%
-            arrange(desc(documento_count))
-        }
+        conn <- poolCheckout(db_pool)
+        on.exit(poolReturn(conn))
         
-        cat("🔄 Map data aggregated:", nrow(map_data), "states\n")
+        # Get jurisdiction level data from database
+        map_data <- dbGetQuery(conn, "
+          SELECT 
+            estado,
+            estado as estado_codigo,
+            COUNT(*) as documento_count
+          FROM documents 
+          WHERE estado IS NOT NULL 
+          GROUP BY estado 
+          ORDER BY COUNT(*) DESC
+        ")
+        
+        cat("🔄 Map data loaded from database:", nrow(map_data), "jurisdiction levels\n")
         cat("🔄 Total documents for map:", sum(map_data$documento_count), "\n")
         
         if (nrow(map_data) > 0) {
@@ -1668,11 +1665,11 @@ server <- function(input, output, session) {
             addControl(
               html = paste0(
                 "<div style='padding: 10px; background: white; border-radius: 5px; max-width: 300px;'>",
-                "<h4>Legislative Documents by State</h4>",
-                "<strong>Total Documents:</strong> ", sum(map_data$documento_count), "<br>",
-                "<strong>Total States:</strong> ", nrow(map_data), "<br><br>",
-                "<strong>Top 10 States:</strong><br>",
-                paste(head(map_data, 10)$estado, ": ", head(map_data, 10)$documento_count, collapse = "<br>"),
+                "<h4>Legislative Documents by Jurisdiction</h4>",
+                "<strong>Total Documents:</strong> ", formatC(sum(map_data$documento_count), format="d", big.mark=","), "<br>",
+                "<strong>Jurisdiction Levels:</strong> ", nrow(map_data), "<br><br>",
+                "<strong>Distribution:</strong><br>",
+                paste(map_data$estado, ": ", formatC(map_data$documento_count, format="d", big.mark=","), collapse = "<br>"),
                 "</div>"
               ),
               position = "topright"
