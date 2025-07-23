@@ -1,0 +1,59 @@
+# Minimal Dockerfile for Monitor Legislativo v4 - Railway Deployment
+FROM rocker/r-base:4.3.1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    postgresql-client \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libgdal-dev \
+    libproj-dev \
+    libgeos-dev \
+    libudunits2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV R_CONFIG_ACTIVE=production
+ENV SHINY_LOG_LEVEL=INFO
+
+# Install only essential R packages for core functionality
+RUN R -e "install.packages(c(\
+    'shiny', 'shinydashboard', 'DT', \
+    'dplyr', 'jsonlite', 'stringr', \
+    'DBI', 'RPostgres', 'pool', \
+    'plotly', 'ggplot2', 'leaflet', \
+    'markdown', 'readr' \
+    ), repos='https://cloud.r-project.org/', dependencies=TRUE)"
+
+# Install additional utility packages
+RUN R -e "install.packages(c(\
+    'httr', 'lubridate', 'digest', \
+    'htmltools', 'magrittr' \
+    ), repos='https://cloud.r-project.org/', dependencies=FALSE)"
+
+# Set working directory
+WORKDIR /app
+
+# Create necessary directories
+RUN mkdir -p data/cache data/geographic www logs exports temp
+
+# Copy only essential files
+COPY app.R ./
+COPY scripts/R/database_connection_fixed.R ./scripts/R/
+COPY scripts/R/map_generator.R ./scripts/R/
+COPY scripts/R/enhanced_search.R ./scripts/R/
+COPY scripts/R/lexml_geographic_analytics.R ./scripts/R/
+COPY scripts/R/lexml_data_loader.R ./scripts/R/
+COPY scripts/R/final_csv_loader.R ./scripts/R/
+COPY config.yml ./
+
+# Copy data directory if needed
+COPY data_current/ ./data_current/
+
+# Expose port
+EXPOSE ${PORT:-3838}
+
+# Start the application
+CMD ["R", "-e", "source('app.R')"]
