@@ -21,6 +21,12 @@ if (file.exists("scripts/R/database_connection_fixed.R")) {
   cat("⚠️ Using original database connection module\n")
 }
 
+# Load simple dashboard functions for reliable data loading
+source("simple_dashboard_fix.R")
+
+# Load debug dashboard functions with extensive logging
+source("dashboard_debug_fix.R")
+
 # Load map generator module for geographic visualization
 source("scripts/R/map_generator.R")
 
@@ -118,6 +124,11 @@ if (!database_connected) {
 if (database_connected) {
   cat("✅ Using existing PostgreSQL database with clean, parsed data (934 documents)\n")
   cat("📊 Database contains properly parsed municipality/state data\n")
+  
+  # Run comprehensive database test
+  cat("🔄 Running comprehensive database test...\n")
+  test_result <- test_database_connection()
+  cat("🔍 Database test result:", test_result, "\n")
 }
 
 if (!database_connected) {
@@ -747,6 +758,23 @@ server <- function(input, output, session) {
     geographic_data = NULL
   )
   
+  # Simple reactive function to get documents when needed
+  get_dashboard_data <- reactive({
+    if (database_connected && !is.null(db_pool)) {
+      tryCatch({
+        cat("🔄 Loading dashboard data from database...\n")
+        data <- get_documents(limit = 1000)
+        if (!is.null(data) && nrow(data) > 0) {
+          cat("✅ Dashboard data loaded:", nrow(data), "documents\n")
+          return(data)
+        }
+      }, error = function(e) {
+        cat("❌  Dashboard data error:", e$message, "\n")
+      })
+    }
+    return(data.frame())
+  })
+  
   # Initialize data on startup with force refresh
   observe({
     cat("🔄 Initializing application data with force refresh...\n")
@@ -1007,21 +1035,9 @@ server <- function(input, output, session) {
     # Force reactive update by checking current documents
     current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
     
-    if (database_connected && !is.null(db_pool)) {
-      # Count distinct jurisdictional levels (Federal, Municipal, State, Distrital)
-      tryCatch({
-        conn <- poolCheckout(db_pool)
-        on.exit(poolReturn(conn))
-        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL")$count)
-        status_color <- "green"
-      }, error = function(e) {
-        count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_state))
-        status_color <- "red"
-      })
-    } else {
-      count <- 0
-      status_color <- "red"
-    }
+    # Use debug function for jurisdiction count
+    count <- get_debug_jurisdiction_count()
+    status_color <- ifelse(count > 0, "green", "red")
     
     valueBox(
       value = count,
@@ -1036,21 +1052,9 @@ server <- function(input, output, session) {
     # Force reactive update by checking current documents
     current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
     
-    if (database_connected && !is.null(db_pool)) {
-      # Use direct database query for accurate count
-      tryCatch({
-        conn <- poolCheckout(db_pool)
-        on.exit(poolReturn(conn))
-        count <- as.numeric(dbGetQuery(conn, "SELECT COUNT(DISTINCT tipo) as count FROM documents WHERE tipo IS NOT NULL AND tipo != ''")$count)
-        status_color <- "yellow"
-      }, error = function(e) {
-        count <- ifelse(is.null(values$analytics_data), 0, nrow(values$analytics_data$documents_by_type))
-        status_color <- "red"
-      })
-    } else {
-      count <- 0
-      status_color <- "red"
-    }
+    # Use debug function for document type count
+    count <- get_debug_type_count()
+    status_color <- ifelse(count > 0, "yellow", "red")
     
     valueBox(
       value = count,
