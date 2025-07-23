@@ -48,6 +48,8 @@ COPY simple_dashboard_fix.R ./
 COPY dashboard_debug_fix.R ./
 COPY senior_engineer_functions.R ./
 COPY app_senior_patch.R ./
+COPY fix_location_and_maps.R ./
+COPY app_location_map_patch.R ./
 
 # Copy R scripts directory - prioritize fixed database connection
 COPY scripts/R/database_connection_fixed.R ./scripts/R/

@@ -53,6 +53,18 @@ source("scripts/R/enhanced_search.R")
 # Load LexML geographic analytics
 source("scripts/R/lexml_geographic_analytics.R")
 
+# Load senior engineer patches for proper database usage
+if (file.exists("app_senior_patch.R")) {
+  source("app_senior_patch.R")
+  cat("✅ Senior engineer patch loaded\n")
+}
+
+# Load location and map fixes
+if (file.exists("app_location_map_patch.R")) {
+  source("app_location_map_patch.R")
+  cat("✅ Location and map patch loaded\n")
+}
+
 # Load LexML advanced statistical analysis - DISABLED for deployment
 # source("scripts/R/lexml_advanced_statistical_analysis.R")
 
