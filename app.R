@@ -47,9 +47,16 @@ if (file.exists("dashboard_debug_fix.R")) {
 # Load map generator module for geographic visualization
 source("scripts/R/map_generator.R")
 
-# Load enhanced search functionality
 # Load comprehensive maps and geographic data fix
-source("fix_maps_and_geographic_data_simple.R")
+if (file.exists("fix_maps_and_geographic_data_simple.R")) {
+  source("fix_maps_and_geographic_data_simple.R")
+  cat("✅ Maps and geographic data fix loaded\n")
+} else if (file.exists("fix_maps_and_geographic_data.R")) {
+  source("fix_maps_and_geographic_data.R")
+  cat("✅ Maps and geographic data fix loaded (full version)\n")
+} else {
+  cat("⚠️ Maps fix files not found - maps may not work properly\n")
+}
 
 source("scripts/R/enhanced_search.R")
 
