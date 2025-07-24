@@ -1289,18 +1289,6 @@ server <- function(input, output, session) {
                  popup = paste("Emergency legislation map error:", e$message)))
     })
   })
-      
-      return(map)
-      
-    }, error = function(e) {
-      cat("ERROR in legislationMap:", e$message, "\n")
-      leaflet() %>%
-        addTiles() %>%
-        setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-        addMarker(lng = -47.86, lat = -15.83, 
-                 popup = paste("Legislation map error:", e$message))
-    })
-  })
   
   # Jurisprudence Map (EMERGENCY FIX)
   output$jurisprudenceMap <- renderLeaflet({
