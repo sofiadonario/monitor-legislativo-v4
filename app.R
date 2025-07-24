@@ -47,15 +47,18 @@ if (file.exists("dashboard_debug_fix.R")) {
 # Load map generator module for geographic visualization
 source("scripts/R/map_generator.R")
 
-# Load comprehensive maps and geographic data fix
-if (file.exists("fix_maps_and_geographic_data_simple.R")) {
+# Load emergency dashboard fix to resolve complete failure
+if (file.exists("emergency_dashboard_fix.R")) {
+  source("emergency_dashboard_fix.R")
+  cat("🚨 Emergency dashboard fix loaded - Rolling back to working unified approach\n")
+} else if (file.exists("fix_maps_and_geographic_data_simple.R")) {
   source("fix_maps_and_geographic_data_simple.R")
   cat("✅ Maps and geographic data fix loaded\n")
 } else if (file.exists("fix_maps_and_geographic_data.R")) {
   source("fix_maps_and_geographic_data.R")
   cat("✅ Maps and geographic data fix loaded (full version)\n")
 } else {
-  cat("⚠️ Maps fix files not found - maps may not work properly\n")
+  cat("⚠️ No fix files found - dashboard may not work properly\n")
 }
 
 source("scripts/R/enhanced_search.R")
