@@ -1112,7 +1112,7 @@ server <- function(input, output, session) {
       cat("❌ Error in totalDocs value box:", e$message, "\n")
       count <- "0"
       status_color <- "red"
-    }
+    })
     
     valueBox(
       value = count,
@@ -1133,7 +1133,7 @@ server <- function(input, output, session) {
       cat("❌ Error in totalStates value box:", e$message, "\n")
       count <- 0
       status_color <- "red"
-    }
+    })
     
     valueBox(
       value = count,
@@ -1154,7 +1154,7 @@ server <- function(input, output, session) {
       cat("❌ Error in totalTypes value box:", e$message, "\n")
       count <- 0
       status_color <- "red"
-    }
+    })
     
     valueBox(
       value = count,
@@ -1177,7 +1177,7 @@ server <- function(input, output, session) {
       value <- "Error"
       subtitle <- "Date Range"
       status_color <- "red"
-    }
+    })
     
     valueBox(
       value = value,
