@@ -48,9 +48,6 @@ if (file.exists("dashboard_debug_fix.R")) {
 source("scripts/R/map_generator.R")
 
 # Load enhanced search functionality
-# Load comprehensive maps and geographic data fix
-source("fix_maps_and_geographic_data.R")
-
 source("scripts/R/enhanced_search.R")
 
 # Load LexML geographic analytics
