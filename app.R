@@ -49,7 +49,7 @@ source("scripts/R/map_generator.R")
 
 # Load enhanced search functionality
 # Load comprehensive maps and geographic data fix
-source("fix_maps_and_geographic_data.R")
+source("fix_maps_and_geographic_data_simple.R")
 
 source("scripts/R/enhanced_search.R")
 
