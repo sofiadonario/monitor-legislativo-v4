@@ -55,6 +55,14 @@ if (file.exists("database_connection_emergency_fix.R")) {
   cat("⚠️ Database connection fix not found\n")
 }
 
+# Load direct emergency override to replace actual called functions
+if (file.exists("direct_emergency_override.R")) {
+  source("direct_emergency_override.R")
+  cat("🚨 Direct emergency override loaded - Replacing actual called functions\n")
+} else {
+  cat("⚠️ Direct emergency override not found\n")
+}
+
 # Load emergency dashboard fix to resolve complete failure
 if (file.exists("emergency_dashboard_fix.R")) {
   source("emergency_dashboard_fix.R")
