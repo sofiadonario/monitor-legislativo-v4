@@ -1270,24 +1270,105 @@ server <- function(input, output, session) {
   # Total Documents Map (EMERGENCY FIX)
   output$totalDocumentsMap <- renderLeaflet({
     tryCatch({
-      # Use emergency map function instead of broken get_map1_data()
-      create_emergency_total_documents_map()
+      # Use working get_map1_data() function that's now overridden
+      map_data <- get_map1_data()
+      
+      if (nrow(map_data) == 0) {
+        cat("⚠️ No map data available, showing fallback map\n")
+        return(leaflet() %>%
+          addTiles() %>%
+          setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
+          addMarker(lng = -47.86, lat = -15.83, 
+                   popup = "No geographic data available - Using emergency fallback"))
+      }
+      
+      cat("✅ Map data loaded:", nrow(map_data), "jurisdictions\n")
+      
+      # Create map with state markers
+      map <- leaflet(map_data) %>%
+        addTiles() %>%
+        setView(lng = -47.86, lat = -15.83, zoom = 4)
+      
+      # Add markers for each jurisdiction
+      for (i in 1:nrow(map_data)) {
+        row <- map_data[i, ]
+        if (row$count > 0) {
+          popup_text <- paste0(
+            "<b>", row$jurisdicao, "</b><br/>",
+            "Documents: ", row$count
+          )
+          
+          map <- map %>%
+            addCircleMarkers(
+              lng = -47.86, lat = -15.83,  # Center of Brazil
+              radius = sqrt(row$count) / 10,
+              popup = popup_text,
+              fillOpacity = 0.7,
+              color = "blue"
+            )
+        }
+      }
+      
+      cat("✅ Total documents map created\n")
+      return(map)
+      
     }, error = function(e) {
       cat("ERROR in totalDocumentsMap:", e$message, "\n")
-      # Emergency fallback
-      leaflet() %>%
+      return(leaflet() %>%
         addTiles() %>%
         setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
         addMarker(lng = -47.86, lat = -15.83, 
-                 popup = paste("Emergency map error:", e$message))
+                 popup = paste("Emergency map error:", e$message)))
     })
   })
   
   # Legislation Map (EMERGENCY FIX)
   output$legislationMap <- renderLeaflet({
     tryCatch({
-      # Use emergency map function instead of broken get_simple_map_data()
-      create_emergency_legislation_map()
+      # Use working get_simple_map_data() function that's now overridden
+      map_data <- get_simple_map_data()
+      
+      if (nrow(map_data) == 0 || sum(map_data$legislacao, na.rm = TRUE) == 0) {
+        cat("⚠️ No legislation data available, showing fallback map\n")
+        return(leaflet() %>%
+          addTiles() %>%
+          setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
+          addMarker(lng = -47.86, lat = -15.83, 
+                   popup = "No legislation data available - Using emergency fallback"))
+      }
+      
+      cat("✅ Legislation map data loaded:", nrow(map_data), "states\n")
+      
+      # Filter for states with legislation documents
+      leg_data <- map_data[map_data$legislacao > 0, ]
+      
+      map <- leaflet(leg_data) %>%
+        addTiles() %>%
+        setView(lng = -47.86, lat = -15.83, zoom = 4)
+      
+      # Add markers for each state
+      for (i in 1:nrow(leg_data)) {
+        row <- leg_data[i, ]
+        if (row$legislacao > 0) {
+          popup_text <- paste0(
+            "<b>", row$estado, "</b><br/>",
+            "Legislation Documents: ", row$legislacao
+          )
+          
+          map <- map %>%
+            addCircleMarkers(
+              lng = -47.86, lat = -15.83,  # Center of Brazil
+              radius = sqrt(row$legislacao) / 8,
+              popup = popup_text,
+              fillOpacity = 0.7,
+              color = "orange"
+            )
+        }
+      }
+      
+      cat("✅ Legislation map created\n")
+      return(map)
+      
     }, error = function(e) {
       cat("ERROR in legislationMap:", e$message, "\n")
       return(leaflet() %>%
@@ -1301,8 +1382,50 @@ server <- function(input, output, session) {
   # Jurisprudence Map (EMERGENCY FIX)
   output$jurisprudenceMap <- renderLeaflet({
     tryCatch({
-      # Use emergency map function instead of broken get_simple_map_data()
-      create_emergency_jurisprudence_map()
+      # Use working get_simple_map_data() function that's now overridden
+      map_data <- get_simple_map_data()
+      
+      if (nrow(map_data) == 0 || sum(map_data$jurisprudencia, na.rm = TRUE) == 0) {
+        cat("⚠️ No jurisprudence data available, showing fallback map\n")
+        return(leaflet() %>%
+          addTiles() %>%
+          setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
+          addMarker(lng = -47.86, lat = -15.83, 
+                   popup = "No jurisprudence data available - Using emergency fallback"))
+      }
+      
+      cat("✅ Jurisprudence map data loaded:", nrow(map_data), "states\n")
+      
+      # Filter for states with jurisprudence documents
+      jur_data <- map_data[map_data$jurisprudencia > 0, ]
+      
+      map <- leaflet(jur_data) %>%
+        addTiles() %>%
+        setView(lng = -47.86, lat = -15.83, zoom = 4)
+      
+      # Add markers for each state
+      for (i in 1:nrow(jur_data)) {
+        row <- jur_data[i, ]
+        if (row$jurisprudencia > 0) {
+          popup_text <- paste0(
+            "<b>", row$estado, "</b><br/>",
+            "Jurisprudence Documents: ", row$jurisprudencia
+          )
+          
+          map <- map %>%
+            addCircleMarkers(
+              lng = -47.86, lat = -15.83,  # Center of Brazil
+              radius = sqrt(row$jurisprudencia) / 8,
+              popup = popup_text,
+              fillOpacity = 0.7,
+              color = "red"
+            )
+        }
+      }
+      
+      cat("✅ Jurisprudence map created\n")
+      return(map)
+      
     }, error = function(e) {
       cat("ERROR in jurisprudenceMap:", e$message, "\n")
       return(leaflet() %>%
