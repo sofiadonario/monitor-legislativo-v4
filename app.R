@@ -69,6 +69,14 @@ if (file.exists("emergency_dashboard_fix.R")) {
   cat("⚠️ No fix files found - dashboard may not work properly\n")
 }
 
+# Load emergency app patch to override broken map outputs
+if (file.exists("emergency_app_patch.R")) {
+  source("emergency_app_patch.R")
+  cat("🚨 Emergency app patch loaded - Overriding broken map outputs\n")
+} else {
+  cat("⚠️ Emergency app patch not found\n")
+}
+
 source("scripts/R/enhanced_search.R")
 
 # Load LexML geographic analytics
@@ -1095,28 +1103,15 @@ server <- function(input, output, session) {
   
   # Total documents value box - now using refined CSV data
   output$totalDocs <- renderValueBox({
-    # Use LexML database for accurate count
-    if (database_connected && !is.null(db_pool)) {
-      tryCatch({
-        # Get metrics from new lexml_documents table
-        lexml_metrics <- get_lexml_dashboard_metrics(db_pool)
-        count <- formatC(lexml_metrics$total_documents, format = "d", big.mark = ",")
-        status_color <- "blue"
-      }, error = function(e) {
-        # Fallback to old table if new one doesn't exist yet
-        tryCatch({
-          conn <- poolCheckout(db_pool)
-          on.exit(poolReturn(conn))
-          count <- formatC(as.numeric(dbGetQuery(conn, "SELECT COUNT(*) as count FROM documents")$count), format = "d", big.mark = ",")
-          status_color <- "green"
-        }, error = function(e2) {
-          count <- "0"
-          status_color <- "red"
-        })
-      })
-    } else {
-      count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
-      status_color <- "yellow"
+    # Use emergency dashboard metrics
+    tryCatch({
+      metrics <- get_emergency_dashboard_metrics()
+      count <- formatC(metrics$total_docs, format = "d", big.mark = ",")
+      status_color <- "blue"
+    }, error = function(e) {
+      cat("❌ Error in totalDocs value box:", e$message, "\n")
+      count <- "0"
+      status_color <- "red"
     }
     
     valueBox(
@@ -1127,57 +1122,59 @@ server <- function(input, output, session) {
     )
   })
   
-  # Total jurisdictions value box - with reactive trigger  
+  # Total states value box (EMERGENCY FIX)
   output$totalStates <- renderValueBox({
-    # Force reactive update by checking current documents
-    current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
-    
-    # Use debug function for jurisdiction count
-    count <- get_debug_jurisdiction_count()
-    status_color <- ifelse(count > 0, "green", "red")
+    # Use emergency dashboard metrics
+    tryCatch({
+      metrics <- get_emergency_dashboard_metrics()
+      count <- metrics$states_with_docs
+      status_color <- ifelse(count > 0, "green", "red")
+    }, error = function(e) {
+      cat("❌ Error in totalStates value box:", e$message, "\n")
+      count <- 0
+      status_color <- "red"
+    }
     
     valueBox(
       value = count,
-      subtitle = "Jurisdiction Levels",
+      subtitle = "States with Documents",
       icon = icon("map"),
       color = status_color
     )
   })
   
-  # Total types value box - with reactive trigger
+  # Total municipalities value box (EMERGENCY FIX)
   output$totalTypes <- renderValueBox({
-    # Force reactive update by checking current documents
-    current_count <- ifelse(is.null(values$current_documents), 0, nrow(values$current_documents))
-    
-    # Use debug function for document type count
-    count <- get_debug_type_count()
-    status_color <- ifelse(count > 0, "yellow", "red")
+    # Use emergency dashboard metrics
+    tryCatch({
+      metrics <- get_emergency_dashboard_metrics()
+      count <- metrics$municipalities_with_docs
+      status_color <- ifelse(count > 0, "yellow", "red")
+    }, error = function(e) {
+      cat("❌ Error in totalTypes value box:", e$message, "\n")
+      count <- 0
+      status_color <- "red"
+    }
     
     valueBox(
       value = count,
-      subtitle = "Document Types",
-      icon = icon("tags"),
+      subtitle = "Municipalities with Documents",
+      icon = icon("city"),
       color = status_color
     )
   })
   
-  # Date range value box
+  # Date range value box (EMERGENCY FIX)
   output$dateRange <- renderValueBox({
-    if (database_connected && !is.null(values$analytics_data)) {
-      min_date <- values$analytics_data$date_range$min
-      max_date <- values$analytics_data$date_range$max
-      if (!is.na(min_date) && !is.na(max_date)) {
-        years <- as.numeric(format(max_date, "%Y")) - as.numeric(format(min_date, "%Y"))
-        value <- years
-        subtitle <- paste(years, "Years")
-        status_color <- "purple"
-      } else {
-        value <- "N/A"
-        subtitle <- "Date Range"
-        status_color <- "red"
-      }
-    } else {
-      value <- "N/A"
+    # Use emergency dashboard metrics
+    tryCatch({
+      metrics <- get_emergency_dashboard_metrics()
+      value <- metrics$date_range
+      subtitle <- "Date Range"
+      status_color <- ifelse(value != "No date range" && value != "Error loading data", "purple", "red")
+    }, error = function(e) {
+      cat("❌ Error in dateRange value box:", e$message, "\n")
+      value <- "Error"
       subtitle <- "Date Range"
       status_color <- "red"
     }
@@ -1262,52 +1259,11 @@ server <- function(input, output, session) {
   
   # === MAP IMPLEMENTATIONS ===
   
-  # Total Documents Map (from lexml_documents)
+  # Total Documents Map (EMERGENCY FIX)
   output$totalDocumentsMap <- renderLeaflet({
     tryCatch({
-      map_data <- get_map1_data()  # Use data from lexml_documents
-      
-      if (nrow(map_data) == 0) {
-        # Fallback map with Brazil center
-        return(leaflet() %>%
-          addTiles() %>%
-          setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-          addMarker(lng = -47.86, lat = -15.83, 
-                   popup = "No geographic data available from lexml_documents"))
-      }
-      
-      # Create leaflet map with state markers
-      map <- leaflet(map_data) %>%
-        addTiles() %>%
-        setView(lng = -47.86, lat = -15.83, zoom = 4)
-      
-      # Add markers for each state with documents
-      for (i in 1:nrow(map_data)) {
-        row <- map_data[i, ]
-        if (!is.na(row$lat) && !is.na(row$lng) && row$total_docs > 0) {
-          popup_text <- paste0(
-            "<b>", row$name, " (", row$abbrev, ")</b><br/>",
-            "Region: ", row$region, "<br/>",
-            "Capital: ", row$capital, "<br/>",
-            "Total Documents: ", row$total_docs, "<br/>",
-            "Legislation: ", row$legislacao, "<br/>",
-            "Jurisprudence: ", row$jurisprudencia, "<br/>",
-            "Doctrine: ", row$doutrina
-          )
-          
-          map <- map %>%
-            addCircleMarkers(
-              lng = row$lng, lat = row$lat,
-              radius = sqrt(row$total_docs) / 10,
-              popup = popup_text,
-              fillOpacity = 0.7,
-              color = "blue"
-            )
-        }
-      }
-      
-      return(map)
-      
+      # Use emergency map function instead of broken get_map1_data()
+      create_emergency_total_documents_map()
     }, error = function(e) {
       cat("ERROR in totalDocumentsMap:", e$message, "\n")
       # Emergency fallback
@@ -1315,48 +1271,24 @@ server <- function(input, output, session) {
         addTiles() %>%
         setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
         addMarker(lng = -47.86, lat = -15.83, 
-                 popup = paste("Map error:", e$message))
+                 popup = paste("Emergency map error:", e$message))
     })
   })
   
-  # Legislation Map  
+  # Legislation Map (EMERGENCY FIX)
   output$legislationMap <- renderLeaflet({
     tryCatch({
-      map_data <- get_simple_map_data()
-      
-      if (nrow(map_data) == 0 || sum(map_data$legislacao, na.rm = TRUE) == 0) {
-        return(leaflet() %>%
-          addTiles() %>%
-          setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-          addMarker(lng = -47.86, lat = -15.83, 
-                   popup = "No legislation data available"))
-      }
-      
-      # Filter for states with legislation documents
-      leg_data <- map_data[map_data$legislacao > 0, ]
-      
-      map <- leaflet(leg_data) %>%
+      # Use emergency map function instead of broken get_simple_map_data()
+      create_emergency_legislation_map()
+    }, error = function(e) {
+      cat("ERROR in legislationMap:", e$message, "\n")
+      return(leaflet() %>%
         addTiles() %>%
-        setView(lng = -47.86, lat = -15.83, zoom = 4)
-      
-      for (i in 1:nrow(leg_data)) {
-        row <- leg_data[i, ]
-        if (!is.na(row$lat) && !is.na(row$lng)) {
-          popup_text <- paste0(
-            "<b>", row$name, " (", row$abbrev, ")</b><br/>",
-            "Legislation Documents: ", row$legislacao
-          )
-          
-          map <- map %>%
-            addCircleMarkers(
-              lng = row$lng, lat = row$lat,
-              radius = sqrt(row$legislacao) / 8,
-              popup = popup_text,
-              fillOpacity = 0.7,
-              color = "orange"
-            )
-        }
-      }
+        setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
+        addMarker(lng = -47.86, lat = -15.83, 
+                 popup = paste("Emergency legislation map error:", e$message)))
+    })
+  })
       
       return(map)
       
@@ -1370,54 +1302,18 @@ server <- function(input, output, session) {
     })
   })
   
-  # Jurisprudence Map
+  # Jurisprudence Map (EMERGENCY FIX)
   output$jurisprudenceMap <- renderLeaflet({
     tryCatch({
-      map_data <- get_simple_map_data()
-      
-      if (nrow(map_data) == 0 || sum(map_data$jurisprudencia, na.rm = TRUE) == 0) {
-        return(leaflet() %>%
-          addTiles() %>%
-          setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-          addMarker(lng = -47.86, lat = -15.83, 
-                   popup = "No jurisprudence data available"))
-      }
-      
-      # Filter for states with jurisprudence documents
-      jur_data <- map_data[map_data$jurisprudencia > 0, ]
-      
-      map <- leaflet(jur_data) %>%
-        addTiles() %>%
-        setView(lng = -47.86, lat = -15.83, zoom = 4)
-      
-      for (i in 1:nrow(jur_data)) {
-        row <- jur_data[i, ]
-        if (!is.na(row$lat) && !is.na(row$lng)) {
-          popup_text <- paste0(
-            "<b>", row$name, " (", row$abbrev, ")</b><br/>",
-            "Jurisprudence Documents: ", row$jurisprudencia
-          )
-          
-          map <- map %>%
-            addCircleMarkers(
-              lng = row$lng, lat = row$lat,
-              radius = sqrt(row$jurisprudencia) / 8,
-              popup = popup_text,
-              fillOpacity = 0.7,
-              color = "green"
-            )
-        }
-      }
-      
-      return(map)
-      
+      # Use emergency map function instead of broken get_simple_map_data()
+      create_emergency_jurisprudence_map()
     }, error = function(e) {
       cat("ERROR in jurisprudenceMap:", e$message, "\n")
-      leaflet() %>%
+      return(leaflet() %>%
         addTiles() %>%
         setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
         addMarker(lng = -47.86, lat = -15.83, 
-                 popup = paste("Jurisprudence map error:", e$message))
+                 popup = paste("Emergency jurisprudence map error:", e$message)))
     })
   })
   
