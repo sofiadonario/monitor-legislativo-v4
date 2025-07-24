@@ -716,15 +716,15 @@ get_states <- function() {
   })
 }
 
-#' Get simple map data for Brazilian states
+#' Get map data for Interactive Map 1 (from lexml_documents)
 #' @return Data frame with state data for mapping
-get_simple_map_data <- function() {
+get_map1_data <- function() {
   if (is.null(db_pool)) {
     return(data.frame())
   }
   
   tryCatch({
-    # Get comprehensive state data for mapping
+    # Get data from lexml_documents table
     result <- dbGetQuery(db_pool, "
       SELECT 
         bs.abbrev,
@@ -733,24 +733,14 @@ get_simple_map_data <- function() {
         bs.capital,
         bs.lat,
         bs.lng,
-        COALESCE(doc_counts.total_docs, 0) as total_docs,
-        COALESCE(doc_counts.legislacao, 0) as legislacao,
-        COALESCE(doc_counts.jurisprudencia, 0) as jurisprudencia,
-        COALESCE(doc_counts.doutrina, 0) as doutrina,
-        COALESCE(doc_counts.outros, 0) as outros,
-        COALESCE(doc_counts.proposicoes, 0) as proposicoes
+        COALESCE(doc_counts.total_docs, 0) as total_docs
       FROM brazilian_states bs
       LEFT JOIN (
         SELECT 
           estado as abbrev,
-          COUNT(*) as total_docs,
-          SUM(CASE WHEN categoria = 'Legislacao' THEN 1 ELSE 0 END) as legislacao,
-          SUM(CASE WHEN categoria = 'Jurisprudencia' THEN 1 ELSE 0 END) as jurisprudencia,
-          SUM(CASE WHEN categoria = 'Doutrina' THEN 1 ELSE 0 END) as doutrina,
-          SUM(CASE WHEN categoria = 'Outros' THEN 1 ELSE 0 END) as outros,
-          SUM(CASE WHEN categoria = 'Proposicoes' THEN 1 ELSE 0 END) as proposicoes
-        FROM documents 
-        WHERE estado IS NOT NULL
+          COUNT(*) as total_docs
+        FROM lexml_documents 
+        WHERE estado IS NOT NULL AND estado != ''
         GROUP BY estado
       ) doc_counts ON bs.abbrev = doc_counts.abbrev
       WHERE COALESCE(doc_counts.total_docs, 0) > 0
@@ -760,8 +750,167 @@ get_simple_map_data <- function() {
     return(result)
     
   }, error = function(e) {
-    cat("ERROR getting map data:", e$message, "\n")
+    cat("ERROR getting map1 data:", e$message, "\n")
     return(data.frame())
+  })
+}
+
+#' Get map data for Interactive Map 2 (Legislation tables)
+#' @return Data frame with state data for legislation
+get_map2_data <- function() {
+  if (is.null(db_pool)) {
+    return(data.frame())
+  }
+  
+  tryCatch({
+    # Get data from all lexml_legislacao_* tables
+    result <- dbGetQuery(db_pool, "
+      SELECT 
+        bs.abbrev,
+        bs.name,
+        bs.region,
+        bs.capital,
+        bs.lat,
+        bs.lng,
+        COALESCE(doc_counts.total_docs, 0) as total_docs
+      FROM brazilian_states bs
+      LEFT JOIN (
+        SELECT 
+          estado as abbrev,
+          COUNT(*) as total_docs
+        FROM (
+          SELECT estado FROM lexml_legislacao_aereo WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_legislacao_geral WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_legislacao_maritimo WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_legislacao_rodoviario WHERE estado IS NOT NULL AND estado != ''
+        ) combined
+        GROUP BY estado
+      ) doc_counts ON bs.abbrev = doc_counts.abbrev
+      WHERE COALESCE(doc_counts.total_docs, 0) > 0
+      ORDER BY total_docs DESC
+    ")
+    
+    return(result)
+    
+  }, error = function(e) {
+    cat("ERROR getting map2 data:", e$message, "\n")
+    return(data.frame())
+  })
+}
+
+#' Get map data for Interactive Map 3 (Jurisprudence + Propositions)
+#' @return Data frame with state data for jurisprudence and propositions
+get_map3_data <- function() {
+  if (is.null(db_pool)) {
+    return(data.frame())
+  }
+  
+  tryCatch({
+    # Get data from all lexml_jurisprudencia_* and lexml_proposicoes_* tables
+    result <- dbGetQuery(db_pool, "
+      SELECT 
+        bs.abbrev,
+        bs.name,
+        bs.region,
+        bs.capital,
+        bs.lat,
+        bs.lng,
+        COALESCE(doc_counts.total_docs, 0) as total_docs
+      FROM brazilian_states bs
+      LEFT JOIN (
+        SELECT 
+          estado as abbrev,
+          COUNT(*) as total_docs
+        FROM (
+          SELECT estado FROM lexml_jurisprudencia_aereo WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_jurisprudencia_geral WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_jurisprudencia_maritimo WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_jurisprudencia_rodoviario WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_proposicoes_aereo WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_proposicoes_geral WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_proposicoes_maritimo WHERE estado IS NOT NULL AND estado != ''
+          UNION ALL
+          SELECT estado FROM lexml_proposicoes_rodoviario WHERE estado IS NOT NULL AND estado != ''
+        ) combined
+        GROUP BY estado
+      ) doc_counts ON bs.abbrev = doc_counts.abbrev
+      WHERE COALESCE(doc_counts.total_docs, 0) > 0
+      ORDER BY total_docs DESC
+    ")
+    
+    return(result)
+    
+  }, error = function(e) {
+    cat("ERROR getting map3 data:", e$message, "\n")
+    return(data.frame())
+  })
+}
+
+#' Get dashboard metrics from lexml_documents
+#' @return List with dashboard statistics
+get_lexml_dashboard_metrics <- function() {
+  if (is.null(db_pool)) {
+    return(list(
+      total_docs = 0,
+      states_with_docs = 0,
+      municipalities_with_docs = 0,
+      date_range = "No data"
+    ))
+  }
+  
+  tryCatch({
+    # Get metrics from lexml_documents table
+    metrics <- dbGetQuery(db_pool, "
+      SELECT 
+        COUNT(*) as total_docs,
+        COUNT(DISTINCT CASE WHEN estado IS NOT NULL AND estado != '' AND estado != 'BR' THEN estado END) as states_with_docs,
+        COUNT(DISTINCT CASE WHEN municipio IS NOT NULL AND municipio != '' THEN municipio END) as municipalities_with_docs,
+        MIN(CASE WHEN data ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN data::date ELSE NULL END) as min_date,
+        MAX(CASE WHEN data ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN data::date ELSE NULL END) as max_date
+      FROM lexml_documents
+    ")
+    
+    if (nrow(metrics) > 0) {
+      row <- metrics[1, ]
+      date_range <- "No date range"
+      
+      if (!is.na(row$min_date) && !is.na(row$max_date)) {
+        date_range <- paste0(format(as.Date(row$min_date), "%Y"), " - ", 
+                           format(as.Date(row$max_date), "%Y"))
+      }
+      
+      return(list(
+        total_docs = as.numeric(row$total_docs),
+        states_with_docs = as.numeric(row$states_with_docs),
+        municipalities_with_docs = as.numeric(row$municipalities_with_docs),
+        date_range = date_range
+      ))
+    }
+    
+    return(list(
+      total_docs = 0,
+      states_with_docs = 0,
+      municipalities_with_docs = 0,
+      date_range = "No data"
+    ))
+    
+  }, error = function(e) {
+    cat("ERROR getting dashboard metrics:", e$message, "\n")
+    return(list(
+      total_docs = 0,
+      states_with_docs = 0,
+      municipalities_with_docs = 0,
+      date_range = "No data"
+    ))
   })
 }
 

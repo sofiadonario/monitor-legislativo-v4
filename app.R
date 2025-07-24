@@ -1251,10 +1251,10 @@ server <- function(input, output, session) {
   
   # === MAP IMPLEMENTATIONS ===
   
-  # Total Documents Map
+  # Total Documents Map (from lexml_documents)
   output$totalDocumentsMap <- renderLeaflet({
     tryCatch({
-      map_data <- get_simple_map_data()
+      map_data <- get_map1_data()  # Use data from lexml_documents
       
       if (nrow(map_data) == 0) {
         # Fallback map with Brazil center
@@ -1262,7 +1262,7 @@ server <- function(input, output, session) {
           addTiles() %>%
           setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
           addMarker(lng = -47.86, lat = -15.83, 
-                   popup = "No geographic data available"))
+                   popup = "No geographic data available from lexml_documents"))
       }
       
       # Create leaflet map with state markers
@@ -4233,7 +4233,7 @@ server <- function(input, output, session) {
   output$lexmlTotalDocs <- renderValueBox({
     metrics <- lexml_metrics()
     valueBox(
-      value = format(metrics$total_documents, big.mark = ","),
+      value = format(metrics$total_docs, big.mark = ","),
       subtitle = "Documents Collected",
       icon = icon("file-alt"),
       color = "blue"
@@ -4243,7 +4243,7 @@ server <- function(input, output, session) {
   output$lexmlStatesPercentage <- renderValueBox({
     metrics <- lexml_metrics()
     valueBox(
-      value = paste0(metrics$states_percentage, "%"),
+      value = paste0(round(100 * metrics$states_with_docs / 27, 1), "%"),
       subtitle = "States with Documents",
       icon = icon("map-marked-alt"),
       color = "green"
@@ -4253,7 +4253,7 @@ server <- function(input, output, session) {
   output$lexmlMunicipalitiesPercentage <- renderValueBox({
     metrics <- lexml_metrics()
     valueBox(
-      value = paste0(metrics$municipalities_percentage, "%"),
+      value = paste0(round(100 * metrics$municipalities_with_docs / 5570, 1), "%"),
       subtitle = "Municipalities with Documents",
       icon = icon("city"),
       color = "orange"
