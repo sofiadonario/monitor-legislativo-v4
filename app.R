@@ -47,6 +47,14 @@ if (file.exists("dashboard_debug_fix.R")) {
 # Load map generator module for geographic visualization
 source("scripts/R/map_generator.R")
 
+# Load emergency database connection fix first
+if (file.exists("database_connection_emergency_fix.R")) {
+  source("database_connection_emergency_fix.R")
+  cat("🚨 Emergency database connection fix loaded\n")
+} else {
+  cat("⚠️ Database connection fix not found\n")
+}
+
 # Load emergency dashboard fix to resolve complete failure
 if (file.exists("emergency_dashboard_fix.R")) {
   source("emergency_dashboard_fix.R")
