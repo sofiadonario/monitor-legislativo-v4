@@ -119,9 +119,9 @@ clean_loaded_data <- function(data) {
       tipo_doc = case_when(
         !is.na(categoria) ~ tolower(categoria),
         !is.na(categoria_file) ~ tolower(categoria_file),
-        grepl("lei|decreto|portaria|resolução", tolower(tipo), na.rm = TRUE) ~ "legislacao",
-        grepl("jurisprudência|decisão|acórdão", tolower(tipo), na.rm = TRUE) ~ "jurisprudencia",
-        grepl("doutrina|livro|artigo", tolower(tipo), na.rm = TRUE) ~ "doutrina",
+        grepl("lei|decreto|portaria|resolução", tolower(tipo)) ~ "legislacao",
+        grepl("jurisprudência|decisão|acórdão", tolower(tipo)) ~ "jurisprudencia",
+        grepl("doutrina|livro|artigo", tolower(tipo)) ~ "doutrina",
         TRUE ~ "outros"
       ),
       

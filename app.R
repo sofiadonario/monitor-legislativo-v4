@@ -85,6 +85,14 @@ if (file.exists("emergency_app_patch.R")) {
   cat("⚠️ Emergency app patch not found\n")
 }
 
+# Load data display fix with CSV fallback
+if (file.exists("fix_data_display.R")) {
+  source("fix_data_display.R")
+  cat("🔧 Data display fix loaded - CSV fallback enabled\n")
+} else {
+  cat("⚠️ Data display fix not found\n")
+}
+
 source("scripts/R/enhanced_search.R")
 
 # Load LexML geographic analytics
