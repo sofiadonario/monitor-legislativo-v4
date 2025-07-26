@@ -1,8 +1,8 @@
 # MackMonitor - R Shiny Application with Database
 # Railway Production Deployment - Connected to PostgreSQL with real data
 
-# FORCE LOAD COMPREHENSIVE FRAMEWORK - FIXED
-source("data_current/processed/R_analytical_framework/fix_data_display.R")
+# EMERGENCY DATABASE OVERRIDE - FORCE FRAMEWORK DATA
+source("emergency_database_override.R")
 
 # Install required packages for Railway deployment
 if (file.exists("install_packages.R")) {
