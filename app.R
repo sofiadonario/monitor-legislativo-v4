@@ -94,14 +94,8 @@ get_simple_map_data <- function(...) {
   return(get_map_data())
 }
 
-# Database function hijacking
-dbGetQuery <- function(conn, statement, ...) {
-  cat("🔄 EMBEDDED Database query HIJACKED\n")
-  if (grepl("COUNT", statement, ignore.case = TRUE)) {
-    return(data.frame(count = 278152))
-  }
-  return(COMPREHENSIVE_DATA[1:100, ])
-}
+# DATABASE HIJACKING REMOVED - WAS CAUSING DATA LOADING ERRORS
+# Let the real database work, only override display functions
 
 # Force database_connected to TRUE
 database_connected <- TRUE
