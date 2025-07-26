@@ -1,6 +1,13 @@
 # MackMonitor - R Shiny Application with Database
 # Railway Production Deployment - Connected to PostgreSQL with real data
 
+# FORCE LOAD COMPREHENSIVE FRAMEWORK
+if (file.exists("force_comprehensive_framework.R")) {
+  source("force_comprehensive_framework.R")
+} else {
+  DEBUG_INFO <<- "❌ force_comprehensive_framework.R not found"
+}
+
 # Install required packages for Railway deployment
 if (file.exists("install_packages.R")) {
   source("install_packages.R")
@@ -944,11 +951,12 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   
   # Debug Status Output
+  # Debug Status Output (ROBUST)
   output$debug_status_display <- renderText({
     if (exists("DEBUG_INFO")) {
       return(DEBUG_INFO)
     } else {
-      return("Debug info not available")
+      return(paste0("❌ DEBUG_INFO not available at ", Sys.time(), "\nWorking dir: ", getwd(), "\nPort: ", Sys.getenv("PORT", "not_set")))
     }
   })
 
