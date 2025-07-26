@@ -97,6 +97,34 @@ if (file.exists("emergency_data_fix.R")) {
   cat("🔧 Data display fix loaded - CSV fallback enabled\n")
 } else {
   cat("⚠️ No data display fix found\n")
+
+# 🚀 COMPREHENSIVE FRAMEWORK INTEGRATION
+# Load the comprehensive Brazilian Legislative Analytics Framework (134,014 records)
+if (file.exists("comprehensive_framework_patch.R")) {
+  source("comprehensive_framework_patch.R")
+  cat("🎯 Comprehensive Framework loaded - All 8 analytics modules ready!\n")
+} else {
+  cat("⚠️ Comprehensive framework patch not found\n")
+}
+
+}
+
+# 🚀 COMPREHENSIVE FRAMEWORK INTEGRATION
+# Load the comprehensive Brazilian Legislative Analytics Framework (134,014 records)
+if (file.exists("comprehensive_framework_patch.R")) {
+  source("comprehensive_framework_patch.R")
+  cat("🎯 Comprehensive Framework loaded - All 8 analytics modules ready!\n")
+} else {
+  cat("⚠️ Comprehensive framework patch not found\n")
+}
+
+# 🚀 COMPREHENSIVE FRAMEWORK INTEGRATION
+# Load the comprehensive Brazilian Legislative Analytics Framework (134,014 records)
+if (file.exists("comprehensive_framework_patch.R")) {
+  source("comprehensive_framework_patch.R")
+  cat("🎯 Comprehensive Framework loaded - All 8 analytics modules ready!\n")
+} else {
+  cat("⚠️ Comprehensive framework patch not found\n")
 }
 
 source("scripts/R/enhanced_search.R")

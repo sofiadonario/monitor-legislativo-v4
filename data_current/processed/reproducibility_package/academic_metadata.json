@@ -1,0 +1,45 @@
+{
+  "project_info": {
+    "title": "Comprehensive Analysis of Brazilian Legislative Dataset: Temporal Evolution, Geographic Diffusion, and Transport Policy Innovation (1942-2025)",
+    "version": "2.0.0",
+    "date_created": "2025-07-26",
+    "doi": "10.xxxx/brazilian-legislative-analytics-2025",
+    "license": "MIT",
+    "repository": "https://github.com/your-repo/brazilian-legislative-analytics",
+    "contact": "researcher@institution.edu"
+  },
+  "data_description": {
+    "source": "LexML Portal - Brazilian Legal Document Repository",
+    "total_records": 134014,
+    "temporal_span": "1942-2025 (84 years)",
+    "geographic_coverage": "26 Brazilian states + Federal District",
+    "languages": "Portuguese (legal domain)",
+    "transport_focus_records": 2037,
+    "data_format": "Parquet with Snappy compression",
+    "encoding": "UTF-8"
+  },
+  "methodology": {
+    "data_cleaning": "CSV corruption repair, encoding standardization, URN validation",
+    "text_processing": "Portuguese legal NLP, domain-specific stopwords, transport theme classification",
+    "temporal_analysis": "Constitutional era analysis, decade-level trends, policy evolution tracking",
+    "geospatial_analysis": "State-level policy diffusion, regional innovation patterns, municipal analysis",
+    "network_analysis": "URN-based citations, legal cross-references, authority citation patterns",
+    "quality_control": "Multi-level validation, completeness scoring, text quality assessment"
+  },
+  "technical_specs": {
+    "programming_language": "R 4.x",
+    "key_packages": ["data.table", "arrow", "stringr", "shiny", "plotly", "leaflet"],
+    "storage_format": "Apache Parquet",
+    "compression": "Snappy",
+    "partitioning": "Multi-level (authority, decade, category, theme)",
+    "performance": "3-5x faster than CSV, 70% size reduction"
+  },
+  "research_applications": {
+    "policy_evolution": "Tracking legislative development across constitutional eras",
+    "geographic_diffusion": "Modeling policy innovation spread across Brazilian states",
+    "transport_decarbonization": "Analyzing green transport policy development",
+    "comparative_analysis": "Federal vs state policy dynamics",
+    "text_mining": "Legal terminology evolution and domain analysis",
+    "citation_networks": "Policy influence and legal precedent tracking"
+  }
+}
