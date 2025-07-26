@@ -1,19 +1,8 @@
 # MackMonitor - R Shiny Application with Database
 # Railway Production Deployment - Connected to PostgreSQL with real data
 
-# FORCE LOAD COMPREHENSIVE FRAMEWORK
-# EMBEDDED COMPREHENSIVE FRAMEWORK (NO EXTERNAL FILES)
-if (file.exists("embedded_comprehensive_framework.R")) {
-  source("embedded_comprehensive_framework.R")
-} else {
-  cat("❌ embedded_comprehensive_framework.R not found\n")
-  DEBUG_INFO <<- "❌ Embedded framework not found"
-}
-if (file.exists("force_comprehensive_framework.R")) {
-  source("force_comprehensive_framework.R")
-} else {
-  DEBUG_INFO <<- "❌ force_comprehensive_framework.R not found"
-}
+# FORCE LOAD COMPREHENSIVE FRAMEWORK - FIXED
+source("data_current/processed/R_analytical_framework/fix_data_display.R")
 
 # Install required packages for Railway deployment
 if (file.exists("install_packages.R")) {
