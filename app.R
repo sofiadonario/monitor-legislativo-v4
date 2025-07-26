@@ -1,152 +1,179 @@
 # MackMonitor - R Shiny Application with Database
 # Railway Production Deployment - Connected to PostgreSQL with real data
 
+source("legacy/r-shiny/r-shiny-consolidated/R/database.R")
+init_database()
+
+shiny::onStop(function() {
+  close_database()
+})
+
+get_document_types <- function() {
+  if (is.null(.db_pool)) return(c())
+  tryCatch({
+    dbGetQuery(.db_pool, "SELECT DISTINCT tipo FROM documents ORDER BY tipo")$tipo
+  }, error = function(e) {
+    cat("Error getting document types:", e$message, "\n")
+    c()
+  })
+}
+
+get_states <- function() {
+  if (is.null(.db_pool)) return(c())
+  tryCatch({
+    dbGetQuery(.db_pool, "SELECT DISTINCT estado FROM documents WHERE estado IS NOT NULL ORDER BY estado")$estado
+  }, error = function(e) {
+    cat("Error getting states:", e$message, "\n")
+    c()
+  })
+}
+
 # EMERGENCY DATABASE OVERRIDE - EMBEDDED IN APP.R FOR RAILWAY
-cat("🚨 LOADING EMBEDDED EMERGENCY DATABASE OVERRIDE...\n")
+# cat("🚨 LOADING EMBEDDED EMERGENCY DATABASE OVERRIDE...\n")
 
-# Brazilian states with coordinates for map rendering
-BRAZILIAN_STATES <- data.frame(
-  estado = c("SP", "RJ", "MG", "RS", "PR", "SC", "BA", "GO", "PE", "CE", 
-             "PA", "MT", "MS", "DF", "MA", "RO", "AM", "AL", "RN", "PB", 
-             "ES", "PI", "AC", "SE", "RR", "AP", "TO"),
-  state_name = c("São Paulo", "Rio de Janeiro", "Minas Gerais", "Rio Grande do Sul", 
-                 "Paraná", "Santa Catarina", "Bahia", "Goiás", "Pernambuco", "Ceará",
-                 "Pará", "Mato Grosso", "Mato Grosso do Sul", "Distrito Federal", 
-                 "Maranhão", "Rondônia", "Amazonas", "Alagoas", "Rio Grande do Norte", 
-                 "Paraíba", "Espírito Santo", "Piauí", "Acre", "Sergipe", 
-                 "Roraima", "Amapá", "Tocantins"),
-  lat = c(-23.55, -22.91, -19.92, -30.03, -25.43, -27.59, -12.97, -16.69, -8.05, -3.72,
-          -1.46, -15.60, -20.45, -15.78, -2.54, -8.76, -3.12, -9.67, -5.79, -7.12,
-          -20.29, -5.09, -9.97, -10.95, 2.82, 0.04, -10.25),
-  lng = c(-46.63, -43.17, -43.94, -51.23, -49.27, -48.55, -38.51, -49.25, -34.88, -38.54,
-          -48.50, -56.10, -54.62, -47.93, -44.28, -63.90, -60.02, -35.74, -35.20, -36.78,
-          -40.31, -42.77, -67.81, -37.07, -60.67, -51.07, -48.36),
-  stringsAsFactors = FALSE
-)
+# # Brazilian states with coordinates for map rendering
+# BRAZILIAN_STATES <- data.frame(
+#   estado = c("SP", "RJ", "MG", "RS", "PR", "SC", "BA", "GO", "PE", "CE", 
+#              "PA", "MT", "MS", "DF", "MA", "RO", "AM", "AL", "RN", "PB", 
+#              "ES", "PI", "AC", "SE", "RR", "AP", "TO"),
+#   state_name = c("São Paulo", "Rio de Janeiro", "Minas Gerais", "Rio Grande do Sul", 
+#                  "Paraná", "Santa Catarina", "Bahia", "Goiás", "Pernambuco", "Ceará",
+#                  "Pará", "Mato Grosso", "Mato Grosso do Sul", "Distrito Federal", 
+#                  "Maranhão", "Rondônia", "Amazonas", "Alagoas", "Rio Grande do Norte", 
+#                  "Paraíba", "Espírito Santo", "Piauí", "Acre", "Sergipe", 
+#                  "Roraima", "Amapá", "Tocantins"),
+#   lat = c(-23.55, -22.91, -19.92, -30.03, -25.43, -27.59, -12.97, -16.69, -8.05, -3.72,
+#           -1.46, -15.60, -20.45, -15.78, -2.54, -8.76, -3.12, -9.67, -5.79, -7.12,
+#           -20.29, -5.09, -9.97, -10.95, 2.82, 0.04, -10.25),
+#   lng = c(-46.63, -43.17, -43.94, -51.23, -49.27, -48.55, -38.51, -49.25, -34.88, -38.54,
+#           -48.50, -56.10, -54.62, -47.93, -44.28, -63.90, -60.02, -35.74, -35.20, -36.78,
+#           -40.31, -42.77, -67.81, -37.07, -60.67, -51.07, -48.36),
+#   stringsAsFactors = FALSE
+# )
 
-# Enhanced comprehensive dataset (278,152 documents)
-set.seed(42)
-COMPREHENSIVE_DATA <- data.frame(
-  id = 1:278152,
-  titulo = paste("Legislative Document", 1:278152),
-  data = seq(as.Date("1942-01-01"), as.Date("2025-12-31"), length.out = 278152),
-  ano = as.numeric(format(seq(as.Date("1942-01-01"), as.Date("2025-12-31"), length.out = 278152), "%Y")),
-  estado = sample(BRAZILIAN_STATES$estado, 278152, replace = TRUE, 
-                 prob = c(0.35, 0.15, 0.12, 0.08, 0.06, 0.04, 0.04, 0.03, 0.03, 0.02, 
-                         rep(0.008, 17))),
-  categoria = sample(c("jurisprudencia", "legislacao", "doutrina", "outros"), 278152, 
-                    replace = TRUE, prob = c(0.42, 0.35, 0.15, 0.08)),
-  tipo = sample(c("jurisprudencia", "legislacao", "doutrina", "outros"), 278152, 
-               replace = TRUE, prob = c(0.42, 0.35, 0.15, 0.08)),
-  stringsAsFactors = FALSE
-)
+# # Enhanced comprehensive dataset (278,152 documents)
+# set.seed(42)
+# COMPREHENSIVE_DATA <- data.frame(
+#   id = 1:278152,
+#   titulo = paste("Legislative Document", 1:278152),
+#   data = seq(as.Date("1942-01-01"), as.Date("2025-12-31"), length.out = 278152),
+#   ano = as.numeric(format(seq(as.Date("1942-01-01"), as.Date("2025-12-31"), length.out = 278152), "%Y")),
+#   estado = sample(BRAZILIAN_STATES$estado, 278152, replace = TRUE, 
+#                  prob = c(0.35, 0.15, 0.12, 0.08, 0.06, 0.04, 0.04, 0.03, 0.03, 0.02, 
+#                          rep(0.008, 17))),
+#   categoria = sample(c("jurisprudencia", "legislacao", "doutrina", "outros"), 278152, 
+#                     replace = TRUE, prob = c(0.42, 0.35, 0.15, 0.08)),
+#   tipo = sample(c("jurisprudencia", "legislacao", "doutrina", "outros"), 278152, 
+#                replace = TRUE, prob = c(0.42, 0.35, 0.15, 0.08)),
+#   stringsAsFactors = FALSE
+# )
 
-# Complete function overrides
-get_total_documents <- function(...) {
-  cat("🔄 EMBEDDED get_total_documents: 278,152\n")
-  return(278152)
-}
+# # Complete function overrides
+# get_total_documents <- function(...) {
+#   cat("🔄 EMBEDDED get_total_documents: 278,152\n")
+#   return(278152)
+# }
 
-get_documents_data <- function(filters = NULL) { 
-  cat("🔄 EMBEDDED get_documents_data\n")
-  return(COMPREHENSIVE_DATA) 
-}
+# get_documents_data <- function(filters = NULL) { 
+#   cat("🔄 EMBEDDED get_documents_data\n")
+#   return(COMPREHENSIVE_DATA) 
+# }
 
-get_documents <- function(limit = NULL) {
-  cat("🔄 EMBEDDED get_documents called with limit:", ifelse(is.null(limit), "NULL", limit), "\n")
-  if (!is.null(limit) && is.numeric(limit)) {
-    cat("🔄 Returning", limit, "documents from COMPREHENSIVE_DATA\n")
-    return(COMPREHENSIVE_DATA[1:min(limit, nrow(COMPREHENSIVE_DATA)), ])
-  }
-  cat("🔄 Returning ALL", nrow(COMPREHENSIVE_DATA), "documents from COMPREHENSIVE_DATA\n")
-  return(COMPREHENSIVE_DATA)
-}
+# get_documents <- function(limit = NULL) {
+#   cat("🔄 EMBEDDED get_documents called with limit:", ifelse(is.null(limit), "NULL", limit), "\n")
+#   if (!is.null(limit) && is.numeric(limit)) {
+#     cat("🔄 Returning", limit, "documents from COMPREHENSIVE_DATA\n")
+#     return(COMPREHENSIVE_DATA[1:min(limit, nrow(COMPREHENSIVE_DATA)), ])
+#   }
+#   cat("🔄 Returning ALL", nrow(COMPREHENSIVE_DATA), "documents from COMPREHENSIVE_DATA\n")
+#   return(COMPREHENSIVE_DATA)
+# }
 
-get_emergency_dashboard_metrics <- function(...) {
-  cat("🔄 EMBEDDED get_emergency_dashboard_metrics\n")
-  return(list(
-    total_documents = 278152,
-    jurisprudencia_count = sum(COMPREHENSIVE_DATA$categoria == "jurisprudencia"),
-    legislacao_count = sum(COMPREHENSIVE_DATA$categoria == "legislacao"),
-    outros_count = sum(COMPREHENSIVE_DATA$categoria == "outros"),
-    doutrina_count = sum(COMPREHENSIVE_DATA$categoria == "doutrina")
-  ))
-}
+# get_emergency_dashboard_metrics <- function(...) {
+#   cat("🔄 EMBEDDED get_emergency_dashboard_metrics\n")
+#   return(list(
+#     total_documents = 278152,
+#     jurisprudencia_count = sum(COMPREHENSIVE_DATA$categoria == "jurisprudencia"),
+#     legislacao_count = sum(COMPREHENSIVE_DATA$categoria == "legislacao"),
+#     outros_count = sum(COMPREHENSIVE_DATA$categoria == "outros"),
+#     doutrina_count = sum(COMPREHENSIVE_DATA$categoria == "doutrina")
+#   ))
+# }
 
-get_document_stats <- function(...) {
-  cat("🔄 EMBEDDED get_document_stats\n")
-  type_stats <- COMPREHENSIVE_DATA %>%
-    dplyr::count(tipo, name = "Count") %>%
-    dplyr::arrange(desc(Count)) %>%
-    dplyr::rename(Type = tipo)
-  return(list(document_types = as.data.frame(type_stats)))
-}
+# get_document_stats <- function(...) {
+#   cat("🔄 EMBEDDED get_document_stats\n")
+#   type_stats <- COMPREHENSIVE_DATA %>%
+#     dplyr::count(tipo, name = "Count") %>%
+#     dplyr::arrange(desc(Count)) %>%
+#     dplyr::rename(Type = tipo)
+#   return(list(document_types = as.data.frame(type_stats)))
+# }
 
-get_map_data <- function(...) {
-  cat("🔄 EMBEDDED get_map_data with coordinates\n")
-  state_counts <- table(COMPREHENSIVE_DATA$estado)
-  map_data <- merge(BRAZILIAN_STATES, 
-                    data.frame(estado = names(state_counts), 
-                              document_count = as.numeric(state_counts),
-                              stringsAsFactors = FALSE),
-                    by = "estado", all.x = TRUE)
-  map_data$document_count[is.na(map_data$document_count)] <- 0
-  return(map_data)
-}
+# get_map_data <- function(...) {
+#   cat("🔄 EMBEDDED get_map_data with coordinates\n")
+#   state_counts <- table(COMPREHENSIVE_DATA$estado)
+#   map_data <- merge(BRAZILIAN_STATES, 
+#                     data.frame(estado = names(state_counts), 
+#                               document_count = as.numeric(state_counts),
+#                               stringsAsFactors = FALSE),
+#                     by = "estado", all.x = TRUE)
+#   map_data$document_count[is.na(map_data$document_count)] <- 0
+#   return(map_data)
+# }
 
-get_map1_data <- function(...) {
-  cat("🔄 EMBEDDED get_map1_data\n")
-  return(get_map_data())
-}
+# get_map1_data <- function(...) {
+#   cat("🔄 EMBEDDED get_map1_data\n")
+#   return(get_map_data())
+# }
 
-get_simple_map_data <- function(...) {
-  cat("🔄 EMBEDDED get_simple_map_data\n")
-  return(get_map_data())
-}
+# get_simple_map_data <- function(...) {
+#   cat("🔄 EMBEDDED get_simple_map_data\n")
+#   return(get_map__data())
+# }
 
-# Additional critical missing functions
-load_lexml_data <- function(...) {
-  cat("🔄 EMBEDDED load_lexml_data\n")
-  return(COMPREHENSIVE_DATA)
-}
+# # Additional critical missing functions
+# load_lexml_data <- function(...) {
+#   cat("🔄 EMBEDDED load_lexml_data\n")
+#   return(COMPREHENSIVE_DATA)
+# }
 
-load_lexml_metadata <- function(...) {
-  cat("🔄 EMBEDDED load_lexml_metadata\n")
-  return(list(
-    total_documents = 278152,
-    last_updated = Sys.Date(),
-    data_quality = "96.5%"
-  ))
-}
+# load_lexml_metadata <- function(...) {
+#   cat("🔄 EMBEDDED load_lexml_metadata\n")
+#   return(list(
+#     total_documents = 278152,
+#     last_updated = Sys.Date(),
+#     data_quality = "96.5%"
+#   ))
+# }
 
-get_search_analytics <- function(...) {
-  cat("🔄 EMBEDDED get_search_analytics\n")
-  return(COMPREHENSIVE_DATA)
-}
+# get_search_analytics <- function(...) {
+#   cat("🔄 EMBEDDED get_search_analytics\n")
+#   return(COMPREHENSIVE_DATA)
+# }
 
-load_brazil_geography <- function(year = 2020, cache_data = TRUE) {
-  cat("🔄 EMBEDDED load_brazil_geography for year:", year, "\n")
-  return(BRAZILIAN_STATES)
-}
+# load_brazil_geography <- function(year = 2020, cache_data = TRUE) {
+#   cat("🔄 EMBEDDED load_brazil_geography for year:", year, "\n")
+#   return(BRAZILIAN_STATES)
+# }
 
-load_specific_lexml_data <- function(category = NULL, transport_mode = NULL, ...) {
-  cat("🔄 EMBEDDED load_specific_lexml_data - category:", category, "transport_mode:", transport_mode, "\n")
-  filtered_data <- COMPREHENSIVE_DATA
-  if (!is.null(category)) {
-    if (category == "legislation") {
-      filtered_data <- filtered_data[filtered_data$categoria == "legislacao", ]
-    } else if (category == "jurisprudence") {
-      filtered_data <- filtered_data[filtered_data$categoria == "jurisprudencia", ]
-    }
-  }
-  return(filtered_data)
-}
+# load_specific_lexml_data <- function(category = NULL, transport_mode = NULL, ...) {
+#   cat("🔄 EMBEDDED load_specific_lexml_data - category:", category, "transport_mode:", transport_mode, "\n")
+#   filtered_data <- COMPREHENSIVE_DATA
+#   if (!is.null(category)) {
+#     if (category == "legislation") {
+#       filtered_data <- filtered_data[filtered_data$categoria == "legislacao", ]
+#     } else if (category == "jurisprudence") {
+#       filtered_data <- filtered_data[filtered_data$categoria == "jurisprudencia", ]
+#     }
+#   }
+#   return(filtered_data)
+# }
 
-# DATABASE HIJACKING REMOVED - WAS CAUSING DATA LOADING ERRORS
-# Let the real database work, only override display functions
+# # DATABASE HIJACKING REMOVED - WAS CAUSING DATA LOADING ERRORS
+# # Let the real database work, only override display functions
 
-# Force database_connected to TRUE
-database_connected <- TRUE
+# # Force database_connected to TRUE
+# database_connected <- TRUE
 # Load additional comprehensive function overrides as backup
 if (file.exists("comprehensive_function_overrides.R")) {
   source("comprehensive_function_overrides.R")
@@ -1212,130 +1239,42 @@ server <- function(input, output, session) {
   
   # Simple reactive function to get documents when needed
   get_dashboard_data <- reactive({
-    if (database_connected && !is.null(db_pool)) {
-      tryCatch({
-        cat("🔄 Loading dashboard data from database...\n")
-        data <- get_documents(limit = 1000)
-        if (!is.null(data) && nrow(data) > 0) {
-          cat("✅ Dashboard data loaded:", nrow(data), "documents\n")
-          return(data)
-        }
-      }, error = function(e) {
-        cat("❌  Dashboard data error:", e$message, "\n")
-      })
-    }
-    return(data.frame())
+    load_legislative_data(limit = 1000)
   })
   
   # Initialize data on startup with force refresh
   observe({
     cat("🔄 Initializing application data with force refresh...\n")
     
-    # Load data from PostgreSQL database (preferred) or CSV fallback
+    # Load data from PostgreSQL database
     tryCatch({
-      if (database_connected && !is.null(db_pool)) {
-        # Load data from PostgreSQL database
-        cat("🔄 Loading data from PostgreSQL database...\n")
-        documents_from_db <- get_documents()
-        if (!is.null(documents_from_db) && nrow(documents_from_db) > 0) {
-          cat("📊 Loaded", nrow(documents_from_db), "documents from PostgreSQL database\n")
-          
-          # Transform database data to match expected structure
-          lexml_data_loaded <- documents_from_db %>%
-            mutate(
-              State = estado,
-              Municipality = ifelse(is.na(municipio) | municipio == "", "", municipio),
-              Title = titulo,
-              Enacting_date = enacting_date,
-              Urn_type = tipo,
-              Document_summary = ifelse(is.null(conteudo), "", as.character(conteudo)),
-              Document_description = ifelse(is.null(document_type_full), "", as.character(document_type_full)),
-              Search_term = ifelse(is.null(search_term), "", as.character(search_term)),
-              Urn = ifelse(is.null(urn), "", as.character(urn)),
-              Url = ifelse(is.null(url), "", as.character(url)),
-              Country = "br",
-              Justice = "",
-              Region = "",
-              Court_class = "",
-              Document_type_full = ifelse(is.null(document_type_full), "", as.character(document_type_full))
-            )
-          
-          values$current_documents <- lexml_data_loaded
-        } else {
-          cat("❌ No data found in PostgreSQL database\n")
-          values$current_documents <- data.frame()
-        }
+      documents_from_db <- load_legislative_data()
+      if (!is.null(documents_from_db) && nrow(documents_from_db) > 0) {
+        cat("📊 Loaded", nrow(documents_from_db), "documents from PostgreSQL database\n")
+        values$current_documents <- documents_from_db
       } else {
-        # Fallback to CSV loading
-        cat("🔄 Database not available, loading LexML data from CSV...\n")
-        lexml_data_loaded <- load_lexml_data()
-        if (!is.null(lexml_data_loaded)) {
-          cat("📊 Loaded", nrow(lexml_data_loaded), "LexML documents from CSV\n")
-          values$current_documents <- lexml_data_loaded
-        } else {
-          cat("❌ No LexML data file found\n")
-          values$current_documents <- data.frame()
-        }
-      }
-      
-      cat("📊 Loaded", ifelse(is.null(values$current_documents), 0, nrow(values$current_documents)), "total documents\n")
-      
-      # Also load LexML metadata and statistics
-      lexml_meta <- load_lexml_metadata()
-      if (!is.null(lexml_meta)) {
-        cat("📊 Loaded LexML metadata and statistics\n")
+        cat("❌ No data found in PostgreSQL database\n")
+        values$current_documents <- data.frame()
       }
     }, error = function(e) {
-      cat("⚠️ Error loading LexML data:", e$message, "\n")
+      cat("⚠️ Error loading data from database:", e$message, "\n")
       values$current_documents <- data.frame()
       cat("📊 No documents loaded\n")
     })
     
-    # Get analytics data from database or LexML fallback
+    # Get analytics data from database
     cat("🔄 Loading analytics data...\n")
-    if (database_connected && !is.null(db_pool)) {
-      cat("🔄 Loading analytics data from PostgreSQL database...\n")
-      values$analytics_data <- get_search_analytics()  # Load analytics data from PostgreSQL
-      if (!is.null(values$analytics_data)) {
-        cat("✅ Analytics data loaded successfully:", values$analytics_data$total_documents, "total documents\n")
-      } else {
-        cat("❌ Failed to load analytics data from database\n")
-      }
+    values$analytics_data <- get_database_stats()
+    if (!is.null(values$analytics_data)) {
+      cat("✅ Analytics data loaded successfully:", values$analytics_data$total_documents, "total documents\n")
     } else {
-      cat("⚠️ Database not connected, using empty analytics data\n")
-      values$analytics_data <- list(
-        total_documents = 0,
-        documents_by_year = data.frame(),
-        documents_by_month = data.frame(),
-        documents_by_state = data.frame(),
-        documents_by_type = data.frame(),
-        documents_by_species = data.frame(),
-        documents_by_gender_species = data.frame(),
-        recent_documents = data.frame(),
-        date_range = list(min = NA, max = NA)
-      )
+      cat("❌ Failed to load analytics data from database\n")
     }
-    cat("📊 Analytics data loading complete\n")
     
-    # Initialize refined CSV data for dashboard
-    cat("🔄 Loading refined CSV data from ./data_current/processed/...\n")
-    tryCatch({
-      initialize_final_csv_data()
-      values$document_overview_stats <- final_dashboard_stats
-      values$legislation_layers <- legislation_layers
-      values$final_jurisprudence_layers <- final_jurisprudence_layers
-      cat("✅ Refined CSV data loaded successfully\n")
-    }, error = function(e) {
-      cat("❌ Error loading refined CSV data:", e$message, "\n")
-      values$document_overview_stats <- NULL
-      values$legislation_layers <- NULL
-      values$final_jurisprudence_layers <- NULL
-    })
-    
-    # Load geographic data for map (use 2020 - latest available year)
+    # Load geographic data for map
     tryCatch({
       cat("🔄 Loading geographic data...\n")
-      values$geographic_data <- load_brazil_geography(year = 2020, cache_data = TRUE)
+      values$geographic_data <- load_geographic_data()
       cat("📊 Geographic data loaded\n")
     }, error = function(e) {
       cat("Error loading geographic data:", e$message, "\n")
@@ -1345,26 +1284,14 @@ server <- function(input, output, session) {
     
     # Populate filter choices
     cat("🔄 Populating filter choices...\n")
-    if (database_connected && !is.null(db_pool)) {
-      updateSelectizeInput(session, "documentTypes", choices = get_document_types())
-      updateSelectizeInput(session, "states", choices = get_states())
-      cat("📊 Filter choices populated from PostgreSQL database\n")
-    } else {
-      updateSelectizeInput(session, "documentTypes", choices = get_lexml_document_types())
-      updateSelectizeInput(session, "states", choices = get_lexml_states())
-      cat("📊 Filter choices populated from CSV fallback\n")
-    }
+    updateSelectizeInput(session, "documentTypes", choices = get_document_types())
+    updateSelectizeInput(session, "states", choices = get_states())
+    cat("📊 Filter choices populated from PostgreSQL database\n")
     cat("✅ Application initialization complete\n")
     
     # Force UI refresh by triggering reactive updates
     cat("🔄 Triggering UI refresh...\n")
     invalidateLater(1000)  # Force refresh after 1 second
-    
-    if (database_connected && !is.null(db_pool)) {
-      cat("✅ Database connection available for additional features\n")
-    } else {
-      cat("⚠️ Database not connected - running with CSV data only\n")
-    }
   })
   
   # Add reactive trigger to force UI updates
@@ -1379,24 +1306,14 @@ server <- function(input, output, session) {
   
   # Database statistics
   output$dbStats <- renderText({
-    if (database_connected && !is.null(db_pool)) {
-      tryCatch({
-        stats <- get_document_stats()
-        paste(
-          "Total Documents:", stats$total_documents, "\n",
-          "Connection Status:", stats$connection_status
-        )
-      }, error = function(e) {
-        paste(
-          "Total Documents: 0\n",
-          "Connection Status: Error -", e$message
-        )
-      })
-    } else {
+    stats <- get_database_stats()
+    if (!is.null(stats)) {
       paste(
-        "Total Documents: 0\n",
-        "Connection Status: No database connection"
+        "Total Documents:", stats$total_documents, "\n",
+        "Last Update:", stats$last_update
       )
+    } else {
+      "Could not load database statistics."
     }
   })
   

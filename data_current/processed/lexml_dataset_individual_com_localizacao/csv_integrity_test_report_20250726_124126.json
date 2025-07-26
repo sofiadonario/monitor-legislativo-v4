@@ -1,0 +1,36 @@
+{
+  "test_timestamp": "2025-07-26T12:40:55.155349",
+  "total_tests": 11,
+  "passed_tests": 7,
+  "failed_tests": 4,
+  "error_tests": 0,
+  "success_rate": 63.64,
+  "test_details": {
+    "failures": [
+      {
+        "test": "test_categorical_value_constraints (__main__.CSVIntegrityTestSuite.test_categorical_value_constraints) (file='lexml_dataset_limpo_classificado_20250722_102507_com_localizacao_cleaned.csv')",
+        "error": "Traceback (most recent call last):\n  File \"/mnt/c/Users/Sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/data_current/processed/lexml_dataset_individual_com_localizacao/csv_integrity_tester.py\", line 172, in test_categorical_value_constraints\n    self.assertEqual(\nAssertionError: 1 != 0 : Unexpected values in column 'categoria' in lexml_dataset_limpo_classificado_20250722_102507_com_localizacao_cleaned.csv: ['geral']\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/mnt/c/Users/Sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/data_current/processed/lexml_dataset_individual_com_localizacao/csv_integrity_tester.py\", line 178, in test_categorical_value_constraints\n    self.fail(f\"Failed to check categorical constraints for {file_path.name}: {str(e)}\")\nAssertionError: Failed to check categorical constraints for lexml_dataset_limpo_classificado_20250722_102507_com_localizacao_cleaned.csv: 1 != 0 : Unexpected values in column 'categoria' in lexml_dataset_limpo_classificado_20250722_102507_com_localizacao_cleaned.csv: ['geral']\n"
+      },
+      {
+        "test": "test_categorical_value_constraints (__main__.CSVIntegrityTestSuite.test_categorical_value_constraints) (file='lexml_doutrina_geral_20250722_102507_com_localizacao_cleaned.csv')",
+        "error": "Traceback (most recent call last):\n  File \"/mnt/c/Users/Sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/data_current/processed/lexml_dataset_individual_com_localizacao/csv_integrity_tester.py\", line 172, in test_categorical_value_constraints\n    self.assertEqual(\nAssertionError: 1 != 0 : Unexpected values in column 'categoria' in lexml_doutrina_geral_20250722_102507_com_localizacao_cleaned.csv: ['geral']\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/mnt/c/Users/Sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/data_current/processed/lexml_dataset_individual_com_localizacao/csv_integrity_tester.py\", line 178, in test_categorical_value_constraints\n    self.fail(f\"Failed to check categorical constraints for {file_path.name}: {str(e)}\")\nAssertionError: Failed to check categorical constraints for lexml_doutrina_geral_20250722_102507_com_localizacao_cleaned.csv: 1 != 0 : Unexpected values in column 'categoria' in lexml_doutrina_geral_20250722_102507_com_localizacao_cleaned.csv: ['geral']\n"
+      },
+      {
+        "test": "test_date_format_consistency (__main__.CSVIntegrityTestSuite.test_date_format_consistency) (file='lexml_dataset_limpo_classificado_20250722_102507_com_localizacao_cleaned.csv')",
+        "error": "Traceback (most recent call last):\n  File \"/mnt/c/Users/Sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/data_current/processed/lexml_dataset_individual_com_localizacao/csv_integrity_tester.py\", line 211, in test_date_format_consistency\n    self.assertEqual(\nAssertionError: 1 != 0 : Invalid datetimes found in data_coleta column in lexml_dataset_limpo_classificado_20250722_102507_com_localizacao_cleaned.csv: 1\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/mnt/c/Users/Sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/data_current/processed/lexml_dataset_individual_com_localizacao/csv_integrity_tester.py\", line 217, in test_date_format_consistency\n    self.fail(f\"Failed to check date formats for {file_path.name}: {str(e)}\")\nAssertionError: Failed to check date formats for lexml_dataset_limpo_classificado_20250722_102507_com_localizacao_cleaned.csv: 1 != 0 : Invalid datetimes found in data_coleta column in lexml_dataset_limpo_classificado_20250722_102507_com_localizacao_cleaned.csv: 1\n"
+      },
+      {
+        "test": "test_date_format_consistency (__main__.CSVIntegrityTestSuite.test_date_format_consistency) (file='lexml_doutrina_geral_20250722_102507_com_localizacao_cleaned.csv')",
+        "error": "Traceback (most recent call last):\n  File \"/mnt/c/Users/Sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/data_current/processed/lexml_dataset_individual_com_localizacao/csv_integrity_tester.py\", line 211, in test_date_format_consistency\n    self.assertEqual(\nAssertionError: 1 != 0 : Invalid datetimes found in data_coleta column in lexml_doutrina_geral_20250722_102507_com_localizacao_cleaned.csv: 1\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/mnt/c/Users/Sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/data_current/processed/lexml_dataset_individual_com_localizacao/csv_integrity_tester.py\", line 217, in test_date_format_consistency\n    self.fail(f\"Failed to check date formats for {file_path.name}: {str(e)}\")\nAssertionError: Failed to check date formats for lexml_doutrina_geral_20250722_102507_com_localizacao_cleaned.csv: 1 != 0 : Invalid datetimes found in data_coleta column in lexml_doutrina_geral_20250722_102507_com_localizacao_cleaned.csv: 1\n"
+      }
+    ],
+    "errors": []
+  },
+  "overall_status": "FAIL",
+  "cleaned_files_tested": 21,
+  "recommendations": [
+    "4 test failures detected. Review failed tests and address data quality issues.",
+    "Categorical value issues detected. Review and standardize categorical data values.",
+    "Date format issues detected. Standardize date formats across all files."
+  ]
+}

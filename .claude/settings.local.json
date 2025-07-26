@@ -132,7 +132,11 @@
       "Bash(psql \"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway\" -f database_table_fix.sql)",
       "Bash(git mv:*)",
       "Bash(./process_all_csvs.sh:*)",
-      "Bash(PGPASSWORD:*)"
+      "Bash(PGPASSWORD:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(for f in *.csv)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(file:*)"
     ]
   },
   "enableAllProjectMcpServers": false
