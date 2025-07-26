@@ -6,6 +6,17 @@ if (file.exists("install_packages.R")) {
   source("install_packages.R")
 }
 
+# Run deployment diagnostic test
+if (file.exists("test_railway_deployment.R")) {
+  cat("🚂 Running Railway deployment diagnostic...\n")
+  source("test_railway_deployment.R")
+}
+
+# Load debug status for UI display
+if (file.exists("debug_status.R")) {
+  source("debug_status.R")
+}
+
 library(shiny)
 library(shinydashboard)
 library(DT)
@@ -338,6 +349,28 @@ ui <- dashboardPage(
     tabItems(
       # Dashboard tab with interactive map and overview
       tabItem(tabName = "dashboard",
+        # Debug Status Box (shows deployment info)
+        # Debug Status Box (shows deployment info)
+        fluidRow(
+          box(
+            title = "🔍 Deployment Status", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 12,
+            height = "100px",
+            verbatimTextOutput("debug_status_display")
+          )
+        ),
+        fluidRow(
+          box(
+            title = "🔍 Deployment Status", 
+            status = "info", 
+            solidHeader = TRUE, 
+            width = 12,
+            height = "100px",
+            verbatimTextOutput("debug_status_display")
+          )
+        ),
         # Enhanced Dashboard with LexML Data
         fluidRow(
           # Updated Document Overview with LexML Metrics
@@ -910,6 +943,15 @@ ui <- dashboardPage(
 # Server logic
 server <- function(input, output, session) {
   
+  # Debug Status Output
+  output$debug_status_display <- renderText({
+    if (exists("DEBUG_INFO")) {
+      return(DEBUG_INFO)
+    } else {
+      return("Debug info not available")
+    }
+  })
+
   # Reactive values
   values <- reactiveValues(
     current_documents = NULL,
