@@ -85,12 +85,18 @@ if (file.exists("emergency_app_patch.R")) {
   cat("⚠️ Emergency app patch not found\n")
 }
 
-# Load data display fix with CSV fallback
-if (file.exists("fix_data_display.R")) {
+# Load emergency data fix for dashboard
+if (file.exists("emergency_data_fix.R")) {
+  source("emergency_data_fix.R")
+  cat("🚨 Emergency data fix loaded - Direct value override\n")
+} else if (file.exists("emergency_data_fix.R")) {
+  source("emergency_data_fix.R")
+  cat("🚨 Emergency complete fix loaded - All systems override\n")
+} else if (file.exists("fix_data_display.R")) {
   source("fix_data_display.R")
   cat("🔧 Data display fix loaded - CSV fallback enabled\n")
 } else {
-  cat("⚠️ Data display fix not found\n")
+  cat("⚠️ No data display fix found\n")
 }
 
 source("scripts/R/enhanced_search.R")
