@@ -1,7 +1,7 @@
 # MackMonitor - R Shiny Application with Database
 # Railway Production Deployment - Connected to PostgreSQL with real data
 
-source("legacy/r-shiny/r-shiny-consolidated/R/database.R")
+source("R/database.R")
 init_database()
 
 shiny::onStop(function() {
