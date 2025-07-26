@@ -1,6 +1,11 @@
 # MackMonitor - R Shiny Application with Database
 # Railway Production Deployment - Connected to PostgreSQL with real data
 
+# Install required packages for Railway deployment
+if (file.exists("install_packages.R")) {
+  source("install_packages.R")
+}
+
 library(shiny)
 library(shinydashboard)
 library(DT)

@@ -6,6 +6,18 @@
 cat("🔧 Applying Comprehensive Framework Patch to app.R...\n")
 
 # ============================================================================
+# STEP 0: RAILWAY DEPLOYMENT COMPATIBILITY
+# ============================================================================
+
+# Load Railway deployment fix first to handle missing packages/large files
+if (file.exists("railway_deployment_fix.R")) {
+  source("railway_deployment_fix.R")
+  cat("✅ Railway deployment compatibility loaded\n")
+} else {
+  cat("⚠️ Railway deployment fix not found - using standard mode\n")
+}
+
+# ============================================================================
 # STEP 1: LOAD COMPREHENSIVE FRAMEWORK COMPONENTS
 # ============================================================================
 
