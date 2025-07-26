@@ -1,0 +1,26 @@
+# Railway ignore file - DO NOT ignore comprehensive framework files
+# Only ignore unnecessary files
+
+# Ignore data files that are too large
+data_current/processed/production_parquet/
+*.parquet
+
+# Ignore temporary files
+*.tmp
+*.log
+.DS_Store
+
+# Ignore development files
+*.backup.*
+emergency_*.R
+test_*.R
+*_test.R
+
+# DO NOT ignore these critical files:
+# !comprehensive_framework_patch.R
+# !force_comprehensive_framework.R
+# !railway_deployment_fix.R
+# !install_packages.R
+# !comprehensive_app_integration.R
+# !parquet_data_loader.R
+# !debug_status.R
