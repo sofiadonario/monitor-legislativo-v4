@@ -6,13 +6,19 @@ RUN R -e "install.packages('shiny', repos='https://cloud.r-project.org/')"
 
 WORKDIR /app
 
-# Copy ONLY the two essential files
+# Copy ONLY the essential files
 COPY app.R ./
 COPY database.R ./
+COPY diagnostic_check.R ./
 
 # List files to verify they were copied (diagnostic)
 RUN ls -la
 
+# Run diagnostic check at build time
+RUN R -e "source('diagnostic_check.R')"
+
 # Expose port and run
 EXPOSE 3838
-CMD ["R", "-e", "options(shiny.port = 3838, shiny.host = '0.0.0.0'); source('app.R')"]
+
+# Run diagnostic before starting app
+CMD R -e "source('diagnostic_check.R'); options(shiny.port = 3838, shiny.host = '0.0.0.0'); source('app.R')"
