@@ -3,6 +3,22 @@
 **Date:** July 26, 2025
 **Issue Resolved:** Application failing with "cannot open file 'database.R': No such file or directory"
 
+## 🚨 CRITICAL UPDATE (10:30 PM)
+
+**We discovered Railway was using the WRONG Dockerfile!**
+
+Despite our railway.toml configuration specifying `dockerfile = "Dockerfile.minimal"`, Railway was using the main `Dockerfile` which has completely different build instructions. This is why our fixes weren't being applied.
+
+### What We Did:
+1. Backed up the original Dockerfile as `Dockerfile.full.backup`
+2. Renamed our `Dockerfile.minimal` to `Dockerfile` (the default name)
+3. Removed the dockerfile directive from railway.toml
+4. Railway will now use our minimal Dockerfile with all the fixes
+
+### This Should Finally Fix The Issue!
+
+---
+
 ## Root Cause
 The Railway deployment was failing because the `database.R` file was not being found at runtime, despite being present in the repository. This was likely due to:
 1. Railway's build cache issues
