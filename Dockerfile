@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install essential packages needed by database.R and app.R
-RUN R -e "install.packages(c('shiny', 'config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest'), repos='https://cloud.r-project.org/')"
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT', 'config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest'), repos='https://cloud.r-project.org/')"
 
 WORKDIR /app
 

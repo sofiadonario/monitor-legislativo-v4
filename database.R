@@ -35,8 +35,8 @@ init_database <- function() {
       password = app_config$database$password,
       minSize = 2,
       maxSize = app_config$database$pool_size %||% 10,
-      idleTimeout = 3600,  # 1 hour
-      validationQuery = "SELECT 1"
+      idleTimeout = 3600  # 1 hour
+      # validationQuery not supported by pool package
     )
     
     # Test connection
