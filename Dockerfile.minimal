@@ -1,54 +1,18 @@
 # Minimal Dockerfile for Monitor Legislativo v4 - Railway Deployment
 FROM rocker/r-base:4.3.1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    postgresql-client \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    libxml2-dev \
-    libgdal-dev \
-    libproj-dev \
-    libgeos-dev \
-    libudunits2-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Install only the most essential package
+RUN R -e "install.packages('shiny', repos='https://cloud.r-project.org/')"
 
-# Set environment variables
-ENV R_CONFIG_ACTIVE=production
-ENV SHINY_LOG_LEVEL=INFO
-
-# Install only essential R packages for core functionality
-RUN R -e "install.packages(c(\
-    'shiny', 'shinydashboard', 'DT', \
-    'dplyr', 'jsonlite', 'stringr', \
-    'DBI', 'RPostgres', 'pool', \
-    'plotly', 'ggplot2', 'leaflet', \
-    'markdown', 'readr' \
-    ), repos='https://cloud.r-project.org/', dependencies=TRUE)"
-
-# Install additional utility packages
-RUN R -e "install.packages(c(\
-    'httr', 'lubridate', 'digest', \
-    'htmltools', 'magrittr' \
-    ), repos='https://cloud.r-project.org/', dependencies=FALSE)"
-
-# Set working directory
 WORKDIR /app
 
-# Create necessary directories
-RUN mkdir -p data/cache data/geographic www logs exports temp
-
-# Copy only essential files
+# Copy ONLY the two essential files
 COPY app.R ./
-COPY config.yml ./
 COPY database.R ./
 
-# Copy data directory if needed
-COPY data_current/ ./data_current/
+# List files to verify they were copied (diagnostic)
+RUN ls -la
 
-# Expose port
-EXPOSE ${PORT:-3838}
-
-# Start the application
-CMD ["R", "-e", "source('app.R')"]
+# Expose port and run
+EXPOSE 3838
+CMD ["R", "-e", "options(shiny.port = 3838, shiny.host = '0.0.0.0'); source('app.R')"]
