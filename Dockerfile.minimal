@@ -1,15 +1,22 @@
 # Minimal Dockerfile for Monitor Legislativo v4 - Railway Deployment
 FROM rocker/r-base:4.3.1
 
-# Install only the most essential package
-RUN R -e "install.packages('shiny', repos='https://cloud.r-project.org/')"
+# Install system dependencies for PostgreSQL
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install essential packages needed by database.R and app.R
+RUN R -e "install.packages(c('shiny', 'config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest'), repos='https://cloud.r-project.org/')"
 
 WORKDIR /app
 
-# Copy ONLY the essential files
+# Copy ALL the essential files
 COPY app.R ./
 COPY database.R ./
 COPY diagnostic_check.R ./
+COPY start_app.R ./
+COPY config.yml ./
 
 # List files to verify they were copied (diagnostic)
 RUN ls -la
@@ -20,5 +27,5 @@ RUN R -e "source('diagnostic_check.R')"
 # Expose port and run
 EXPOSE 3838
 
-# Run diagnostic before starting app
-CMD R -e "source('diagnostic_check.R'); options(shiny.port = 3838, shiny.host = '0.0.0.0'); source('app.R')"
+# Use the startup script
+CMD ["R", "-e", "source('start_app.R')"]
