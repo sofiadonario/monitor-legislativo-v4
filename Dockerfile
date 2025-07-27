@@ -6,8 +6,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install essential packages needed by database.R and app.R
-RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT', 'config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest'), repos='https://cloud.r-project.org/')"
+# Install all required packages for app.R and database.R
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT', 'config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest', 'jsonlite', 'plotly', 'ggplot2', 'leaflet', 'stringr', 'markdown'), repos='https://cloud.r-project.org/')"
 
 WORKDIR /app
 
