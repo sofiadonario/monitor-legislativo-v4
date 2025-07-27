@@ -1,6 +1,6 @@
 # Railway configuration for monitor-legislativo-unified service
 [build]
-dockerfile = "Dockerfile.minimal"
+# Using default Dockerfile now
 
 [deploy]
 startCommand = "R -e \"source('start_app.R')\""
