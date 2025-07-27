@@ -24,3 +24,4 @@ test_*.R
 # !comprehensive_app_integration.R
 # !parquet_data_loader.R
 # !debug_status.R
+!R/
