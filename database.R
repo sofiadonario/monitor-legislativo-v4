@@ -1,6 +1,9 @@
 # Database Functions for Monitor Legislativo v4
 # PostgreSQL and Redis integration for R architecture
 
+# Source utility functions
+source("utils.R")
+
 library(DBI)
 library(RPostgres)
 library(pool)

@@ -14,6 +14,7 @@ WORKDIR /app
 # Copy ALL the essential files
 COPY app.R ./
 COPY database.R ./
+COPY utils.R ./
 COPY diagnostic_check.R ./
 COPY start_app.R ./
 COPY config.yml ./

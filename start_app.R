@@ -6,6 +6,14 @@ cat("Working directory:", getwd(), "\n")
 cat("Files present:\n")
 print(list.files())
 
+# First source utils.R which contains required utility functions
+tryCatch({
+  source("utils.R")
+  cat("✓ Successfully loaded utils.R\n")
+}, error = function(e) {
+  cat("✗ Could not load utils.R:", e$message, "\n")
+})
+
 # Try to source database.R, but if it fails, embed the functions directly
 tryCatch({
   source("database.R")
