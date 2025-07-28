@@ -11,13 +11,19 @@ RUN apt-get update && apt-get install -y \
     libgdal-dev \
     libgeos-dev \
     libproj-dev \
+    build-essential \
+    cmake \
+    libevent-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install all required packages for app.R and database.R
-RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT', 'config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest', 'jsonlite', 'plotly', 'ggplot2', 'leaflet', 'stringr', 'markdown'), repos='https://cloud.r-project.org/')"
+# Install core packages first
+RUN R -e "install.packages(c('config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest', 'jsonlite', 'stringr', 'markdown'), repos='https://cloud.r-project.org/')"
 
-# Verify packages were installed
-RUN R -e "lapply(c('shiny', 'shinydashboard', 'DT', 'plotly', 'ggplot2', 'leaflet'), library, character.only=TRUE)"
+# Install shiny and UI packages
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT'), repos='https://cloud.r-project.org/')"
+
+# Install visualization packages
+RUN R -e "install.packages(c('plotly', 'ggplot2', 'leaflet'), repos='https://cloud.r-project.org/')"
 
 WORKDIR /app
 
