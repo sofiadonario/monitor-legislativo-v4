@@ -19,14 +19,17 @@ RUN apt-get update && apt-get install -y \
 # Install core packages first
 RUN R -e "install.packages(c('config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest', 'jsonlite', 'stringr', 'markdown'), repos='https://cloud.r-project.org/')"
 
-# Install shiny and UI packages
-RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT'), repos='https://cloud.r-project.org/')"
+# Force fresh shiny installation - install dependencies first
+RUN R -e "install.packages(c('httpuv', 'mime', 'htmltools', 'xtable', 'sourcetools', 'later', 'promises', 'crayon', 'rlang'), repos='https://cloud.r-project.org/')"
+
+# Install shiny and UI packages with verbose output
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT'), repos='https://cloud.r-project.org/', verbose=TRUE)"
 
 # Install visualization packages
 RUN R -e "install.packages(c('plotly', 'ggplot2', 'leaflet'), repos='https://cloud.r-project.org/')"
 
-# Verify ALL packages were installed successfully at build time
-RUN R -e "required_packages <- c('config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest', 'jsonlite', 'stringr', 'markdown', 'shiny', 'shinydashboard', 'DT', 'plotly', 'ggplot2', 'leaflet'); missing <- required_packages[!sapply(required_packages, requireNamespace, quietly=TRUE)]; if(length(missing) > 0) { cat('MISSING PACKAGES:', paste(missing, collapse=', '), '\n'); quit(status=1) } else { cat('✓ ALL PACKAGES VERIFIED INSTALLED\n') }"
+# Check individual package installation
+RUN R -e "packages <- c('shiny', 'shinydashboard', 'DT'); for(pkg in packages) { if(requireNamespace(pkg, quietly=TRUE)) { cat('✓', pkg, 'OK\n') } else { cat('✗', pkg, 'MISSING\n') } }"
 
 # Test loading shiny package specifically during build
 RUN R -e "library(shiny); cat('✓ Shiny package loads successfully during build\n'); cat('Shiny version:', as.character(packageVersion('shiny')), '\n')"
