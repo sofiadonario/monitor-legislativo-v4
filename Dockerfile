@@ -1,4 +1,4 @@
-# Minimal Dockerfile for Monitor Legislativo v4 - Railway Deployment
+# Monitor Legislativo v4 - Railway Deployment (Fixed package installation)
 FROM rocker/r-base:4.3.1
 
 # Install system dependencies for PostgreSQL and R packages
