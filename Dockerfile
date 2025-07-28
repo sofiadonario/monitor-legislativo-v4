@@ -19,20 +19,20 @@ RUN apt-get update && apt-get install -y \
 # Install core packages first
 RUN R -e "install.packages(c('config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest', 'jsonlite', 'stringr', 'markdown'), repos='https://cloud.r-project.org/')"
 
-# Force fresh shiny installation - install dependencies first
-RUN R -e "install.packages(c('httpuv', 'mime', 'htmltools', 'xtable', 'sourcetools', 'later', 'promises', 'crayon', 'rlang'), repos='https://cloud.r-project.org/')"
+# Install shiny dependencies with error checking
+RUN R -e "pkg_list <- c('httpuv', 'mime', 'htmltools', 'xtable', 'sourcetools', 'later', 'promises', 'crayon', 'rlang'); for(pkg in pkg_list) { install.packages(pkg, repos='https://cloud.r-project.org/'); if(!requireNamespace(pkg, quietly=TRUE)) { cat('FAILED TO INSTALL:', pkg, '\n'); quit(status=1) } else { cat('SUCCESS:', pkg, '\n') } }"
 
-# Install shiny and UI packages with verbose output
-RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT'), repos='https://cloud.r-project.org/', verbose=TRUE)"
+# Install shiny with explicit error checking
+RUN R -e "install.packages('shiny', repos='https://cloud.r-project.org/', dependencies=TRUE); if(!requireNamespace('shiny', quietly=TRUE)) { cat('SHINY INSTALLATION FAILED\n'); quit(status=1) } else { cat('SHINY INSTALLED SUCCESSFULLY\n') }"
+
+# Install UI packages individually with error checking
+RUN R -e "for(pkg in c('shinydashboard', 'DT')) { install.packages(pkg, repos='https://cloud.r-project.org/', dependencies=TRUE); if(!requireNamespace(pkg, quietly=TRUE)) { cat('FAILED:', pkg, '\n'); quit(status=1) } else { cat('SUCCESS:', pkg, '\n') } }"
 
 # Install visualization packages
 RUN R -e "install.packages(c('plotly', 'ggplot2', 'leaflet'), repos='https://cloud.r-project.org/')"
 
-# Check individual package installation
-RUN R -e "packages <- c('shiny', 'shinydashboard', 'DT'); for(pkg in packages) { if(requireNamespace(pkg, quietly=TRUE)) { cat('✓', pkg, 'OK\n') } else { cat('✗', pkg, 'MISSING\n') } }"
-
-# Test loading shiny package specifically during build
-RUN R -e "library(shiny); cat('✓ Shiny package loads successfully during build\n'); cat('Shiny version:', as.character(packageVersion('shiny')), '\n')"
+# Final verification that all UI packages work
+RUN R -e "library(shiny); library(shinydashboard); library(DT); cat('✓ ALL UI PACKAGES LOAD SUCCESSFULLY\n')"
 
 # Check and fix library paths for Railway compatibility
 RUN R -e "cat('Library paths during build:\n'); print(.libPaths()); cat('R_LIBS_USER:\n'); cat(Sys.getenv('R_LIBS_USER'), '\n')"
