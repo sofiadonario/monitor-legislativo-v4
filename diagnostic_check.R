@@ -50,4 +50,41 @@ tryCatch({
   cat("  ", e$message, "\n")
 })
 
+# Check R package installation
+cat("\nChecking R package installation:\n")
+required_packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 
+                       'plotly', 'ggplot2', 'leaflet', 'stringr', 'markdown',
+                       'DBI', 'RPostgres', 'pool', 'config', 'digest')
+
+for (pkg in required_packages) {
+  if (requireNamespace(pkg, quietly = TRUE)) {
+    cat(sprintf("  ✓ %s - AVAILABLE\n", pkg))
+  } else {
+    cat(sprintf("  ✗ %s - MISSING\n", pkg))
+  }
+}
+
+# Check library paths
+cat("\nR Library paths:\n")
+lib_paths <- .libPaths()
+for (i in seq_along(lib_paths)) {
+  cat(sprintf("  [%d] %s\n", i, lib_paths[i]))
+  if (dir.exists(lib_paths[i])) {
+    pkg_count <- length(list.dirs(lib_paths[i], recursive = FALSE))
+    cat(sprintf("      Contains %d packages\n", pkg_count))
+  } else {
+    cat("      Path does not exist!\n")
+  }
+}
+
+# Test loading shiny specifically
+cat("\nTesting shiny package load:\n")
+tryCatch({
+  library(shiny, quietly = TRUE)
+  cat("  ✓ shiny loaded successfully\n")
+  cat("  Version:", as.character(packageVersion("shiny")), "\n")
+}, error = function(e) {
+  cat("  ✗ Error loading shiny:", e$message, "\n")
+})
+
 cat("\n=== END DIAGNOSTIC ===\n") 

@@ -1,6 +1,20 @@
 # MackMonitor - R Shiny Application with Database
 # Railway Production Deployment - Connected to PostgreSQL with real data
 
+# Load all required packages FIRST to prevent runtime loading issues
+cat("Loading required R packages...\n")
+library(shiny)
+library(shinydashboard)
+library(DT)
+library(dplyr)
+library(jsonlite)
+library(plotly)
+library(ggplot2)
+library(leaflet)
+library(stringr)
+library(markdown)
+cat("✓ All UI packages loaded successfully\n")
+
 source("database.R")
 init_database()
 

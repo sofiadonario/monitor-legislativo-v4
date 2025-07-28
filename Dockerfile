@@ -25,6 +25,29 @@ RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT'), repos='https://cl
 # Install visualization packages
 RUN R -e "install.packages(c('plotly', 'ggplot2', 'leaflet'), repos='https://cloud.r-project.org/')"
 
+# Verify ALL packages were installed successfully at build time
+RUN R -e "required_packages <- c('config', 'DBI', 'RPostgres', 'pool', 'dplyr', 'digest', 'jsonlite', 'stringr', 'markdown', 'shiny', 'shinydashboard', 'DT', 'plotly', 'ggplot2', 'leaflet'); missing <- required_packages[!sapply(required_packages, requireNamespace, quietly=TRUE)]; if(length(missing) > 0) { cat('MISSING PACKAGES:', paste(missing, collapse=', '), '\n'); quit(status=1) } else { cat('✓ ALL PACKAGES VERIFIED INSTALLED\n') }"
+
+# Test loading shiny package specifically during build
+RUN R -e "library(shiny); cat('✓ Shiny package loads successfully during build\n'); cat('Shiny version:', as.character(packageVersion('shiny')), '\n')"
+
+# Check and fix library paths for Railway compatibility
+RUN R -e "cat('Library paths during build:\n'); print(.libPaths()); cat('R_LIBS_USER:\n'); cat(Sys.getenv('R_LIBS_USER'), '\n')"
+
+# Ensure packages are accessible in standard locations
+RUN R -e "if(!dir.exists('/usr/local/lib/R/site-library')) { dir.create('/usr/local/lib/R/site-library', recursive=TRUE) }; cat('Created standard library directory\n')"
+
+# Set environment variable for consistent library path
+ENV R_LIBS_USER=/usr/local/lib/R/site-library
+
+# Railway-specific fix: Ensure packages are accessible at runtime
+# Create links from build-time library to runtime library paths
+RUN mkdir -p /usr/local/lib/R/site-library && \
+    R -e "build_libs <- .libPaths()[1]; runtime_lib <- '/usr/local/lib/R/site-library'; if(build_libs != runtime_lib && dir.exists(build_libs)) { system(paste('cp -r', file.path(build_libs, '*'), runtime_lib, '2>/dev/null || true')) }"
+
+# Final verification that shiny is accessible in the target location
+RUN R -e "cat('Final shiny check in target location:\n'); .libPaths('/usr/local/lib/R/site-library'); if(requireNamespace('shiny', quietly=TRUE)) { cat('✓ SHINY ACCESSIBLE\n') } else { cat('✗ SHINY NOT ACCESSIBLE\n'); quit(status=1) }"
+
 WORKDIR /app
 
 # Copy ALL the essential files
@@ -34,6 +57,7 @@ COPY utils.R ./
 COPY diagnostic_check.R ./
 COPY start_app.R ./
 COPY config.yml ./
+COPY railway_debug.R ./
 
 # List files to verify they were copied (diagnostic)
 RUN ls -la
