@@ -66,6 +66,7 @@ COPY diagnostic_check.R ./
 COPY start_app.R ./
 COPY config.yml ./
 COPY railway_debug.R ./
+COPY scripts/ ./scripts/
 
 # List files to verify they were copied (diagnostic)
 RUN ls -la
