@@ -45,9 +45,15 @@ if (!all_available) {
   cat("✓ All required packages verified at runtime\n")
 }
 
-# ⚡ CRITICAL FIX: Load the robust data visualization fix FIRST
-cat("⚡ LOADING ROBUST DATA VISUALIZATION FIX...\n")
-if (file.exists("data_loader_robust.R")) {
+# 🔧 CRITICAL FIX: Load new unified data access layer FIRST
+cat("🔧 LOADING UNIFIED DATA ACCESS LAYER...\n")
+if (file.exists("data_access_layer.R")) {
+  source("data_access_layer.R")
+  cat("✅ Unified Data Access Layer loaded successfully\n")
+} else if (file.exists("railway_debug_fix.R")) {
+  source("railway_debug_fix.R")
+  cat("✅ Railway debug fix loaded successfully\n")
+} else if (file.exists("data_loader_robust.R")) {
   source("data_loader_robust.R")
   cat("✅ Robust data visualization fix loaded successfully\n")
 } else if (file.exists("data_loader_fix.R")) {
@@ -163,11 +169,31 @@ if (exists("get_documents")) {
   cat("🔍 ERROR: get_documents function not found\n")
 }
 
+# Initialize the unified data access layer
+cat("🚀 INITIALIZING DATA ACCESS LAYER...\n")
+if (exists("init_data_access_layer")) {
+  data_access_initialized <- init_data_access_layer()
+  cat("📊 Data Access Layer initialized:", data_access_initialized, "\n")
+} else {
+  data_access_initialized <- FALSE
+  cat("❌ Data Access Layer not available\n")
+}
+
 # Set database_connected variable for app.R to check
-# If we have working sample data functions, consider the app "connected"
-database_connected <- exists("load_legislative_data") && (exists(".db_pool") || exists("get_documents"))
+# Check if we have the unified data access functions
+database_connected <- data_access_initialized && exists("get_search_analytics") && exists("get_documents")
 cat("📊 Database connection status for app.R:", database_connected, "\n")
-cat("📊 Available functions - load_legislative_data:", exists("load_legislative_data"), "get_documents:", exists("get_documents"), "\n")
+cat("📊 Available functions - get_search_analytics:", exists("get_search_analytics"), "get_documents:", exists("get_documents"), "\n")
+
+# Get connection status for debugging
+if (exists("get_connection_status")) {
+  connection_status <- get_connection_status()
+  cat("📊 Connection details:\n")
+  cat("  - Database connected:", connection_status$database_connected, "\n")
+  cat("  - Circuit breaker open:", connection_status$circuit_breaker_open, "\n")
+  cat("  - Using fallback:", connection_status$using_fallback, "\n")
+  cat("  - Queries executed:", connection_status$statistics$queries_executed, "\n")
+}
 
 # Now source the main app
 cat("Loading main app.R...\n")
