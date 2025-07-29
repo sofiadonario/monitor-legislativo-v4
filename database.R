@@ -72,6 +72,15 @@ init_database <- function() {
     test_query <- dbGetQuery(.db_pool, "SELECT version()")
     log_event(paste("Database connected:", substr(test_query$version[1], 1, 50)))
     
+    # Test if we can query lexml_documents
+    test_count <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM lexml_documents")
+    cat("🔍 DIRECT TEST: lexml_documents table has", test_count$count[1], "rows\n")
+    
+    # Test a sample query
+    sample_data <- dbGetQuery(.db_pool, "SELECT titulo, tipo, estado FROM lexml_documents LIMIT 3")
+    cat("🔍 SAMPLE DATA from lexml_documents:\n")
+    print(sample_data)
+    
     # Initialize Redis connection if available
     init_redis()
     
