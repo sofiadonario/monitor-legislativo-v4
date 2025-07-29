@@ -1,10 +1,18 @@
 # Startup script for Railway deployment
 # This handles the database.R loading issue gracefully
 
-cat("=== RAILWAY STARTUP SCRIPT ===\n")
-cat("Working directory:", getwd(), "\n")
+cat("=== RAILWAY STARTUP SCRIPT - V3 DEBUG ===\n")
+cat("Working directory:", getwd(), "\n") 
 cat("Files present:\n")
 print(list.files())
+
+# IMMEDIATE DEBUG - Source the force rebuild debug
+cat("🔥 SOURCING FORCE_REBUILD_DEBUG.R IMMEDIATELY\n")
+tryCatch({
+  source("FORCE_REBUILD_DEBUG.R")
+}, error = function(e) {
+  cat("🔥 Failed to source FORCE_REBUILD_DEBUG.R:", e$message, "\n")
+})
 
 # Set R_CONFIG_ACTIVE to production if not set
 if (Sys.getenv("R_CONFIG_ACTIVE") == "") {
@@ -109,6 +117,33 @@ tryCatch({
   
   cat("✓ Embedded minimal database functions\n")
 })
+
+# Test the functions before loading the app
+cat("🔍 TESTING DATA FUNCTIONS\n")
+if (exists("load_legislative_data")) {
+  cat("🔍 Testing load_legislative_data function\n")
+  test_data <- load_legislative_data(limit = 5)
+  if (!is.null(test_data)) {
+    cat("🔍 SUCCESS: Got", nrow(test_data), "rows from load_legislative_data\n")
+    cat("🔍 Sample titles:", paste(head(test_data$titulo, 2), collapse = ", "), "\n")
+  } else {
+    cat("🔍 ERROR: load_legislative_data returned NULL\n")
+  }
+} else {
+  cat("🔍 ERROR: load_legislative_data function not found\n")
+}
+
+if (exists("get_documents")) {
+  cat("🔍 Testing get_documents function\n")
+  test_docs <- get_documents(limit = 3)
+  if (!is.null(test_docs)) {
+    cat("🔍 SUCCESS: get_documents returned", nrow(test_docs), "rows\n")
+  } else {
+    cat("🔍 ERROR: get_documents returned NULL\n")
+  }
+} else {
+  cat("🔍 ERROR: get_documents function not found\n")
+}
 
 # Now source the main app
 cat("Loading main app.R...\n")
