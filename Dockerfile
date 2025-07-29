@@ -1,4 +1,4 @@
-# Monitor Legislativo v4 - Optimized Railway Deployment
+# Monitor Legislativo v4 - Optimized Railway Deployment - REBUILD v2
 # Using rocker/shiny for pre-installed shiny packages
 FROM rocker/shiny:4.3.1
 
@@ -36,6 +36,7 @@ COPY app.R ./
 COPY database.R ./
 COPY utils.R ./
 COPY missing_functions.R ./
+COPY FORCE_REBUILD_DEBUG.R ./
 COPY diagnostic_check.R ./
 COPY start_app.R ./
 COPY config.yml ./

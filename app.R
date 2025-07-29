@@ -1,5 +1,6 @@
-# MackMonitor - R Shiny Application with Database
+# MackMonitor - R Shiny Application with Database - VERSION 3.0
 # Railway Production Deployment - Connected to PostgreSQL with real data
+cat("🚀 STARTING APP.R - VERSION 3.0 WITH DEBUG\n")
 
 # Load all required packages FIRST to prevent runtime loading issues
 cat("Loading required R packages...\n")
