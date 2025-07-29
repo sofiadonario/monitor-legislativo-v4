@@ -45,21 +45,21 @@ if (!all_available) {
   cat("✓ All required packages verified at runtime\n")
 }
 
-# Test shiny package load specifically 
-tryCatch({
-  library(shiny, quietly = TRUE)
-  cat("✓ Shiny loaded successfully at runtime\n")
-  cat("Shiny version:", as.character(packageVersion("shiny")), "\n")
-}, error = function(e) {
-  cat("ERROR loading shiny at runtime:", e$message, "\n")
-  cat("Running comprehensive debug script...\n")
+# Load ALL required packages for app.R
+cat("Loading all required packages for Shiny app...\n")
+required_libraries <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 
+                       'plotly', 'ggplot2', 'leaflet', 'stringr', 'markdown',
+                       'DBI', 'RPostgres', 'pool', 'config', 'digest')
+
+for (pkg in required_libraries) {
   tryCatch({
-    source("railway_debug.R")
-  }, error = function(debug_error) {
-    cat("Debug script failed:", debug_error$message, "\n")
+    library(pkg, character.only = TRUE, quietly = TRUE)
+    cat(sprintf("✓ %s loaded successfully\n", pkg))
+  }, error = function(e) {
+    cat(sprintf("ERROR loading %s: %s\n", pkg, e$message))
+    quit(status = 1)
   })
-  quit(status = 1)
-})
+}
 cat("=== END RUNTIME VERIFICATION ===\n\n")
 
 # First source utils.R which contains required utility functions
