@@ -146,8 +146,10 @@ if (exists("get_documents")) {
 }
 
 # Set database_connected variable for app.R to check
-database_connected <- exists("load_legislative_data") && exists(".db_pool")
+# If we have working sample data functions, consider the app "connected"
+database_connected <- exists("load_legislative_data") && (exists(".db_pool") || exists("get_documents"))
 cat("📊 Database connection status for app.R:", database_connected, "\n")
+cat("📊 Available functions - load_legislative_data:", exists("load_legislative_data"), "get_documents:", exists("get_documents"), "\n")
 
 # Now source the main app
 cat("Loading main app.R...\n")
