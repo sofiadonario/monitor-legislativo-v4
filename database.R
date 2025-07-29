@@ -19,22 +19,51 @@ library(config)
 init_database <- function() {
   
   tryCatch({
-    # Get configuration
-    config_env <- Sys.getenv("R_CONFIG_ACTIVE", "default")
-    app_config <- config::get(config = config_env)
+    # Check for DATABASE_URL first (Railway pattern)
+    database_url <- Sys.getenv("DATABASE_URL")
+    
+    if (nchar(database_url) > 0) {
+      log_event("Using DATABASE_URL for connection")
+      
+      # Parse DATABASE_URL
+      # Format: postgresql://user:password@host:port/dbname
+      parsed <- regmatches(database_url, regexec("postgresql://([^:]+):([^@]+)@([^:]+):([0-9]+)/(.+)", database_url))[[1]]
+      
+      if (length(parsed) == 6) {
+        db_user <- parsed[2]
+        db_password <- parsed[3]
+        db_host <- parsed[4]
+        db_port <- as.numeric(parsed[5])
+        db_name <- parsed[6]
+        
+        log_event(paste("Parsed connection: host=", db_host, ", port=", db_port, ", db=", db_name))
+      } else {
+        stop("Failed to parse DATABASE_URL")
+      }
+    } else {
+      # Fall back to config file
+      config_env <- Sys.getenv("R_CONFIG_ACTIVE", "default")
+      app_config <- config::get(config = config_env)
+      
+      db_host <- app_config$database$host
+      db_port <- app_config$database$port
+      db_name <- app_config$database$name
+      db_user <- app_config$database$user
+      db_password <- app_config$database$password
+    }
     
     log_event("Initializing database connection pool")
     
     # Create PostgreSQL connection pool
     .db_pool <<- dbPool(
       drv = RPostgres::Postgres(),
-      host = app_config$database$host,
-      port = app_config$database$port,
-      dbname = app_config$database$name,
-      user = app_config$database$user,
-      password = app_config$database$password,
+      host = db_host,
+      port = db_port,
+      dbname = db_name,
+      user = db_user,
+      password = db_password,
       minSize = 2,
-      maxSize = app_config$database$pool_size %||% 10,
+      maxSize = 10,
       idleTimeout = 3600  # 1 hour
       # validationQuery not supported by pool package
     )

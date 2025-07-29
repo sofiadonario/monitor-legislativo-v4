@@ -6,6 +6,12 @@ cat("Working directory:", getwd(), "\n")
 cat("Files present:\n")
 print(list.files())
 
+# Set R_CONFIG_ACTIVE to production if not set
+if (Sys.getenv("R_CONFIG_ACTIVE") == "") {
+  Sys.setenv(R_CONFIG_ACTIVE = "production")
+  cat("✓ Set R_CONFIG_ACTIVE to production\n")
+}
+
 # CRITICAL: Verify R packages are available at runtime
 cat("\n=== RUNTIME PACKAGE VERIFICATION ===\n")
 required_packages <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 

@@ -16,7 +16,24 @@ library(markdown)
 cat("✓ All UI packages loaded successfully\n")
 
 source("database.R")
-init_database()
+database_connected <- init_database()
+
+# Add essential data access functions
+get_documents <- function(limit = 1000) {
+  return(load_legislative_data(limit = limit))
+}
+
+get_documents_data <- function(filters = NULL, limit = 1000) {
+  return(load_legislative_data(filters = filters, limit = limit))
+}
+
+get_total_documents <- function() {
+  stats <- get_database_stats()
+  if (!is.null(stats)) {
+    return(stats$total_documents)
+  }
+  return(0)
+}
 
 shiny::onStop(function() {
   close_database()
