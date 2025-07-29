@@ -45,6 +45,18 @@ if (!all_available) {
   cat("✓ All required packages verified at runtime\n")
 }
 
+# ⚡ CRITICAL FIX: Load the robust data visualization fix FIRST
+cat("⚡ LOADING ROBUST DATA VISUALIZATION FIX...\n")
+if (file.exists("data_loader_robust.R")) {
+  source("data_loader_robust.R")
+  cat("✅ Robust data visualization fix loaded successfully\n")
+} else if (file.exists("data_loader_fix.R")) {
+  source("data_loader_fix.R") 
+  cat("✅ Data visualization fix loaded successfully\n")
+} else {
+  cat("❌ WARNING: No data loader fix found - visualizations may not work\n")
+}
+
 # Load ALL required packages for app.R
 cat("Loading all required packages for Shiny app...\n")
 required_libraries <- c('shiny', 'shinydashboard', 'DT', 'dplyr', 'jsonlite', 
@@ -82,6 +94,12 @@ tryCatch({
   }, error = function(e) {
     cat("⚠️ Error loading missing_functions.R:", e$message, "\n")
   })
+  
+  # RELOAD data_loader_fix.R again to ensure it overrides missing_functions.R
+  if (file.exists("data_loader_fix.R")) {
+    source("data_loader_fix.R")
+    cat("✅ Data loader fix reloaded to override missing_functions.R\n")
+  }
   
 }, error = function(e) {
   cat("✗ Could not load database.R:", e$message, "\n")
