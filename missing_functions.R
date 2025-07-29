@@ -62,4 +62,4 @@ get_states <- function() {
   })
 }
 
-cat("✓ Missing functions loaded successfully\n")
+cat("✓ Missing functions loaded successfully - v2\n")
