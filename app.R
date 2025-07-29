@@ -1,50 +1,8 @@
-# MackMonitor - R Shiny Application with Database - VERSION 3.0
-# Railway Production Deployment - Connected to PostgreSQL with real data
-cat("🚀 STARTING APP.R - VERSION 3.0 WITH DEBUG\n")
+# MackMonitor - R Shiny Application - VERSION 3.1 CLEAN ARCHITECTURE
+# This file contains ONLY Shiny UI/server logic - NO initialization
+# All packages, database connections, and functions are loaded by start_app.R
 
-# Load all required packages FIRST to prevent runtime loading issues
-cat("Loading required R packages...\n")
-library(shiny)
-library(shinydashboard)
-library(DT)
-library(dplyr)
-library(jsonlite)
-library(plotly)
-library(ggplot2)
-library(leaflet)
-library(stringr)
-library(markdown)
-cat("✓ All UI packages loaded successfully\n")
-
-source("database.R")
-database_connected <- init_database()
-
-# Source missing functions immediately
-cat("🔍 Loading missing_functions.R\n")
-tryCatch({
-  source("missing_functions.R")
-  cat("✓ Successfully loaded missing_functions.R\n")
-}, error = function(e) {
-  cat("⚠️ Error loading missing_functions.R:", e$message, "\n")
-})
-
-# Test database immediately
-if (database_connected && exists("load_legislative_data")) {
-  cat("🔍 TESTING DATABASE FUNCTIONS\n")
-  test_data <- load_legislative_data(limit = 3)
-  if (!is.null(test_data) && nrow(test_data) > 0) {
-    cat("🔍 SUCCESS: Got", nrow(test_data), "rows from database\n")
-    cat("🔍 Sample title:", test_data$titulo[1], "\n")
-  } else {
-    cat("🔍 ERROR: No data returned from load_legislative_data\n")
-  }
-} else {
-  cat("🔍 Database not connected or function not found\n")
-}
-
-shiny::onStop(function() {
-  close_database()
-})
+cat("🚀 STARTING APP.R - CLEAN VERSION (no initialization)\n")
 
 get_document_types <- function() {
   if (is.null(.db_pool)) return(c())
@@ -242,16 +200,7 @@ if (file.exists("debug_status.R")) {
   source("debug_status.R")
 }
 
-library(shiny)
-library(shinydashboard)
-library(DT)
-library(dplyr)
-library(jsonlite)
-library(plotly)
-library(ggplot2)
-library(leaflet)
-library(stringr)
-library(markdown)
+# Packages already loaded by start_app.R - no need to reload
 
 # ===== INLINE COMPREHENSIVE FRAMEWORK START =====
 cat("🚀 INLINE COMPREHENSIVE FRAMEWORK ACTIVATING...\n")
@@ -557,25 +506,25 @@ if (nchar(Sys.getenv("DATABASE_URL")) == 0) {
   # Sys.setenv(DATABASE_URL = "postgresql://user:pass@host:port/db")
 }
 
-# Force refresh database connection to ensure we get latest data
-database_connected <- init_database()
-
-# If connection failed, try force refresh
-if (!database_connected) {
-  cat("⚠️ Initial connection failed, trying force refresh...\n")
-  database_connected <- force_refresh_database()
+# Verify that start_app.R already initialized database connection
+if (!exists("database_connected")) {
+  stop("❌ ERROR: database_connected variable not found - start_app.R must run first")
 }
 
-# Use existing PostgreSQL database with clean, parsed data
-if (database_connected) {
-  cat("✅ Using existing PostgreSQL database with clean, parsed data (934 documents)\n")
-  cat("📊 Database contains properly parsed municipality/state data\n")
-  
-  # Run comprehensive database test
-  cat("🔄 Running comprehensive database test...\n")
-  test_result <- test_database_connection()
-  cat("🔍 Database test result:", test_result, "\n")
+if (!exists("load_legislative_data")) {
+  stop("❌ ERROR: load_legislative_data function not found - start_app.R must run first")
 }
+
+cat("✅ Database initialization verified - start_app.R completed successfully\n")
+cat("📊 Database connection status:", database_connected, "\n")
+
+# Ensure database connection is closed when Shiny app stops
+shiny::onStop(function() {
+  if (exists("close_database")) {
+    close_database()
+    cat("🔒 Database connection closed on app shutdown\n")
+  }
+})
 
 if (!database_connected) {
   database_error <- "Failed to connect to database - using sample data"

@@ -145,6 +145,10 @@ if (exists("get_documents")) {
   cat("🔍 ERROR: get_documents function not found\n")
 }
 
+# Set database_connected variable for app.R to check
+database_connected <- exists("load_legislative_data") && exists(".db_pool")
+cat("📊 Database connection status for app.R:", database_connected, "\n")
+
 # Now source the main app
 cat("Loading main app.R...\n")
 source("app.R")
