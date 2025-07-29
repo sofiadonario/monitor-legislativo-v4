@@ -19,21 +19,27 @@ cat("✓ All UI packages loaded successfully\n")
 source("database.R")
 database_connected <- init_database()
 
-# Add essential data access functions
-get_documents <- function(limit = 1000) {
-  return(load_legislative_data(limit = limit))
-}
+# Source missing functions immediately
+cat("🔍 Loading missing_functions.R\n")
+tryCatch({
+  source("missing_functions.R")
+  cat("✓ Successfully loaded missing_functions.R\n")
+}, error = function(e) {
+  cat("⚠️ Error loading missing_functions.R:", e$message, "\n")
+})
 
-get_documents_data <- function(filters = NULL, limit = 1000) {
-  return(load_legislative_data(filters = filters, limit = limit))
-}
-
-get_total_documents <- function() {
-  stats <- get_database_stats()
-  if (!is.null(stats)) {
-    return(stats$total_documents)
+# Test database immediately
+if (database_connected && exists("load_legislative_data")) {
+  cat("🔍 TESTING DATABASE FUNCTIONS\n")
+  test_data <- load_legislative_data(limit = 3)
+  if (!is.null(test_data) && nrow(test_data) > 0) {
+    cat("🔍 SUCCESS: Got", nrow(test_data), "rows from database\n")
+    cat("🔍 Sample title:", test_data$titulo[1], "\n")
+  } else {
+    cat("🔍 ERROR: No data returned from load_legislative_data\n")
   }
-  return(0)
+} else {
+  cat("🔍 Database not connected or function not found\n")
 }
 
 shiny::onStop(function() {
