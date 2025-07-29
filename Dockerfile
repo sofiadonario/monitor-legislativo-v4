@@ -35,6 +35,7 @@ WORKDIR /app
 COPY app.R ./
 COPY database.R ./
 COPY utils.R ./
+COPY missing_functions.R ./
 COPY diagnostic_check.R ./
 COPY start_app.R ./
 COPY config.yml ./

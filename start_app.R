@@ -66,6 +66,15 @@ tryCatch({
 tryCatch({
   source("database.R")
   cat("✓ Successfully loaded database.R\n")
+  
+  # Load missing functions after database.R
+  tryCatch({
+    source("missing_functions.R")
+    cat("✓ Successfully loaded missing_functions.R\n")
+  }, error = function(e) {
+    cat("⚠️ Error loading missing_functions.R:", e$message, "\n")
+  })
+  
 }, error = function(e) {
   cat("✗ Could not load database.R:", e$message, "\n")
   cat("  Embedding database functions directly...\n")

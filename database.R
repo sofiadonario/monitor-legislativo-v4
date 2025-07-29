@@ -256,12 +256,12 @@ load_legislative_data <- function(filters = list(), limit = 1000) {
   }
   
   tryCatch({
-    # Build SQL query
+    # Build SQL query - try lexml_documents first, fallback to documents
     base_query <- "
       SELECT 
         titulo, tipo, numero, data, estado, municipio, autor, fonte, 
         ementa, url, created_at as data_coleta
-      FROM documents 
+      FROM lexml_documents 
       WHERE 1=1
     "
     
@@ -311,7 +311,10 @@ load_legislative_data <- function(filters = list(), limit = 1000) {
     
     # Execute query
     log_event("Executing database query")
+    cat("📊 DEBUGGING: Query =", final_query, "\n")
+    cat("📊 DEBUGGING: Params =", paste(params, collapse = ", "), "\n")
     result <- dbGetQuery(.db_pool, final_query, params = params)
+    cat("📊 DEBUGGING: Query returned", nrow(result), "rows\n")
     
     if (nrow(result) > 0) {
       # Standardize and validate data
@@ -393,23 +396,23 @@ get_database_stats <- function() {
   
   tryCatch({
     # Total documents
-    total_docs <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")$count[1]
+    total_docs <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM lexml_documents")$count[1]
     
     # Unique states
     unique_states <- dbGetQuery(.db_pool, 
-      "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL")$count[1]
+      "SELECT COUNT(DISTINCT estado) as count FROM lexml_documents WHERE estado IS NOT NULL")$count[1]
     
     # Unique document types
     unique_types <- dbGetQuery(.db_pool, 
-      "SELECT COUNT(DISTINCT tipo) as count FROM documents WHERE tipo IS NOT NULL")$count[1]
+      "SELECT COUNT(DISTINCT tipo) as count FROM lexml_documents WHERE tipo IS NOT NULL")$count[1]
     
     # Date range
     date_range <- dbGetQuery(.db_pool, 
-      "SELECT MIN(data) as min_date, MAX(data) as max_date FROM documents WHERE data IS NOT NULL")
+      "SELECT MIN(data) as min_date, MAX(data) as max_date FROM lexml_documents WHERE data IS NOT NULL")
     
     # Most recent update
     last_update <- dbGetQuery(.db_pool, 
-      "SELECT MAX(created_at) as last_update FROM documents")$last_update[1]
+      "SELECT MAX(created_at) as last_update FROM lexml_documents")$last_update[1]
     
     stats <- list(
       total_documents = total_docs,
