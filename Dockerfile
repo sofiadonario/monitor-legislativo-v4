@@ -23,7 +23,8 @@ RUN install2.r --error --skipinstalled \
     ggplot2 \
     leaflet \
     stringr \
-    markdown
+    markdown \
+    readr
 
 # Quick verification that key packages are installed
 RUN R -e "if(!require(shiny)) stop('shiny not installed'); if(!require(shinydashboard)) stop('shinydashboard not installed'); cat('✓ All packages verified\n')"
