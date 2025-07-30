@@ -188,7 +188,14 @@ if (file.exists("map_rendering_fix.R")) {
 }
 cat("✅ EMBEDDED EMERGENCY DATABASE OVERRIDE COMPLETE\n")
 
-# Load Emergency Database Fix (highest priority)
+# Load Direct Analytics Override (HIGHEST PRIORITY)
+if (file.exists("DIRECT_ANALYTICS_OVERRIDE.R")) {
+  cat("🚨 Loading DIRECT ANALYTICS OVERRIDE...\n")
+  source("DIRECT_ANALYTICS_OVERRIDE.R", local = TRUE)
+  cat("✅ Direct analytics override loaded\n")
+}
+
+# Load Emergency Database Fix (high priority)
 if (file.exists("EMERGENCY_DATABASE_FIX.R")) {
   cat("🚨 Loading EMERGENCY DATABASE FIX...\n")
   source("EMERGENCY_DATABASE_FIX.R", local = TRUE)
