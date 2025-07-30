@@ -45,15 +45,15 @@ if (!all_available) {
   cat("✓ All required packages verified at runtime\n")
 }
 
-# 🚀 ULTRA SIMPLE DATA FIX: Load the working Railway solution FIRST
-cat("🚨 LOADING ULTRA SIMPLE DATA FIX - GUARANTEED WORKING SOLUTION...\n")
+# 🚀 REAL DATA FIX: Load your ACTUAL processed research data FIRST
+cat("🚨 LOADING REAL DATA FIX - YOUR ACTUAL 786k+ RESEARCH DOCUMENTS...\n")
 
-# Load the ULTRA SIMPLE data fix FIRST - this completely replaces all other fixes
-if (file.exists("ULTRA_SIMPLE_DATA_FIX.R")) {
-  source("ULTRA_SIMPLE_DATA_FIX.R")
-  cat("✅ ULTRA SIMPLE DATA FIX loaded - 750k documents ready for UI components\n")
+# Load the REAL data fix FIRST - uses your actual processed research data
+if (file.exists("REAL_DATA_FIX.R")) {
+  source("REAL_DATA_FIX.R")
+  cat("✅ REAL DATA FIX loaded - Your actual research corpus ready for UI components\n")
 } else {
-  cat("❌ CRITICAL: ULTRA_SIMPLE_DATA_FIX.R not found! Using emergency fallback...\n")
+  cat("❌ CRITICAL: REAL_DATA_FIX.R not found! Using emergency fallback...\n")
   
   # Fallback chain
   if (file.exists("EMERGENCY_DATABASE_FIX.R")) {
