@@ -108,13 +108,13 @@ tryCatch({
     cat("⚠️ Error loading missing_functions.R:", e$message, "\n")
   })
   
-  # DISABLED: RELOAD data_loader_fix.R - conflicts with FINAL_DATA_FIX
+  # DISABLED: RELOAD data_loader_fix.R - conflicts with REAL_DATA_FIX
   # if (file.exists("data_loader_fix.R")) {
   #   source("data_loader_fix.R")
   #   cat("✅ Data loader fix reloaded to override missing_functions.R\n")
   # }
   
-  # DISABLED: RELOAD railway_database_fix.R - conflicts with FINAL_DATA_FIX
+  # DISABLED: RELOAD railway_database_fix.R - conflicts with REAL_DATA_FIX
   # if (file.exists("railway_database_fix.R")) {
   #   source("railway_database_fix.R")
   #   cat("✅ Railway database fix reloaded to ensure get_database_stats is patched\n")
@@ -193,9 +193,9 @@ if (exists("init_data_access_layer")) {
 }
 
 # Set database_connected variable for app.R to check
-# FINAL_DATA_FIX sets this to TRUE, but verify it exists
+# REAL_DATA_FIX sets this to TRUE, but verify it exists
 if (exists("database_connected") && database_connected) {
-  cat("📊 Database connection status from FINAL_DATA_FIX:", database_connected, "\n")
+  cat("📊 Database connection status from REAL_DATA_FIX:", database_connected, "\n")
 } else {
   # Fallback logic for unified data access functions
   database_connected <- data_access_initialized && exists("get_search_analytics") && exists("get_documents")
