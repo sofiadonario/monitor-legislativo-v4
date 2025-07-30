@@ -180,12 +180,6 @@ if (file.exists("comprehensive_function_overrides.R")) {
   source("comprehensive_function_overrides.R")
 }
 
-
-# Load comprehensive map rendering fix
-if (file.exists("map_rendering_fix.R")) {
-  cat("🔄 Loading map rendering fix...\n")
-  source("map_rendering_fix.R")
-}
 cat("✅ EMBEDDED EMERGENCY DATABASE OVERRIDE COMPLETE\n")
 cat("📊 All functions embedded in app.R (278,152 documents)\n")
 cat("🗺️ Map coordinates loaded for all 27 Brazilian states\n")
@@ -760,16 +754,7 @@ ui <- dashboardPage(
               width = 12,
               height = "600px",
               fluidRow(
-                column(9, 
-                  div(id = "map1-loading", class = "map-loading-overlay", style = "display: none;",
-                    div(class = "loading-content",
-                      icon("spinner", class = "fa-spin fa-2x"),
-                      br(),
-                      "Loading map data for 278,152 documents..."
-                    )
-                  ),
-                  leafletOutput("totalDocumentsMap", height = "500px")
-                ),
+                column(9, leafletOutput("totalDocumentsMap", height = "500px")),
                 column(3, 
                   wellPanel(
                     h5("🎛️ Map Controls"),
@@ -4898,9 +4883,3 @@ cat("✅ Database connection status:", database_connected, "\n")
 cat("📊 App startup completed successfully\n")
 
 runApp(app, host = "0.0.0.0", port = as.integer(Sys.getenv("PORT", "3838")), launch.browser = FALSE)
-
-# Load comprehensive map data fix - FINAL SOLUTION
-if (file.exists("comprehensive_map_data_fix.R")) {
-  cat("🚀 Loading comprehensive map data fix...\\n")
-  source("comprehensive_map_data_fix.R")
-}
