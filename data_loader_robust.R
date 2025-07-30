@@ -10,7 +10,21 @@ suppressPackageStartupMessages({
 load_robust_dataset <- function() {
   cat("🔄 load_robust_dataset called\n")
   
-  csv_path <- "data_current/processed/lexml_dataset_individual_com_localizacao/lexml_dataset_limpo_classificado_20250722_102507_com_localizacao.csv"
+  # Try multiple CSV paths in order of preference
+  csv_paths <- c(
+    "analytics_ready_data.csv",  # The 1.7M row file we found
+    "data_current/processed/lexml_dataset_individual_com_localizacao/lexml_dataset_limpo_classificado_20250722_102507_com_localizacao.csv",
+    "data/processed/lexml_dataset_individual_com_localizacao/lexml_dataset_limpo_classificado_20250722_102507_com_localizacao.csv"
+  )
+  
+  csv_path <- NULL
+  for (path in csv_paths) {
+    if (file.exists(path)) {
+      csv_path <- path
+      cat("📊 Found CSV file:", path, "\n")
+      break
+    }
+  }
   
   if (!file.exists(csv_path)) {
     cat("❌ CSV file not found, using fallback data\n")

@@ -45,29 +45,26 @@ if (!all_available) {
   cat("✓ All required packages verified at runtime\n")
 }
 
-# 🔧 CRITICAL FIX: Load new unified data access layer FIRST
-cat("🔧 LOADING UNIFIED DATA ACCESS LAYER...\n")
+# 🚨 EMERGENCY FIX: Load comprehensive database solution IMMEDIATELY
+cat("🚨 LOADING EMERGENCY DATABASE FIX...\n")
 
-# Load Railway database fix FIRST to patch get_database_stats
-if (file.exists("railway_database_fix.R")) {
-  source("railway_database_fix.R")
-  cat("✅ Railway database fix loaded - patched get_database_stats\n")
-}
-
-if (file.exists("data_access_layer.R")) {
-  source("data_access_layer.R")
-  cat("✅ Unified Data Access Layer loaded successfully\n")
-} else if (file.exists("railway_debug_fix.R")) {
-  source("railway_debug_fix.R")
-  cat("✅ Railway debug fix loaded successfully\n")
-} else if (file.exists("data_loader_robust.R")) {
-  source("data_loader_robust.R")
-  cat("✅ Robust data visualization fix loaded successfully\n")
-} else if (file.exists("data_loader_fix.R")) {
-  source("data_loader_fix.R") 
-  cat("✅ Data visualization fix loaded successfully\n")
+# Load the emergency database fix FIRST - this will handle everything
+if (file.exists("EMERGENCY_DATABASE_FIX.R")) {
+  source("EMERGENCY_DATABASE_FIX.R")
+  cat("✅ Emergency Database Fix loaded - 400k+ documents ready\n")
 } else {
-  cat("❌ WARNING: No data loader fix found - visualizations may not work\n")
+  cat("❌ CRITICAL: Emergency database fix not found!\n")
+  
+  # Fallback to previous loaders
+  if (file.exists("data_access_layer.R")) {
+    source("data_access_layer.R")
+    cat("✅ Unified Data Access Layer loaded successfully\n")
+  } else if (file.exists("data_loader_robust.R")) {
+    source("data_loader_robust.R")
+    cat("✅ Robust data visualization fix loaded successfully\n")
+  } else {
+    cat("❌ WARNING: No data loader fix found - visualizations may not work\n")
+  }
 }
 
 # Load ALL required packages for app.R
