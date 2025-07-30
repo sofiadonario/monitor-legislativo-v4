@@ -45,30 +45,7 @@ if (!all_available) {
   cat("✓ All required packages verified at runtime\n")
 }
 
-# 🚀 REAL DATA FIX: Load your ACTUAL processed research data FIRST
-cat("🚨 LOADING REAL DATA FIX - YOUR ACTUAL 786k+ RESEARCH DOCUMENTS...\n")
-
-# Load the REAL data fix FIRST - uses your actual processed research data
-if (file.exists("REAL_DATA_FIX.R")) {
-  source("REAL_DATA_FIX.R")
-  cat("✅ REAL DATA FIX loaded - Your actual research corpus ready for UI components\n")
-} else {
-  cat("❌ CRITICAL: REAL_DATA_FIX.R not found! Using emergency fallback...\n")
-  
-  # Fallback chain
-  if (file.exists("EMERGENCY_DATABASE_FIX.R")) {
-    source("EMERGENCY_DATABASE_FIX.R")
-    cat("✅ Emergency Database Fix loaded - 400k+ documents ready\n")
-  } else if (file.exists("data_access_layer.R")) {
-    source("data_access_layer.R")
-    cat("✅ Unified Data Access Layer loaded successfully\n")
-  } else if (file.exists("data_loader_robust.R")) {
-    source("data_loader_robust.R")
-    cat("✅ Robust data visualization fix loaded successfully\n")
-  } else {
-    cat("❌ WARNING: No data loader fix found - visualizations may not work\n")
-  }
-}
+# NOTE: REAL_DATA_FIX will be loaded AFTER all other files to ensure final override
 
 # Load ALL required packages for app.R
 cat("Loading all required packages for Shiny app...\n")
@@ -211,6 +188,15 @@ if (exists("get_connection_status")) {
   cat("  - Circuit breaker open:", connection_status$circuit_breaker_open, "\n")
   cat("  - Using fallback:", connection_status$using_fallback, "\n")
   cat("  - Queries executed:", connection_status$statistics$queries_executed, "\n")
+}
+
+# 🚨 FINAL OVERRIDE: Load REAL_DATA_FIX.R to override all conflicting functions
+cat("🚨 FINAL OVERRIDE: Loading REAL_DATA_FIX.R to ensure your actual research data is used\n")
+if (file.exists("REAL_DATA_FIX.R")) {
+  source("REAL_DATA_FIX.R")
+  cat("✅ REAL_DATA_FIX.R loaded - All functions now use your actual 131k+ research documents\n")
+} else {
+  cat("❌ CRITICAL: REAL_DATA_FIX.R not found! Data may not display correctly\n")
 }
 
 # Now source the main app

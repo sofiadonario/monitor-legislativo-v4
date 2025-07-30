@@ -251,9 +251,9 @@ get_documents <<- function(limit = 1000, ...) {
   return(result)
 }
 
-# Map data with your actual state distribution
+# Map data with your actual state distribution - RAILWAY COMPATIBLE
 get_map_data <<- function(...) {
-  cat("🗺️ get_map_data (REAL DATA)\n")
+  cat("🗺️ get_map_data (REAL DATA - Railway compatible)\n")
   
   # Brazilian states with coordinates
   brazil_coords <- data.frame(
@@ -282,8 +282,57 @@ get_map_data <<- function(...) {
   map_data <- merge(brazil_coords, state_counts, by = "estado", all.x = TRUE)
   map_data$document_count[is.na(map_data$document_count)] <- 0
   
+  # Add Railway-safe marker creation function
+  map_data$popup_text <- paste0(map_data$state_name, ": ", map_data$document_count, " documents")
+  
   cat("✅ Map data ready with REAL state distributions:", nrow(map_data), "regions\n")
   return(map_data)
+}
+
+# Railway-safe leaflet helper function to avoid addMarker namespace issues
+create_safe_leaflet_map <<- function(map_data = NULL) {
+  cat("🗺️ Creating Railway-safe leaflet map\n")
+  
+  # Ensure leaflet namespace is available
+  if (!requireNamespace("leaflet", quietly = TRUE)) {
+    cat("❌ leaflet package not available\n")
+    return(NULL)
+  }
+  
+  tryCatch({
+    if (is.null(map_data)) {
+      map_data <- get_map_data()
+    }
+    
+    # Create base map with explicit leaflet:: namespace
+    base_map <- leaflet::leaflet() %>%
+      leaflet::addTiles() %>%
+      leaflet::setView(lng = -47.86, lat = -15.83, zoom = 4)
+    
+    # Add markers for top 10 states with documents
+    top_states <- map_data[order(-map_data$document_count), ][1:10, ]
+    top_states <- top_states[!is.na(top_states$lat) & top_states$document_count > 0, ]
+    
+    if (nrow(top_states) > 0) {
+      base_map <- base_map %>%
+        leaflet::addMarkers(
+          lng = top_states$lng,
+          lat = top_states$lat,
+          popup = top_states$popup_text,
+          label = paste0(top_states$state_name, ": ", top_states$document_count)
+        )
+    }
+    
+    cat("✅ Safe leaflet map created with", nrow(top_states), "markers\n")
+    return(base_map)
+    
+  }, error = function(e) {
+    cat("❌ Error creating leaflet map:", e$message, "\n")
+    # Return minimal fallback map
+    return(leaflet::leaflet() %>%
+      leaflet::addTiles() %>%
+      leaflet::setView(lng = -47.86, lat = -15.83, zoom = 4))
+  })
 }
 
 # ==============================================================================
