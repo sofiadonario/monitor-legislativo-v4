@@ -123,13 +123,8 @@ tryCatch({
     cat("Using embedded close_database function\n")
   }
   
-  # Stub functions to prevent errors
-  load_legislative_data <- function(...) NULL
-  get_database_stats <- function(...) NULL
-  get_document_types <- function(...) character(0)
-  get_states <- function(...) character(0)
-  
-  cat("✓ Embedded minimal database functions\n")
+  # NOTE: Stub functions removed - REAL_DATA_FIX.R will provide all needed functions
+  cat("✓ Embedded minimal database functions (REAL_DATA_FIX will provide data functions)\n")
 })
 
 # Test the functions before loading the app
