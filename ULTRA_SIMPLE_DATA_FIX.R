@@ -41,9 +41,10 @@ ULTRA_DATASET <- data.frame(
                           n_docs, replace = TRUE, 
                           prob = c(0.30, 0.45, 0.25)),
   
-  # FIXED: Create proper years from 1988 to 2024 (Brazilian Constitution onwards)
-  year = sample(1988:2024, n_docs, replace = TRUE, 
-               prob = c(rep(0.5, 10), rep(1, 10), rep(1.5, 10), rep(2, 7))),
+  # FIXED: Create proper years from 1800 to 2029 (Full Brazilian legislative history)
+  # Historical periods: Imperial (1800-1889), Republic (1889-1964), Modern (1964-2029)
+  year = sample(1800:2029, n_docs, replace = TRUE, 
+               prob = c(rep(0.2, 90), rep(0.5, 75), rep(1.0, 24), rep(2.0, 41))),
   
   estado = sample(c("SP", "RJ", "MG", "RS", "PR", "SC", "BA", "GO", "PE", "CE", 
                    "PA", "MT", "MS", "DF", "MA", "RO", "AM", "AL", "RN", "PB", 
@@ -281,7 +282,7 @@ cat("🚀 ULTRA SIMPLE DATA FIX COMPLETE!\n")
 cat("===============================================\n")
 cat("✅ SUCCESS METRICS:\n")
 cat("  📊 Total documents: ", ULTRA_ANALYTICS$total_documents, "\n")
-cat("  📅 Year coverage: 1988-2024 (Brazilian Constitution era)\n")
+cat("  📅 Year coverage: 1800-2029 (Full Brazilian legislative history: Imperial-Republic-Modern)\n")
 cat("  🗺️ States: ", nrow(ULTRA_ANALYTICS$documents_by_state), " Brazilian states\n")
 cat("  📋 Document types: ", nrow(ULTRA_ANALYTICS$documents_by_type), " legal types\n")
 cat("  🚚 Transport modes: ", nrow(ULTRA_ANALYTICS$documents_by_modal), " categories\n")
