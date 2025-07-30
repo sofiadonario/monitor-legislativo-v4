@@ -1079,7 +1079,7 @@ ui <- dashboardPage(
               width = 12,
               collapsible = TRUE,
               fluidRow(
-                column(6, plotlyOutput("yearChart", height = "300px")),
+                column(6, plotlyOutput("analyticsYearChart", height = "300px")),
                 column(6, plotlyOutput("monthChart", height = "300px"))
               ),
               fluidRow(
@@ -2559,7 +2559,7 @@ server <- function(input, output, session) {
   
   # Documents by Type Chart
   # Year Chart - Documents by Year
-  output$yearChart <- renderPlotly({
+  output$analyticsYearChart <- renderPlotly({
     tryCatch({
       if (is.null(values$analytics_data) || is.null(values$analytics_data$documents_by_year)) {
         empty_plot <- plot_ly() %>%
@@ -2606,7 +2606,7 @@ server <- function(input, output, session) {
       
       return(p)
     }, error = function(e) {
-      cat("Error in yearChart:", e$message, "\n")
+      cat("Error in analyticsYearChart:", e$message, "\n")
       return(plot_ly() %>% add_annotations(text = paste("Error:", e$message), 
                                           x = 0.5, y = 0.5))
     })
