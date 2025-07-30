@@ -715,16 +715,6 @@ ui <- dashboardPage(
             verbatimTextOutput("debug_status_display")
           )
         ),
-        fluidRow(
-          box(
-            title = "🔍 Deployment Status", 
-            status = "info", 
-            solidHeader = TRUE, 
-            width = 12,
-            height = "100px",
-            verbatimTextOutput("debug_status_display")
-          )
-        ),
         # Enhanced Dashboard with LexML Data
         fluidRow(
           # Updated Document Overview with LexML Metrics
