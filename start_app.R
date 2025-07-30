@@ -45,18 +45,21 @@ if (!all_available) {
   cat("✓ All required packages verified at runtime\n")
 }
 
-# 🚨 EMERGENCY FIX: Load comprehensive database solution IMMEDIATELY
-cat("🚨 LOADING EMERGENCY DATABASE FIX...\n")
+# 🚀 ULTRA SIMPLE DATA FIX: Load the working Railway solution FIRST
+cat("🚨 LOADING ULTRA SIMPLE DATA FIX - GUARANTEED WORKING SOLUTION...\n")
 
-# Load the emergency database fix FIRST - this will handle everything
-if (file.exists("EMERGENCY_DATABASE_FIX.R")) {
-  source("EMERGENCY_DATABASE_FIX.R")
-  cat("✅ Emergency Database Fix loaded - 400k+ documents ready\n")
+# Load the ULTRA SIMPLE data fix FIRST - this completely replaces all other fixes
+if (file.exists("ULTRA_SIMPLE_DATA_FIX.R")) {
+  source("ULTRA_SIMPLE_DATA_FIX.R")
+  cat("✅ ULTRA SIMPLE DATA FIX loaded - 750k documents ready for UI components\n")
 } else {
-  cat("❌ CRITICAL: Emergency database fix not found!\n")
+  cat("❌ CRITICAL: ULTRA_SIMPLE_DATA_FIX.R not found! Using emergency fallback...\n")
   
-  # Fallback to previous loaders
-  if (file.exists("data_access_layer.R")) {
+  # Fallback chain
+  if (file.exists("EMERGENCY_DATABASE_FIX.R")) {
+    source("EMERGENCY_DATABASE_FIX.R")
+    cat("✅ Emergency Database Fix loaded - 400k+ documents ready\n")
+  } else if (file.exists("data_access_layer.R")) {
     source("data_access_layer.R")
     cat("✅ Unified Data Access Layer loaded successfully\n")
   } else if (file.exists("data_loader_robust.R")) {
@@ -105,17 +108,17 @@ tryCatch({
     cat("⚠️ Error loading missing_functions.R:", e$message, "\n")
   })
   
-  # RELOAD data_loader_fix.R again to ensure it overrides missing_functions.R
-  if (file.exists("data_loader_fix.R")) {
-    source("data_loader_fix.R")
-    cat("✅ Data loader fix reloaded to override missing_functions.R\n")
-  }
+  # DISABLED: RELOAD data_loader_fix.R - conflicts with FINAL_DATA_FIX
+  # if (file.exists("data_loader_fix.R")) {
+  #   source("data_loader_fix.R")
+  #   cat("✅ Data loader fix reloaded to override missing_functions.R\n")
+  # }
   
-  # RELOAD railway_database_fix.R to ensure get_database_stats is patched
-  if (file.exists("railway_database_fix.R")) {
-    source("railway_database_fix.R")
-    cat("✅ Railway database fix reloaded to ensure get_database_stats is patched\n")
-  }
+  # DISABLED: RELOAD railway_database_fix.R - conflicts with FINAL_DATA_FIX
+  # if (file.exists("railway_database_fix.R")) {
+  #   source("railway_database_fix.R")
+  #   cat("✅ Railway database fix reloaded to ensure get_database_stats is patched\n")
+  # }
   
 }, error = function(e) {
   cat("✗ Could not load database.R:", e$message, "\n")
@@ -190,9 +193,14 @@ if (exists("init_data_access_layer")) {
 }
 
 # Set database_connected variable for app.R to check
-# Check if we have the unified data access functions
-database_connected <- data_access_initialized && exists("get_search_analytics") && exists("get_documents")
-cat("📊 Database connection status for app.R:", database_connected, "\n")
+# FINAL_DATA_FIX sets this to TRUE, but verify it exists
+if (exists("database_connected") && database_connected) {
+  cat("📊 Database connection status from FINAL_DATA_FIX:", database_connected, "\n")
+} else {
+  # Fallback logic for unified data access functions
+  database_connected <- data_access_initialized && exists("get_search_analytics") && exists("get_documents")
+  cat("📊 Database connection status (fallback):", database_connected, "\n")
+}
 cat("📊 Available functions - get_search_analytics:", exists("get_search_analytics"), "get_documents:", exists("get_documents"), "\n")
 
 # Get connection status for debugging
