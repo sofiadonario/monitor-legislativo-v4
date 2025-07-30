@@ -1084,7 +1084,7 @@ ui <- dashboardPage(
               ),
               fluidRow(
                 column(6, plotlyOutput("analyticsTypeChart", height = "300px")),
-                column(6, plotlyOutput("stateChart", height = "300px"))
+                column(6, plotlyOutput("analyticsStateChart", height = "300px"))
               )
             ),
             
@@ -2282,6 +2282,82 @@ server <- function(input, output, session) {
         plot_ly() %>%
           add_annotations(
             text = "No type data available",
+            xref = "paper", yref = "paper",
+            x = 0.5, y = 0.5, showarrow = FALSE
+          ) %>%
+          layout(
+            xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
+            yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
+          )
+      }
+    } else {
+      # No data available
+      plot_ly() %>%
+        add_annotations(
+          text = "No data available",
+          xref = "paper", yref = "paper",
+          x = 0.5, y = 0.5, showarrow = FALSE
+        ) %>%
+        layout(
+          xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
+          yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
+        )
+    }
+  })
+  
+  # Documents by State Chart (Main Dashboard)
+  output$stateChart <- renderPlotly({
+    if (database_connected && !is.null(values$analytics_data)) {
+      data <- values$analytics_data$documents_by_state
+      
+      if (nrow(data) > 0) {
+        # Ensure data is properly formatted
+        data$count <- as.numeric(data$count)
+        
+        # Remove any invalid counts
+        data <- data[!is.na(data$count), ]
+        
+        if (nrow(data) > 0) {
+          # Limit to top 10 states for better visualization
+          data <- data[order(data$count, decreasing = TRUE), ]
+          if (nrow(data) > 10) {
+            data <- data[1:10, ]
+          }
+          
+          p <- ggplot(data, aes(x = reorder(estado, count), y = count)) +
+            geom_col(fill = "#e1001e", alpha = 0.8) +
+            coord_flip() +
+            theme_minimal() +
+            labs(
+              title = "Documents by State (Top 10)",
+              x = "State",
+              y = "Number of Documents"
+            ) +
+            theme(
+              plot.title = element_text(size = 14, face = "bold"),
+              axis.title = element_text(size = 12),
+              axis.text = element_text(size = 10)
+            )
+          
+          ggplotly(p, tooltip = c("x", "y"))
+        } else {
+          # Empty plot
+          plot_ly() %>%
+            add_annotations(
+              text = "No state data available",
+              xref = "paper", yref = "paper",
+              x = 0.5, y = 0.5, showarrow = FALSE
+            ) %>%
+            layout(
+              xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
+              yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
+            )
+        }
+      } else {
+        # Empty plot
+        plot_ly() %>%
+          add_annotations(
+            text = "No state data available",
             xref = "paper", yref = "paper",
             x = 0.5, y = 0.5, showarrow = FALSE
           ) %>%
@@ -3997,8 +4073,8 @@ server <- function(input, output, session) {
 
   # Missing chart outputs for Basic Analytics
   
-  # State distribution chart
-  output$stateChart <- renderPlotly({
+  # State distribution chart (Analytics)
+  output$analyticsStateChart <- renderPlotly({
     tryCatch({
       if (is.null(values$analytics_data) || is.null(values$analytics_data$documents_by_state)) {
         empty_plot <- plot_ly() %>%
@@ -4045,7 +4121,7 @@ server <- function(input, output, session) {
       
       return(p)
     }, error = function(e) {
-      cat("Error in stateChart:", e$message, "\n")
+      cat("Error in analyticsStateChart:", e$message, "\n")
       return(plot_ly() %>% add_annotations(text = paste("Error:", e$message), 
                                           x = 0.5, y = 0.5))
     })
