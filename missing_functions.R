@@ -26,7 +26,7 @@ create_sample_data <- function(limit = 1000) {
 }
 
 # Add essential data access functions
-get_documents <- function(limit = 1000) {
+get_documents <- function(limit = 25000) {
   cat("🔄 get_documents called with limit:", limit, "\n")
   
   # Always use sample data to avoid circular dependencies
@@ -36,7 +36,7 @@ get_documents <- function(limit = 1000) {
   return(result)
 }
 
-get_documents_data <- function(filters = NULL, limit = 1000) {
+get_documents_data <- function(filters = NULL, limit = 25000) {
   cat("🔄 get_documents_data called with filters and limit:", limit, "\n")
   
   # Try database first
@@ -176,7 +176,7 @@ get_database_stats <- function() {
   ))
 }
 
-load_legislative_data <- function(limit = 1000, filters = NULL) {
+load_legislative_data <- function(limit = 25000, filters = NULL) {
   cat("🔄 load_legislative_data called with limit:", limit, "\n")
   
   # Create sample data directly to avoid circular dependency

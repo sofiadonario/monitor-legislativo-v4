@@ -1316,7 +1316,7 @@ server <- function(input, output, session) {
   
   # Simple reactive function to get documents when needed
   get_dashboard_data <- reactive({
-    load_legislative_data(limit = 1000)
+    load_legislative_data(limit = 25000)
   })
   
   # Initialize data on startup with force refresh
@@ -1552,7 +1552,7 @@ server <- function(input, output, session) {
   output$documentsTable <- DT::renderDataTable({
     # Load data from database instead of CSV
     if (database_connected) {
-      lexml_data <- get_documents(limit = 1000)  # Get first 1000 documents
+      lexml_data <- get_documents(limit = 25000)  # Get first 25000 documents
     } else {
       lexml_data <- NULL
     }
