@@ -188,7 +188,21 @@ if (file.exists("map_rendering_fix.R")) {
 }
 cat("✅ EMBEDDED EMERGENCY DATABASE OVERRIDE COMPLETE\n")
 
-# Load Railway database connection fix
+# Load Emergency Database Fix (highest priority)
+if (file.exists("EMERGENCY_DATABASE_FIX.R")) {
+  cat("🚨 Loading EMERGENCY DATABASE FIX...\n")
+  source("EMERGENCY_DATABASE_FIX.R", local = TRUE)
+  cat("✅ Emergency database fix loaded\n")
+}
+
+# Load Force Rebuild Debug
+if (file.exists("FORCE_REBUILD_DEBUG.R")) {
+  cat("🔧 Loading force rebuild debug...\n")
+  source("FORCE_REBUILD_DEBUG.R", local = TRUE)
+  cat("✅ Force rebuild debug loaded\n")
+}
+
+# Load Railway database connection fix (secondary)
 if (file.exists("railway_database_fix.R")) {
   cat("🔄 Loading Railway database connection fix...\n")
   source("railway_database_fix.R")
