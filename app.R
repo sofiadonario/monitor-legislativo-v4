@@ -1083,7 +1083,7 @@ ui <- dashboardPage(
                 column(6, plotlyOutput("analyticsMonthChart", height = "300px"))
               ),
               fluidRow(
-                column(6, plotlyOutput("typeChart", height = "300px")),
+                column(6, plotlyOutput("analyticsTypeChart", height = "300px")),
                 column(6, plotlyOutput("stateChart", height = "300px"))
               )
             ),
@@ -2235,6 +2235,76 @@ server <- function(input, output, session) {
     }
   })
   
+  # Documents by Type Chart (Main Dashboard)
+  output$typeChart <- renderPlotly({
+    if (database_connected && !is.null(values$analytics_data)) {
+      data <- values$analytics_data$documents_by_type
+      
+      if (nrow(data) > 0) {
+        # Ensure data is properly formatted
+        data$count <- as.numeric(data$count)
+        
+        # Remove any invalid counts
+        data <- data[!is.na(data$count), ]
+        
+        if (nrow(data) > 0) {
+          p <- ggplot(data, aes(x = reorder(tipo, count), y = count)) +
+            geom_col(fill = "#e1001e", alpha = 0.8) +
+            coord_flip() +
+            theme_minimal() +
+            labs(
+              title = "Documents by Type",
+              x = "Document Type",
+              y = "Number of Documents"
+            ) +
+            theme(
+              plot.title = element_text(size = 14, face = "bold"),
+              axis.title = element_text(size = 12),
+              axis.text = element_text(size = 10)
+            )
+          
+          ggplotly(p, tooltip = c("x", "y"))
+        } else {
+          # Empty plot
+          plot_ly() %>%
+            add_annotations(
+              text = "No type data available",
+              xref = "paper", yref = "paper",
+              x = 0.5, y = 0.5, showarrow = FALSE
+            ) %>%
+            layout(
+              xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
+              yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
+            )
+        }
+      } else {
+        # Empty plot
+        plot_ly() %>%
+          add_annotations(
+            text = "No type data available",
+            xref = "paper", yref = "paper",
+            x = 0.5, y = 0.5, showarrow = FALSE
+          ) %>%
+          layout(
+            xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
+            yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
+          )
+      }
+    } else {
+      # No data available
+      plot_ly() %>%
+        add_annotations(
+          text = "No data available",
+          xref = "paper", yref = "paper",
+          x = 0.5, y = 0.5, showarrow = FALSE
+        ) %>%
+        layout(
+          xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
+          yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
+        )
+    }
+  })
+  
   # Dashboard Map - Load data directly from database
   output$dashboardMap <- renderLeaflet({
     cat("🔄 Dashboard map rendering triggered\n")
@@ -2671,7 +2741,7 @@ server <- function(input, output, session) {
     })
   })
   
-  output$typeChart <- renderPlotly({
+  output$analyticsTypeChart <- renderPlotly({
     if (database_connected && !is.null(values$analytics_data)) {
       data <- values$analytics_data$documents_by_type
       
