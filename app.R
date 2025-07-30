@@ -187,6 +187,13 @@ if (file.exists("map_rendering_fix.R")) {
   source("map_rendering_fix.R")
 }
 cat("✅ EMBEDDED EMERGENCY DATABASE OVERRIDE COMPLETE\n")
+
+# Load Railway database connection fix
+if (file.exists("railway_database_fix.R")) {
+  cat("🔄 Loading Railway database connection fix...\n")
+  source("railway_database_fix.R")
+  cat("✅ Railway database fix loaded\n")
+}
 cat("📊 All functions embedded in app.R (278,152 documents)\n")
 cat("🗺️ Map coordinates loaded for all 27 Brazilian states\n")
 

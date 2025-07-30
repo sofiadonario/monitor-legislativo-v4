@@ -47,6 +47,13 @@ if (!all_available) {
 
 # 🔧 CRITICAL FIX: Load new unified data access layer FIRST
 cat("🔧 LOADING UNIFIED DATA ACCESS LAYER...\n")
+
+# Load Railway database fix FIRST to patch get_database_stats
+if (file.exists("railway_database_fix.R")) {
+  source("railway_database_fix.R")
+  cat("✅ Railway database fix loaded - patched get_database_stats\n")
+}
+
 if (file.exists("data_access_layer.R")) {
   source("data_access_layer.R")
   cat("✅ Unified Data Access Layer loaded successfully\n")
@@ -105,6 +112,12 @@ tryCatch({
   if (file.exists("data_loader_fix.R")) {
     source("data_loader_fix.R")
     cat("✅ Data loader fix reloaded to override missing_functions.R\n")
+  }
+  
+  # RELOAD railway_database_fix.R to ensure get_database_stats is patched
+  if (file.exists("railway_database_fix.R")) {
+    source("railway_database_fix.R")
+    cat("✅ Railway database fix reloaded to ensure get_database_stats is patched\n")
   }
   
 }, error = function(e) {

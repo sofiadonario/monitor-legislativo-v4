@@ -1,247 +1,159 @@
-# TEST DATABASE FIX - Comprehensive testing of the database pool access fix
-# This script tests the new database connection pool management system
+#!/usr/bin/env Rscript
 
-cat("🧪 TESTING DATABASE POOL ACCESS FIX\n")
-cat(paste(rep("=", 50), collapse = ""), "\n")
+# Test script to verify the database fix is working
+cat("=== TESTING DATABASE FIX ===\n")
 
-# Load the data access layer
-cat("🔧 Loading Data Access Layer...\n")
-if (file.exists("data_access_layer.R")) {
-  source("data_access_layer.R")
-  cat("✅ Data Access Layer loaded\n")
+# Load required libraries
+suppressPackageStartupMessages({
+  library(DBI)
+  library(RPostgres)
+  library(dplyr)
+})
+
+# Load utility functions first
+if (file.exists("utils.R")) {
+  source("utils.R")
+  cat("✅ utils.R loaded\n")
+}
+
+# Load the database fix
+if (file.exists("railway_database_fix.R")) {
+  source("railway_database_fix.R")
+  cat("✅ railway_database_fix.R loaded\n")
 } else {
-  cat("❌ Data Access Layer not found\n")
+  cat("❌ railway_database_fix.R not found\n")
   quit(status = 1)
 }
 
-# Test 1: Initialize the system
-cat("\n🧪 TEST 1: System Initialization\n")
-cat(paste(rep("-", 30), collapse = ""), "\n")
-
-if (exists("init_data_access_layer")) {
-  init_result <- init_data_access_layer()
-  cat("📊 Initialization result:", init_result, "\n")
-} else {
-  cat("❌ init_data_access_layer function not found\n")
+# Load the data access layer
+if (file.exists("data_access_layer.R")) {
+  source("data_access_layer.R")
+  cat("✅ data_access_layer.R loaded\n")
 }
 
-# Test 2: Connection Status
-cat("\n🧪 TEST 2: Connection Status Check\n")
-cat(paste(rep("-", 30), collapse = ""), "\n")
-
-if (exists("get_connection_status")) {
-  status <- get_connection_status()
-  cat("📊 Database Connected:", status$database_connected, "\n")
-  cat("📊 Circuit Breaker Open:", status$circuit_breaker_open, "\n")
-  cat("📊 Using Fallback:", status$using_fallback, "\n")
-  cat("📊 Failure Count:", status$failure_count, "\n")
-  cat("📊 Queries Executed:", status$statistics$queries_executed, "\n")
-} else {
-  cat("❌ get_connection_status function not found\n")
-}
-
-# Test 3: Health Check
-cat("\n🧪 TEST 3: Comprehensive Health Check\n")
-cat(paste(rep("-", 30), collapse = ""), "\n")
-
-if (exists("perform_comprehensive_health_check")) {
-  health <- perform_comprehensive_health_check()
-  cat("📊 Overall Status:", health$overall_status, "\n")
-  cat("📊 Database Status:", health$database_status, "\n")
-  cat("📊 Connection Pool Status:", health$connection_pool_status, "\n")
+# Load database functions
+if (file.exists("database.R")) {
+  source("database.R")
+  cat("✅ database.R loaded\n")
   
-  if (length(health$issues) > 0) {
-    cat("⚠️ Issues found:\n")
-    for (issue in health$issues) {
-      cat("  -", issue, "\n")
-    }
-  } else {
-    cat("✅ No issues detected\n")
-  }
-  
-  if (length(health$recommendations) > 0) {
-    cat("💡 Recommendations:\n")
-    for (rec in health$recommendations) {
-      cat("  -", rec, "\n")
-    }
-  }
-} else {
-  cat("❌ perform_comprehensive_health_check function not found\n")
+  # Reload the fix to ensure it overrides
+  source("railway_database_fix.R")
+  cat("✅ railway_database_fix.R reloaded to override functions\n")
 }
 
-# Test 4: Data Retrieval
-cat("\n🧪 TEST 4: Data Retrieval Test\n")
-cat(paste(rep("-", 30), collapse = ""), "\n")
+cat("\n=== TESTING DATABASE CONNECTION ===\n")
 
-# Test get_search_analytics
-if (exists("get_search_analytics")) {
-  cat("🔍 Testing get_search_analytics...\n")
-  start_time <- Sys.time()
-  analytics <- get_search_analytics()
-  end_time <- Sys.time()
-  query_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
-  
-  if (!is.null(analytics)) {
-    cat("✅ Analytics retrieved successfully in", round(query_time, 2), "seconds\n")
-    cat("📊 Total Documents:", analytics$total_documents, "\n")
-    cat("📊 Data Source:", analytics$data_source %||% "unknown", "\n")
-    cat("📊 Years Available:", nrow(analytics$documents_by_year), "\n")
-    cat("📊 States Available:", nrow(analytics$documents_by_state), "\n")
-    cat("📊 Types Available:", nrow(analytics$documents_by_type), "\n")
-  } else {
-    cat("❌ Analytics retrieval failed\n")
-  }
+# Test 1: Check if DATABASE_URL is available
+database_url <- Sys.getenv("DATABASE_URL", "")
+if (database_url != "") {
+  cat("✅ DATABASE_URL is set\n")
 } else {
-  cat("❌ get_search_analytics function not found\n")
+  cat("❌ DATABASE_URL is not set - using fallback mode\n")
 }
 
-# Test get_documents
-if (exists("get_documents")) {
-  cat("🔍 Testing get_documents...\n")
-  start_time <- Sys.time()
-  documents <- get_documents(limit = 10)
-  end_time <- Sys.time()
-  query_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
-  
-  if (!is.null(documents) && nrow(documents) > 0) {
-    cat("✅ Documents retrieved successfully in", round(query_time, 2), "seconds\n")
-    cat("📊 Documents Retrieved:", nrow(documents), "\n")
-    cat("📊 Columns Available:", paste(names(documents)[1:min(5, ncol(documents))], collapse = ", "), "\n")
-    
-    # Show sample titles
-    if ("titulo" %in% names(documents)) {
-      cat("📄 Sample Titles:\n")
-      for (i in 1:min(3, nrow(documents))) {
-        title <- substr(documents$titulo[i], 1, 60)
-        cat("  ", i, ":", title, "\n")
-      }
-    }
-  } else {
-    cat("❌ Document retrieval failed or returned empty result\n")
-  }
-} else {
-  cat("❌ get_documents function not found\n")
-}
-
-# Test 5: Database Stats
-cat("\n🧪 TEST 5: Database Statistics\n")
-cat(paste(rep("-", 30), collapse = ""), "\n")
-
+# Test 2: Test get_database_stats function
+cat("\n=== TESTING get_database_stats() ===\n")
 if (exists("get_database_stats")) {
-  cat("🔍 Testing get_database_stats...\n")
   stats <- get_database_stats()
   
   if (!is.null(stats)) {
-    cat("✅ Database stats retrieved successfully\n")
-    cat("📊 Total Documents:", stats$total_documents, "\n")
-    cat("📊 Unique States:", stats$unique_states, "\n")
-    cat("📊 Unique Types:", stats$unique_types, "\n")
-    cat("📊 Oldest Document:", stats$oldest_document, "\n")
-    cat("📊 Newest Document:", stats$newest_document, "\n")
-    cat("📊 Last Update:", stats$last_update, "\n")
+    cat("✅ get_database_stats() returned data:\n")
+    cat("  Total documents:", stats$total_documents, "\n")
+    cat("  Unique states:", stats$unique_states, "\n")
+    cat("  Unique types:", stats$unique_types, "\n")
+    cat("  Date range:", stats$oldest_document, "to", stats$newest_document, "\n")
+    
+    if (stats$total_documents > 1000) {
+      cat("✅ SUCCESS: Large dataset detected (not sample data)\n")
+    } else {
+      cat("⚠️ WARNING: Small dataset detected, may be sample data\n")
+    }
   } else {
-    cat("❌ Database stats retrieval failed\n")
+    cat("❌ get_database_stats() returned NULL\n")
   }
 } else {
-  cat("❌ get_database_stats function not found\n")
+  cat("❌ get_database_stats() function not found\n")
 }
 
-# Test 6: Performance Test
-cat("\n🧪 TEST 6: Performance Test (5 queries)\n")
-cat(paste(rep("-", 30), collapse = ""), "\n")
+# Test 3: Test load_legislative_data function
+cat("\n=== TESTING load_legislative_data() ===\n")
+if (exists("load_legislative_data")) {
+  data <- load_legislative_data(limit = 10)
+  
+  if (!is.null(data) && nrow(data) > 0) {
+    cat("✅ load_legislative_data() returned", nrow(data), "rows\n")
+    cat("  Columns:", paste(names(data), collapse = ", "), "\n")
+    cat("  Sample titles:\n")
+    for (i in 1:min(3, nrow(data))) {
+      cat("   ", i, ":", substr(data$titulo[i], 1, 60), "...\n")
+    }
+  } else {
+    cat("❌ load_legislative_data() returned no data\n")
+  }
+} else {
+  cat("❌ load_legislative_data() function not found\n")
+}
 
+# Test 4: Test data access layer functions
+cat("\n=== TESTING DATA ACCESS LAYER ===\n")
 if (exists("get_search_analytics")) {
-  query_times <- numeric(5)
-  successful_queries <- 0
+  analytics <- get_search_analytics()
   
-  for (i in 1:5) {
-    start_time <- Sys.time()
-    result <- get_search_analytics()
-    end_time <- Sys.time()
-    
-    query_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
-    query_times[i] <- query_time
-    
-    if (!is.null(result)) {
-      successful_queries <- successful_queries + 1
-    }
-    
-    cat("  Query", i, ":", round(query_time, 3), "seconds\n")
-  }
-  
-  cat("📊 Performance Summary:\n")
-  cat("  - Successful Queries:", successful_queries, "/5\n")
-  cat("  - Success Rate:", round(successful_queries / 5 * 100, 1), "%\n")
-  cat("  - Average Time:", round(mean(query_times), 3), "seconds\n")
-  cat("  - Min Time:", round(min(query_times), 3), "seconds\n")
-  cat("  - Max Time:", round(max(query_times), 3), "seconds\n")
-  
-  if (successful_queries == 5 && mean(query_times) < 2.0) {
-    cat("✅ Performance test PASSED\n")
+  if (!is.null(analytics) && analytics$total_documents > 0) {
+    cat("✅ get_search_analytics() working:\n")
+    cat("  Total:", analytics$total_documents, "\n")
+    cat("  By year entries:", nrow(analytics$documents_by_year), "\n")
+    cat("  By state entries:", nrow(analytics$documents_by_state), "\n")
+    cat("  By type entries:", nrow(analytics$documents_by_type), "\n")
   } else {
-    cat("⚠️ Performance test shows issues - check connection stability\n")
+    cat("⚠️ get_search_analytics() returned minimal data\n")
   }
-}
-
-# Test 7: Health Trends
-cat("\n🧪 TEST 7: Health Trends Analysis\n")
-cat(paste(rep("-", 30), collapse = ""), "\n")
-
-if (exists("get_health_trends")) {
-  trends <- get_health_trends()
-  cat("📈 Health Trends:\n")
-  cat("  - Total Health Checks:", trends$total_health_checks, "\n")
-  cat("  - Success Rate:", trends$success_rate, "%\n")
-  cat("  - Average Query Time:", trends$avg_query_time, "seconds\n")
-  cat("  - Recent Failures:", trends$recent_failures, "\n")
-  cat("  - Recent Successes:", trends$recent_successes, "\n")
-  
-  if (is.character(trends$recommendations) && length(trends$recommendations) > 0) {
-    cat("💡 Trend Recommendations:\n")
-    for (rec in trends$recommendations) {
-      cat("  -", rec, "\n")
-    }
-  }
-}
-
-# Final Assessment
-cat("\n🏆 FINAL ASSESSMENT\n")
-cat(paste(rep("=", 50), collapse = ""), "\n")
-
-# Determine overall success
-tests_passed <- 0
-total_tests <- 7
-
-if (exists("init_data_access_layer")) tests_passed <- tests_passed + 1
-if (exists("get_connection_status")) tests_passed <- tests_passed + 1
-if (exists("perform_comprehensive_health_check")) tests_passed <- tests_passed + 1
-if (exists("get_search_analytics")) tests_passed <- tests_passed + 1
-if (exists("get_documents")) tests_passed <- tests_passed + 1
-if (exists("get_database_stats")) tests_passed <- tests_passed + 1
-if (exists("get_health_trends")) tests_passed <- tests_passed + 1
-
-success_rate <- tests_passed / total_tests * 100
-
-cat("📊 TESTS SUMMARY:\n")
-cat("  - Tests Passed:", tests_passed, "/", total_tests, "\n")
-cat("  - Success Rate:", round(success_rate, 1), "%\n")
-
-if (success_rate >= 85) {
-  cat("✅ DATABASE POOL ACCESS FIX - SUCCESS\n")
-  cat("🎯 All critical functions are working\n")
-  cat("🚀 Ready for Railway deployment\n")
-} else if (success_rate >= 70) {
-  cat("⚠️ DATABASE POOL ACCESS FIX - PARTIAL SUCCESS\n")
-  cat("🔧 Some issues detected - review logs above\n")
 } else {
-  cat("❌ DATABASE POOL ACCESS FIX - NEEDS ATTENTION\n")
-  cat("🚨 Critical issues detected - review implementation\n")
+  cat("❌ get_search_analytics() function not found\n")
 }
 
-cat("\n📋 NEXT STEPS:\n")
-cat("1. Deploy to Railway and monitor logs\n")
-cat("2. Use perform_comprehensive_health_check() for ongoing monitoring\n")
-cat("3. Check get_connection_status() if issues arise\n")
-cat("4. Review health trends with get_health_trends()\n")
+# Test 5: Direct database connection test
+cat("\n=== TESTING DIRECT DATABASE CONNECTION ===\n")
+if (database_url != "") {
+  tryCatch({
+    con <- dbConnect(RPostgres::Postgres(), database_url)
+    tables <- dbListTables(con)
+    cat("✅ Direct connection successful\n")
+    cat("  Tables found:", length(tables), "\n")
+    
+    # Count documents in main tables
+    for (table_name in c("lexml_documents", "documents", "lexml_parsed_enhanced_fixed")) {
+      if (table_name %in% tables) {
+        tryCatch({
+          count <- dbGetQuery(con, paste("SELECT COUNT(*) as count FROM", table_name))$count[1]
+          cat("   ", table_name, ":", count, "rows\n")
+        }, error = function(e) {
+          cat("   ", table_name, ": error counting rows\n")
+        })
+      }
+    }
+    
+    dbDisconnect(con)
+  }, error = function(e) {
+    cat("❌ Direct connection failed:", e$message, "\n")
+  })
+} else {
+  cat("❌ Cannot test direct connection without DATABASE_URL\n")
+}
 
-cat("\n✅ Database Pool Access Fix Test Complete\n")
+cat("\n=== TEST SUMMARY ===\n")
+if (exists("get_database_stats")) {
+  final_stats <- get_database_stats()
+  if (!is.null(final_stats) && final_stats$total_documents > 1000) {
+    cat("🎉 SUCCESS: Database fix is working!\n")
+    cat("   App will show", final_stats$total_documents, "documents instead of 3\n")
+    cat("   UI components will be populated with real data\n")
+  } else {
+    cat("⚠️ PARTIAL SUCCESS: Fix loaded but using fallback data\n")
+    cat("   Check DATABASE_URL and database connectivity\n")
+  }
+} else {
+  cat("❌ FAILURE: Fix not properly loaded\n")
+}
+
+cat("=== END TEST ===\n")
