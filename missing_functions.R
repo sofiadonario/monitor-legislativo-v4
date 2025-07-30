@@ -26,7 +26,7 @@ create_sample_data <- function(limit = 1000) {
 }
 
 # Add essential data access functions
-get_documents <- function(limit = 25000) {
+get_documents <- function(limit = 200000) {
   cat("🔄 get_documents called with limit:", limit, "\n")
   
   # Always use sample data to avoid circular dependencies
@@ -36,7 +36,7 @@ get_documents <- function(limit = 25000) {
   return(result)
 }
 
-get_documents_data <- function(filters = NULL, limit = 25000) {
+get_documents_data <- function(filters = NULL, limit = 200000) {
   cat("🔄 get_documents_data called with filters and limit:", limit, "\n")
   
   # Try database first
@@ -167,16 +167,87 @@ get_lexml_dashboard_metrics <- function(db_pool = NULL) {
 
 # Add more functions that might be called by other UI components
 get_database_stats <- function() {
-  cat("🔄 get_database_stats called (using sample data)\n")
+  cat("🔄 get_database_stats called\n")
   
-  return(list(
-    total_documents = 3,
-    last_updated = Sys.time(),
-    data_quality = "100%"
-  ))
+  # Try to use the real database function if available
+  if (exists(".db_pool") && !is.null(.db_pool)) {
+    cat("🔄 Using real database connection for stats\n")
+    tryCatch({
+      # Total documents
+      total_docs <- DBI::dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")$count[1]
+      
+      # Documents by year
+      docs_by_year <- DBI::dbGetQuery(.db_pool, "
+        SELECT EXTRACT(YEAR FROM data) as year, COUNT(*) as count 
+        FROM documents 
+        WHERE data IS NOT NULL 
+        GROUP BY year 
+        ORDER BY year
+      ")
+      
+      # Documents by type
+      docs_by_type <- DBI::dbGetQuery(.db_pool, "
+        SELECT tipo, COUNT(*) as count 
+        FROM documents 
+        WHERE tipo IS NOT NULL 
+        GROUP BY tipo 
+        ORDER BY count DESC
+      ")
+      
+      # Documents by state
+      docs_by_state <- DBI::dbGetQuery(.db_pool, "
+        SELECT estado, COUNT(*) as count 
+        FROM documents 
+        WHERE estado IS NOT NULL 
+        GROUP BY estado 
+        ORDER BY count DESC
+      ")
+      
+      # Documents by month (last 12 months)
+      docs_by_month <- DBI::dbGetQuery(.db_pool, "
+        SELECT TO_CHAR(data, 'YYYY-MM') as month, COUNT(*) as count 
+        FROM documents 
+        WHERE data >= CURRENT_DATE - INTERVAL '12 months' 
+          AND data IS NOT NULL
+        GROUP BY month 
+        ORDER BY month
+      ")
+      
+      return(list(
+        total_documents = total_docs,
+        documents_by_year = docs_by_year,
+        documents_by_type = docs_by_type,
+        documents_by_state = docs_by_state,
+        documents_by_month = docs_by_month,
+        last_updated = Sys.time()
+      ))
+      
+    }, error = function(e) {
+      cat("⚠️ Error getting database stats:", e$message, "\n")
+      # Fall back to sample data
+      return(list(
+        total_documents = 3,
+        documents_by_year = data.frame(year = c(2021, 2022, 2023), count = c(1, 1, 1)),
+        documents_by_type = data.frame(tipo = c("Lei", "Decreto"), count = c(2, 1)),
+        documents_by_state = data.frame(estado = c("SP", "RJ"), count = c(2, 1)),
+        documents_by_month = data.frame(month = c("2023-01", "2023-02"), count = c(2, 1)),
+        last_updated = Sys.time()
+      ))
+    })
+  } else {
+    cat("🔄 Using sample data (no database connection)\n")
+    return(list(
+      total_documents = 3,
+      documents_by_year = data.frame(year = c(2021, 2022, 2023), count = c(1, 1, 1)),
+      documents_by_type = data.frame(tipo = c("Lei", "Decreto"), count = c(2, 1)),
+      documents_by_state = data.frame(estado = c("SP", "RJ"), count = c(2, 1)),
+      documents_by_month = data.frame(month = c("2023-01", "2023-02"), count = c(2, 1)),
+      last_updated = Sys.time()
+    ))
+  }
 }
 
-load_legislative_data <- function(limit = 25000, filters = NULL) {
+load_legislative_data <- function(limit = 200000, filters = NULL) {
   cat("🔄 load_legislative_data called with limit:", limit, "\n")
   
   # Create sample data directly to avoid circular dependency

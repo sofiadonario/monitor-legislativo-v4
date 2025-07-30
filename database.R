@@ -247,7 +247,7 @@ clear_cache <- function(pattern = NULL) {
 #' @param filters List of filters to apply
 #' @param limit Maximum number of records
 #' @return Data frame with legislative data
-load_legislative_data <- function(filters = list(), limit = 10000) {
+load_legislative_data <- function(filters = list(), limit = 200000) {
   
   if (is.null(.db_pool)) {
     log_event("Database not initialized", "ERROR")
