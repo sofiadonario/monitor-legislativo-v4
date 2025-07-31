@@ -11,7 +11,7 @@ library(jsonlite)
 FORCE_REFRESH <- TRUE
 
 # Global connection pool
-db_pool <- NULL
+if (!exists("db_pool", envir = .GlobalEnv)) db_pool <- NULL
 
 #' Parse DATABASE_URL into components
 #' @param url The DATABASE_URL string

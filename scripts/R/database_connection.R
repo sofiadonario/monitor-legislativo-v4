@@ -48,7 +48,7 @@ create_simple_date_coalesce_sql <- function(prefix = "d") {
 }
 
 # Global connection pool
-db_pool <- NULL
+if (!exists("db_pool", envir = .GlobalEnv)) db_pool <- NULL
 
 #' Populate PostgreSQL database with CSV data from data_current/processed/
 #' @return TRUE if successful, FALSE otherwise
