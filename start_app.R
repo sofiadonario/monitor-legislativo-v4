@@ -97,6 +97,13 @@ tryCatch({
     if (database_connected && exists(".db_pool") && inherits(.db_pool, "Pool")) {
       db_pool <<- .db_pool
       cat("✅ Real database pool created and assigned.\n")
+      # Load full data-access layer once pool exists
+      if (file.exists("scripts/R/database_connection_fixed.R")) {
+        cat("📥 Loading database_connection_fixed.R for data-access functions\n")
+        source("scripts/R/database_connection_fixed.R")
+      } else {
+        cat("⚠️ database_connection_fixed.R not found - analytics functions may be missing\n")
+      }
     } else {
       cat("⚠️ init_database() did not create a Pool, falling back to emergency data.\n")
     }
