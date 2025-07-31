@@ -11,7 +11,8 @@ library(dplyr)
 library(config)
 
 # Global connection pool
-.db_pool <- NULL
+if (!exists(".db_pool", envir = .GlobalEnv)) .db_pool <- NULL
+if (!exists("db_pool", envir = .GlobalEnv)) db_pool <- NULL
 .redis_connection <- NULL
 
 #' Initialize database connection pool
@@ -67,6 +68,7 @@ init_database <- function() {
       idleTimeout = 3600  # 1 hour
       # validationQuery not supported by pool package
     )
+    db_pool <<- .db_pool
     
     # Test connection
     test_query <- dbGetQuery(.db_pool, "SELECT version()")
