@@ -358,8 +358,8 @@ if (file.exists("REAL_DATA_FIX.R") && file.exists("./data_current/processed/enha
 
 # FINAL VERIFICATION before loading app.R
 cat("🔍 FINAL VERIFICATION BEFORE APP.R:\n")
-cat("  - .db_pool exists:", exists(".db_pool"), "value:", if(exists(".db_pool")) .db_pool else "NOT SET", "\n")
-cat("  - db_pool exists:", exists("db_pool"), "value:", if(exists("db_pool")) db_pool else "NOT SET", "\n")
+cat("  - .db_pool exists:", exists(".db_pool"), "value:", if(exists(".db_pool")) "<Pool>" else "NOT SET", "\n")
+cat("  - db_pool exists:", exists("db_pool"), "value:", if(exists("db_pool")) "<Pool>" else "NOT SET", "\n")
 cat("  - database_connected:", if(exists("database_connected")) database_connected else "NOT SET", "\n")
 cat("  - get_database_stats exists:", exists("get_database_stats"), "\n")
 cat("  - get_documents exists:", exists("get_documents"), "\n")
