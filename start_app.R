@@ -378,3 +378,11 @@ cat("Loading main app.R...\n")
 source("app.R")
 cat("✓ App loaded successfully\n")
 }
+
+# Ensure app is running
+if (!exists("__APP_STARTED__")) {
+  cat("🚀 Unconditional start of Shiny app...\n")
+  source("app.R")
+  __APP_STARTED__ <- TRUE
+}
+
