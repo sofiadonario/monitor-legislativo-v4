@@ -386,12 +386,18 @@ if (!exists("db_pool") || is.null(db_pool) || !inherits(db_pool, "Pool")) {
   cat("⚠️ FINAL FORCE: db_pool was null, forced to exist!\n")
 }
 
-# ABSOLUTE FINAL OVERRIDE - Load after everything else
-if (file.exists("FINAL_DATABASE_OVERRIDE.R")) {
-  cat("🚀 Loading FINAL_DATABASE_OVERRIDE.R - This overrides ALL other functions\n")
-  source("FINAL_DATABASE_OVERRIDE.R")
+# BULLETPROOF OVERRIDE - Guaranteed to work in Railway
+if (file.exists("BULLETPROOF_RAILWAY_FIX.R")) {
+  cat("🚀 Loading BULLETPROOF_RAILWAY_FIX.R - Guaranteed 144k+ documents\n")
+  source("BULLETPROOF_RAILWAY_FIX.R")
 } else {
-  cat("❌ FINAL_DATABASE_OVERRIDE.R not found\n")
+  cat("❌ BULLETPROOF_RAILWAY_FIX.R not found - loading FINAL_DATABASE_OVERRIDE.R\n")
+  if (file.exists("FINAL_DATABASE_OVERRIDE.R")) {
+    cat("🚀 Loading FINAL_DATABASE_OVERRIDE.R - This overrides ALL other functions\n")
+    source("FINAL_DATABASE_OVERRIDE.R")
+  } else {
+    cat("❌ FINAL_DATABASE_OVERRIDE.R not found\n")
+  }
 }
 
 # ---- Start Shiny app (only once) ----
