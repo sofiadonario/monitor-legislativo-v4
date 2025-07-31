@@ -74,13 +74,13 @@ init_database <- function() {
     test_query <- dbGetQuery(.db_pool, "SELECT version()")
     log_event(paste("Database connected:", substr(test_query$version[1], 1, 50)))
     
-    # Test if we can query lexml_documents
-    test_count <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM lexml_documents")
-    cat("🔍 DIRECT TEST: lexml_documents table has", test_count$count[1], "rows\n")
+    # Test if we can query documents view
+    test_count <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")
+    cat("🔍 DIRECT TEST: documents view has", test_count$count[1], "rows\n")
     
     # Test a sample query
-    sample_data <- dbGetQuery(.db_pool, "SELECT titulo, tipo, estado FROM lexml_documents LIMIT 3")
-    cat("🔍 SAMPLE DATA from lexml_documents:\n")
+    sample_data <- dbGetQuery(.db_pool, "SELECT titulo, tipo, estado FROM documents LIMIT 3")
+    cat("🔍 SAMPLE DATA from documents view:\n")
     print(sample_data)
     
     # Initialize Redis connection if available
@@ -267,12 +267,12 @@ load_legislative_data <- function(filters = list(), limit = 200000) {
   }
   
   tryCatch({
-    # Build SQL query - try lexml_documents first, fallback to documents
+    # Build SQL query using documents view
     base_query <- "
       SELECT 
         titulo, tipo, numero, data, estado, municipio, autor, fonte, 
         ementa, url, created_at as data_coleta
-      FROM lexml_documents 
+      FROM documents 
       WHERE 1=1
     "
     
@@ -407,23 +407,23 @@ get_database_stats <- function() {
   
   tryCatch({
     # Total documents
-    total_docs <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM lexml_documents")$count[1]
+    total_docs <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")$count[1]
     
     # Unique states
     unique_states <- dbGetQuery(.db_pool, 
-      "SELECT COUNT(DISTINCT estado) as count FROM lexml_documents WHERE estado IS NOT NULL")$count[1]
+      "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL")$count[1]
     
     # Unique document types
     unique_types <- dbGetQuery(.db_pool, 
-      "SELECT COUNT(DISTINCT tipo) as count FROM lexml_documents WHERE tipo IS NOT NULL")$count[1]
+      "SELECT COUNT(DISTINCT tipo) as count FROM documents WHERE tipo IS NOT NULL")$count[1]
     
     # Date range
     date_range <- dbGetQuery(.db_pool, 
-      "SELECT MIN(data) as min_date, MAX(data) as max_date FROM lexml_documents WHERE data IS NOT NULL")
+      "SELECT MIN(data) as min_date, MAX(data) as max_date FROM documents WHERE data IS NOT NULL")
     
     # Most recent update
     last_update <- dbGetQuery(.db_pool, 
-      "SELECT MAX(created_at) as last_update FROM lexml_documents")$last_update[1]
+      "SELECT MAX(created_at) as last_update FROM documents")$last_update[1]
     
     stats <- list(
       total_documents = total_docs,

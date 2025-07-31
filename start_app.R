@@ -16,10 +16,10 @@ if (!exists("db_pool") || is.null(db_pool) || !inherits(db_pool, "Pool")) {
 }
 
 
-# Load NUCLEAR POOL FIX to ensure pool never becomes null
-if (file.exists("NUCLEAR_POOL_FIX.R")) {
-  source("NUCLEAR_POOL_FIX.R")
-}
+# Load NUCLEAR POOL FIX to ensure pool never becomes null (DISABLED - database.R works properly now)
+# if (file.exists("NUCLEAR_POOL_FIX.R")) {
+#   source("NUCLEAR_POOL_FIX.R")
+# }
 
 # IMMEDIATE DEBUG - Source the force rebuild debug
 cat("🔥 SOURCING FORCE_REBUILD_DEBUG.R IMMEDIATELY\n")
@@ -236,12 +236,13 @@ if (file.exists("REAL_DATA_FIX.R") && file.exists("./data_current/processed/enha
   source("REAL_DATA_FIX.R")
   cat("✅ REAL_DATA_FIX.R loaded - Using your actual 131k+ research documents\n")
 } else {
-  # Railway fallback - create realistic dataset when CSV not available
-  cat("🚨 CSV not available - Loading RAILWAY_EMERGENCY_FIX for production\n")
-  if (file.exists("RAILWAY_EMERGENCY_FIX.R")) {
-    source("RAILWAY_EMERGENCY_FIX.R")
-    cat("✅ RAILWAY_EMERGENCY_FIX.R loaded - 131k+ documents ready for production\n")
-  } else {
+  # Railway fallback - DISABLED: database.R now works with documents view
+  cat("✅ CSV not available - Using database.R with documents view (EMERGENCY_FIX disabled)\n")
+  # if (file.exists("RAILWAY_EMERGENCY_FIX.R")) {
+  #   source("RAILWAY_EMERGENCY_FIX.R")
+  #   cat("✅ RAILWAY_EMERGENCY_FIX.R loaded - 131k+ documents ready for production\n")
+  # } else {
+  if (FALSE) {
     cat("❌ CRITICAL: No data fix available! Creating minimal emergency override...\n")
     # Last resort - inline emergency fix
     

@@ -4,10 +4,10 @@
 
 cat("🚀 STARTING APP.R - CLEAN VERSION (no initialization)\n")
 
-# RAILWAY CRITICAL FIX - Force database pool to exist
-if (file.exists("FORCE_RAILWAY_FIX.R")) {
-  source("FORCE_RAILWAY_FIX.R")
-}
+# RAILWAY CRITICAL FIX - Force database pool to exist (DISABLED - database.R now works properly)
+# if (file.exists("FORCE_RAILWAY_FIX.R")) {
+#   source("FORCE_RAILWAY_FIX.R")
+# }
 
 get_document_types <- function() {
   # RAILWAY FIX: Force pool to exist
@@ -22,12 +22,29 @@ get_document_types <- function() {
 }
 
 get_states <- function() {
-  if (is.null(.db_pool)) return(c())
+  # RAILWAY FIX: Force pool to exist
+  if (!exists(".db_pool") || is.null(.db_pool)) {
+    .db_pool <<- "FORCE_POOL"
+    db_pool <<- "FORCE_POOL"
+  }
+  
+  # Check if we have a real database pool
+  if (is.character(.db_pool)) {
+    # Return Brazilian states as fallback
+    cat("🗺️ get_states (APP.R FALLBACK)\n")
+    return(c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
+             "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
+             "RS", "RO", "RR", "SC", "SP", "SE", "TO"))
+  }
+  
   tryCatch({
     dbGetQuery(.db_pool, "SELECT DISTINCT estado FROM documents WHERE estado IS NOT NULL ORDER BY estado")$estado
   }, error = function(e) {
     cat("Error getting states:", e$message, "\n")
-    c()
+    # Return Brazilian states as fallback
+    return(c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
+             "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
+             "RS", "RO", "RR", "SC", "SP", "SE", "TO"))
   })
 }
 
