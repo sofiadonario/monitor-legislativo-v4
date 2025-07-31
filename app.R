@@ -4828,7 +4828,7 @@ server <- function(input, output, session) {
   # LexML Dashboard Metrics (Value Boxes)
   lexml_metrics <- reactive({
     if (database_connected && !is.null(db_pool)) {
-      get_lexml_dashboard_metrics(db_pool)
+      get_lexml_dashboard_metrics()
     } else {
       list(
         total_documents = 0,
@@ -5034,7 +5034,7 @@ server <- function(input, output, session) {
   # Update state choices when needed
   observe({
     if (database_connected && !is.null(db_pool)) {
-      states <- get_available_states(db_pool)
+      states <- get_available_states()
       
       updateSelectInput(session, "lexmlTotalMapState", 
                        choices = c("All States" = "", states))
@@ -5048,7 +5048,7 @@ server <- function(input, output, session) {
   # LexML About Tab Content
   output$lexmlUpdateSummary <- renderUI({
     if (database_connected && !is.null(db_pool)) {
-      summary <- get_lexml_update_summary(db_pool)
+      summary <- get_lexml_update_summary()
       
       div(
         h4("Latest Update Summary"),
