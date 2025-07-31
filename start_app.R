@@ -7,14 +7,14 @@ cat("Files present:\n")
 print(list.files())
 
 # ULTRA CRITICAL: Force database pool to exist IMMEDIATELY
-cat("🚨 FORCING DATABASE POOL VARIABLES AT STARTUP 🚨\n")
-.db_pool <<- "STARTUP_FORCED_POOL"
-db_pool <<- "STARTUP_FORCED_POOL"
-pool <<- "STARTUP_FORCED_POOL"
-.pool <<- "STARTUP_FORCED_POOL"
-database_connected <<- TRUE
-cat("✅ Database pool forced: .db_pool exists =", exists(".db_pool"), "\n")
-cat("✅ Database pool forced: db_pool exists =", exists("db_pool"), "\n")
+cat("🔍 Checking existing database pool...\n")
+if (!exists(".db_pool") || is.null(.db_pool) || !inherits(.db_pool, "Pool")) {
+  .db_pool <<- NULL
+}
+if (!exists("db_pool") || is.null(db_pool) || !inherits(db_pool, "Pool")) {
+  db_pool <<- NULL
+}
+
 
 # Load NUCLEAR POOL FIX to ensure pool never becomes null
 if (file.exists("NUCLEAR_POOL_FIX.R")) {
@@ -90,6 +90,17 @@ tryCatch({
 # Try to source database.R, but if it fails, embed the functions directly
 tryCatch({
   source("database.R")
+  # Initialize the real database pool if possible
+  if (exists("init_database")) {
+    cat("🔄 Calling init_database() to create real pool...\n")
+    database_connected <<- init_database()
+    if (database_connected && exists(".db_pool") && inherits(.db_pool, "Pool")) {
+      db_pool <<- .db_pool
+      cat("✅ Real database pool created and assigned.\n")
+    } else {
+      cat("⚠️ init_database() did not create a Pool, falling back to emergency data.\n")
+    }
+  }
   cat("✓ Successfully loaded database.R\n")
   
   # Load missing functions after database.R
