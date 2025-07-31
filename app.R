@@ -4,10 +4,13 @@
 
 cat("🚀 STARTING APP.R - CLEAN VERSION (no initialization)\n")
 
-# RAILWAY CRITICAL FIX - Force database pool to exist (DISABLED - database.R now works properly)
-# if (file.exists("FORCE_RAILWAY_FIX.R")) {
-#   source("FORCE_RAILWAY_FIX.R")
-# }
+# RAILWAY CRITICAL FIX - BULLETPROOF loading mechanism for 144k+ documents
+if (file.exists("BULLETPROOF_RAILWAY_FIX.R")) {
+  cat("🚀 Loading BULLETPROOF_RAILWAY_FIX.R for 144k+ documents\n")
+  source("BULLETPROOF_RAILWAY_FIX.R", local = FALSE)
+} else {
+  cat("⚠️ BULLETPROOF_RAILWAY_FIX.R not found - using fallback mechanisms\n")
+}
 
 get_document_types <- function() {
   # RAILWAY FIX: Force pool to exist
@@ -4828,10 +4831,17 @@ server <- function(input, output, session) {
   # LexML Dashboard Metrics (Value Boxes)
   lexml_metrics <- reactive({
     if (database_connected && !is.null(db_pool)) {
-      get_lexml_dashboard_metrics()
+      # Use wrapper function if available, otherwise direct function
+      if (exists("lexml_metrics_wrapper")) {
+        lexml_metrics_wrapper()
+      } else {
+        get_lexml_dashboard_metrics()
+      }
     } else {
       list(
         total_documents = 0,
+        states_with_docs = 0,
+        municipalities_with_docs = 0,
         states_percentage = 0,
         municipalities_percentage = 0,
         date_range_years = 0,
