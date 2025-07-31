@@ -5121,6 +5121,15 @@ cat("Host: 0.0.0.0\n")
 cat("Database connected:", database_connected, "\n")
 cat("App version: Database-enabled (", Sys.time(), ")\n")
 
+# RAILWAY POSTGRESQL FIX - Load real database connection
+cat("🚀 Loading Railway PostgreSQL Fix...\n")
+if (file.exists("RAILWAY_POSTGRESQL_FIX.R")) {
+  source("RAILWAY_POSTGRESQL_FIX.R")
+  cat("✅ Railway PostgreSQL Fix loaded\n")
+} else {
+  cat("⚠️ RAILWAY_POSTGRESQL_FIX.R not found\n")
+}
+
 # FINAL RAILWAY OVERRIDE - Ensure database_connected is TRUE before app starts
 cat("🚨 FINAL RAILWAY OVERRIDE - Forcing database_connected to TRUE\n")
 database_connected <- TRUE
