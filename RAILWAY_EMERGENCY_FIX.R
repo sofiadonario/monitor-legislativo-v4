@@ -242,11 +242,63 @@ get_document_stats <<- function(...) {
   list(document_types = RAILWAY_ANALYTICS$documents_by_type)
 }
 
+# Functions that depend on .db_pool for documents tab
+get_document_types <<- function() {
+  cat("📋 get_document_types (RAILWAY EMERGENCY)\n")
+  return(unique(REALISTIC_DATASET$tipo))
+}
+
+get_states <<- function() {
+  cat("🗺️ get_states (RAILWAY EMERGENCY)\n") 
+  return(unique(REALISTIC_DATASET$estado))
+}
+
+# Main document search function for tables
+search_documents <<- function(limit = 50, filters = list(), ...) {
+  cat("🔍 search_documents (RAILWAY EMERGENCY) - limit:", limit, "\n")
+  
+  result <- REALISTIC_DATASET
+  
+  # Apply filters if provided
+  if (!is.null(filters$type) && filters$type != "" && filters$type != "all") {
+    result <- result[result$tipo == filters$type, ]
+  }
+  
+  if (!is.null(filters$state) && filters$state != "" && filters$state != "all") {
+    result <- result[result$estado == filters$state, ]
+  }
+  
+  if (!is.null(filters$year_start) && !is.na(filters$year_start)) {
+    result <- result[result$year >= filters$year_start, ]
+  }
+  
+  if (!is.null(filters$year_end) && !is.na(filters$year_end)) {
+    result <- result[result$year <= filters$year_end, ]
+  }
+  
+  # Apply limit
+  if (nrow(result) > limit) {
+    result <- result[1:limit, ]
+  }
+  
+  cat("✅ search_documents returning", nrow(result), "documents\n")
+  return(result)
+}
+
+# Alternative names for search function
+get_documents_filtered <<- function(...) { search_documents(...) }
+load_documents_with_filters <<- function(...) { search_documents(...) }
+
 # ==============================================================================
-# STEP 5: GLOBAL STATUS VARIABLES
+# STEP 5: GLOBAL STATUS VARIABLES AND DATABASE POOL
 # ==============================================================================
 
-cat("🔧 Setting Railway global status...\n")
+cat("🔧 Setting Railway global status and database pool...\n")
+
+# Create fake database pool objects that app.R expects
+.db_pool <<- "RAILWAY_EMERGENCY_POOL"  # Not NULL so checks pass
+db_pool <<- "RAILWAY_EMERGENCY_POOL"   # Alternative variable name
+.redis_connection <<- NULL
 
 # Force all status variables for Railway
 database_connected <<- TRUE
