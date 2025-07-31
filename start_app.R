@@ -370,3 +370,4 @@ if (!exists("db_pool") || is.null(db_pool) || !inherits(db_pool, "Pool")) {
 cat("Loading main app.R...\n")
 source("app.R")
 cat("✓ App loaded successfully\n")
+}
