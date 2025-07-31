@@ -213,7 +213,10 @@ if (exists("get_connection_status")) {
 }
 
 # 🚨 FINAL OVERRIDE: Load data fix with Railway fallback
-cat("🚨 FINAL OVERRIDE: Loading data fix to ensure 131k+ documents display\n")
+if (database_connected && exists("db_pool") && inherits(db_pool, "Pool")) {
+  cat("✅ Real database pool detected - skipping emergency data fixes\n")
+} else {
+  cat("🚨 FINAL OVERRIDE: Loading data fix to ensure 131k+ documents display\n")
 
 # Try REAL_DATA_FIX first (uses your actual CSV data)
 if (file.exists("REAL_DATA_FIX.R") && file.exists("./data_current/processed/enhanced/lexml_dataset_enhanced_simple.csv")) {
@@ -354,11 +357,11 @@ cat("  - get_database_stats exists:", exists("get_database_stats"), "\n")
 cat("  - get_documents exists:", exists("get_documents"), "\n")
 
 # NUCLEAR: One more force before app.R
-if (!exists(".db_pool") || is.null(.db_pool)) {
+if (!exists(".db_pool") || is.null(.db_pool) || !inherits(.db_pool, "Pool")) {
   .db_pool <<- "FINAL_FORCE_POOL"
   cat("⚠️ FINAL FORCE: .db_pool was null, forced to exist!\n")
 }
-if (!exists("db_pool") || is.null(db_pool)) {
+if (!exists("db_pool") || is.null(db_pool) || !inherits(db_pool, "Pool")) {
   db_pool <<- "FINAL_FORCE_POOL"
   cat("⚠️ FINAL FORCE: db_pool was null, forced to exist!\n")
 }
