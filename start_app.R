@@ -114,6 +114,11 @@ tryCatch({
   tryCatch({
     source("missing_functions.R")
     cat("✓ Successfully loaded missing_functions.R\n")
+    # Re-load data-access layer LAST so its functions override fallbacks
+    if (database_connected && file.exists("scripts/R/database_connection_fixed.R")) {
+      cat("📥 Re-loading database_connection_fixed.R to override fallback functions\n")
+      source("scripts/R/database_connection_fixed.R")
+    }
   }, error = function(e) {
     cat("⚠️ Error loading missing_functions.R:", e$message, "\n")
   })
