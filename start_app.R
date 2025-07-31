@@ -16,6 +16,11 @@ database_connected <<- TRUE
 cat("✅ Database pool forced: .db_pool exists =", exists(".db_pool"), "\n")
 cat("✅ Database pool forced: db_pool exists =", exists("db_pool"), "\n")
 
+# Load NUCLEAR POOL FIX to ensure pool never becomes null
+if (file.exists("NUCLEAR_POOL_FIX.R")) {
+  source("NUCLEAR_POOL_FIX.R")
+}
+
 # IMMEDIATE DEBUG - Source the force rebuild debug
 cat("🔥 SOURCING FORCE_REBUILD_DEBUG.R IMMEDIATELY\n")
 tryCatch({
@@ -336,6 +341,16 @@ cat("  - db_pool exists:", exists("db_pool"), "value:", if(exists("db_pool")) db
 cat("  - database_connected:", if(exists("database_connected")) database_connected else "NOT SET", "\n")
 cat("  - get_database_stats exists:", exists("get_database_stats"), "\n")
 cat("  - get_documents exists:", exists("get_documents"), "\n")
+
+# NUCLEAR: One more force before app.R
+if (!exists(".db_pool") || is.null(.db_pool)) {
+  .db_pool <<- "FINAL_FORCE_POOL"
+  cat("⚠️ FINAL FORCE: .db_pool was null, forced to exist!\n")
+}
+if (!exists("db_pool") || is.null(db_pool)) {
+  db_pool <<- "FINAL_FORCE_POOL"
+  cat("⚠️ FINAL FORCE: db_pool was null, forced to exist!\n")
+}
 
 # Now source the main app
 cat("Loading main app.R...\n")
