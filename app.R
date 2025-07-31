@@ -282,9 +282,9 @@ cat("✅ EMBEDDED EMERGENCY DATABASE OVERRIDE COMPLETE\n")
 # }
 
 # Load Force Rebuild Debug
-if (file.exists("FORCE_REBUILD_DEBUG.R")) {
+if (file.exists("scripts/R/FORCE_REBUILD_DEBUG.R")) {
   cat("🔧 Loading force rebuild debug...\n")
-  source("FORCE_REBUILD_DEBUG.R", local = TRUE)
+  source("scripts/R/FORCE_REBUILD_DEBUG.R", local = TRUE)
   cat("✅ Force rebuild debug loaded\n")
 }
 
@@ -298,8 +298,8 @@ cat("📊 All functions embedded in app.R (278,152 documents)\n")
 cat("🗺️ Map coordinates loaded for all 27 Brazilian states\n")
 
 # Install required packages for Railway deployment
-if (file.exists("install_packages.R")) {
-  source("install_packages.R")
+if (file.exists("scripts/R/install_packages.R")) {
+  source("scripts/R/install_packages.R")
 }
 
 # Run deployment diagnostic test

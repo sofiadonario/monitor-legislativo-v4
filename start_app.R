@@ -24,7 +24,7 @@ if (!exists("db_pool") || is.null(db_pool) || !inherits(db_pool, "Pool")) {
 # IMMEDIATE DEBUG - Source the force rebuild debug
 cat("🔥 SOURCING FORCE_REBUILD_DEBUG.R IMMEDIATELY\n")
 tryCatch({
-  source("FORCE_REBUILD_DEBUG.R")
+  source("scripts/R/FORCE_REBUILD_DEBUG.R")
 }, error = function(e) {
   cat("🔥 Failed to source FORCE_REBUILD_DEBUG.R:", e$message, "\n")
 })
