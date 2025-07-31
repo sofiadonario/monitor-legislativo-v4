@@ -129,6 +129,12 @@ tryCatch({
   #   cat("✅ Data loader fix reloaded to override missing_functions.R\n")
   # }
   
+  # Load dashboard metrics fix
+  if (file.exists("fix_dashboard_metrics.R")) {
+    source("fix_dashboard_metrics.R")
+    cat("✅ Dashboard metrics fix loaded\n")
+  }
+  
   # DISABLED: RELOAD railway_database_fix.R - conflicts with REAL_DATA_FIX
   # if (file.exists("railway_database_fix.R")) {
   #   source("railway_database_fix.R")
