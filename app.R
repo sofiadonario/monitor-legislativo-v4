@@ -4,6 +4,11 @@
 
 cat("🚀 STARTING APP.R - CLEAN VERSION (no initialization)\n")
 
+# RAILWAY CRITICAL FIX - Force database pool to exist
+if (file.exists("FORCE_RAILWAY_FIX.R")) {
+  source("FORCE_RAILWAY_FIX.R")
+}
+
 get_document_types <- function() {
   if (is.null(.db_pool)) return(c())
   tryCatch({
