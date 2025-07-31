@@ -354,6 +354,7 @@ if (file.exists("REAL_DATA_FIX.R") && file.exists("./data_current/processed/enha
     cat("✅ Inline emergency override COMPLETE - 131k documents with db_pool set\n")
   }
 }
+}
 
 # FINAL VERIFICATION before loading app.R
 cat("🔍 FINAL VERIFICATION BEFORE APP.R:\n")
