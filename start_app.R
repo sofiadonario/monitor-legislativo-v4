@@ -373,16 +373,10 @@ if (!exists("db_pool") || is.null(db_pool) || !inherits(db_pool, "Pool")) {
   cat("⚠️ FINAL FORCE: db_pool was null, forced to exist!\n")
 }
 
-# Now source the main app
-cat("Loading main app.R...\n")
-source("app.R")
-cat("✓ App loaded successfully\n")
-}
-
-# Ensure app is running
-if (!exists("__APP_STARTED__")) {
-  cat("🚀 Unconditional start of Shiny app...\n")
-  source("app.R")
-  __APP_STARTED__ <- TRUE
+# ---- Start Shiny app (only once) ----
+if (!exists("app_started_flag")) {
+  cat("🚀 Starting Shiny app...\n")
+  source("app.R")   # app.R will call runApp()
+  app_started_flag <- TRUE
 }
 
