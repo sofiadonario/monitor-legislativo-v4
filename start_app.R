@@ -279,11 +279,12 @@ if (file.exists("REAL_DATA_FIX.R") && file.exists("./data_current/processed/enha
       get_documents(limit)
     }
     
-    load_legislative_data <<- function(limit = 1000, ...) {
+    load_legislative_data <<- function(limit = 200000, ...) {
       cat("📚 load_legislative_data (INLINE EMERGENCY) - limit:", limit, "\n")
       
       # DIRECT data return - don't call get_documents which might be overridden
-      num_docs <- min(as.numeric(limit), 200000)  # Support large limits
+      # Use 131799 to match the actual research corpus size
+      num_docs <- min(as.numeric(limit), 131799)  # Match actual dataset size
       
       result <- data.frame(
         titulo = paste("Lei de Transporte Federal nº", 1:num_docs),
