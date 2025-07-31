@@ -130,8 +130,8 @@ tryCatch({
   # }
   
   # Load dashboard metrics fix
-  if (file.exists("fix_dashboard_metrics.R")) {
-    source("fix_dashboard_metrics.R")
+  if (file.exists("fixes/active/fix_dashboard_metrics.R")) {
+    source("fixes/active/fix_dashboard_metrics.R")
     cat("✅ Dashboard metrics fix loaded\n")
   }
   
@@ -387,16 +387,16 @@ if (!exists("db_pool") || is.null(db_pool) || !inherits(db_pool, "Pool")) {
 }
 
 # BULLETPROOF OVERRIDE - Guaranteed to work in Railway
-if (file.exists("BULLETPROOF_RAILWAY_FIX.R")) {
-  cat("🚀 Loading BULLETPROOF_RAILWAY_FIX.R - Guaranteed 144k+ documents\n")
-  source("BULLETPROOF_RAILWAY_FIX.R")
+if (file.exists("fixes/active/BULLETPROOF_RAILWAY_FIX.R")) {
+  cat("🚀 Loading fixes/active/BULLETPROOF_RAILWAY_FIX.R - Guaranteed 144k+ documents\n")
+  source("fixes/active/BULLETPROOF_RAILWAY_FIX.R")
 } else {
   cat("❌ BULLETPROOF_RAILWAY_FIX.R not found - loading FINAL_DATABASE_OVERRIDE.R\n")
-  if (file.exists("FINAL_DATABASE_OVERRIDE.R")) {
-    cat("🚀 Loading FINAL_DATABASE_OVERRIDE.R - This overrides ALL other functions\n")
-    source("FINAL_DATABASE_OVERRIDE.R")
+  if (file.exists("fixes/active/FINAL_DATABASE_OVERRIDE.R")) {
+    cat("🚀 Loading fixes/active/FINAL_DATABASE_OVERRIDE.R - This overrides ALL other functions\n")
+    source("fixes/active/FINAL_DATABASE_OVERRIDE.R")
   } else {
-    cat("❌ FINAL_DATABASE_OVERRIDE.R not found\n")
+    cat("❌ Both active fix files not found\n")
   }
 }
 
