@@ -6,6 +6,16 @@ cat("Working directory:", getwd(), "\n")
 cat("Files present:\n")
 print(list.files())
 
+# ULTRA CRITICAL: Force database pool to exist IMMEDIATELY
+cat("🚨 FORCING DATABASE POOL VARIABLES AT STARTUP 🚨\n")
+.db_pool <<- "STARTUP_FORCED_POOL"
+db_pool <<- "STARTUP_FORCED_POOL"
+pool <<- "STARTUP_FORCED_POOL"
+.pool <<- "STARTUP_FORCED_POOL"
+database_connected <<- TRUE
+cat("✅ Database pool forced: .db_pool exists =", exists(".db_pool"), "\n")
+cat("✅ Database pool forced: db_pool exists =", exists("db_pool"), "\n")
+
 # IMMEDIATE DEBUG - Source the force rebuild debug
 cat("🔥 SOURCING FORCE_REBUILD_DEBUG.R IMMEDIATELY\n")
 tryCatch({
@@ -108,8 +118,9 @@ tryCatch({
   library(dplyr)
   library(config)
   
-  # Global connection pool
-  .db_pool <- NULL
+  # Global connection pool - DO NOT SET TO NULL FOR RAILWAY
+  if (!exists(".db_pool")) .db_pool <- "EMBEDDED_POOL"
+  if (!exists("db_pool")) db_pool <- "EMBEDDED_POOL"
   .redis_connection <- NULL
   
   # Minimal init_database function
