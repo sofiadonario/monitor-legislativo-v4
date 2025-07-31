@@ -114,11 +114,11 @@ tryCatch({
   tryCatch({
     source("missing_functions.R")
     cat("✓ Successfully loaded missing_functions.R\n")
-    # Re-load data-access layer LAST so its functions override fallbacks
-    if (database_connected && file.exists("scripts/R/database_connection_fixed.R")) {
-      cat("📥 Re-loading database_connection_fixed.R to override fallback functions\n")
-      source("scripts/R/database_connection_fixed.R")
-    }
+    # DISABLED: Re-load data-access layer - it overrides our enhanced functions
+    # if (database_connected && file.exists("scripts/R/database_connection_fixed.R")) {
+    #   cat("📥 Re-loading database_connection_fixed.R to override fallback functions\n")
+    #   source("scripts/R/database_connection_fixed.R")
+    # }
   }, error = function(e) {
     cat("⚠️ Error loading missing_functions.R:", e$message, "\n")
   })
@@ -384,6 +384,14 @@ if (!exists(".db_pool") || is.null(.db_pool) || !inherits(.db_pool, "Pool")) {
 if (!exists("db_pool") || is.null(db_pool) || !inherits(db_pool, "Pool")) {
   db_pool <<- "FINAL_FORCE_POOL"
   cat("⚠️ FINAL FORCE: db_pool was null, forced to exist!\n")
+}
+
+# ABSOLUTE FINAL OVERRIDE - Load after everything else
+if (file.exists("FINAL_DATABASE_OVERRIDE.R")) {
+  cat("🚀 Loading FINAL_DATABASE_OVERRIDE.R - This overrides ALL other functions\n")
+  source("FINAL_DATABASE_OVERRIDE.R")
+} else {
+  cat("❌ FINAL_DATABASE_OVERRIDE.R not found\n")
 }
 
 # ---- Start Shiny app (only once) ----
