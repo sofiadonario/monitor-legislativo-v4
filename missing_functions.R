@@ -154,8 +154,65 @@ lexml_metrics <- function() {
 }
 
 get_lexml_dashboard_metrics <- function(db_pool = NULL) {
-  cat("🔄 get_lexml_dashboard_metrics called (using sample data)\n")
+  cat("🔄 get_lexml_dashboard_metrics called\n")
   
+  # Try to use the real database first
+  if (!is.null(.db_pool) || !is.null(db_pool)) {
+    pool_to_use <- if (!is.null(db_pool)) db_pool else .db_pool
+    
+    tryCatch({
+      cat("🔄 Using real database connection for dashboard metrics\n")
+      
+      # Total documents from documents view (which has 144,138 records)
+      total_docs <- DBI::dbGetQuery(pool_to_use, "SELECT COUNT(*) as count FROM documents")$count[1]
+      cat("🔄 get_lexml_dashboard_metrics found:", total_docs, "total documents\n")
+      
+      # Count unique states
+      unique_states <- DBI::dbGetQuery(pool_to_use, "
+        SELECT COUNT(DISTINCT estado) as count 
+        FROM documents 
+        WHERE estado IS NOT NULL AND estado != ''
+      ")$count[1]
+      
+      # Count unique municipalities  
+      unique_municipalities <- DBI::dbGetQuery(pool_to_use, "
+        SELECT COUNT(DISTINCT municipio) as count 
+        FROM documents 
+        WHERE municipio IS NOT NULL AND municipio != ''
+      ")$count[1]
+      
+      # Get date range
+      date_range <- DBI::dbGetQuery(pool_to_use, "
+        SELECT 
+          MIN(COALESCE(data_publicacao, created_at::date)) as min_date,
+          MAX(COALESCE(data_publicacao, created_at::date)) as max_date
+        FROM documents 
+        WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
+      ")
+      
+      # Calculate years
+      years_span <- if (nrow(date_range) > 0 && !is.na(date_range$min_date) && !is.na(date_range$max_date)) {
+        as.numeric(difftime(date_range$max_date, date_range$min_date, units = "days")) / 365.25
+      } else {
+        4  # fallback
+      }
+      
+      return(list(
+        total_documents = total_docs,
+        states_percentage = round((unique_states / 27) * 100, 1),  # Brazil has 27 states
+        municipalities_percentage = round((unique_municipalities / 5570) * 100, 2), # Brazil has ~5570 municipalities
+        date_range_years = round(years_span, 1),
+        last_updated = Sys.time()
+      ))
+      
+    }, error = function(e) {
+      cat("⚠️ Error getting dashboard metrics from database:", e$message, "\n")
+      # Fall back to sample data
+    })
+  }
+  
+  # Fallback to sample data if database is not available
+  cat("🔄 get_lexml_dashboard_metrics using fallback sample data\n")
   return(list(
     total_documents = 3,
     states_percentage = 11.1,  # 3 out of 27 states
@@ -173,44 +230,49 @@ get_database_stats <- function() {
   if (exists(".db_pool") && !is.null(.db_pool)) {
     cat("🔄 Using real database connection for stats\n")
     tryCatch({
-      # Total documents
+      # Total documents from documents view
       total_docs <- DBI::dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")$count[1]
+      cat("🔄 get_database_stats found:", total_docs, "total documents\n")
       
-      # Documents by year
+      # Documents by year using proper date fields
       docs_by_year <- DBI::dbGetQuery(.db_pool, "
-        SELECT EXTRACT(YEAR FROM data) as year, COUNT(*) as count 
+        SELECT EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)) as year, COUNT(*) as count 
         FROM documents 
-        WHERE data IS NOT NULL 
+        WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL 
         GROUP BY year 
-        ORDER BY year
+        ORDER BY year DESC
+        LIMIT 10
       ")
       
       # Documents by type
       docs_by_type <- DBI::dbGetQuery(.db_pool, "
         SELECT tipo, COUNT(*) as count 
         FROM documents 
-        WHERE tipo IS NOT NULL 
+        WHERE tipo IS NOT NULL AND tipo != ''
         GROUP BY tipo 
         ORDER BY count DESC
+        LIMIT 15
       ")
       
       # Documents by state
       docs_by_state <- DBI::dbGetQuery(.db_pool, "
         SELECT estado, COUNT(*) as count 
         FROM documents 
-        WHERE estado IS NOT NULL 
+        WHERE estado IS NOT NULL AND estado != ''
         GROUP BY estado 
         ORDER BY count DESC
+        LIMIT 27
       ")
       
       # Documents by month (last 12 months)
       docs_by_month <- DBI::dbGetQuery(.db_pool, "
-        SELECT TO_CHAR(data, 'YYYY-MM') as month, COUNT(*) as count 
+        SELECT TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM') as month, COUNT(*) as count 
         FROM documents 
-        WHERE data >= CURRENT_DATE - INTERVAL '12 months' 
-          AND data IS NOT NULL
+        WHERE COALESCE(data_publicacao, created_at::date) >= CURRENT_DATE - INTERVAL '12 months' 
+          AND COALESCE(data_publicacao, created_at::date) IS NOT NULL
         GROUP BY month 
-        ORDER BY month
+        ORDER BY month DESC
+        LIMIT 12
       ")
       
       return(list(
@@ -410,4 +472,125 @@ get_lexml_update_summary <- function(db_pool = NULL) {
   return("Sample update summary: 3 documents processed successfully")
 }
 
-cat("✓ Missing functions loaded successfully - v6 with map and geographic functions\n")
+# Add the missing get_search_analytics function that the dashboard needs
+get_search_analytics <- function() {
+  cat("🔄 get_search_analytics called\n")
+  
+  # Try to use the real database first
+  if (exists(".db_pool") && !is.null(.db_pool)) {
+    cat("🔄 Using real database connection for search analytics\n")
+    tryCatch({
+      # Total documents from documents view (144,138 records)
+      total_docs <- DBI::dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")$count[1]
+      cat("🔄 get_search_analytics found:", total_docs, "total documents\n")
+      
+      # Documents by year
+      docs_by_year <- DBI::dbGetQuery(.db_pool, "
+        SELECT 
+          EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)) as year,
+          COUNT(*) as count
+        FROM documents 
+        WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
+        GROUP BY EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date))
+        ORDER BY year DESC
+        LIMIT 10
+      ")
+      
+      # Documents by month (last 12 months)
+      docs_by_month <- DBI::dbGetQuery(.db_pool, "
+        SELECT 
+          TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM') as month,
+          COUNT(*) as count
+        FROM documents 
+        WHERE COALESCE(data_publicacao, created_at::date) >= CURRENT_DATE - INTERVAL '12 months'
+          AND COALESCE(data_publicacao, created_at::date) IS NOT NULL
+        GROUP BY TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM')
+        ORDER BY month DESC
+      ")
+      
+      # Documents by state
+      docs_by_state <- DBI::dbGetQuery(.db_pool, "
+        SELECT estado, COUNT(*) as count 
+        FROM documents 
+        WHERE estado IS NOT NULL AND estado != ''
+        GROUP BY estado 
+        ORDER BY count DESC
+        LIMIT 27
+      ")
+      
+      # Documents by type
+      docs_by_type <- DBI::dbGetQuery(.db_pool, "
+        SELECT tipo, COUNT(*) as count 
+        FROM documents 
+        WHERE tipo IS NOT NULL AND tipo != ''
+        GROUP BY tipo 
+        ORDER BY count DESC
+        LIMIT 15
+      ")
+      
+      # Recent documents
+      recent_docs <- DBI::dbGetQuery(.db_pool, "
+        SELECT titulo, tipo, estado, COALESCE(data_publicacao, created_at::date) as data
+        FROM documents 
+        WHERE titulo IS NOT NULL
+        ORDER BY COALESCE(data_publicacao, created_at, NOW()) DESC
+        LIMIT 10
+      ")
+      
+      # Date range
+      date_range_query <- DBI::dbGetQuery(.db_pool, "
+        SELECT 
+          MIN(COALESCE(data_publicacao, created_at::date)) as min_date,
+          MAX(COALESCE(data_publicacao, created_at::date)) as max_date
+        FROM documents 
+        WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
+      ")
+      
+      # Convert integer64 to numeric for proper display
+      if (nrow(docs_by_year) > 0) {
+        docs_by_year$count <- as.numeric(docs_by_year$count)
+        docs_by_year$year <- as.numeric(docs_by_year$year)
+      }
+      if (nrow(docs_by_month) > 0) {
+        docs_by_month$count <- as.numeric(docs_by_month$count)
+      }
+      if (nrow(docs_by_state) > 0) {
+        docs_by_state$count <- as.numeric(docs_by_state$count)
+      }
+      if (nrow(docs_by_type) > 0) {
+        docs_by_type$count <- as.numeric(docs_by_type$count)
+      }
+      
+      return(list(
+        total_documents = total_docs,
+        documents_by_year = docs_by_year,
+        documents_by_month = docs_by_month,
+        documents_by_state = docs_by_state,
+        documents_by_type = docs_by_type,
+        recent_documents = recent_docs,
+        date_range = list(
+          min = if (nrow(date_range_query) > 0) date_range_query$min_date else NA,
+          max = if (nrow(date_range_query) > 0) date_range_query$max_date else NA
+        )
+      ))
+      
+    }, error = function(e) {
+      cat("⚠️ Error getting search analytics from database:", e$message, "\n")
+      # Fall back to sample data
+    })
+  }
+  
+  # Fallback to sample data if database is not available
+  cat("🔄 get_search_analytics using fallback sample data\n")
+  return(list(
+    total_documents = 3,
+    documents_by_year = data.frame(year = c(2021, 2022, 2023), count = c(1, 1, 1)),
+    documents_by_month = data.frame(month = c("2023-01", "2023-02"), count = c(2, 1)),
+    documents_by_state = data.frame(estado = c("SP", "RJ"), count = c(2, 1)),
+    documents_by_type = data.frame(tipo = c("Lei", "Decreto"), count = c(2, 1)),
+    recent_documents = data.frame(titulo = c("Sample Doc 1", "Sample Doc 2"), tipo = c("Lei", "Decreto"), estado = c("SP", "RJ"), data = c(Sys.Date(), Sys.Date()-1)),
+    date_range = list(min = as.Date("2021-01-01"), max = Sys.Date())
+  ))
+}
+
+cat("✓ Missing functions loaded successfully - v7 with get_search_analytics function\n")

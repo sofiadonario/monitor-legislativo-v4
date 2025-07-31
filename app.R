@@ -1716,7 +1716,7 @@ server <- function(input, output, session) {
         return(leaflet() %>%
           addTiles() %>%
           setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-          addMarker(lng = -47.86, lat = -15.83, 
+          addMarkers(lng = -47.86, lat = -15.83, 
                    popup = "No geographic data available - Using emergency fallback"))
       }
       
@@ -1755,7 +1755,7 @@ server <- function(input, output, session) {
       return(leaflet() %>%
         addTiles() %>%
         setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-        addMarker(lng = -47.86, lat = -15.83, 
+        addMarkers(lng = -47.86, lat = -15.83, 
                  popup = paste("Emergency map error:", e$message)))
     })
   })
@@ -1771,7 +1771,7 @@ server <- function(input, output, session) {
         return(leaflet() %>%
           addTiles() %>%
           setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-          addMarker(lng = -47.86, lat = -15.83, 
+          addMarkers(lng = -47.86, lat = -15.83, 
                    popup = "No legislation data available - Using emergency fallback"))
       }
       
@@ -1812,7 +1812,7 @@ server <- function(input, output, session) {
       return(leaflet() %>%
         addTiles() %>%
         setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-        addMarker(lng = -47.86, lat = -15.83, 
+        addMarkers(lng = -47.86, lat = -15.83, 
                  popup = paste("Emergency legislation map error:", e$message)))
     })
   })
@@ -1828,7 +1828,7 @@ server <- function(input, output, session) {
         return(leaflet() %>%
           addTiles() %>%
           setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-          addMarker(lng = -47.86, lat = -15.83, 
+          addMarkers(lng = -47.86, lat = -15.83, 
                    popup = "No jurisprudence data available - Using emergency fallback"))
       }
       
@@ -1869,7 +1869,7 @@ server <- function(input, output, session) {
       return(leaflet() %>%
         addTiles() %>%
         setView(lng = -47.86, lat = -15.83, zoom = 4) %>%
-        addMarker(lng = -47.86, lat = -15.83, 
+        addMarkers(lng = -47.86, lat = -15.83, 
                  popup = paste("Emergency jurisprudence map error:", e$message)))
     })
   })
