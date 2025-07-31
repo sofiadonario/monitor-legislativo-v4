@@ -135,7 +135,7 @@ init_database <- function() {
 #' Test database connection and verify tables
 #' @return TRUE if successful, FALSE otherwise
 test_database_connection <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     cat("ERROR: Database pool is NULL\n")
     return(FALSE)
   }
@@ -180,7 +180,7 @@ test_database_connection <- function() {
 #' @param limit Maximum number of documents to return
 #' @return Data frame with documents or NULL if error
 get_documents <- function(limit = NULL) {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     warning("Database not initialized")
     return(NULL)
   }
@@ -304,7 +304,7 @@ get_documents <- function(limit = NULL) {
 #' @return Data frame with search results
 search_documents <- function(search_text = "", document_types = NULL, states = NULL, 
                            date_from = NULL, date_to = NULL, limit = 100) {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     warning("Database not initialized")
     return(NULL)
   }
@@ -433,7 +433,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
 #' Get document statistics
 #' @return List with various statistics
 get_document_stats <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(list(
       total_documents = 0,
       document_types = data.frame(),
@@ -511,7 +511,7 @@ get_document_stats <- function() {
 #' Get search analytics
 #' @return List with search-related statistics
 get_search_analytics <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(list(
       total_documents = 0,
       documents_by_year = data.frame(),
@@ -638,7 +638,7 @@ get_search_analytics <- function() {
 #' Get document types for filter
 #' @return Vector of document types
 get_document_types <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(c("legislacao", "jurisprudencia", "doutrina", "proposicoes", "outros"))
   }
   
@@ -665,7 +665,7 @@ get_document_types <- function() {
 #' Get states for filter with proper names and coordinates
 #' @return Data frame with state info
 get_states <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(data.frame(abbrev = c("BR"), name = c("Federal"), count = c(0)))
   }
   
@@ -719,7 +719,7 @@ get_states <- function() {
 #' Get map data for Interactive Map 1 (from lexml_documents)
 #' @return Data frame with state data for mapping
 get_map1_data <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(data.frame())
   }
   
@@ -758,7 +758,7 @@ get_map1_data <- function() {
 #' Get map data for Interactive Map 2 (Legislation tables)
 #' @return Data frame with state data for legislation
 get_map2_data <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(data.frame())
   }
   
@@ -804,7 +804,7 @@ get_map2_data <- function() {
 #' Get map data for Interactive Map 3 (Jurisprudence + Propositions)
 #' @return Data frame with state data for jurisprudence and propositions
 get_map3_data <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(data.frame())
   }
   
@@ -858,7 +858,7 @@ get_map3_data <- function() {
 #' Get dashboard metrics from lexml_documents
 #' @return List with dashboard statistics
 get_lexml_dashboard_metrics <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(list(
       total_docs = 0,
       states_with_docs = 0,

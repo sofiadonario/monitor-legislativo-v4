@@ -56,7 +56,7 @@ populate_database_with_csv_data <- function() {
   cat("🔄 Populating PostgreSQL database with CSV data from data_current/processed/\n")
   
   tryCatch({
-    if (is.null(db_pool)) {
+    if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
       cat("❌ Database pool is NULL\n")
       return(FALSE)
     }
@@ -310,7 +310,7 @@ parse_database_url <- function(url) {
 #' Test database connection and verify tables
 #' @return TRUE if successful, FALSE otherwise
 test_database_connection <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     cat("ERROR: Database pool is NULL\n")
     return(FALSE)
   }
@@ -402,7 +402,7 @@ test_database_connection <- function() {
 #' @param limit Maximum number of documents to return (default: NULL for all)
 #' @return Data frame with documents or NULL if error
 get_documents <- function(limit = NULL) {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     warning("Database not initialized")
     return(NULL)
   }
@@ -642,7 +642,7 @@ get_documents <- function(limit = NULL) {
 #' @return Data frame with search results
 search_documents <- function(search_text = "", document_types = NULL, states = NULL, 
                             date_from = NULL, date_to = NULL, limit = 100) {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     warning("Database not initialized")
     return(NULL)
   }
@@ -793,7 +793,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
 #' Get available document types for filter
 #' @return Vector of document types
 get_document_types <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(c("lei", "decreto", "portaria"))
   }
   
@@ -822,7 +822,7 @@ get_document_types <- function() {
 #' Get available states for filter
 #' @return Vector of states
 get_states <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(c("SP", "RJ", "MG", "RS"))
   }
   
@@ -851,7 +851,7 @@ get_states <- function() {
 #' Get document statistics
 #' @return List with various statistics
 get_document_stats <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(list(
       total_documents = 0,
       document_types = data.frame(),
@@ -905,7 +905,7 @@ get_document_stats <- function() {
 #' Get search analytics and statistics
 #' @return List with search-related statistics
 get_search_analytics <- function() {
-  if (is.null(db_pool)) {
+  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
     return(list(
       total_documents = 0,
       documents_by_year = data.frame(),
