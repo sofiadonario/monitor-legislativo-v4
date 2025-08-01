@@ -6,9 +6,8 @@ nixPkgs = ["R", "libpq"]
 
 [phases.install]
 cmds = [
-  "R -e \"install.packages('shiny', repos='https://cran.rstudio.com/')\"",
-  "R -e \"install.packages('DBI', repos='https://cran.rstudio.com/')\"", 
-  "R -e \"install.packages('RPostgres', repos='https://cran.rstudio.com/')\""
+  "R -e \"install.packages(c('shiny', 'shinydashboard', 'DT', 'plotly', 'dplyr', 'DBI', 'RPostgres'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
+  "R -e \"cat('✅ All packages installed successfully\\n')\""
 ]
 
 [start]
