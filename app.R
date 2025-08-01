@@ -4,8 +4,11 @@
 
 cat("🚀 STARTING APP.R - CLEAN VERSION (no initialization)\n")
 
-# RAILWAY DATABASE FIX - Priority loading for production
-if (file.exists("RAILWAY_DATABASE_FIX.R")) {
+# RAILWAY STARTUP FIX - Priority for fast startup (prevent timeout)
+if (file.exists("RAILWAY_STARTUP_FIX.R")) {
+  cat("🚀 Loading RAILWAY_STARTUP_FIX.R for fast startup\n")
+  source("RAILWAY_STARTUP_FIX.R", local = FALSE)
+} else if (file.exists("RAILWAY_DATABASE_FIX.R")) {
   cat("🚀 Loading RAILWAY_DATABASE_FIX.R for production database\n")
   source("RAILWAY_DATABASE_FIX.R", local = FALSE)
 } else if (file.exists("BULLETPROOF_RAILWAY_FIX.R")) {
