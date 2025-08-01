@@ -4,12 +4,15 @@
 
 cat("🚀 STARTING APP.R - CLEAN VERSION (no initialization)\n")
 
-# RAILWAY CRITICAL FIX - BULLETPROOF loading mechanism for 144k+ documents
-if (file.exists("BULLETPROOF_RAILWAY_FIX.R")) {
+# RAILWAY DATABASE FIX - Priority loading for production
+if (file.exists("RAILWAY_DATABASE_FIX.R")) {
+  cat("🚀 Loading RAILWAY_DATABASE_FIX.R for production database\n")
+  source("RAILWAY_DATABASE_FIX.R", local = FALSE)
+} else if (file.exists("BULLETPROOF_RAILWAY_FIX.R")) {
   cat("🚀 Loading BULLETPROOF_RAILWAY_FIX.R for 144k+ documents\n")
   source("BULLETPROOF_RAILWAY_FIX.R", local = FALSE)
 } else {
-  cat("⚠️ BULLETPROOF_RAILWAY_FIX.R not found - using fallback mechanisms\n")
+  cat("⚠️ No Railway fix found - using fallback mechanisms\n")
 }
 
 # Load Unified Data Access Layer Integration
@@ -26,6 +29,14 @@ if (file.exists("integrate_data_validation.R")) {
   source("integrate_data_validation.R", local = FALSE)
 } else {
   cat("⚠️ integrate_data_validation.R not found\n")
+}
+
+# Load Dashboard NULL Fix
+if (file.exists("dashboard_null_fix.R")) {
+  cat("🔧 Loading Dashboard NULL fix...\n")
+  source("dashboard_null_fix.R", local = FALSE)
+} else {
+  cat("⚠️ dashboard_null_fix.R not found\n")
 }
 
 # Load Database Integration (prioritized over CSV)

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "echo 'Build complete'"
+  },
+  "deploy": {
+    "startCommand": "R -e \"source('init.R'); shiny::runApp(host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))\"",
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  },
+  "env": {
+    "R_VERSION": "4.3.0",
+    "NIXPACKS_R_PACKAGES": "shiny DBI RPostgres dplyr lubridate ggplot2 plotly leaflet shinydashboard shinyWidgets",
+    "DATABASE_URL": "${{DATABASE_URL}}",
+    "DB_HOST": "nozomi.proxy.rlwy.net",
+    "DB_PORT": "44844",
+    "DB_NAME": "railway",
+    "DB_USER": "postgres",
+    "DB_PASSWORD": "smNCedRjMKeNsoqpurLWXjGEUZxORwVY"
+  }
+}
