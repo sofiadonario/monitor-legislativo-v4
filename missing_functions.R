@@ -181,13 +181,13 @@ get_lexml_dashboard_metrics <- function(db_pool = NULL) {
         WHERE municipio IS NOT NULL AND municipio != ''
       ")$count[1]
       
-      # Get date range
+      # Get date range - FIXED: Remove ::date cast to prevent type mismatch
       date_range <- DBI::dbGetQuery(pool_to_use, "
         SELECT 
-          MIN(COALESCE(data_publicacao, created_at::date)) as min_date,
-          MAX(COALESCE(data_publicacao, created_at::date)) as max_date
+          MIN(COALESCE(data_publicacao, created_at)) as min_date,
+          MAX(COALESCE(data_publicacao, created_at)) as max_date
         FROM documents 
-        WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
+        WHERE COALESCE(data_publicacao, created_at) IS NOT NULL
       ")
       
       # Calculate years
@@ -234,11 +234,11 @@ get_database_stats <- function() {
       total_docs <- DBI::dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")$count[1]
       cat("🔄 get_database_stats found:", total_docs, "total documents\n")
       
-      # Documents by year using proper date fields
+      # Documents by year using proper date fields - FIXED: Remove ::date cast to prevent type mismatch
       docs_by_year <- DBI::dbGetQuery(.db_pool, "
-        SELECT EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)) as year, COUNT(*) as count 
+        SELECT EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at)) as year, COUNT(*) as count 
         FROM documents 
-        WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL 
+        WHERE COALESCE(data_publicacao, created_at) IS NOT NULL 
         GROUP BY year 
         ORDER BY year DESC
         LIMIT 10
@@ -264,12 +264,12 @@ get_database_stats <- function() {
         LIMIT 27
       ")
       
-      # Documents by month (last 12 months)
+      # Documents by month (last 12 months) - FIXED: Remove ::date cast to prevent type mismatch
       docs_by_month <- DBI::dbGetQuery(.db_pool, "
-        SELECT TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM') as month, COUNT(*) as count 
+        SELECT TO_CHAR(COALESCE(data_publicacao, created_at), 'YYYY-MM') as month, COUNT(*) as count 
         FROM documents 
-        WHERE COALESCE(data_publicacao, created_at::date) >= CURRENT_DATE - INTERVAL '12 months' 
-          AND COALESCE(data_publicacao, created_at::date) IS NOT NULL
+        WHERE COALESCE(data_publicacao, created_at) >= CURRENT_DATE - INTERVAL '12 months' 
+          AND COALESCE(data_publicacao, created_at) IS NOT NULL
         GROUP BY month 
         ORDER BY month DESC
         LIMIT 12
@@ -484,27 +484,27 @@ get_search_analytics <- function() {
       total_docs <- DBI::dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")$count[1]
       cat("🔄 get_search_analytics found:", total_docs, "total documents\n")
       
-      # Documents by year
+      # Documents by year - FIXED: Remove ::date cast to prevent type mismatch
       docs_by_year <- DBI::dbGetQuery(.db_pool, "
         SELECT 
-          EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date)) as year,
+          EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at)) as year,
           COUNT(*) as count
         FROM documents 
-        WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
-        GROUP BY EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at::date))
+        WHERE COALESCE(data_publicacao, created_at) IS NOT NULL
+        GROUP BY EXTRACT(YEAR FROM COALESCE(data_publicacao, created_at))
         ORDER BY year DESC
         LIMIT 10
       ")
       
-      # Documents by month (last 12 months)
+      # Documents by month (last 12 months) - FIXED: Remove ::date cast to prevent type mismatch
       docs_by_month <- DBI::dbGetQuery(.db_pool, "
         SELECT 
-          TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM') as month,
+          TO_CHAR(COALESCE(data_publicacao, created_at), 'YYYY-MM') as month,
           COUNT(*) as count
         FROM documents 
-        WHERE COALESCE(data_publicacao, created_at::date) >= CURRENT_DATE - INTERVAL '12 months'
-          AND COALESCE(data_publicacao, created_at::date) IS NOT NULL
-        GROUP BY TO_CHAR(COALESCE(data_publicacao, created_at::date), 'YYYY-MM')
+        WHERE COALESCE(data_publicacao, created_at) >= CURRENT_DATE - INTERVAL '12 months'
+          AND COALESCE(data_publicacao, created_at) IS NOT NULL
+        GROUP BY TO_CHAR(COALESCE(data_publicacao, created_at), 'YYYY-MM')
         ORDER BY month DESC
       ")
       
@@ -528,22 +528,22 @@ get_search_analytics <- function() {
         LIMIT 15
       ")
       
-      # Recent documents
+      # Recent documents - FIXED: Remove ::date cast to prevent type mismatch
       recent_docs <- DBI::dbGetQuery(.db_pool, "
-        SELECT titulo, tipo, estado, COALESCE(data_publicacao, created_at::date) as data
+        SELECT titulo, tipo, estado, COALESCE(data_publicacao, created_at) as data
         FROM documents 
         WHERE titulo IS NOT NULL
         ORDER BY COALESCE(data_publicacao, created_at, NOW()) DESC
         LIMIT 10
       ")
       
-      # Date range
+      # Date range - FIXED: Remove ::date cast to prevent type mismatch
       date_range_query <- DBI::dbGetQuery(.db_pool, "
         SELECT 
-          MIN(COALESCE(data_publicacao, created_at::date)) as min_date,
-          MAX(COALESCE(data_publicacao, created_at::date)) as max_date
+          MIN(COALESCE(data_publicacao, created_at)) as min_date,
+          MAX(COALESCE(data_publicacao, created_at)) as max_date
         FROM documents 
-        WHERE COALESCE(data_publicacao, created_at::date) IS NOT NULL
+        WHERE COALESCE(data_publicacao, created_at) IS NOT NULL
       ")
       
       # Convert integer64 to numeric for proper display
