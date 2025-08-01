@@ -12,6 +12,22 @@ if (file.exists("BULLETPROOF_RAILWAY_FIX.R")) {
   cat("⚠️ BULLETPROOF_RAILWAY_FIX.R not found - using fallback mechanisms\n")
 }
 
+# Load Unified Data Access Layer Integration
+if (file.exists("integrate_unified_data_access.R")) {
+  cat("🔧 Loading Unified Data Access Layer integration...\n")
+  source("integrate_unified_data_access.R", local = FALSE)
+} else {
+  cat("⚠️ integrate_unified_data_access.R not found\n")
+}
+
+# Load Data Validation Pipeline Integration
+if (file.exists("integrate_data_validation.R")) {
+  cat("🔍 Loading Data Validation Pipeline integration...\n")
+  source("integrate_data_validation.R", local = FALSE)
+} else {
+  cat("⚠️ integrate_data_validation.R not found\n")
+}
+
 get_document_types <- function() {
   # RAILWAY FIX: Force pool to exist
   if (!exists(".db_pool") || is.null(.db_pool)) {
