@@ -201,32 +201,28 @@ class CSVDeduplicator:
             try:
                 logging.info(f"📄 Processing {file_path.name} for unified dataset")
                 
-                # Extract category and transport mode from filename
-                filename = file_path.stem
-                if "legislação" in filename or "legisla" in filename:
-                    category = "Legislação"
-                elif "jurisprudência" in filename or "jurisprud" in filename:
-                    category = "Jurisprudência"
-                elif "doutrina" in filename:
-                    category = "Doutrina"
-                elif "outros" in filename:
-                    category = "Outros"
-                elif "proposições" in filename or "proposi" in filename:
-                    category = "Proposições"
-                else:
-                    category = "Unknown"
+                # Read file first to access actual category data
+                try:
+                    df = pd.read_csv(file_path, encoding='utf-8')
+                except UnicodeDecodeError:
+                    df = pd.read_csv(file_path, encoding='latin-1')
                 
-                # Extract transport mode
-                if "aéreo" in filename or "aereo" in filename:
-                    transport_mode = "Aéreo"
-                elif "marítimo" in filename or "maritimo" in filename:
-                    transport_mode = "Marítimo"
-                elif "rodoviário" in filename or "rodoviario" in filename:
-                    transport_mode = "Rodoviário"
-                elif "geral" in filename:
-                    transport_mode = "Geral"
+                # Extract categories from actual data instead of filename
+                logging.info(f"📊 Extracting categories from document content instead of filename")
+                
+                # Use existing categoria field if available
+                if 'categoria' in df.columns:
+                    category_counts = df['categoria'].value_counts()
+                    logging.info(f"   Found categoria field with {len(category_counts)} unique values")
                 else:
-                    transport_mode = "Unknown"
+                    logging.info("   No categoria field found, will use content-based parsing")
+                
+                # Use existing modal field if available for transport
+                if 'modal' in df.columns:
+                    modal_counts = df['modal'].value_counts()
+                    logging.info(f"   Found modal field with {len(modal_counts)} unique values")
+                else:
+                    logging.info("   No modal field found, will use content-based parsing")
                 
                 # Read file
                 try:

@@ -28,6 +28,20 @@ if (file.exists("integrate_data_validation.R")) {
   cat("⚠️ integrate_data_validation.R not found\n")
 }
 
+# Load Database Integration (prioritized over CSV)
+if (file.exists("database_dashboard_integration.R")) {
+  cat("🔗 Loading Database Dashboard integration...\n")
+  source("database_dashboard_integration.R", local = FALSE)
+} else if (file.exists("simple_deduplicated_integration.R")) {
+  cat("📊 Loading Simple Deduplicated Data integration...\n")
+  source("simple_deduplicated_integration.R", local = FALSE)
+} else if (file.exists("integrate_deduplicated_data.R")) {
+  cat("📊 Loading Deduplicated Data integration...\n")
+  source("integrate_deduplicated_data.R", local = FALSE)
+} else {
+  cat("⚠️ No data integration found\n")
+}
+
 get_document_types <- function() {
   # RAILWAY FIX: Force pool to exist
   if (!exists(".db_pool") || is.null(.db_pool)) {
