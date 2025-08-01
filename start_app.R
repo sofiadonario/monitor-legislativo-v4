@@ -237,9 +237,9 @@ if (database_connected && exists("db_pool") && inherits(db_pool, "Pool")) {
   cat("🚨 FINAL OVERRIDE: Loading data fix to ensure 131k+ documents display\n")
 
 # Try REAL_DATA_FIX first (uses your actual CSV data)
-if (file.exists("REAL_DATA_FIX.R") && file.exists("./data_current/processed/enhanced/lexml_dataset_enhanced_simple.csv")) {
+if (file.exists("fixes/legacy/REAL_DATA_FIX.R") && file.exists("./data_current/processed/enhanced/lexml_dataset_enhanced_simple.csv")) {
   cat("📊 Loading REAL_DATA_FIX.R - Your actual research data\n")
-  source("REAL_DATA_FIX.R")
+  source("fixes/legacy/REAL_DATA_FIX.R")
   cat("✅ REAL_DATA_FIX.R loaded - Using your actual 131k+ research documents\n")
 } else {
   # Railway fallback - DISABLED: database.R now works with documents view

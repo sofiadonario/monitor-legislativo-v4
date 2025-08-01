@@ -36,12 +36,13 @@ COPY app.R ./
 COPY database.R ./
 COPY utils.R ./
 COPY missing_functions.R ./
-COPY FORCE_REBUILD_DEBUG.R ./
-COPY diagnostic_check.R ./
 COPY start_app.R ./
-COPY config.yml ./
-COPY railway_debug.R ./
+
+# Copy directories
 COPY scripts/ ./scripts/
+COPY fixes/ ./fixes/
+COPY config/ ./config/
+COPY data_current/ ./data_current/
 
 # List files to verify they were copied (diagnostic)
 RUN ls -la
