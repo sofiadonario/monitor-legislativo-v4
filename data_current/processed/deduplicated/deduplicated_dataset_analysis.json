@@ -1,0 +1,13 @@
+{
+  "total_documents": 134014,
+  "categories": {
+    "Unknown": 134014
+  },
+  "transport_modes": {
+    "Unknown": 134014
+  },
+  "merged_documents": 134014,
+  "single_documents": 0,
+  "documents_with_merged_categories": 0,
+  "documents_with_merged_transport": 0
+}
