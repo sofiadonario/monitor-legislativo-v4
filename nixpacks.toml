@@ -1,0 +1,15 @@
+[providers]
+r = "4.3.1"
+
+[phases.setup]
+nixPkgs = ["R", "libpq"]
+
+[phases.install]
+cmds = [
+  "R -e \"install.packages('shiny', repos='https://cran.rstudio.com/')\"",
+  "R -e \"install.packages('DBI', repos='https://cran.rstudio.com/')\"", 
+  "R -e \"install.packages('RPostgres', repos='https://cran.rstudio.com/')\""
+]
+
+[start]
+cmd = "R -e \"shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))\""
