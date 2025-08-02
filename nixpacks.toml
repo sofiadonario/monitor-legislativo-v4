@@ -6,8 +6,17 @@ nixPkgs = ["R", "libpq"]
 
 [phases.install]
 cmds = [
+  # Core Shiny and Database packages
   "R -e \"install.packages(c('shiny', 'shinydashboard', 'DT', 'plotly', 'dplyr', 'DBI', 'RPostgres'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
-  "R -e \"cat('✅ All packages installed successfully\\n')\""
+  # Essential data manipulation and visualization
+  "R -e \"install.packages(c('ggplot2', 'tidyr', 'stringr', 'lubridate', 'scales', 'RColorBrewer', 'htmlwidgets', 'leaflet'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
+  # Text mining packages (lightweight selection for Railway)
+  "R -e \"install.packages(c('tidytext', 'textclean', 'wordcloud'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
+  # ML and statistical packages
+  "R -e \"install.packages(c('randomForest', 'cluster', 'factoextra', 'forecast'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
+  # Geospatial basics
+  "R -e \"install.packages(c('sf', 'geojsonio'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
+  "R -e \"cat('✅ All required packages installed successfully\\n')\""
 ]
 
 [start]
