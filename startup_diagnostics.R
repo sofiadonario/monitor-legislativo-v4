@@ -3,7 +3,7 @@
 # This script runs during startup to diagnose database connectivity
 
 cat("\n🚀 RAILWAY STARTUP DIAGNOSTICS\n")
-cat("=" * 50, "\n")
+cat(paste(rep("=", 50), collapse = ""), "\n")
 
 # Check environment
 cat("\n📍 ENVIRONMENT CHECK:\n")
@@ -98,8 +98,8 @@ if (db_url != "") {
   })
 }
 
-cat("\n" * 2)
-cat("=" * 50, "\n")
+cat("\n\n")
+cat(paste(rep("=", 50), collapse = ""), "\n")
 cat("🏁 DIAGNOSTICS COMPLETE\n\n")
 
 # Write results to a file for later inspection
