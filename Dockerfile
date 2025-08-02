@@ -1,57 +1,63 @@
-# Monitor Legislativo v4 - Optimized Railway Deployment - REBUILD v2
-# Using rocker/shiny for pre-installed shiny packages
-FROM rocker/shiny:4.3.1
+# Multi-stage build for Railway deployment with geospatial support
+FROM rocker/geospatial:4.3.1 AS builder
 
-# Install only essential system dependencies
+# Install system dependencies for database and analytics
 RUN apt-get update && apt-get install -y \
     libpq-dev \
-    libgdal-dev \
     libudunits2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install all required packages in one command using binary packages where possible
-RUN install2.r --error --skipinstalled \
-    config \
-    DBI \
-    RPostgres \
-    pool \
-    dplyr \
-    shinydashboard \
-    DT \
-    jsonlite \
-    plotly \
-    ggplot2 \
-    leaflet \
-    stringr \
-    markdown \
-    readr
+# Install packages in optimized order to prevent memory issues
+# Core packages first
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DBI', 'RPostgres'), repos='https://cran.rstudio.com/', dependencies=FALSE)"
 
-# Quick verification that key packages are installed
-RUN R -e "if(!require(shiny)) stop('shiny not installed'); if(!require(shinydashboard)) stop('shinydashboard not installed'); cat('✓ All packages verified\n')"
+# Data packages
+RUN R -e "install.packages(c('dplyr', 'DT', 'plotly', 'ggplot2'), repos='https://cran.rstudio.com/', dependencies=FALSE)"
 
-WORKDIR /app
+# Geospatial packages (already included in rocker/geospatial base)
+RUN R -e "install.packages('leaflet', repos='https://cran.rstudio.com/', dependencies=FALSE)"
 
-# Copy ALL the essential files
-COPY app.R ./
-COPY database.R ./
-COPY utils.R ./
-COPY missing_functions.R ./
-COPY start_app.R ./
+# Optional packages with error handling
+RUN R -e "tryCatch({install.packages(c('htmlwidgets', 'RColorBrewer', 'stringr', 'scales', 'lubridate'), repos='https://cran.rstudio.com/', dependencies=FALSE)}, error=function(e){cat('Optional packages installation failed, continuing...\n')})"
 
-# Copy directories
-COPY scripts/ ./scripts/
-COPY fixes/ ./fixes/
-COPY config/ ./config/
-COPY data_current/ ./data_current/
+# Final runtime stage
+FROM rocker/geospatial:4.3.1
 
-# List files to verify they were copied (diagnostic)
-RUN ls -la
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 
-# Skip diagnostic check to speed up build
-# RUN R -e "source('diagnostic_check.R')"
+# Install only runtime system dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Expose port and run
+# Set working directory
+WORKDIR /srv/shiny-server
+
+# Copy application files
+COPY app.R .
+COPY RAILWAY_DATABASE_FINAL_FIX.R .
+COPY startup_diagnostics.R .
+COPY test_railway_connection.R .
+
+# Copy analytics systems (if they exist)
+COPY geospatial_analytics_system.R . 
+COPY temporal_analysis_system.R .
+COPY legislative_ml_system.R .
+COPY advanced_text_mining_pipeline.R .
+
+# Copy optional files if they exist
+COPY railway_analytics_lightweight.R . 2>/dev/null || true
+COPY railway_error_handler.R . 2>/dev/null || true
+
+# Verify core packages are working
+RUN R -e "library(shiny); library(shinydashboard); library(leaflet); cat('✅ Core packages verified\n')"
+
+# Set proper permissions
+RUN chmod -R 755 /srv/shiny-server
+
+# Expose port
 EXPOSE 3838
 
-# Use the startup script
-CMD ["R", "-e", "source('start_app.R')"]
+# Run startup diagnostics then the app
+CMD ["R", "-e", "source('startup_diagnostics.R'); shiny::runApp('/srv/shiny-server/app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))"]

@@ -6,17 +6,14 @@ nixPkgs = ["R", "libpq"]
 
 [phases.install]
 cmds = [
-  # Core Shiny and Database packages
-  "R -e \"install.packages(c('shiny', 'shinydashboard', 'DT', 'plotly', 'dplyr', 'DBI', 'RPostgres'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
-  # Essential data manipulation and visualization
-  "R -e \"install.packages(c('ggplot2', 'tidyr', 'stringr', 'lubridate', 'scales', 'RColorBrewer', 'htmlwidgets', 'leaflet'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
-  # Text mining packages (lightweight selection for Railway)
-  "R -e \"install.packages(c('tidytext', 'textclean', 'wordcloud'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
-  # ML and statistical packages
-  "R -e \"install.packages(c('randomForest', 'cluster', 'factoextra', 'forecast'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
-  # Geospatial basics
-  "R -e \"install.packages(c('sf', 'geojsonio'), repos='https://cran.rstudio.com/', dependencies=TRUE)\"",
-  "R -e \"cat('✅ All required packages installed successfully\\n')\""
+  # Core packages only - avoiding heavy dependencies
+  "R -e \"install.packages(c('shiny', 'shinydashboard', 'DT', 'plotly', 'dplyr', 'ggplot2', 'DBI', 'RPostgres'), repos='https://cran.rstudio.com/')\"",
+  # Optional lightweight packages
+  "R -e \"install.packages(c('RColorBrewer', 'htmlwidgets'), repos='https://cran.rstudio.com/')\"",
+  # Skip leaflet for now - it pulls in heavy geo dependencies
+  "R -e \"cat('✅ Core packages installed\\n')\"",
+  # Run diagnostics
+  "R -e \"source('startup_diagnostics.R')\""
 ]
 
 [start]
