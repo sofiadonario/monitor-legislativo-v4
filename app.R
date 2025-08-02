@@ -56,7 +56,7 @@ system_status_global <- list(
 
 # Load Railway database connection (with fallback)
 tryCatch({
-  source("RAILWAY_DATABASE_FIX_CORRECTED.R")
+  source("RAILWAY_DATABASE_FINAL_FIX.R")
   system_status_global$database <- TRUE
   cat("✅ Database connection loaded\n")
 }, error = function(e) {
