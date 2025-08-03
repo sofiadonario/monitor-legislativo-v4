@@ -1051,22 +1051,6 @@ ui <- dashboardPage(
               )
             )
           )
-        )
-                              start = "2020-01-01",
-                              end = Sys.Date(),
-                              format = "yyyy-mm-dd")
-              ),
-              column(2,
-                div(style = "margin-top: 25px;",
-                  actionButton("lib_search_btn", "Search", 
-                              class = "btn-primary", style = "width: 100%;"),
-                  br(), br(),
-                  actionButton("lib_reset_btn", "Reset", 
-                              class = "btn-secondary", style = "width: 100%;")
-                )
-              )
-            )
-          )
         ),
         
         # Category Tabs for Document Display
@@ -1385,7 +1369,6 @@ ui <- dashboardPage(
       )
     )
   )
-)
 
 cat("✅ UI defined with comprehensive analytics structure\n")
 
