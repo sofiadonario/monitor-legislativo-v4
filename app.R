@@ -1220,6 +1220,7 @@ ui <- dashboardPage(
         )
       )
     )
+  )
 )
 
 # UI definition complete
@@ -2849,14 +2850,15 @@ server <- function(input, output, session) {
   
   cat("✅ Unified server logic defined with comprehensive analytics\n")
 }
+}
 
 # ============================================================================
 # APPLICATION LAUNCH
 # ============================================================================
 
-cat("🚀 Launching World-Class MackMonitor Analytics Dashboard...\n")
-cat("📊 All systems integrated and ready\n")
-cat("🌐 Access your dashboard at: http://localhost or Railway deployment URL\n")
+cat("All systems integrated and ready\n")
+cat("Access your dashboard at: http://localhost or Railway deployment URL\n")
 
 # Create and run the Shiny application
 shinyApp(ui = ui, server = server)
+
