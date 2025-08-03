@@ -52,9 +52,21 @@ tryCatch({
                                    limit = 100, offset = 0) {
     # Try to load real CSV data as fallback
     tryCatch({
-      csv_path <- "data_current/processed/production/lexml_enhanced_simple.csv"
+      # Try full CSV first, then sample for Railway deployment
+      csv_paths <- c(
+        "data_current/processed/production/lexml_enhanced_simple.csv",
+        "data_current/processed/production/lexml_sample_for_railway.csv"
+      )
       
-      if(file.exists(csv_path)) {
+      csv_path <- NULL
+      for(path in csv_paths) {
+        if(file.exists(path)) {
+          csv_path <- path
+          break
+        }
+      }
+      
+      if(!is.null(csv_path)) {
         cat("📁 Loading CSV fallback data from:", csv_path, "\n")
         
         # Read CSV with proper encoding - sample to match database size (~134k)
