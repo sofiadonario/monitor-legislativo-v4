@@ -1,0 +1,2571 @@
+{
+  "processing_date": "2025-07-26T12:34:26.373899",
+  "total_files_processed": 21,
+  "successful_files": 21,
+  "failed_files": 0,
+  "file_details": [
+    {
+      "filename": "lexml_dataset_limpo_classificado_20250722_102507_com_localizacao.csv",
+      "total_rows": 134014,
+      "total_columns": 23,
+      "empty_columns": [
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 118920,
+          "missing_percentage": 88.74
+        },
+        "data": {
+          "missing_count": 1,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 15094,
+          "missing_percentage": 11.26
+        },
+        "autor": {
+          "missing_count": 134013,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 56568,
+          "missing_percentage": 42.21
+        },
+        "classificacao": {
+          "missing_count": 134014,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 15094,
+          "missing_percentage": 11.26
+        },
+        "autoridade": {
+          "missing_count": 134014,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 9156,
+          "missing_percentage": 6.83
+        },
+        "url": {
+          "missing_count": 134014,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 134014,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 134014,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 134013,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 3363,
+          "missing_percentage": 2.51
+        },
+        "estado": {
+          "missing_count": 20127,
+          "missing_percentage": 15.02
+        },
+        "municipio": {
+          "missing_count": 131020,
+          "missing_percentage": 97.77
+        },
+        "fontes_localizacao": {
+          "missing_count": 20127,
+          "missing_percentage": 15.02
+        }
+      },
+      "issues_found": [
+        "assuntos: 12832 rows with embedded newlines",
+        "ementa: 40928 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 12832 embedded newlines",
+        "ementa: cleaned 40928 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 134014,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_dataset_limpo_classificado_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_outros_rodovi├írio_20250722_102507_com_localizacao.csv",
+      "total_rows": 5981,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 5970,
+          "missing_percentage": 99.82
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 11,
+          "missing_percentage": 0.18
+        },
+        "autor": {
+          "missing_count": 5981,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 3197,
+          "missing_percentage": 53.45
+        },
+        "classificacao": {
+          "missing_count": 5981,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 11,
+          "missing_percentage": 0.18
+        },
+        "autoridade": {
+          "missing_count": 5981,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 10,
+          "missing_percentage": 0.17
+        },
+        "url": {
+          "missing_count": 5981,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 5981,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 5981,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 5981,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 2,
+          "missing_percentage": 0.03
+        },
+        "estado": {
+          "missing_count": 11,
+          "missing_percentage": 0.18
+        },
+        "municipio": {
+          "missing_count": 5981,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 11,
+          "missing_percentage": 0.18
+        }
+      },
+      "issues_found": [
+        "assuntos: 2700 rows with embedded newlines",
+        "ementa: 5613 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 2700 embedded newlines",
+        "ementa: cleaned 5613 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 5981,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_outros_rodovi├írio_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_proposi├º├Áes_geral_20250722_102507_com_localizacao.csv",
+      "total_rows": 877,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 875,
+          "missing_percentage": 99.77
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 2,
+          "missing_percentage": 0.23
+        },
+        "autor": {
+          "missing_count": 877,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 870,
+          "missing_percentage": 99.2
+        },
+        "classificacao": {
+          "missing_count": 877,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 2,
+          "missing_percentage": 0.23
+        },
+        "autoridade": {
+          "missing_count": 877,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 1,
+          "missing_percentage": 0.11
+        },
+        "url": {
+          "missing_count": 877,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 877,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 877,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 877,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "estado": {
+          "missing_count": 2,
+          "missing_percentage": 0.23
+        },
+        "municipio": {
+          "missing_count": 877,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 2,
+          "missing_percentage": 0.23
+        }
+      },
+      "issues_found": [
+        "assuntos: 2 rows with embedded newlines",
+        "ementa: 10 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 2 embedded newlines",
+        "ementa: cleaned 10 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 877,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_proposi├º├Áes_geral_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_proposi├º├Áes_rodovi├írio_20250722_102507_com_localizacao.csv",
+      "total_rows": 747,
+      "total_columns": 23,
+      "empty_columns": [
+        "tipo",
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 747,
+          "missing_percentage": 100.0
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "autor": {
+          "missing_count": 747,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 743,
+          "missing_percentage": 99.46
+        },
+        "classificacao": {
+          "missing_count": 747,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "autoridade": {
+          "missing_count": 747,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "url": {
+          "missing_count": 747,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 747,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 747,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 747,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "estado": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "municipio": {
+          "missing_count": 747,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        }
+      },
+      "issues_found": [
+        "ementa: 4 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 0 embedded newlines",
+        "ementa: cleaned 4 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 747,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_proposi├º├Áes_rodovi├írio_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_proposi├º├Áes_a├®reo_20250722_102507_com_localizacao.csv",
+      "total_rows": 14,
+      "total_columns": 23,
+      "empty_columns": [
+        "tipo",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "autor": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "classificacao": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "autoridade": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "url": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "estado": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "municipio": {
+          "missing_count": 14,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        }
+      },
+      "issues_found": [],
+      "issues_fixed": [
+        "assuntos: cleaned 0 embedded newlines",
+        "ementa: cleaned 0 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 14,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_proposi├º├Áes_a├®reo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_proposi├º├Áes_mar├¡timo_20250722_102507_com_localizacao.csv",
+      "total_rows": 13,
+      "total_columns": 23,
+      "empty_columns": [
+        "tipo",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "autor": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "classificacao": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "autoridade": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "url": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "estado": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "municipio": {
+          "missing_count": 13,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        }
+      },
+      "issues_found": [],
+      "issues_fixed": [
+        "assuntos: cleaned 0 embedded newlines",
+        "ementa: cleaned 0 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 13,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_proposi├º├Áes_mar├¡timo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_jurisprud├¬ncia_rodovi├írio_20250722_102507_com_localizacao.csv",
+      "total_rows": 25794,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 25769,
+          "missing_percentage": 99.9
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 25,
+          "missing_percentage": 0.1
+        },
+        "autor": {
+          "missing_count": 25794,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 13473,
+          "missing_percentage": 52.23
+        },
+        "classificacao": {
+          "missing_count": 25794,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 25,
+          "missing_percentage": 0.1
+        },
+        "autoridade": {
+          "missing_count": 25794,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 15,
+          "missing_percentage": 0.06
+        },
+        "url": {
+          "missing_count": 25794,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 25794,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 25794,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 25794,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 5,
+          "missing_percentage": 0.02
+        },
+        "estado": {
+          "missing_count": 24,
+          "missing_percentage": 0.09
+        },
+        "municipio": {
+          "missing_count": 25794,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 24,
+          "missing_percentage": 0.09
+        }
+      },
+      "issues_found": [
+        "assuntos: 2000 rows with embedded newlines",
+        "ementa: 12260 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 2000 embedded newlines",
+        "ementa: cleaned 12260 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 25794,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_jurisprud├¬ncia_rodovi├írio_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_jurisprud├¬ncia_geral_20250722_102507_com_localizacao.csv",
+      "total_rows": 26981,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 26773,
+          "missing_percentage": 99.23
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 208,
+          "missing_percentage": 0.77
+        },
+        "autor": {
+          "missing_count": 26981,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 19285,
+          "missing_percentage": 71.48
+        },
+        "classificacao": {
+          "missing_count": 26981,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 208,
+          "missing_percentage": 0.77
+        },
+        "autoridade": {
+          "missing_count": 26981,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 130,
+          "missing_percentage": 0.48
+        },
+        "url": {
+          "missing_count": 26981,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 26981,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 26981,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 26981,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 32,
+          "missing_percentage": 0.12
+        },
+        "estado": {
+          "missing_count": 197,
+          "missing_percentage": 0.73
+        },
+        "municipio": {
+          "missing_count": 26979,
+          "missing_percentage": 99.99
+        },
+        "fontes_localizacao": {
+          "missing_count": 197,
+          "missing_percentage": 0.73
+        }
+      },
+      "issues_found": [
+        "assuntos: 1304 rows with embedded newlines",
+        "ementa: 14241 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 1304 embedded newlines",
+        "ementa: cleaned 14241 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 26981,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_jurisprud├¬ncia_geral_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_legisla├º├úo_geral_20250722_102507_com_localizacao.csv",
+      "total_rows": 37218,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 35621,
+          "missing_percentage": 95.71
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 1597,
+          "missing_percentage": 4.29
+        },
+        "autor": {
+          "missing_count": 37218,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 11137,
+          "missing_percentage": 29.92
+        },
+        "classificacao": {
+          "missing_count": 37218,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 1597,
+          "missing_percentage": 4.29
+        },
+        "autoridade": {
+          "missing_count": 37218,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 1039,
+          "missing_percentage": 2.79
+        },
+        "url": {
+          "missing_count": 37218,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 37218,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 37218,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 37218,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 160,
+          "missing_percentage": 0.43
+        },
+        "estado": {
+          "missing_count": 6020,
+          "missing_percentage": 16.17
+        },
+        "municipio": {
+          "missing_count": 34872,
+          "missing_percentage": 93.7
+        },
+        "fontes_localizacao": {
+          "missing_count": 6020,
+          "missing_percentage": 16.17
+        }
+      },
+      "issues_found": [
+        "assuntos: 2470 rows with embedded newlines",
+        "ementa: 961 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 2470 embedded newlines",
+        "ementa: cleaned 961 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 37218,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_legisla├º├úo_geral_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_outros_geral_20250722_102507_com_localizacao.csv",
+      "total_rows": 7097,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 7023,
+          "missing_percentage": 98.96
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 74,
+          "missing_percentage": 1.04
+        },
+        "autor": {
+          "missing_count": 7097,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 4281,
+          "missing_percentage": 60.32
+        },
+        "classificacao": {
+          "missing_count": 7097,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 74,
+          "missing_percentage": 1.04
+        },
+        "autoridade": {
+          "missing_count": 7097,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 55,
+          "missing_percentage": 0.77
+        },
+        "url": {
+          "missing_count": 7097,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 7097,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 7097,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 7097,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 15,
+          "missing_percentage": 0.21
+        },
+        "estado": {
+          "missing_count": 117,
+          "missing_percentage": 1.65
+        },
+        "municipio": {
+          "missing_count": 7095,
+          "missing_percentage": 99.97
+        },
+        "fontes_localizacao": {
+          "missing_count": 117,
+          "missing_percentage": 1.65
+        }
+      },
+      "issues_found": [
+        "assuntos: 2203 rows with embedded newlines",
+        "ementa: 5738 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 2203 embedded newlines",
+        "ementa: cleaned 5738 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 7097,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_outros_geral_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_doutrina_geral_20250722_102507_com_localizacao.csv",
+      "total_rows": 10124,
+      "total_columns": 23,
+      "empty_columns": [
+        "urn",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data": {
+          "missing_count": 1,
+          "missing_percentage": 0.01
+        },
+        "urn": {
+          "missing_count": 10124,
+          "missing_percentage": 100.0
+        },
+        "autor": {
+          "missing_count": 10123,
+          "missing_percentage": 99.99
+        },
+        "assuntos": {
+          "missing_count": 1,
+          "missing_percentage": 0.01
+        },
+        "classificacao": {
+          "missing_count": 10124,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 10124,
+          "missing_percentage": 100.0
+        },
+        "autoridade": {
+          "missing_count": 10124,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 6123,
+          "missing_percentage": 60.48
+        },
+        "url": {
+          "missing_count": 10124,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 10124,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 10124,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 10123,
+          "missing_percentage": 99.99
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 2278,
+          "missing_percentage": 22.5
+        },
+        "estado": {
+          "missing_count": 9880,
+          "missing_percentage": 97.59
+        },
+        "municipio": {
+          "missing_count": 10098,
+          "missing_percentage": 99.74
+        },
+        "fontes_localizacao": {
+          "missing_count": 9880,
+          "missing_percentage": 97.59
+        }
+      },
+      "issues_found": [],
+      "issues_fixed": [
+        "assuntos: cleaned 0 embedded newlines",
+        "ementa: cleaned 0 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 10124,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_doutrina_geral_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_legisla├º├úo_rodovi├írio_20250722_102507_com_localizacao.csv",
+      "total_rows": 11706,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 11459,
+          "missing_percentage": 97.89
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 247,
+          "missing_percentage": 2.11
+        },
+        "autor": {
+          "missing_count": 11706,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 1601,
+          "missing_percentage": 13.68
+        },
+        "classificacao": {
+          "missing_count": 11706,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 247,
+          "missing_percentage": 2.11
+        },
+        "autoridade": {
+          "missing_count": 11706,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 150,
+          "missing_percentage": 1.28
+        },
+        "url": {
+          "missing_count": 11706,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 11706,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 11706,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 11706,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 21,
+          "missing_percentage": 0.18
+        },
+        "estado": {
+          "missing_count": 1072,
+          "missing_percentage": 9.16
+        },
+        "municipio": {
+          "missing_count": 11118,
+          "missing_percentage": 94.98
+        },
+        "fontes_localizacao": {
+          "missing_count": 1072,
+          "missing_percentage": 9.16
+        }
+      },
+      "issues_found": [
+        "assuntos: 1678 rows with embedded newlines",
+        "ementa: 259 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 1678 embedded newlines",
+        "ementa: cleaned 259 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 11706,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_legisla├º├úo_rodovi├írio_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_jurisprud├¬ncia_a├®reo_20250722_102507_com_localizacao.csv",
+      "total_rows": 1032,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 1029,
+          "missing_percentage": 99.71
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 3,
+          "missing_percentage": 0.29
+        },
+        "autor": {
+          "missing_count": 1032,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 585,
+          "missing_percentage": 56.69
+        },
+        "classificacao": {
+          "missing_count": 1032,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 3,
+          "missing_percentage": 0.29
+        },
+        "autoridade": {
+          "missing_count": 1032,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 2,
+          "missing_percentage": 0.19
+        },
+        "url": {
+          "missing_count": 1032,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 1032,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 1032,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 1032,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "estado": {
+          "missing_count": 3,
+          "missing_percentage": 0.29
+        },
+        "municipio": {
+          "missing_count": 1032,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 3,
+          "missing_percentage": 0.29
+        }
+      },
+      "issues_found": [
+        "assuntos: 64 rows with embedded newlines",
+        "ementa: 606 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 64 embedded newlines",
+        "ementa: cleaned 606 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 1032,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_jurisprud├¬ncia_a├®reo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_jurisprud├¬ncia_mar├¡timo_20250722_102507_com_localizacao.csv",
+      "total_rows": 810,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 803,
+          "missing_percentage": 99.14
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 7,
+          "missing_percentage": 0.86
+        },
+        "autor": {
+          "missing_count": 810,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 783,
+          "missing_percentage": 96.67
+        },
+        "classificacao": {
+          "missing_count": 810,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 7,
+          "missing_percentage": 0.86
+        },
+        "autoridade": {
+          "missing_count": 810,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 6,
+          "missing_percentage": 0.74
+        },
+        "url": {
+          "missing_count": 810,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 810,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 810,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 810,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 1,
+          "missing_percentage": 0.12
+        },
+        "estado": {
+          "missing_count": 7,
+          "missing_percentage": 0.86
+        },
+        "municipio": {
+          "missing_count": 810,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 7,
+          "missing_percentage": 0.86
+        }
+      },
+      "issues_found": [
+        "ementa: 521 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 0 embedded newlines",
+        "ementa: cleaned 521 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 810,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_jurisprud├¬ncia_mar├¡timo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_doutrina_rodovi├írio_20250722_102507_com_localizacao.csv",
+      "total_rows": 1846,
+      "total_columns": 23,
+      "empty_columns": [
+        "urn",
+        "autor",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 1846,
+          "missing_percentage": 100.0
+        },
+        "autor": {
+          "missing_count": 1846,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "classificacao": {
+          "missing_count": 1846,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 1846,
+          "missing_percentage": 100.0
+        },
+        "autoridade": {
+          "missing_count": 1846,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 1067,
+          "missing_percentage": 57.8
+        },
+        "url": {
+          "missing_count": 1846,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 1846,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 1846,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 1846,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 505,
+          "missing_percentage": 27.36
+        },
+        "estado": {
+          "missing_count": 1806,
+          "missing_percentage": 97.83
+        },
+        "municipio": {
+          "missing_count": 1843,
+          "missing_percentage": 99.84
+        },
+        "fontes_localizacao": {
+          "missing_count": 1806,
+          "missing_percentage": 97.83
+        }
+      },
+      "issues_found": [],
+      "issues_fixed": [
+        "assuntos: cleaned 0 embedded newlines",
+        "ementa: cleaned 0 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 1846,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_doutrina_rodovi├írio_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_legisla├º├úo_mar├¡timo_20250722_102507_com_localizacao.csv",
+      "total_rows": 1618,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 1537,
+          "missing_percentage": 94.99
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 81,
+          "missing_percentage": 5.01
+        },
+        "autor": {
+          "missing_count": 1618,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 137,
+          "missing_percentage": 8.47
+        },
+        "classificacao": {
+          "missing_count": 1618,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 81,
+          "missing_percentage": 5.01
+        },
+        "autoridade": {
+          "missing_count": 1618,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 45,
+          "missing_percentage": 2.78
+        },
+        "url": {
+          "missing_count": 1618,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 1618,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 1618,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 1618,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 8,
+          "missing_percentage": 0.49
+        },
+        "estado": {
+          "missing_count": 121,
+          "missing_percentage": 7.48
+        },
+        "municipio": {
+          "missing_count": 1613,
+          "missing_percentage": 99.69
+        },
+        "fontes_localizacao": {
+          "missing_count": 121,
+          "missing_percentage": 7.48
+        }
+      },
+      "issues_found": [
+        "assuntos: 12 rows with embedded newlines",
+        "ementa: 33 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 12 embedded newlines",
+        "ementa: cleaned 33 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 1618,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_legisla├º├úo_mar├¡timo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_outros_mar├¡timo_20250722_102507_com_localizacao.csv",
+      "total_rows": 526,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 523,
+          "missing_percentage": 99.43
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 3,
+          "missing_percentage": 0.57
+        },
+        "autor": {
+          "missing_count": 526,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 299,
+          "missing_percentage": 56.84
+        },
+        "classificacao": {
+          "missing_count": 526,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 3,
+          "missing_percentage": 0.57
+        },
+        "autoridade": {
+          "missing_count": 526,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 3,
+          "missing_percentage": 0.57
+        },
+        "url": {
+          "missing_count": 526,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 526,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 526,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 526,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 3,
+          "missing_percentage": 0.57
+        },
+        "estado": {
+          "missing_count": 3,
+          "missing_percentage": 0.57
+        },
+        "municipio": {
+          "missing_count": 526,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 3,
+          "missing_percentage": 0.57
+        }
+      },
+      "issues_found": [
+        "assuntos: 209 rows with embedded newlines",
+        "ementa: 473 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 209 embedded newlines",
+        "ementa: cleaned 473 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 526,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_outros_mar├¡timo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_outros_a├®reo_20250722_102507_com_localizacao.csv",
+      "total_rows": 246,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 245,
+          "missing_percentage": 99.59
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 1,
+          "missing_percentage": 0.41
+        },
+        "autor": {
+          "missing_count": 246,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 122,
+          "missing_percentage": 49.59
+        },
+        "classificacao": {
+          "missing_count": 246,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 1,
+          "missing_percentage": 0.41
+        },
+        "autoridade": {
+          "missing_count": 246,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 1,
+          "missing_percentage": 0.41
+        },
+        "url": {
+          "missing_count": 246,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 246,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 246,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 246,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 1,
+          "missing_percentage": 0.41
+        },
+        "estado": {
+          "missing_count": 1,
+          "missing_percentage": 0.41
+        },
+        "municipio": {
+          "missing_count": 246,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 1,
+          "missing_percentage": 0.41
+        }
+      },
+      "issues_found": [
+        "assuntos: 116 rows with embedded newlines",
+        "ementa: 206 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 116 embedded newlines",
+        "ementa: cleaned 206 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 246,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_outros_a├®reo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_doutrina_mar├¡timo_20250722_102507_com_localizacao.csv",
+      "total_rows": 602,
+      "total_columns": 23,
+      "empty_columns": [
+        "urn",
+        "autor",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "autor": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "classificacao": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "autoridade": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 345,
+          "missing_percentage": 57.31
+        },
+        "url": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 262,
+          "missing_percentage": 43.52
+        },
+        "estado": {
+          "missing_count": 597,
+          "missing_percentage": 99.17
+        },
+        "municipio": {
+          "missing_count": 602,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 597,
+          "missing_percentage": 99.17
+        }
+      },
+      "issues_found": [],
+      "issues_fixed": [
+        "assuntos: cleaned 0 embedded newlines",
+        "ementa: cleaned 0 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 602,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_doutrina_mar├¡timo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_legisla├º├úo_a├®reo_20250722_102507_com_localizacao.csv",
+      "total_rows": 544,
+      "total_columns": 23,
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 519,
+          "missing_percentage": 95.4
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 25,
+          "missing_percentage": 4.6
+        },
+        "autor": {
+          "missing_count": 544,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 27,
+          "missing_percentage": 4.96
+        },
+        "classificacao": {
+          "missing_count": 544,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 25,
+          "missing_percentage": 4.6
+        },
+        "autoridade": {
+          "missing_count": 544,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 12,
+          "missing_percentage": 2.21
+        },
+        "url": {
+          "missing_count": 544,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 544,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 544,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 544,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "estado": {
+          "missing_count": 29,
+          "missing_percentage": 5.33
+        },
+        "municipio": {
+          "missing_count": 522,
+          "missing_percentage": 95.96
+        },
+        "fontes_localizacao": {
+          "missing_count": 29,
+          "missing_percentage": 5.33
+        }
+      },
+      "issues_found": [
+        "assuntos: 74 rows with embedded newlines",
+        "ementa: 3 rows with embedded newlines"
+      ],
+      "issues_fixed": [
+        "assuntos: cleaned 74 embedded newlines",
+        "ementa: cleaned 3 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 544,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_legisla├º├úo_a├®reo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    },
+    {
+      "filename": "lexml_doutrina_a├®reo_20250722_102507_com_localizacao.csv",
+      "total_rows": 238,
+      "total_columns": 23,
+      "empty_columns": [
+        "urn",
+        "autor",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "missing_data_stats": {
+        "titulo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "tipo": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "urn": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "autor": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "assuntos": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "classificacao": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "jurisdicao": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "autoridade": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "ementa": {
+          "missing_count": 152,
+          "missing_percentage": 63.87
+        },
+        "url": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "localidade": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "numero": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "ano": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "termo_busca": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "data_coleta": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "origem": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "categoria": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "modal": {
+          "missing_count": 0,
+          "missing_percentage": 0.0
+        },
+        "pais": {
+          "missing_count": 70,
+          "missing_percentage": 29.41
+        },
+        "estado": {
+          "missing_count": 237,
+          "missing_percentage": 99.58
+        },
+        "municipio": {
+          "missing_count": 238,
+          "missing_percentage": 100.0
+        },
+        "fontes_localizacao": {
+          "missing_count": 237,
+          "missing_percentage": 99.58
+        }
+      },
+      "issues_found": [],
+      "issues_fixed": [
+        "assuntos: cleaned 0 embedded newlines",
+        "ementa: cleaned 0 embedded newlines",
+        "titulo: cleaned 0 embedded newlines"
+      ],
+      "rows_after_cleaning": 238,
+      "rows_removed": 0,
+      "status": "SUCCESS",
+      "output_file": "lexml_doutrina_a├®reo_20250722_102507_com_localizacao_cleaned.csv",
+      "encoding_used": "utf-8"
+    }
+  ]
+}

@@ -209,7 +209,7 @@ def main():
         
         # Step 4: Load and insert data
         logging.info("📄 Step 4: Loading categorized dataset...")
-        data_file = "./data_current/processed/deduplicated/lexml_unified_deduplicated_FIXED.csv"
+        data_file = "./data_current/processed/production/lexml_unified_dataset.csv"
         
         if not Path(data_file).exists():
             logging.error(f"❌ Categorized dataset not found: {data_file}")

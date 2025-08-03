@@ -46,7 +46,7 @@ def main():
             return
         
         # Load the full deduplicated dataset
-        data_file = "./data_current/processed/deduplicated/lexml_unified_deduplicated_FIXED.csv"
+        data_file = "./data_current/processed/production/lexml_unified_dataset.csv"
         logging.info(f"📄 Loading full dataset: {data_file}")
         
         df = pd.read_csv(data_file, encoding='utf-8', low_memory=False)

@@ -59,9 +59,9 @@ bulletproof_load_functions <- function() {
   
   # STRATEGY 1: Try to load CSV data if available
   csv_data_loaded <- FALSE
-  if (file.exists("./data_current/processed/enhanced/lexml_dataset_enhanced_simple.csv")) {
+  if (file.exists("./data_current/processed/production/lexml_enhanced_simple.csv")) {
     tryCatch({
-      cat("📊 Loading CSV data from ./data_current/processed/enhanced/\n")
+      cat("📊 Loading CSV data from ./data_current/processed/production/\n")
       
       # Use data.table for fast loading
       if (!requireNamespace("data.table", quietly = TRUE)) {
@@ -70,7 +70,7 @@ bulletproof_load_functions <- function() {
       library(data.table, quietly = TRUE)
       
       dt <- fread(
-        "./data_current/processed/enhanced/lexml_dataset_enhanced_simple.csv",
+        "./data_current/processed/production/lexml_enhanced_simple.csv",
         encoding = "UTF-8",
         na.strings = c("", "NA", "NULL"),
         showProgress = FALSE,
@@ -245,7 +245,7 @@ detect_railway_environment <- function() {
     
     # Check file accessibility
     test_files <- c(
-      "./data_current/processed/enhanced/lexml_dataset_enhanced_simple.csv",
+      "./data_current/processed/production/lexml_enhanced_simple.csv",
       "FINAL_DATABASE_OVERRIDE.R",
       "REAL_DATA_FIX.R"
     )

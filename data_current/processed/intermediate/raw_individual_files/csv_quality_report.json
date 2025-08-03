@@ -1,0 +1,1225 @@
+{
+  "stats": {
+    "lexml_dataset_limpo_classificado_20250722_102507_com_localizacao.csv": {
+      "total_rows": 134014,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_doutrina_a├®reo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 238,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_doutrina_geral_20250722_102507_com_localizacao.csv": {
+      "total_rows": 10124,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_doutrina_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 602,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_doutrina_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "total_rows": 1846,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_jurisprud├¬ncia_a├®reo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 1032,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_jurisprud├¬ncia_geral_20250722_102507_com_localizacao.csv": {
+      "total_rows": 26981,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_jurisprud├¬ncia_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 810,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_jurisprud├¬ncia_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "total_rows": 25794,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_legisla├º├úo_a├®reo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 544,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_legisla├º├úo_geral_20250722_102507_com_localizacao.csv": {
+      "total_rows": 37218,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_legisla├º├úo_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 1618,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_legisla├º├úo_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "total_rows": 11706,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_outros_a├®reo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 246,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_outros_geral_20250722_102507_com_localizacao.csv": {
+      "total_rows": 7097,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_outros_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 526,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_outros_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "total_rows": 5981,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_proposi├º├Áes_a├®reo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 14,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_proposi├º├Áes_geral_20250722_102507_com_localizacao.csv": {
+      "total_rows": 877,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_proposi├º├Áes_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "total_rows": 13,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    },
+    "lexml_proposi├º├Áes_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "total_rows": 747,
+      "columns": 23,
+      "column_names": [
+        "titulo",
+        "tipo",
+        "data",
+        "urn",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "ementa",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "termo_busca",
+        "data_coleta",
+        "origem",
+        "categoria",
+        "modal",
+        "pais",
+        "estado",
+        "municipio",
+        "fontes_localizacao"
+      ]
+    }
+  },
+  "issues": {
+    "lexml_dataset_limpo_classificado_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 98.04,
+        "autor": 100.0,
+        "assuntos": 51.98,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 96.36
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "embedded_newlines": [
+        "assuntos: 578 rows",
+        "ementa: 2978 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=57",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_doutrina_a├®reo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "urn": 100.0,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "jurisdicao": 100.0,
+        "autoridade": 100.0,
+        "ementa": 63.87,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "estado": 99.58,
+        "municipio": 100.0,
+        "fontes_localizacao": 99.58
+      },
+      "empty_columns": [
+        "urn",
+        "autor",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=22, max=69",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_doutrina_geral_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "urn": 100.0,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "jurisdicao": 100.0,
+        "autoridade": 100.0,
+        "ementa": 63.42,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "estado": 97.92,
+        "municipio": 99.76,
+        "fontes_localizacao": 97.92
+      },
+      "empty_columns": [
+        "urn",
+        "autor",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=22, max=155",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_doutrina_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "urn": 100.0,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "jurisdicao": 100.0,
+        "autoridade": 100.0,
+        "ementa": 57.31,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "estado": 99.17,
+        "municipio": 100.0,
+        "fontes_localizacao": 99.17
+      },
+      "empty_columns": [
+        "urn",
+        "autor",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=22, max=76",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_doutrina_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "urn": 100.0,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "jurisdicao": 100.0,
+        "autoridade": 100.0,
+        "ementa": 57.8,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "estado": 97.83,
+        "municipio": 99.84,
+        "fontes_localizacao": 97.83
+      },
+      "empty_columns": [
+        "urn",
+        "autor",
+        "classificacao",
+        "jurisdicao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=22, max=183",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_jurisprud├¬ncia_a├®reo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 99.71,
+        "autor": 100.0,
+        "assuntos": 56.69,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "embedded_newlines": [
+        "assuntos: 64 rows",
+        "ementa: 606 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=118",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_jurisprud├¬ncia_geral_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 99.76,
+        "autor": 100.0,
+        "assuntos": 84.06,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "embedded_newlines": [
+        "assuntos: 163 rows",
+        "ementa: 3269 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=51"
+    },
+    "lexml_jurisprud├¬ncia_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 99.14,
+        "autor": 100.0,
+        "assuntos": 96.67,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "embedded_newlines": [
+        "ementa: 521 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=38",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_jurisprud├¬ncia_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 99.94,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "embedded_newlines": [
+        "assuntos: 437 rows",
+        "ementa: 3301 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=1, max=57"
+    },
+    "lexml_legisla├º├úo_a├®reo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 95.4,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 95.96
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "embedded_newlines": [
+        "assuntos: 74 rows",
+        "ementa: 3 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=83",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_legisla├º├úo_geral_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 97.22,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 97.5
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "embedded_newlines": [
+        "assuntos: 331 rows",
+        "ementa: 298 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=69",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_legisla├º├úo_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 94.99,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 99.69
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "embedded_newlines": [
+        "assuntos: 12 rows",
+        "ementa: 33 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=1, max=200",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_legisla├º├úo_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 98.08,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 93.2
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "embedded_newlines": [
+        "assuntos: 721 rows",
+        "ementa: 102 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=127",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_outros_a├®reo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 99.59,
+        "autor": 100.0,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "embedded_newlines": [
+        "assuntos: 116 rows",
+        "ementa: 206 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=22",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_outros_geral_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 98.64,
+        "autor": 100.0,
+        "assuntos": 57.54,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 99.96
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano"
+      ],
+      "embedded_newlines": [
+        "assuntos: 1885 rows",
+        "ementa: 4113 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=22",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_outros_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 99.43,
+        "autor": 100.0,
+        "assuntos": 56.84,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "embedded_newlines": [
+        "assuntos: 209 rows",
+        "ementa: 473 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=22",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_outros_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 99.78,
+        "autor": 100.0,
+        "assuntos": 50.8,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "embedded_newlines": [
+        "assuntos: 2389 rows",
+        "ementa: 4661 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=22",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_proposi├º├Áes_a├®reo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 100.0,
+        "autor": 100.0,
+        "assuntos": 100.0,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "tipo",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=22, max=35"
+    },
+    "lexml_proposi├º├Áes_geral_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 99.77,
+        "autor": 100.0,
+        "assuntos": 99.2,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "embedded_newlines": [
+        "assuntos: 2 rows",
+        "ementa: 10 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=63",
+      "quote_issues": "Potentially unmatched quotes detected"
+    },
+    "lexml_proposi├º├Áes_mar├¡timo_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 100.0,
+        "autor": 100.0,
+        "assuntos": 100.0,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "tipo",
+        "autor",
+        "assuntos",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=22, max=31"
+    },
+    "lexml_proposi├º├Áes_rodovi├írio_20250722_102507_com_localizacao.csv": {
+      "high_missing_values": {
+        "tipo": 100.0,
+        "autor": 100.0,
+        "assuntos": 99.46,
+        "classificacao": 100.0,
+        "autoridade": 100.0,
+        "url": 100.0,
+        "localidade": 100.0,
+        "numero": 100.0,
+        "ano": 100.0,
+        "municipio": 100.0
+      },
+      "empty_columns": [
+        "tipo",
+        "autor",
+        "classificacao",
+        "autoridade",
+        "url",
+        "localidade",
+        "numero",
+        "ano",
+        "municipio"
+      ],
+      "embedded_newlines": [
+        "ementa: 4 rows"
+      ],
+      "delimiter_inconsistency": "Variable comma counts: min=0, max=143"
+    }
+  }
+}
