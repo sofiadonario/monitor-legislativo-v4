@@ -1233,7 +1233,6 @@ cat("UI defined with comprehensive analytics structure\n")
 # ============================================================================
 
 server <- function(input, output, session) {
-server <- function(input, output, session) {
   
   # Initialize reactive system status
   system_status <- reactiveValues(
@@ -2848,6 +2847,7 @@ server <- function(input, output, session) {
   
   cat("✅ Unified server logic defined with comprehensive analytics\n")
 }
+}
 
 # ============================================================================
 # APPLICATION LAUNCH
@@ -2856,6 +2856,7 @@ server <- function(input, output, session) {
 cat("All systems integrated and ready\n")
 cat("Access your dashboard at: http://localhost or Railway deployment URL\n")
 
-# Create and run the Shiny application
+# Create and run the Shiny application  
 shinyApp(ui = ui, server = server)
+
 
