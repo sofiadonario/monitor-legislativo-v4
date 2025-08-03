@@ -2848,7 +2848,6 @@ server <- function(input, output, session) {
   
   cat("✅ Unified server logic defined with comprehensive analytics\n")
 }
-}
 
 # ============================================================================
 # APPLICATION LAUNCH
