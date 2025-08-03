@@ -1083,123 +1083,55 @@ ui <- dashboardPage(
           )
         ),
         
-        # Category Tabs for Document Display
+        # Simplified Document Display (Railway Compatible)
         fluidRow(
-          box(
-            title = "📋 Document Collection", status = "success", solidHeader = TRUE,
-            width = 12,
+          # Main document display
+          column(9,
+            box(
+              title = "📋 Document Library Results", status = "primary", solidHeader = TRUE,
+              width = 12, height = 700,
+              
+              # Simple document table without nested tabs
+              DT::dataTableOutput("lib_documents_table_enhanced", height = "600px")
+            )
+          ),
+          
+          # Sidebar with category overview
+          column(3,
+            box(
+              title = "📊 Category Overview", status = "info", solidHeader = TRUE,
+              width = 12, collapsible = TRUE,
+              
+              # Category metrics
+              valueBoxOutput("lib_category_summary", width = 12),
+              
+              # Category distribution chart
+              plotlyOutput("lib_category_distribution_chart", height = "250px")
+            ),
             
-            # Tab navigation for categories
-            tabsetPanel(
-              id = "lib_category_tabs",
-              type = "tabs",
+            box(
+              title = "🔍 Quick Filters", status = "success", solidHeader = TRUE,
+              width = 12, collapsible = TRUE,
               
-              # All Documents Tab
-              tabPanel("All Documents", 
-                value = "all_docs",
-                br(),
-                div(style = "margin-bottom: 15px;",
-                  fluidRow(
-                    column(6,
-                      h4("Document Results", style = "margin: 0;")
-                    ),
-                    column(6,
-                      div(style = "text-align: right;",
-                        selectInput("lib_sort", "Sort by:",
-                                   choices = c("Date (Newest)" = "date_desc",
-                                             "Date (Oldest)" = "date_asc",
-                                             "Title A-Z" = "title_asc",
-                                             "Title Z-A" = "title_desc",
-                                             "Relevance" = "relevance"),
-                                   selected = "date_desc",
-                                   width = "150px")
-                      )
-                    )
-                  )
-                ),
-                DT::dataTableOutput("lib_all_documents", height = "600px")
-              ),
-              
-              # Jurisprudência Tab (54,617 docs)
-              tabPanel("Jurisprudência", 
-                value = "jurisprudencia",
-                br(),
-                div(
-                  h4("Court Decisions & Case Law", style = "color: #2c3e50;"),
-                  p("54,617 jurisprudential documents including Supreme Court decisions, appellate rulings, and case precedents", 
-                    style = "color: #7f8c8d; margin-bottom: 20px;")
-                ),
-                DT::dataTableOutput("lib_jurisprudencia_docs", height = "600px")
-              ),
-              
-              # Legislação Tab (51,086 docs)  
-              tabPanel("Legislação",
-                value = "legislacao", 
-                br(),
-                div(
-                  h4("Laws, Decrees & Ordinances", style = "color: #2c3e50;"),
-                  p("51,086 legislative documents including federal laws, state decrees, municipal ordinances, and regulatory acts",
-                    style = "color: #7f8c8d; margin-bottom: 20px;")
-                ),
-                DT::dataTableOutput("lib_legislacao_docs", height = "600px")
-              ),
-              
-              # Outros Tab (13,850 docs)
-              tabPanel("Outros",
-                value = "outros",
-                br(), 
-                div(
-                  h4("Other Legal Documents", style = "color: #2c3e50;"),
-                  p("13,850 miscellaneous legal documents including administrative acts, technical opinions, and regulatory guidance",
-                    style = "color: #7f8c8d; margin-bottom: 20px;")
-                ),
-                DT::dataTableOutput("lib_outros_docs", height = "600px")
-              ),
-              
-              # Doutrina Tab (12,809 docs)
-              tabPanel("Doutrina",
-                value = "doutrina",
-                br(),
-                div(
-                  h4("Legal Doctrine & Academic Writings", style = "color: #2c3e50;"),
-                  p("12,809 doctrinal documents including academic articles, legal commentaries, and scholarly analyses",
-                    style = "color: #7f8c8d; margin-bottom: 20px;")
-                ),
-                DT::dataTableOutput("lib_doutrina_docs", height = "600px")
-              ),
-              
-              # Proposições Tab (1,651 docs)
-              tabPanel("Proposições", 
-                value = "proposicoes",
-                br(),
-                div(
-                  h4("Legislative Proposals & Bills", style = "color: #2c3e50;"),
-                  p("1,651 legislative proposals including draft bills, constitutional amendments, and policy proposals",
-                    style = "color: #7f8c8d; margin-bottom: 20px;")
-                ),
-                DT::dataTableOutput("lib_proposicoes_docs", height = "600px")
+              # Quick filter buttons
+              div(style = "margin-bottom: 10px;",
+                actionButton("filter_jurisprudencia", "Jurisprudência", 
+                           class = "btn-primary btn-sm", style = "width: 100%; margin-bottom: 5px;"),
+                actionButton("filter_legislacao", "Legislação", 
+                           class = "btn-success btn-sm", style = "width: 100%; margin-bottom: 5px;"),
+                actionButton("filter_outros", "Outros", 
+                           class = "btn-warning btn-sm", style = "width: 100%; margin-bottom: 5px;"),
+                actionButton("filter_doutrina", "Doutrina", 
+                           class = "btn-info btn-sm", style = "width: 100%; margin-bottom: 5px;"),
+                actionButton("filter_proposicoes", "Proposições", 
+                           class = "btn-secondary btn-sm", style = "width: 100%; margin-bottom: 5px;"),
+                actionButton("filter_all", "Mostrar Todos", 
+                           class = "btn-default btn-sm", style = "width: 100%;")
               )
             )
           )
-        ),
-        
-        # Document Statistics & Analytics
-        fluidRow(
-          box(
-            title = "📊 Collection Analytics", status = "info", solidHeader = TRUE,
-            width = 6, height = 400,
-            plotlyOutput("lib_category_distribution", height = "350px")
-          ),
-          box(
-            title = "📈 Document Timeline", status = "warning", solidHeader = TRUE,
-            width = 6, height = 400,
-            plotlyOutput("lib_temporal_distribution", height = "350px")
-          )
         )
-      ),
-      
-      # Data Quality Monitoring
-      tabItem(tabName = "data_quality",
+      ),      tabItem(tabName = "data_quality",
         fluidRow(
           h2("📈 Data Quality & System Health", style = "color: #2c3e50; margin-left: 15px;"),
           p("Real-time monitoring of data integrity and system performance", 
@@ -2073,6 +2005,41 @@ server <- function(input, output, session) {
     )
     
     return(p)
+  })
+  
+  # Category summary value box
+  output$lib_category_summary <- renderValueBox({
+    valueBox(
+      value = "134.014",
+      subtitle = "Total Documents",
+      icon = icon("books"),
+      color = "blue"
+    )
+  })
+  
+  # Filter button event handlers
+  observeEvent(input$filter_jurisprudencia, {
+    updateSelectInput(session, "lib_category_enhanced", selected = "jurisprudence")
+  })
+  
+  observeEvent(input$filter_legislacao, {
+    updateSelectInput(session, "lib_category_enhanced", selected = "legislation")
+  })
+  
+  observeEvent(input$filter_outros, {
+    updateSelectInput(session, "lib_category_enhanced", selected = "outros")
+  })
+  
+  observeEvent(input$filter_doutrina, {
+    updateSelectInput(session, "lib_category_enhanced", selected = "doutrina")
+  })
+  
+  observeEvent(input$filter_proposicoes, {
+    updateSelectInput(session, "lib_category_enhanced", selected = "proposicoes")
+  })
+  
+  observeEvent(input$filter_all, {
+    updateSelectInput(session, "lib_category_enhanced", selected = "all")
   })
   
   # JavaScript for copy functionality
