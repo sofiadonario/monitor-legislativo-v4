@@ -1,4 +1,4 @@
-# Railway Dockerfile for MackMonitor
+# Railway Dockerfile for MackMonitor - Enhanced Version
 FROM rocker/shiny:4.3.1
 
 # Install system dependencies
@@ -6,9 +6,11 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libgdal-dev \
     libudunits2-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install R packages
+# Install R packages with better error handling
 RUN install2.r --error --skipinstalled \
     shiny \
     shinydashboard \
@@ -18,20 +20,40 @@ RUN install2.r --error --skipinstalled \
     ggplot2 \
     plotly \
     leaflet \
-    DT
+    DT \
+    stringr \
+    scales \
+    lubridate \
+    tidyr
 
 # Set working directory
 WORKDIR /app
 
 # Copy essential files only
-COPY RAILWAY_STARTUP_FIX.R ./
+COPY RAILWAY_DATABASE_CONNECTION_FIX.R ./
 COPY app.R ./
 
-# Test packages
-RUN R -e "if(!require(shiny)) stop('shiny not installed'); cat('✓ Packages ready\n')"
+# Verify all packages are properly installed
+RUN R -e "
+  required_packages <- c('shiny', 'shinydashboard', 'DBI', 'RPostgres', 'dplyr', 'DT', 'plotly')
+  for (pkg in required_packages) {
+    if (!require(pkg, character.only = TRUE)) {
+      stop(paste('Package', pkg, 'not installed properly'))
+    }
+  }
+  cat('✅ All required packages verified\n')
+"
+
+# Create healthcheck script
+RUN echo '#!/bin/bash\ncurl -f http://localhost:$PORT/ || exit 1' > /app/healthcheck.sh && \
+    chmod +x /app/healthcheck.sh
 
 # Expose port
 EXPOSE 3838
 
-# Start command
-CMD ["R", "-e", "source('RAILWAY_STARTUP_FIX.R'); shiny::runApp(host='0.0.0.0', port=3838)"]
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD /app/healthcheck.sh
+
+# Enhanced start command with proper error handling
+CMD ["R", "-e", "cat('🚀 Starting MackMonitor Railway App\\n'); options(shiny.port=as.numeric(Sys.getenv('PORT', 3838)), shiny.host='0.0.0.0'); shiny::runApp('app.R')"]

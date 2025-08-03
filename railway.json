@@ -1,11 +1,20 @@
 {
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile"
+    "dockerfilePath": "Dockerfile.railway"
   },
   "deploy": {
     "healthcheckPath": "/",
     "healthcheckTimeout": 300,
-    "restartPolicyType": "ON_FAILURE"
+    "restartPolicyType": "ON_FAILURE",
+    "startCommand": "R -e \"shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))\""
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "R_LIBS_USER": "/app/renv/library/R-4.3/x86_64-pc-linux-gnu",
+        "SHINY_PORT": "3838"
+      }
+    }
   }
 }

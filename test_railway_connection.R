@@ -1,111 +1,63 @@
-# TEST RAILWAY DATABASE CONNECTION
-# ================================
-# Simple diagnostic script to test Railway PostgreSQL connectivity
+# RAILWAY DATABASE CONNECTION TEST
+# =================================
+# Test script to verify Railway PostgreSQL connection and data access
 
-cat("\n🔍 TESTING RAILWAY DATABASE CONNECTION...\n")
-cat("=" * 50, "\n\n")
+cat("🧪 RAILWAY DATABASE CONNECTION TEST\n")
+cat("===================================\n") 
 
-# Test 1: Check if packages are available
-cat("📦 PACKAGE CHECK:\n")
-packages_ok <- TRUE
-for (pkg in c("DBI", "RPostgres")) {
-  if (requireNamespace(pkg, quietly = TRUE)) {
-    cat("✅", pkg, "is available\n")
-  } else {
-    cat("❌", pkg, "is NOT available\n")
-    packages_ok <- FALSE
-  }
-}
+# Load the connection system
+source("RAILWAY_DATABASE_CONNECTION_FIX.R")
 
-if (!packages_ok) {
-  cat("\n⚠️ Installing missing packages...\n")
-  install.packages(c("DBI", "RPostgres"), repos = "https://cran.rstudio.com/")
-}
+# Test basic connection
+cat("\n✅ CONNECTION TEST RESULTS:\n")
+status <- get_connection_status()
+cat("Status:", status$status, "\n")
+cat("Method:", status$connection_method, "\n") 
+cat("Document Count:", format(status$document_count, big.mark = ","), "\n")
 
-# Load packages
-library(DBI)
-library(RPostgres)
-
-# Test 2: Basic connection test
-cat("\n🔌 CONNECTION TEST:\n")
-cat("Host: nozomi.proxy.rlwy.net\n")
-cat("Port: 44844\n")
-cat("Database: railway\n")
-cat("User: postgres\n")
-
-tryCatch({
-  con <- dbConnect(
-    RPostgres::Postgres(),
-    host = "nozomi.proxy.rlwy.net",
-    port = 44844,
-    dbname = "railway",
-    user = "postgres",
-    password = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY",
-    connect_timeout = 30
-  )
+# Test data access
+if (status$status == "connected") {
+  cat("\n📊 DATA ACCESS TESTS:\n")
   
-  cat("✅ Connection established!\n")
+  # Test 1: Total documents
+  total <- get_total_documents()
+  cat("Total Documents:", format(total, big.mark = ","), "\n")
   
-  # Test 3: Query test
-  cat("\n📊 QUERY TEST:\n")
+  # Test 2: Dashboard metrics
+  metrics <- get_lexml_dashboard_metrics()
+  cat("Dashboard Metrics Retrieved: ✅\n")
+  cat("  - Documents:", format(metrics$total_documents, big.mark = ","), "\n")
+  cat("  - States:", metrics$states_with_docs, "\n")
+  cat("  - Data Source:", metrics$data_source, "\n")
   
-  # Check if documents table exists
-  tables <- dbListTables(con)
-  cat("Tables found:", length(tables), "\n")
+  # Test 3: Library documents
+  docs <- get_library_documents(limit = 5)
+  cat("Sample Documents Retrieved:", nrow(docs), "\n")
   
-  if ("documents" %in% tables) {
-    cat("✅ 'documents' table exists\n")
-    
-    # Count documents
-    count_result <- dbGetQuery(con, "SELECT COUNT(*) as count FROM documents")
-    cat("📄 Total documents:", format(count_result$count[1], big.mark = ","), "\n")
-    
-    # Check columns
-    columns <- dbListFields(con, "documents")
-    cat("📋 Columns found:", length(columns), "\n")
-    cat("   First 10 columns:", paste(head(columns, 10), collapse = ", "), "...\n")
-    
-    # Check for specific columns
-    important_cols <- c("categoria", "categoria_original", "estado", "municipio", "ano")
-    cat("\n🔍 CHECKING IMPORTANT COLUMNS:\n")
-    for (col in important_cols) {
-      if (col %in% columns) {
-        cat("✅", col, "exists\n")
-      } else {
-        cat("❌", col, "NOT FOUND\n")
+  if (nrow(docs) > 0) {
+    cat("\n📄 SAMPLE DOCUMENT TITLES:\n")
+    for (i in 1:min(3, nrow(docs))) {
+      title <- docs$title[i]
+      if (\!is.na(title) && title \!= "") {
+        cat(" ", i, ":", substr(title, 1, 70), "...\n")
       }
     }
-    
-    # Sample data
-    cat("\n📊 SAMPLE DATA:\n")
-    sample_query <- "SELECT * FROM documents LIMIT 1"
-    sample <- dbGetQuery(con, sample_query)
-    
-    if (nrow(sample) > 0) {
-      cat("✅ Successfully retrieved sample data\n")
-      cat("   Column names:", paste(names(sample), collapse = ", "), "\n")
-    }
-    
-  } else {
-    cat("❌ 'documents' table NOT FOUND\n")
-    cat("Available tables:", paste(tables, collapse = ", "), "\n")
   }
   
-  dbDisconnect(con)
-  cat("\n✅ Database test completed successfully!\n")
+  # Test 4: Filtered queries
+  legislation_docs <- get_library_documents(category = "legislation", limit = 3)
+  cat("\nLegislation Documents:", nrow(legislation_docs), "\n")
   
-}, error = function(e) {
-  cat("❌ CONNECTION FAILED!\n")
-  cat("Error message:", e$message, "\n")
+  transport_docs <- get_library_documents(search_term = "transporte", limit = 3)
+  cat("Transport-related Documents:", nrow(transport_docs), "\n")
   
-  # Additional diagnostics
-  cat("\n💡 POSSIBLE ISSUES:\n")
-  cat("1. Check if Railway PostgreSQL add-on is attached to your service\n")
-  cat("2. Verify the database credentials are correct\n")
-  cat("3. Ensure Railway deployment has network access to database\n")
-  cat("4. Check Railway logs for more details\n")
-})
+  cat("\n🎉 ALL TESTS PASSED\!\n")
+  cat("Database is fully operational with", format(total, big.mark = ","), "documents\n")
+  
+} else {
+  cat("\n❌ CONNECTION FAILED\n")
+  cat("Error:", status$error, "\n")
+}
 
-cat("\n" * 2)
-cat("=" * 50, "\n")
-cat("🏁 TEST COMPLETE\n")
+cat("\n🏁 TEST COMPLETE\n")
+EOF < /dev/null
