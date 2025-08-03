@@ -1220,14 +1220,16 @@ ui <- dashboardPage(
         )
       )
     )
-  )
+)
 
-cat("✅ UI defined with comprehensive analytics structure\n")
+# UI definition complete
+cat("UI defined with comprehensive analytics structure\n")
 
 # ============================================================================
 # UNIFIED SERVER LOGIC
 # ============================================================================
 
+server <- function(input, output, session) {
 server <- function(input, output, session) {
   
   # Initialize reactive system status
