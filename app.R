@@ -113,10 +113,13 @@ tryCatch({
         }
         
         # Filter empty rows and ensure we have required columns
+        cat("📊 Before filtering empty rows:", nrow(all_docs), "documents\n")
         all_docs <- all_docs[!is.na(all_docs$title) & all_docs$title != "", ]
+        cat("📊 After filtering empty rows:", nrow(all_docs), "documents\n")
         
         # Apply filters
         filtered_docs <- all_docs
+        cat("📊 Starting filtering with:", nrow(filtered_docs), "documents\n")
         
         # Category filter
         if(category != "all" && "category" %in% names(filtered_docs)) {
@@ -169,6 +172,10 @@ tryCatch({
         }
         
         cat("✅ CSV fallback loaded:", nrow(filtered_docs), "documents\n")
+        cat("📋 Final columns:", paste(names(filtered_docs), collapse = ", "), "\n")
+        if(nrow(filtered_docs) > 0 && "title" %in% names(filtered_docs)) {
+          cat("📄 Sample title:", substr(filtered_docs$title[1], 1, 50), "...\n")
+        }
         return(filtered_docs)
         
       } else {
@@ -399,26 +406,60 @@ server <- function(input, output, session) {
   output$lib_documents_table <- DT::renderDataTable({
     docs <- lib_filtered_data()
     
-    # Enhance display with better column names and formatting
+    # Enhanced debug information
+    cat("=== TABLE RENDERING DEBUG ===\n")
+    cat("📊 Documents for table display:", nrow(docs), "\n")
     if(nrow(docs) > 0) {
-      # Rename columns for better display
-      display_names <- c(
-        "title" = "Title",
-        "category" = "Category", 
-        "state" = "State",
-        "date" = "Date",
-        "url" = "URL",
-        "summary" = "Summary",
-        "urn" = "URN",
-        "municipality" = "Municipality",
-        "document_type" = "Type"
-      )
-      
-      # Only rename columns that exist
-      existing_cols <- intersect(names(display_names), names(docs))
-      for(col in existing_cols) {
-        names(docs)[names(docs) == col] <- display_names[col]
+      cat("📋 Column names:", paste(names(docs), collapse = ", "), "\n")
+      cat("📄 First few titles:\n")
+      if("title" %in% names(docs)) {
+        titles_to_show <- head(docs$title, 3)
+        for(i in seq_along(titles_to_show)) {
+          cat("  ", i, ":", substr(titles_to_show[i], 1, 80), "\n")
+        }
       }
+      cat("📊 Data structure summary:\n")
+      print(str(docs))
+    } else {
+      cat("⚠️ NO DOCUMENTS FOUND\n")
+    }
+    cat("=== END DEBUG ===\n")
+    
+    # If no data, show message
+    if(nrow(docs) == 0) {
+      no_data <- data.frame(
+        Message = "No documents found with current filters. Try adjusting your search criteria.",
+        stringsAsFactors = FALSE
+      )
+      return(DT::datatable(no_data, options = list(dom = 't')))
+    }
+    
+    # Enhance display with better column names and formatting
+    # Rename columns for better display
+    display_names <- c(
+      "title" = "📄 Title",
+      "category" = "📊 Category", 
+      "state" = "🏛️ State",
+      "date" = "📅 Date",
+      "url" = "🔗 URL",
+      "summary" = "📝 Summary",
+      "urn" = "🔖 URN",
+      "municipality" = "🏘️ Municipality",
+      "document_type" = "📋 Type"
+    )
+    
+    # Only rename columns that exist
+    existing_cols <- intersect(names(display_names), names(docs))
+    for(col in existing_cols) {
+      names(docs)[names(docs) == col] <- display_names[col]
+    }
+    
+    # Truncate long text fields for better display
+    if("📄 Title" %in% names(docs)) {
+      docs$`📄 Title` <- substr(docs$`📄 Title`, 1, 100)
+    }
+    if("📝 Summary" %in% names(docs)) {
+      docs$`📝 Summary` <- substr(docs$`📝 Summary`, 1, 150)
     }
     
     DT::datatable(docs,
@@ -426,17 +467,17 @@ server <- function(input, output, session) {
         pageLength = 25,
         scrollX = TRUE,
         dom = 'frtip',
-        order = list(list(2, 'desc')), # Sort by date column if available
+        order = list(list(0, 'asc')), # Sort by first column
         columnDefs = list(
           list(width = '300px', targets = 0), # Title column width
-          list(width = '150px', targets = 1), # Category column width
+          list(width = '100px', targets = 1), # Category column width
           list(width = '80px', targets = 2)   # State column width
         )
       ),
       class = "compact stripe hover",
-      filter = 'top'
-    ) %>%
-      DT::formatDate(columns = which(sapply(docs, function(x) inherits(x, "Date"))), method = 'toLocaleDateString')
+      filter = 'top',
+      escape = FALSE
+    )
   })
   
   cat("✅ Server logic initialized\n")
