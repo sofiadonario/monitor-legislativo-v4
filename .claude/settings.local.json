@@ -136,7 +136,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(for f in *.csv)",
       "Bash(do echo \"=== $f ===\")",
-      "Bash(file:*)"
+      "Bash(file:*)",
+      "mcp__ide__executeCode"
     ]
   },
   "enableAllProjectMcpServers": false
