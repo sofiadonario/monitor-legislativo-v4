@@ -1,0 +1,23 @@
+# Railway configuration for monitor-legislativo-unified service
+[build]
+# Using default Dockerfile now
+
+[deploy]
+startCommand = "R -e \"source('startup_diagnostics.R'); source('start_app.R')\""
+healthcheckPath = "/"
+healthcheckTimeout = 120
+# No health check needed for Shiny apps - they start successfully when listening
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 1
+
+[env]
+PORT = "3838"
+R_CONFIG_ACTIVE = "production"
+SHINY_LOG_LEVEL = "INFO"
+DATABASE_URL = "${{ Postgres.DATABASE_URL }}"
+PGHOST = "${{ Postgres.PGHOST }}"
+PGPORT = "${{ Postgres.PGPORT }}"
+PGDATABASE = "${{ Postgres.PGDATABASE }}"
+PGUSER = "${{ Postgres.PGUSER }}"
+PGPASSWORD = "${{ Postgres.PGPASSWORD }}"
+REDIS_URL = "${{ Redis.REDIS_URL }}"
