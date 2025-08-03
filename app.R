@@ -31,9 +31,11 @@ tryCatch({
   
   # Essential fallback functions
   get_total_documents <<- function(filters = list()) { 
-    # Check if we have the full CSV or sample, return appropriate count
-    if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
-      return(134014)  # Full database size
+    # Check for full dataset sources first (parquet preferred, then CSV)
+    if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
+      return(134014)  # Full dataset in parquet format
+    } else if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+      return(134014)  # Full dataset in CSV format
     } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
       return(20000)   # Sample size for Railway deployment
     } else {
@@ -43,10 +45,12 @@ tryCatch({
   get_lexml_dashboard_metrics <<- function() {
     # Get dynamic document count based on available data
     doc_count <- get_total_documents()
-    data_source <- if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
-      "full_csv"
+    data_source <- if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
+      "parquet_full"
+    } else if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+      "csv_full"
     } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
-      "sample_csv"  
+      "csv_sample"  
     } else {
       "minimal_fallback"
     }
@@ -63,12 +67,123 @@ tryCatch({
     ))
   }
   
+  # Helper function to process document data (shared by CSV and Parquet loaders)
+  process_document_data <<- function(all_docs, category, search_term, state, 
+                                   date_start, date_end, sort_by, limit, offset) {
+    # Standardize column names for compatibility
+    if("titulo" %in% names(all_docs)) names(all_docs)[names(all_docs) == "titulo"] <- "title"
+    if("categoria" %in% names(all_docs)) names(all_docs)[names(all_docs) == "categoria"] <- "category"  
+    if("estado" %in% names(all_docs)) names(all_docs)[names(all_docs) == "estado"] <- "state"
+    if("data" %in% names(all_docs)) names(all_docs)[names(all_docs) == "data"] <- "date"
+    if("ementa" %in% names(all_docs)) names(all_docs)[names(all_docs) == "ementa"] <- "summary"
+    if("urn" %in% names(all_docs)) names(all_docs)[names(all_docs) == "urn"] <- "urn"
+    if("municipio" %in% names(all_docs)) names(all_docs)[names(all_docs) == "municipio"] <- "municipality"
+    if("tipo" %in% names(all_docs)) names(all_docs)[names(all_docs) == "tipo"] <- "document_type"
+    
+    # Convert date if needed
+    if("date" %in% names(all_docs)) {
+      all_docs$date <- tryCatch({
+        as.Date(all_docs$date)
+      }, error = function(e) {
+        as.Date(Sys.Date())
+      })
+    }
+    
+    # Filter empty rows and ensure we have required columns
+    cat("📊 Before filtering empty rows:", nrow(all_docs), "documents\n")
+    all_docs <- all_docs[!is.na(all_docs$title) & all_docs$title != "", ]
+    cat("📊 After filtering empty rows:", nrow(all_docs), "documents\n")
+    
+    # Apply filters
+    filtered_docs <- all_docs
+    cat("📊 Starting filtering with:", nrow(filtered_docs), "documents\n")
+    
+    # Category filter
+    if(category != "all" && "category" %in% names(filtered_docs)) {
+      category_map <- list(
+        "jurisprudence" = c("Jurisprudência", "Jurisprudencia", "jurisprudencia"),
+        "legislation" = c("Legislação", "Legislacao", "legislacao"), 
+        "outros" = c("Outros", "outros", "Other"),
+        "doutrina" = c("Doutrina", "doutrina", "doctrine"),
+        "proposicoes" = c("Proposições", "Proposicoes", "proposicoes", "proposals")
+      )
+      if(category %in% names(category_map)) {
+        target_categories <- category_map[[category]]
+        filtered_docs <- filtered_docs[filtered_docs$category %in% target_categories, ]
+      }
+    }
+    
+    # State filter
+    if(state != "all" && "state" %in% names(filtered_docs)) {
+      filtered_docs <- filtered_docs[!is.na(filtered_docs$state) & filtered_docs$state == state, ]
+    }
+    
+    # Search filter
+    if(search_term != "" && search_term != " ") {
+      search_pattern <- paste0(".*", search_term, ".*")
+      title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
+      summary_match <- if("summary" %in% names(filtered_docs)) {
+        grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE, na.rm = TRUE)
+      } else {
+        rep(FALSE, nrow(filtered_docs))
+      }
+      filtered_docs <- filtered_docs[title_match | summary_match, ]
+    }
+    
+    # Sort by date if available
+    if("date" %in% names(filtered_docs) && sort_by %in% c("date_desc", "date_asc")) {
+      if(sort_by == "date_desc") {
+        filtered_docs <- filtered_docs[order(filtered_docs$date, decreasing = TRUE), ]
+      } else {
+        filtered_docs <- filtered_docs[order(filtered_docs$date, decreasing = FALSE), ]
+      }
+    }
+    
+    # Apply offset and limit
+    if(offset > 0 && offset < nrow(filtered_docs)) {
+      filtered_docs <- filtered_docs[(offset + 1):nrow(filtered_docs), ]
+    }
+    
+    if(nrow(filtered_docs) > limit) {
+      filtered_docs <- filtered_docs[1:limit, ]
+    }
+    
+    cat("✅ Data processed:", nrow(filtered_docs), "documents returned\n")
+    return(filtered_docs)
+  }
+  
   get_library_documents <<- function(category = "all", search_term = "", state = "all", 
                                    date_start = NULL, date_end = NULL, sort_by = "date_desc", 
                                    limit = 100, offset = 0) {
-    # Try to load real CSV data as fallback
+    # Enhanced fallback hierarchy: Database -> Parquet -> Full CSV -> Sample CSV -> Minimal
     tryCatch({
-      # Try full CSV first, then sample for Railway deployment
+      # Try parquet file first (best fallback for full dataset)
+      parquet_path <- "data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet"
+      
+      if(file.exists(parquet_path)) {
+        cat("📁 Loading parquet data (full dataset) from:", parquet_path, "\n")
+        
+        # Try to load parquet using arrow package if available
+        parquet_data <- tryCatch({
+          if(requireNamespace("arrow", quietly = TRUE)) {
+            arrow::read_parquet(parquet_path)
+          } else {
+            NULL
+          }
+        }, error = function(e) NULL)
+        
+        if(!is.null(parquet_data)) {
+          # Convert to data.frame and apply same processing as CSV
+          all_docs <- as.data.frame(parquet_data)
+          cat("✅ Parquet loaded:", nrow(all_docs), "documents\n")
+          
+          # Apply the same column mapping and filtering logic as CSV
+          return(process_document_data(all_docs, category, search_term, state, 
+                                     date_start, date_end, sort_by, limit, offset))
+        }
+      }
+      
+      # Fallback to CSV files
       csv_paths <- c(
         "data_current/processed/production/lexml_enhanced_simple.csv",
         "data_current/processed/production/lexml_sample_for_railway.csv"
@@ -121,90 +236,11 @@ tryCatch({
           all_docs <- read.csv(csv_path, stringsAsFactors = FALSE, encoding = "UTF-8")
         }
         
-        # Standardize column names for compatibility
-        if("titulo" %in% names(all_docs)) names(all_docs)[names(all_docs) == "titulo"] <- "title"
-        if("categoria" %in% names(all_docs)) names(all_docs)[names(all_docs) == "categoria"] <- "category"  
-        if("estado" %in% names(all_docs)) names(all_docs)[names(all_docs) == "estado"] <- "state"
-        if("data" %in% names(all_docs)) names(all_docs)[names(all_docs) == "data"] <- "date"
-        if("ementa" %in% names(all_docs)) names(all_docs)[names(all_docs) == "ementa"] <- "summary"
-        if("urn" %in% names(all_docs)) names(all_docs)[names(all_docs) == "urn"] <- "urn"
-        if("municipio" %in% names(all_docs)) names(all_docs)[names(all_docs) == "municipio"] <- "municipality"
-        if("tipo" %in% names(all_docs)) names(all_docs)[names(all_docs) == "tipo"] <- "document_type"
+        cat("✅ CSV loaded:", nrow(all_docs), "documents\n")
         
-        # Convert date if needed
-        if("date" %in% names(all_docs)) {
-          all_docs$date <- tryCatch({
-            as.Date(all_docs$date)
-          }, error = function(e) {
-            as.Date(Sys.Date())
-          })
-        }
-        
-        # Filter empty rows and ensure we have required columns
-        cat("📊 Before filtering empty rows:", nrow(all_docs), "documents\n")
-        all_docs <- all_docs[!is.na(all_docs$title) & all_docs$title != "", ]
-        cat("📊 After filtering empty rows:", nrow(all_docs), "documents\n")
-        
-        # Apply filters
-        filtered_docs <- all_docs
-        cat("📊 Starting filtering with:", nrow(filtered_docs), "documents\n")
-        
-        # Category filter
-        if(category != "all" && "category" %in% names(filtered_docs)) {
-          category_map <- list(
-            "jurisprudence" = c("Jurisprudência", "Jurisprudencia", "jurisprudencia"),
-            "legislation" = c("Legislação", "Legislacao", "legislacao"), 
-            "outros" = c("Outros", "outros", "Other"),
-            "doutrina" = c("Doutrina", "doutrina", "doctrine"),
-            "proposicoes" = c("Proposições", "Proposicoes", "proposicoes", "proposals")
-          )
-          if(category %in% names(category_map)) {
-            target_categories <- category_map[[category]]
-            filtered_docs <- filtered_docs[filtered_docs$category %in% target_categories, ]
-          }
-        }
-        
-        # State filter
-        if(state != "all" && "state" %in% names(filtered_docs)) {
-          filtered_docs <- filtered_docs[!is.na(filtered_docs$state) & filtered_docs$state == state, ]
-        }
-        
-        # Search filter
-        if(search_term != "" && search_term != " ") {
-          search_pattern <- paste0(".*", search_term, ".*")
-          title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
-          summary_match <- if("summary" %in% names(filtered_docs)) {
-            grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE, na.rm = TRUE)
-          } else {
-            rep(FALSE, nrow(filtered_docs))
-          }
-          filtered_docs <- filtered_docs[title_match | summary_match, ]
-        }
-        
-        # Sort by date if available
-        if("date" %in% names(filtered_docs) && sort_by %in% c("date_desc", "date_asc")) {
-          if(sort_by == "date_desc") {
-            filtered_docs <- filtered_docs[order(filtered_docs$date, decreasing = TRUE), ]
-          } else {
-            filtered_docs <- filtered_docs[order(filtered_docs$date, decreasing = FALSE), ]
-          }
-        }
-        
-        # Apply offset and limit
-        if(offset > 0 && offset < nrow(filtered_docs)) {
-          filtered_docs <- filtered_docs[(offset + 1):nrow(filtered_docs), ]
-        }
-        
-        if(nrow(filtered_docs) > limit) {
-          filtered_docs <- filtered_docs[1:limit, ]
-        }
-        
-        cat("✅ CSV fallback loaded:", nrow(filtered_docs), "documents\n")
-        cat("📋 Final columns:", paste(names(filtered_docs), collapse = ", "), "\n")
-        if(nrow(filtered_docs) > 0 && "title" %in% names(filtered_docs)) {
-          cat("📄 Sample title:", substr(filtered_docs$title[1], 1, 50), "...\n")
-        }
-        return(filtered_docs)
+        # Use helper function to process the data
+        return(process_document_data(all_docs, category, search_term, state, 
+                                   date_start, date_end, sort_by, limit, offset))
         
       } else {
         cat("⚠️ CSV file not found, using minimal fallback\n")

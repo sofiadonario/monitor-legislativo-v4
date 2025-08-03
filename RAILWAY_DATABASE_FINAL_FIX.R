@@ -101,10 +101,27 @@ connect_to_railway_db <- function(retry_count = 3, silent = FALSE) {
 
 # Ensure valid connection helper
 ensure_connection <- function() {
-  if (is.null(.railway_db_conn) || !dbIsValid(.railway_db_conn)) {
-    connect_to_railway_db(silent = TRUE)
+  # More robust connection checking
+  if (is.null(.railway_db_conn)) {
+    cat("🔄 No connection object, attempting to connect...\n")
+    return(connect_to_railway_db(silent = TRUE))
   }
-  return(.connection_status$connected)
+  
+  # Test actual connection validity with a simple query
+  tryCatch({
+    test_result <- dbGetQuery(.railway_db_conn, "SELECT 1 as test")
+    if(nrow(test_result) == 1) {
+      .connection_status$connected <<- TRUE
+      return(TRUE)
+    }
+  }, error = function(e) {
+    cat("⚠️ Connection test failed:", e$message, "\n")
+    .connection_status$connected <<- FALSE
+  })
+  
+  # If we get here, connection is invalid, try to reconnect
+  cat("🔄 Connection invalid, attempting to reconnect...\n")
+  return(connect_to_railway_db(silent = TRUE))
 }
 
 # Initialize connection on load
