@@ -31,19 +31,35 @@ tryCatch({
   
   # Essential fallback functions
   get_total_documents <<- function(filters = list()) { 
-    # Return the known database count - CSV is larger and contains duplicates
-    return(134014) 
+    # Check if we have the full CSV or sample, return appropriate count
+    if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+      return(134014)  # Full database size
+    } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
+      return(20000)   # Sample size for Railway deployment
+    } else {
+      return(3)       # Minimal fallback
+    }
   }
   get_lexml_dashboard_metrics <<- function() {
+    # Get dynamic document count based on available data
+    doc_count <- get_total_documents()
+    data_source <- if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+      "full_csv"
+    } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
+      "sample_csv"  
+    } else {
+      "minimal_fallback"
+    }
+    
     return(list(
-      total_documents = 134014,
+      total_documents = doc_count,
       states_with_docs = 21,  
       municipalities_with_docs = 315,
       states_percentage = 77.8,
       municipalities_percentage = 5.7,
       date_range_years = 25,
       last_updated = Sys.time(),
-      data_source = "fallback"
+      data_source = data_source
     ))
   }
   
@@ -341,9 +357,11 @@ server <- function(input, output, session) {
   })
   
   output$exec_system_status <- renderText({
+    m <- get_lexml_dashboard_metrics()
     paste(
       "System Status: OPERATIONAL",
-      sprintf("Database Documents: %s", format(134014, big.mark = ",")),
+      sprintf("Documents Available: %s", format(m$total_documents, big.mark = ",")),
+      sprintf("Data Source: %s", m$data_source),
       "All core systems functional",
       sep = "\n"
     )
