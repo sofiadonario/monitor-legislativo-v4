@@ -1131,7 +1131,10 @@ ui <- dashboardPage(
             )
           )
         )
-      ),      tabItem(tabName = "data_quality",
+      ),
+      
+      # Data Quality Tab
+      tabItem(tabName = "data_quality",
         fluidRow(
           h2("📈 Data Quality & System Health", style = "color: #2c3e50; margin-left: 15px;"),
           p("Real-time monitoring of data integrity and system performance", 
@@ -1168,119 +1171,6 @@ ui <- dashboardPage(
             title = "⚠️ System Alerts & Notifications", status = "warning", solidHeader = TRUE,
             width = 12,
             DT::dataTableOutput("system_alerts_table")
-          )
-        )
-      ),
-      
-      # Duplicate removed - using enhanced Library tab above
-        fluidRow(
-          h2("📚 Document Library", style = "color: #2c3e50; margin-left: 15px;"),
-          p("Browse and search through 134,014+ Brazilian legislative documents organized by categories", 
-            style = "margin-left: 15px; color: #7f8c8d;")
-        ),
-        
-        # Category overview metrics
-        fluidRow(
-          valueBoxOutput("lib_total_docs", width = 2),
-          valueBoxOutput("lib_jurisprudencia", width = 2),
-          valueBoxOutput("lib_legislacao", width = 2),
-          valueBoxOutput("lib_outros", width = 2),
-          valueBoxOutput("lib_doutrina", width = 2),
-          valueBoxOutput("lib_proposicoes", width = 2)
-        ),
-        
-        # Advanced search and filters
-        fluidRow(
-          box(
-            title = "🔍 Advanced Search & Filters", status = "primary", solidHeader = TRUE,
-            collapsible = TRUE, collapsed = TRUE, width = 12,
-            fluidRow(
-              column(4,
-                textInput("lib_search_text", "Search Documents:", 
-                         placeholder = "Enter keywords, URN, or document title...")
-              ),
-              column(3,
-                selectInput("lib_category_filter", "Category:",
-                           choices = c("All Categories" = "all",
-                                     "Jurisprudência" = "jurisprudencia",
-                                     "Legislação" = "legislacao",
-                                     "Outros" = "outros",
-                                     "Doutrina" = "doutrina",
-                                     "Proposições" = "proposicoes"))
-              ),
-              column(3,
-                selectInput("lib_state_filter", "State:",
-                           choices = c("All States" = "all",
-                                     "São Paulo" = "SP",
-                                     "Minas Gerais" = "MG",
-                                     "Rio de Janeiro" = "RJ",
-                                     "Distrito Federal" = "DF"))
-              ),
-              column(2,
-                selectInput("lib_sort_order", "Sort by:",
-                           choices = c("Date (Newest)" = "date_desc",
-                                     "Date (Oldest)" = "date_asc",
-                                     "Title A-Z" = "title_asc",
-                                     "Title Z-A" = "title_desc"))
-              )
-            ),
-            fluidRow(
-              column(4,
-                dateRangeInput("lib_date_range", "Date Range:",
-                              start = "2000-01-01", end = Sys.Date())
-              ),
-              column(4,
-                numericInput("lib_results_per_page", "Results per page:",
-                            value = 25, min = 10, max = 100, step = 5)
-              ),
-              column(4, style = "padding-top: 25px;",
-                actionButton("lib_search_btn", "Search", class = "btn-primary", style = "margin-right: 10px;"),
-                actionButton("lib_reset_btn", "Reset", class = "btn-secondary")
-              )
-            )
-          )
-        ),
-        
-        # Document display with tabs
-        fluidRow(
-          box(
-            title = "📋 Document Results", status = "info", solidHeader = TRUE,
-            width = 12, height = 700,
-            tabsetPanel(
-              id = "lib_document_tabs",
-              tabPanel("All Documents", 
-                DT::dataTableOutput("lib_all_documents", height = "600px")
-              ),
-              tabPanel("Jurisprudência", 
-                DT::dataTableOutput("lib_jurisprudencia_docs", height = "600px")
-              ),
-              tabPanel("Legislação", 
-                DT::dataTableOutput("lib_legislacao_docs", height = "600px")
-              ),
-              tabPanel("Outros", 
-                DT::dataTableOutput("lib_outros_docs", height = "600px")
-              ),
-              tabPanel("Doutrina", 
-                DT::dataTableOutput("lib_doutrina_docs", height = "600px")
-              ),
-              tabPanel("Proposições", 
-                DT::dataTableOutput("lib_proposicoes_docs", height = "600px")
-              )
-            )
-          )
-        ),
-        
-        # Category analytics
-        fluidRow(
-          box(
-            title = "📊 Category Distribution", status = "success", solidHeader = TRUE,
-            width = 6, height = 500,
-            plotlyOutput("lib_category_chart", height = "450px")
-          ),
-          box(
-            title = "📈 Collection Growth", status = "warning", solidHeader = TRUE,
-            width = 6, height = 500,
-            plotlyOutput("lib_growth_chart", height = "450px")
           )
         )
       ),
