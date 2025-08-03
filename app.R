@@ -339,21 +339,41 @@ server <- function(input, output, session) {
   
   # Library reactive data
   lib_filtered_data <- reactive({
+    cat("=== REACTIVE DATA DEBUG ===\n")
+    
     # Get filter inputs
     category <- input$lib_category
     state <- input$lib_state  
     search_term <- input$lib_search
     
+    cat("📝 Filter inputs:\n")
+    cat("  - Category:", if(is.null(category)) "NULL" else category, "\n")
+    cat("  - State:", if(is.null(state)) "NULL" else state, "\n")
+    cat("  - Search:", if(is.null(search_term)) "NULL" else search_term, "\n")
+    
     # Trigger on search button or input changes
     input$lib_search_btn
     
+    # Get documents with filters - ensure defaults
+    final_category <- if(is.null(category) || category == "all") "all" else category
+    final_search <- if(is.null(search_term)) "" else search_term
+    final_state <- if(is.null(state) || state == "all") "all" else state
+    
+    cat("📋 Final filter params:\n")
+    cat("  - Category:", final_category, "\n")
+    cat("  - State:", final_state, "\n")
+    cat("  - Search:", final_search, "\n")
+    
     # Get documents with filters
     docs <- get_library_documents(
-      category = if(is.null(category) || category == "all") "all" else category,
-      search_term = if(is.null(search_term)) "" else search_term,
-      state = if(is.null(state) || state == "all") "all" else state,
+      category = final_category,
+      search_term = final_search,
+      state = final_state,
       limit = 1000
     )
+    
+    cat("📊 Reactive returning:", nrow(docs), "documents\n")
+    cat("=== END REACTIVE DEBUG ===\n")
     
     return(docs)
   })
