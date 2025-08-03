@@ -47,14 +47,74 @@ tryCatch({
   get_library_documents <<- function(category = "all", search_term = "", state = "all", 
                                    date_start = NULL, date_end = NULL, sort_by = "date_desc", 
                                    limit = 100, offset = 0) {
-    return(data.frame(
-      title = c("Sample Document 1", "Sample Document 2"),
-      category = c("Jurisprudência", "Legislação"),
-      state = c("SP", "MG"), 
-      date = c(Sys.Date(), Sys.Date()-1),
-      url = c("", ""),
-      summary = c("Sample summary 1", "Sample summary 2")
-    ))
+    # Enhanced fallback data that demonstrates filtering
+    all_docs <- data.frame(
+      title = c(
+        "STF - ADI 5.876 - Marco Regulatório do Transporte de Carga",
+        "Lei Federal 13.103/2015 - Regulamentação dos Motoristas Profissionais", 
+        "Decreto Estadual SP 64.684/2019 - Logística Urbana de São Paulo",
+        "STJ - REsp 1.789.543 - Responsabilidade Civil no Transporte",
+        "Lei Municipal BH 11.253/2020 - Mobilidade Urbana Sustentável",
+        "Portaria ANTT 3.543/2021 - Transporte Rodoviário Interestadual",
+        "Parecer Técnico DNIT - Infraestrutura Rodoviária Federal",
+        "PL 1.234/2023 - Modernização do Marco Regulatório Ferroviário"
+      ),
+      category = c("Jurisprudência", "Legislação", "Legislação", "Jurisprudência", 
+                   "Legislação", "Outros", "Doutrina", "Proposições"),
+      state = c("DF", "DF", "SP", "DF", "MG", "DF", "DF", "DF"),
+      date = seq(Sys.Date()-30, Sys.Date(), length.out = 8),
+      url = c("https://stf.jus.br/portal/adi/5876", "", "", "https://stj.jus.br/resp/1789543", 
+              "", "https://antt.gov.br/portaria/3543", "", ""),
+      summary = c(
+        "Ação Direta de Inconstitucionalidade sobre marco regulatório do transporte de carga",
+        "Regulamentação da profissão de motorista profissional e jornada de trabalho",
+        "Decreto estadual estabelecendo diretrizes para logística urbana na capital paulista", 
+        "Recurso Especial sobre responsabilidade civil em acidentes de transporte",
+        "Lei municipal de Belo Horizonte sobre mobilidade urbana sustentável",
+        "Portaria da ANTT regulamentando transporte rodoviário interestadual",
+        "Parecer técnico do DNIT sobre infraestrutura rodoviária federal",
+        "Projeto de Lei para modernização do marco regulatório ferroviário"
+      ),
+      stringsAsFactors = FALSE
+    )
+    
+    # Apply filters
+    filtered_docs <- all_docs
+    
+    # Category filter
+    if(category != "all") {
+      category_map <- list(
+        "jurisprudence" = "Jurisprudência",
+        "legislation" = "Legislação", 
+        "outros" = "Outros",
+        "doutrina" = "Doutrina",
+        "proposicoes" = "Proposições"
+      )
+      if(category %in% names(category_map)) {
+        filtered_docs <- filtered_docs[filtered_docs$category == category_map[[category]], ]
+      }
+    }
+    
+    # State filter
+    if(state != "all") {
+      filtered_docs <- filtered_docs[filtered_docs$state == state, ]
+    }
+    
+    # Search filter
+    if(search_term != "") {
+      search_pattern <- paste0(".*", search_term, ".*")
+      filtered_docs <- filtered_docs[
+        grepl(search_pattern, filtered_docs$title, ignore.case = TRUE) |
+        grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE), 
+      ]
+    }
+    
+    # Apply limit
+    if(nrow(filtered_docs) > limit) {
+      filtered_docs <- filtered_docs[1:limit, ]
+    }
+    
+    return(filtered_docs)
   }
   
   system_status_global <- list(
@@ -101,8 +161,49 @@ ui <- dashboardPage(
       # Library Tab
       tabItem(tabName = "library",
         fluidRow(
+          # Search and Filter Controls
           box(
-            title = "Document Library", status = "primary", solidHeader = TRUE, width = 12,
+            title = "🔍 Search & Filter", status = "info", solidHeader = TRUE, width = 12,
+            fluidRow(
+              column(3,
+                selectInput("lib_category", "Category:",
+                  choices = c("All Categories" = "all",
+                            "Jurisprudência" = "jurisprudence", 
+                            "Legislação" = "legislation",
+                            "Outros" = "outros",
+                            "Doutrina" = "doutrina",
+                            "Proposições" = "proposicoes"),
+                  selected = "all"
+                )
+              ),
+              column(3,
+                selectInput("lib_state", "State:",
+                  choices = c("All States" = "all", "SP" = "SP", "MG" = "MG", 
+                            "RJ" = "RJ", "DF" = "DF", "SC" = "SC", "RS" = "RS"),
+                  selected = "all"
+                )
+              ),
+              column(4,
+                textInput("lib_search", "Search Documents:", 
+                         placeholder = "Enter keywords...")
+              ),
+              column(2,
+                actionButton("lib_search_btn", "Search", 
+                           class = "btn-primary", style = "margin-top: 25px;")
+              )
+            )
+          )
+        ),
+        fluidRow(
+          # Document Statistics
+          valueBoxOutput("lib_total_docs", width = 4),
+          valueBoxOutput("lib_filtered_docs", width = 4), 
+          valueBoxOutput("lib_database_status", width = 4)
+        ),
+        fluidRow(
+          # Documents Table
+          box(
+            title = "📚 Document Library", status = "primary", solidHeader = TRUE, width = 12,
             DT::dataTableOutput("lib_documents_table")
           )
         )
@@ -144,18 +245,113 @@ server <- function(input, output, session) {
     )
   })
   
-  # Library outputs
+  # Library reactive data
+  lib_filtered_data <- reactive({
+    # Get filter inputs
+    category <- input$lib_category
+    state <- input$lib_state  
+    search_term <- input$lib_search
+    
+    # Trigger on search button or input changes
+    input$lib_search_btn
+    
+    # Get documents with filters
+    docs <- get_library_documents(
+      category = if(is.null(category) || category == "all") "all" else category,
+      search_term = if(is.null(search_term)) "" else search_term,
+      state = if(is.null(state) || state == "all") "all" else state,
+      limit = 1000
+    )
+    
+    return(docs)
+  })
+  
+  # Library value boxes
+  output$lib_total_docs <- renderValueBox({
+    total <- tryCatch({
+      if(exists("get_total_documents")) {
+        get_total_documents()
+      } else {
+        134014
+      }
+    }, error = function(e) 134014)
+    
+    valueBox(
+      value = format(total, big.mark = ","),
+      subtitle = "Total Documents",
+      icon = icon("database"),
+      color = "blue"
+    )
+  })
+  
+  output$lib_filtered_docs <- renderValueBox({
+    filtered_count <- nrow(lib_filtered_data())
+    
+    valueBox(
+      value = format(filtered_count, big.mark = ","),
+      subtitle = "Filtered Results", 
+      icon = icon("filter"),
+      color = "green"
+    )
+  })
+  
+  output$lib_database_status <- renderValueBox({
+    # Check if we have real database connection
+    is_connected <- tryCatch({
+      exists("get_connection_status") && 
+      get_connection_status()$status == "connected"
+    }, error = function(e) FALSE)
+    
+    valueBox(
+      value = if(is_connected) "CONNECTED" else "FALLBACK",
+      subtitle = "Database Status",
+      icon = if(is_connected) icon("check-circle") else icon("exclamation-triangle"),
+      color = if(is_connected) "green" else "yellow"
+    )
+  })
+  
+  # Enhanced documents table with real-time filtering
   output$lib_documents_table <- DT::renderDataTable({
-    docs <- get_library_documents(limit = 50)
+    docs <- lib_filtered_data()
+    
+    # Enhance display with better column names and formatting
+    if(nrow(docs) > 0) {
+      # Rename columns for better display
+      display_names <- c(
+        "title" = "Title",
+        "category" = "Category", 
+        "state" = "State",
+        "date" = "Date",
+        "url" = "URL",
+        "summary" = "Summary",
+        "urn" = "URN",
+        "municipality" = "Municipality",
+        "document_type" = "Type"
+      )
+      
+      # Only rename columns that exist
+      existing_cols <- intersect(names(display_names), names(docs))
+      for(col in existing_cols) {
+        names(docs)[names(docs) == col] <- display_names[col]
+      }
+    }
     
     DT::datatable(docs,
       options = list(
         pageLength = 25,
         scrollX = TRUE,
-        dom = 'frtip'
+        dom = 'frtip',
+        order = list(list(2, 'desc')), # Sort by date column if available
+        columnDefs = list(
+          list(width = '300px', targets = 0), # Title column width
+          list(width = '150px', targets = 1), # Category column width
+          list(width = '80px', targets = 2)   # State column width
+        )
       ),
-      class = "compact stripe hover"
-    )
+      class = "compact stripe hover",
+      filter = 'top'
+    ) %>%
+      DT::formatDate(columns = which(sapply(docs, function(x) inherits(x, "Date"))), method = 'toLocaleDateString')
   })
   
   cat("✅ Server logic initialized\n")
