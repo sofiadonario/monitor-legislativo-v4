@@ -1057,7 +1057,7 @@ ui <- dashboardPage(
             h4("Resultados da busca", style = "color: #2c3e50; margin-bottom: 20px;"),
             
             # Results table
-            DT::dataTableOutput("lib_documents_table_enhanced", height = "600px")
+            DT::dataTableOutput("lib_documents_table_portuguese", height = "600px")
           ),
           
           # Sidebar with analytics
@@ -1786,15 +1786,11 @@ server <- function(input, output, session) {
   output$lib_documents_table_enhanced <- DT::renderDataTable({
     
     # Get filtered documents based on current search parameters
-    docs <- get_library_documents_optimized(
+    docs <- get_library_documents(
       category = input$lib_category_enhanced %||% "all",
       search_term = input$lib_search_enhanced %||% "",
       state = input$lib_state_enhanced %||% "all",
-      date_start = if(!is.null(input$lib_date_range_enhanced)) input$lib_date_range_enhanced[1] else NULL,
-      date_end = if(!is.null(input$lib_date_range_enhanced)) input$lib_date_range_enhanced[2] else NULL,
-      sort_by = "date_desc",
-      limit = 50,
-      use_cache = TRUE
+      limit = 50
     )
     
     if (nrow(docs) == 0) {
