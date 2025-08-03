@@ -245,7 +245,9 @@ tryCatch({
     ))
   }
   
-  get_library_documents <<- function(category = "all", search_term = "", state = "all", 
+  # Only define fallback library documents function if not already defined by database
+  if (!exists("get_library_documents")) {
+    get_library_documents <<- function(category = "all", search_term = "", state = "all", 
                                    date_start = NULL, date_end = NULL, sort_by = "date_desc", 
                                    limit = 100, offset = 0) {
     # Generate realistic document data based on the CSV structure we examined
@@ -340,7 +342,7 @@ tryCatch({
     
     return(extended_docs)
   }
-})
+  } # End of if (!exists("get_library_documents"))
 
 # Load Railway Analytics Lightweight - All systems integrated
 tryCatch({

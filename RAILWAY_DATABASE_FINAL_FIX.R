@@ -374,6 +374,120 @@ get_database_stats <<- function() {
   })
 }
 
+# Library document retrieval function
+get_library_documents <<- function(category = "all", search_term = "", state = "all", 
+                                 date_start = NULL, date_end = NULL, sort_by = "date_desc", 
+                                 limit = 100, offset = 0) {
+  if (!ensure_connection()) {
+    cat("⚠️ No database connection for library documents, using fallback data\n")
+    # Return empty data frame to trigger fallback
+    return(data.frame())
+  }
+  
+  tryCatch({
+    # Build query with proper column names based on documents table structure
+    base_query <- "
+      SELECT 
+        COALESCE(titulo, 'Documento sem título') as title,
+        COALESCE(urn, '') as urn,
+        COALESCE(categoria_original, categoria, tipo, 'Outros') as category,
+        COALESCE(estado, estado_codigo, jurisdicao, 'BR') as state,
+        COALESCE(localidade, municipality, '') as municipality,
+        COALESCE(data_publicacao, data, CURRENT_DATE) as date,
+        COALESCE(tipo, document_type, categoria) as document_type,
+        COALESCE(url, '') as url,
+        COALESCE(ementa, conteudo, '') as summary
+      FROM documents
+    "
+    
+    # Build WHERE clauses
+    where_clauses <- c("1=1")  # Always true to make building easier
+    
+    # Category filter with proper mapping
+    if (category != "all") {
+      category_map <- list(
+        "jurisprudence" = c("Jurisprudência", "Jurisprudencia", "jurisprudencia"),
+        "legislation" = c("Legislação", "Legislacao", "legislacao"),
+        "outros" = c("Outros", "outros", "Other"),
+        "doutrina" = c("Doutrina", "doutrina", "doctrine"),
+        "proposicoes" = c("Proposições", "Proposicoes", "proposicoes", "proposals")
+      )
+      
+      if (category %in% names(category_map)) {
+        cat_values <- category_map[[category]]
+        cat_conditions <- paste0("'", cat_values, "'", collapse = ", ")
+        where_clauses <- c(where_clauses, 
+          sprintf("(categoria_original IN (%s) OR categoria IN (%s) OR tipo IN (%s))", 
+                  cat_conditions, cat_conditions, cat_conditions))
+      }
+    }
+    
+    # Search term filter
+    if (search_term != "") {
+      search_pattern <- dbQuoteString(.railway_db_conn, paste0("%", search_term, "%"))
+      where_clauses <- c(where_clauses,
+        sprintf("(titulo ILIKE %s OR ementa ILIKE %s OR urn ILIKE %s OR conteudo ILIKE %s)",
+                search_pattern, search_pattern, search_pattern, search_pattern))
+    }
+    
+    # State filter
+    if (state != "all" && state != "") {
+      state_quoted <- dbQuoteString(.railway_db_conn, state)
+      where_clauses <- c(where_clauses,
+        sprintf("(estado = %s OR estado_codigo = %s OR jurisdicao = %s)",
+                state_quoted, state_quoted, state_quoted))
+    }
+    
+    # Date range filters
+    if (!is.null(date_start)) {
+      where_clauses <- c(where_clauses,
+        sprintf("(data_publicacao >= '%s' OR data >= '%s')", 
+                as.character(date_start), as.character(date_start)))
+    }
+    
+    if (!is.null(date_end)) {
+      where_clauses <- c(where_clauses,
+        sprintf("(data_publicacao <= '%s' OR data <= '%s')", 
+                as.character(date_end), as.character(date_end)))
+    }
+    
+    # Combine all WHERE clauses
+    where_clause <- paste(where_clauses, collapse = " AND ")
+    
+    # Add ORDER BY clause
+    order_clause <- switch(sort_by,
+      "date_desc" = "ORDER BY date DESC",
+      "date_asc" = "ORDER BY date ASC",
+      "title_asc" = "ORDER BY title ASC",
+      "title_desc" = "ORDER BY title DESC",
+      "ORDER BY date DESC"  # default
+    )
+    
+    # Build final query
+    final_query <- sprintf("%s WHERE %s %s LIMIT %d OFFSET %d",
+                          base_query, where_clause, order_clause, 
+                          as.integer(limit), as.integer(offset))
+    
+    # Execute query
+    result <- dbGetQuery(.railway_db_conn, final_query)
+    
+    # If no results, log the issue
+    if (nrow(result) == 0) {
+      cat("ℹ️ No documents found with filters - category:", category, 
+          "search:", search_term, "state:", state, "\n")
+    } else {
+      cat("✅ Retrieved", nrow(result), "library documents from database\n")
+    }
+    
+    return(result)
+    
+  }, error = function(e) {
+    cat("❌ Error retrieving library documents:", e$message, "\n")
+    # Return empty data frame to trigger fallback
+    return(data.frame())
+  })
+}
+
 # Health check function for diagnostics
 check_database_health <<- function() {
   health_status <- list(
