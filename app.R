@@ -30,7 +30,10 @@ tryCatch({
   cat("⚠️ Database connection failed, using fallback functions\n")
   
   # Essential fallback functions
-  get_total_documents <<- function(filters = list()) { return(134014) }
+  get_total_documents <<- function(filters = list()) { 
+    # Return the known database count - CSV is larger and contains duplicates
+    return(134014) 
+  }
   get_lexml_dashboard_metrics <<- function() {
     return(list(
       total_documents = 134014,
@@ -47,74 +50,156 @@ tryCatch({
   get_library_documents <<- function(category = "all", search_term = "", state = "all", 
                                    date_start = NULL, date_end = NULL, sort_by = "date_desc", 
                                    limit = 100, offset = 0) {
-    # Enhanced fallback data that demonstrates filtering
-    all_docs <- data.frame(
+    # Try to load real CSV data as fallback
+    tryCatch({
+      csv_path <- "data_current/processed/production/lexml_enhanced_simple.csv"
+      
+      if(file.exists(csv_path)) {
+        cat("📁 Loading CSV fallback data from:", csv_path, "\n")
+        
+        # Read CSV with proper encoding - sample to match database size (~134k)
+        # First check file size to decide on sampling strategy
+        line_count_cmd <- paste("wc -l <", shQuote(csv_path))
+        total_lines <- as.numeric(system(line_count_cmd, intern = TRUE)) - 1 # exclude header
+        
+        if(total_lines > 200000) {
+          # Large file - use sampling to get ~134k records
+          cat("📊 Large CSV detected (", format(total_lines, big.mark = ","), "lines), sampling to match database size\n")
+          
+          # Read header first
+          header <- read.csv(csv_path, nrows = 1, stringsAsFactors = FALSE)
+          
+          # Calculate sampling ratio to get ~134k records
+          sample_ratio <- min(1.0, 134014 / total_lines)
+          
+          # Use system command to sample the file efficiently
+          temp_file <- tempfile(fileext = ".csv")
+          
+          # Create sampled file using awk (more efficient for large files)
+          sample_cmd <- sprintf("awk 'NR==1 || (NR>1 && rand() < %f)' %s > %s", 
+                               sample_ratio, shQuote(csv_path), shQuote(temp_file))
+          system(sample_cmd)
+          
+          # Read the sampled file
+          all_docs <- read.csv(temp_file, stringsAsFactors = FALSE, encoding = "UTF-8")
+          
+          # Clean up temp file
+          unlink(temp_file)
+          
+          cat("✅ Sampled", nrow(all_docs), "documents from CSV\n")
+          
+        } else {
+          # Smaller file - read directly
+          all_docs <- read.csv(csv_path, stringsAsFactors = FALSE, encoding = "UTF-8")
+        }
+        
+        # Standardize column names for compatibility
+        if("titulo" %in% names(all_docs)) names(all_docs)[names(all_docs) == "titulo"] <- "title"
+        if("categoria" %in% names(all_docs)) names(all_docs)[names(all_docs) == "categoria"] <- "category"  
+        if("estado" %in% names(all_docs)) names(all_docs)[names(all_docs) == "estado"] <- "state"
+        if("data" %in% names(all_docs)) names(all_docs)[names(all_docs) == "data"] <- "date"
+        if("ementa" %in% names(all_docs)) names(all_docs)[names(all_docs) == "ementa"] <- "summary"
+        if("urn" %in% names(all_docs)) names(all_docs)[names(all_docs) == "urn"] <- "urn"
+        if("municipio" %in% names(all_docs)) names(all_docs)[names(all_docs) == "municipio"] <- "municipality"
+        if("tipo" %in% names(all_docs)) names(all_docs)[names(all_docs) == "tipo"] <- "document_type"
+        
+        # Convert date if needed
+        if("date" %in% names(all_docs)) {
+          all_docs$date <- tryCatch({
+            as.Date(all_docs$date)
+          }, error = function(e) {
+            as.Date(Sys.Date())
+          })
+        }
+        
+        # Filter empty rows and ensure we have required columns
+        all_docs <- all_docs[!is.na(all_docs$title) & all_docs$title != "", ]
+        
+        # Apply filters
+        filtered_docs <- all_docs
+        
+        # Category filter
+        if(category != "all" && "category" %in% names(filtered_docs)) {
+          category_map <- list(
+            "jurisprudence" = c("Jurisprudência", "Jurisprudencia", "jurisprudencia"),
+            "legislation" = c("Legislação", "Legislacao", "legislacao"), 
+            "outros" = c("Outros", "outros", "Other"),
+            "doutrina" = c("Doutrina", "doutrina", "doctrine"),
+            "proposicoes" = c("Proposições", "Proposicoes", "proposicoes", "proposals")
+          )
+          if(category %in% names(category_map)) {
+            target_categories <- category_map[[category]]
+            filtered_docs <- filtered_docs[filtered_docs$category %in% target_categories, ]
+          }
+        }
+        
+        # State filter
+        if(state != "all" && "state" %in% names(filtered_docs)) {
+          filtered_docs <- filtered_docs[!is.na(filtered_docs$state) & filtered_docs$state == state, ]
+        }
+        
+        # Search filter
+        if(search_term != "" && search_term != " ") {
+          search_pattern <- paste0(".*", search_term, ".*")
+          title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
+          summary_match <- if("summary" %in% names(filtered_docs)) {
+            grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE, na.rm = TRUE)
+          } else {
+            rep(FALSE, nrow(filtered_docs))
+          }
+          filtered_docs <- filtered_docs[title_match | summary_match, ]
+        }
+        
+        # Sort by date if available
+        if("date" %in% names(filtered_docs) && sort_by %in% c("date_desc", "date_asc")) {
+          if(sort_by == "date_desc") {
+            filtered_docs <- filtered_docs[order(filtered_docs$date, decreasing = TRUE), ]
+          } else {
+            filtered_docs <- filtered_docs[order(filtered_docs$date, decreasing = FALSE), ]
+          }
+        }
+        
+        # Apply offset and limit
+        if(offset > 0 && offset < nrow(filtered_docs)) {
+          filtered_docs <- filtered_docs[(offset + 1):nrow(filtered_docs), ]
+        }
+        
+        if(nrow(filtered_docs) > limit) {
+          filtered_docs <- filtered_docs[1:limit, ]
+        }
+        
+        cat("✅ CSV fallback loaded:", nrow(filtered_docs), "documents\n")
+        return(filtered_docs)
+        
+      } else {
+        cat("⚠️ CSV file not found, using minimal fallback\n")
+      }
+      
+    }, error = function(e) {
+      cat("⚠️ Error loading CSV:", e$message, "\n")
+    })
+    
+    # Minimal fallback if CSV loading fails
+    minimal_docs <- data.frame(
       title = c(
         "STF - ADI 5.876 - Marco Regulatório do Transporte de Carga",
         "Lei Federal 13.103/2015 - Regulamentação dos Motoristas Profissionais", 
-        "Decreto Estadual SP 64.684/2019 - Logística Urbana de São Paulo",
-        "STJ - REsp 1.789.543 - Responsabilidade Civil no Transporte",
-        "Lei Municipal BH 11.253/2020 - Mobilidade Urbana Sustentável",
-        "Portaria ANTT 3.543/2021 - Transporte Rodoviário Interestadual",
-        "Parecer Técnico DNIT - Infraestrutura Rodoviária Federal",
-        "PL 1.234/2023 - Modernização do Marco Regulatório Ferroviário"
+        "Decreto Estadual SP 64.684/2019 - Logística Urbana de São Paulo"
       ),
-      category = c("Jurisprudência", "Legislação", "Legislação", "Jurisprudência", 
-                   "Legislação", "Outros", "Doutrina", "Proposições"),
-      state = c("DF", "DF", "SP", "DF", "MG", "DF", "DF", "DF"),
-      date = seq(Sys.Date()-30, Sys.Date(), length.out = 8),
-      url = c("https://stf.jus.br/portal/adi/5876", "", "", "https://stj.jus.br/resp/1789543", 
-              "", "https://antt.gov.br/portaria/3543", "", ""),
+      category = c("Jurisprudência", "Legislação", "Legislação"),
+      state = c("DF", "DF", "SP"),
+      date = seq(Sys.Date()-30, Sys.Date(), length.out = 3),
+      url = c("", "", ""),
       summary = c(
-        "Ação Direta de Inconstitucionalidade sobre marco regulatório do transporte de carga",
-        "Regulamentação da profissão de motorista profissional e jornada de trabalho",
-        "Decreto estadual estabelecendo diretrizes para logística urbana na capital paulista", 
-        "Recurso Especial sobre responsabilidade civil em acidentes de transporte",
-        "Lei municipal de Belo Horizonte sobre mobilidade urbana sustentável",
-        "Portaria da ANTT regulamentando transporte rodoviário interestadual",
-        "Parecer técnico do DNIT sobre infraestrutura rodoviária federal",
-        "Projeto de Lei para modernização do marco regulatório ferroviário"
+        "Ação Direta de Inconstitucionalidade sobre marco regulatório do transporte",
+        "Regulamentação da profissão de motorista profissional",
+        "Decreto estadual sobre logística urbana na capital paulista"
       ),
       stringsAsFactors = FALSE
     )
     
-    # Apply filters
-    filtered_docs <- all_docs
-    
-    # Category filter
-    if(category != "all") {
-      category_map <- list(
-        "jurisprudence" = "Jurisprudência",
-        "legislation" = "Legislação", 
-        "outros" = "Outros",
-        "doutrina" = "Doutrina",
-        "proposicoes" = "Proposições"
-      )
-      if(category %in% names(category_map)) {
-        filtered_docs <- filtered_docs[filtered_docs$category == category_map[[category]], ]
-      }
-    }
-    
-    # State filter
-    if(state != "all") {
-      filtered_docs <- filtered_docs[filtered_docs$state == state, ]
-    }
-    
-    # Search filter
-    if(search_term != "") {
-      search_pattern <- paste0(".*", search_term, ".*")
-      filtered_docs <- filtered_docs[
-        grepl(search_pattern, filtered_docs$title, ignore.case = TRUE) |
-        grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE), 
-      ]
-    }
-    
-    # Apply limit
-    if(nrow(filtered_docs) > limit) {
-      filtered_docs <- filtered_docs[1:limit, ]
-    }
-    
-    return(filtered_docs)
+    cat("✅ Using minimal fallback:", nrow(minimal_docs), "documents\n")
+    return(minimal_docs)
   }
   
   system_status_global <- list(
