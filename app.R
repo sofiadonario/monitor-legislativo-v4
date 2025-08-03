@@ -600,6 +600,84 @@ ui <- dashboardPage(
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           margin-bottom: 20px;
         }
+        .library-header {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 20px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .search-panel {
+          background: white;
+          border-radius: 10px;
+          padding: 20px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+          margin-bottom: 20px;
+        }
+        .category-card {
+          background: white;
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          cursor: pointer;
+        }
+        .category-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .performance-indicator {
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          background: rgba(0,150,0,0.8);
+          color: white;
+          padding: 5px 10px;
+          border-radius: 15px;
+          font-size: 12px;
+          z-index: 2000;
+        }
+        .library-header {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 20px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .search-panel {
+          background: white;
+          border-radius: 10px;
+          padding: 20px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+          margin-bottom: 20px;
+        }
+        .category-card {
+          background: white;
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          cursor: pointer;
+        }
+        .category-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .performance-indicator {
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          background: rgba(0,150,0,0.8);
+          color: white;
+          padding: 5px 10px;
+          border-radius: 15px;
+          font-size: 12px;
+          z-index: 2000;
+        }
       "))
     ),
     
@@ -879,54 +957,6 @@ ui <- dashboardPage(
       # Enhanced Library Tab - World-Class Document Management
       tabItem(tabName = "library",
         
-        # Custom CSS for enhanced styling
-        tags$head(
-          tags$style(HTML("
-            .library-header {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              color: white;
-              padding: 20px;
-              border-radius: 10px;
-              margin-bottom: 20px;
-              box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            }
-            
-            .search-panel {
-              background: white;
-              border-radius: 10px;
-              padding: 20px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-              margin-bottom: 20px;
-            }
-            
-            .category-card {
-              background: white;
-              border-radius: 8px;
-              padding: 15px;
-              margin: 10px 0;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-              transition: transform 0.2s ease, box-shadow 0.2s ease;
-              cursor: pointer;
-            }
-            
-            .category-card:hover {
-              transform: translateY(-2px);
-              box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            }
-            
-            .performance-indicator {
-              position: fixed;
-              top: 10px;
-              right: 10px;
-              background: rgba(0,150,0,0.8);
-              color: white;
-              padding: 5px 10px;
-              border-radius: 15px;
-              font-size: 12px;
-              z-index: 2000;
-            }
-          "))
-        ),
         
         # Header Section
         div(class = "library-header",
