@@ -9,6 +9,74 @@ library(dplyr)
 # Global connection pool
 db_pool <- NULL
 
+#' Get column mapping for dynamic database queries
+#' @return List with table name and column mappings
+get_column_mapping <- function() {
+  if (is.null(db_pool)) {
+    return(NULL)
+  }
+  
+  tryCatch({
+    conn <- poolCheckout(db_pool)
+    on.exit(poolReturn(conn))
+    
+    # Find documents table
+    tables <- dbListTables(conn)
+    documents_table <- if ("documents" %in% tables) "documents" else {
+      for (table in tables) {
+        if (grepl("document", table, ignore.case = TRUE)) return(table)
+      }
+      "documents"  # fallback
+    }
+    
+    # Get column information
+    columns_info <- dbGetQuery(conn, paste0("SELECT column_name FROM information_schema.columns WHERE table_name = '", documents_table, "'"))
+    available_columns <- columns_info$column_name
+    
+    # Map columns to standardized names
+    mapping <- list(
+      table = documents_table,
+      columns = list(
+        id = if ("id" %in% available_columns) "id" else NULL,
+        title = if ("titulo" %in% available_columns) "titulo" 
+                else if ("title" %in% available_columns) "title" 
+                else "title",
+        type = if ("tipo" %in% available_columns) "tipo" 
+               else if ("type" %in% available_columns) "type"
+               else if ("category" %in% available_columns) "category" 
+               else if ("document_type" %in% available_columns) "document_type"
+               else "tipo",
+        state = if ("estado" %in% available_columns) "estado" 
+                else if ("state" %in% available_columns) "state"
+                else if ("state_code" %in% available_columns) "state_code"
+                else "estado",
+        date = if ("data_publicacao" %in% available_columns) "data_publicacao" 
+               else if ("date" %in% available_columns) "date"
+               else if ("publication_date" %in% available_columns) "publication_date"
+               else if ("event_date" %in% available_columns) "event_date"
+               else "data_publicacao",
+        url = if ("url" %in% available_columns) "url" 
+              else if ("source_url" %in% available_columns) "source_url"
+              else "url",
+        urn = if ("urn" %in% available_columns) "urn" else "urn",
+        content = if ("conteudo" %in% available_columns) "conteudo"
+                  else if ("description" %in% available_columns) "description"
+                  else if ("summary" %in% available_columns) "summary"
+                  else "description",
+        municipality = if ("municipio" %in% available_columns) "municipio"
+                       else if ("municipality" %in% available_columns) "municipality"
+                       else "municipio"
+      )
+    )
+    
+    return(mapping)
+    
+  }, error = function(e) {
+    cat("ERROR: Failed to get column mapping:", e$message, "\n")
+    return(NULL)
+  })
+}
+
 #' Initialize database connection pool
 #' @return TRUE if successful, FALSE otherwise
 init_database <- function() {
@@ -149,7 +217,29 @@ test_database_connection <- function() {
     
     if (length(missing_tables) > 0) {
       cat("⚠️ Missing tables:", paste(missing_tables, collapse = ", "), "\n")
+      
+      # Check if main documents table exists with any name
+      for (table in tables) {
+        if (grepl("document", table, ignore.case = TRUE)) {
+          cat("Found documents table:", table, "\n")
+          # Check column structure of documents table
+          columns <- dbGetQuery(conn, paste0("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '", table, "' ORDER BY ordinal_position"))
+          cat("Columns in", table, ":\n")
+          for (i in 1:nrow(columns)) {
+            cat("  -", columns$column_name[i], "(", columns$data_type[i], ")\n")
+          }
+        }
+      }
       return(FALSE)
+    }
+    
+    # Check column structure of documents table
+    cat("Checking column structure of documents table:\n")
+    columns <- dbGetQuery(conn, "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'documents' ORDER BY ordinal_position")
+    if (nrow(columns) > 0) {
+      for (i in 1:nrow(columns)) {
+        cat("  -", columns$column_name[i], "(", columns$data_type[i], ")\n")
+      }
     }
     
     # Check row counts
@@ -176,40 +266,138 @@ get_documents <- function(limit = 100) {
   }
   
   tryCatch({
-    query <- "
-      SELECT 
-        id,
-        titulo,
-        tipo,
-        estado,
-        data_publicacao,
-        url,
-        urn
-      FROM documents 
-      WHERE titulo IS NOT NULL 
-      ORDER BY data_publicacao DESC NULLS LAST
+    # First check which table and columns exist
+    conn <- poolCheckout(db_pool)
+    on.exit(poolReturn(conn))
+    
+    # Check available tables
+    tables <- dbListTables(conn)
+    documents_table <- NULL
+    
+    if ("documents" %in% tables) {
+      documents_table <- "documents"
+    } else {
+      # Look for alternative table names
+      for (table in tables) {
+        if (grepl("document", table, ignore.case = TRUE)) {
+          documents_table <- table
+          break
+        }
+      }
+    }
+    
+    if (is.null(documents_table)) {
+      cat("ERROR: No documents table found in database\n")
+      return(NULL)
+    }
+    
+    # Check column structure
+    columns_info <- dbGetQuery(conn, paste0("SELECT column_name FROM information_schema.columns WHERE table_name = '", documents_table, "'"))
+    available_columns <- columns_info$column_name
+    
+    cat("DEBUG: Available columns in", documents_table, ":", paste(available_columns, collapse = ", "), "\n")
+    
+    # Map column names (check both Portuguese and English variants)
+    column_mapping <- list(
+      id = if ("id" %in% available_columns) "id" else NULL,
+      title = if ("titulo" %in% available_columns) "titulo" 
+              else if ("title" %in% available_columns) "title" 
+              else NULL,
+      type = if ("tipo" %in% available_columns) "tipo" 
+             else if ("type" %in% available_columns) "type"
+             else if ("category" %in% available_columns) "category"
+             else if ("document_type" %in% available_columns) "document_type"
+             else NULL,
+      state = if ("estado" %in% available_columns) "estado" 
+              else if ("state" %in% available_columns) "state"
+              else if ("state_code" %in% available_columns) "state_code"
+              else NULL,
+      date = if ("data_publicacao" %in% available_columns) "data_publicacao" 
+             else if ("date" %in% available_columns) "date"
+             else if ("publication_date" %in% available_columns) "publication_date"
+             else if ("event_date" %in% available_columns) "event_date"
+             else NULL,
+      url = if ("url" %in% available_columns) "url" 
+            else if ("source_url" %in% available_columns) "source_url"
+            else NULL,
+      urn = if ("urn" %in% available_columns) "urn" else NULL,
+      summary = if ("resumo" %in% available_columns) "resumo"
+                else if ("summary" %in% available_columns) "summary"
+                else if ("description" %in% available_columns) "description"
+                else NULL,
+      municipality = if ("municipio" %in% available_columns) "municipio"
+                     else if ("municipality" %in% available_columns) "municipality"
+                     else NULL
+    )
+    
+    # Build SELECT statement with available columns
+    select_parts <- c()
+    for (alias in names(column_mapping)) {
+      col_name <- column_mapping[[alias]]
+      if (!is.null(col_name)) {
+        if (alias != col_name) {
+          select_parts <- c(select_parts, paste0(col_name, " AS ", alias))
+        } else {
+          select_parts <- c(select_parts, col_name)
+        }
+      } else {
+        # Add NULL placeholder for missing columns
+        select_parts <- c(select_parts, paste0("NULL AS ", alias))
+      }
+    }
+    
+    # Build the query
+    query <- paste0("
+      SELECT ", paste(select_parts, collapse = ",\n        "), "
+      FROM ", documents_table, " 
+      WHERE ", ifelse(!is.null(column_mapping$title), column_mapping$title, "1=1"), " IS NOT NULL 
+      ORDER BY ", ifelse(!is.null(column_mapping$date), 
+                        paste0(column_mapping$date, " DESC NULLS LAST"), 
+                        "1"), "
       LIMIT $1
-    "
+    ")
+    
+    cat("DEBUG: Generated query:\n", query, "\n")
     
     result <- dbGetQuery(db_pool, query, params = list(limit))
     
     # Clean up the data
     if (nrow(result) > 0) {
-      # Convert dates
-      if ("data_publicacao" %in% names(result)) {
-        result$data_publicacao <- as.Date(result$data_publicacao)
+      # Convert dates - handle multiple possible date columns
+      date_columns <- c("date", "data_publicacao", "publication_date", "event_date")
+      for (date_col in date_columns) {
+        if (date_col %in% names(result)) {
+          result[[date_col]] <- as.Date(result[[date_col]])
+        }
       }
       
       # Clean up missing values
       result[is.na(result)] <- ""
       
-      cat("Retrieved", nrow(result), "documents from database\n")
+      cat("✅ Successfully retrieved", nrow(result), "documents from database\n")
+      
+      # Standardize column names for compatibility
+      if ("title" %in% names(result) && !"titulo" %in% names(result)) {
+        result$titulo <- result$title
+      }
+      if ("type" %in% names(result) && !"tipo" %in% names(result)) {
+        result$tipo <- result$type
+      }
+      if ("state" %in% names(result) && !"estado" %in% names(result)) {
+        result$estado <- result$state
+      }
+      if ("date" %in% names(result) && !"data_publicacao" %in% names(result)) {
+        result$data_publicacao <- result$date
+      }
+      
+    } else {
+      cat("⚠️ Query returned 0 results\n")
     }
     
     return(result)
     
   }, error = function(e) {
-    cat("Error retrieving documents:", e$message, "\n")
+    cat("❌ Error retrieving documents:", e$message, "\n")
     return(NULL)
   })
 }
@@ -230,44 +418,70 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
   }
   
   tryCatch({
+    # Get column mapping first
+    conn <- poolCheckout(db_pool)
+    on.exit(poolReturn(conn))
+    
+    # Check available tables
+    tables <- dbListTables(conn)
+    documents_table <- if ("documents" %in% tables) "documents" else {
+      for (table in tables) {
+        if (grepl("document", table, ignore.case = TRUE)) return(table)
+      }
+      "documents"  # fallback
+    }
+    
+    # Check column structure
+    columns_info <- dbGetQuery(conn, paste0("SELECT column_name FROM information_schema.columns WHERE table_name = '", documents_table, "'"))
+    available_columns <- columns_info$column_name
+    
+    # Map column names dynamically
+    title_col <- if ("titulo" %in% available_columns) "titulo" else if ("title" %in% available_columns) "title" else "title"
+    type_col <- if ("tipo" %in% available_columns) "tipo" else if ("type" %in% available_columns) "type" else if ("category" %in% available_columns) "category" else "tipo"
+    state_col <- if ("estado" %in% available_columns) "estado" else if ("state" %in% available_columns) "state" else if ("state_code" %in% available_columns) "state_code" else "estado"
+    date_col <- if ("data_publicacao" %in% available_columns) "data_publicacao" else if ("date" %in% available_columns) "date" else if ("publication_date" %in% available_columns) "publication_date" else "data_publicacao"
+    content_col <- if ("conteudo" %in% available_columns) "conteudo" else if ("description" %in% available_columns) "description" else if ("summary" %in% available_columns) "summary" else "description"
+    url_col <- if ("url" %in% available_columns) "url" else if ("source_url" %in% available_columns) "source_url" else "url"
+    urn_col <- if ("urn" %in% available_columns) "urn" else "urn"
+    
     # Build dynamic query with ranking
     has_search_text <- nchar(search_text) > 0
     
     if (has_search_text) {
-      base_query <- "
+      base_query <- paste0("
         SELECT 
           id,
-          titulo,
-          tipo,
-          estado,
-          data_publicacao,
-          url,
-          urn,
-          conteudo,
+          ", title_col, " AS titulo,
+          ", type_col, " AS tipo,
+          ", state_col, " AS estado,
+          ", date_col, " AS data_publicacao,
+          ", url_col, " AS url,
+          ", urn_col, " AS urn,
+          ", content_col, " AS conteudo,
           CASE 
-            WHEN titulo ILIKE $1 THEN 3
-            WHEN conteudo ILIKE $1 THEN 1
+            WHEN ", title_col, " ILIKE $1 THEN 3
+            WHEN ", content_col, " ILIKE $1 THEN 1
             ELSE 0
           END as relevance_score
-        FROM documents 
-        WHERE (titulo ILIKE $1 OR conteudo ILIKE $1)"
+        FROM ", documents_table, " 
+        WHERE (", title_col, " ILIKE $1 OR ", content_col, " ILIKE $1)")
       
       params <- list(paste0("%", search_text, "%"))
       param_count <- 1
     } else {
-      base_query <- "
+      base_query <- paste0("
         SELECT 
           id,
-          titulo,
-          tipo,
-          estado,
-          data_publicacao,
-          url,
-          urn,
-          conteudo,
+          ", title_col, " AS titulo,
+          ", type_col, " AS tipo,
+          ", state_col, " AS estado,
+          ", date_col, " AS data_publicacao,
+          ", url_col, " AS url,
+          ", urn_col, " AS urn,
+          ", content_col, " AS conteudo,
           0 as relevance_score
-        FROM documents 
-        WHERE 1=1"
+        FROM ", documents_table, " 
+        WHERE 1=1")
       
       params <- list()
       param_count <- 0
@@ -277,35 +491,35 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
     if (!is.null(document_types) && length(document_types) > 0) {
       # Use simple string formatting for IN clauses (safer approach)
       quoted_types <- paste0("'", gsub("'", "''", document_types), "'", collapse = ", ")
-      base_query <- paste(base_query, "AND tipo IN (", quoted_types, ")")
+      base_query <- paste(base_query, "AND", type_col, "IN (", quoted_types, ")")
     }
     
     # Add state filter
     if (!is.null(states) && length(states) > 0) {
       # Use simple string formatting for IN clauses
       quoted_states <- paste0("'", gsub("'", "''", states), "'", collapse = ", ")
-      base_query <- paste(base_query, "AND estado IN (", quoted_states, ")")
+      base_query <- paste(base_query, "AND", state_col, "IN (", quoted_states, ")")
     }
     
     # Add date range filter
     if (!is.null(date_from)) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND data_publicacao >= $", param_count, sep="")
+      base_query <- paste(base_query, "AND", date_col, ">= $", param_count, sep="")
       params[[param_count]] <- date_from
     }
     
     if (!is.null(date_to)) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND data_publicacao <= $", param_count, sep="")
+      base_query <- paste(base_query, "AND", date_col, "<= $", param_count, sep="")
       params[[param_count]] <- date_to
     }
     
     # Add ordering and limit - rank by relevance first, then by date
     param_count <- param_count + 1
     if (has_search_text) {
-      base_query <- paste(base_query, "ORDER BY relevance_score DESC, data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+      base_query <- paste(base_query, "ORDER BY relevance_score DESC,", date_col, "DESC NULLS LAST LIMIT $", param_count, sep="")
     } else {
-      base_query <- paste(base_query, "ORDER BY data_publicacao DESC NULLS LAST LIMIT $", param_count, sep="")
+      base_query <- paste(base_query, "ORDER BY", date_col, "DESC NULLS LAST LIMIT $", param_count, sep="")
     }
     params[[param_count]] <- limit
     
@@ -367,12 +581,34 @@ get_document_types <- function() {
   }
   
   tryCatch({
-    result <- dbGetQuery(db_pool, "
-      SELECT DISTINCT tipo 
-      FROM documents 
-      WHERE tipo IS NOT NULL AND tipo != '' 
-      ORDER BY tipo
-    ")
+    # Get column mapping
+    conn <- poolCheckout(db_pool)
+    on.exit(poolReturn(conn))
+    
+    tables <- dbListTables(conn)
+    documents_table <- if ("documents" %in% tables) "documents" else {
+      for (table in tables) {
+        if (grepl("document", table, ignore.case = TRUE)) return(table)
+      }
+      "documents"
+    }
+    
+    columns_info <- dbGetQuery(conn, paste0("SELECT column_name FROM information_schema.columns WHERE table_name = '", documents_table, "'"))
+    available_columns <- columns_info$column_name
+    
+    type_col <- if ("tipo" %in% available_columns) "tipo" 
+                else if ("type" %in% available_columns) "type"
+                else if ("category" %in% available_columns) "category" 
+                else if ("document_type" %in% available_columns) "document_type"
+                else "tipo"
+    
+    query <- paste0("
+      SELECT DISTINCT ", type_col, " as tipo
+      FROM ", documents_table, " 
+      WHERE ", type_col, " IS NOT NULL AND ", type_col, " != '' 
+      ORDER BY ", type_col)
+    
+    result <- dbGetQuery(db_pool, query)
     
     if (nrow(result) > 0) {
       cat("DEBUG: Found document types:", paste(result$tipo, collapse = ", "), "\n")
@@ -396,12 +632,33 @@ get_states <- function() {
   }
   
   tryCatch({
-    result <- dbGetQuery(db_pool, "
-      SELECT DISTINCT estado 
-      FROM documents 
-      WHERE estado IS NOT NULL AND estado != '' 
-      ORDER BY estado
-    ")
+    # Get column mapping
+    conn <- poolCheckout(db_pool)
+    on.exit(poolReturn(conn))
+    
+    tables <- dbListTables(conn)
+    documents_table <- if ("documents" %in% tables) "documents" else {
+      for (table in tables) {
+        if (grepl("document", table, ignore.case = TRUE)) return(table)
+      }
+      "documents"
+    }
+    
+    columns_info <- dbGetQuery(conn, paste0("SELECT column_name FROM information_schema.columns WHERE table_name = '", documents_table, "'"))
+    available_columns <- columns_info$column_name
+    
+    state_col <- if ("estado" %in% available_columns) "estado" 
+                 else if ("state" %in% available_columns) "state"
+                 else if ("state_code" %in% available_columns) "state_code"
+                 else "estado"
+    
+    query <- paste0("
+      SELECT DISTINCT ", state_col, " as estado
+      FROM ", documents_table, " 
+      WHERE ", state_col, " IS NOT NULL AND ", state_col, " != '' 
+      ORDER BY ", state_col)
+    
+    result <- dbGetQuery(db_pool, query)
     
     if (nrow(result) > 0) {
       cat("DEBUG: Found states:", paste(result$estado, collapse = ", "), "\n")
@@ -430,28 +687,46 @@ get_document_stats <- function() {
   }
   
   tryCatch({
+    # Get column mapping
+    conn <- poolCheckout(db_pool)
+    on.exit(poolReturn(conn))
+    
+    tables <- dbListTables(conn)
+    documents_table <- if ("documents" %in% tables) "documents" else {
+      for (table in tables) {
+        if (grepl("document", table, ignore.case = TRUE)) return(table)
+      }
+      "documents"
+    }
+    
+    columns_info <- dbGetQuery(conn, paste0("SELECT column_name FROM information_schema.columns WHERE table_name = '", documents_table, "'"))
+    available_columns <- columns_info$column_name
+    
+    type_col <- if ("tipo" %in% available_columns) "tipo" else if ("type" %in% available_columns) "type" else if ("category" %in% available_columns) "category" else "tipo"
+    state_col <- if ("estado" %in% available_columns) "estado" else if ("state" %in% available_columns) "state" else if ("state_code" %in% available_columns) "state_code" else "estado"
+    
     # Total documents
-    total <- dbGetQuery(db_pool, "SELECT COUNT(*) as count FROM documents")$count
+    total <- dbGetQuery(db_pool, paste0("SELECT COUNT(*) as count FROM ", documents_table))$count
     
     # Document types
-    types <- dbGetQuery(db_pool, "
-      SELECT tipo, COUNT(*) as count 
-      FROM documents 
-      WHERE tipo IS NOT NULL AND tipo != ''
-      GROUP BY tipo 
+    types <- dbGetQuery(db_pool, paste0("
+      SELECT ", type_col, " as tipo, COUNT(*) as count 
+      FROM ", documents_table, " 
+      WHERE ", type_col, " IS NOT NULL AND ", type_col, " != ''
+      GROUP BY ", type_col, " 
       ORDER BY count DESC 
       LIMIT 10
-    ")
+    "))
     
     # States distribution
-    states <- dbGetQuery(db_pool, "
-      SELECT estado, COUNT(*) as count 
-      FROM documents 
-      WHERE estado IS NOT NULL AND estado != ''
-      GROUP BY estado 
+    states <- dbGetQuery(db_pool, paste0("
+      SELECT ", state_col, " as estado, COUNT(*) as count 
+      FROM ", documents_table, " 
+      WHERE ", state_col, " IS NOT NULL AND ", state_col, " != ''
+      GROUP BY ", state_col, " 
       ORDER BY count DESC 
       LIMIT 10
-    ")
+    "))
     
     return(list(
       total_documents = total,
