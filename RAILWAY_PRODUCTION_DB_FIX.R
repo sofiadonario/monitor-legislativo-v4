@@ -386,19 +386,19 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
       log_railway_db("WARNING", sprintf("Could not retrieve column info: %s", e$message))
     })
     
-    # Build query with actual column names from the documents view
-    # Based on the error logs, it seems the view uses English column names
+    # Build query with actual column names from the documents table
+    # Based on the diagnostic logs, use only existing columns
     base_query <- sprintf("
       SELECT 
         id,
         titulo as title,
         tipo as category,
-        estado as state, 
-        data_publicacao as date,
-        url,
-        COALESCE(ementa, conteudo, '') as summary,
-        urn,
-        COALESCE(localidade, '') as municipality,
+        COALESCE(estado, '') as state, 
+        COALESCE(data_publicacao, data) as date,
+        COALESCE(url, '') as url,
+        COALESCE(ementa, '') as summary,
+        COALESCE(urn, '') as urn,
+        COALESCE(municipio, localidade, '') as municipality,
         tipo as document_type
       FROM %s
       WHERE titulo IS NOT NULL AND titulo != ''", main_table)
@@ -411,7 +411,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     # Add filters
     if (search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
       param_count <- param_count + 1
-      where_conditions <- c(where_conditions, sprintf("(titulo ILIKE $%d OR COALESCE(ementa, conteudo, '') ILIKE $%d)", param_count, param_count))
+      where_conditions <- c(where_conditions, sprintf("(titulo ILIKE $%d OR COALESCE(ementa, '') ILIKE $%d)", param_count, param_count))
       params[[param_count]] <- paste0("%", search_term, "%")
     }
     
