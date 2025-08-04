@@ -378,18 +378,28 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     
     log_railway_db("INFO", sprintf("Using main table: %s with %s documents", main_table, format(max_count, big.mark = ",")))
     
-    # Build simpler, more reliable query for the identified main table
+    # First, let's check what columns actually exist in the table
+    tryCatch({
+      column_check <- dbGetQuery(railway_db_pool, sprintf("SELECT column_name FROM information_schema.columns WHERE table_name = '%s' ORDER BY ordinal_position", main_table))
+      log_railway_db("INFO", sprintf("Columns in %s: %s", main_table, paste(column_check$column_name, collapse=", ")))
+    }, error = function(e) {
+      log_railway_db("WARNING", sprintf("Could not retrieve column info: %s", e$message))
+    })
+    
+    # Build query with actual column names from the documents view
+    # Based on the error logs, it seems the view uses English column names
     base_query <- sprintf("
       SELECT 
+        id,
         titulo as title,
-        COALESCE(categoria, tipo, 'Unknown') as category,
-        COALESCE(estado, 'Unknown') as state, 
-        COALESCE(data_publicacao, data, created_at::date) as date,
-        COALESCE(url, '') as url,
-        COALESCE(ementa, resumo, '') as summary,
-        COALESCE(urn, '') as urn,
-        COALESCE(municipio, '') as municipality,
-        COALESCE(tipo, 'Document') as document_type
+        tipo as category,
+        estado as state, 
+        data_publicacao as date,
+        url,
+        COALESCE(ementa, conteudo, '') as summary,
+        urn,
+        COALESCE(localidade, '') as municipality,
+        tipo as document_type
       FROM %s
       WHERE titulo IS NOT NULL AND titulo != ''", main_table)
     
@@ -401,7 +411,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     # Add filters
     if (search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
       param_count <- param_count + 1
-      where_conditions <- c(where_conditions, sprintf("(titulo ILIKE $%d OR ementa ILIKE $%d)", param_count, param_count))
+      where_conditions <- c(where_conditions, sprintf("(titulo ILIKE $%d OR COALESCE(ementa, conteudo, '') ILIKE $%d)", param_count, param_count))
       params[[param_count]] <- paste0("%", search_term, "%")
     }
     
@@ -425,7 +435,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
       if(category %in% names(category_mapping)) {
         target_categories <- category_mapping[[category]]
         placeholders <- paste(sprintf("$%d", param_count:(param_count + length(target_categories) - 1)), collapse = ",")
-        where_conditions <- c(where_conditions, sprintf("categoria IN (%s)", placeholders))
+        where_conditions <- c(where_conditions, sprintf("tipo IN (%s)", placeholders))
         for(cat in target_categories) {
           params[[param_count]] <- cat
           param_count <- param_count + 1
