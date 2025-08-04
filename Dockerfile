@@ -19,6 +19,13 @@ WORKDIR /srv/shiny-server
 COPY app.R ./
 COPY RAILWAY_PRODUCTION_DB_FIX.R ./
 
+# Create directories for data files
+RUN mkdir -p scripts analytics_output
+
+# Copy CSV data files
+COPY scripts/*.csv ./scripts/
+COPY analytics_output/*.csv ./analytics_output/
+
 # Make sure shiny server can read the files
 RUN chmod -R 755 /srv/shiny-server
 
