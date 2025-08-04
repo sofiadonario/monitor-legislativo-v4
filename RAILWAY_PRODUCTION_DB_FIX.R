@@ -350,55 +350,129 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     log_railway_db("INFO", sprintf("Querying documents: category=%s, search='%s', state=%s, limit=%d", 
                                   category, substr(search_term, 1, 20), state, limit))
     
-    # Build dynamic query
-    base_query <- "
+    # First, identify which table has the most documents
+    table_candidates <- c("lexml_parsed_enhanced", "documents", "legislative_data", "brazilian_legislative_complete")
+    main_table <- NULL
+    max_count <- 0
+    
+    for(table_name in table_candidates) {
+      tryCatch({
+        # Check if table exists and count rows
+        count_query <- sprintf("SELECT COUNT(*) as count FROM %s WHERE titulo IS NOT NULL AND titulo != ''", table_name)
+        result <- dbGetQuery(railway_db_pool, count_query)
+        
+        if(nrow(result) > 0 && result$count > max_count) {
+          max_count <- result$count  
+          main_table <- table_name
+          log_railway_db("INFO", sprintf("Found table %s with %s documents", table_name, format(result$count, big.mark = ",")))
+        }
+      }, error = function(e) {
+        # Table doesn't exist or query failed, continue
+      })
+    }
+    
+    if(is.null(main_table)) {
+      log_railway_db("ERROR", "No valid document table found")
+      return(get_fallback_documents(category, search_term, state, limit))
+    }
+    
+    log_railway_db("INFO", sprintf("Using main table: %s with %s documents", main_table, format(max_count, big.mark = ",")))
+    
+    # Build simpler, more reliable query for the identified main table
+    base_query <- sprintf("
       SELECT 
-        COALESCE(titulo, title, '') as title,
-        COALESCE(categoria, category, tipo, 'Unknown') as category,
-        COALESCE(estado, state, 'Unknown') as state, 
+        titulo as title,
+        COALESCE(categoria, tipo, 'Unknown') as category,
+        COALESCE(estado, 'Unknown') as state, 
         COALESCE(data_publicacao, data, created_at::date) as date,
         COALESCE(url, '') as url,
-        COALESCE(ementa, summary, resumo, '') as summary,
+        COALESCE(ementa, resumo, '') as summary,
         COALESCE(urn, '') as urn,
-        COALESCE(municipio, municipality, '') as municipality,
-        COALESCE(tipo, document_type, 'Document') as document_type
-      FROM (
-        SELECT * FROM documents
-        UNION ALL 
-        SELECT titulo, categoria, estado, data_publicacao, url, ementa, urn, municipio, tipo FROM lexml_parsed_enhanced
-        UNION ALL
-        SELECT titulo, categoria, estado, data, url, resumo, urn, municipio, tipo FROM legislative_data
-      ) combined_docs
-      WHERE titulo IS NOT NULL AND titulo != ''
-    "
+        COALESCE(municipio, '') as municipality,
+        COALESCE(tipo, 'Document') as document_type
+      FROM %s
+      WHERE titulo IS NOT NULL AND titulo != ''", main_table)
     
+    # Build parameters list for safe parameterized queries
+    where_conditions <- c()
     params <- list()
     param_count <- 0
     
     # Add filters
-    if (search_term != "" && !is.null(search_term)) {
+    if (search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND (titulo ILIKE $", param_count, " OR ementa ILIKE $", param_count, ")", sep="")
+      where_conditions <- c(where_conditions, sprintf("(titulo ILIKE $%d OR ementa ILIKE $%d)", param_count, param_count))
       params[[param_count]] <- paste0("%", search_term, "%")
     }
     
     if (state != "all" && !is.null(state)) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "AND estado = $", param_count, sep="")
+      where_conditions <- c(where_conditions, sprintf("estado = $%d", param_count))
       params[[param_count]] <- state
     }
     
+    if (category != "all" && !is.null(category)) {
+      param_count <- param_count + 1
+      # Map category names
+      category_mapping <- list(
+        "jurisprudence" = c("Jurisprudência", "Jurisprudencia", "jurisprudencia"),
+        "legislation" = c("Legislação", "Legislacao", "legislacao"), 
+        "outros" = c("Outros", "outros", "Other"),
+        "doutrina" = c("Doutrina", "doutrina", "doctrine"),
+        "proposicoes" = c("Proposições", "Proposicoes", "proposicoes", "proposals")
+      )
+      
+      if(category %in% names(category_mapping)) {
+        target_categories <- category_mapping[[category]]
+        placeholders <- paste(sprintf("$%d", param_count:(param_count + length(target_categories) - 1)), collapse = ",")
+        where_conditions <- c(where_conditions, sprintf("categoria IN (%s)", placeholders))
+        for(cat in target_categories) {
+          params[[param_count]] <- cat
+          param_count <- param_count + 1
+        }
+        param_count <- param_count - 1  # Adjust for the loop increment
+      }
+    }
+    
+    # Add additional WHERE conditions
+    if(length(where_conditions) > 0) {
+      base_query <- paste(base_query, "AND", paste(where_conditions, collapse = " AND "))
+    }
+    
     # Add ordering and limit
-    base_query <- paste(base_query, "ORDER BY date DESC NULLS LAST")
+    base_query <- paste(base_query, "ORDER BY data_publicacao DESC NULLS LAST, titulo ASC")
+    
+    # Add offset and limit
+    if(offset > 0) {
+      param_count <- param_count + 1
+      base_query <- paste(base_query, "OFFSET $", param_count, sep="")
+      params[[param_count]] <- offset
+    }
     
     param_count <- param_count + 1
     base_query <- paste(base_query, "LIMIT $", param_count, sep="")
     params[[param_count]] <- limit
     
-    # Execute query
-    result <- dbGetQuery(railway_db_pool, base_query, params = params)
+    log_railway_db("INFO", sprintf("Executing query with %d parameters", length(params)))
     
-    log_railway_db("SUCCESS", sprintf("Retrieved %d documents from Railway database", nrow(result)))
+    # Execute query
+    if(length(params) > 0) {
+      result <- dbGetQuery(railway_db_pool, base_query, params = params)
+    } else {
+      result <- dbGetQuery(railway_db_pool, base_query)
+    }
+    
+    log_railway_db("SUCCESS", sprintf("Retrieved %d documents from Railway database table %s", nrow(result), main_table))
+    
+    # If we got fewer results than expected and it's exactly 5, log this as suspicious
+    if(nrow(result) == 5 && max_count > 100) {
+      log_railway_db("WARNING", sprintf("Query returned exactly 5 results despite %s documents in table - investigating...", format(max_count, big.mark = ",")))
+      
+      # Try a simpler query to debug
+      simple_query <- sprintf("SELECT COUNT(*) as count FROM %s WHERE titulo IS NOT NULL AND titulo != ''", main_table)
+      debug_result <- dbGetQuery(railway_db_pool, simple_query)
+      log_railway_db("INFO", sprintf("Debug count query returned: %s documents", format(debug_result$count, big.mark = ",")))
+    }
     
     return(result)
     
@@ -410,34 +484,104 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
 
 #' Fallback document data when database is unavailable
 get_fallback_documents <- function(category = "all", search_term = "", state = "all", limit = 100) {
-  log_railway_db("INFO", "Using fallback document data")
+  log_railway_db("WARNING", "🚨 DATABASE CONNECTION FAILED - Using expanded fallback dataset")
+  log_railway_db("INFO", "This indicates a connection issue with Railway PostgreSQL")
   
+  # Expanded fallback dataset with more realistic data
   fallback_docs <- data.frame(
     title = c(
-      "Lei Federal 14.133/2021 - Nova Lei de Licitações e Contratos",
-      "STF - ADPF 789 - Marco Civil da Internet e Liberdade de Expressão", 
-      "Lei Complementar 182/2021 - Marco Legal das Startups",
-      "Decreto Federal 10.881/2021 - Governo Digital",
-      "Lei 14.129/2021 - Princípios, Regras e Instrumentos para o Governo Digital"
+      "Lei Federal 14.133/2021 - Nova Lei de Licitações e Contratos Administrativos",
+      "STF - ADPF 789 - Marco Civil da Internet e Liberdade de Expressão Digital", 
+      "Lei Complementar 182/2021 - Marco Legal das Startups e Inovação",
+      "Decreto Federal 10.881/2021 - Estratégia Nacional de Governo Digital",
+      "Lei 14.129/2021 - Princípios e Regras para Governo Digital no Brasil",
+      "Resolução CONTRAN 886/2021 - Regulamentação de Transporte de Cargas",
+      "Lei Federal 13.103/2015 - Regulamentação dos Motoristas Profissionais",
+      "Decreto Estadual SP 64.684/2019 - Logística Urbana Sustentável",
+      "Portaria ANTT 3.665/2020 - Registro Nacional de Transportadores",
+      "Lei Complementar 87/1996 - ICMS sobre Combustíveis e Transporte",
+      "Resolução ANP 816/2020 - Qualidade de Combustíveis para Transporte",
+      "Lei Federal 12.619/2012 - Jornada de Trabalho de Motoristas",
+      "Decreto Federal 9.503/1997 - Código de Trânsito Brasileiro",
+      "Lei Estadual RJ 7.194/2016 - Política de Transporte Sustentável",
+      "Portaria MT 2.080/2020 - Infraestrutura de Transportes",
+      "Resolução CONTRAN 789/2020 - Segurança Veicular em Transportes",
+      "Lei Municipal SP 16.050/2014 - Plano Diretor e Mobilidade Urbana",
+      "Decreto Federal 10.296/2020 - Marco Regulatório de Cabotagem",
+      "Lei Federal 14.368/2022 - Política Nacional de Biocombustíveis",
+      "Portaria IBAMA 443/2021 - Controle de Emissões Veiculares"
     ),
-    category = c("Legislação", "Jurisprudência", "Legislação", "Legislação", "Legislação"),
-    state = c("DF", "DF", "DF", "DF", "DF"),
-    date = seq(Sys.Date()-60, Sys.Date(), length.out = 5),
-    url = rep("", 5),
+    category = c("Legislação", "Jurisprudência", "Legislação", "Legislação", "Legislação",
+                "Legislação", "Legislação", "Legislação", "Legislação", "Legislação",
+                "Legislação", "Legislação", "Legislação", "Legislação", "Legislação",
+                "Legislação", "Legislação", "Legislação", "Legislação", "Legislação"),
+    state = c("DF", "DF", "DF", "DF", "DF", "DF", "DF", "SP", "DF", "DF",
+              "DF", "DF", "DF", "RJ", "DF", "DF", "SP", "DF", "DF", "DF"),
+    date = seq(Sys.Date()-365, Sys.Date(), length.out = 20),
+    url = rep("", 20),
     summary = c(
-      "Nova lei de licitações que moderniza e simplifica os processos de contratação pública",
-      "Ação que discute limites da regulação de conteúdo em plataformas digitais",
-      "Marco regulatório para fomento ao ambiente de inovação no país", 
-      "Regulamentação da estratégia de governo digital federal",
-      "Lei que estabelece princípios e regras para a transformação digital do governo"
+      "Nova lei de licitações que moderniza e simplifica os processos de contratação pública no Brasil",
+      "Ação que discute limites da regulação de conteúdo em plataformas digitais e liberdade de expressão",
+      "Marco regulatório para fomento ao ambiente de inovação e empreendedorismo no país", 
+      "Regulamentação da estratégia de governo digital federal e transformação da administração pública",
+      "Lei que estabelece princípios e regras para a transformação digital do governo brasileiro",
+      "Regulamentação específica para transporte de cargas perigosas e equipamentos especiais",
+      "Lei que regulamenta a profissão de motorista, estabelecendo direitos e jornada de trabalho",
+      "Decreto estadual sobre logística urbana sustentável na região metropolitana de São Paulo",
+      "Regulamentação do registro nacional de transportadores rodoviários de carga",
+      "Lei complementar que estabelece normas sobre ICMS incidente sobre combustíveis",
+      "Resolução sobre especificações de qualidade para combustíveis utilizados em transporte",
+      "Lei que disciplina a jornada de trabalho e tempo de direção do motorista profissional",
+      "Código de Trânsito Brasileiro com regras fundamentais para circulação de veículos",
+      "Política estadual para promoção do transporte sustentável no Rio de Janeiro",
+      "Portaria sobre planejamento e desenvolvimento da infraestrutura de transportes",
+      "Regulamentação de equipamentos obrigatórios de segurança em veículos de transporte",
+      "Plano diretor municipal com diretrizes para mobilidade urbana sustentável",
+      "Marco regulatório da navegação de cabotagem e transporte marítimo nacional",
+      "Política nacional para incentivo à produção e uso de biocombustíveis",
+      "Controle de emissões atmosféricas por veículos automotores e fiscalização ambiental"
     ),
-    urn = rep("", 5),
-    municipality = rep("", 5),
-    document_type = c("Lei", "ADPF", "Lei Complementar", "Decreto", "Lei"),
+    urn = rep("", 20),
+    municipality = c("", "", "", "", "", "", "", "São Paulo", "", "",
+                    "", "", "", "Rio de Janeiro", "", "", "São Paulo", "", "", ""),
+    document_type = c("Lei", "ADPF", "Lei Complementar", "Decreto", "Lei",
+                     "Resolução", "Lei", "Decreto", "Portaria", "Lei Complementar",
+                     "Resolução", "Lei", "Decreto", "Lei", "Portaria",
+                     "Resolução", "Lei", "Decreto", "Lei", "Portaria"),
     stringsAsFactors = FALSE
   )
   
-  return(fallback_docs)
+  # Apply basic filtering if requested
+  filtered_docs <- fallback_docs
+  
+  if(category != "all") {
+    # Apply category filter (basic)
+    if(category == "legislation") {
+      filtered_docs <- fallback_docs[fallback_docs$category == "Legislação", ]
+    } else if(category == "jurisprudence") {
+      filtered_docs <- fallback_docs[fallback_docs$category == "Jurisprudência", ]
+    }
+  }
+  
+  if(state != "all") {
+    filtered_docs <- filtered_docs[filtered_docs$state == state, ]
+  }
+  
+  if(search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
+    search_pattern <- paste0(".*", search_term, ".*")
+    title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
+    summary_match <- grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE)
+    filtered_docs <- filtered_docs[title_match | summary_match, ]
+  }
+  
+  # Apply limit
+  if(nrow(filtered_docs) > limit) {
+    filtered_docs <- filtered_docs[1:limit, ]
+  }
+  
+  log_railway_db("INFO", sprintf("Fallback data returning %d documents (filtered from 20 total)", nrow(filtered_docs)))
+  
+  return(filtered_docs)
 }
 
 #' Get dashboard metrics
@@ -484,17 +628,40 @@ close_railway_database <- function() {
 cat("🚀 RAILWAY POSTGRESQL CONNECTION MODULE LOADED\n")
 cat("🔧 Attempting to establish Railway database connection...\n")
 
-# Initialize connection
-init_success <- init_railway_database()
+# Initialize connection with retry logic
+cat("🔧 Attempting Railway database connection with retry logic...\n")
+init_success <- FALSE
+max_init_attempts <- 3
 
-if (init_success) {
-  cat("✅ RAILWAY DATABASE CONNECTION ESTABLISHED\n")
-  cat("📊 Connection Status:", connection_status$status, "\n")
-  cat("🔌 Connection Method:", connection_status$connection_method, "\n")
-  cat("📄 Documents Available:", format(connection_status$document_count, big.mark = ","), "\n")
-} else {
-  cat("⚠️ RAILWAY DATABASE CONNECTION FAILED - USING FALLBACK MODE\n")
-  cat("📋 Application will continue with limited functionality\n")
+for(attempt in 1:max_init_attempts) {
+  cat(sprintf("🔄 Connection attempt %d/%d\n", attempt, max_init_attempts))
+  
+  init_success <- init_railway_database()
+  
+  if (init_success) {
+    cat("✅ RAILWAY DATABASE CONNECTION ESTABLISHED\n")
+    cat("📊 Connection Status:", connection_status$status, "\n")
+    cat("🔌 Connection Method:", connection_status$connection_method, "\n")
+    cat("📄 Documents Available:", format(connection_status$document_count, big.mark = ","), "\n")
+    break
+  } else {
+    if(attempt < max_init_attempts) {
+      delay <- 5 * attempt  # Progressive delay: 5s, 10s, 15s
+      cat(sprintf("⏳ Connection attempt %d failed, retrying in %d seconds...\n", attempt, delay))
+      Sys.sleep(delay)
+    }
+  }
+}
+
+if (!init_success) {
+  cat("⚠️ RAILWAY DATABASE CONNECTION FAILED AFTER", max_init_attempts, "ATTEMPTS\n")
+  cat("🚨 CRITICAL: Application is running in FALLBACK MODE with limited data\n")
+  cat("📋 Only sample documents will be available in the library\n")
+  cat("🔧 Check Railway service status and database connectivity\n")
+  
+  # Log the final status for debugging
+  cat("📊 Final Connection Status:", connection_status$status, "\n")
+  cat("❌ Error:", if(is.null(connection_status$error)) "Unknown" else connection_status$error, "\n")
 }
 
 cat("🎯 Railway PostgreSQL connection module ready for use\n")
