@@ -349,7 +349,7 @@ if (!database_connection_loaded) {
     database = FALSE,
     last_updated = Sys.time()
   )
-})
+}
 
 cat("📊 All systems loaded\n")
 
