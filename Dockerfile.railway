@@ -30,7 +30,8 @@ RUN install2.r --error --skipinstalled \
 WORKDIR /app
 
 # Copy essential files only
-COPY RAILWAY_DATABASE_CONNECTION_FIX.R ./
+COPY RAILWAY_PRODUCTION_DB_FIX.R ./
+COPY railway_startup.R ./
 COPY app.R ./
 
 # Verify all packages are properly installed

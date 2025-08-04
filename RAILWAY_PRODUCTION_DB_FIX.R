@@ -51,6 +51,14 @@ get_railway_db_config <- function() {
     }
   }
   
+  # Additional Railway-specific debugging
+  railway_env <- Sys.getenv("RAILWAY_ENVIRONMENT")
+  if (railway_env != "") {
+    cat("🚂 Railway Environment Detected:", railway_env, "\n")
+  } else {
+    cat("⚠️ RAILWAY_ENVIRONMENT not set - may not be running on Railway\n")
+  }
+  
   # Method 1: DATABASE_URL (Railway preferred)
   if (railway_env_check$DATABASE_URL != "" && grepl("^postgres", railway_env_check$DATABASE_URL)) {
     cat("✅ Using Railway DATABASE_URL\n")
@@ -77,14 +85,15 @@ get_railway_db_config <- function() {
   cat("⚠️ Railway environment variables not set, using hardcoded credentials\n")
   cat("📡 This indicates Railway environment variable injection failure\n")
   
-  # Try to build DATABASE_URL from hardcoded credentials as fallback
-  hardcoded_url <- "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway"
+  # Railway internal hostname fallback - use the Railway internal service name
+  # This should match the DATABASE_URL provided by Railway service
+  hardcoded_url <- "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@postgres.railway.internal:5432/railway"
   
   return(list(
     method = "HARDCODED",
     connection_string = hardcoded_url,
-    host = "nozomi.proxy.rlwy.net",
-    port = 44844,
+    host = "postgres.railway.internal",
+    port = 5432,
     dbname = "railway", 
     user = "postgres",
     password = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY"
@@ -106,7 +115,7 @@ connect_to_railway_db <- function(config, retry_count = 3) {
           conn <- dbConnect(RPostgres::Postgres(), config$connection_string)
         }, error = function(e) {
           cat("🔄 DATABASE_URL failed, trying individual parameters...\n")
-          # Fallback to individual parameters
+          # Fallback to individual parameters with Railway-optimized settings
           conn <- dbConnect(
             RPostgres::Postgres(),
             host = config$host,
@@ -114,11 +123,13 @@ connect_to_railway_db <- function(config, retry_count = 3) {
             dbname = config$dbname,
             user = config$user,
             password = config$password,
-            connect_timeout = 30,
-            sslmode = "prefer"
+            connect_timeout = 60,
+            sslmode = "require",
+            application_name = "monitor_legislativo_railway"
           )
         })
       } else {
+        # Railway-optimized connection parameters
         conn <- dbConnect(
           RPostgres::Postgres(),
           host = config$host,
@@ -126,8 +137,9 @@ connect_to_railway_db <- function(config, retry_count = 3) {
           dbname = config$dbname,
           user = config$user,
           password = config$password,
-          connect_timeout = 30,
-          sslmode = "prefer"
+          connect_timeout = 60,
+          sslmode = "require",
+          application_name = "monitor_legislativo_railway"
         )
       }
       
