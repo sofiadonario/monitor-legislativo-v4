@@ -35,11 +35,9 @@ FROM rocker/geospatial:4.3.1
 COPY --from=builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 
 # Install only runtime system dependencies
+# Note: rocker/geospatial already includes GDAL, PROJ, and GEOS libraries
 RUN apt-get update && apt-get install -y \
     libpq5 \
-    libgdal32 \
-    libproj25 \
-    libgeos-c1v5 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
