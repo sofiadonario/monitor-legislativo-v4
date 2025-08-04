@@ -41,6 +41,18 @@ archive/
 │   ├── public/                # Static assets
 │   ├── environment.template   # Environment configuration template
 │   └── nixpacks.toml          # Nixpacks configuration
+├── database_fixes/            # Railway Database Connection Fixes
+│   ├── RAILWAY_DATABASE_*_FIX.R     # Database connection fixes
+│   ├── IMMEDIATE_RAILWAY_FIX.sql    # SQL patches
+│   └── DATABASE_ANALYSIS_REPORT.md  # Analysis reports
+├── diagnostic_files/          # System Diagnostics & Tests
+│   ├── startup_diagnostics.R         # System startup tests
+│   ├── railway_diagnostics_results.rds # Diagnostic results
+│   └── database_analysis*.py/R       # Database analysis scripts
+├── config_files/              # Configuration File Backups
+│   ├── nixpacks.toml.backup          # Nixpacks configurations
+│   ├── nixpacks_full.toml            # Full deployment config
+│   └── railway.json                  # Railway deployment config
 ├── temporary/                 # Temporary Files
 │   ├── test_env/              # Python virtual environment
 │   └── venv/                  # Virtual environment files
@@ -109,6 +121,39 @@ Contains deprecated project directories and configurations:
 **Configuration**:
 - `environment.template`: Environment variable template
 - `nixpacks.toml`: Nixpacks build configuration
+
+### **Database Fixes** (`database_fixes/`)
+Contains Railway database connection fixes and patches:
+
+**Railway Database Fixes**:
+- `RAILWAY_DATABASE_CONNECTION_FIX.R`: Database connection improvements
+- `RAILWAY_DATABASE_FINAL_FIX.R`: Final connection fix implementation
+- `RAILWAY_DATABASE_FIX.R`: Original database fix attempts
+- `RAILWAY_DATABASE_FIX_CORRECTED.R`: Corrected database connection
+- `RAILWAY_STARTUP_FIX.R`: Startup sequence fixes
+- `IMMEDIATE_RAILWAY_FIX.sql`: SQL patches for immediate fixes
+- `DATABASE_ANALYSIS_REPORT.md`: Database analysis and diagnosis reports
+
+### **Diagnostic Files** (`diagnostic_files/`)
+Contains system diagnostic scripts and analysis results:
+
+**Diagnostic Scripts**:
+- `startup_diagnostics.R`: System startup diagnostic tests
+- `railway_connection_diagnostics.R`: Railway connection diagnostics
+- `railway_env_diagnostics.R`: Environment variable diagnostics
+- `railway_diagnostics_results.rds`: Saved diagnostic results
+- `database_analysis.py/R`: Database structure analysis scripts
+- `detailed_table_analysis.py`: Table structure analysis
+- `fixed_table_analysis.py`: Fixed analysis implementation
+
+### **Configuration Files** (`config_files/`)
+Contains backup configuration files and deployment settings:
+
+**Configuration Backups**:
+- `nixpacks.toml.backup`: Backup Nixpacks configuration
+- `nixpacks_full.toml`: Full deployment configuration
+- `railway.json`: Railway deployment JSON configuration
+- Alternative deployment configurations and settings
 
 ### **Temporary Files** (`temporary/`)
 Contains temporary files and virtual environments:

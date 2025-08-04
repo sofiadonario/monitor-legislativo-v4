@@ -1,511 +1,392 @@
-# Database Module for Caching Legislative Data
-# Uses SQLite for local storage and caching
+# Database Functions for Monitor Legislativo v4
+# PostgreSQL and Redis integration for R architecture
+
+# Source utility functions
+source("utils.R")
 
 library(DBI)
-library(RSQLite)
+library(RPostgres)
+library(pool)
 library(dplyr)
-library(futile.logger)
+library(config)
 
-# Global database connection
-.db_connection <- new.env()
+# Global connection pool
+if (!exists(".db_pool", envir = .GlobalEnv)) .db_pool <- NULL
+if (!exists("db_pool", envir = .GlobalEnv)) db_pool <- NULL
+.redis_connection <- NULL
 
-# Security and validation functions
-#' Validate and sanitize database inputs
-#' @param input Input value to validate
-#' @param type Expected type ('string', 'date', 'numeric', 'list')
-#' @param max_length Maximum length for strings
-#' @return Validated and sanitized input
-validate_db_input <- function(input, type = "string", max_length = 1000) {
+#' Initialize database connection pool
+#' @return TRUE if successful, FALSE otherwise
+init_database <- function() {
   
-  if (is.null(input)) {
-    return(NULL)
-  }
-  
-  switch(type,
-    "string" = {
-      if (!is.character(input)) {
-        stop("Invalid input: expected character string")
+  tryCatch({
+    # Check for DATABASE_URL first (Railway pattern)
+    database_url <- Sys.getenv("DATABASE_URL")
+    
+    if (nchar(database_url) > 0) {
+      log_event("Using DATABASE_URL for connection")
+      
+      # Parse DATABASE_URL
+      # Format: postgresql://user:password@host:port/dbname
+      parsed <- regmatches(database_url, regexec("postgresql://([^:]+):([^@]+)@([^:]+):([0-9]+)/(.+)", database_url))[[1]]
+      
+      if (length(parsed) == 6) {
+        db_user <- parsed[2]
+        db_password <- parsed[3]
+        db_host <- parsed[4]
+        db_port <- as.numeric(parsed[5])
+        db_name <- parsed[6]
+        
+        log_event(paste("Parsed connection: host=", db_host, ", port=", db_port, ", db=", db_name))
+      } else {
+        stop("Failed to parse DATABASE_URL")
       }
-      # Sanitize string input
-      sanitized <- gsub("[<>\"'&]", "", input)  # Remove potentially dangerous characters
-      if (nchar(sanitized) > max_length) {
-        sanitized <- substr(sanitized, 1, max_length)
-      }
-      return(sanitized)
-    },
-    "date" = {
-      if (!inherits(input, c("Date", "POSIXct", "POSIXt"))) {
-        tryCatch({
-          return(as.Date(input))
-        }, error = function(e) {
-          stop("Invalid date format")
-        })
-      }
-      return(input)
-    },
-    "numeric" = {
-      if (!is.numeric(input)) {
-        tryCatch({
-          return(as.numeric(input))
-        }, error = function(e) {
-          stop("Invalid numeric input")
-        })
-      }
-      return(input)
-    },
-    "list" = {
-      if (!is.list(input) && !is.vector(input)) {
-        stop("Invalid input: expected list or vector")
-      }
-      # Validate each element
-      sanitized_list <- lapply(input, function(x) {
-        validate_db_input(x, "string", max_length)
-      })
-      return(sanitized_list)
-    },
-    stop("Unknown validation type")
-  )
+    } else {
+      # Fall back to config file
+      config_env <- Sys.getenv("R_CONFIG_ACTIVE", "default")
+      app_config <- config::get(config = config_env)
+      
+      db_host <- app_config$database$host
+      db_port <- app_config$database$port
+      db_name <- app_config$database$name
+      db_user <- app_config$database$user
+      db_password <- app_config$database$password
+    }
+    
+    log_event("Initializing database connection pool")
+    
+    # Create PostgreSQL connection pool
+    .db_pool <<- dbPool(
+      drv = RPostgres::Postgres(),
+      host = db_host,
+      port = db_port,
+      dbname = db_name,
+      user = db_user,
+      password = db_password,
+      minSize = 2,
+      maxSize = 10,
+      idleTimeout = 3600  # 1 hour
+      # validationQuery not supported by pool package
+    )
+    db_pool <<- .db_pool
+    
+    # Test connection
+    test_query <- dbGetQuery(.db_pool, "SELECT version()")
+    log_event(paste("Database connected:", substr(test_query$version[1], 1, 50)))
+    
+    # Test if we can query documents view
+    test_count <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")
+    cat("🔍 DIRECT TEST: documents view has", test_count$count[1], "rows\n")
+    
+    # Test a sample query
+    sample_data <- dbGetQuery(.db_pool, "SELECT titulo, tipo, estado FROM documents LIMIT 3")
+    cat("🔍 SAMPLE DATA from documents view:\n")
+    print(sample_data)
+    
+    # Initialize Redis connection if available
+    init_redis()
+    
+    return(TRUE)
+    
+  }, error = function(e) {
+    log_event(paste("Database initialization failed:", e$message), "ERROR")
+    return(FALSE)
+  })
 }
 
-#' Check for SQL injection patterns
-#' @param input String to check
-#' @return TRUE if safe, FALSE if suspicious
-is_safe_input <- function(input) {
-  if (is.null(input)) return(TRUE)
+#' Initialize Redis connection for caching
+#' @return TRUE if successful, FALSE otherwise
+init_redis <- function() {
   
-  # Check for common SQL injection patterns
-  dangerous_patterns <- c(
-    "(?i)(union|select|insert|update|delete|drop|create|alter|exec|execute)",
-    "(?i)(script|javascript|vbscript)",
-    "(?i)(onload|onerror|onclick)",
-    "--",
-    "/\\*",
-    "\\*/"
-  )
+  # Check if Redis packages are available
+  if (!require_package("redux", quiet = TRUE)) {
+    log_event("Redis package not available, using memory cache", "WARN")
+    return(FALSE)
+  }
   
-  for (pattern in dangerous_patterns) {
-    if (grepl(pattern, input, perl = TRUE)) {
-      flog.warn("Suspicious input detected: %s", substr(input, 1, 50))
-      return(FALSE)
+  tryCatch({
+    # Get configuration
+    config_env <- Sys.getenv("R_CONFIG_ACTIVE", "default")
+    app_config <- config::get(config = config_env)
+    
+    log_event("Initializing Redis connection")
+    
+    # Create Redis connection
+    redis_config <- redux::redis_config(
+      host = app_config$cache$host %||% "localhost",
+      port = app_config$cache$port %||% 6379,
+      password = app_config$cache$password
+    )
+    
+    .redis_connection <<- redux::hiredis(redis_config)
+    
+    # Test connection
+    .redis_connection$PING()
+    log_event("Redis connected successfully")
+    
+    return(TRUE)
+    
+  }, error = function(e) {
+    log_event(paste("Redis initialization failed:", e$message), "WARN")
+    .redis_connection <<- NULL
+    return(FALSE)
+  })
+}
+
+#' Get cached data from Redis or memory
+#' @param key Cache key
+#' @return Cached data or NULL
+get_cache <- function(key) {
+  
+  if (!is.null(.redis_connection)) {
+    tryCatch({
+      cached_data <- .redis_connection$GET(key)
+      if (!is.null(cached_data)) {
+        return(unserialize(cached_data))
+      }
+    }, error = function(e) {
+      log_event(paste("Redis cache read error:", e$message), "WARN")
+    })
+  }
+  
+  # Fallback to memory cache
+  if (exists(".memory_cache", envir = globalenv())) {
+    memory_cache <- get(".memory_cache", envir = globalenv())
+    if (key %in% names(memory_cache)) {
+      cache_entry <- memory_cache[[key]]
+      
+      # Check if cache entry is still valid
+      if (Sys.time() < cache_entry$expires) {
+        return(cache_entry$data)
+      } else {
+        # Remove expired entry
+        memory_cache[[key]] <- NULL
+        assign(".memory_cache", memory_cache, envir = globalenv())
+      }
     }
   }
+  
+  return(NULL)
+}
+
+#' Set cached data in Redis or memory
+#' @param key Cache key
+#' @param data Data to cache
+#' @param ttl Time to live in seconds
+set_cache <- function(key, data, ttl = 3600) {
+  
+  if (!is.null(.redis_connection)) {
+    tryCatch({
+      serialized_data <- serialize(data, NULL)
+      .redis_connection$SETEX(key, ttl, serialized_data)
+      return(TRUE)
+    }, error = function(e) {
+      log_event(paste("Redis cache write error:", e$message), "WARN")
+    })
+  }
+  
+  # Fallback to memory cache
+  if (!exists(".memory_cache", envir = globalenv())) {
+    assign(".memory_cache", list(), envir = globalenv())
+  }
+  
+  memory_cache <- get(".memory_cache", envir = globalenv())
+  memory_cache[[key]] <- list(
+    data = data,
+    expires = Sys.time() + ttl
+  )
+  assign(".memory_cache", memory_cache, envir = globalenv())
   
   return(TRUE)
 }
 
-#' Initialize database and create tables
-#' @param db_path Path to SQLite database file
-#' @return TRUE if successful, FALSE otherwise
-init_database <- function(db_path = "data_current/legislative.db") {
+#' Clear cache (Redis and memory)
+#' @param pattern Optional pattern to match keys (for memory cache only)
+clear_cache <- function(pattern = NULL) {
   
-  flog.info("Initializing database: %s", db_path)
+  cleared_count <- 0
   
-  # Ensure data directory exists
-  dir.create(dirname(db_path), showWarnings = FALSE, recursive = TRUE)
-  
-  tryCatch({
-    # Create connection
-    con <- dbConnect(SQLite(), db_path)
-    
-    # Enable foreign keys
-    dbExecute(con, "PRAGMA foreign_keys = ON")
-    
-    # Create tables
-    create_tables(con)
-    
-    # Store connection globally
-    .db_connection$con <- con
-    
-    flog.info("Database initialized successfully")
-    return(TRUE)
-    
-  }, error = function(e) {
-    flog.error("Error initializing database: %s", e$message)
-    return(FALSE)
-  })
-}
-
-#' Create database tables
-#' @param con Database connection
-create_tables <- function(con) {
-  
-  # Main legislative documents table
-  legislative_table <- "
-  CREATE TABLE IF NOT EXISTS legislative_documents (
-    id_unico TEXT PRIMARY KEY,
-    titulo TEXT NOT NULL,
-    tipo TEXT,
-    numero TEXT,
-    data DATE,
-    ano INTEGER,
-    resumo TEXT,
-    autor TEXT,
-    status TEXT,
-    estado TEXT,
-    municipio TEXT,
-    nivel_governo TEXT,
-    fonte_original TEXT,
-    url TEXT,
-    citacao TEXT,
-    palavras_chave TEXT,
-    dias_desde_publicacao INTEGER,
-    data_processamento TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )"
-  
-  # API cache table for storing raw API responses
-  api_cache_table <- "
-  CREATE TABLE IF NOT EXISTS api_cache (
-    cache_key TEXT PRIMARY KEY,
-    endpoint TEXT NOT NULL,
-    params TEXT,
-    response_data TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP,
-    status TEXT DEFAULT 'valid'
-  )"
-  
-  # Data source tracking table
-  sources_table <- "
-  CREATE TABLE IF NOT EXISTS data_sources (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    source_name TEXT NOT NULL,
-    endpoint TEXT,
-    last_update TIMESTAMP,
-    total_records INTEGER DEFAULT 0,
-    success_rate REAL DEFAULT 0.0,
-    status TEXT DEFAULT 'active'
-  )"
-  
-  # Search queries log
-  search_log_table <- "
-  CREATE TABLE IF NOT EXISTS search_queries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    query_text TEXT,
-    filters TEXT,
-    results_count INTEGER,
-    execution_time REAL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )"
-  
-  # Export history
-  export_history_table <- "
-  CREATE TABLE IF NOT EXISTS export_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    format TEXT NOT NULL,
-    filename TEXT,
-    records_count INTEGER,
-    file_size INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )"
-  
-  # Execute table creation
-  dbExecute(con, legislative_table)
-  dbExecute(con, api_cache_table)
-  dbExecute(con, sources_table)
-  dbExecute(con, search_log_table)
-  dbExecute(con, export_history_table)
-  
-  # Create indexes for better performance
-  create_indexes(con)
-  
-  flog.info("Database tables created successfully")
-}
-
-#' Create database indexes
-#' @param con Database connection
-create_indexes <- function(con) {
-  
-  indexes <- c(
-    "CREATE INDEX IF NOT EXISTS idx_legislative_estado ON legislative_documents(estado)",
-    "CREATE INDEX IF NOT EXISTS idx_legislative_data ON legislative_documents(data)",
-    "CREATE INDEX IF NOT EXISTS idx_legislative_tipo ON legislative_documents(tipo)",
-    "CREATE INDEX IF NOT EXISTS idx_legislative_fonte ON legislative_documents(fonte_original)",
-    "CREATE INDEX IF NOT EXISTS idx_cache_endpoint ON api_cache(endpoint)",
-    "CREATE INDEX IF NOT EXISTS idx_cache_expires ON api_cache(expires_at)"
-  )
-  
-  for (index in indexes) {
-    dbExecute(con, index)
-  }
-  
-  flog.info("Database indexes created")
-}
-
-#' Save legislative data to database
-#' @param data Data frame with legislative documents
-#' @param overwrite Whether to overwrite existing records
-#' @return Number of records saved
-save_legislative_data <- function(data, overwrite = FALSE) {
-  
-  if (is.null(data) || nrow(data) == 0) {
-    flog.warn("No data to save")
-    return(0)
-  }
-  
-  if (is.null(.db_connection$con)) {
-    flog.error("Database not initialized")
-    return(0)
-  }
-  
-  flog.info("Saving %d legislative records to database", nrow(data))
-  
-  tryCatch({
-    con <- .db_connection$con
-    
-    # Prepare data for insertion
-    insert_data <- data %>%
-      mutate(
-        # Ensure all required columns exist
-        id_unico = coalesce(id_unico, paste0("auto_", row_number())),
-        data_processamento = coalesce(data_processamento, Sys.time()),
-        updated_at = Sys.time()
-      ) %>%
-      select(
-        id_unico, titulo, tipo, numero, data, ano, resumo, autor, status,
-        estado, municipio, nivel_governo, fonte_original, url, citacao,
-        palavras_chave, dias_desde_publicacao, data_processamento
-      )
-    
-    # Use upsert approach if overwrite is TRUE
-    if (overwrite) {
-      # Delete existing records with same IDs using parameterized query
-      if (nrow(insert_data) > 0) {
-        placeholders <- paste(rep("?", nrow(insert_data)), collapse = ",")
-        delete_query <- paste0("DELETE FROM legislative_documents WHERE id_unico IN (", placeholders, ")")
-        dbExecute(con, delete_query, as.list(insert_data$id_unico))
+  # Clear Redis cache
+  if (!is.null(.redis_connection)) {
+    tryCatch({
+      if (is.null(pattern)) {
+        keys <- .redis_connection$KEYS("monitor_legislativo:*")
+      } else {
+        keys <- .redis_connection$KEYS(paste0("monitor_legislativo:", pattern, "*"))
       }
+      
+      if (length(keys) > 0) {
+        .redis_connection$DEL(keys)
+        cleared_count <- cleared_count + length(keys)
+      }
+    }, error = function(e) {
+      log_event(paste("Redis cache clear error:", e$message), "WARN")
+    })
+  }
+  
+  # Clear memory cache
+  if (exists(".memory_cache", envir = globalenv())) {
+    memory_cache <- get(".memory_cache", envir = globalenv())
+    
+    if (is.null(pattern)) {
+      cleared_count <- cleared_count + length(memory_cache)
+      assign(".memory_cache", list(), envir = globalenv())
+    } else {
+      keys_to_remove <- names(memory_cache)[grepl(pattern, names(memory_cache))]
+      for (key in keys_to_remove) {
+        memory_cache[[key]] <- NULL
+      }
+      cleared_count <- cleared_count + length(keys_to_remove)
+      assign(".memory_cache", memory_cache, envir = globalenv())
     }
-    
-    # Insert new records
-    dbWriteTable(con, "legislative_documents", insert_data, append = TRUE)
-    
-    # Update source tracking
-    update_source_tracking(data)
-    
-    flog.info("Successfully saved %d records", nrow(insert_data))
-    return(nrow(insert_data))
-    
-  }, error = function(e) {
-    flog.error("Error saving legislative data: %s", e$message)
-    return(0)
-  })
+  }
+  
+  log_event(paste("Cleared", cleared_count, "cache entries"))
+  return(cleared_count)
 }
 
 #' Load legislative data from database
 #' @param filters List of filters to apply
-#' @param limit Maximum number of records to return
-#' @return Data frame with legislative documents
-load_legislative_data <- function(filters = list(), limit = NULL) {
+#' @param limit Maximum number of records
+#' @return Data frame with legislative data
+load_legislative_data <- function(filters = list(), limit = 200000) {
   
-  if (is.null(.db_connection$con)) {
-    flog.error("Database not initialized")
+  if (is.null(.db_pool)) {
+    log_event("Database not initialized", "ERROR")
     return(NULL)
   }
   
-  # Validate and sanitize all filter inputs
-  if (!is.null(filters$estado)) {
-    filters$estado <- validate_db_input(filters$estado, "list")
-    if (!all(sapply(filters$estado, is_safe_input))) {
-      flog.error("Unsafe input detected in estado filter")
-      return(NULL)
-    }
-  }
+  # Create cache key
+  cache_key <- paste0("monitor_legislativo:search:", digest::digest(filters))
   
-  if (!is.null(filters$tipo)) {
-    filters$tipo <- validate_db_input(filters$tipo, "list")
-    if (!all(sapply(filters$tipo, is_safe_input))) {
-      flog.error("Unsafe input detected in tipo filter")
-      return(NULL)
-    }
+  # Check cache first
+  cached_data <- get_cache(cache_key)
+  if (!is.null(cached_data)) {
+    log_event("Returning cached search results")
+    return(cached_data)
   }
-  
-  if (!is.null(filters$search_text)) {
-    filters$search_text <- validate_db_input(filters$search_text, "string", 500)
-    if (!is_safe_input(filters$search_text)) {
-      flog.error("Unsafe input detected in search text")
-      return(NULL)
-    }
-  }
-  
-  if (!is.null(filters$date_from)) {
-    filters$date_from <- validate_db_input(filters$date_from, "date")
-  }
-  
-  if (!is.null(filters$date_to)) {
-    filters$date_to <- validate_db_input(filters$date_to, "date")
-  }
-  
-  if (!is.null(limit)) {
-    limit <- validate_db_input(limit, "numeric")
-    if (limit < 1 || limit > 10000) {
-      flog.warn("Invalid limit value, using default 1000")
-      limit <- 1000
-    }
-  }
-  
-  flog.info("Loading legislative data with validated filters")
   
   tryCatch({
-    con <- .db_connection$con
+    # Build SQL query using documents view
+    base_query <- "
+      SELECT 
+        titulo, tipo, numero, data, estado, municipio, autor, fonte, 
+        ementa, url, created_at as data_coleta
+      FROM documents 
+      WHERE 1=1
+    "
     
-    # Build query
-    query <- "SELECT * FROM legislative_documents WHERE 1=1"
     params <- list()
+    where_clauses <- c()
     
-    # Apply filters using parameterized queries
-    if (!is.null(filters$estado) && length(filters$estado) > 0) {
-      placeholders_estado <- paste(rep("?", length(filters$estado)), collapse = ",")
-      query <- paste(query, "AND estado IN (", placeholders_estado, ")")
-      params <- append(params, as.list(filters$estado))
-    }
-    
-    if (!is.null(filters$tipo) && length(filters$tipo) > 0) {
-      placeholders_tipo <- paste(rep("?", length(filters$tipo)), collapse = ",")
-      query <- paste(query, "AND tipo IN (", placeholders_tipo, ")")
-      params <- append(params, as.list(filters$tipo))
+    # Add filters
+    if (!is.null(filters$search_text) && filters$search_text != "") {
+      where_clauses <- c(where_clauses, 
+        "(titulo ILIKE ? OR ementa ILIKE ?)")
+      search_pattern <- paste0("%", filters$search_text, "%")
+      params <- c(params, search_pattern, search_pattern)
     }
     
     if (!is.null(filters$date_from)) {
-      query <- paste(query, "AND data >= ?")
-      params <- append(params, filters$date_from)
+      where_clauses <- c(where_clauses, "data >= ?")
+      params <- c(params, filters$date_from)
     }
     
     if (!is.null(filters$date_to)) {
-      query <- paste(query, "AND data <= ?")
-      params <- append(params, filters$date_to)
+      where_clauses <- c(where_clauses, "data <= ?")
+      params <- c(params, filters$date_to)
     }
     
-    if (!is.null(filters$search_text)) {
-      query <- paste(query, "AND (titulo LIKE ? OR resumo LIKE ?)")
-      search_term <- paste0("%", filters$search_text, "%")
-      params <- append(params, list(search_term, search_term))
+    if (!is.null(filters$tipo) && length(filters$tipo) > 0) {
+      placeholders <- paste(rep("?", length(filters$tipo)), collapse = ",")
+      where_clauses <- c(where_clauses, paste0("tipo IN (", placeholders, ")"))
+      params <- c(params, filters$tipo)
+    }
+    
+    if (!is.null(filters$estado) && length(filters$estado) > 0) {
+      placeholders <- paste(rep("?", length(filters$estado)), collapse = ",")
+      where_clauses <- c(where_clauses, paste0("estado IN (", placeholders, ")"))
+      params <- c(params, filters$estado)
+    }
+    
+    # Combine query
+    if (length(where_clauses) > 0) {
+      final_query <- paste(base_query, "AND", paste(where_clauses, collapse = " AND "))
+    } else {
+      final_query <- base_query
     }
     
     # Add ordering and limit
-    query <- paste(query, "ORDER BY data DESC")
-    
-    if (!is.null(limit)) {
-      query <- paste(query, "LIMIT", limit)
-    }
+    final_query <- paste(final_query, "ORDER BY data DESC LIMIT ?")
+    params <- c(params, limit)
     
     # Execute query
-    if (length(params) > 0) {
-      result <- dbGetQuery(con, query, params)
-    } else {
-      result <- dbGetQuery(con, query)
-    }
-    
-    # Log search query
-    log_search_query(filters, nrow(result))
-    
-    flog.info("Loaded %d records from database", nrow(result))
-    return(result)
-    
-  }, error = function(e) {
-    flog.error("Error loading legislative data: %s", e$message)
-    return(NULL)
-  })
-}
-
-#' Cache API response
-#' @param endpoint API endpoint
-#' @param params Request parameters
-#' @param response_data Response data
-#' @param expires_hours Hours until cache expires
-cache_api_response <- function(endpoint, params, response_data, expires_hours = 24) {
-  
-  if (is.null(.db_connection$con)) {
-    return(FALSE)
-  }
-  
-  tryCatch({
-    con <- .db_connection$con
-    
-    # Create cache key
-    cache_key <- create_cache_key(endpoint, params)
-    
-    # Prepare cache record
-    cache_record <- data.frame(
-      cache_key = cache_key,
-      endpoint = endpoint,
-      params = jsonlite::toJSON(params, auto_unbox = TRUE),
-      response_data = jsonlite::toJSON(response_data, auto_unbox = TRUE),
-      expires_at = Sys.time() + as.difftime(expires_hours, units = "hours"),
-      stringsAsFactors = FALSE
-    )
-    
-    # Insert or replace cache record
-    dbExecute(con, "DELETE FROM api_cache WHERE cache_key = ?", list(cache_key))
-    dbWriteTable(con, "api_cache", cache_record, append = TRUE)
-    
-    flog.debug("Cached API response for: %s", endpoint)
-    return(TRUE)
-    
-  }, error = function(e) {
-    flog.error("Error caching API response: %s", e$message)
-    return(FALSE)
-  })
-}
-
-#' Get cached API response
-#' @param endpoint API endpoint
-#' @param params Request parameters
-#' @return Cached response data or NULL if not found/expired
-get_cached_response <- function(endpoint, params) {
-  
-  if (is.null(.db_connection$con)) {
-    return(NULL)
-  }
-  
-  tryCatch({
-    con <- .db_connection$con
-    
-    # Create cache key
-    cache_key <- create_cache_key(endpoint, params)
-    
-    # Query cache
-    result <- dbGetQuery(
-      con, 
-      "SELECT response_data FROM api_cache WHERE cache_key = ? AND expires_at > ? AND status = 'valid'",
-      list(cache_key, Sys.time())
-    )
+    log_event("Executing database query")
+    cat("📊 DEBUGGING: Query =", final_query, "\n")
+    cat("📊 DEBUGGING: Params =", paste(params, collapse = ", "), "\n")
+    result <- dbGetQuery(.db_pool, final_query, params = params)
+    cat("📊 DEBUGGING: Query returned", nrow(result), "rows\n")
     
     if (nrow(result) > 0) {
-      flog.debug("Cache hit for: %s", endpoint)
-      return(jsonlite::fromJSON(result$response_data[1]))
+      # Standardize and validate data
+      result <- standardize_columns(result)
+      result <- validate_data_quality(result)
+      
+      # Cache results
+      config_env <- Sys.getenv("R_CONFIG_ACTIVE", "default")
+      app_config <- config::get(config = config_env)
+      ttl <- app_config$cache$ttl_search %||% 1800
+      
+      set_cache(cache_key, result, ttl)
+      
+      log_event(paste("Loaded", nrow(result), "documents from database"))
+      return(result)
     } else {
-      flog.debug("Cache miss for: %s", endpoint)
+      log_event("No documents found in database")
       return(NULL)
     }
     
   }, error = function(e) {
-    flog.error("Error retrieving cached response: %s", e$message)
+    log_event(paste("Database query error:", e$message), "ERROR")
     return(NULL)
   })
 }
 
-#' Clean expired cache entries
-#' @return Number of entries cleaned
-clean_cache <- function() {
+#' Save legislative data to database
+#' @param data Data frame with legislative data
+#' @param table_name Target table name
+#' @return TRUE if successful, FALSE otherwise
+save_legislative_data <- function(data, table_name = "documents") {
   
-  if (is.null(.db_connection$con)) {
-    return(0)
+  if (is.null(.db_pool) || is.null(data) || nrow(data) == 0) {
+    return(FALSE)
   }
   
   tryCatch({
-    con <- .db_connection$con
+    log_event(paste("Saving", nrow(data), "documents to database"))
     
-    # Delete expired entries
-    result <- dbExecute(con, "DELETE FROM api_cache WHERE expires_at <= ?", list(Sys.time()))
+    # Prepare data for insertion
+    data$created_at <- Sys.time()
+    data$updated_at <- Sys.time()
     
-    flog.info("Cleaned %d expired cache entries", result)
-    return(result)
+    # Remove any existing quality_score column for database storage
+    if ("quality_score" %in% names(data)) {
+      data$quality_score <- NULL
+    }
+    
+    # Use upsert to handle duplicates
+    dbWriteTable(.db_pool, table_name, data, 
+                append = TRUE, row.names = FALSE)
+    
+    # Clear related cache
+    clear_cache("search:")
+    
+    log_event("Data saved successfully")
+    return(TRUE)
     
   }, error = function(e) {
-    flog.error("Error cleaning cache: %s", e$message)
-    return(0)
+    log_event(paste("Database save error:", e$message), "ERROR")
+    return(FALSE)
   })
 }
 
@@ -513,237 +394,194 @@ clean_cache <- function() {
 #' @return List with database statistics
 get_database_stats <- function() {
   
-  if (is.null(.db_connection$con)) {
+  if (is.null(.db_pool)) {
     return(NULL)
   }
   
+  # Check cache first
+  cache_key <- "monitor_legislativo:stats:database"
+  cached_stats <- get_cache(cache_key)
+  if (!is.null(cached_stats)) {
+    return(cached_stats)
+  }
+  
   tryCatch({
-    con <- .db_connection$con
+    # Total documents
+    total_docs <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")$count[1]
+    
+    # Unique states
+    unique_states <- dbGetQuery(.db_pool, 
+      "SELECT COUNT(DISTINCT estado) as count FROM documents WHERE estado IS NOT NULL")$count[1]
+    
+    # Unique document types
+    unique_types <- dbGetQuery(.db_pool, 
+      "SELECT COUNT(DISTINCT tipo) as count FROM documents WHERE tipo IS NOT NULL")$count[1]
+    
+    # Date range
+    date_range <- dbGetQuery(.db_pool, 
+      "SELECT MIN(data) as min_date, MAX(data) as max_date FROM documents WHERE data IS NOT NULL")
+    
+    # Most recent update
+    last_update <- dbGetQuery(.db_pool, 
+      "SELECT MAX(created_at) as last_update FROM documents")$last_update[1]
     
     stats <- list(
-      total_documents = dbGetQuery(con, "SELECT COUNT(*) as count FROM legislative_documents")$count,
-      unique_states = dbGetQuery(con, "SELECT COUNT(DISTINCT estado) as count FROM legislative_documents WHERE estado IS NOT NULL")$count,
-      cache_entries = dbGetQuery(con, "SELECT COUNT(*) as count FROM api_cache WHERE status = 'valid'")$count,
-      oldest_document = dbGetQuery(con, "SELECT MIN(data) as date FROM legislative_documents")$date,
-      newest_document = dbGetQuery(con, "SELECT MAX(data) as date FROM legislative_documents")$date,
-      last_update = dbGetQuery(con, "SELECT MAX(updated_at) as timestamp FROM legislative_documents")$timestamp
+      total_documents = total_docs,
+      unique_states = unique_states,
+      unique_types = unique_types,
+      oldest_document = if (!is.na(date_range$min_date[1])) format(date_range$min_date[1], "%d/%m/%Y") else "N/A",
+      newest_document = if (!is.na(date_range$max_date[1])) format(date_range$max_date[1], "%d/%m/%Y") else "N/A",
+      last_update = if (!is.na(last_update)) format(last_update, "%d/%m/%Y %H:%M") else "N/A"
     )
+    
+    # Cache for 5 minutes
+    set_cache(cache_key, stats, 300)
     
     return(stats)
     
   }, error = function(e) {
-    flog.error("Error getting database stats: %s", e$message)
+    log_event(paste("Database stats error:", e$message), "ERROR")
     return(NULL)
   })
 }
 
-#' Helper function to create cache keys
-create_cache_key <- function(endpoint, params) {
-  key_string <- paste0(endpoint, "_", digest::digest(params))
-  return(substr(key_string, 1, 64))  # Limit length
-}
-
-#' Update source tracking information
-update_source_tracking <- function(data) {
+#' Load geographic data for Brazilian states and municipalities
+#' @return SF object with geographic boundaries
+load_geographic_data <- function() {
   
-  if (is.null(.db_connection$con) || is.null(data)) {
-    return(FALSE)
+  # Check cache first
+  cache_key <- "monitor_legislativo:geo:brazil"
+  cached_geo <- get_cache(cache_key)
+  if (!is.null(cached_geo)) {
+    return(cached_geo)
   }
   
   tryCatch({
-    con <- .db_connection$con
+    log_event("Loading Brazilian geographic data")
     
-    # Count records by source
-    source_counts <- data %>%
-      count(fonte_original, name = "records_count")
-    
-    for (i in 1:nrow(source_counts)) {
-      source_name <- source_counts$fonte_original[i]
-      record_count <- source_counts$records_count[i]
+    # Try to load from geobr package if available
+    if (require_package("geobr", quiet = TRUE)) {
       
-      # Upsert source tracking
-      dbExecute(con, "
-        INSERT INTO data_sources (source_name, last_update, total_records) 
-        VALUES (?, ?, ?)
-        ON CONFLICT(source_name) DO UPDATE SET
-          last_update = ?,
-          total_records = total_records + ?
-      ", list(source_name, Sys.time(), record_count, Sys.time(), record_count))
+      # Load states
+      states_geo <- geobr::read_state(year = 2020, showProgress = FALSE)
+      
+      # Load municipalities (this can be large, so we might want to load on demand)
+      # municipalities_geo <- geobr::read_municipality(year = 2020, showProgress = FALSE)
+      
+      geo_data <- list(
+        states = states_geo,
+        # municipalities = municipalities_geo,
+        loaded_at = Sys.time()
+      )
+      
+      # Cache for 24 hours
+      config_env <- Sys.getenv("R_CONFIG_ACTIVE", "default")
+      app_config <- config::get(config = config_env)
+      ttl <- app_config$cache$ttl_geo %||% 86400
+      
+      set_cache(cache_key, geo_data, ttl)
+      
+      log_event("Geographic data loaded successfully")
+      return(geo_data)
+      
+    } else {
+      log_event("geobr package not available", "WARN")
+      return(NULL)
     }
     
-    return(TRUE)
-    
   }, error = function(e) {
-    flog.error("Error updating source tracking: %s", e$message)
-    return(FALSE)
+    log_event(paste("Geographic data loading error:", e$message), "ERROR")
+    return(NULL)
   })
 }
 
-#' Log search query for analytics
-log_search_query <- function(filters, results_count, execution_time = NULL) {
+#' Create database tables if they don't exist
+#' @return TRUE if successful
+setup_database_schema <- function() {
   
-  if (is.null(.db_connection$con)) {
+  if (is.null(.db_pool)) {
+    log_event("Database not initialized", "ERROR")
     return(FALSE)
   }
   
   tryCatch({
-    con <- .db_connection$con
+    log_event("Setting up database schema")
     
-    log_record <- data.frame(
-      query_text = paste(names(filters), collapse = ","),
-      filters = jsonlite::toJSON(filters, auto_unbox = TRUE),
-      results_count = results_count,
-      execution_time = execution_time %||% NA,
-      stringsAsFactors = FALSE
+    # Create documents table
+    documents_schema <- "
+      CREATE TABLE IF NOT EXISTS documents (
+        id SERIAL PRIMARY KEY,
+        titulo TEXT NOT NULL,
+        tipo VARCHAR(100),
+        numero VARCHAR(50),
+        data DATE,
+        estado VARCHAR(2),
+        municipio VARCHAR(100),
+        autor TEXT,
+        fonte VARCHAR(100),
+        ementa TEXT,
+        url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    "
+    
+    dbExecute(.db_pool, documents_schema)
+    
+    # Create indexes for better performance
+    indexes <- c(
+      "CREATE INDEX IF NOT EXISTS idx_documents_data ON documents(data);",
+      "CREATE INDEX IF NOT EXISTS idx_documents_estado ON documents(estado);",
+      "CREATE INDEX IF NOT EXISTS idx_documents_tipo ON documents(tipo);",
+      "CREATE INDEX IF NOT EXISTS idx_documents_titulo ON documents USING gin(to_tsvector('portuguese', titulo));",
+      "CREATE INDEX IF NOT EXISTS idx_documents_ementa ON documents USING gin(to_tsvector('portuguese', ementa));"
     )
     
-    dbWriteTable(con, "search_queries", log_record, append = TRUE)
+    for (index_sql in indexes) {
+      dbExecute(.db_pool, index_sql)
+    }
+    
+    # Create cache management table
+    cache_schema <- "
+      CREATE TABLE IF NOT EXISTS cache_entries (
+        key VARCHAR(255) PRIMARY KEY,
+        data BYTEA,
+        expires_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    "
+    
+    dbExecute(.db_pool, cache_schema)
+    
+    log_event("Database schema setup completed")
     return(TRUE)
     
   }, error = function(e) {
-    flog.error("Error logging search query: %s", e$message)
+    log_event(paste("Database schema setup error:", e$message), "ERROR")
     return(FALSE)
   })
 }
 
-#' Close database connection
+#' Close database connections
 close_database <- function() {
-  if (!is.null(.db_connection$con)) {
-    dbDisconnect(.db_connection$con)
-    .db_connection$con <- NULL
-    flog.info("Database connection closed")
-  }
-}
-
-#' Backup database to file
-#' @param backup_path Path for backup file
-#' @return TRUE if successful
-backup_database <- function(backup_path = NULL) {
   
-  if (is.null(backup_path)) {
-    timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
-    backup_path <- paste0("data_current/backup_", timestamp, ".db")
+  if (!is.null(.db_pool)) {
+    tryCatch({
+      poolClose(.db_pool)
+      .db_pool <<- NULL
+      log_event("Database pool closed")
+    }, error = function(e) {
+      log_event(paste("Error closing database pool:", e$message), "WARN")
+    })
   }
   
-  if (is.null(.db_connection$con)) {
-    return(FALSE)
+  if (!is.null(.redis_connection)) {
+    tryCatch({
+      .redis_connection$disconnect()
+      .redis_connection <<- NULL
+      log_event("Redis connection closed")
+    }, error = function(e) {
+      log_event(paste("Error closing Redis connection:", e$message), "WARN")
+    })
   }
-  
-  tryCatch({
-    # Simple file copy for SQLite
-    current_db <- dbGetInfo(.db_connection$con)$dbname
-    file.copy(current_db, backup_path, overwrite = TRUE)
-    
-    flog.info("Database backed up to: %s", backup_path)
-    return(TRUE)
-    
-  }, error = function(e) {
-    flog.error("Error backing up database: %s", e$message)
-    return(FALSE)
-  })
-}
-
-#' Populate database with new CSV data structure
-#' @param db_path Path to SQLite database file
-#' @return TRUE if successful, FALSE otherwise
-populate_database_with_csv_data <- function(db_path = "data_current/legislative.db") {
-  
-  flog.info("Populating database with new CSV data structure")
-  
-  tryCatch({
-    # Initialize database if not exists
-    if (!init_database(db_path)) {
-      flog.error("Failed to initialize database")
-      return(FALSE)
-    }
-    
-    # Load all CSV files from data_current/processed/
-    csv_files <- list.files("data_current/processed/", pattern = "*.csv", full.names = TRUE)
-    
-    if (length(csv_files) == 0) {
-      flog.warn("No CSV files found in data_current/processed/")
-      return(FALSE)
-    }
-    
-    flog.info("Found %d CSV files to process", length(csv_files))
-    
-    total_records <- 0
-    
-    for (csv_file in csv_files) {
-      flog.info("Processing file: %s", basename(csv_file))
-      
-      # Load CSV data
-      data <- read_csv(csv_file,
-                       col_types = cols(
-                         Search_term = col_character(),
-                         Date_searched = col_date(format = "%Y-%m-%d"),
-                         Url = col_character(),
-                         Title = col_character(),
-                         Urn = col_character(),
-                         Urn_type = col_character(),
-                         Country = col_character(),
-                         State = col_character(),
-                         Municipality = col_character(),
-                         Justice = col_character(),
-                         Region = col_character(),
-                         Court_class = col_character(),
-                         Document_type_full = col_character(),
-                         Enacting_date = col_datetime(format = "%Y-%m-%d %H:%M:%S"),
-                         Document_description = col_character(),
-                         Document_summary = col_character()
-                       ),
-                       locale = locale(encoding = "UTF-8"))
-      
-      if (nrow(data) == 0) {
-        flog.warn("No data in file: %s", basename(csv_file))
-        next
-      }
-      
-      # Transform data to match database schema
-      db_data <- data %>%
-        mutate(
-          id_unico = Urn,
-          titulo = Title,
-          tipo = case_when(
-            Urn_type == "legislation" ~ "lei",
-            Urn_type == "jurisprudence" ~ "jurisprudencia",
-            Urn_type == "doutrina" ~ "doutrina",
-            TRUE ~ "outro"
-          ),
-          numero = NA_character_,
-          data = as.Date(Enacting_date),
-          ano = as.numeric(format(as.Date(Enacting_date), "%Y")),
-          resumo = Document_summary,
-          autor = NA_character_,
-          status = "ativo",
-          estado = State,
-          municipio = Municipality,
-          nivel_governo = "federal",
-          fonte_original = "LexML",
-          url = Url,
-          citacao = Urn,
-          palavras_chave = Search_term,
-          dias_desde_publicacao = as.numeric(Sys.Date() - as.Date(Enacting_date)),
-          data_processamento = Sys.time()
-        ) %>%
-        select(
-          id_unico, titulo, tipo, numero, data, ano, resumo, autor, status,
-          estado, municipio, nivel_governo, fonte_original, url, citacao,
-          palavras_chave, dias_desde_publicacao, data_processamento
-        )
-      
-      # Save to database
-      records_saved <- save_legislative_data(db_data, overwrite = FALSE)
-      total_records <- total_records + records_saved
-      
-      flog.info("Saved %d records from %s", records_saved, basename(csv_file))
-    }
-    
-    flog.info("Database population completed. Total records: %d", total_records)
-    return(TRUE)
-    
-  }, error = function(e) {
-    flog.error("Error populating database: %s", e$message)
-    return(FALSE)
-  })
 }

@@ -1,163 +1,155 @@
-# Monitor Legislativo v4
-**Ultra-Budget Academic Deployment with Advanced Analytics**
+# Monitor Legislativo v4 - Unified R Service
 
-A comprehensive legislative monitoring system for Brazilian government APIs featuring LexML Enhanced Research Engine integration and advanced R-powered analytics.
+🇧🇷 **Monitor Legislativo v4** is a unified R-Shiny application for monitoring Brazilian legislative data, deployed on Railway with PostgreSQL and Redis integration.
 
-## 🏗️ Repository Structure
+## 🏗️ Architecture Overview
 
-This repository is comprehensively organized for maintainability and clarity. See [`REPOSITORY_STRUCTURE.md`](./REPOSITORY_STRUCTURE.md) for detailed organization.
+**Unified Service Architecture:**
+- **Primary Service**: R-Shiny application (`app.R`)
+- **Database**: PostgreSQL (Railway managed)
+- **Cache**: Redis (Railway managed)
+- **Deployment**: Railway platform
 
-### Quick Navigation
-- **📋 [Planning](./planning/)** - Project roadmaps, PRDs, and feature specifications
-- **📚 [Documentation](./documentation/)** - Guides, deployment docs, and technical reports  
-- **🔧 [Development](./development/)** - Scripts, testing tools, and research materials
-- **🌐 [External](./external/)** - Third-party libraries and vendor dependencies
+## 📁 Project Structure
 
-## 🚀 Features
+```
+monitor-legislativo-v4/
+├── app.R                    # Main R-Shiny application
+├── config.yml              # Application configuration
+├── railway-unified.toml     # Railway deployment configuration
+├── R/                       # R modules and functions
+│   ├── api_client.R
+│   ├── database_connection.R
+│   ├── map_generator.R
+│   └── ...
+├── data/                    # Data files and exports
+├── exports/                 # Generated export files
+├── docs/                    # Documentation
+├── dev-tools/              # Development tools and scripts
+├── legacy/                 # Legacy services (archived)
+│   ├── backend/            # Python FastAPI service (deprecated)
+│   ├── frontend/           # React frontend (deprecated)
+│   └── r-shiny/            # Old R-Shiny variants (deprecated)
+└── archive/                # Archived files and media
+```
 
-### Core Capabilities
-- **Real-time Legislative Data** from Câmara, Senado, and 11+ regulatory agencies
-- **LexML Enhanced Research Engine** with SKOS vocabulary expansion
-- **Interactive Map Visualization** with offline capability
-- **Academic Citation Tools** and multiple export formats
-- **Advanced R Analytics** with secure iframe integration
-- **Real-time Dashboard Updates** via Server-Sent Events
-- **Saved Query Management** with tag-based organization
-- **Mobile-Responsive Design** with accessibility features
-
-### Performance & Cost
-- **70%+ Performance Improvement** through intelligent caching
-- **Ultra-Low Cost Deployment** ($7-16/month total)
-- **Budget-Efficient Architecture** using free tiers and HTTP polling
-
-## 🏗️ Two-Tier Architecture
-
-### Tier 1: Automated Data Collection
-- **Backend**: FastAPI + Python (Railway - $7/month)
-- **Database**: PostgreSQL (Supabase - FREE) 
-- **Cache**: Redis (Upstash - FREE)
-- **Background Jobs**: Prefect-based collection service
-
-### Tier 2: Analytics Dashboard  
-- **Frontend**: React + TypeScript (GitHub Pages - FREE)
-- **R Analytics**: Shiny integration (Shinyapps.io - FREE/optional $9)
-- **Real-time Updates**: Server-Sent Events with polling fallback
-- **CDN**: CloudFlare (FREE)
-
-## 📋 Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- Python 3.11+
-- Git
+- R 4.3+
+- PostgreSQL database (Railway managed)
+- Redis cache (Railway managed)
 
 ### Local Development
-
-**Automated Setup** (Recommended):
 ```bash
-git clone https://github.com/your-username/monitor_legislativo_v4.git
-cd monitor_legislativo_v4
-
-# Run comprehensive development setup
-./development/scripts/dev-setup.sh
-
-# Initialize database
-python development/scripts/initialize_database.py
-
-# Verify installation
-python development/test-scripts/verify_setup.py
+# Start the R-Shiny application
+R -e "source('app.R')"
 ```
-
-**Manual Setup**:
-1. **Clone and navigate:**
-    ```bash
-    git clone https://github.com/your-username/monitor_legislativo_v4.git
-    cd monitor_legislativo_v4
-    ```
-
-2. **Install dependencies:**
-    ```bash
-    # Backend dependencies
-    pip install -r requirements.txt
-    
-    # Frontend dependencies
-    npm install
-    ```
-
-3. **Database setup:**
-    ```bash
-    # Unix/Linux/Mac
-    ./development/scripts/setup_database.sh
-    
-    # Windows
-    ./development/scripts/setup_database.bat
-    
-    # For development with mock data (default)
-    cp .env.development .env.development.local
-    ```
-
-4. **Run the application:**
-```bash
-# Start development servers
-python launch.py  # Backend on :8000
-npm run dev      # Frontend on :5173
-```
-
-### Data Service Architecture
-
-The application uses a flexible data service layer that supports both mock data (for development/testing) and real API integration:
-
-- **Development Mode**: Uses mock data by default (controlled by `VITE_USE_MOCK_DATA` in `.env.development`)
-- **Production Mode**: Connects to the real API with automatic fallback and caching
-- **API Client**: Includes retry logic, caching, and error handling
-- **Type Safety**: Full TypeScript support for all data operations
 
 ### Production Deployment
-Follow the deployment checklist:
-1. Create accounts (GitHub, Railway, Supabase, Upstash)
-2. Deploy backend to Railway
-3. Deploy frontend to GitHub Pages
-4. Configure environment variables
-5. Test deployment
-
-## 🎯 Performance Targets
-- Page load: <1.5s
-- API response: <500ms (cached)
-- Cache hit rate: >70%
-- Offline capability: Full functionality
-
-## 📊 Cost Breakdown
-- **Railway**: $7/month (API backend)
-- **All other services**: FREE
-- **Total**: $7/month for professional-grade platform
-
-## 🔧 Environment Variables
-
-### Backend (Railway)
+The application is deployed on Railway using `railway-unified.toml`:
 ```bash
-DATABASE_URL=postgresql://...
-REDIS_URL=redis://...
-ALLOWED_ORIGINS=https://username.github.io
-PORT=8000
-ENABLE_CACHE_WARMING=true
+# Deploy to Railway
+railway up
 ```
 
-### Frontend (GitHub Actions)
+## 🔧 Configuration
+
+### Environment Variables
 ```bash
-API_URL=https://your-app.railway.app
+# Database connection
+DATABASE_URL=postgresql://user:password@host:port/database
+
+# Redis cache
+REDIS_URL=redis://default:password@host:port
+
+# Application settings
+PORT=3838
+R_CONFIG_ACTIVE=production
+SHINY_LOG_LEVEL=INFO
 ```
+
+### Database Schema
+- **PostgreSQL**: Primary data storage
+- **Redis**: Caching layer for performance optimization
+- **Data Sources**: Brazilian legislative documents, transport legislation focus
+
+## 📊 Features
+
+- **Real-time Legislative Search**: Search Brazilian legislative documents
+- **Geographic Analysis**: Map-based visualization of legislation
+- **Transport Focus**: Specialized analysis for transport legislation
+- **Academic Tools**: Citation generation and research features
+- **Export Capabilities**: CSV, XLSX, and other formats
+- **Performance Optimized**: Redis caching for fast responses
+
+## 🏛️ Data Sources
+
+- **LexML Brasil**: Official Brazilian legislative XML
+- **IBGE**: Geographic and demographic data
+- **Transport Agencies**: Specialized transport legislation
+- **Academic Databases**: Research and citation data
+
+## 🔄 Service Migration
+
+This project has been migrated to a unified architecture:
+
+- **Before**: Multi-service architecture (backend, frontend, r-shiny)
+- **After**: Unified R-Shiny service with PostgreSQL and Redis
+- **Benefits**: Simplified deployment, better performance, easier maintenance
 
 ## 📚 Documentation
-- API Docs: `/api/docs` (Swagger UI)
-- Health Check: `/health`
-- Monitoring: `/api/v1/monitoring`
 
-## 🏫 Academic Use
-This system is optimized for academic research with:
-- Proper citation formatting
-- Multiple export formats (CSV, Excel, JSON)
-- Research-grade data validation
-- Institutional authentication support
+- **User Guide**: See `docs/USER_GUIDE.md`
+- **API Documentation**: See `docs/API_DOCUMENTATION.md`
+- **Deployment Guide**: See `docs/DEPLOYMENT_GUIDE.md`
+- **Development Guide**: See `docs/DEVELOPMENT_GUIDE.md`
+
+## 🗂️ Legacy Services
+
+Legacy services have been moved to the `legacy/` directory:
+- **Backend (Python/FastAPI)**: `legacy/backend/`
+- **Frontend (React/TypeScript)**: `legacy/frontend/`
+- **Old R-Shiny variants**: `legacy/r-shiny/`
+
+These services are deprecated and maintained for reference only.
+
+## 🛠️ Development Tools
+
+Development tools and scripts are available in `dev-tools/`:
+- **Migration scripts**: Database and deployment utilities
+- **Test files**: Testing and validation scripts
+- **Docker files**: Container configurations
+- **Build tools**: Development utilities
+
+## 🔍 Health Monitoring
+
+The application includes comprehensive health monitoring:
+- **Application Health**: `/health` endpoint
+- **Database Connectivity**: PostgreSQL connection monitoring
+- **Cache Performance**: Redis performance metrics
+- **Memory Usage**: R session monitoring
+
+## 🤝 Contributing
+
+This is an academic research project. For contributions:
+1. Follow R coding standards
+2. Update documentation
+3. Test with sample data
+4. Ensure Railway compatibility
+
+## 📄 License
+
+Academic research project - see license terms in documentation.
+
+## 🎯 Research Focus
+
+Monitor Legislativo v4 is designed for academic research on Brazilian transport legislation, providing tools for:
+- Legislative pattern analysis
+- Geographic legislation mapping
+- Transport policy research
+- Academic citation generation
 
 ---
-© 2025 MackIntegridade - Academic Research Platform
+
+**Monitor Legislativo v4** - Unified R Service for Brazilian Legislative Research

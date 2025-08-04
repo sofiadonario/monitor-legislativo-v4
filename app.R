@@ -25,7 +25,7 @@ cat("✅ Core packages loaded\n")
 # Load Enhanced Railway Database Connection - PRODUCTION VERSION
 database_connection_loaded <- FALSE
 tryCatch({
-  source("RAILWAY_DATABASE_CONNECTION_FIX.R")
+  source("RAILWAY_PRODUCTION_DB_FIX.R")
   cat("✅ Enhanced Railway database connection loaded successfully\n")
   
   # Verify the connection functions are available
