@@ -339,7 +339,7 @@ get_total_documents <- function(filters = list()) {
 #' Get documents from Railway database
 get_library_documents <- function(category = "all", search_term = "", state = "all", 
                                  date_start = NULL, date_end = NULL, sort_by = "date_desc", 
-                                 limit = 100, offset = 0) {
+                                 limit = 999999, offset = 0) {
   
   if (is.null(railway_db_pool) || connection_status$status != "connected") {
     log_railway_db("WARNING", "Database not connected, using fallback data")
@@ -494,7 +494,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
 }
 
 #' Fallback document data when database is unavailable
-get_fallback_documents <- function(category = "all", search_term = "", state = "all", limit = 100) {
+get_fallback_documents <- function(category = "all", search_term = "", state = "all", limit = 999999) {
   log_railway_db("WARNING", "🚨 DATABASE CONNECTION FAILED - Using expanded fallback dataset")
   log_railway_db("INFO", "This indicates a connection issue with Railway PostgreSQL")
   

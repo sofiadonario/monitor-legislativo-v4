@@ -547,7 +547,7 @@ server <- function(input, output, session) {
       search_term = final_search,
       state = final_state,
       sort_by = final_sort,
-      limit = 10000
+      limit = 999999  # Remove limit to show all documents
     )
     
     cat("📊 Reactive returning:", nrow(docs), "documents\n")
