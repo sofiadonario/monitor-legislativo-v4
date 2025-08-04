@@ -1,7 +1,7 @@
 [build]
 
 [deploy]
-startCommand = "R -e \"shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))\""
+startCommand = "R -e \"source('startup_diagnostics.R'); shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))\""
 healthcheckPath = "/"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"

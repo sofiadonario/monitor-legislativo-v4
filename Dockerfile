@@ -34,9 +34,23 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /srv/shiny-server
 
-# Copy only existing application files
+# Copy main application files
 COPY app.R .
 COPY RAILWAY_PRODUCTION_DB_FIX.R .
+
+# Copy archived analytics systems to maintain full functionality
+COPY archive/database_fixes/RAILWAY_DATABASE_FINAL_FIX.R .
+COPY archive/diagnostic_files/startup_diagnostics.R .
+COPY archive/old_analysis_scripts/geospatial_analytics_system.R .
+COPY archive/old_analysis_scripts/temporal_analysis_system.R .
+COPY archive/old_analysis_scripts/legislative_ml_system.R .
+COPY archive/old_analysis_scripts/advanced_text_mining_pipeline.R .
+COPY archive/old_analysis_scripts/ml_anomaly_detection_system.R .
+
+# Copy dev tools
+COPY dev-tools/railway_analytics_lightweight.R .
+COPY dev-tools/railway_error_handler.R .
+COPY dev-tools/test_railway_connection.R .
 
 # Verify core packages are working
 RUN R -e "library(shiny); library(shinydashboard); library(leaflet); cat('✅ Core packages verified\n')"
