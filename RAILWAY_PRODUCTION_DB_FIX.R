@@ -399,6 +399,9 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
         COALESCE(ementa, '') as summary,
         COALESCE(urn, '') as urn,
         COALESCE(municipio, localidade, '') as municipality,
+        COALESCE(autor, '') as author,
+        COALESCE(termo_busca, '') as search_term,
+        COALESCE(assuntos, '') as subjects,
         tipo as document_type
       FROM %s
       WHERE titulo IS NOT NULL AND titulo != ''", main_table)
@@ -408,10 +411,10 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     params <- list()
     param_count <- 0
     
-    # Add filters
+    # Add filters - search across multiple text fields
     if (search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
       param_count <- param_count + 1
-      where_conditions <- c(where_conditions, sprintf("(titulo ILIKE $%d OR COALESCE(ementa, '') ILIKE $%d)", param_count, param_count))
+      where_conditions <- c(where_conditions, sprintf("(titulo ILIKE $%d OR COALESCE(ementa, '') ILIKE $%d OR COALESCE(termo_busca, '') ILIKE $%d OR COALESCE(autor, '') ILIKE $%d OR COALESCE(assuntos, '') ILIKE $%d)", param_count, param_count, param_count, param_count, param_count))
       params[[param_count]] <- paste0("%", search_term, "%")
     }
     
