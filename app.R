@@ -170,18 +170,23 @@ if (!database_connection_loaded) {
     filtered_docs <- all_docs
     cat("📊 Starting filtering with:", nrow(filtered_docs), "documents\n")
     
-    # Category filter
+    # Enhanced category filter for 3 sublibraries
     if(category != "all" && "category" %in% names(filtered_docs)) {
       category_map <- list(
-        "jurisprudence" = c("Jurisprudência", "Jurisprudencia", "jurisprudencia"),
-        "legislation" = c("Legislação", "Legislacao", "legislacao"), 
-        "outros" = c("Outros", "outros", "Other"),
-        "doutrina" = c("Doutrina", "doutrina", "doctrine"),
-        "proposicoes" = c("Proposições", "Proposicoes", "proposicoes", "proposals")
+        "legislation" = c("Legislação", "Legislacao", "legislacao", "Lei", "Decreto", "Portaria", "Resolução", "Medida Provisória", "Lei Complementar", "Decreto Legislativo"),
+        "jurisprudence" = c("Jurisprudência", "Jurisprudencia", "jurisprudencia", "ADPF", "ADI", "Acórdão", "Decisão", "Súmula", "Julgamento"),
+        "doctrine" = c("Doutrina", "doutrina", "doctrine", "Livro", "Artigo de revista", "Tese", "Dissertação", "Monografia", "Análise", "Comentário")
       )
       if(category %in% names(category_map)) {
         target_categories <- category_map[[category]]
-        filtered_docs <- filtered_docs[filtered_docs$category %in% target_categories, ]
+        # Filter by both category and document_type columns for better accuracy
+        if("document_type" %in% names(filtered_docs)) {
+          category_match <- filtered_docs$category %in% target_categories
+          type_match <- filtered_docs$document_type %in% target_categories
+          filtered_docs <- filtered_docs[category_match | type_match, ]
+        } else {
+          filtered_docs <- filtered_docs[filtered_docs$category %in% target_categories, ]
+        }
       }
     }
     
@@ -386,24 +391,37 @@ ui <- dashboardPage(
         )
       ),
       
-      # Library Tab
+      # Library Tab - Enhanced with Sublibraries
       tabItem(tabName = "library",
+        # Sublibrary Navigation Tabs
+        fluidRow(
+          box(
+            title = "📚 Brazilian Legislative Monitor - Sublibraries", status = "primary", solidHeader = TRUE, width = 12,
+            tabsetPanel(id = "sublibrary_tabs",
+              tabPanel("All Documents", value = "all",
+                h4("All Legislative Documents"),
+                p("Browse all 134k+ documents across legislation, jurisprudence, and doctrine")
+              ),
+              tabPanel("📜 Legislation", value = "legislation", 
+                h4("Laws, Decrees, Regulations & Legal Acts"),
+                p("Federal, state, and municipal legislation including laws, decrees, ordinances, and regulations")
+              ),
+              tabPanel("⚖️ Jurisprudence", value = "jurisprudence",
+                h4("Court Decisions, Judicial Precedents & Case Law"),
+                p("Supreme Court decisions, appellate court rulings, and judicial precedents")
+              ),
+              tabPanel("📖 Doctrine", value = "doctrine",
+                h4("Legal Opinions, Academic Analysis & Legal Scholarship"),
+                p("Academic articles, legal commentary, and scholarly analysis")
+              )
+            )
+          )
+        ),
         fluidRow(
           # Search and Filter Controls
           box(
             title = "🔍 Search & Filter", status = "info", solidHeader = TRUE, width = 12,
             fluidRow(
-              column(3,
-                selectInput("lib_category", "Category:",
-                  choices = c("All Categories" = "all",
-                            "Jurisprudência" = "jurisprudence", 
-                            "Legislação" = "legislation",
-                            "Outros" = "outros",
-                            "Doutrina" = "doutrina",
-                            "Proposições" = "proposicoes"),
-                  selected = "all"
-                )
-              ),
               column(3,
                 selectInput("lib_state", "State:",
                   choices = c("All States" = "all", "SP" = "SP", "MG" = "MG", 
@@ -415,6 +433,12 @@ ui <- dashboardPage(
                 textInput("lib_search", "Search Documents:", 
                          placeholder = "Enter keywords...")
               ),
+              column(3,
+                selectInput("lib_sort", "Sort by:",
+                  choices = c("Most Recent" = "date_desc", "Oldest First" = "date_asc", "Title A-Z" = "title_asc"),
+                  selected = "date_desc"
+                )
+              ),
               column(2,
                 actionButton("lib_search_btn", "Search", 
                            class = "btn-primary", style = "margin-top: 25px;")
@@ -423,10 +447,16 @@ ui <- dashboardPage(
           )
         ),
         fluidRow(
-          # Document Statistics
-          valueBoxOutput("lib_total_docs", width = 4),
-          valueBoxOutput("lib_filtered_docs", width = 4), 
-          valueBoxOutput("lib_database_status", width = 4)
+          # Sublibrary Statistics
+          valueBoxOutput("lib_legislation_count", width = 3),
+          valueBoxOutput("lib_jurisprudence_count", width = 3),
+          valueBoxOutput("lib_doctrine_count", width = 3),
+          valueBoxOutput("lib_filtered_docs", width = 3)
+        ),
+        fluidRow(
+          # System Statistics  
+          valueBoxOutput("lib_total_docs", width = 6),
+          valueBoxOutput("lib_database_status", width = 6)
         ),
         fluidRow(
           # Documents Table
@@ -475,45 +505,114 @@ server <- function(input, output, session) {
     )
   })
   
-  # Library reactive data
+  # Library reactive data with sublibrary support
   lib_filtered_data <- reactive({
     cat("=== REACTIVE DATA DEBUG ===\n")
     
     # Get filter inputs
-    category <- input$lib_category
+    selected_sublibrary <- input$sublibrary_tabs
     state <- input$lib_state  
     search_term <- input$lib_search
+    sort_by <- input$lib_sort
     
     cat("📝 Filter inputs:\n")
-    cat("  - Category:", if(is.null(category)) "NULL" else category, "\n")
+    cat("  - Sublibrary:", if(is.null(selected_sublibrary)) "NULL" else selected_sublibrary, "\n")
     cat("  - State:", if(is.null(state)) "NULL" else state, "\n")
     cat("  - Search:", if(is.null(search_term)) "NULL" else search_term, "\n")
+    cat("  - Sort:", if(is.null(sort_by)) "NULL" else sort_by, "\n")
     
     # Trigger on search button or input changes
     input$lib_search_btn
     
-    # Get documents with filters - ensure defaults
-    final_category <- if(is.null(category) || category == "all") "all" else category
+    # Map sublibrary selection to category
+    final_category <- if(is.null(selected_sublibrary) || selected_sublibrary == "all") {
+      "all"
+    } else {
+      selected_sublibrary
+    }
+    
     final_search <- if(is.null(search_term)) "" else search_term
     final_state <- if(is.null(state) || state == "all") "all" else state
+    final_sort <- if(is.null(sort_by)) "date_desc" else sort_by
     
     cat("📋 Final filter params:\n")
     cat("  - Category:", final_category, "\n")
     cat("  - State:", final_state, "\n")
     cat("  - Search:", final_search, "\n")
+    cat("  - Sort:", final_sort, "\n")
     
     # Get documents with filters
     docs <- get_library_documents(
       category = final_category,
       search_term = final_search,
       state = final_state,
-      limit = 1000
+      sort_by = final_sort,
+      limit = 10000
     )
     
     cat("📊 Reactive returning:", nrow(docs), "documents\n")
     cat("=== END REACTIVE DEBUG ===\n")
     
     return(docs)
+  })
+  
+  # Dynamic sublibrary document counts
+  get_sublibrary_count <- function(sublibrary) {
+    tryCatch({
+      if(exists("get_library_documents")) {
+        docs <- get_library_documents(category = sublibrary, limit = 50000)
+        return(nrow(docs))
+      } else {
+        # Fallback counts from category_distribution.csv
+        counts <- list(
+          "legislation" = 51086,
+          "jurisprudence" = 54617, 
+          "doctrine" = 12810
+        )
+        return(counts[[sublibrary]])
+      }
+    }, error = function(e) {
+      # Default fallback counts
+      counts <- list(
+        "legislation" = 51086,
+        "jurisprudence" = 54617,
+        "doctrine" = 12810
+      )
+      return(counts[[sublibrary]])
+    })
+  }
+  
+  output$lib_legislation_count <- renderValueBox({
+    legislation_count <- get_sublibrary_count("legislation")
+    
+    valueBox(
+      value = format(legislation_count, big.mark = ","),
+      subtitle = "Legislation Documents",
+      icon = icon("gavel"),
+      color = "blue"
+    )
+  })
+  
+  output$lib_jurisprudence_count <- renderValueBox({
+    jurisprudence_count <- get_sublibrary_count("jurisprudence")
+    
+    valueBox(
+      value = format(jurisprudence_count, big.mark = ","),
+      subtitle = "Jurisprudence Documents",
+      icon = icon("balance-scale"),
+      color = "green"
+    )
+  })
+  
+  output$lib_doctrine_count <- renderValueBox({
+    doctrine_count <- get_sublibrary_count("doctrine")
+    
+    valueBox(
+      value = format(doctrine_count, big.mark = ","),
+      subtitle = "Doctrine Documents",
+      icon = icon("graduation-cap"),
+      color = "purple"
+    )
   })
   
   # Library value boxes
@@ -530,7 +629,7 @@ server <- function(input, output, session) {
       value = format(total, big.mark = ","),
       subtitle = "Total Documents",
       icon = icon("database"),
-      color = "blue"
+      color = "light-blue"
     )
   })
   
