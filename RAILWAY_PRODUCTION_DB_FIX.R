@@ -176,18 +176,23 @@ connect_to_railway_db <- function(config, retry_count = 3) {
       
     }, error = function(e) {
       cat("❌ Attempt", attempt, "failed:", e$message, "\n")
-      if (attempt == retry_count) {
-        cat("🚨 All connection attempts failed\n")
-        return(list(
-          connection = NULL,
-          document_count = 134014,  # Fallback count
-          method = "FAILED",
-          status = "disconnected",
-          error = e$message
-        ))
+      if (attempt < retry_count) {
+        Sys.sleep(2)  # Wait before retry
       }
-      Sys.sleep(2)  # Wait before retry
+      return(NULL)  # Continue to next attempt
     })
+    
+    # If we got here and it's the last attempt, return failure
+    if (attempt == retry_count) {
+      cat("🚨 All connection attempts failed\n")
+      return(list(
+        connection = NULL,
+        document_count = 134014,  # Fallback count
+        method = "FAILED", 
+        status = "disconnected",
+        error = "All connection attempts failed"
+      ))
+    }
   }
 }
 
@@ -209,12 +214,12 @@ initialize_railway_connection <- function() {
   result <- connect_to_railway_db(config)
   
   .railway_connection_state <<- list(
-    connection = result$connection,
-    status = result$status,
-    document_count = result$document_count,
-    method = result$method,
+    connection = if(!is.null(result$connection)) result$connection else NULL,
+    status = if(!is.null(result$status)) result$status else "unknown",
+    document_count = if(!is.null(result$document_count)) result$document_count else 134014,
+    method = if(!is.null(result$method)) result$method else "unknown",
     last_check = Sys.time(),
-    error = result$error
+    error = if(!is.null(result$error)) result$error else NULL
   )
   
   # Log Railway environment diagnosis
@@ -328,8 +333,20 @@ safe_db_query <- function(query, params = list()) {
   })
 }
 
-# Initialize connection on load
-connection_result <- initialize_railway_connection()
+# Initialize connection on load with error handling
+connection_result <- tryCatch({
+  initialize_railway_connection()
+}, error = function(e) {
+  cat("❌ Error during connection initialization:", e$message, "\n")
+  list(
+    connection = NULL,
+    status = "initialization_failed",
+    document_count = 134014,
+    method = "FAILED",
+    last_check = Sys.time(),
+    error = e$message
+  )
+})
 
 # Main document retrieval function for library interface
 get_library_documents <- function(category = "all", state = "all", search_term = "", limit = 1000) {
