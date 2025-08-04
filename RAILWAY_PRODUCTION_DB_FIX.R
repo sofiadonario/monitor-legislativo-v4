@@ -445,12 +445,12 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     # Add offset and limit
     if(offset > 0) {
       param_count <- param_count + 1
-      base_query <- paste(base_query, "OFFSET $", param_count, sep="")
+      base_query <- paste(base_query, " OFFSET $", param_count, sep="")
       params[[param_count]] <- offset
     }
     
     param_count <- param_count + 1
-    base_query <- paste(base_query, "LIMIT $", param_count, sep="")
+    base_query <- paste(base_query, " LIMIT $", param_count, sep="")
     params[[param_count]] <- limit
     
     log_railway_db("INFO", sprintf("Executing query with %d parameters", length(params)))
