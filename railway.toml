@@ -1,7 +1,7 @@
 [build]
 
 [deploy]
-startCommand = "R -e \"shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))\""
+startCommand = "R -e \"cat('🚀 Starting Railway MackMonitor\\\\n'); source('railway_db_connection_test.R'); cat('🎯 Starting Shiny App\\\\n'); shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))\""
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"

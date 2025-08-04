@@ -31,7 +31,7 @@ WORKDIR /app
 
 # Copy essential files only
 COPY RAILWAY_PRODUCTION_DB_FIX.R ./
-COPY railway_startup.R ./
+COPY railway_db_connection_test.R ./
 COPY app.R ./
 
 # Verify all packages are properly installed
