@@ -1,0 +1,14 @@
+# Exclude unnecessary files from Docker build
+node_modules
+.git
+*.log
+*.md
+legacy/
+cache/
+temp_venv/
+data_current/raw/
+data_current/temp_venv/
+*.rds
+*.RData
+.Rhistory
+# Note: archive/ is NOT excluded - we need those files for full functionality
