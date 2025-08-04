@@ -35,6 +35,22 @@ get_railway_db_config <- function() {
     PGPASSWORD = Sys.getenv("PGPASSWORD")
   )
   
+  # Debug: Show what environment variables are actually set
+  cat("🔍 Railway Environment Variables Debug:\n")
+  for (var_name in names(railway_env_check)) {
+    var_value <- railway_env_check[[var_name]]
+    if (var_value != "") {
+      if (var_name == "PGPASSWORD" || var_name == "DATABASE_URL") {
+        # Don't log full passwords/URLs for security
+        cat("  ", var_name, ": [SET - length:", nchar(var_value), "]\n")
+      } else {
+        cat("  ", var_name, ":", var_value, "\n")
+      }
+    } else {
+      cat("  ", var_name, ": [NOT SET]\n")
+    }
+  }
+  
   # Method 1: DATABASE_URL (Railway preferred)
   if (railway_env_check$DATABASE_URL != "" && grepl("^postgres", railway_env_check$DATABASE_URL)) {
     cat("✅ Using Railway DATABASE_URL\n")
@@ -60,11 +76,16 @@ get_railway_db_config <- function() {
   # Method 3: Hardcoded Railway credentials (diagnosis/fallback)
   cat("⚠️ Railway environment variables not set, using hardcoded credentials\n")
   cat("📡 This indicates Railway environment variable injection failure\n")
+  
+  # Try to build DATABASE_URL from hardcoded credentials as fallback
+  hardcoded_url <- "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway"
+  
   return(list(
     method = "HARDCODED",
+    connection_string = hardcoded_url,
     host = "nozomi.proxy.rlwy.net",
     port = 44844,
-    dbname = "railway",
+    dbname = "railway", 
     user = "postgres",
     password = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY"
   ))
@@ -77,7 +98,26 @@ connect_to_railway_db <- function(config, retry_count = 3) {
       cat("🔄 Connection attempt", attempt, "of", retry_count, "...\n")
       
       if (config$method == "DATABASE_URL") {
-        conn <- dbConnect(RPostgres::Postgres(), dbname = config$connection_string)
+        # Parse DATABASE_URL format: postgresql://user:password@host:port/dbname
+        conn <- dbConnect(RPostgres::Postgres(), config$connection_string)
+      } else if (config$method == "HARDCODED" && !is.null(config$connection_string)) {
+        # Try DATABASE_URL format first for hardcoded credentials
+        tryCatch({
+          conn <- dbConnect(RPostgres::Postgres(), config$connection_string)
+        }, error = function(e) {
+          cat("🔄 DATABASE_URL failed, trying individual parameters...\n")
+          # Fallback to individual parameters
+          conn <- dbConnect(
+            RPostgres::Postgres(),
+            host = config$host,
+            port = config$port,
+            dbname = config$dbname,
+            user = config$user,
+            password = config$password,
+            connect_timeout = 30,
+            sslmode = "prefer"
+          )
+        })
       } else {
         conn <- dbConnect(
           RPostgres::Postgres(),
