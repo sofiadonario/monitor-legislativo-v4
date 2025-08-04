@@ -392,7 +392,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
       SELECT 
         id,
         titulo as title,
-        tipo as category,
+        COALESCE(categoria, tipo, '') as category,
         COALESCE(estado, '') as state, 
         COALESCE(data_publicacao, data) as date,
         COALESCE(url, '') as url,
@@ -402,7 +402,8 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
         COALESCE(autor, '') as author,
         COALESCE(termo_busca, '') as search_term,
         COALESCE(assuntos, '') as subjects,
-        tipo as document_type
+        tipo as document_type,
+        categoria as raw_category
       FROM %s
       WHERE titulo IS NOT NULL AND titulo != ''", main_table)
     
@@ -426,22 +427,26 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     
     if (category != "all" && !is.null(category)) {
       param_count <- param_count + 1
-      # Enhanced category mapping for 3 sublibraries  
+      # CORRECTED: Enhanced category mapping for 3 sublibraries based on actual database values
+      # Data shows: Jurisprudência (54,617), Legislação (51,086), Doutrina (12,810), Outros (13,850), Proposições (1,651)
       category_mapping <- list(
-        "legislation" = c("Legislação", "Legislacao", "legislacao", "Lei", "Decreto", "Portaria", "Resolução", "Medida Provisória", "Lei Complementar", "Decreto Legislativo"),
-        "jurisprudence" = c("Jurisprudência", "Jurisprudencia", "jurisprudencia", "ADPF", "ADI", "Acórdão", "Decisão", "Súmula", "Julgamento"),
-        "doctrine" = c("Doutrina", "doutrina", "doctrine", "Livro", "Artigo de revista", "Tese", "Dissertação", "Monografia", "Análise", "Comentário")
+        "legislation" = c("Legislação", "Proposições"),  # Laws, bills, regulations
+        "jurisprudence" = c("Jurisprudência"),  # Court decisions, judicial precedents
+        "doctrine" = c("Doutrina", "Outros")  # Academic works, opinions, other legal documents
       )
       
       if(category %in% names(category_mapping)) {
         target_categories <- category_mapping[[category]]
         placeholders <- paste(sprintf("$%d", param_count:(param_count + length(target_categories) - 1)), collapse = ",")
-        where_conditions <- c(where_conditions, sprintf("tipo IN (%s)", placeholders))
+        # CORRECTED: Filter by categoria column (not tipo) since that's where the main categories are stored
+        where_conditions <- c(where_conditions, sprintf("categoria IN (%s)", placeholders))
         for(cat in target_categories) {
           params[[param_count]] <- cat
           param_count <- param_count + 1
         }
         param_count <- param_count - 1  # Adjust for the loop increment
+        
+        log_railway_db("INFO", sprintf("Filtering for category '%s' with values: %s", category, paste(target_categories, collapse = ", ")))
       }
     }
     
@@ -562,20 +567,17 @@ get_fallback_documents <- function(category = "all", search_term = "", state = "
     stringsAsFactors = FALSE
   )
   
-  # Apply enhanced filtering for 3 sublibraries
+  # Apply enhanced filtering for 3 sublibraries with CORRECTED category mapping
   filtered_docs <- fallback_docs
   
   if(category != "all") {
-    # Enhanced sublibrary filtering
+    # CORRECTED: Enhanced sublibrary filtering based on actual database values
     if(category == "legislation") {
-      filtered_docs <- fallback_docs[fallback_docs$category == "Legislação" | 
-                                   fallback_docs$document_type %in% c("Lei", "Decreto", "Portaria", "Resolução", "Medida Provisória", "Lei Complementar", "Decreto Legislativo"), ]
+      filtered_docs <- fallback_docs[fallback_docs$category %in% c("Legislação", "Proposições"), ]
     } else if(category == "jurisprudence") {
-      filtered_docs <- fallback_docs[fallback_docs$category == "Jurisprudência" | 
-                                   fallback_docs$document_type %in% c("ADPF", "ADI", "Acórdão", "Decisão", "Súmula", "Julgamento"), ]
+      filtered_docs <- fallback_docs[fallback_docs$category == "Jurisprudência", ]
     } else if(category == "doctrine") {
-      filtered_docs <- fallback_docs[fallback_docs$category == "Doutrina" | 
-                                   fallback_docs$document_type %in% c("Livro", "Artigo de revista", "Tese", "Dissertação", "Monografia", "Análise", "Comentário"), ]
+      filtered_docs <- fallback_docs[fallback_docs$category %in% c("Doutrina", "Outros"), ]
     }
   }
   

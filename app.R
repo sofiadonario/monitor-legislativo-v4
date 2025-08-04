@@ -170,23 +170,18 @@ if (!database_connection_loaded) {
     filtered_docs <- all_docs
     cat("📊 Starting filtering with:", nrow(filtered_docs), "documents\n")
     
-    # Enhanced category filter for 3 sublibraries
+    # CORRECTED: Enhanced category filter for 3 sublibraries based on actual database values
     if(category != "all" && "category" %in% names(filtered_docs)) {
       category_map <- list(
-        "legislation" = c("Legislação", "Legislacao", "legislacao", "Lei", "Decreto", "Portaria", "Resolução", "Medida Provisória", "Lei Complementar", "Decreto Legislativo"),
-        "jurisprudence" = c("Jurisprudência", "Jurisprudencia", "jurisprudencia", "ADPF", "ADI", "Acórdão", "Decisão", "Súmula", "Julgamento"),
-        "doctrine" = c("Doutrina", "doutrina", "doctrine", "Livro", "Artigo de revista", "Tese", "Dissertação", "Monografia", "Análise", "Comentário")
+        "legislation" = c("Legislação", "Proposições"),  # Laws, bills, regulations
+        "jurisprudence" = c("Jurisprudência"),  # Court decisions, judicial precedents
+        "doctrine" = c("Doutrina", "Outros")  # Academic works, opinions, other legal documents
       )
       if(category %in% names(category_map)) {
         target_categories <- category_map[[category]]
-        # Filter by both category and document_type columns for better accuracy
-        if("document_type" %in% names(filtered_docs)) {
-          category_match <- filtered_docs$category %in% target_categories
-          type_match <- filtered_docs$document_type %in% target_categories
-          filtered_docs <- filtered_docs[category_match | type_match, ]
-        } else {
-          filtered_docs <- filtered_docs[filtered_docs$category %in% target_categories, ]
-        }
+        # Filter by categoria column since that's where the main categories are stored
+        filtered_docs <- filtered_docs[filtered_docs$category %in% target_categories, ]
+        cat("📊 Category filter applied:", category, "->", paste(target_categories, collapse=", "), "->", nrow(filtered_docs), "documents\n")
       }
     }
     
@@ -563,20 +558,20 @@ server <- function(input, output, session) {
         docs <- get_library_documents(category = sublibrary, limit = 50000)
         return(nrow(docs))
       } else {
-        # Fallback counts from category_distribution.csv
+        # CORRECTED: Fallback counts from actual category_distribution.csv
         counts <- list(
-          "legislation" = 51086,
-          "jurisprudence" = 54617, 
-          "doctrine" = 12810
+          "legislation" = 51086 + 1651,  # Legislação + Proposições = 52,737
+          "jurisprudence" = 54617,       # Jurisprudência = 54,617
+          "doctrine" = 12810 + 13850     # Doutrina + Outros = 26,660
         )
         return(counts[[sublibrary]])
       }
     }, error = function(e) {
-      # Default fallback counts
+      # CORRECTED: Default fallback counts
       counts <- list(
-        "legislation" = 51086,
-        "jurisprudence" = 54617,
-        "doctrine" = 12810
+        "legislation" = 51086 + 1651,  # Legislação + Proposições = 52,737
+        "jurisprudence" = 54617,       # Jurisprudência = 54,617
+        "doctrine" = 12810 + 13850     # Doutrina + Outros = 26,660
       )
       return(counts[[sublibrary]])
     })
