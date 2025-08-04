@@ -34,22 +34,9 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /srv/shiny-server
 
-# Copy core application files
+# Copy only existing application files
 COPY app.R .
-COPY RAILWAY_DATABASE_FINAL_FIX.R .
-COPY startup_diagnostics.R .
-COPY test_railway_connection.R .
-
-# Copy analytics systems
-COPY geospatial_analytics_system.R . 
-COPY temporal_analysis_system.R .
-COPY legislative_ml_system.R .
-COPY advanced_text_mining_pipeline.R .
-
-# Copy remaining analytics files
-COPY railway_analytics_lightweight.R .
-COPY railway_error_handler.R .
-COPY ml_anomaly_detection_system.R .
+COPY RAILWAY_PRODUCTION_DB_FIX.R .
 
 # Verify core packages are working
 RUN R -e "library(shiny); library(shinydashboard); library(leaflet); cat('✅ Core packages verified\n')"
@@ -60,5 +47,5 @@ RUN chmod -R 755 /srv/shiny-server
 # Expose port
 EXPOSE 3838
 
-# Run startup diagnostics then the app
-CMD ["R", "-e", "source('startup_diagnostics.R'); shiny::runApp('/srv/shiny-server/app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))"]
+# Run the app directly
+CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))"]

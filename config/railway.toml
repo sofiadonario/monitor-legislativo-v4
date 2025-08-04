@@ -3,7 +3,7 @@
 # Using default Dockerfile now
 
 [deploy]
-startCommand = "R -e \"source('startup_diagnostics.R'); source('app.R')\""
+startCommand = "R -e \"shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))\""
 healthcheckPath = "/"
 healthcheckTimeout = 120
 # No health check needed for Shiny apps - they start successfully when listening
