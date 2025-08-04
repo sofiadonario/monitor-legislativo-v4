@@ -39,7 +39,8 @@ get_railway_db_config <- function() {
   cat("🔍 Railway Environment Variables Debug:\n")
   for (var_name in names(railway_env_check)) {
     var_value <- railway_env_check[[var_name]]
-    if (var_value != "") {
+    # Safety check for NULL or empty values
+    if (!is.null(var_value) && nchar(var_value) > 0) {
       if (var_name == "PGPASSWORD" || var_name == "DATABASE_URL") {
         # Don't log full passwords/URLs for security
         cat("  ", var_name, ": [SET - length:", nchar(var_value), "]\n")
@@ -53,28 +54,38 @@ get_railway_db_config <- function() {
   
   # Additional Railway-specific debugging
   railway_env <- Sys.getenv("RAILWAY_ENVIRONMENT")
-  if (railway_env != "") {
+  if (!is.null(railway_env) && nchar(railway_env) > 0) {
     cat("🚂 Railway Environment Detected:", railway_env, "\n")
   } else {
     cat("⚠️ RAILWAY_ENVIRONMENT not set - may not be running on Railway\n")
   }
   
   # Method 1: DATABASE_URL (Railway preferred)
-  if (railway_env_check$DATABASE_URL != "" && grepl("^postgres", railway_env_check$DATABASE_URL)) {
+  database_url <- railway_env_check$DATABASE_URL
+  if (!is.null(database_url) && nchar(database_url) > 0 && grepl("^postgres", database_url)) {
     cat("✅ Using Railway DATABASE_URL\n")
     return(list(
       method = "DATABASE_URL",
-      connection_string = railway_env_check$DATABASE_URL
+      connection_string = database_url
     ))
   }
   
   # Method 2: Individual PostgreSQL environment variables
   if (all(sapply(railway_env_check[2:6], function(x) x != ""))) {
     cat("✅ Using Railway individual PostgreSQL variables\n")
+    
+    # Safely convert port to integer
+    port_val <- tryCatch({
+      as.integer(railway_env_check$PGPORT)
+    }, error = function(e) {
+      cat("⚠️ Invalid PGPORT value, using default 5432\n")
+      5432
+    })
+    
     return(list(
       method = "PG_VARS",
       host = railway_env_check$PGHOST,
-      port = as.integer(railway_env_check$PGPORT),
+      port = port_val,
       dbname = railway_env_check$PGDATABASE,
       user = railway_env_check$PGUSER,
       password = railway_env_check$PGPASSWORD
