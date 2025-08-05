@@ -10,7 +10,7 @@ library(dplyr)
 library(RColorBrewer)
 
 # Load optional packages with error handling
-optional_packages <- c("stringr", "scales", "lubridate", "tidyr", "echarts4r", "htmltools")
+optional_packages <- c("stringr", "scales", "lubridate", "tidyr", "echarts4r", "htmltools", "leaflet")
 
 for (pkg in optional_packages) {
   tryCatch({
@@ -502,6 +502,42 @@ ui <- dashboardPage(
           box(
             title = "🏛️ Top States by Volume", status = "info", solidHeader = TRUE, width = 4,
             DT::dataTableOutput("analytics_top_states")
+          )
+        ),
+        fluidRow(
+          # Interactive Brazilian Map
+          box(
+            title = "🇧🇷 Interactive Brazilian States Map", status = "warning", solidHeader = TRUE, width = 8,
+            leafletOutput("analytics_brazil_map", height = "400px")
+          ),
+          # Geographic Analytics Controls
+          box(
+            title = "🎛️ Geographic Analytics Controls", status = "warning", solidHeader = TRUE, width = 4,
+            selectInput("geo_metric", "Select Metric:",
+              choices = list(
+                "Document Count" = "count",
+                "Regulatory Density" = "density",
+                "Per Capita Documents" = "per_capita"
+              ),
+              selected = "count"
+            ),
+            selectInput("geo_category", "Document Category:",
+              choices = list(
+                "All Documents" = "all",
+                "Legislation" = "legislation", 
+                "Jurisprudence" = "jurisprudence",
+                "Doctrine" = "doctrine"
+              ),
+              selected = "all"
+            ),
+            br(),
+            h5("🗺️ Map Features:"),
+            tags$ul(
+              tags$li("Click states for details"),
+              tags$li("Hover for quick stats"),
+              tags$li("Zoom and pan enabled"),
+              tags$li("Color-coded by volume")
+            )
           )
         ),
         fluidRow(
