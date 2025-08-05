@@ -361,20 +361,93 @@ if (!database_connection_loaded) {
   )
 }
 
-# Load Advanced NLP System
-nlp_system_loaded <- FALSE
-tryCatch({
-  if(file.exists("src/integrate_advanced_nlp.R")) {
-    source("src/integrate_advanced_nlp.R")
-    nlp_system_loaded <- TRUE
-    cat("🧠 Advanced Portuguese Legal NLP system loaded successfully\n")
+# Built-in Portuguese Legal NLP System
+nlp_system_loaded <- TRUE
+
+# Portuguese Legal Stopwords
+portuguese_legal_stopwords <- c(
+  "o", "a", "os", "as", "um", "uma", "uns", "umas", "de", "da", "do", "das", "dos",
+  "em", "na", "no", "nas", "nos", "para", "por", "com", "sem", "sob", "sobre",
+  "artigo", "art", "lei", "decreto", "resolução", "portaria", "instrução",
+  "normativa", "medida", "provisória", "constituição", "código", "regulamento",
+  "que", "não", "ser", "ter", "estar", "haver", "fazer", "dever", "poder"
+)
+
+# Brazilian Legal Entity Recognition Patterns
+legal_entities <- list(
+  agencies = c("ANVISA", "IBAMA", "ANTT", "ANTAQ", "DENATRAN", "CONTRAN", "DNIT"),
+  courts = c("STF", "STJ", "TRF", "TJSP", "TJRJ", "TJMG", "TJRS"),
+  laws = c("Lei", "Decreto", "Resolução", "Portaria", "Instrução Normativa", "Medida Provisória"),
+  authorities = c("Ministério", "Secretaria", "Departamento", "Autarquia", "Agência")
+)
+
+# Simple Portuguese Text Processing Function
+process_portuguese_text <- function(text) {
+  if(is.null(text) || is.na(text) || text == "") return("")
+  
+  # Basic cleaning
+  text <- tolower(text)
+  text <- gsub("[[:punct:]]", " ", text)
+  text <- gsub("\\s+", " ", text)
+  text <- trimws(text)
+  
+  # Remove stopwords
+  words <- unlist(strsplit(text, " "))
+  words <- words[!words %in% portuguese_legal_stopwords]
+  words <- words[nchar(words) > 2]
+  
+  return(paste(words, collapse = " "))
+}
+
+# Regulatory Sentiment Analysis Function
+analyze_regulatory_sentiment <- function(text) {
+  if(is.null(text) || is.na(text) || text == "") return("Balanced")
+  
+  text_lower <- tolower(text)
+  
+  # Prescriptive indicators
+  prescriptive_terms <- c("obrigatório", "vedado", "proibido", "deve", "deverá", 
+                         "obriga", "exige", "impõe", "determina", "estabelece")
+  
+  # Flexible indicators  
+  flexible_terms <- c("pode", "poderá", "faculta", "permite", "autoriza", 
+                     "recomenda", "sugere", "orienta", "incentiva")
+  
+  prescriptive_count <- sum(sapply(prescriptive_terms, function(x) length(grep(x, text_lower))))
+  flexible_count <- sum(sapply(flexible_terms, function(x) length(grep(x, text_lower))))
+  
+  if(prescriptive_count > flexible_count && prescriptive_count > 0) {
+    return("Prescriptive")
+  } else if(flexible_count > prescriptive_count && flexible_count > 0) {
+    return("Flexible") 
   } else {
-    cat("⚠️ NLP integration file not found, using basic text processing\n")
+    return("Balanced")
   }
-}, error = function(e) {
-  cat("❌ NLP system loading failed:", e$message, "\n")
-  cat("🔧 Continuing with basic functionality\n")
-})
+}
+
+# Legal Entity Recognition Function
+extract_legal_entities <- function(text) {
+  if(is.null(text) || is.na(text) || text == "") return(list())
+  
+  found_entities <- list()
+  
+  for(category in names(legal_entities)) {
+    entities_in_category <- c()
+    for(entity in legal_entities[[category]]) {
+      if(grepl(entity, text, ignore.case = TRUE)) {
+        entities_in_category <- c(entities_in_category, entity)
+      }
+    }
+    if(length(entities_in_category) > 0) {
+      found_entities[[category]] <- entities_in_category
+    }
+  }
+  
+  return(found_entities)
+}
+
+cat("🧠 Built-in Portuguese Legal NLP system loaded successfully\n")
+cat("📊 Features: Text processing, sentiment analysis, entity recognition\n")
 
 cat("📊 All systems loaded\n")
 
@@ -1301,23 +1374,71 @@ server <- function(input, output, session) {
     }
   })
   
-  # NLP Analysis reactive data
+  # Enhanced NLP Analysis reactive data
   nlp_analysis_data <- reactive({
     # Trigger analysis when button is clicked
     input$nlp_analyze_btn 
     
     # Get documents based on selected category
     category <- if(is.null(input$nlp_document_category)) "all" else input$nlp_document_category
-    docs <- get_library_documents(category = category, limit = 1000)
+    docs <- get_library_documents(category = category, limit = 500)
     
-    # Add mock NLP analysis results for demonstration
-    if(nrow(docs) > 0) {
-      docs$sentiment_score <- runif(nrow(docs), -1, 1)
-      docs$sentiment_label <- ifelse(docs$sentiment_score > 0.3, "Prescriptive",
-                                   ifelse(docs$sentiment_score < -0.3, "Flexible", "Balanced"))
+    # Apply real Portuguese NLP analysis
+    if(nrow(docs) > 0 && nlp_system_loaded) {
+      cat("🧠 Applying Portuguese Legal NLP to", nrow(docs), "documents...\n")
+      
+      # Process titles and summaries
+      docs$processed_title <- sapply(docs$title, process_portuguese_text)
+      if("summary" %in% names(docs)) {
+        docs$processed_summary <- sapply(docs$summary, process_portuguese_text)
+        # Combine title and summary for analysis
+        docs$full_text <- paste(docs$title, docs$summary, sep = " ")
+      } else {
+        docs$full_text <- docs$title
+      }
+      
+      # Apply sentiment analysis
+      docs$sentiment_label <- sapply(docs$full_text, analyze_regulatory_sentiment)
+      
+      # Extract legal entities from documents
+      docs$has_agencies <- sapply(docs$full_text, function(x) {
+        entities <- extract_legal_entities(x)
+        length(entities$agencies) > 0
+      })
+      
+      docs$has_courts <- sapply(docs$full_text, function(x) {
+        entities <- extract_legal_entities(x)
+        length(entities$courts) > 0
+      })
+      
+      # Assign topics based on content analysis
+      docs$topic <- sapply(docs$full_text, function(text) {
+        text_lower <- tolower(text)
+        if(grepl("transport|trânsito|veículo|estrada|rodovia", text_lower)) {
+          return("Transport Infrastructure")
+        } else if(grepl("ambiental|meio ambiente|poluição|sustentável", text_lower)) {
+          return("Environmental Regulation")
+        } else if(grepl("segurança|acidente|proteção|risco", text_lower)) {
+          return("Safety Standards")
+        } else if(grepl("econom|financ|investimento|custo", text_lower)) {
+          return("Economic Policy")
+        } else if(grepl("urban|cidade|município|planejamento", text_lower)) {
+          return("Urban Planning")
+        } else {
+          return("General Legal")
+        }
+      })
+      
+      cat("✅ NLP Analysis completed for", nrow(docs), "documents\n")
+    } else if(nrow(docs) > 0) {
+      # Fallback to mock data if NLP system not loaded
+      docs$sentiment_label <- sample(c("Prescriptive", "Balanced", "Flexible"), 
+                                   nrow(docs), replace = TRUE, prob = c(0.4, 0.35, 0.25))
       docs$topic <- sample(c("Transport Infrastructure", "Environmental Regulation", 
-                           "Safety Standards", "Economic Policy", "Urban Planning"), 
+                           "Safety Standards", "Economic Policy", "Urban Planning", "General Legal"), 
                          nrow(docs), replace = TRUE)
+      docs$has_agencies <- sample(c(TRUE, FALSE), nrow(docs), replace = TRUE, prob = c(0.3, 0.7))
+      docs$has_courts <- sample(c(TRUE, FALSE), nrow(docs), replace = TRUE, prob = c(0.2, 0.8))
     }
     
     return(docs)
@@ -1369,27 +1490,77 @@ server <- function(input, output, session) {
     }
   })
   
-  # Legal Entities Table
+  # Enhanced Legal Entities Table
   output$nlp_entities_table <- DT::renderDataTable({
-    # Mock legal entities data
-    entities_data <- data.frame(
-      Entity = c("ANVISA", "IBAMA", "STF", "Lei 9.503/1997", "Decreto 5.296/2004", 
-                "CONTRAN", "DENATRAN", "Ministério dos Transportes", "ANTT", "ANTAQ"),
-      Type = c("Agency", "Agency", "Court", "Law", "Decree", 
-               "Council", "Department", "Ministry", "Agency", "Agency"),
-      Frequency = c(156, 89, 234, 67, 43, 
-                   178, 145, 203, 187, 98),
-      Category = c("Health", "Environment", "Justice", "Traffic", "Accessibility",
-                  "Traffic", "Traffic", "Transport", "Transport", "Transport"),
-      stringsAsFactors = FALSE
-    )
+    docs <- nlp_analysis_data()
+    
+    if(nrow(docs) > 0 && nlp_system_loaded) {
+      # Count entity occurrences from real analysis
+      entity_counts <- list()
+      
+      # Count agencies
+      agency_docs <- docs[docs$has_agencies == TRUE, ]
+      if(nrow(agency_docs) > 0) {
+        for(entity in legal_entities$agencies) {
+          count <- sum(sapply(agency_docs$full_text, function(x) grepl(entity, x, ignore.case = TRUE)))
+          if(count > 0) {
+            entity_counts[[entity]] <- list(type = "Agency", count = count, category = "Transport/Environment")
+          }
+        }
+      }
+      
+      # Count courts
+      court_docs <- docs[docs$has_courts == TRUE, ]
+      if(nrow(court_docs) > 0) {
+        for(entity in legal_entities$courts) {
+          count <- sum(sapply(court_docs$full_text, function(x) grepl(entity, x, ignore.case = TRUE)))
+          if(count > 0) {
+            entity_counts[[entity]] <- list(type = "Court", count = count, category = "Justice")
+          }
+        }
+      }
+      
+      # Convert to data frame
+      if(length(entity_counts) > 0) {
+        entities_data <- data.frame(
+          Entity = names(entity_counts),
+          Type = sapply(entity_counts, function(x) x$type),
+          Frequency = sapply(entity_counts, function(x) x$count),
+          Category = sapply(entity_counts, function(x) x$category),
+          stringsAsFactors = FALSE
+        )
+        entities_data <- entities_data[order(entities_data$Frequency, decreasing = TRUE), ]
+      } else {
+        # No entities found in this sample
+        entities_data <- data.frame(
+          Entity = c("No entities found in current sample"),
+          Type = c("Analysis"),
+          Frequency = c(0),
+          Category = c("Try analyzing more documents"),
+          stringsAsFactors = FALSE
+        )
+      }
+    } else {
+      # Fallback entities data with realistic Brazilian legal entities
+      entities_data <- data.frame(
+        Entity = c("CONTRAN", "DENATRAN", "ANTT", "STF", "IBAMA", 
+                  "ANVISA", "ANTAQ", "Ministério dos Transportes", "DNIT", "Lei 9.503/1997"),
+        Type = c("Council", "Department", "Agency", "Court", "Agency", 
+               "Agency", "Agency", "Ministry", "Agency", "Law"),
+        Frequency = c(178, 145, 187, 234, 89, 
+                     156, 98, 203, 123, 67),
+        Category = c("Traffic", "Traffic", "Transport", "Justice", "Environment",
+                    "Health", "Transport", "Transport", "Infrastructure", "Traffic"),
+        stringsAsFactors = FALSE
+      )
+    }
     
     DT::datatable(
       entities_data,
       options = list(pageLength = 10, dom = 'frtip'),
       rownames = FALSE
     ) %>%
-      DT::formatStyle("Frequency", backgroundColor = DT::styleInterval(c(100, 200), c("#FEF0D9", "#FDCC8A", "#FC8D59")))
+      DT::formatStyle("Frequency", backgroundColor = DT::styleInterval(c(50, 150), c("#FEF0D9", "#FDCC8A", "#FC8D59")))
   })
   
   # Topic Modeling Chart
