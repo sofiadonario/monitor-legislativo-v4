@@ -565,7 +565,7 @@ server <- function(input, output, session) {
   get_sublibrary_count <- function(sublibrary) {
     tryCatch({
       if(exists("get_library_documents")) {
-        docs <- get_library_documents(category = sublibrary, limit = 50000)
+        docs <- get_library_documents(category = sublibrary, limit = 999999)
         return(nrow(docs))
       } else {
         # CORRECTED: Fallback counts from actual category_distribution.csv
