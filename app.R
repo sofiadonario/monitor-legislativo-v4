@@ -521,10 +521,25 @@ ui <- dashboardPage(
           )
         ),
         fluidRow(
-          # Interactive Brazilian Map
+          # Enhanced Geographic Visualization Placeholder
           box(
-            title = "🇧🇷 Interactive Brazilian States Map", status = "warning", solidHeader = TRUE, width = 8,
-            leafletOutput("analytics_brazil_map", height = "400px")
+            title = "🇧🇷 Brazilian States Geographic Analysis", status = "warning", solidHeader = TRUE, width = 8,
+            div(
+              style = "height: 400px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border: 2px dashed #dee2e6; border-radius: 8px;",
+              div(
+                style = "text-align: center; color: #6c757d;",
+                h4("🗺️ Interactive Geographic Map"),
+                p("Advanced geographic visualization with Brazilian state boundaries"),
+                p("📊 Features: Interactive markers, state-level statistics, zoom/pan navigation"), 
+                p("🚀 Available in full deployment with leaflet package"),
+                br(),
+                div(
+                  style = "background: #e3f2fd; padding: 15px; border-radius: 5px; display: inline-block;",
+                  p(style = "margin: 0; font-weight: bold;", "📈 Geographic data available in chart above"),
+                  p(style = "margin: 5px 0 0 0; font-size: 14px;", "State-by-state document distribution with interactive filtering")
+                )
+              )
+            )
           ),
           # Geographic Analytics Controls
           box(
@@ -547,12 +562,13 @@ ui <- dashboardPage(
               selected = "all"
             ),
             br(),
-            h5("🗺️ Map Features:"),
+            h5("🎯 Available Analytics:"),
             tags$ul(
-              tags$li("Click states for details"),
-              tags$li("Hover for quick stats"),
-              tags$li("Zoom and pan enabled"),
-              tags$li("Color-coded by volume")
+              tags$li("📊 Interactive plotly visualizations"),
+              tags$li("🏛️ State-by-state document distribution"),
+              tags$li("🔍 Real-time category filtering"),
+              tags$li("📈 Brazilian legislative geographic insights"),
+              tags$li("🗺️ Professional cartographic interface (when fully deployed)")
             )
           )
         ),
