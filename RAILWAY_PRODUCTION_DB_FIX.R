@@ -388,24 +388,26 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     
     # Build query with actual column names from the documents table
     # Based on the diagnostic logs, use only existing columns
+    # Join with document_categories table to get category names
     base_query <- sprintf("
       SELECT 
-        id,
-        titulo as title,
-        COALESCE(categoria, tipo, '') as category,
-        COALESCE(estado, '') as state, 
-        COALESCE(data_publicacao, data) as date,
-        COALESCE(url, '') as url,
-        COALESCE(ementa, '') as summary,
-        COALESCE(urn, '') as urn,
-        COALESCE(municipio, localidade, '') as municipality,
-        COALESCE(autor, '') as author,
-        COALESCE(termo_busca, '') as search_term,
-        COALESCE(assuntos, '') as subjects,
-        tipo as document_type,
-        categoria as raw_category
-      FROM %s
-      WHERE titulo IS NOT NULL AND titulo != ''", main_table)
+        d.id,
+        d.titulo as title,
+        COALESCE(dc.name, d.tipo, '') as category,
+        COALESCE(d.estado, '') as state, 
+        COALESCE(d.data_publicacao, d.data) as date,
+        COALESCE(d.url, '') as url,
+        COALESCE(d.ementa, '') as summary,
+        COALESCE(d.urn, '') as urn,
+        COALESCE(d.municipio, d.localidade, '') as municipality,
+        COALESCE(d.autor, '') as author,
+        COALESCE(d.termo_busca, '') as search_term,
+        COALESCE(d.assuntos, '') as subjects,
+        d.tipo as document_type,
+        d.categoria_original as raw_category
+      FROM %s d
+      LEFT JOIN document_categories dc ON d.category_id = dc.id
+      WHERE d.titulo IS NOT NULL AND d.titulo != ''", main_table)
     
     # Build parameters list for safe parameterized queries
     where_conditions <- c()
@@ -415,13 +417,13 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     # Add filters - search across multiple text fields
     if (search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
       param_count <- param_count + 1
-      where_conditions <- c(where_conditions, sprintf("(titulo ILIKE $%d OR COALESCE(ementa, '') ILIKE $%d OR COALESCE(termo_busca, '') ILIKE $%d OR COALESCE(autor, '') ILIKE $%d OR COALESCE(assuntos, '') ILIKE $%d)", param_count, param_count, param_count, param_count, param_count))
+      where_conditions <- c(where_conditions, sprintf("(d.titulo ILIKE $%d OR COALESCE(d.ementa, '') ILIKE $%d OR COALESCE(d.termo_busca, '') ILIKE $%d OR COALESCE(d.autor, '') ILIKE $%d OR COALESCE(d.assuntos, '') ILIKE $%d)", param_count, param_count, param_count, param_count, param_count))
       params[[param_count]] <- paste0("%", search_term, "%")
     }
     
     if (state != "all" && !is.null(state)) {
       param_count <- param_count + 1
-      where_conditions <- c(where_conditions, sprintf("estado = $%d", param_count))
+      where_conditions <- c(where_conditions, sprintf("d.estado = $%d", param_count))
       params[[param_count]] <- state
     }
     
@@ -438,8 +440,8 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
       if(category %in% names(category_mapping)) {
         target_categories <- category_mapping[[category]]
         placeholders <- paste(sprintf("$%d", param_count:(param_count + length(target_categories) - 1)), collapse = ",")
-        # CORRECTED: Filter by categoria column (not tipo) since that's where the main categories are stored
-        where_conditions <- c(where_conditions, sprintf("categoria IN (%s)", placeholders))
+        # CORRECTED: Filter by category name from document_categories table via JOIN
+        where_conditions <- c(where_conditions, sprintf("dc.name IN (%s)", placeholders))
         for(cat in target_categories) {
           params[[param_count]] <- cat
           param_count <- param_count + 1
