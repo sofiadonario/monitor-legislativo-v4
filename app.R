@@ -65,8 +65,11 @@ if (!database_connection_loaded) {
       if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
         cat("📁 Using parquet dataset for document count\n")
         return(134014)  # Full dataset in parquet format
+      } else if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
+        cat("📁 Using unified CSV dataset for document count\n")
+        return(134014)  # Full unified dataset in CSV format
       } else if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
-        cat("📁 Using CSV dataset for document count\n")
+        cat("📁 Using enhanced CSV dataset for document count\n")
         return(134014)  # Full dataset in CSV format
       } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
         cat("📁 Using sample dataset for document count\n")
@@ -88,6 +91,12 @@ if (!database_connection_loaded) {
       # Determine data source and adjust metrics accordingly
       if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
         data_source <- "parquet_full_dataset"
+        states_count <- 26
+        municipalities_count <- 1000
+        states_pct <- 96.3
+        municipalities_pct <- 18.0
+      } else if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
+        data_source <- "csv_unified_dataset"
         states_count <- 26
         municipalities_count <- 1000
         states_pct <- 96.3
@@ -257,6 +266,7 @@ if (!database_connection_loaded) {
       
       # Fallback to CSV files
       csv_paths <- c(
+        "data_current/processed/production/lexml_unified_dataset.csv",
         "data_current/processed/production/lexml_enhanced_simple.csv",
         "data_current/processed/production/lexml_sample_for_railway.csv"
       )
