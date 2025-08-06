@@ -1,0 +1,109 @@
+{
+  "dash_patterns": [
+    {
+      "original": "Itabirito - MG",
+      "city": "Itabirito",
+      "state": "MG",
+      "column": "locality",
+      "row": 3
+    },
+    {
+      "original": "Ponte Nova - MG",
+      "city": "Ponte Nova",
+      "state": "MG",
+      "column": "locality",
+      "row": 4
+    },
+    {
+      "original": "Uberaba - MG",
+      "city": "Uberaba",
+      "state": "MG",
+      "column": "locality",
+      "row": 9
+    },
+    {
+      "original": "Miguel Pereira - RJ",
+      "city": "Miguel Pereira",
+      "state": "RJ",
+      "column": "locality",
+      "row": 12
+    },
+    {
+      "original": "Terra de Areia - RS",
+      "city": "Terra de Areia",
+      "state": "RS",
+      "column": "locality",
+      "row": 15
+    },
+    {
+      "original": "Herval - RS",
+      "city": "Herval",
+      "state": "RS",
+      "column": "locality",
+      "row": 16
+    },
+    {
+      "original": "Pedras Altas - RS",
+      "city": "Pedras Altas",
+      "state": "RS",
+      "column": "locality",
+      "row": 17
+    },
+    {
+      "original": "Machadinho - RS",
+      "city": "Machadinho",
+      "state": "RS",
+      "column": "locality",
+      "row": 18
+    },
+    {
+      "original": "Santa Margarida do Sul - RS",
+      "city": "Santa Margarida do Sul",
+      "state": "RS",
+      "column": "locality",
+      "row": 19
+    },
+    {
+      "original": "Campinas - SP",
+      "city": "Campinas",
+      "state": "SP",
+      "column": "locality",
+      "row": 20
+    },
+    {
+      "original": "Hortolândia - SP",
+      "city": "Hortolândia",
+      "state": "SP",
+      "column": "locality",
+      "row": 21
+    },
+    {
+      "original": "Caxias do Sul - RS",
+      "city": "Caxias do Sul",
+      "state": "RS",
+      "column": "locality",
+      "row": 34
+    },
+    {
+      "original": "Arinos - MG",
+      "city": "Arinos",
+      "state": "MG",
+      "column": "locality",
+      "row": 56
+    },
+    {
+      "original": "Divinópolis - MG",
+      "city": "Divinópolis",
+      "state": "MG",
+      "column": "locality",
+      "row": 59
+    },
+    {
+      "original": "Catanduva - SP",
+      "city": "Catanduva",
+      "state": "SP",
+      "column": "locality",
+      "row": 73
+    }
+  ]
+}
