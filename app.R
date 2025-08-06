@@ -1182,7 +1182,6 @@ ui <- dashboardPage(
           )
         ) # closes NLP tabItem
     ) # closes tabItems
-  ) # closes dashboardBody
 ) # closes dashboardPage
 
 # Server Logic
