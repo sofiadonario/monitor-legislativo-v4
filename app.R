@@ -1358,6 +1358,10 @@ server <- function(input, output, session) {
   })
   
   output$analytics_date_range <- renderValueBox({
+    # Initialize variables
+    date_range <- "1829-2025"
+    subtitle <- "Date Range (196 years)"
+    
     # Get real date range from database
     tryCatch({
       date_stats <- dbGetQuery(db, "
@@ -1371,15 +1375,11 @@ server <- function(input, output, session) {
       if(nrow(date_stats) > 0 && !is.na(date_stats$min_date) && !is.na(date_stats$max_date)) {
         min_year <- format(as.Date(date_stats$min_date), "%Y")
         max_year <- format(as.Date(date_stats$max_date), "%Y")
-        date_range <- paste0(min_year, "-", max_year)
-        subtitle <- paste0("Date Range (", as.numeric(max_year) - as.numeric(min_year), " years)")
-      } else {
-        date_range <- "1829-2025"
-        subtitle <- "Date Range (196 years)"
+        date_range <<- paste0(min_year, "-", max_year)
+        subtitle <<- paste0("Date Range (", as.numeric(max_year) - as.numeric(min_year), " years)")
       }
     }, error = function(e) {
-      date_range <- "1829-2025"
-      subtitle <- "Date Range (196 years)"
+      cat("⚠️ Date range query failed, using fallback\n")
     })
     
     valueBox(
@@ -1391,6 +1391,10 @@ server <- function(input, output, session) {
   })
   
   output$analytics_doc_types <- renderValueBox({
+    # Initialize variables
+    doc_types <- "5"
+    subtitle <- "Document Types"
+    
     # Get real document type count from database
     tryCatch({
       type_stats <- dbGetQuery(db, "
@@ -1401,15 +1405,11 @@ server <- function(input, output, session) {
       ")
       
       if(nrow(type_stats) > 0 && !is.na(type_stats$type_count)) {
-        doc_types <- type_stats$type_count
-        subtitle <- "Document Types"
-      } else {
-        doc_types <- "5"
-        subtitle <- "Document Types"
+        doc_types <<- type_stats$type_count
+        subtitle <<- "Document Types"
       }
     }, error = function(e) {
-      doc_types <- "5"
-      subtitle <- "Document Types"
+      cat("⚠️ Document types query failed, using fallback\n")
     })
     
     valueBox(
