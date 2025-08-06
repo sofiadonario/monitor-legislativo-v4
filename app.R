@@ -1195,8 +1195,9 @@ ui <- dashboardPage(
           )
         )
       )
-    )
-)
+    ) # closes tabItems
+  ) # closes dashboardBody
+) # closes dashboardPage
 
 # Server Logic
 server <- function(input, output, session) {
