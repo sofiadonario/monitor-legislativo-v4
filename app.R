@@ -1247,9 +1247,9 @@ server <- function(input, output, session) {
     cat("📝 Filter inputs:\n")
     cat("  - Sublibrary:", if(is.null(selected_sublibrary)) "NULL" else selected_sublibrary, "\n")
     cat("  - State:", if(is.null(state)) "NULL" else state, "\n")
-    cat("  - Search:", if(is.null(search_term)) "NULL" else search_term, "\n")
-    cat("  - Sort:", if(is.null(sort_by)) "NULL" else sort_by, "\n")
-    cat("  - Semantic Search:", if(is.null(semantic_search_enabled)) "NULL" else semantic_search_enabled, "\n")
+    cat("  - Search:", ifelse(is.null(search_term), "NULL", search_term), "\n")
+    cat("  - Sort:", ifelse(is.null(sort_by), "NULL", sort_by), "\n")
+    cat("  - Semantic Search:", ifelse(is.null(semantic_search_enabled), "NULL", semantic_search_enabled), "\n")
     
     # Trigger on search button or input changes
     input$lib_search_btn
@@ -1355,7 +1355,7 @@ server <- function(input, output, session) {
       } else {
         134014
       }
-    }, error = function(e) 134014)
+    }, error = function(e) { return(134014) })
     
     valueBox(
       value = format(total, big.mark = ","),
