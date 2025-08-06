@@ -926,8 +926,7 @@ ui <- dashboardPage(
               plotlyOutput("geo_temporal_trends", height = "400px")
             )
           )
-        )
-      ),
+        ),
         
       # Interactive Maps Tab
       tabItem(tabName = "maps",
@@ -1197,7 +1196,6 @@ ui <- dashboardPage(
         ) # closes NLP tabItem
     ) # closes tabItems
   ) # closes dashboardBody  
-) # closes dashboardPage
 
 # Server Logic
 server <- function(input, output, session) {
