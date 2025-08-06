@@ -10,7 +10,7 @@ library(dplyr)
 library(RColorBrewer)
 
 # Load optional packages with error handling
-optional_packages <- c("stringr", "scales", "lubridate", "tidyr", "echarts4r", "htmltools", "leaflet", "sf", "geobr")
+optional_packages <- c("stringr", "scales", "lubridate", "tidyr", "echarts4r", "htmltools", "leaflet", "sf", "geobr", "jsonlite")
 
 for (pkg in optional_packages) {
   tryCatch({
@@ -971,7 +971,7 @@ ui <- dashboardPage(
             # Main Interactive Map
             box(
               title = "🗺️ Brazil Legislative Activity Map", status = "primary", solidHeader = TRUE, width = 8,
-              plotlyOutput("interactive_brazil_map", height = "600px")
+              uiOutput("map_output_ui")
             )
           ),
           fluidRow(
@@ -3091,87 +3091,76 @@ server <- function(input, output, session) {
         "Viridis"  # default
       )
       
-      # Create proper choropleth map with Brazilian state boundaries using GeoJSON
-      # Try to load Brazilian state boundaries from geobr package
-      brazil_states_geojson <- tryCatch({
+      # Create true choropleth map with filled state boundaries
+      # Use built-in plotly choropleth with proper GeoJSON for Brazilian states
+      
+      # Try to create choropleth using geobr data
+      choropleth_success <- FALSE
+      
+      tryCatch({
         if(requireNamespace("geobr", quietly = TRUE) && requireNamespace("sf", quietly = TRUE)) {
-          # Load Brazilian states geometry
+          # Load Brazilian states with proper CRS
           states_sf <- geobr::read_state(year = 2020, simplified = TRUE, showProgress = FALSE)
           
-          # Convert to GeoJSON-like structure for plotly
-          states_geojson <- list(
-            type = "FeatureCollection",
-            features = lapply(1:nrow(states_sf), function(i) {
-              state_geom <- sf::st_geometry(states_sf[i,])[[1]]
-              coords <- as.matrix(state_geom)
-              
-              list(
-                type = "Feature",
-                id = states_sf$abbrev_state[i],
-                properties = list(
-                  name = states_sf$name_state[i],
-                  abbrev = states_sf$abbrev_state[i]
+          # Ensure proper coordinate system (WGS84)
+          if(sf::st_crs(states_sf)$input != "EPSG:4326") {
+            states_sf <- sf::st_transform(states_sf, 4326)
+          }
+          
+          # Convert to proper GeoJSON for plotly
+          states_geojson <- jsonlite::toJSON(sf::st_sf(states_sf), auto_unbox = TRUE)
+          
+          # Create choropleth with filled state areas
+          p <- plot_ly() %>%
+            add_trace(
+              type = "choroplethmapbox",
+              geojson = states_geojson,
+              locations = map_data$state_code,
+              z = map_data[[metric_column]],
+              colorscale = colorscale_choice,
+              reversescale = FALSE,
+              marker = list(
+                line = list(color = "white", width = 1),
+                opacity = 0.8
+              ),
+              colorbar = list(
+                title = switch(map_metric,
+                  "count" = "Documents",
+                  "per_capita" = "Docs per<br>100k pop",
+                  "activity" = "Activity<br>Index",
+                  "density" = "Regulatory<br>Density"
                 ),
-                geometry = list(
-                  type = "Polygon",
-                  coordinates = list(list(coords))
-                )
+                thickness = 15,
+                len = 0.7
+              ),
+              hovertemplate = paste0(
+                "<b>", map_data$state_name, "</b><br>",
+                "State: ", map_data$state_code, "<br>",
+                switch(map_metric,
+                  "count" = paste0("Documents: ", format(map_data$documents, big.mark = ",")),
+                  "per_capita" = paste0("Per 100k: ", map_data$docs_per_capita),
+                  "activity" = paste0("Activity: ", map_data$activity_index),
+                  "density" = paste0("Density: ", map_data$regulatory_density)
+                ),
+                "<extra></extra>"
               )
-            })
-          )
-          states_geojson
-        } else {
-          NULL
+            )
+          
+          choropleth_success <- TRUE
         }
       }, error = function(e) {
-        NULL
+        cat("Choropleth error:", e$message, "\n")
       })
       
-      if(!is.null(brazil_states_geojson)) {
-        # Create choropleth with actual Brazilian state boundaries
-        p <- plot_ly(
-          type = "choroplethmapbox",
-          geojson = brazil_states_geojson,
-          locations = map_data$state_code,
-          z = map_data[[metric_column]],
-          colorscale = colorscale_choice,
-          colorbar = list(
-            title = switch(map_metric,
-              "count" = "Documents",
-              "per_capita" = "Docs per<br>100k pop",
-              "activity" = "Activity<br>Index",
-              "density" = "Regulatory<br>Density"
-            ),
-            thickness = 15,
-            len = 0.7
-          ),
-          hovertemplate = paste0(
-            "<b>%{properties.name}</b><br>",
-            "State: %{location}<br>",
-            switch(map_metric,
-              "count" = "Documents: %{z:,}",
-              "per_capita" = "Docs per 100k: %{z}",
-              "activity" = "Activity Index: %{z}",
-              "density" = "Regulatory Density: %{z}"
-            ),
-            "<extra></extra>"
-          ),
-          marker = list(
-            line = list(color = "white", width = 1.5),
-            opacity = 0.85
-          )
-        )
-      } else {
-        # Fallback to enhanced scatter plot if geobr is not available
-        p <- plot_ly(
-          data = map_data,
-          lon = ~lon,
-          lat = ~lat,
-          type = "scattermapbox",
-          mode = "markers+text",
-          marker = list(
-            size = 35,
-            color = ~get(metric_column),
+      if(!choropleth_success) {
+        # Alternative approach using plotly's built-in geography
+        tryCatch({
+          # Try using plotly's choropleth with location codes
+          p <- plot_ly(
+            type = "choropleth",
+            locations = map_data$state_code,
+            z = map_data[[metric_column]],
+            locationmode = "geojson-id",
             colorscale = colorscale_choice,
             colorbar = list(
               title = switch(map_metric,
@@ -3181,14 +3170,106 @@ server <- function(input, output, session) {
                 "density" = "Regulatory<br>Density"
               )
             ),
-            line = list(color = "white", width = 2),
-            opacity = 0.9
-          ),
-          text = if(show_labels) {~state_code} else {NULL},
-          textposition = "middle center",
-          textfont = list(size = 12, color = "white", family = "Arial Black"),
-          hovertext = ~hover_text,
-          hoverinfo = "text"
+            hovertemplate = paste0(
+              "<b>", map_data$state_name, "</b><br>",
+              "Value: %{z}<br>",
+              "<extra></extra>"
+            )
+          )
+          choropleth_success <- TRUE
+        }, error = function(e2) {
+          cat("Alternative choropleth failed:", e2$message, "\n")
+        })
+      }
+      
+      if(!choropleth_success) {
+        # Create true filled polygon areas for Brazilian states
+        # Simplified state boundaries for choropleth effect
+        
+        state_polygons <- list(
+          # Major states with simplified rectangular boundaries
+          SP = list(lon = c(-53.1, -44.2, -44.2, -53.1, -53.1), lat = c(-19.8, -19.8, -25.3, -25.3, -19.8)),
+          RJ = list(lon = c(-45, -40.9, -40.9, -45, -45), lat = c(-20.7, -20.7, -23.4, -23.4, -20.7)),
+          MG = list(lon = c(-51.1, -39.8, -39.8, -51.1, -51.1), lat = c(-14.2, -14.2, -22.9, -22.9, -14.2)),
+          RS = list(lon = c(-57.6, -49.7, -49.7, -57.6, -57.6), lat = c(-27.1, -27.1, -33.8, -33.8, -27.1)),
+          PR = list(lon = c(-54.6, -48.1, -48.1, -54.6, -54.6), lat = c(-22.5, -22.5, -26.7, -26.7, -22.5)),
+          SC = list(lon = c(-53.8, -48.3, -48.3, -53.8, -53.8), lat = c(-25.9, -25.9, -29.4, -29.4, -25.9)),
+          BA = list(lon = c(-47.8, -38, -38, -47.8, -47.8), lat = c(-9, -9, -18.3, -18.3, -9)),
+          GO = list(lon = c(-53.2, -45.9, -45.9, -53.2, -53.2), lat = c(-12.4, -12.4, -19.5, -19.5, -12.4)),
+          MS = list(lon = c(-58, -50.1, -50.1, -58, -58), lat = c(-17.9, -17.9, -24.1, -24.1, -17.9)),
+          MT = list(lon = c(-66, -50.2, -50.2, -66, -66), lat = c(-7.3, -7.3, -18.1, -18.1, -7.3)),
+          PA = list(lon = c(-58, -46, -46, -58, -58), lat = c(2.5, 2.5, -10, -10, 2.5)),
+          CE = list(lon = c(-41.4, -37.2, -37.2, -41.4, -41.4), lat = c(-2.8, -2.8, -7.9, -7.9, -2.8)),
+          PE = list(lon = c(-41.3, -34.8, -34.8, -41.3, -41.3), lat = c(-7.3, -7.3, -9.5, -9.5, -7.3)),
+          ES = list(lon = c(-41.9, -39.7, -39.7, -41.9, -41.9), lat = c(-17.9, -17.9, -21.3, -21.3, -17.9)),
+          DF = list(lon = c(-48.3, -47.2, -47.2, -48.3, -48.3), lat = c(-15.5, -15.5, -16.1, -16.1, -15.5))
+        )
+        
+        # Create base plot
+        p <- plot_ly(type = "scatter", mode = "none")
+        
+        # Add filled polygons for each state
+        for(state_code in map_data$state_code) {
+          if(state_code %in% names(state_polygons)) {
+            state_value <- map_data[map_data$state_code == state_code, metric_column]
+            state_name <- map_data[map_data$state_code == state_code, "state_name"]
+            
+            # Calculate color based on value and colorscale
+            # This is a simplified color mapping - ideally would use proper colorscale
+            color_intensity <- (state_value - min(map_data[[metric_column]], na.rm = TRUE)) / 
+                             (max(map_data[[metric_column]], na.rm = TRUE) - min(map_data[[metric_column]], na.rm = TRUE))
+            
+            fill_color <- switch(colorscale_choice,
+              "Viridis" = paste0("rgba(", round(68 + color_intensity * 187), ",", 
+                               round(1 + color_intensity * 253), ",", 
+                               round(84 + color_intensity * 171), ", 0.8)"),
+              "Hot" = paste0("rgba(", round(255 * color_intensity), ",", 
+                           round(255 * color_intensity^2), ",0, 0.8)"),
+              "Blues" = paste0("rgba(8,", round(48 + color_intensity * 200), ",", 
+                             round(107 + color_intensity * 148), ", 0.8)"),
+              paste0("rgba(", round(68 + color_intensity * 187), ",", 
+                   round(1 + color_intensity * 253), ",", 
+                   round(84 + color_intensity * 171), ", 0.8)")
+            )
+            
+            p <- p %>% add_trace(
+              x = state_polygons[[state_code]]$lon,
+              y = state_polygons[[state_code]]$lat,
+              type = "scatter",
+              mode = "lines",
+              fill = "toself",
+              fillcolor = fill_color,
+              line = list(color = "white", width = 2),
+              hovertemplate = paste0(
+                "<b>", state_name, " (", state_code, ")</b><br>",
+                switch(map_metric,
+                  "count" = paste0("Documents: ", format(state_value, big.mark = ",")),
+                  "per_capita" = paste0("Per 100k: ", state_value),
+                  "activity" = paste0("Activity Index: ", state_value),
+                  "density" = paste0("Density: ", state_value)
+                ),
+                "<extra></extra>"
+              ),
+              showlegend = FALSE
+            )
+          }
+        }
+        
+        # Add colorbar manually
+        p <- p %>% layout(
+          coloraxis = list(
+            colorscale = colorscale_choice,
+            colorbar = list(
+              title = switch(map_metric,
+                "count" = "Documents",
+                "per_capita" = "Docs per<br>100k pop",
+                "activity" = "Activity<br>Index",
+                "density" = "Regulatory<br>Density"
+              ),
+              thickness = 15,
+              len = 0.7
+            )
+          )
         )
       }
       
