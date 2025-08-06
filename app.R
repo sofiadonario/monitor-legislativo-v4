@@ -2992,6 +2992,7 @@ server <- function(input, output, session) {
     map_category <- input$map_category
     show_labels <- input$map_show_labels
     show_population <- input$map_show_population
+    date_range <- input$map_date_range
     
     # Brazilian states data with enhanced geographic information
     brazil_states <- data.frame(
@@ -3026,8 +3027,28 @@ server <- function(input, output, session) {
     )
     
     if(nrow(docs) > 0 && "state" %in% names(docs)) {
+      # Filter documents by category if specified
+      filtered_docs <- docs
+      if(map_category != "all") {
+        if(map_category == "legislation" && "category" %in% names(docs)) {
+          filtered_docs <- docs %>% filter(grepl("Legislação|Proposições", category, ignore.case = TRUE))
+        } else if(map_category == "jurisprudence" && "category" %in% names(docs)) {
+          filtered_docs <- docs %>% filter(grepl("Jurisprudência", category, ignore.case = TRUE))
+        } else if(map_category == "doctrine" && "category" %in% names(docs)) {
+          filtered_docs <- docs %>% filter(grepl("Doutrina|Outros", category, ignore.case = TRUE))
+        } else if(map_category == "transport") {
+          filtered_docs <- docs %>% filter(grepl("transport|veículo|mobilidade|logística", title, ignore.case = TRUE))
+        }
+      }
+      
+      # Apply date filtering if date column exists
+      if(!is.null(input$map_date_range) && "date" %in% names(filtered_docs)) {
+        filtered_docs <- filtered_docs %>%
+          filter(date >= input$map_date_range[1], date <= input$map_date_range[2])
+      }
+      
       # Process document data by state
-      state_data <- docs %>%
+      state_data <- filtered_docs %>%
         filter(!is.na(state), state != "") %>%
         count(state, name = "documents") %>%
         arrange(desc(documents))
@@ -3061,41 +3082,132 @@ server <- function(input, output, session) {
         "Activity Index: ", map_data$activity_index
       )
       
-      # Create the enhanced interactive map
-      p <- plot_ly(
-        data = map_data,
-        lon = ~lon,
-        lat = ~lat,
-        type = "scattermapbox",
-        mode = "markers+text",
-        marker = list(
-          size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 15, 8), 40),
-          color = ~get(metric_column),
-          colorscale = "Viridis",
-          colorbar = list(
-            title = switch(map_metric,
-              "count" = "Documents",
-              "per_capita" = "Docs per<br>100k pop",
-              "activity" = "Activity<br>Index", 
-              "density" = "Regulatory<br>Density"
-            )
+      # Create the enhanced interactive map based on map type
+      if(map_type == "density") {
+        # Density heatmap style
+        p <- plot_ly(
+          data = map_data,
+          lon = ~lon,
+          lat = ~lat,
+          type = "scattermapbox",
+          mode = "markers",
+          marker = list(
+            size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 20, 10), 60),
+            color = ~get(metric_column),
+            colorscale = "Hot",
+            colorbar = list(
+              title = switch(map_metric,
+                "count" = "Documents",
+                "per_capita" = "Docs per<br>100k pop",
+                "activity" = "Activity<br>Index", 
+                "density" = "Regulatory<br>Density"
+              )
+            ),
+            line = list(color = "red", width = 1),
+            opacity = 0.7
           ),
-          line = list(color = "white", width = 2),
-          opacity = 0.8
-        ),
-        text = if(show_labels) {~state_code} else {NULL},
-        textposition = "middle center",
-        textfont = list(size = 12, color = "white"),
-        hovertext = ~hover_text,
-        hoverinfo = "text"
-      ) %>%
+          hovertext = ~hover_text,
+          hoverinfo = "text"
+        )
+      } else if(map_type == "municipalities") {
+        # Municipality heatmap style (enhanced state view)
+        p <- plot_ly(
+          data = map_data,
+          lon = ~lon,
+          lat = ~lat,
+          type = "scattermapbox",
+          mode = "markers+text",
+          marker = list(
+            size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 18, 10), 50),
+            color = ~get(metric_column),
+            colorscale = "Blues",
+            colorbar = list(
+              title = paste("Municipal<br>", switch(map_metric,
+                "count" = "Documents",
+                "per_capita" = "Docs per<br>100k pop",
+                "activity" = "Activity<br>Index", 
+                "density" = "Regulatory<br>Density"
+              ))
+            ),
+            line = list(color = "navy", width = 1),
+            opacity = 0.8,
+            symbol = "circle"
+          ),
+          text = if(show_labels) {~paste0(state_code, "\n", round(get(metric_column), 1))} else {NULL},
+          textposition = "middle center",
+          textfont = list(size = 10, color = "white"),
+          hovertext = ~paste0(hover_text, "<br><b>Municipal Focus:</b> Enhanced view"),
+          hoverinfo = "text"
+        )
+      } else if(map_type == "regions") {
+        # Regional clustering style
+        region_colors <- c("Norte" = "#FF6B6B", "Nordeste" = "#4ECDC4", 
+                          "Centro-Oeste" = "#45B7D1", "Sudeste" = "#96CEB4", 
+                          "Sul" = "#FFEAA7")
+        p <- plot_ly(
+          data = map_data,
+          lon = ~lon,
+          lat = ~lat,
+          type = "scattermapbox",
+          mode = "markers+text",
+          marker = list(
+            size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 12, 8), 35),
+            color = ~region,
+            colors = region_colors,
+            line = list(color = "white", width = 2),
+            opacity = 0.8
+          ),
+          text = if(show_labels) {~state_code} else {NULL},
+          textposition = "middle center",
+          textfont = list(size = 10, color = "white"),
+          hovertext = ~hover_text,
+          hoverinfo = "text"
+        )
+      } else {
+        # Default state distribution style
+        p <- plot_ly(
+          data = map_data,
+          lon = ~lon,
+          lat = ~lat,
+          type = "scattermapbox",
+          mode = "markers+text",
+          marker = list(
+            size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 15, 8), 40),
+            color = ~get(metric_column),
+            colorscale = "Viridis",
+            colorbar = list(
+              title = switch(map_metric,
+                "count" = "Documents",
+                "per_capita" = "Docs per<br>100k pop",
+                "activity" = "Activity<br>Index", 
+                "density" = "Regulatory<br>Density"
+              )
+            ),
+            line = list(color = "white", width = 2),
+            opacity = 0.8
+          ),
+          text = if(show_labels) {~state_code} else {NULL},
+          textposition = "middle center",
+          textfont = list(size = 12, color = "white"),
+          hovertext = ~hover_text,
+          hoverinfo = "text"
+        )
+      }
+      
+      p <- p %>%
         layout(
           title = list(
             text = paste("Interactive Brazil Map -", 
+                        switch(map_type,
+                          "states" = "State Distribution",
+                          "municipalities" = "Municipality Heatmap",
+                          "regions" = "Regional Clusters", 
+                          "density" = "Document Density"),
+                        "-",
                         switch(map_metric,
-                          "count" = "Document Distribution",
-                          "per_capita" = "Documents per Capita",
-                          "activity" = "Legislative Activity Index",
+                          "count" = "Document Count",
+                          "per_capita" = "Per Capita",
+                          "activity" = "Activity Index",
                           "density" = "Regulatory Density")),
             font = list(size = 16)
           ),
