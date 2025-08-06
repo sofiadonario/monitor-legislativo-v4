@@ -1193,8 +1193,6 @@ ui <- dashboardPage(
               )
             )
           )
-        )
-      )
     ) # closes tabItems
   ) # closes dashboardBody
 ) # closes dashboardPage
