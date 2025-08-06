@@ -10,7 +10,7 @@ library(dplyr)
 library(RColorBrewer)
 
 # Load optional packages with error handling
-optional_packages <- c("stringr", "scales", "lubridate", "tidyr", "echarts4r", "htmltools", "leaflet")
+optional_packages <- c("stringr", "scales", "lubridate", "tidyr", "echarts4r", "htmltools", "leaflet", "sf", "geobr")
 
 for (pkg in optional_packages) {
   tryCatch({
@@ -3091,53 +3091,106 @@ server <- function(input, output, session) {
         "Viridis"  # default
       )
       
-      # Create choropleth-style map with state-sized filled areas
-      # Calculate dynamic sizes based on approximate state areas (larger states get bigger circles)
-      state_sizes <- c(
-        "AC" = 35, "AL" = 20, "AP" = 30, "AM" = 55, "BA" = 50, "CE" = 25, "DF" = 15,
-        "ES" = 20, "GO" = 45, "MA" = 45, "MT" = 60, "MS" = 50, "MG" = 55, "PA" = 65,
-        "PB" = 20, "PR" = 35, "PE" = 25, "PI" = 35, "RJ" = 25, "RN" = 20, "RS" = 40,
-        "RO" = 35, "RR" = 40, "SC" = 25, "SP" = 45, "SE" = 18, "TO" = 40
-      )
+      # Create proper choropleth map with Brazilian state boundaries using GeoJSON
+      # Try to load Brazilian state boundaries from geobr package
+      brazil_states_geojson <- tryCatch({
+        if(requireNamespace("geobr", quietly = TRUE) && requireNamespace("sf", quietly = TRUE)) {
+          # Load Brazilian states geometry
+          states_sf <- geobr::read_state(year = 2020, simplified = TRUE, showProgress = FALSE)
+          
+          # Convert to GeoJSON-like structure for plotly
+          states_geojson <- list(
+            type = "FeatureCollection",
+            features = lapply(1:nrow(states_sf), function(i) {
+              state_geom <- sf::st_geometry(states_sf[i,])[[1]]
+              coords <- as.matrix(state_geom)
+              
+              list(
+                type = "Feature",
+                id = states_sf$abbrev_state[i],
+                properties = list(
+                  name = states_sf$name_state[i],
+                  abbrev = states_sf$abbrev_state[i]
+                ),
+                geometry = list(
+                  type = "Polygon",
+                  coordinates = list(list(coords))
+                )
+              )
+            })
+          )
+          states_geojson
+        } else {
+          NULL
+        }
+      }, error = function(e) {
+        NULL
+      })
       
-      # Create the enhanced map with proportional state areas
-      p <- plot_ly(
-        data = map_data,
-        lon = ~lon,
-        lat = ~lat,
-        type = "scattermapbox",
-        mode = "markers",
-        marker = list(
-          size = ~state_sizes[state_code],
-          color = ~get(metric_column),
+      if(!is.null(brazil_states_geojson)) {
+        # Create choropleth with actual Brazilian state boundaries
+        p <- plot_ly(
+          type = "choroplethmapbox",
+          geojson = brazil_states_geojson,
+          locations = map_data$state_code,
+          z = map_data[[metric_column]],
           colorscale = colorscale_choice,
           colorbar = list(
             title = switch(map_metric,
               "count" = "Documents",
               "per_capita" = "Docs per<br>100k pop",
-              "activity" = "Activity<br>Index", 
+              "activity" = "Activity<br>Index",
               "density" = "Regulatory<br>Density"
             ),
             thickness = 15,
             len = 0.7
           ),
-          line = list(color = "white", width = 2),
-          opacity = 0.9,
-          symbol = "circle"
-        ),
-        text = if(show_labels) {
-          ~paste0("<b>", state_code, "</b><br>", 
-                 switch(map_metric,
-                   "count" = format(documents, big.mark = ","),
-                   "per_capita" = paste0(docs_per_capita, "/100k"),
-                   "activity" = activity_index,
-                   "density" = regulatory_density))
-        } else {NULL},
-        textposition = "middle center",
-        textfont = list(size = 11, color = "white", family = "Arial Black"),
-        hovertext = ~hover_text,
-        hoverinfo = "text"
-      )
+          hovertemplate = paste0(
+            "<b>%{properties.name}</b><br>",
+            "State: %{location}<br>",
+            switch(map_metric,
+              "count" = "Documents: %{z:,}",
+              "per_capita" = "Docs per 100k: %{z}",
+              "activity" = "Activity Index: %{z}",
+              "density" = "Regulatory Density: %{z}"
+            ),
+            "<extra></extra>"
+          ),
+          marker = list(
+            line = list(color = "white", width = 1.5),
+            opacity = 0.85
+          )
+        )
+      } else {
+        # Fallback to enhanced scatter plot if geobr is not available
+        p <- plot_ly(
+          data = map_data,
+          lon = ~lon,
+          lat = ~lat,
+          type = "scattermapbox",
+          mode = "markers+text",
+          marker = list(
+            size = 35,
+            color = ~get(metric_column),
+            colorscale = colorscale_choice,
+            colorbar = list(
+              title = switch(map_metric,
+                "count" = "Documents",
+                "per_capita" = "Docs per<br>100k pop",
+                "activity" = "Activity<br>Index",
+                "density" = "Regulatory<br>Density"
+              )
+            ),
+            line = list(color = "white", width = 2),
+            opacity = 0.9
+          ),
+          text = if(show_labels) {~state_code} else {NULL},
+          textposition = "middle center",
+          textfont = list(size = 12, color = "white", family = "Arial Black"),
+          hovertext = ~hover_text,
+          hoverinfo = "text"
+        )
+      }
       
       p <- p %>%
         layout(
