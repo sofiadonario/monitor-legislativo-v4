@@ -3082,117 +3082,62 @@ server <- function(input, output, session) {
         "Activity Index: ", map_data$activity_index
       )
       
-      # Create the enhanced interactive map based on map type
-      if(map_type == "density") {
-        # Density heatmap style
-        p <- plot_ly(
-          data = map_data,
-          lon = ~lon,
-          lat = ~lat,
-          type = "scattermapbox",
-          mode = "markers",
-          marker = list(
-            size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 20, 10), 60),
-            color = ~get(metric_column),
-            colorscale = "Hot",
-            colorbar = list(
-              title = switch(map_metric,
-                "count" = "Documents",
-                "per_capita" = "Docs per<br>100k pop",
-                "activity" = "Activity<br>Index", 
-                "density" = "Regulatory<br>Density"
-              )
+      # Create choropleth map with colored state boundaries
+      # Define colorscale based on map type
+      colorscale_choice <- switch(map_type,
+        "density" = "Hot",
+        "municipalities" = "Blues", 
+        "regions" = "Viridis",
+        "Viridis"  # default
+      )
+      
+      # Create choropleth-style map with state-sized filled areas
+      # Calculate dynamic sizes based on approximate state areas (larger states get bigger circles)
+      state_sizes <- c(
+        "AC" = 35, "AL" = 20, "AP" = 30, "AM" = 55, "BA" = 50, "CE" = 25, "DF" = 15,
+        "ES" = 20, "GO" = 45, "MA" = 45, "MT" = 60, "MS" = 50, "MG" = 55, "PA" = 65,
+        "PB" = 20, "PR" = 35, "PE" = 25, "PI" = 35, "RJ" = 25, "RN" = 20, "RS" = 40,
+        "RO" = 35, "RR" = 40, "SC" = 25, "SP" = 45, "SE" = 18, "TO" = 40
+      )
+      
+      # Create the enhanced map with proportional state areas
+      p <- plot_ly(
+        data = map_data,
+        lon = ~lon,
+        lat = ~lat,
+        type = "scattermapbox",
+        mode = "markers",
+        marker = list(
+          size = ~state_sizes[state_code],
+          color = ~get(metric_column),
+          colorscale = colorscale_choice,
+          colorbar = list(
+            title = switch(map_metric,
+              "count" = "Documents",
+              "per_capita" = "Docs per<br>100k pop",
+              "activity" = "Activity<br>Index", 
+              "density" = "Regulatory<br>Density"
             ),
-            line = list(color = "red", width = 1),
-            opacity = 0.7
+            thickness = 15,
+            len = 0.7
           ),
-          hovertext = ~hover_text,
-          hoverinfo = "text"
-        )
-      } else if(map_type == "municipalities") {
-        # Municipality heatmap style (enhanced state view)
-        p <- plot_ly(
-          data = map_data,
-          lon = ~lon,
-          lat = ~lat,
-          type = "scattermapbox",
-          mode = "markers+text",
-          marker = list(
-            size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 18, 10), 50),
-            color = ~get(metric_column),
-            colorscale = "Blues",
-            colorbar = list(
-              title = paste("Municipal<br>", switch(map_metric,
-                "count" = "Documents",
-                "per_capita" = "Docs per<br>100k pop",
-                "activity" = "Activity<br>Index", 
-                "density" = "Regulatory<br>Density"
-              ))
-            ),
-            line = list(color = "navy", width = 1),
-            opacity = 0.8,
-            symbol = "circle"
-          ),
-          text = if(show_labels) {~paste0(state_code, "\n", round(get(metric_column), 1))} else {NULL},
-          textposition = "middle center",
-          textfont = list(size = 10, color = "white"),
-          hovertext = ~paste0(hover_text, "<br><b>Municipal Focus:</b> Enhanced view"),
-          hoverinfo = "text"
-        )
-      } else if(map_type == "regions") {
-        # Regional clustering style
-        region_colors <- c("Norte" = "#FF6B6B", "Nordeste" = "#4ECDC4", 
-                          "Centro-Oeste" = "#45B7D1", "Sudeste" = "#96CEB4", 
-                          "Sul" = "#FFEAA7")
-        p <- plot_ly(
-          data = map_data,
-          lon = ~lon,
-          lat = ~lat,
-          type = "scattermapbox",
-          mode = "markers+text",
-          marker = list(
-            size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 12, 8), 35),
-            color = ~region,
-            colors = region_colors,
-            line = list(color = "white", width = 2),
-            opacity = 0.8
-          ),
-          text = if(show_labels) {~state_code} else {NULL},
-          textposition = "middle center",
-          textfont = list(size = 10, color = "white"),
-          hovertext = ~hover_text,
-          hoverinfo = "text"
-        )
-      } else {
-        # Default state distribution style
-        p <- plot_ly(
-          data = map_data,
-          lon = ~lon,
-          lat = ~lat,
-          type = "scattermapbox",
-          mode = "markers+text",
-          marker = list(
-            size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 15, 8), 40),
-            color = ~get(metric_column),
-            colorscale = "Viridis",
-            colorbar = list(
-              title = switch(map_metric,
-                "count" = "Documents",
-                "per_capita" = "Docs per<br>100k pop",
-                "activity" = "Activity<br>Index", 
-                "density" = "Regulatory<br>Density"
-              )
-            ),
-            line = list(color = "white", width = 2),
-            opacity = 0.8
-          ),
-          text = if(show_labels) {~state_code} else {NULL},
-          textposition = "middle center",
-          textfont = list(size = 12, color = "white"),
-          hovertext = ~hover_text,
-          hoverinfo = "text"
-        )
-      }
+          line = list(color = "white", width = 2),
+          opacity = 0.9,
+          symbol = "circle"
+        ),
+        text = if(show_labels) {
+          ~paste0("<b>", state_code, "</b><br>", 
+                 switch(map_metric,
+                   "count" = format(documents, big.mark = ","),
+                   "per_capita" = paste0(docs_per_capita, "/100k"),
+                   "activity" = activity_index,
+                   "density" = regulatory_density))
+        } else {NULL},
+        textposition = "middle center",
+        textfont = list(size = 11, color = "white", family = "Arial Black"),
+        hovertext = ~hover_text,
+        hoverinfo = "text"
+      )
       
       p <- p %>%
         layout(
