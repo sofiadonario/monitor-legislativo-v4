@@ -680,7 +680,6 @@ ui <- dashboardPage(
                 )
               )
             )
-            )
           )
         ),
         fluidRow(
@@ -1169,7 +1168,10 @@ ui <- dashboardPage(
           )
         ) # closes NLP tabItem
     ) # closes tabItems
+  ) # closes dashboardBody
 ) # closes dashboardPage
+
+# UI definition complete
 
 # Server Logic
 server <- function(input, output, session) {
