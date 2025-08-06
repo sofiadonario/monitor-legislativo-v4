@@ -1245,8 +1245,8 @@ server <- function(input, output, session) {
     semantic_search_enabled <- input$lib_semantic_search
     
     cat("📝 Filter inputs:\n")
-    cat("  - Sublibrary:", if(is.null(selected_sublibrary)) "NULL" else selected_sublibrary, "\n")
-    cat("  - State:", if(is.null(state)) "NULL" else state, "\n")
+    cat("  - Sublibrary:", ifelse(is.null(selected_sublibrary), "NULL", selected_sublibrary), "\n")
+    cat("  - State:", ifelse(is.null(state), "NULL", state), "\n")
     cat("  - Search:", ifelse(is.null(search_term), "NULL", search_term), "\n")
     cat("  - Sort:", ifelse(is.null(sort_by), "NULL", sort_by), "\n")
     cat("  - Semantic Search:", ifelse(is.null(semantic_search_enabled), "NULL", semantic_search_enabled), "\n")
