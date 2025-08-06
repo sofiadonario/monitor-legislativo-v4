@@ -2710,7 +2710,7 @@ server <- function(input, output, session) {
         type = "scatter",
         mode = "markers+text",
         marker = list(
-          size = ~sqrt(pmax(documents, 1)) * 3,
+          size = ~pmin(pmax(log10(pmax(documents, 1) + 1) * 10, 5), 25),
           color = ~docs_per_capita,
           colorscale = "Viridis",
           colorbar = list(title = "Docs per<br>100k pop"),
@@ -2795,7 +2795,7 @@ server <- function(input, output, session) {
         type = "scatter",
         mode = "markers+text",
         marker = list(
-          size = ~sqrt(documents) * 3,
+          size = ~pmin(pmax(log10(pmax(documents, 1) + 1) * 10, 5), 25),
           color = ~docs_per_capita,
           colorscale = "Viridis",
           colorbar = list(title = "Docs per<br>100k pop"),
@@ -3069,7 +3069,7 @@ server <- function(input, output, session) {
         type = "scattermapbox",
         mode = "markers+text",
         marker = list(
-          size = ~sqrt(pmax(get(metric_column), 1)) * 8,
+          size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 15, 8), 40),
           color = ~get(metric_column),
           colorscale = "Viridis",
           colorbar = list(
@@ -3198,7 +3198,7 @@ server <- function(input, output, session) {
         frame = ~year,
         type = "scatter",
         mode = "markers",
-        marker = list(size = ~sqrt(n) * 2, opacity = 0.7),
+        marker = list(size = ~pmin(pmax(log10(pmax(n, 1) + 1) * 8, 4), 20), opacity = 0.7),
         text = ~paste0(state, ": ", n, " documents"),
         hoverinfo = "text"
       ) %>%
