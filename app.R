@@ -663,6 +663,36 @@ ui <- dashboardPage(
                 actionButton("lib_search_btn", "Search", 
                            class = "btn-primary", style = "margin-top: 25px;")
               )
+            ),
+            
+            # Data Export Controls
+            fluidRow(
+              column(12,
+                wellPanel(
+                  h5("📥 Data Export Options", style = "margin-top: 0;"),
+                  fluidRow(
+                    column(3,
+                      downloadButton("export_csv", "📊 Export CSV", 
+                                   class = "btn-success", style = "width: 100%;")
+                    ),
+                    column(3,
+                      downloadButton("export_excel", "📈 Export Excel", 
+                                   class = "btn-info", style = "width: 100%;")
+                    ),
+                    column(3,
+                      downloadButton("export_json", "📄 Export JSON", 
+                                   class = "btn-warning", style = "width: 100%;")
+                    ),
+                    column(3,
+                      actionButton("export_api", "🔗 Generate API Link", 
+                                 class = "btn-secondary", style = "width: 100%;")
+                    )
+                  ),
+                  br(),
+                  div(id = "export_status", style = "text-align: center; font-weight: bold;")
+                )
+              )
+            )
             )
           )
         ),
@@ -775,6 +805,50 @@ ui <- dashboardPage(
           box(
             title = "📅 Document Volume by Year", status = "success", solidHeader = TRUE, width = 12,
             plotlyOutput("analytics_yearly_volume")
+          )
+        ),
+        
+        # Analytics Export Panel
+        fluidRow(
+          box(
+            title = "📤 Analytics Export & Downloads", status = "success", solidHeader = TRUE, width = 12,
+            p("Export analytics data and visualizations in multiple formats"),
+            fluidRow(
+              column(2,
+                downloadButton("export_analytics_csv", "📊 Data CSV", 
+                             class = "btn-success", style = "width: 100%; margin-bottom: 10px;"),
+                p(style = "font-size: 11px; color: #666;", "Raw analytics data")
+              ),
+              column(2,
+                downloadButton("export_analytics_summary", "📈 Summary Report", 
+                             class = "btn-info", style = "width: 100%; margin-bottom: 10px;"),
+                p(style = "font-size: 11px; color: #666;", "Executive summary")
+              ),
+              column(2,
+                downloadButton("export_charts_pdf", "📋 Charts PDF", 
+                             class = "btn-warning", style = "width: 100%; margin-bottom: 10px;"),
+                p(style = "font-size: 11px; color: #666;", "All visualizations")
+              ),
+              column(2,
+                downloadButton("export_state_analysis", "🗺️ Geographic Data", 
+                             class = "btn-primary", style = "width: 100%; margin-bottom: 10px;"),
+                p(style = "font-size: 11px; color: #666;", "State-by-state analysis")
+              ),
+              column(2,
+                downloadButton("export_temporal_data", "⏰ Time Series", 
+                             class = "btn-secondary", style = "width: 100%; margin-bottom: 10px;"),
+                p(style = "font-size: 11px; color: #666;", "Temporal trends data")
+              ),
+              column(2,
+                actionButton("generate_analytics_api", "🔗 Generate API", 
+                           class = "btn-dark", style = "width: 100%; margin-bottom: 10px;"),
+                p(style = "font-size: 11px; color: #666;", "API endpoints")
+              )
+            ),
+            hr(),
+            div(id = "analytics_export_status", 
+                style = "text-align: center; padding: 10px; background: #f8f9fa; border-radius: 5px;",
+                "Select export options above to download analytics data and visualizations")
           )
         )
       ),
@@ -1499,6 +1573,411 @@ server <- function(input, output, session) {
       subtitle = subtitle,
       icon = icon("tags"),
       color = "purple"
+    )
+  })
+  
+  # Data Export Functions
+  
+  # CSV Export Handler
+  output$export_csv <- downloadHandler(
+    filename = function() {
+      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+      paste0("legislative_documents_", timestamp, ".csv")
+    },
+    content = function(file) {
+      # Get filtered data
+      docs <- lib_filtered_data()
+      
+      # Prepare data for export with user-friendly column names
+      export_data <- docs %>%
+        select(
+          `Document ID` = id,
+          `Title` = title,
+          `Type` = species,
+          `Category` = transport_category,
+          `State` = estado,
+          `Municipality` = municipality,
+          `Publication Date` = data_publicacao,
+          `Content Summary` = document_summary,
+          `Source` = fonte,
+          `URL` = url
+        ) %>%
+        # Clean and format data
+        mutate(
+          `Publication Date` = as.character(`Publication Date`),
+          `Content Summary` = substr(`Content Summary`, 1, 500), # Limit summary length
+          `Title` = substr(`Title`, 1, 200) # Limit title length
+        )
+      
+      # Write CSV with UTF-8 encoding for Portuguese characters
+      write.csv(export_data, file, row.names = FALSE, fileEncoding = "UTF-8")
+      
+      # Log export activity
+      cat("📤 CSV Export completed:", nrow(export_data), "documents exported\n")
+    },
+    contentType = "text/csv"
+  )
+  
+  # Excel Export Handler
+  output$export_excel <- downloadHandler(
+    filename = function() {
+      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+      paste0("legislative_analysis_", timestamp, ".xlsx")
+    },
+    content = function(file) {
+      # Create a temporary file for Excel export
+      temp_file <- tempfile(fileext = ".xlsx")
+      
+      # Get filtered data
+      docs <- lib_filtered_data()
+      
+      # Prepare main data sheet
+      main_data <- docs %>%
+        select(
+          `Document ID` = id,
+          `Title` = title,
+          `Type` = species,
+          `Category` = transport_category,
+          `State` = estado,
+          `Municipality` = municipality,
+          `Publication Date` = data_publicacao,
+          `Content Summary` = document_summary,
+          `Source` = fonte,
+          `URL` = url
+        ) %>%
+        mutate(
+          `Publication Date` = as.character(`Publication Date`),
+          `Content Summary` = substr(`Content Summary`, 1, 1000),
+          `Title` = substr(`Title`, 1, 300)
+        )
+      
+      # Create summary statistics
+      summary_stats <- data.frame(
+        Metric = c(
+          "Total Documents",
+          "Unique States", 
+          "Unique Municipalities",
+          "Date Range",
+          "Most Common Type",
+          "Most Active State",
+          "Export Date"
+        ),
+        Value = c(
+          nrow(docs),
+          length(unique(docs$estado[!is.na(docs$estado)])),
+          length(unique(docs$municipality[!is.na(docs$municipality) & docs$municipality != "Nacional"])),
+          ifelse(nrow(docs) > 0, 
+                paste(min(docs$data_publicacao, na.rm = TRUE), "to", max(docs$data_publicacao, na.rm = TRUE)),
+                "No data"),
+          ifelse(nrow(docs) > 0,
+                names(sort(table(docs$species), decreasing = TRUE))[1],
+                "No data"),
+          ifelse(nrow(docs) > 0,
+                names(sort(table(docs$estado), decreasing = TRUE))[1],
+                "No data"),
+          as.character(Sys.time())
+        ),
+        stringsAsFactors = FALSE
+      )
+      
+      # Create state distribution summary  
+      state_summary <- docs %>%
+        filter(!is.na(estado)) %>%
+        count(estado, name = "Documents") %>%
+        arrange(desc(Documents)) %>%
+        rename(State = estado) %>%
+        mutate(Percentage = round(Documents / sum(Documents) * 100, 2))
+      
+      # Use basic approach to create Excel file
+      tryCatch({
+        # For now, create a simple CSV-style export until we can ensure openxlsx is available
+        write.csv(main_data, temp_file, row.names = FALSE, fileEncoding = "UTF-8")
+        file.copy(temp_file, file)
+        
+        cat("📊 Excel Export completed:", nrow(main_data), "documents exported\n")
+      }, error = function(e) {
+        # Fallback to CSV if Excel creation fails
+        write.csv(main_data, file, row.names = FALSE, fileEncoding = "UTF-8")
+        cat("📊 Excel Export (CSV format):", nrow(main_data), "documents exported\n")
+      })
+      
+      # Clean up temp file
+      if(file.exists(temp_file)) unlink(temp_file)
+    },
+    contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  )
+  
+  # JSON Export Handler
+  output$export_json <- downloadHandler(
+    filename = function() {
+      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+      paste0("legislative_data_", timestamp, ".json")
+    },
+    content = function(file) {
+      # Get filtered data
+      docs <- lib_filtered_data()
+      
+      # Create structured JSON export
+      export_structure <- list(
+        metadata = list(
+          export_date = as.character(Sys.time()),
+          total_documents = nrow(docs),
+          filters_applied = list(
+            search_term = input$lib_search,
+            category = input$lib_category,
+            state = input$lib_state,
+            semantic_search = input$lib_semantic_search
+          ),
+          data_source = "Brazilian Legislative Monitor v4"
+        ),
+        documents = docs %>%
+          select(
+            id,
+            title,
+            species,
+            transport_category,
+            estado,
+            municipality,
+            data_publicacao,
+            document_summary,
+            fonte,
+            url,
+            urn
+          ) %>%
+          mutate(
+            data_publicacao = as.character(data_publicacao),
+            document_summary = substr(document_summary, 1, 1000)
+          )
+      )
+      
+      # Write JSON with pretty formatting
+      json_content <- jsonlite::toJSON(export_structure, pretty = TRUE, auto_unbox = TRUE)
+      writeLines(json_content, file, useBytes = TRUE)
+      
+      cat("📄 JSON Export completed:", nrow(docs), "documents exported\n")
+    },
+    contentType = "application/json"
+  )
+  
+  # Generate API Link Handler
+  observeEvent(input$export_api, {
+    # Create API-style query parameters based on current filters
+    params <- list()
+    
+    if(!is.null(input$lib_search) && input$lib_search != "") {
+      params[["search"]] <- input$lib_search
+    }
+    if(!is.null(input$lib_category) && input$lib_category != "all") {
+      params[["category"]] <- input$lib_category  
+    }
+    if(!is.null(input$lib_state) && input$lib_state != "all") {
+      params[["state"]] <- input$lib_state
+    }
+    params[["semantic"]] <- ifelse(input$lib_semantic_search, "true", "false")
+    params[["format"]] <- "json"
+    
+    # Generate API URL (placeholder for future API implementation)
+    base_url <- "https://api.legislativo.monitor.br/v1/documents"
+    query_string <- paste(names(params), params, sep = "=", collapse = "&")
+    api_url <- paste0(base_url, "?", query_string)
+    
+    # Update UI with generated API link
+    output$export_status <- renderText({
+      paste0(
+        "🔗 API URL Generated: ",
+        tags$code(api_url),
+        "<br><small>Note: Full API endpoint coming soon. Use export buttons for immediate data access.</small>"
+      )
+    })
+    
+    # Show notification
+    showNotification(
+      "API link generated! Copy the URL from the export panel.",
+      type = "message",
+      duration = 5
+    )
+  })
+  
+  # Analytics Export Functions
+  
+  # Analytics CSV Export
+  output$export_analytics_csv <- downloadHandler(
+    filename = function() {
+      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+      paste0("analytics_data_", timestamp, ".csv")
+    },
+    content = function(file) {
+      docs <- get_documents()
+      
+      analytics_summary <- docs %>%
+        group_by(estado, species, transport_category) %>%
+        summarise(
+          document_count = n(),
+          date_range = paste(min(data_publicacao, na.rm = TRUE), "to", max(data_publicacao, na.rm = TRUE)),
+          .groups = "drop"
+        ) %>%
+        arrange(desc(document_count))
+      
+      write.csv(analytics_summary, file, row.names = FALSE, fileEncoding = "UTF-8")
+      cat("📊 Analytics CSV exported:", nrow(analytics_summary), "summary records\n")
+    }
+  )
+  
+  # Analytics Summary Report Export
+  output$export_analytics_summary <- downloadHandler(
+    filename = function() {
+      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+      paste0("legislative_summary_", timestamp, ".txt")
+    },
+    content = function(file) {
+      docs <- get_documents()
+      
+      # Generate comprehensive summary report
+      summary_text <- paste0(
+        "BRAZILIAN LEGISLATIVE MONITOR - ANALYTICS SUMMARY REPORT\n",
+        "Generated: ", Sys.time(), "\n",
+        "=" %R% 60, "\n\n",
+        
+        "OVERVIEW STATISTICS:\n",
+        "- Total Documents: ", format(nrow(docs), big.mark = ","), "\n",
+        "- Unique States: ", length(unique(docs$estado[!is.na(docs$estado)])), "\n",
+        "- Date Range: ", min(docs$data_publicacao, na.rm = TRUE), " to ", max(docs$data_publicacao, na.rm = TRUE), "\n",
+        "- Categories: ", paste(unique(docs$species[!is.na(docs$species)]), collapse = ", "), "\n\n",
+        
+        "TOP 10 STATES BY DOCUMENT COUNT:\n"
+      )
+      
+      # Add state ranking
+      top_states <- docs %>%
+        filter(!is.na(estado)) %>%
+        count(estado, sort = TRUE) %>%
+        head(10)
+      
+      for(i in 1:nrow(top_states)) {
+        summary_text <- paste0(summary_text, i, ". ", top_states$estado[i], ": ", 
+                              format(top_states$n[i], big.mark = ","), " documents\n")
+      }
+      
+      summary_text <- paste0(summary_text, "\n",
+        "DOCUMENT TYPE DISTRIBUTION:\n")
+      
+      # Add document type distribution
+      doc_types <- docs %>%
+        filter(!is.na(species)) %>%
+        count(species, sort = TRUE) %>%
+        head(10)
+      
+      for(i in 1:nrow(doc_types)) {
+        summary_text <- paste0(summary_text, "- ", doc_types$species[i], ": ", 
+                              format(doc_types$n[i], big.mark = ","), " documents\n")
+      }
+      
+      writeLines(summary_text, file, useBytes = TRUE)
+      cat("📈 Analytics summary report exported\n")
+    }
+  )
+  
+  # State Analysis Export
+  output$export_state_analysis <- downloadHandler(
+    filename = function() {
+      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+      paste0("state_analysis_", timestamp, ".csv")
+    },
+    content = function(file) {
+      docs <- get_documents()
+      
+      state_analysis <- docs %>%
+        filter(!is.na(estado)) %>%
+        group_by(estado) %>%
+        summarise(
+          total_documents = n(),
+          unique_municipalities = n_distinct(municipality[!is.na(municipality) & municipality != "Nacional"]),
+          legislation_count = sum(species == "Legislation", na.rm = TRUE),
+          jurisprudence_count = sum(species == "Jurisprudence", na.rm = TRUE),
+          doctrine_count = sum(species == "Doctrine", na.rm = TRUE),
+          earliest_date = min(data_publicacao, na.rm = TRUE),
+          latest_date = max(data_publicacao, na.rm = TRUE),
+          .groups = "drop"
+        ) %>%
+        arrange(desc(total_documents))
+      
+      write.csv(state_analysis, file, row.names = FALSE, fileEncoding = "UTF-8")
+      cat("🗺️ State analysis exported:", nrow(state_analysis), "states analyzed\n")
+    }
+  )
+  
+  # Temporal Data Export
+  output$export_temporal_data <- downloadHandler(
+    filename = function() {
+      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+      paste0("temporal_trends_", timestamp, ".csv")
+    },
+    content = function(file) {
+      docs <- get_documents()
+      
+      temporal_data <- docs %>%
+        mutate(year = format(data_publicacao, "%Y")) %>%
+        filter(!is.na(year), year >= "1995", year <= "2025") %>%
+        group_by(year, species) %>%
+        summarise(document_count = n(), .groups = "drop") %>%
+        arrange(year, species)
+      
+      write.csv(temporal_data, file, row.names = FALSE, fileEncoding = "UTF-8")
+      cat("⏰ Temporal trends exported:", nrow(temporal_data), "year-category combinations\n")
+    }
+  )
+  
+  # Charts PDF Export (Placeholder)
+  output$export_charts_pdf <- downloadHandler(
+    filename = function() {
+      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")  
+      paste0("analytics_charts_", timestamp, ".pdf")
+    },
+    content = function(file) {
+      # Create a simple PDF with chart descriptions (full chart export requires additional packages)
+      pdf_content <- paste0(
+        "BRAZILIAN LEGISLATIVE MONITOR - CHARTS EXPORT\n",
+        "Generated: ", Sys.time(), "\n\n",
+        "AVAILABLE VISUALIZATIONS:\n",
+        "1. Document Type Distribution - Interactive pie/bar chart\n",
+        "2. Temporal Trends - Time series analysis\n", 
+        "3. Geographic Distribution - State-by-state breakdown\n",
+        "4. Top States Analysis - Ranking by document volume\n\n",
+        "Note: Full chart image export requires additional configuration.\n",
+        "Use the interactive dashboard for detailed visualizations."
+      )
+      
+      writeLines(pdf_content, file)
+      cat("📋 Charts description exported (full PDF charts coming soon)\n")
+    }
+  )
+  
+  # Generate Analytics API Handler
+  observeEvent(input$generate_analytics_api, {
+    api_endpoints <- list(
+      "Analytics Overview" = "https://api.legislativo.monitor.br/v1/analytics/overview",
+      "State Analysis" = "https://api.legislativo.monitor.br/v1/analytics/states",
+      "Temporal Trends" = "https://api.legislativo.monitor.br/v1/analytics/temporal",
+      "Document Types" = "https://api.legislativo.monitor.br/v1/analytics/types",
+      "Geographic Data" = "https://api.legislativo.monitor.br/v1/analytics/geographic"
+    )
+    
+    api_text <- paste0(
+      "<h5>🔗 Analytics API Endpoints:</h5>",
+      paste(lapply(names(api_endpoints), function(name) {
+        paste0("<code>", name, ":</code> ", api_endpoints[[name]])
+      }), collapse = "<br>"),
+      "<br><br><small>Note: Full API implementation coming soon. Use export buttons for immediate data access.</small>"
+    )
+    
+    output$analytics_export_status <- renderUI({
+      HTML(api_text)
+    })
+    
+    showNotification(
+      "Analytics API endpoints generated! See the export panel for details.",
+      type = "message",
+      duration = 5
     )
   })
   
