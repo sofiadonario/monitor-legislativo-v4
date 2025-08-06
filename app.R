@@ -775,10 +775,11 @@ ui <- dashboardPage(
             title = "📅 Document Volume by Year", status = "success", solidHeader = TRUE, width = 12,
             plotlyOutput("analytics_yearly_volume")
           )
-        ),
-        
-        # Geographic Analysis Tab
-        tabItem(tabName = "geographic",
+        )
+      ),
+      
+      # Geographic Analysis Tab
+      tabItem(tabName = "geographic",
           fluidRow(
             valueBoxOutput("geo_total_states"),
             valueBoxOutput("geo_total_municipalities"), 
@@ -1040,7 +1041,6 @@ ui <- dashboardPage(
       )
     )
   )
-)
 
 # Server Logic
 server <- function(input, output, session) {
