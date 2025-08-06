@@ -2032,11 +2032,11 @@ server <- function(input, output, session) {
       if(unique_count == 0) {
         subtitle <- "No Municipality Data"
         value_display <- "0"
-        color <- "yellow"
+        box_color <- "yellow"
       } else {
         subtitle <- paste0("Municipalities (", coverage_pct, "% coverage)")
         value_display <- format(unique_count, big.mark = ",")
-        color <- "green"
+        box_color <- "green"
       }
     }, error = function(e) {
       # Fallback to basic municipality count if enhanced view fails
@@ -2052,11 +2052,11 @@ server <- function(input, output, session) {
         coverage_pct <- round(fallback_stats$docs_with_municipio / fallback_stats$total_docs * 100, 1)
         subtitle <- paste0("Municipalities (", coverage_pct, "% basic)")
         value_display <- format(unique_count, big.mark = ",")
-        color <- "orange"
+        box_color <- "orange"
       }, error = function(e2) {
         subtitle <- "Municipality Data (Query Error)"
         value_display <- "Error"
-        color <- "red"
+        box_color <- "red"
       })
     })
     
@@ -2064,7 +2064,7 @@ server <- function(input, output, session) {
       value = value_display,
       subtitle = subtitle,
       icon = icon("city"),
-      color = color
+      color = box_color
     )
   })
   
