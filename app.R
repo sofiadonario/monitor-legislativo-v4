@@ -926,10 +926,11 @@ ui <- dashboardPage(
               plotlyOutput("geo_temporal_trends", height = "400px")
             )
           )
-        ),
+        )
+      ),
         
-        # Interactive Maps Tab
-        tabItem(tabName = "maps",
+      # Interactive Maps Tab
+      tabItem(tabName = "maps",
           fluidRow(
             box(
               title = "🗺️ Interactive Maps Dashboard", status = "primary", solidHeader = TRUE, width = 12,
@@ -1009,8 +1010,8 @@ ui <- dashboardPage(
           )
         ),
         
-        # São Paulo State Analysis Tab  
-        tabItem(tabName = "saopaulo",
+      # São Paulo State Analysis Tab  
+      tabItem(tabName = "saopaulo",
           fluidRow(
             valueBoxOutput("sp_total_docs"),
             valueBoxOutput("sp_municipalities"),
@@ -1091,8 +1092,8 @@ ui <- dashboardPage(
           )
         ),
         
-        # Advanced Text Analytics & NLP Tab
-        tabItem(tabName = "nlp",
+      # Advanced Text Analytics & NLP Tab
+      tabItem(tabName = "nlp",
           fluidRow(
             valueBoxOutput("nlp_processed_docs"),
             valueBoxOutput("nlp_language_status"),
@@ -1193,8 +1194,9 @@ ui <- dashboardPage(
               )
             )
           )
+        ) # closes NLP tabItem
     ) # closes tabItems
-  ) # closes dashboardBody
+  ) # closes dashboardBody  
 ) # closes dashboardPage
 
 # Server Logic
