@@ -2016,6 +2016,11 @@ server <- function(input, output, session) {
   })
   
   output$geo_total_municipalities <- renderValueBox({
+    # Initialize variables before tryCatch blocks
+    subtitle <<- "Municipality Data (Loading...)"
+    value_display <<- "..."
+    box_color <<- "blue"
+    
     # Query enhanced municipality data from comprehensive extraction
     tryCatch({
       municipality_stats <- dbGetQuery(db, "
@@ -2030,13 +2035,13 @@ server <- function(input, output, session) {
       coverage_pct <- round(municipality_stats$docs_with_municipalities / municipality_stats$total_docs * 100, 1)
       
       if(unique_count == 0) {
-        subtitle <- "No Municipality Data"
-        value_display <- "0"
-        box_color <- "yellow"
+        subtitle <<- "No Municipality Data"
+        value_display <<- "0"
+        box_color <<- "yellow"
       } else {
-        subtitle <- paste0("Municipalities (", coverage_pct, "% coverage)")
-        value_display <- format(unique_count, big.mark = ",")
-        box_color <- "green"
+        subtitle <<- paste0("Municipalities (", coverage_pct, "% coverage)")
+        value_display <<- format(unique_count, big.mark = ",")
+        box_color <<- "green"
       }
     }, error = function(e) {
       # Fallback to basic municipality count if enhanced view fails
@@ -2050,13 +2055,13 @@ server <- function(input, output, session) {
         ")
         unique_count <- fallback_stats$unique_municipalities
         coverage_pct <- round(fallback_stats$docs_with_municipio / fallback_stats$total_docs * 100, 1)
-        subtitle <- paste0("Municipalities (", coverage_pct, "% basic)")
-        value_display <- format(unique_count, big.mark = ",")
-        box_color <- "orange"
+        subtitle <<- paste0("Municipalities (", coverage_pct, "% basic)")
+        value_display <<- format(unique_count, big.mark = ",")
+        box_color <<- "orange"
       }, error = function(e2) {
-        subtitle <- "Municipality Data (Query Error)"
-        value_display <- "Error"
-        box_color <- "red"
+        subtitle <<- "Municipality Data (Query Error)"
+        value_display <<- "Error"
+        box_color <<- "red"
       })
     })
     
