@@ -1938,30 +1938,55 @@ server <- function(input, output, session) {
   })
   
   output$geo_total_municipalities <- renderValueBox({
-    docs <- analytics_data()
-    
-    # Debug to see what columns we have
-    cat("Geographic tab - Available columns:", paste(names(docs), collapse = ", "), "\n")
-    
-    municipality_count <- if(nrow(docs) > 0 && "municipality" %in% names(docs)) {
-      unique_municipalities <- unique(docs$municipality[!is.na(docs$municipality) & docs$municipality != ""])
-      cat("Found municipalities:", length(unique_municipalities), "\n")
-      if(length(unique_municipalities) > 0) {
-        length(unique_municipalities)
+    # Query enhanced municipality data from comprehensive extraction
+    tryCatch({
+      municipality_stats <- dbGetQuery(db, "
+        SELECT 
+          COUNT(DISTINCT municipality_name) as unique_municipalities,
+          COUNT(DISTINCT id) as docs_with_municipalities,
+          (SELECT COUNT(*) FROM documents) as total_docs
+        FROM extracted_municipalities_comprehensive
+      ")
+      
+      unique_count <- municipality_stats$unique_municipalities
+      coverage_pct <- round(municipality_stats$docs_with_municipalities / municipality_stats$total_docs * 100, 1)
+      
+      if(unique_count == 0) {
+        subtitle <- "No Municipality Data"
+        value_display <- "0"
+        color <- "yellow"
       } else {
-        # If no municipalities in data, use realistic fallback
-        1250  # Approximate number of Brazilian municipalities with legislative data
+        subtitle <- paste0("Municipalities (", coverage_pct, "% coverage)")
+        value_display <- format(unique_count, big.mark = ",")
+        color <- "green"
       }
-    } else {
-      # No municipality column, use fallback
-      1250
-    }
+    }, error = function(e) {
+      # Fallback to basic municipality count if enhanced view fails
+      tryCatch({
+        fallback_stats <- dbGetQuery(db, "
+          SELECT 
+            COUNT(DISTINCT municipio) as unique_municipalities,
+            COUNT(*) FILTER (WHERE municipio IS NOT NULL AND municipio <> '') as docs_with_municipio,
+            COUNT(*) as total_docs
+          FROM documents
+        ")
+        unique_count <- fallback_stats$unique_municipalities
+        coverage_pct <- round(fallback_stats$docs_with_municipio / fallback_stats$total_docs * 100, 1)
+        subtitle <- paste0("Municipalities (", coverage_pct, "% basic)")
+        value_display <- format(unique_count, big.mark = ",")
+        color <- "orange"
+      }, error = function(e2) {
+        subtitle <- "Municipality Data (Query Error)"
+        value_display <- "Error"
+        color <- "red"
+      })
+    })
     
     valueBox(
-      value = format(municipality_count, big.mark = ","),
-      subtitle = "Municipalities with Documents",
+      value = value_display,
+      subtitle = subtitle,
       icon = icon("city"),
-      color = "green"
+      color = color
     )
   })
   
