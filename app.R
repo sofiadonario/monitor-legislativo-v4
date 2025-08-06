@@ -616,12 +616,10 @@ ui <- dashboardPage(
           box(
             title = "📚 Brazilian Legislative Monitor - Sublibraries", status = "primary", solidHeader = TRUE, width = 12,
             # Simplified sublibrary display
-            div(
-              h4("📚 Brazilian Legislative Monitor - Complete Library"),
-              p("Browse all 134k+ documents across legislation, jurisprudence, and doctrine."),
-              p(strong("Categories available:"), "Federal and state legislation, court decisions, judicial precedents, legal opinions, and academic analysis."),
-              hr()
-            )
+            h4("📚 Brazilian Legislative Monitor - Complete Library"),
+            p("Browse all 134k+ documents across legislation, jurisprudence, and doctrine."),
+            p(strong("Categories available:"), "Federal and state legislation, court decisions, judicial precedents, legal opinions, and academic analysis."),
+            hr()
           )
         ),
         fluidRow(
@@ -1156,28 +1154,17 @@ ui <- dashboardPage(
             # NLP Analysis Results
             box(
               title = "📊 Text Analysis Results", status = "success", solidHeader = TRUE, width = 12,
-              # Simplified NLP results display without conditionalPanel conflicts
-              div(
-                h4("🧠 Portuguese Legal NLP Analysis Results"),
-                p("Advanced text analysis capabilities for Brazilian legislative documents."),
-                br(),
-                div(
-                  h5("📈 Available Analysis Types:"),
-                  tags$ul(
-                    tags$li("Document Sentiment Analysis - Regulatory style patterns"),
-                    tags$li("Legal Entity Recognition - Brazilian agencies and instruments"),
-                    tags$li("Topic Modeling - Legislative themes and transport policy"),
-                    tags$li("Document Similarity - Semantic similarity clusters")
-                  )
-                ),
-                br(),
-                div(
-                  style = "background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;",
-                  h5("🚀 NLP System Status"),
-                  p("Portuguese legal text processing system ready for analysis."),
-                  p("Use the controls above to select analysis type and process documents.")
-                )
-              )
+              # Simplified NLP results display
+              h4("🧠 Portuguese Legal NLP Analysis Results"),
+              p("Advanced text analysis capabilities for Brazilian legislative documents."),
+              h5("📈 Available Analysis Types:"),
+              p("• Document Sentiment Analysis - Regulatory style patterns"),
+              p("• Legal Entity Recognition - Brazilian agencies and instruments"), 
+              p("• Topic Modeling - Legislative themes and transport policy"),
+              p("• Document Similarity - Semantic similarity clusters"),
+              hr(),
+              h5("🚀 NLP System Status"),
+              p("Portuguese legal text processing system ready for analysis.")
             )
           )
         ) # closes NLP tabItem
