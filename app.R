@@ -2122,7 +2122,7 @@ server <- function(input, output, session) {
         left_join(state_data, by = c("state_code" = "state")) %>%
         mutate(
           documents = ifelse(is.na(documents), 0, documents),
-          docs_per_capita = ifelse(documents > 0, round(documents / population * 100000, 2), 0),
+          docs_per_capita = ifelse(documents > 0 & population > 0, round(documents / population * 100000, 2), 0),
           hover_text = paste0(
             "<b>", state_name, " (", state_code, ")</b><br>",
             "Documents: ", format(documents, big.mark = ","), "<br>",
@@ -2130,6 +2130,10 @@ server <- function(input, output, session) {
             "Docs per 100k: ", docs_per_capita
           )
         )
+      
+      # Debug: Check if columns exist
+      cat("📊 State analysis columns:", paste(names(state_analysis), collapse = ", "), "\n")
+      cat("📊 Map data will have docs_per_capita:", "docs_per_capita" %in% names(state_analysis), "\n")
       
       # Create a choropleth-style map using plotly
       # Using a heatmap approach with state codes positioned geographically
@@ -2149,6 +2153,13 @@ server <- function(input, output, session) {
       map_data <- state_analysis %>%
         inner_join(state_positions, by = "state_code")
       
+      # Ensure required columns exist
+      if(!"docs_per_capita" %in% names(map_data)) {
+        map_data$docs_per_capita <- ifelse(map_data$documents > 0, map_data$documents / 1000, 0)
+      }
+      
+      cat("📊 Final map data columns:", paste(names(map_data), collapse = ", "), "\n")
+      
       # Create the geographic visualization
       p <- plot_ly(
         data = map_data,
@@ -2158,7 +2169,7 @@ server <- function(input, output, session) {
         type = "scatter",
         mode = "markers+text",
         marker = list(
-          size = ~sqrt(documents) * 3,
+          size = ~sqrt(pmax(documents, 1)) * 3,
           color = ~docs_per_capita,
           colorscale = "Viridis",
           colorbar = list(title = "Docs per<br>100k pop"),
