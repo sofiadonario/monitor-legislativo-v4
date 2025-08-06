@@ -586,6 +586,7 @@ ui <- dashboardPage(
       menuItem("📚 Library", tabName = "library", icon = icon("book")),
       menuItem("📈 Advanced Analytics", tabName = "analytics", icon = icon("chart-area")),
       menuItem("🗺️ Geographic Analysis", tabName = "geographic", icon = icon("map-marked-alt")),
+      menuItem("🗺️ Interactive Maps", tabName = "maps", icon = icon("globe-americas")),
       menuItem("🏙️ São Paulo Analysis", tabName = "saopaulo", icon = icon("city")),
       menuItem("🧠 Text Analytics", tabName = "nlp", icon = icon("brain"))
     )
@@ -849,6 +850,87 @@ ui <- dashboardPage(
             box(
               title = "📅 Geographic Trends Over Time", status = "info", solidHeader = TRUE, width = 12,
               plotlyOutput("geo_temporal_trends", height = "400px")
+            )
+          )
+        ),
+        
+        # Interactive Maps Tab
+        tabItem(tabName = "maps",
+          fluidRow(
+            box(
+              title = "🗺️ Interactive Maps Dashboard", status = "primary", solidHeader = TRUE, width = 12,
+              p("Advanced interactive mapping capabilities for Brazilian legislative data visualization.")
+            )
+          ),
+          fluidRow(
+            # Map Controls Panel
+            box(
+              title = "🎛️ Map Controls", status = "info", solidHeader = TRUE, width = 4,
+              selectInput("map_type", "Map Type:",
+                choices = list(
+                  "State Distribution" = "states",
+                  "Municipality Heatmap" = "municipalities", 
+                  "Regional Clusters" = "regions",
+                  "Document Density" = "density"
+                ),
+                selected = "states"
+              ),
+              selectInput("map_metric", "Display Metric:",
+                choices = list(
+                  "Document Count" = "count",
+                  "Documents per Capita" = "per_capita",
+                  "Legislative Activity Index" = "activity",
+                  "Regulatory Density" = "density"
+                ),
+                selected = "count"
+              ),
+              selectInput("map_category", "Document Category:",
+                choices = list(
+                  "All Documents" = "all",
+                  "Legislation" = "legislation",
+                  "Jurisprudence" = "jurisprudence", 
+                  "Doctrine" = "doctrine",
+                  "Transportation" = "transport"
+                ),
+                selected = "all"
+              ),
+              dateRangeInput("map_date_range", "Date Range:",
+                start = "1995-01-01",
+                end = Sys.Date(),
+                format = "yyyy-mm-dd"
+              ),
+              hr(),
+              checkboxInput("map_show_labels", "Show State/City Labels", value = TRUE),
+              checkboxInput("map_show_population", "Include Population Data", value = TRUE),
+              checkboxInput("map_animation", "Enable Animation", value = FALSE),
+              hr(),
+              downloadButton("download_map", "📥 Download Map", class = "btn-info"),
+              br(), br(),
+              actionButton("refresh_map", "🔄 Refresh Data", class = "btn-success")
+            ),
+            # Main Interactive Map
+            box(
+              title = "🗺️ Brazil Legislative Activity Map", status = "primary", solidHeader = TRUE, width = 8,
+              plotlyOutput("interactive_brazil_map", height = "600px")
+            )
+          ),
+          fluidRow(
+            # Municipality Detail Map
+            box(
+              title = "🏘️ Municipality Detail View", status = "success", solidHeader = TRUE, width = 6,
+              plotlyOutput("municipality_detail_map", height = "400px")
+            ),
+            # Time Series Animation  
+            box(
+              title = "⏰ Temporal Evolution Map", status = "warning", solidHeader = TRUE, width = 6,
+              plotlyOutput("temporal_map_animation", height = "400px")
+            )
+          ),
+          fluidRow(
+            # Map Statistics
+            box(
+              title = "📊 Map Statistics", status = "info", solidHeader = TRUE, width = 12,
+              DT::dataTableOutput("map_statistics_table")
             )
           )
         ),
@@ -2443,6 +2525,307 @@ server <- function(input, output, session) {
       ggplotly(p)
     }
   })
+  
+  # Interactive Maps Tab outputs
+  
+  # Main Interactive Brazil Map
+  output$interactive_brazil_map <- renderPlotly({
+    docs <- analytics_data()
+    
+    # Get reactive inputs
+    map_type <- input$map_type
+    map_metric <- input$map_metric
+    map_category <- input$map_category
+    show_labels <- input$map_show_labels
+    show_population <- input$map_show_population
+    
+    # Brazilian states data with enhanced geographic information
+    brazil_states <- data.frame(
+      state_code = c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
+                    "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
+                    "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
+      state_name = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará", 
+                    "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão",
+                    "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará", 
+                    "Paraíba", "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro", 
+                    "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia", "Roraima", 
+                    "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"),
+      population = c(906876, 3365351, 877613, 4269995, 14985284, 9240580, 3094325, 
+                    4108508, 7206589, 7153262, 3567234, 2839188, 21411923, 8777124, 
+                    4059905, 11597484, 9674793, 3289290, 17463349, 3560903, 11422973, 
+                    1815278, 652713, 7338473, 46649132, 2371969, 1607363),
+      # Enhanced geographic coordinates for better positioning
+      lat = c(-9.0238, -9.5713, 0.9023, -3.4168, -12.5797, -5.4984, -15.7998, 
+             -19.1834, -15.827, -4.9609, -12.6819, -20.7722, -18.512, -1.9981, 
+             -7.8014, -24.89, -8.8137, -6.6784, -22.9099, -5.4026, -30.0346, 
+             -11.5057, 1.99, -27.3344, -23.1959, -10.5741, -9.4712),
+      lon = c(-70.812, -36.782, -52.003, -65.8561, -41.7007, -39.8206, -47.8645, 
+             -40.3089, -49.8362, -45.2744, -56.9211, -54.7852, -44.555, -54.9306, 
+             -36.782, -51.55, -36.954, -42.7339, -43.2075, -36.9541, -53.5, 
+             -63.34, -61.222, -49.0544, -46.8315, -37.3857, -48.2982),
+      region = c("Norte", "Nordeste", "Norte", "Norte", "Nordeste", "Nordeste", 
+                "Centro-Oeste", "Sudeste", "Centro-Oeste", "Nordeste", "Centro-Oeste", 
+                "Centro-Oeste", "Sudeste", "Norte", "Nordeste", "Sul", "Nordeste", 
+                "Nordeste", "Sudeste", "Nordeste", "Sul", "Norte", "Norte", 
+                "Sul", "Sudeste", "Nordeste", "Norte"),
+      stringsAsFactors = FALSE
+    )
+    
+    if(nrow(docs) > 0 && "state" %in% names(docs)) {
+      # Process document data by state
+      state_data <- docs %>%
+        filter(!is.na(state), state != "") %>%
+        count(state, name = "documents") %>%
+        arrange(desc(documents))
+      
+      # Merge with state information
+      map_data <- brazil_states %>%
+        left_join(state_data, by = c("state_code" = "state")) %>%
+        mutate(
+          documents = ifelse(is.na(documents), 0, documents),
+          docs_per_capita = ifelse(documents > 0 & population > 0, 
+                                  round(documents / population * 100000, 2), 0),
+          activity_index = round(sqrt(documents) * log10(population + 1), 1),
+          regulatory_density = round(documents / (population / 1000000), 1)
+        )
+      
+      # Select metric based on input
+      metric_column <- switch(map_metric,
+        "count" = "documents",
+        "per_capita" = "docs_per_capita", 
+        "activity" = "activity_index",
+        "density" = "regulatory_density"
+      )
+      
+      # Create hover text
+      map_data$hover_text <- paste0(
+        "<b>", map_data$state_name, " (", map_data$state_code, ")</b><br>",
+        "Region: ", map_data$region, "<br>",
+        "Documents: ", format(map_data$documents, big.mark = ","), "<br>",
+        if(show_population) paste0("Population: ", format(map_data$population, big.mark = ","), "<br>"),
+        "Docs per 100k: ", map_data$docs_per_capita, "<br>",
+        "Activity Index: ", map_data$activity_index
+      )
+      
+      # Create the enhanced interactive map
+      p <- plot_ly(
+        data = map_data,
+        lon = ~lon,
+        lat = ~lat,
+        type = "scattermapbox",
+        mode = "markers+text",
+        marker = list(
+          size = ~sqrt(pmax(get(metric_column), 1)) * 8,
+          color = ~get(metric_column),
+          colorscale = "Viridis",
+          colorbar = list(
+            title = switch(map_metric,
+              "count" = "Documents",
+              "per_capita" = "Docs per<br>100k pop",
+              "activity" = "Activity<br>Index", 
+              "density" = "Regulatory<br>Density"
+            )
+          ),
+          line = list(color = "white", width = 2),
+          opacity = 0.8
+        ),
+        text = if(show_labels) ~state_code else NULL,
+        textposition = "middle center",
+        textfont = list(size = 12, color = "white"),
+        hovertext = ~hover_text,
+        hoverinfo = "text"
+      ) %>%
+        layout(
+          title = list(
+            text = paste("Interactive Brazil Map -", 
+                        switch(map_metric,
+                          "count" = "Document Distribution",
+                          "per_capita" = "Documents per Capita",
+                          "activity" = "Legislative Activity Index",
+                          "density" = "Regulatory Density")),
+            font = list(size = 16)
+          ),
+          mapbox = list(
+            style = "carto-positron",
+            zoom = 3,
+            center = list(lat = -14.2, lon = -53.2)
+          ),
+          height = 600,
+          margin = list(l = 0, r = 0, t = 50, b = 0)
+        ) %>%
+        config(displayModeBar = TRUE, scrollZoom = TRUE)
+      
+    } else {
+      # Fallback map with sample data
+      p <- plot_ly() %>%
+        add_text(x = 0.5, y = 0.5, text = "Loading interactive map...", 
+                textfont = list(size = 20)) %>%
+        layout(
+          title = "Interactive Brazil Map - Loading...",
+          showlegend = FALSE,
+          xaxis = list(showgrid = FALSE, showticklabels = FALSE),
+          yaxis = list(showgrid = FALSE, showticklabels = FALSE)
+        )
+    }
+    
+    return(p)
+  })
+  
+  # Municipality Detail Map
+  output$municipality_detail_map <- renderPlotly({
+    # Enhanced municipality visualization
+    tryCatch({
+      municipality_stats <- dbGetQuery(db, "
+        SELECT 
+          municipality_name,
+          state_code,
+          COUNT(*) as document_count
+        FROM extracted_municipalities_comprehensive
+        WHERE municipality_name IS NOT NULL
+        GROUP BY municipality_name, state_code
+        ORDER BY document_count DESC
+        LIMIT 20
+      ")
+      
+      if(nrow(municipality_stats) > 0) {
+        p <- plot_ly(
+          data = municipality_stats,
+          x = ~reorder(municipality_name, document_count),
+          y = ~document_count,
+          type = "bar",
+          orientation = "v",
+          marker = list(
+            color = ~document_count,
+            colorscale = "Blues",
+            showscale = TRUE
+          ),
+          text = ~paste0(municipality_name, " (", state_code, ")<br>", 
+                        document_count, " documents"),
+          hoverinfo = "text"
+        ) %>%
+          layout(
+            title = "Top 20 Municipalities by Document Count",
+            xaxis = list(title = "", tickangle = -45),
+            yaxis = list(title = "Documents"),
+            margin = list(b = 100)
+          )
+      } else {
+        p <- plot_ly() %>%
+          add_text(x = 0.5, y = 0.5, text = "No municipality data available") %>%
+          layout(title = "Municipality Analysis", showlegend = FALSE)
+      }
+      
+    }, error = function(e) {
+      p <- plot_ly() %>%
+        add_text(x = 0.5, y = 0.5, text = "Municipality data loading...") %>%
+        layout(title = "Municipality Detail View", showlegend = FALSE)
+    })
+    
+    return(p)
+  })
+  
+  # Temporal Evolution Map Animation
+  output$temporal_map_animation <- renderPlotly({
+    docs <- analytics_data()
+    
+    if(nrow(docs) > 0 && "year" %in% names(docs) && "state" %in% names(docs)) {
+      # Create temporal data for animation
+      temporal_data <- docs %>%
+        filter(!is.na(year), !is.na(state), year >= 2000, year <= 2025) %>%
+        count(year, state) %>%
+        arrange(year, state)
+      
+      # Create animated scatter plot
+      p <- plot_ly(
+        data = temporal_data,
+        x = ~year,
+        y = ~n,
+        color = ~state,
+        frame = ~year,
+        type = "scatter",
+        mode = "markers",
+        marker = list(size = ~sqrt(n) * 2, opacity = 0.7),
+        text = ~paste0(state, ": ", n, " documents"),
+        hoverinfo = "text"
+      ) %>%
+        layout(
+          title = "Legislative Activity Evolution Over Time",
+          xaxis = list(title = "Year"),
+          yaxis = list(title = "Documents"),
+          showlegend = TRUE
+        ) %>%
+        animation_opts(
+          frame = 1000,
+          transition = 500,
+          redraw = FALSE
+        )
+      
+    } else {
+      p <- plot_ly() %>%
+        add_text(x = 0.5, y = 0.5, text = "Temporal data loading...") %>%
+        layout(title = "Temporal Evolution", showlegend = FALSE)
+    }
+    
+    return(p)
+  })
+  
+  # Map Statistics Table
+  output$map_statistics_table <- DT::renderDataTable({
+    docs <- analytics_data()
+    
+    if(nrow(docs) > 0 && "state" %in% names(docs)) {
+      # Create comprehensive statistics table
+      stats_data <- docs %>%
+        filter(!is.na(state), state != "") %>%
+        group_by(state) %>%
+        summarise(
+          Documents = n(),
+          .groups = "drop"
+        ) %>%
+        arrange(desc(Documents)) %>%
+        mutate(
+          Percentage = round(Documents / sum(Documents) * 100, 2),
+          Rank = row_number()
+        ) %>%
+        select(Rank, State = state, Documents, Percentage)
+      
+      DT::datatable(
+        stats_data,
+        options = list(
+          pageLength = 10,
+          scrollX = TRUE,
+          searching = TRUE,
+          ordering = TRUE,
+          info = TRUE,
+          dom = 'Bfrtip',
+          buttons = list('copy', 'csv', 'excel')
+        ),
+        rownames = FALSE
+      ) %>%
+        DT::formatPercentage('Percentage', digits = 2) %>%
+        DT::formatCurrency('Documents', currency = '', interval = 3, mark = ',', digits = 0)
+      
+    } else {
+      DT::datatable(data.frame(Message = "Loading statistics..."), options = list(dom = 't'))
+    }
+  })
+  
+  # Download Map Handler
+  output$download_map <- downloadHandler(
+    filename = function() {
+      paste0("brazil_legislative_map_", Sys.Date(), ".png")
+    },
+    content = function(file) {
+      # Create a static version for download
+      p <- plot_ly() %>%
+        add_text(x = 0.5, y = 0.5, text = "Map export functionality coming soon...") %>%
+        layout(title = "Brazil Legislative Activity Map")
+      
+      # Export as image (requires additional setup)
+      # For now, create a simple notification
+      writeLines("Map export feature will be implemented in future update", file)
+    }
+  )
   
   # São Paulo Analysis Tab outputs
   output$sp_total_docs <- renderValueBox({
