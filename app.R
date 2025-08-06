@@ -1196,7 +1196,7 @@ ui <- dashboardPage(
         )
       )
     )
-  )
+)
 
 # Server Logic
 server <- function(input, output, session) {
@@ -1836,7 +1836,7 @@ server <- function(input, output, session) {
       summary_text <- paste0(
         "BRAZILIAN LEGISLATIVE MONITOR - ANALYTICS SUMMARY REPORT\n",
         "Generated: ", Sys.time(), "\n",
-        "=" %R% 60, "\n\n",
+        paste(rep("=", 60), collapse = ""), "\n\n",
         
         "OVERVIEW STATISTICS:\n",
         "- Total Documents: ", format(nrow(docs), big.mark = ","), "\n",
@@ -3081,7 +3081,7 @@ server <- function(input, output, session) {
         "<b>", map_data$state_name, " (", map_data$state_code, ")</b><br>",
         "Region: ", map_data$region, "<br>",
         "Documents: ", format(map_data$documents, big.mark = ","), "<br>",
-        if(show_population) paste0("Population: ", format(map_data$population, big.mark = ","), "<br>"),
+        if(show_population) {paste0("Population: ", format(map_data$population, big.mark = ","), "<br>")} else {""},
         "Docs per 100k: ", map_data$docs_per_capita, "<br>",
         "Activity Index: ", map_data$activity_index
       )
@@ -3108,7 +3108,7 @@ server <- function(input, output, session) {
           line = list(color = "white", width = 2),
           opacity = 0.8
         ),
-        text = if(show_labels) ~state_code else NULL,
+        text = if(show_labels) {~state_code} else {NULL},
         textposition = "middle center",
         textfont = list(size = 12, color = "white"),
         hovertext = ~hover_text,
