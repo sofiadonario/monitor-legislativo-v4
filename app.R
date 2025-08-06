@@ -1123,8 +1123,7 @@ server <- function(input, output, session) {
       search_term = final_search,
       state = final_state,
       sort_by = final_sort,
-      limit = 999999,  # Remove limit to show all documents
-      use_semantic_search = final_semantic
+      limit = 999999  # Remove limit to show all documents
     )
     
     cat("📊 Reactive returning:", nrow(docs), "documents\n")
