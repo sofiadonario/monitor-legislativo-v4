@@ -22,6 +22,24 @@ for (pkg in optional_packages) {
 
 cat("✅ Core packages loaded\n")
 
+# Load geospatial utilities for choropleth mapping
+tryCatch({
+  source("scripts/R/geospatial_utils.R")
+  source("scripts/R/choropleth_generator.R")
+  cat("✅ Geospatial utilities loaded successfully\n")
+}, error = function(e) {
+  cat("⚠️ Geospatial utilities not available - using basic maps:", e$message, "\n")
+})
+
+# Load map modules
+tryCatch({
+  source("modules/maps/map_ui.R")
+  source("modules/maps/map_server.R")
+  cat("✅ Map modules loaded successfully\n")
+}, error = function(e) {
+  cat("⚠️ Map modules not available:", e$message, "\n")
+})
+
 # Load Enhanced Railway Database Connection - PRODUCTION VERSION
 database_connection_loaded <- FALSE
 tryCatch({
@@ -914,86 +932,19 @@ ui <- dashboardPage(
           )
       ),
         
-      # Interactive Maps Tab
-      tabItem(tabName = "maps",
+      # Interactive Maps Tab - Using Module
+      if (exists("mapUI")) {
+        mapUI("maps_module")
+      } else {
+        tabItem(tabName = "maps",
           fluidRow(
             box(
-              title = "🗺️ Interactive Maps Dashboard", status = "primary", solidHeader = TRUE, width = 12,
-              p("Advanced interactive mapping capabilities for Brazilian legislative data visualization.")
-            )
-          ),
-          fluidRow(
-            # Map Controls Panel
-            box(
-              title = "🎛️ Map Controls", status = "info", solidHeader = TRUE, width = 4,
-              selectInput("map_type", "Map Type:",
-                choices = list(
-                  "State Distribution" = "states",
-                  "Municipality Heatmap" = "municipalities", 
-                  "Regional Clusters" = "regions",
-                  "Document Density" = "density"
-                ),
-                selected = "states"
-              ),
-              selectInput("map_metric", "Display Metric:",
-                choices = list(
-                  "Document Count" = "count",
-                  "Documents per Capita" = "per_capita",
-                  "Legislative Activity Index" = "activity",
-                  "Regulatory Density" = "density"
-                ),
-                selected = "count"
-              ),
-              selectInput("map_category", "Document Category:",
-                choices = list(
-                  "All Documents" = "all",
-                  "Legislation" = "legislation",
-                  "Jurisprudence" = "jurisprudence", 
-                  "Doctrine" = "doctrine",
-                  "Transportation" = "transport"
-                ),
-                selected = "all"
-              ),
-              dateRangeInput("map_date_range", "Date Range:",
-                start = "1995-01-01",
-                end = Sys.Date(),
-                format = "yyyy-mm-dd"
-              ),
-              hr(),
-              checkboxInput("map_show_labels", "Show State/City Labels", value = TRUE),
-              checkboxInput("map_show_population", "Include Population Data", value = TRUE),
-              checkboxInput("map_animation", "Enable Animation", value = FALSE),
-              hr(),
-              downloadButton("download_map", "📥 Download Map", class = "btn-info"),
-              br(), br(),
-              actionButton("refresh_map", "🔄 Refresh Data", class = "btn-success")
-            ),
-            # Main Interactive Map
-            box(
-              title = "🗺️ Brazil Legislative Activity Map", status = "primary", solidHeader = TRUE, width = 8,
-              plotlyOutput("interactive_brazil_map", height = "600px")
-            )
-          ),
-          fluidRow(
-            # Municipality Detail Map
-            box(
-              title = "🏘️ Municipality Detail View", status = "success", solidHeader = TRUE, width = 6,
-              plotlyOutput("municipality_detail_map", height = "400px")
-            ),
-            # Time Series Animation  
-            box(
-              title = "⏰ Temporal Evolution Map", status = "warning", solidHeader = TRUE, width = 6,
-              plotlyOutput("temporal_map_animation", height = "400px")
-            )
-          ),
-          fluidRow(
-            # Map Statistics
-            box(
-              title = "📊 Map Statistics", status = "info", solidHeader = TRUE, width = 12,
-              DT::dataTableOutput("map_statistics_table")
+              title = "🗺️ Interactive Maps Dashboard", status = "warning", solidHeader = TRUE, width = 12,
+              p("Map module not loaded. Please check the modules/maps directory.")
             )
           )
-        ),
+        )
+      },
         
       # São Paulo State Analysis Tab  
       tabItem(tabName = "saopaulo",
@@ -1175,6 +1126,17 @@ ui <- dashboardPage(
 
 # Server Logic
 server <- function(input, output, session) {
+  
+  # Initialize geospatial system for choropleth mapping
+  geospatial_system <- reactive({
+    if (exists("initialize_geospatial_system")) {
+      cat("🌍 Initializing geospatial system for choropleth maps...\n")
+      initialize_geospatial_system()
+    } else {
+      cat("⚠️ Geospatial system not available - using fallback maps\n")
+      list(boundaries = NULL, geojson = NULL, available = FALSE)
+    }
+  })
   
   # Executive Summary outputs
   output$exec_total_docs <- renderValueBox({
@@ -2980,191 +2942,359 @@ server <- function(input, output, session) {
     }
   })
   
-  # Interactive Maps Tab outputs
-  
-  # Main Interactive Brazil Map
-  output$interactive_brazil_map <- renderPlotly({
-    docs <- analytics_data()
-    
-    # Get reactive inputs
-    map_type <- input$map_type
-    map_metric <- input$map_metric
-    map_category <- input$map_category
-    show_labels <- input$map_show_labels
-    show_population <- input$map_show_population
-    date_range <- input$map_date_range
-    
-    # Brazilian states data with enhanced geographic information
-    brazil_states <- data.frame(
-      state_code = c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
-                    "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
-                    "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
-      state_name = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará", 
-                    "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão",
-                    "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará", 
-                    "Paraíba", "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro", 
-                    "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia", "Roraima", 
-                    "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"),
-      population = c(906876, 3365351, 877613, 4269995, 14985284, 9240580, 3094325, 
-                    4108508, 7206589, 7153262, 3567234, 2839188, 21411923, 8777124, 
-                    4059905, 11597484, 9674793, 3289290, 17463349, 3560903, 11422973, 
-                    1815278, 652713, 7338473, 46649132, 2371969, 1607363),
-      # Enhanced geographic coordinates for better positioning
-      lat = c(-9.0238, -9.5713, 0.9023, -3.4168, -12.5797, -5.4984, -15.7998, 
-             -19.1834, -15.827, -4.9609, -12.6819, -20.7722, -18.512, -1.9981, 
-             -7.8014, -24.89, -8.8137, -6.6784, -22.9099, -5.4026, -30.0346, 
-             -11.5057, 1.99, -27.3344, -23.1959, -10.5741, -9.4712),
-      lon = c(-70.812, -36.782, -52.003, -65.8561, -41.7007, -39.8206, -47.8645, 
-             -40.3089, -49.8362, -45.2744, -56.9211, -54.7852, -44.555, -54.9306, 
-             -36.782, -51.55, -36.954, -42.7339, -43.2075, -36.9541, -53.5, 
-             -63.34, -61.222, -49.0544, -46.8315, -37.3857, -48.2982),
-      region = c("Norte", "Nordeste", "Norte", "Norte", "Nordeste", "Nordeste", 
-                "Centro-Oeste", "Sudeste", "Centro-Oeste", "Nordeste", "Centro-Oeste", 
-                "Centro-Oeste", "Sudeste", "Norte", "Nordeste", "Sul", "Nordeste", 
-                "Nordeste", "Sudeste", "Nordeste", "Sul", "Norte", "Norte", 
-                "Sul", "Sudeste", "Nordeste", "Norte"),
-      stringsAsFactors = FALSE
-    )
-    
-    if(nrow(docs) > 0 && "state" %in% names(docs)) {
-      # Filter documents by category if specified
-      filtered_docs <- docs
-      if(map_category != "all") {
-        if(map_category == "legislation" && "category" %in% names(docs)) {
-          filtered_docs <- docs %>% filter(grepl("Legislação|Proposições", category, ignore.case = TRUE))
-        } else if(map_category == "jurisprudence" && "category" %in% names(docs)) {
-          filtered_docs <- docs %>% filter(grepl("Jurisprudência", category, ignore.case = TRUE))
-        } else if(map_category == "doctrine" && "category" %in% names(docs)) {
-          filtered_docs <- docs %>% filter(grepl("Doutrina|Outros", category, ignore.case = TRUE))
-        } else if(map_category == "transport") {
-          filtered_docs <- docs %>% filter(grepl("transport|veículo|mobilidade|logística", title, ignore.case = TRUE))
+  # Interactive Maps Tab outputs - Using Module
+  if (exists("mapServer")) {
+    # Get pool from the database connection if available
+    pool_reactive <- reactive({
+      if (exists("get_db_pool") && is.function(get_db_pool)) {
+        get_db_pool()
+      } else {
+        NULL
+      }
+    })
+    mapServer("maps_module", analytics_data, pool_reactive)
+  } else {
+    # Fallback if module not loaded
+    output$interactive_brazil_map <- renderPlotly({
+    tryCatch({
+      cat("🗺️ Starting interactive Brazil map generation\n")
+      
+      # Get reactive inputs
+      docs <- analytics_data()
+      map_type <- input$map_type
+      map_metric <- input$map_metric
+      map_category <- input$map_category
+      show_labels <- input$map_show_labels
+      show_population <- input$map_show_population
+      date_range <- input$map_date_range
+      
+      # Get geospatial system for true choropleth mapping
+      geo_system <- geospatial_system()
+      
+      # Enhanced Brazilian states data with all required information
+      brazil_states <- data.frame(
+        state_code = c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
+                      "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
+                      "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
+        state_name = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará", 
+                      "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão",
+                      "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará", 
+                      "Paraíba", "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro", 
+                      "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia", "Roraima", 
+                      "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"),
+        population = c(906876, 3365351, 877613, 4269995, 14985284, 9240580, 3094325, 
+                      4108508, 7206589, 7153262, 3567234, 2839188, 21411923, 8777124, 
+                      4059905, 11597484, 9674793, 3289290, 17463349, 3560903, 11422973, 
+                      1815278, 652713, 7338473, 46649132, 2371969, 1607363),
+        lat = c(-9.0238, -9.5713, 0.9023, -3.4168, -12.5797, -5.4984, -15.7998, 
+               -19.1834, -15.827, -4.9609, -12.6819, -20.7722, -18.512, -1.9981, 
+               -7.8014, -24.89, -8.8137, -6.6784, -22.9099, -5.4026, -30.0346, 
+               -11.5057, 1.99, -27.3344, -23.1959, -10.5741, -9.4712),
+        lon = c(-70.812, -36.782, -52.003, -65.8561, -41.7007, -39.8206, -47.8645, 
+               -40.3089, -49.8362, -45.2744, -56.9211, -54.7852, -44.555, -54.9306, 
+               -36.782, -51.55, -36.954, -42.7339, -43.2075, -36.9541, -53.5, 
+               -63.34, -61.222, -49.0544, -46.8315, -37.3857, -48.2982),
+        region = c("Norte", "Nordeste", "Norte", "Norte", "Nordeste", "Nordeste", 
+                  "Centro-Oeste", "Sudeste", "Centro-Oeste", "Nordeste", "Centro-Oeste", 
+                  "Centro-Oeste", "Sudeste", "Norte", "Nordeste", "Sul", "Nordeste", 
+                  "Nordeste", "Sudeste", "Nordeste", "Sul", "Norte", "Norte", 
+                  "Sul", "Sudeste", "Nordeste", "Norte"),
+        stringsAsFactors = FALSE
+      )
+      
+      # Validate and process document data
+      if (nrow(docs) > 0 && "state" %in% names(docs)) {
+        cat("📊 Processing", nrow(docs), "documents for choropleth mapping\n")
+        
+        # Apply category filtering
+        filtered_docs <- docs
+        if (map_category != "all") {
+          if (map_category == "legislation" && "category" %in% names(docs)) {
+            filtered_docs <- docs %>% filter(grepl("Legislação|Proposições", category, ignore.case = TRUE))
+          } else if (map_category == "jurisprudence" && "category" %in% names(docs)) {
+            filtered_docs <- docs %>% filter(grepl("Jurisprudência", category, ignore.case = TRUE))
+          } else if (map_category == "doctrine" && "category" %in% names(docs)) {
+            filtered_docs <- docs %>% filter(grepl("Doutrina|Outros", category, ignore.case = TRUE))
+          } else if (map_category == "transport") {
+            filtered_docs <- docs %>% filter(grepl("transport|veículo|mobilidade|logística", title, ignore.case = TRUE))
+          }
+        }
+        
+        # Apply date filtering
+        if (!is.null(date_range) && length(date_range) == 2 && "date" %in% names(filtered_docs)) {
+          filtered_docs <- filtered_docs %>%
+            filter(date >= date_range[1], date <= date_range[2])
+        }
+        
+        # Calculate state-level document metrics
+        state_document_counts <- filtered_docs %>%
+          filter(!is.na(state), state != "", nchar(trimws(state)) > 0) %>%
+          count(state, name = "documents") %>%
+          arrange(desc(documents))
+        
+        cat("📍 Found documents in", nrow(state_document_counts), "states\n")
+        
+        # Merge with state information and calculate all metrics
+        map_data <- brazil_states %>%
+          left_join(state_document_counts, by = c("state_code" = "state")) %>%
+          mutate(
+            documents = ifelse(is.na(documents), 0, documents),
+            docs_per_capita = ifelse(documents > 0 & population > 0, 
+                                    round(documents / population * 100000, 2), 0),
+            activity_index = ifelse(documents > 0, 
+                                   round(sqrt(documents) * log10(population + 1), 1), 0),
+            regulatory_density = ifelse(documents > 0 & population > 0, 
+                                       round(documents / (population / 1000000), 1), 0)
+          )
+        
+        # Select metric column
+        metric_column <- switch(map_metric,
+          "count" = "documents",
+          "per_capita" = "docs_per_capita", 
+          "activity" = "activity_index",
+          "density" = "regulatory_density",
+          "documents"  # default fallback
+        )
+        
+        # Enhance hover text with conditional population display
+        map_data$hover_text <- paste0(
+          "<b>", map_data$state_name, " (", map_data$state_code, ")</b><br>",
+          "Region: ", map_data$region, "<br>",
+          "Documents: ", format(map_data$documents, big.mark = ","), "<br>",
+          if (show_population) {
+            paste0("Population: ", format(map_data$population, big.mark = ","), "<br>")
+          } else {""},
+          "Docs per 100k: ", map_data$docs_per_capita, "<br>",
+          "Activity Index: ", map_data$activity_index, "<br>",
+          "Regulatory Density: ", map_data$regulatory_density
+        )
+        
+        # Choose appropriate colorscale
+        colorscale_choice <- switch(map_type,
+          "density" = "Reds",
+          "municipalities" = "Plasma", 
+          "regions" = "Set3",
+          "states" = "Viridis",
+          "Viridis"  # default
+        )
+        
+        # Try to use professional choropleth mapping
+        if (!is.null(geo_system) && !is.null(geo_system$available) && geo_system$available) {
+          cat("✨ Using professional choropleth with state boundaries\n")
+          
+          # Use the generate_choropleth_map function from choropleth_generator.R
+          choropleth_result <- tryCatch({
+            if (exists("generate_choropleth_map")) {
+              generate_choropleth_map(
+                state_data = map_data,
+                geospatial_system = geo_system,
+                metric_column = metric_column,
+                map_metric = map_metric,
+                map_type = map_type,
+                colorscale = colorscale_choice,
+                show_labels = show_labels
+              )
+            } else {
+              NULL
+            }
+          }, error = function(e) {
+            cat("⚠️ Choropleth generation failed:", e$message, "\n")
+            NULL
+          })
+          
+          # If choropleth was successful, return it with proper title
+          if (!is.null(choropleth_result)) {
+            final_map <- choropleth_result %>%
+              layout(
+                title = list(
+                  text = paste("Brazilian States Choropleth Map -", 
+                              switch(map_type,
+                                "states" = "State Distribution",
+                                "municipalities" = "Municipality Analysis",
+                                "regions" = "Regional Analysis", 
+                                "density" = "Document Density"),
+                              "-",
+                              switch(map_metric,
+                                "count" = "Total Documents",
+                                "per_capita" = "Per Capita Analysis",
+                                "activity" = "Activity Index",
+                                "density" = "Regulatory Density")),
+                  font = list(size = 16, family = "Arial"),
+                  x = 0.5
+                ),
+                height = 650,
+                margin = list(l = 0, r = 60, t = 60, b = 0)
+              ) %>%
+              config(
+                displayModeBar = TRUE, 
+                scrollZoom = TRUE,
+                displaylogo = FALSE,
+                modeBarButtonsToRemove = c('pan2d', 'select2d', 'lasso2d')
+              )
+            
+            cat("✅ Professional choropleth map created successfully\n")
+            return(final_map)
+          }
+        }
+        
+        # Fallback: Enhanced circle-based map
+        cat("🔄 Using enhanced fallback visualization\n")
+        
+        # Filter out states with no data for cleaner visualization
+        active_states <- map_data %>%
+          filter(get(metric_column) > 0)
+        
+        if (nrow(active_states) > 0) {
+          # Create enhanced scatter plot with optimized circle sizes
+          fallback_map <- plot_ly(
+            data = active_states,
+            lon = ~lon,
+            lat = ~lat,
+            type = "scattermapbox",
+            mode = "markers",
+            marker = list(
+              size = ~pmin(pmax(sqrt(get(metric_column)) * 8 + 25, 30), 120),
+              color = ~get(metric_column),
+              colorscale = colorscale_choice,
+              reversescale = FALSE,
+              opacity = 0.85,
+              line = list(color = "white", width = 3),
+              colorbar = list(
+                title = list(
+                  text = switch(map_metric,
+                    "count" = "Documents",
+                    "per_capita" = "Per 100k Pop", 
+                    "activity" = "Activity Index",
+                    "density" = "Density Score"
+                  ),
+                  font = list(size = 12, family = "Arial")
+                ),
+                thickness = 20,
+                len = 0.8,
+                x = 1.02,
+                bordercolor = "rgba(255,255,255,0.8)",
+                borderwidth = 1
+              )
+            ),
+            text = if (show_labels) {~paste0("<b>", state_code, "</b>")} else {NULL},
+            textposition = "middle center",
+            textfont = list(size = 11, color = "white", family = "Arial Bold"),
+            hovertext = ~hover_text,
+            hoverinfo = "text",
+            showlegend = FALSE
+          ) %>%
+          layout(
+            title = list(
+              text = paste("Interactive Brazil Map -", 
+                          switch(map_type,
+                            "states" = "State Distribution",
+                            "municipalities" = "Municipality Analysis",
+                            "regions" = "Regional Analysis", 
+                            "density" = "Document Density"),
+                          "-",
+                          switch(map_metric,
+                            "count" = "Total Documents",
+                            "per_capita" = "Per Capita Analysis",
+                            "activity" = "Activity Index",
+                            "density" = "Regulatory Density")),
+              font = list(size = 16, family = "Arial"),
+              x = 0.5
+            ),
+            mapbox = list(
+              style = "carto-positron",
+              zoom = 3.2,
+              center = list(lat = -14.2, lon = -53.2),
+              bearing = 0,
+              pitch = 0
+            ),
+            height = 650,
+            margin = list(l = 0, r = 60, t = 60, b = 0),
+            annotations = list(
+              list(
+                text = paste("Enhanced view:", nrow(active_states), "states with data"),
+                showarrow = FALSE,
+                x = 0.02,
+                y = 0.98,
+                xref = "paper",
+                yref = "paper",
+                font = list(size = 10, color = "gray", family = "Arial"),
+                xanchor = "left"
+              )
+            )
+          ) %>%
+          config(
+            displayModeBar = TRUE, 
+            scrollZoom = TRUE,
+            displaylogo = FALSE,
+            modeBarButtonsToRemove = c('pan2d', 'select2d', 'lasso2d')
+          )
+          
+          cat("✅ Enhanced fallback map created with", nrow(active_states), "active states\n")
+          return(fallback_map)
         }
       }
       
-      # Apply date filtering if date column exists
-      if(!is.null(input$map_date_range) && "date" %in% names(filtered_docs)) {
-        filtered_docs <- filtered_docs %>%
-          filter(date >= input$map_date_range[1], date <= input$map_date_range[2])
-      }
+      # Ultimate fallback - loading or error state
+      cat("⚠️ No valid data found - showing loading state\n")
       
-      # Process document data by state
-      state_data <- filtered_docs %>%
-        filter(!is.na(state), state != "") %>%
-        count(state, name = "documents") %>%
-        arrange(desc(documents))
-      
-      # Merge with state information
-      map_data <- brazil_states %>%
-        left_join(state_data, by = c("state_code" = "state")) %>%
-        mutate(
-          documents = ifelse(is.na(documents), 0, documents),
-          docs_per_capita = ifelse(documents > 0 & population > 0, 
-                                  round(documents / population * 100000, 2), 0),
-          activity_index = round(sqrt(documents) * log10(population + 1), 1),
-          regulatory_density = round(documents / (population / 1000000), 1)
-        )
-      
-      # Select metric based on input
-      metric_column <- switch(map_metric,
-        "count" = "documents",
-        "per_capita" = "docs_per_capita", 
-        "activity" = "activity_index",
-        "density" = "regulatory_density"
-      )
-      
-      # Create hover text
-      map_data$hover_text <- paste0(
-        "<b>", map_data$state_name, " (", map_data$state_code, ")</b><br>",
-        "Region: ", map_data$region, "<br>",
-        "Documents: ", format(map_data$documents, big.mark = ","), "<br>",
-        if(show_population) {paste0("Population: ", format(map_data$population, big.mark = ","), "<br>")} else {""},
-        "Docs per 100k: ", map_data$docs_per_capita, "<br>",
-        "Activity Index: ", map_data$activity_index
-      )
-      
-      # Create choropleth map with colored state boundaries
-      # Define colorscale based on map type
-      colorscale_choice <- switch(map_type,
-        "density" = "Hot",
-        "municipalities" = "Blues", 
-        "regions" = "Viridis",
-        "Viridis"  # default
-      )
-      
-      # Create choropleth-style map using large filled circles
-      # Simple approach that ensures the map always renders
-      p <- plot_ly(
-        data = map_data,
-        lon = ~lon,
-        lat = ~lat,
-        type = "scattermapbox",
-        mode = "markers",
-        marker = list(
-          size = ~pmin(pmax(log10(pmax(get(metric_column), 1) + 1) * 40, 30), 100), # Large circles
-          color = ~get(metric_column),
-          colorscale = colorscale_choice,
-          reversescale = FALSE,
-          opacity = 0.8,
-          line = list(color = "white", width = 2),
-          colorbar = list(
-            title = switch(map_metric,
-              "count" = "Documents",
-              "per_capita" = "Docs per<br>100k pop", 
-              "activity" = "Activity<br>Index",
-              "density" = "Regulatory<br>Density"
-            ),
-            thickness = 15,
-            len = 0.7
-          )
-        ),
-        text = if(show_labels) {~paste0("<b>", state_code, "</b>")} else {NULL},
-        textposition = "middle center",
-        textfont = list(size = 12, color = "white", family = "Arial Black"),
-        hovertext = ~hover_text,
-        hoverinfo = "text"
-      )
-      
-      p <- p %>%
+      loading_map <- plot_ly() %>%
+        add_text(
+          x = 0.5, y = 0.5, 
+          text = if (nrow(docs) == 0) {
+            "Loading document data..."
+          } else {
+            "No geographic data available for selected filters"
+          },
+          textfont = list(size = 18, family = "Arial", color = "#666")
+        ) %>%
         layout(
           title = list(
-            text = paste("Interactive Brazil Map -", 
-                        switch(map_type,
-                          "states" = "State Distribution",
-                          "municipalities" = "Municipality Heatmap",
-                          "regions" = "Regional Clusters", 
-                          "density" = "Document Density"),
-                        "-",
-                        switch(map_metric,
-                          "count" = "Document Count",
-                          "per_capita" = "Per Capita",
-                          "activity" = "Activity Index",
-                          "density" = "Regulatory Density")),
-            font = list(size = 16)
+            text = "Interactive Brazil Map - Loading",
+            font = list(size = 16, family = "Arial")
           ),
-          mapbox = list(
-            style = "carto-positron",
-            zoom = 3,
-            center = list(lat = -14.2, lon = -53.2)
-          ),
-          height = 600,
-          margin = list(l = 0, r = 0, t = 50, b = 0)
-        ) %>%
-        config(displayModeBar = TRUE, scrollZoom = TRUE)
-      
-    } else {
-      # Fallback map with sample data
-      p <- plot_ly() %>%
-        add_text(x = 0.5, y = 0.5, text = "Loading interactive map...", 
-                textfont = list(size = 20)) %>%
-        layout(
-          title = "Interactive Brazil Map - Loading...",
           showlegend = FALSE,
-          xaxis = list(showgrid = FALSE, showticklabels = FALSE),
-          yaxis = list(showgrid = FALSE, showticklabels = FALSE)
+          xaxis = list(
+            showgrid = FALSE, 
+            showticklabels = FALSE, 
+            zeroline = FALSE,
+            range = c(0, 1)
+          ),
+          yaxis = list(
+            showgrid = FALSE, 
+            showticklabels = FALSE, 
+            zeroline = FALSE,
+            range = c(0, 1)
+          ),
+          height = 650,
+          margin = list(l = 50, r = 50, t = 60, b = 50),
+          plot_bgcolor = "rgba(245,245,245,0.3)"
         )
-    }
-    
-    return(p)
+      
+      return(loading_map)
+      
+    }, error = function(e) {
+      cat("❌ Critical error in interactive_brazil_map:", e$message, "\n")
+      
+      # Error fallback map
+      error_map <- plot_ly() %>%
+        add_text(
+          x = 0.5, y = 0.5, 
+          text = paste("Map generation error:", substr(e$message, 1, 50), "..."),
+          textfont = list(size = 16, family = "Arial", color = "red")
+        ) %>%
+        layout(
+          title = list(
+            text = "Interactive Brazil Map - Error",
+            font = list(size = 16, family = "Arial")
+          ),
+          showlegend = FALSE,
+          xaxis = list(showgrid = FALSE, showticklabels = FALSE, range = c(0, 1)),
+          yaxis = list(showgrid = FALSE, showticklabels = FALSE, range = c(0, 1)),
+          height = 650
+        )
+      
+      return(error_map)
+    })
   })
   
   # Municipality Detail Map
@@ -3322,6 +3452,7 @@ server <- function(input, output, session) {
       writeLines("Map export feature will be implemented in future update", file)
     }
   )
+  } # End of fallback maps implementation
   
   # São Paulo Analysis Tab outputs
   output$sp_total_docs <- renderValueBox({
