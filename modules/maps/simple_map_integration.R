@@ -1,14 +1,20 @@
-# Map UI Module
-# This module contains the UI components for the Interactive Maps tab
+# Simple Map Integration 
+# This provides a simpler integration without complex module system
 
-mapUI <- function(id) {
-  # Handle namespace function availability
-  ns <- if (exists("NS") && is.function(NS)) {
-    NS(id)
-  } else {
-    function(x) paste0(id, "-", x)
-  }
-  
+# Load required data
+if (file.exists("data/brazil_states.R")) {
+  source("data/brazil_states.R", local = TRUE)
+  cat("✅ Brazilian states data loaded\n")
+}
+
+# Load data cleaning fix
+if (file.exists("fixes/active/map_data_fix.R")) {
+  source("fixes/active/map_data_fix.R", local = TRUE)
+  cat("✅ Map data fix loaded\n")
+}
+
+# Simple function to create map UI
+create_maps_tab_ui <- function() {
   tabItem(
     tabName = "maps",
     fluidRow(
@@ -23,7 +29,7 @@ mapUI <- function(id) {
           column(
             width = 3,
             selectInput(
-              ns("map_type"),
+              "map_type",
               "Map Type:",
               choices = c(
                 "State Distribution" = "state",
@@ -37,7 +43,7 @@ mapUI <- function(id) {
           column(
             width = 3,
             selectInput(
-              ns("map_metric"),
+              "map_metric",
               "Display Metric:",
               choices = c(
                 "Document Count" = "count",
@@ -51,7 +57,7 @@ mapUI <- function(id) {
           column(
             width = 3,
             selectInput(
-              ns("map_category"),
+              "map_category",
               "Document Category:",
               choices = c(
                 "All Categories" = "all",
@@ -66,7 +72,7 @@ mapUI <- function(id) {
           column(
             width = 3,
             dateRangeInput(
-              ns("map_date_range"),
+              "map_date_range",
               "Date Range:",
               start = as.Date("1995-01-01"),
               end = Sys.Date(),
@@ -75,37 +81,8 @@ mapUI <- function(id) {
           )
         ),
         
-        # Additional controls
-        fluidRow(
-          column(
-            width = 12,
-            checkboxGroupInput(
-              ns("map_options"),
-              "Display Options:",
-              choices = c(
-                "Show state labels" = "labels",
-                "Include population data" = "population",
-                "Animate over time" = "animate"
-              ),
-              selected = c("labels", "population"),
-              inline = TRUE
-            )
-          )
-        ),
-        
-        # Map loading indicator
-        conditionalPanel(
-          condition = sprintf("$('#%s').hasClass('recalculating')", ns("interactive_brazil_map")),
-          tags$div(
-            class = "text-center",
-            style = "padding: 20px;",
-            tags$i(class = "fa fa-spinner fa-spin fa-2x"),
-            tags$p("Loading map data...")
-          )
-        ),
-        
         # Main map output
-        plotlyOutput(ns("interactive_brazil_map"), height = "600px"),
+        plotlyOutput("interactive_brazil_map", height = "600px"),
         
         # Action buttons
         br(),
@@ -114,12 +91,12 @@ mapUI <- function(id) {
             width = 12,
             style = "text-align: center;",
             downloadButton(
-              ns("download_map"), 
+              "download_map", 
               "Download Map",
               class = "btn-primary"
             ),
             actionButton(
-              ns("refresh_map"),
+              "refresh_map",
               "Refresh Data",
               icon = icon("refresh"),
               class = "btn-info",
@@ -130,7 +107,7 @@ mapUI <- function(id) {
       )
     ),
     
-    # Municipality detail map
+    # Municipality detail and temporal maps
     fluidRow(
       box(
         title = "Municipality Detail Analysis",
@@ -139,18 +116,16 @@ mapUI <- function(id) {
         width = 6,
         collapsible = TRUE,
         collapsed = TRUE,
-        plotlyOutput(ns("municipality_detail_map"), height = "400px")
+        plotlyOutput("municipality_detail_map", height = "400px")
       ),
-      
-      # Temporal evolution map
       box(
         title = "Temporal Evolution",
-        status = "success",
+        status = "success", 
         solidHeader = TRUE,
         width = 6,
         collapsible = TRUE,
         collapsed = TRUE,
-        plotlyOutput(ns("temporal_map_animation"), height = "400px")
+        plotlyOutput("temporal_map_animation", height = "400px")
       )
     ),
     
@@ -163,8 +138,13 @@ mapUI <- function(id) {
         width = 12,
         collapsible = TRUE,
         collapsed = TRUE,
-        DT::dataTableOutput(ns("map_statistics_table"))
+        DT::dataTableOutput("map_statistics_table")
       )
     )
   )
 }
+
+# Mark functions as available
+SIMPLE_MAP_UI_AVAILABLE <- TRUE
+
+cat("✅ Simple map integration loaded\n")

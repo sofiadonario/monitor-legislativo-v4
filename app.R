@@ -38,6 +38,13 @@ tryCatch({
   cat("✅ Map modules loaded successfully\n")
 }, error = function(e) {
   cat("⚠️ Map modules not available:", e$message, "\n")
+  # Try simple integration as fallback
+  tryCatch({
+    source("modules/maps/simple_map_integration.R")
+    cat("✅ Simple map integration loaded as fallback\n")
+  }, error = function(e2) {
+    cat("❌ Simple map integration also failed:", e2$message, "\n")
+  })
 })
 
 # Load Enhanced Railway Database Connection - PRODUCTION VERSION
@@ -932,15 +939,19 @@ ui <- dashboardPage(
           )
       ),
         
-      # Interactive Maps Tab - Using Module
+      # Interactive Maps Tab - Using Module or Simple Integration
       if (exists("mapUI")) {
         mapUI("maps_module")
+      } else if (exists("SIMPLE_MAP_UI_AVAILABLE") && SIMPLE_MAP_UI_AVAILABLE && exists("create_maps_tab_ui")) {
+        create_maps_tab_ui()
       } else {
         tabItem(tabName = "maps",
           fluidRow(
             box(
               title = "🗺️ Interactive Maps Dashboard", status = "warning", solidHeader = TRUE, width = 12,
-              p("Map module not loaded. Please check the modules/maps directory.")
+              p("Map module not loaded. Please check the modules/maps directory."),
+              p("Debug info: mapUI exists =", exists("mapUI"), 
+                ", simple UI available =", exists("SIMPLE_MAP_UI_AVAILABLE"))
             )
           )
         )
@@ -2942,7 +2953,7 @@ server <- function(input, output, session) {
     }
   })
   
-  # Interactive Maps Tab outputs - Using Module
+  # Interactive Maps Tab outputs - Using Module or Direct Implementation
   if (exists("mapServer")) {
     # Get pool from the database connection if available
     pool_reactive <- reactive({
@@ -2953,6 +2964,9 @@ server <- function(input, output, session) {
       }
     })
     mapServer("maps_module", analytics_data, pool_reactive)
+  } else if (exists("SIMPLE_MAP_UI_AVAILABLE") && SIMPLE_MAP_UI_AVAILABLE) {
+    # Use simple map implementation directly
+    source("modules/maps/simple_map_server.R", local = TRUE)
   } else {
     # Fallback if module not loaded
     output$interactive_brazil_map <- renderPlotly({

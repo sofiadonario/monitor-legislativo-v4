@@ -10,7 +10,21 @@ if (file.exists("fixes/active/map_data_fix.R")) {
 }
 
 mapServer <- function(id, analytics_data, pool) {
-  moduleServer(id, function(input, output, session) {
+  # Handle moduleServer function availability
+  if (exists("moduleServer") && is.function(moduleServer)) {
+    moduleServer(id, function(input, output, session) {
+      map_server_logic(input, output, session, analytics_data, pool)
+    })
+  } else {
+    # Fallback for when moduleServer is not available
+    function(input, output, session) {
+      map_server_logic(input, output, session, analytics_data, pool)
+    }
+  }
+}
+
+# Main server logic extracted to separate function
+map_server_logic <- function(input, output, session, analytics_data, pool) {
     
     # Reactive values for performance optimization
     map_trigger <- reactiveVal(0)
@@ -398,3 +412,4 @@ create_fallback_map <- function(data, value_col) {
       margin = list(l = 0, r = 0, t = 50, b = 0)
     )
 }
+} # End of map_server_logic function
