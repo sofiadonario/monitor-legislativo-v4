@@ -4,6 +4,11 @@
 # Load required data
 source("data/brazil_states.R", local = TRUE)
 
+# Load data cleaning fix if available
+if (file.exists("fixes/active/map_data_fix.R")) {
+  source("fixes/active/map_data_fix.R", local = TRUE)
+}
+
 mapServer <- function(id, analytics_data, pool) {
   moduleServer(id, function(input, output, session) {
     
@@ -20,19 +25,26 @@ mapServer <- function(id, analytics_data, pool) {
     map_data <- reactive({
       req(analytics_data())
       
-      data <- analytics_data()
+      raw_data <- analytics_data()
+      
+      # Clean the data first if function is available
+      if (exists("clean_map_data")) {
+        data <- clean_map_data(raw_data)
+      } else {
+        data <- raw_data
+      }
       
       # Apply category filter
       if (map_category_debounced() != "all") {
-        data <- data %>%
-          filter(category == map_category_debounced())
+        if ("category" %in% names(data)) {
+          data <- data[data$category == map_category_debounced() | is.na(data$category), ]
+        }
       }
       
       # Apply date filter
       date_range <- map_date_range_debounced()
-      if (!is.null(date_range)) {
-        data <- data %>%
-          filter(date >= date_range[1], date <= date_range[2])
+      if (!is.null(date_range) && "date" %in% names(data)) {
+        data <- data[data$date >= date_range[1] & data$date <= date_range[2] & !is.na(data$date), ]
       }
       
       data
@@ -42,26 +54,53 @@ mapServer <- function(id, analytics_data, pool) {
     state_map_data <- reactive({
       req(map_data())
       
-      # Aggregate by state
-      state_counts <- map_data() %>%
-        filter(!is.na(state), state != "") %>%
-        group_by(state) %>%
-        summarise(
-          documents = n(),
-          unique_types = n_distinct(document_type),
-          .groups = 'drop'
+      data <- map_data()
+      
+      # Aggregate by state - handle both missing dplyr and regular case
+      if ("state" %in% names(data)) {
+        # Filter out invalid states
+        valid_data <- data[!is.na(data$state) & data$state != "" & data$state %in% brazil_states$state_code, ]
+        
+        if (nrow(valid_data) > 0) {
+          # Manual aggregation
+          state_list <- unique(valid_data$state)
+          state_counts <- data.frame(
+            state = state_list,
+            documents = sapply(state_list, function(s) sum(valid_data$state == s, na.rm = TRUE)),
+            unique_types = sapply(state_list, function(s) {
+              state_data <- valid_data[valid_data$state == s, ]
+              if ("document_type" %in% names(state_data)) {
+                length(unique(state_data$document_type[!is.na(state_data$document_type)]))
+              } else {
+                1
+              }
+            }),
+            stringsAsFactors = FALSE
+          )
+        } else {
+          state_counts <- data.frame(
+            state = character(),
+            documents = numeric(),
+            unique_types = numeric(),
+            stringsAsFactors = FALSE
+          )
+        }
+      } else {
+        state_counts <- data.frame(
+          state = character(),
+          documents = numeric(),
+          unique_types = numeric(),
+          stringsAsFactors = FALSE
         )
+      }
       
       # Merge with state reference data
-      state_data <- brazil_states %>%
-        left_join(state_counts, by = c("state_code" = "state")) %>%
-        mutate(
-          documents = ifelse(is.na(documents), 0, documents),
-          unique_types = ifelse(is.na(unique_types), 0, unique_types),
-          per_capita = round((documents / population) * 100000, 2),
-          activity_index = round(sqrt(documents) * log10(population + 1), 2),
-          density = round((documents / population) * 1000000, 2)
-        )
+      state_data <- merge(brazil_states, state_counts, by.x = "state_code", by.y = "state", all.x = TRUE)
+      state_data$documents[is.na(state_data$documents)] <- 0
+      state_data$unique_types[is.na(state_data$unique_types)] <- 0
+      state_data$per_capita <- round((state_data$documents / state_data$population) * 100000, 2)
+      state_data$activity_index <- round(sqrt(state_data$documents) * log10(state_data$population + 1), 2)
+      state_data$density <- round((state_data$documents / state_data$population) * 1000000, 2)
       
       state_data
     })
@@ -167,17 +206,47 @@ mapServer <- function(id, analytics_data, pool) {
     output$temporal_map_animation <- renderPlotly({
       req(map_data())
       
-      # Aggregate by state and year
-      temporal_data <- map_data() %>%
-        filter(!is.na(state), state != "", !is.na(year)) %>%
-        group_by(state, year) %>%
-        summarise(documents = n(), .groups = 'drop') %>%
-        filter(year >= 2000, year <= 2025)
+      data <- map_data()
       
-      # Merge with state coordinates
-      temporal_data <- temporal_data %>%
-        left_join(brazil_states %>% select(state_code, lat, lng, state_name), 
-                  by = c("state" = "state_code"))
+      # Handle temporal data without dplyr
+      if ("state" %in% names(data) && "year" %in% names(data)) {
+        # Filter valid data
+        valid_data <- data[!is.na(data$state) & data$state != "" & 
+                          !is.na(data$year) & data$year >= 2000 & data$year <= 2025, ]
+        
+        if (nrow(valid_data) > 0) {
+          # Manual aggregation by state and year
+          state_year_combinations <- unique(valid_data[, c("state", "year")])
+          temporal_data <- data.frame(
+            state = state_year_combinations$state,
+            year = state_year_combinations$year,
+            documents = sapply(1:nrow(state_year_combinations), function(i) {
+              sum(valid_data$state == state_year_combinations$state[i] & 
+                  valid_data$year == state_year_combinations$year[i], na.rm = TRUE)
+            }),
+            stringsAsFactors = FALSE
+          )
+          
+          # Merge with state coordinates
+          brazil_coords <- brazil_states[, c("state_code", "lat", "lng", "state_name")]
+          temporal_data <- merge(temporal_data, brazil_coords, 
+                               by.x = "state", by.y = "state_code", all.x = TRUE)
+        } else {
+          temporal_data <- data.frame(
+            state = character(),
+            year = numeric(),
+            documents = numeric(),
+            stringsAsFactors = FALSE
+          )
+        }
+      } else {
+        temporal_data <- data.frame(
+          state = character(),
+          year = numeric(),
+          documents = numeric(),
+          stringsAsFactors = FALSE
+        )
+      }
       
       if (nrow(temporal_data) > 0) {
         plot_ly(
