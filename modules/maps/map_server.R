@@ -358,7 +358,6 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
         htmlwidgets::saveWidget(p, file, selfcontained = TRUE)
       }
     )
-  })
 }
 
 # Helper function for fallback map
@@ -411,5 +410,4 @@ create_fallback_map <- function(data, value_col) {
       ),
       margin = list(l = 0, r = 0, t = 50, b = 0)
     )
-}
-} # End of map_server_logic function
+} # End of create_fallback_map function

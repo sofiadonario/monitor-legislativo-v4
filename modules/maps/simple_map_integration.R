@@ -144,7 +144,14 @@ create_maps_tab_ui <- function() {
   )
 }
 
-# Mark functions as available
-SIMPLE_MAP_UI_AVAILABLE <- TRUE
+# Mark functions as available in global environment
+assign("SIMPLE_MAP_UI_AVAILABLE", TRUE, envir = .GlobalEnv)
+assign("create_maps_tab_ui", create_maps_tab_ui, envir = .GlobalEnv)
 
-cat("✅ Simple map integration loaded\n")
+# Verify the assignment worked
+if (exists("SIMPLE_MAP_UI_AVAILABLE", envir = .GlobalEnv) && 
+    exists("create_maps_tab_ui", envir = .GlobalEnv)) {
+  cat("✅ Simple map integration loaded and verified\n")
+} else {
+  cat("⚠️ Simple map integration loaded but verification failed\n")
+}

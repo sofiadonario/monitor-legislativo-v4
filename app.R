@@ -31,20 +31,17 @@ tryCatch({
   cat("⚠️ Geospatial utilities not available - using basic maps:", e$message, "\n")
 })
 
-# Load map modules
+# Load map modules with centralized loader
 tryCatch({
-  source("modules/maps/map_ui.R")
-  source("modules/maps/map_server.R")
-  cat("✅ Map modules loaded successfully\n")
+  source("modules/maps/maps_loader.R")
 }, error = function(e) {
-  cat("⚠️ Map modules not available:", e$message, "\n")
-  # Try simple integration as fallback
-  tryCatch({
-    source("modules/maps/simple_map_integration.R")
-    cat("✅ Simple map integration loaded as fallback\n")
-  }, error = function(e2) {
-    cat("❌ Simple map integration also failed:", e2$message, "\n")
-  })
+  cat("❌ Failed to load maps loader:", e$message, "\n")
+  # Set default values
+  assign("MAP_MODULE_STATUS", list(
+    module_loaded = FALSE,
+    simple_loaded = FALSE,
+    error_messages = c(paste("Loader error:", e$message))
+  ), envir = .GlobalEnv)
 })
 
 # Load Enhanced Railway Database Connection - PRODUCTION VERSION
@@ -940,18 +937,45 @@ ui <- dashboardPage(
       ),
         
       # Interactive Maps Tab - Using Module or Simple Integration
-      if (exists("mapUI")) {
+      if (exists("mapUI", mode = "function")) {
         mapUI("maps_module")
-      } else if (exists("SIMPLE_MAP_UI_AVAILABLE") && SIMPLE_MAP_UI_AVAILABLE && exists("create_maps_tab_ui")) {
+      } else if (exists("create_maps_tab_ui", mode = "function")) {
         create_maps_tab_ui()
       } else {
+        # Detailed error display
         tabItem(tabName = "maps",
           fluidRow(
             box(
               title = "🗺️ Interactive Maps Dashboard", status = "warning", solidHeader = TRUE, width = 12,
-              p("Map module not loaded. Please check the modules/maps directory."),
-              p("Debug info: mapUI exists =", exists("mapUI"), 
-                ", simple UI available =", exists("SIMPLE_MAP_UI_AVAILABLE"))
+              h4("Map module not loaded. Debugging information:"),
+              tags$ul(
+                tags$li(paste("mapUI exists:", exists("mapUI", mode = "function"))),
+                tags$li(paste("mapServer exists:", exists("mapServer", mode = "function"))),
+                tags$li(paste("create_maps_tab_ui exists:", exists("create_maps_tab_ui", mode = "function"))),
+                tags$li(paste("SIMPLE_MAP_UI_AVAILABLE:", exists("SIMPLE_MAP_UI_AVAILABLE") && isTRUE(SIMPLE_MAP_UI_AVAILABLE))),
+                tags$li(paste("brazil_states data loaded:", exists("brazil_states"))),
+                tags$li(paste("clean_map_data function:", exists("clean_map_data", mode = "function")))
+              ),
+              if (exists("MAP_MODULE_STATUS")) {
+                tagList(
+                  h5("Module Loading Status:"),
+                  tags$ul(
+                    tags$li(paste("Module loaded:", MAP_MODULE_STATUS$module_loaded)),
+                    tags$li(paste("Simple loaded:", MAP_MODULE_STATUS$simple_loaded)),
+                    if (length(MAP_MODULE_STATUS$error_messages) > 0) {
+                      tags$li("Errors:", tags$ul(
+                        lapply(MAP_MODULE_STATUS$error_messages, function(msg) tags$li(msg))
+                      ))
+                    }
+                  )
+                )
+              } else {
+                p("MAP_MODULE_STATUS not available")
+              },
+              hr(),
+              p("Working directory:", getwd()),
+              p("Files in modules/maps/:", 
+                paste(list.files("modules/maps/", pattern = "\\.R$"), collapse = ", "))
             )
           )
         )
