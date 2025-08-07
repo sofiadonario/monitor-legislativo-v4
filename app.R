@@ -936,11 +936,13 @@ ui <- dashboardPage(
           )
       ),
         
-      # Interactive Maps Tab - Using Module or Simple Integration
+      # Interactive Maps Tab - Using Module or Simple Integration or Inline Fallback
       if (exists("mapUI", mode = "function")) {
         mapUI("maps_module")
       } else if (exists("create_maps_tab_ui", mode = "function")) {
         create_maps_tab_ui()
+      } else if (exists("create_inline_maps_ui", mode = "function")) {
+        create_inline_maps_ui()
       } else {
         # Detailed error display
         tabItem(tabName = "maps",
@@ -952,7 +954,9 @@ ui <- dashboardPage(
                 tags$li(paste("mapUI exists:", exists("mapUI", mode = "function"))),
                 tags$li(paste("mapServer exists:", exists("mapServer", mode = "function"))),
                 tags$li(paste("create_maps_tab_ui exists:", exists("create_maps_tab_ui", mode = "function"))),
+                tags$li(paste("create_inline_maps_ui exists:", exists("create_inline_maps_ui", mode = "function"))),
                 tags$li(paste("SIMPLE_MAP_UI_AVAILABLE:", exists("SIMPLE_MAP_UI_AVAILABLE") && isTRUE(SIMPLE_MAP_UI_AVAILABLE))),
+                tags$li(paste("INLINE_MAPS_AVAILABLE:", exists("INLINE_MAPS_AVAILABLE") && isTRUE(INLINE_MAPS_AVAILABLE))),
                 tags$li(paste("brazil_states data loaded:", exists("brazil_states"))),
                 tags$li(paste("clean_map_data function:", exists("clean_map_data", mode = "function")))
               ),
@@ -2990,7 +2994,41 @@ server <- function(input, output, session) {
     mapServer("maps_module", analytics_data, pool_reactive)
   } else if (exists("SIMPLE_MAP_UI_AVAILABLE") && SIMPLE_MAP_UI_AVAILABLE) {
     # Use simple map implementation directly
-    source("modules/maps/simple_map_server.R", local = TRUE)
+    tryCatch({
+      source("modules/maps/simple_map_server.R", local = TRUE)
+    }, error = function(e) {
+      cat("❌ Error loading simple map server:", e$message, "\n")
+    })
+  } else if (exists("INLINE_MAPS_AVAILABLE") && INLINE_MAPS_AVAILABLE) {
+    # Use inline fallback - basic map output
+    output$fallback_map_output <- renderPlotly({
+      plot_ly(type = "scatter", mode = "markers") %>%
+        layout(title = "Map visualization will appear here once data is loaded")
+    })
+    output$inline_brazil_map <- renderPlotly({
+      # Basic map with inline data
+      if (exists("brazil_states_inline")) {
+        plot_ly(
+          data = brazil_states_inline,
+          lon = ~lng,
+          lat = ~lat,
+          type = 'scattergeo',
+          mode = 'markers+text',
+          text = ~state_code,
+          marker = list(size = 10, color = 'blue')
+        ) %>%
+          layout(
+            title = "Brazilian States",
+            geo = list(
+              scope = 'south america',
+              showland = TRUE,
+              center = list(lat = -14, lon = -51)
+            )
+          )
+      } else {
+        plot_ly() %>% layout(title = "Loading map data...")
+      }
+    })
   } else {
     # Fallback if module not loaded
     output$interactive_brazil_map <- renderPlotly({
