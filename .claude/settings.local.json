@@ -138,7 +138,13 @@
       "Bash(do echo \"=== $f ===\")",
       "Bash(file:*)",
       "mcp__ide__executeCode",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(for line in 610 718 854)",
+      "Bash(do echo \"Line $line:\")",
+      "WebFetch(domain:plotly.com)",
+      "WebFetch(domain:cran.r-project.org)",
+      "Bash(git -C \"/mnt/c/Users/sofia/OneDrive/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4\" commit -m \"fix: Fix maps module loading in Railway deployment\")",
+      "Bash(du:*)"
     ]
   },
   "enableAllProjectMcpServers": false

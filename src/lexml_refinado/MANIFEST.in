@@ -1,0 +1,50 @@
+# Manifest file for lexml-refinado package
+# Specifies additional files to include in the distribution
+
+# Include all markdown files
+include *.md
+include *.txt
+include *.rst
+
+# Include license and changelog
+include LICENSE
+include CHANGELOG.md
+
+# Include configuration files
+recursive-include lexml_refinado/config *.yaml *.json *.toml
+
+# Include data files
+recursive-include lexml_refinado/data *.json *.yaml *.txt *.csv
+
+# Include model files
+recursive-include lexml_refinado/models *.pkl *.joblib *.h5
+
+# Include test data
+recursive-include lexml_refinado/tests/data *
+
+# Include documentation
+recursive-include docs *.md *.rst *.py
+recursive-include docs/source *
+recursive-include docs/_static *
+recursive-include docs/_templates *
+
+# Exclude unnecessary files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude .git*
+global-exclude .DS_Store
+global-exclude *.so
+global-exclude *.dylib
+
+# Exclude development and build files
+exclude .gitignore
+exclude .pre-commit-config.yaml
+exclude tox.ini
+exclude Makefile
+prune .git
+prune .github
+prune build
+prune dist
+prune *.egg-info

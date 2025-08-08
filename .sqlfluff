@@ -1,0 +1,171 @@
+# =============================================================================
+# SQLFluff Configuration for Monitor Legislativo v4
+# Comprehensive SQL linting and formatting for PostgreSQL
+# =============================================================================
+
+[sqlfluff]
+# Dialect for PostgreSQL
+dialect = postgres
+
+# Template language (none for pure SQL)
+templater = jinja
+
+# SQL file extensions
+sql_file_exts = .sql,.SQL
+
+# Exclude directories and files
+exclude_rules = 
+    # Disable overly strict rules for existing codebase
+    L010,  # Keywords must be consistently upper case
+    L014,  # Unquoted identifiers must be consistently lower case
+    L030,  # Function names must be consistently upper case
+    L040,  # Null comparison should use "IS" or "IS NOT"
+    L044,  # Query produces an unknown number of result columns
+    L046,  # Jinja template variables should be surrounded by a single whitespace
+    L048,  # Quoted literals should be surrounded by a single whitespace
+
+# Output format
+output_line_length = 120
+
+# Rules configuration
+[sqlfluff:rules]
+
+# Layout and spacing rules
+[sqlfluff:rules:L001]  # Unnecessary trailing whitespace
+[sqlfluff:rules:L002]  # Mixed tab and space indentation
+[sqlfluff:rules:L003]  # Indentation not consistent with previous lines
+indent_unit = space
+tab_space_size = 4
+hanging_indents = true
+
+[sqlfluff:rules:L004]  # Incorrect indentation type
+indent_unit = space
+
+[sqlfluff:rules:L005]  # Commas should not have whitespace directly before them
+[sqlfluff:rules:L006]  # Operators should be surrounded by a single space
+[sqlfluff:rules:L007]  # Operators near newlines should be consistent
+operator_new_lines = after
+
+[sqlfluff:rules:L008]  # Commas should be followed by a single whitespace
+[sqlfluff:rules:L009]  # Files must end with a single trailing newline
+
+# Capitalization rules (relaxed for existing codebase)
+[sqlfluff:rules:L010]  # Keywords must be consistently upper case
+capitalisation_policy = consistent
+
+[sqlfluff:rules:L011]  # Implicit alias for tables
+[sqlfluff:rules:L012]  # Implicit alias for columns
+[sqlfluff:rules:L013]  # Column expression without alias
+
+[sqlfluff:rules:L014]  # Unquoted identifiers must be consistently lower case
+extended_capitalisation_policy = consistent
+
+[sqlfluff:rules:L016]  # Line is too long
+max_line_length = 120
+
+[sqlfluff:rules:L019]  # Leading/Trailing comma enforcement
+comma_style = trailing
+
+[sqlfluff:rules:L020]  # Table aliases should be unique within each clause
+[sqlfluff:rules:L021]  # Ambiguous use of DISTINCT in a SELECT statement with GROUP BY
+[sqlfluff:rules:L022]  # Blank line expected but not found after CTE closing bracket
+[sqlfluff:rules:L023]  # Single whitespace expected after AS in WITH clause
+
+# Naming conventions
+[sqlfluff:rules:L029]  # Keywords should not be used as identifiers
+[sqlfluff:rules:L030]  # Function names should be consistent
+extended_capitalisation_policy = consistent
+
+[sqlfluff:rules:L031]  # Avoid aliases in FROM clauses and JOIN conditions
+[sqlfluff:rules:L032]  # Prefer specifying join type
+[sqlfluff:rules:L033]  # UNION ALL is preferred over UNION
+[sqlfluff:rules:L034]  # Select wildcards then simple targets before calculations and aggregates
+wildcard_policy = single
+
+[sqlfluff:rules:L036]  # Select targets should be on a new line unless there is only one
+select_clause_trailing_comma = forbid
+
+[sqlfluff:rules:L037]  # Ambiguous ordering directions for columns in ORDER BY
+[sqlfluff:rules:L038]  # Column aliases in GROUP BY clauses should not be explicit
+[sqlfluff:rules:L039]  # Unnecessary whitespace found
+
+[sqlfluff:rules:L040]  # Null comparison should use "IS" or "IS NOT"
+# Disabled for existing codebase compatibility
+
+[sqlfluff:rules:L041]  # SELECT DISTINCT with ORDER BY should order by columns in the select clause
+[sqlfluff:rules:L042]  # Join/From clauses should not contain subqueries
+[sqlfluff:rules:L043]  # Unnecessary case when NULL is returned
+
+[sqlfluff:rules:L044]  # Query produces an unknown number of result columns
+# Disabled for views and complex queries
+
+[sqlfluff:rules:L045]  # Query defines a CTE (common-table expression) but does not use it
+[sqlfluff:rules:L046]  # Jinja template variables should be surrounded by a single whitespace
+[sqlfluff:rules:L047]  # Use consistent syntax to express "count number of rows"
+prefer_count_1 = false
+
+[sqlfluff:rules:L048]  # Quoted literals should be surrounded by a single whitespace
+[sqlfluff:rules:L049]  # Comparisons with NULL should use "IS" or "IS NOT"
+[sqlfluff:rules:L050]  # Files must not begin with newlines or whitespace
+[sqlfluff:rules:L051]  # Join clauses should be fully qualified
+fully_qualify_join_types = outer
+
+[sqlfluff:rules:L052]  # Statements must end with a semi-colon
+multiline_newline = false
+require_final_semicolon = true
+
+[sqlfluff:rules:L053]  # Top-level statements should not be wrapped in unnecessary parentheses
+[sqlfluff:rules:L054]  # GROUP BY/ORDER BY column references should not be explicit
+[sqlfluff:rules:L055]  # Use LEFT JOIN instead of RIGHT JOIN
+[sqlfluff:rules:L056]  # Joins should list the table referenced earlier/later first
+[sqlfluff:rules:L057]  # Do not use special characters in identifiers
+[sqlfluff:rules:L058]  # Nested CASE statement in ELSE clause could be flattened
+[sqlfluff:rules:L059]  # Unnecessary quoted identifier
+
+# Database-specific rules for PostgreSQL
+[sqlfluff:rules:L060]  # Use COALESCE instead of IFNULL or NVL
+[sqlfluff:rules:L061]  # Use != instead of <> for "not equal to" comparison
+[sqlfluff:rules:L062]  # Blocked words
+[sqlfluff:rules:L063]  # Data types without precision should not be used
+[sqlfluff:rules:L064]  # Consistent usage of preferred quotes for quoted literals
+
+# Jinja templating rules
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = false
+
+# Custom rules for PostgreSQL functions and extensions
+[sqlfluff:rules:postgres]
+# Allow PostgreSQL-specific functions
+unqualified_column_reference = false
+
+# Exclude certain files/patterns
+[sqlfluff:exclude]
+# Legacy files
+legacy/**/*.sql
+archive/**/*.sql
+
+# Migration files may have different standards
+*/migrations/*.sql
+database/migrations/*.sql
+
+# Generated files
+**/generated/*.sql
+**/build/*.sql
+
+# Temporary and cache files
+**/cache/*.sql
+**/temp/*.sql
+**/tmp/*.sql
+
+# Test files may be more permissive
+**/tests/*.sql
+**/test_*.sql
+**/*_test.sql
+
+# Backup files
+**/*.sql.backup
+**/*.sql.bak
+
+# Development files that may have debugging code
+dev-tools/**/*.sql
+fixes/**/*.sql

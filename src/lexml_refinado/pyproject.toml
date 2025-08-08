@@ -1,0 +1,293 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "setuptools_scm>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lexml-refinado"
+description = "Advanced Brazilian Legislative Document Analysis System with NLP and Machine Learning"
+authors = [
+    {name = "MackIntegridade Team", email = "dev@mackintegridade.com"},
+]
+maintainers = [
+    {name = "Sofia Researcher", email = "sofia@mackintegridade.com"},
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = [
+    "nlp",
+    "legal-text-analysis", 
+    "brazilian-legislation",
+    "document-classification",
+    "machine-learning",
+    "data-mining",
+    "text-analytics"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Legal Industry",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Natural Language :: Portuguese (Brazilian)",
+]
+dynamic = ["version"]
+
+# Core dependencies for NLP and data processing
+dependencies = [
+    # Core Python libraries
+    "requests>=2.28.0",
+    "urllib3>=1.26.0",
+    
+    # Data processing and analysis
+    "pandas>=1.4.0",
+    "numpy>=1.21.0",
+    "scipy>=1.8.0",
+    
+    # Text processing and NLP
+    "beautifulsoup4>=4.11.0",
+    "lxml>=4.9.0",
+    "nltk>=3.7",
+    "spacy>=3.4.0",
+    "transformers>=4.15.0",
+    "torch>=1.12.0",
+    "scikit-learn>=1.1.0",
+    
+    # Portuguese NLP specific
+    "unidecode>=1.3.0",
+    "pyuca>=1.2",
+    
+    # Database connectivity
+    "psycopg2-binary>=2.9.0",
+    "sqlalchemy>=1.4.0",
+    "alembic>=1.8.0",
+    
+    # Data serialization and configuration
+    "pydantic>=1.10.0",
+    "pyyaml>=6.0",
+    "toml>=0.10.0",
+    "python-dotenv>=0.20.0",
+    
+    # Logging and monitoring
+    "structlog>=22.1.0",
+    "rich>=12.0.0",
+    
+    # Date and time handling
+    "python-dateutil>=2.8.0",
+    "pytz>=2022.1",
+    
+    # Statistical analysis
+    "statsmodels>=0.13.0",
+    
+    # Parallel processing
+    "joblib>=1.1.0",
+    
+    # Progress tracking
+    "tqdm>=4.64.0",
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=3.0.0",
+    "pytest-asyncio>=0.20.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=5.0.0",
+    "mypy>=0.991",
+    "pre-commit>=2.20.0",
+    "bandit>=1.7.0",
+]
+
+# Documentation dependencies
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "sphinx-autodoc-typehints>=1.19.0",
+    "myst-parser>=0.18.0",
+]
+
+# Advanced ML and deep learning
+ml-advanced = [
+    "tensorflow>=2.10.0",
+    "keras>=2.10.0",
+    "gensim>=4.2.0",
+    "flair>=0.11.0",
+    "bertimbau>=0.1.0",
+]
+
+# Visualization and plotting
+viz = [
+    "matplotlib>=3.5.0",
+    "seaborn>=0.11.0",
+    "plotly>=5.10.0",
+    "wordcloud>=1.9.0",
+]
+
+# Geospatial analysis
+geo = [
+    "geopandas>=0.11.0",
+    "shapely>=1.8.0",
+    "folium>=0.12.0",
+]
+
+# All optional dependencies
+all = [
+    "lexml-refinado[dev,docs,ml-advanced,viz,geo]"
+]
+
+[project.urls]
+Homepage = "https://github.com/MackIntegridade/monitor_legislativo_v4"
+Documentation = "https://monitor-legislativo-v4.readthedocs.io/"
+Repository = "https://github.com/MackIntegridade/monitor_legislativo_v4.git"
+"Bug Tracker" = "https://github.com/MackIntegridade/monitor_legislativo_v4/issues"
+Changelog = "https://github.com/MackIntegridade/monitor_legislativo_v4/blob/main/CHANGELOG.md"
+
+[project.scripts]
+lexml-scraper = "lexml_refinado.cli:main"
+lexml-classify = "lexml_refinado.cli:classify_documents"
+lexml-analyze = "lexml_refinado.cli:analyze_corpus"
+
+[project.entry-points."lexml_refinado.analyzers"]
+document-classifier = "lexml_refinado.classification_system:RefinedDocumentClassifier"
+thematic-enricher = "lexml_refinado.thematic_enrichment:ThematicEnrichmentSystem"
+quality-controller = "lexml_refinado.quality_controller:ParsingQualityController"
+
+# Tool configurations
+[tool.setuptools]
+packages = ["lexml_refinado"]
+
+[tool.setuptools.dynamic]
+version = {attr = "lexml_refinado.__version__"}
+
+[tool.setuptools.package-data]
+lexml_refinado = [
+    "data/*.json",
+    "data/*.yaml", 
+    "data/*.txt",
+    "models/*.pkl",
+    "models/*.joblib",
+    "config/*.yaml",
+    "config/*.json",
+]
+
+# Black code formatting
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | migrations
+)/
+'''
+
+# isort import sorting
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+# pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=lexml_refinado",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml"
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+python_classes = ["Test*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "nlp: marks tests that require NLP models",
+    "db: marks tests that require database connection",
+]
+
+# mypy type checking
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "beautifulsoup4.*",
+    "nltk.*",
+    "spacy.*",
+    "transformers.*",
+    "sklearn.*",
+    "gensim.*",
+]
+ignore_missing_imports = true
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["lexml_refinado"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "setup.py",
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+# Bandit security linting
+[tool.bandit]
+exclude_dirs = ["tests", "migrations"]
+skips = ["B101", "B601"]

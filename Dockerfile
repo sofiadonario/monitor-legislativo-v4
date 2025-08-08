@@ -19,6 +19,15 @@ WORKDIR /srv/shiny-server
 COPY app.R ./
 COPY RAILWAY_PRODUCTION_DB_FIX.R ./
 
+# Copy modules directory with maps
+COPY modules/ ./modules/
+
+# Copy data directory (for brazil_states.R)
+COPY data/ ./data/
+
+# Copy fixes directory (for map_data_fix.R)
+COPY fixes/ ./fixes/
+
 # Create directories for data files
 RUN mkdir -p scripts analytics_output
 

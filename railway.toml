@@ -1,20 +1,36 @@
 [build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile.optimized"
+dockerContext = "."
 
 [deploy]
-startCommand = "R -e \"cat('🚀 Starting Railway MackMonitor\\\\n'); cat('🎯 Starting Shiny App\\\\n'); shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', 3838)))\""
-healthcheckPath = "/"
-healthcheckTimeout = 300
+startCommand = "exec /app/railway-start.sh"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 5
+# Railway memory limit optimization for R Shiny
+memoryLimit = 2048
+cpuLimit = 1000
 
 [env]
+# Application Configuration
 PORT = "3838"
 R_CONFIG_ACTIVE = "production"
-SHINY_LOG_LEVEL = "INFO"
+SHINY_LOG_LEVEL = "WARN"
 RAILWAY_ENVIRONMENT = "production"
-DATABASE_URL = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@postgres.railway.internal:5432/railway"
-PGHOST = "postgres.railway.internal"
-PGPORT = "5432"
-PGDATABASE = "railway"
-PGUSER = "postgres"
-PGPASSWORD = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY"
+TZ = "America/Sao_Paulo"
+
+# R Optimization Settings
+R_MAX_NUM_DLLS = "150"
+R_GC_MEM_GROW = "3"
+OMP_NUM_THREADS = "2"
+SHINY_WORKER_TIMEOUT = "300"
+
+# Database Configuration (Use Railway's internal service variables)
+# DATABASE_URL will be automatically provided by Railway PostgreSQL service
+# PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD will be auto-injected
+
+# Security Settings
+RAILWAY_DEPLOYMENT = "true"
+NODE_ENV = "production"
