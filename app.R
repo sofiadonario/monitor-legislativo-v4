@@ -3226,9 +3226,15 @@ server <- function(input, output, session) {
         # Fallback: Enhanced circle-based map
         cat("🔄 Using enhanced fallback visualization\n")
         
-        # Filter out states with no data for cleaner visualization
-        active_states <- map_data %>%
-          filter(.data[[metric_column]] > 0)
+        # Filter out states with no data for cleaner visualization (avoid tidy-eval)
+        metric_values <- map_data[[metric_column]]
+        active_states <- map_data[!is.na(metric_values) & metric_values > 0, , drop = FALSE]
+        
+        # Pre-compute circle sizes to avoid referencing dynamic columns inside plotly formulas
+        active_states$circle_size <- pmin(
+          pmax(sqrt(active_states[[metric_column]]) * 8 + 25, 30),
+          120
+        )
         
         if (nrow(active_states) > 0) {
           # Create enhanced scatter plot with optimized circle sizes
@@ -3239,7 +3245,7 @@ server <- function(input, output, session) {
             type = "scattermapbox",
             mode = "markers",
             marker = list(
-              size = ~pmin(pmax(sqrt(.data[[metric_column]]) * 8 + 25, 30), 120),
+              size = ~circle_size,
               color = active_states[[metric_column]],
               colorscale = colorscale_choice,
               reversescale = FALSE,

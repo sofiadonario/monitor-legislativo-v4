@@ -214,9 +214,9 @@ create_enhanced_fallback_map <- function(state_data, metric_column, map_metric =
   tryCatch({
     cat("🔄 Creating enhanced fallback map with area-filling circles\n")
     
-    # Prepare data
-    map_data <- state_data %>%
-      dplyr::filter(!is.na(.data[[metric_column]]) & .data[[metric_column]] > 0)
+    # Prepare data (avoid tidy-eval to prevent closure errors in some envs)
+    metric_values <- state_data[[metric_column]]
+    map_data <- state_data[!is.na(metric_values) & metric_values > 0, , drop = FALSE]
     
     # Calculate appropriate circle sizes (logarithmic scaling for visual balance)
     map_data$circle_size <- pmin(pmax(log10(pmax(map_data[[metric_column]], 1) + 1) * 50, 35), 120)

@@ -71,7 +71,8 @@ load_main_parquet_dataset <- function(use_cache = TRUE, columns = NULL) {
     if (is.null(columns)) {
       data <- arrow::read_parquet(parquet_path)
     } else {
-      data <- arrow::read_parquet(parquet_path, col_select = all_of(columns))
+      # Use explicit character vector selection to avoid tidyselect dependency differences
+      data <- arrow::read_parquet(parquet_path, col_select = columns)
     }
     
     # Convert to data.frame for compatibility
