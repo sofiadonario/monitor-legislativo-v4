@@ -3228,7 +3228,7 @@ server <- function(input, output, session) {
         
         # Filter out states with no data for cleaner visualization
         active_states <- map_data %>%
-          filter(get(metric_column) > 0)
+          filter(.data[[metric_column]] > 0)
         
         if (nrow(active_states) > 0) {
           # Create enhanced scatter plot with optimized circle sizes
@@ -3239,8 +3239,8 @@ server <- function(input, output, session) {
             type = "scattermapbox",
             mode = "markers",
             marker = list(
-              size = ~pmin(pmax(sqrt(get(metric_column)) * 8 + 25, 30), 120),
-              color = ~get(metric_column),
+              size = ~pmin(pmax(sqrt(.data[[metric_column]]) * 8 + 25, 30), 120),
+              color = active_states[[metric_column]],
               colorscale = colorscale_choice,
               reversescale = FALSE,
               opacity = 0.85,
