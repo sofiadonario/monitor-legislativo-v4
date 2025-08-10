@@ -34,8 +34,8 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
     map_metric_debounced <- debounce(reactive(input$map_metric), 500)
     map_category_debounced <- debounce(reactive(input$map_category), 500)
     map_date_range_debounced <- debounce(reactive(input$map_date_range), 1000)
-    color_scale_debounced <- debounce(reactive(input$color_scale %||% "Viridis"), 300)
-    density_threshold_debounced <- debounce(reactive(input$density_threshold %||% "all"), 300)
+    color_scale_debounced <- debounce(reactive(if (is.null(input$color_scale)) "Viridis" else input$color_scale), 300)
+    density_threshold_debounced <- debounce(reactive(if (is.null(input$density_threshold)) "all" else input$density_threshold), 300)
     
     # Filtered data for maps
     map_data <- reactive({
@@ -233,9 +233,9 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
       }
       
       # Get map options
-      map_options <- input$map_options %||% c()
-      density_options <- input$density_options %||% c()
-      map_opacity <- input$map_opacity %||% 0.85
+      map_options <- if (is.null(input$map_options)) c() else input$map_options
+      density_options <- if (is.null(input$density_options)) c() else input$density_options
+      map_opacity <- if (is.null(input$map_opacity)) 0.85 else input$map_opacity
       
       # Create hover text
       data$hover_text <- paste0(
