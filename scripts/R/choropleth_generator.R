@@ -29,8 +29,8 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
     
     # Prepare data for choropleth
     choropleth_data <- state_data %>%
-      dplyr::select(state_code, state_name = state_name, all_of(metric_column)) %>%
-      dplyr::rename(z_value = all_of(metric_column)) %>%
+      dplyr::select(state_code, state_name = state_name, .data[[metric_column]]) %>%
+      dplyr::rename(z_value = .data[[metric_column]]) %>%
       dplyr::filter(!is.na(z_value) & z_value > 0)
     
     cat("📊 Prepared choropleth data for", nrow(choropleth_data), "states\n")
