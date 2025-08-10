@@ -28,8 +28,11 @@ COPY data/ ./data/
 # Copy fixes directory (for map_data_fix.R)
 COPY fixes/ ./fixes/
 
+# Copy scripts directory (for geospatial_utils.R and choropleth_generator.R)
+COPY scripts/ ./scripts/
+
 # Create directories for data files
-RUN mkdir -p scripts analytics_output
+RUN mkdir -p analytics_output
 
 # Note: CSV files are loaded from the database or generated at runtime
 # No need to copy them during build
