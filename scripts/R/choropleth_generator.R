@@ -212,7 +212,7 @@ create_enhanced_fallback_map <- function(state_data, metric_column, map_metric =
     
     # Prepare data
     map_data <- state_data %>%
-      dplyr::filter(!is.na(get(metric_column)) & get(metric_column) > 0)
+      dplyr::filter(!is.na(.data[[metric_column]]) & .data[[metric_column]] > 0)
     
     # Calculate appropriate circle sizes (logarithmic scaling for visual balance)
     map_data$circle_size <- pmin(pmax(log10(pmax(map_data[[metric_column]], 1) + 1) * 50, 35), 120)
@@ -238,7 +238,7 @@ create_enhanced_fallback_map <- function(state_data, metric_column, map_metric =
       mode = "markers",
       marker = list(
         size = ~circle_size,
-        color = ~get(metric_column),
+        color = map_data[[metric_column]],
         colorscale = colorscale,
         reversescale = FALSE,
         opacity = opacity,
