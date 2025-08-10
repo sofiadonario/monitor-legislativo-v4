@@ -9,22 +9,22 @@ if (file.exists("fixes/active/map_data_fix.R")) {
   source("fixes/active/map_data_fix.R", local = TRUE)
 }
 
-mapServer <- function(id, analytics_data, pool) {
+mapServer <- function(id, analytics_data, pool, geospatial_system = NULL) {
   # Handle moduleServer function availability
   if (exists("moduleServer") && is.function(moduleServer)) {
     moduleServer(id, function(input, output, session) {
-      map_server_logic(input, output, session, analytics_data, pool)
+      map_server_logic(input, output, session, analytics_data, pool, geospatial_system)
     })
   } else {
     # Fallback for when moduleServer is not available
     function(input, output, session) {
-      map_server_logic(input, output, session, analytics_data, pool)
+      map_server_logic(input, output, session, analytics_data, pool, geospatial_system)
     }
   }
 }
 
 # Main server logic extracted to separate function
-map_server_logic <- function(input, output, session, analytics_data, pool) {
+map_server_logic <- function(input, output, session, analytics_data, pool, geospatial_system = NULL) {
     
     # Reactive values for performance optimization
     map_trigger <- reactiveVal(0)
@@ -247,15 +247,11 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
         "Activity Index: ", data$activity_index
       )
       
-      # Initialize geospatial system if available
-      geospatial_sys <- NULL
-      if (exists("initialize_geospatial_system")) {
-        geospatial_sys <- tryCatch({
-          initialize_geospatial_system()
-        }, error = function(e) {
-          cat("⚠️ Could not initialize geospatial system:", e$message, "\n")
-          list(boundaries = NULL, geojson = NULL, available = FALSE)
-        })
+      # Use provided geospatial system or fallback to none
+      geospatial_sys <- geospatial_system
+      if (is.null(geospatial_sys)) {
+        cat("⚠️ No geospatial system provided - using fallback maps\n")
+        geospatial_sys <- list(boundaries = NULL, geojson = NULL, available = FALSE)
       }
       
       # Try to use professional choropleth first
@@ -468,14 +464,10 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
             "density" = "density"
           )
           
-          # Initialize geospatial system for download
-          geospatial_sys <- NULL
-          if (exists("initialize_geospatial_system")) {
-            geospatial_sys <- tryCatch({
-              initialize_geospatial_system()
-            }, error = function(e) {
-              list(boundaries = NULL, geojson = NULL, available = FALSE)
-            })
+          # Use provided geospatial system for download
+          geospatial_sys <- geospatial_system
+          if (is.null(geospatial_sys)) {
+            geospatial_sys <- list(boundaries = NULL, geojson = NULL, available = FALSE)
           }
           
           # Try choropleth first

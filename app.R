@@ -2991,7 +2991,7 @@ server <- function(input, output, session) {
         NULL
       }
     })
-    mapServer("maps_module", analytics_data, pool_reactive)
+    mapServer("maps_module", analytics_data, pool_reactive, geospatial_system)
   } else if (exists("SIMPLE_MAP_UI_AVAILABLE") && SIMPLE_MAP_UI_AVAILABLE) {
     # Use simple map implementation directly
     tryCatch({
