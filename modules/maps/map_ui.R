@@ -13,7 +13,7 @@ mapUI <- function(id) {
     tabName = "maps",
     fluidRow(
       box(
-        title = "Interactive Document Distribution Maps",
+        title = "Interactive Choropleth Maps - Brazilian Legislative Documents",
         status = "primary",
         solidHeader = TRUE,
         width = 12,
@@ -24,14 +24,14 @@ mapUI <- function(id) {
             width = 3,
             selectInput(
               ns("map_type"),
-              "Map Type:",
+              "Visualization Type:",
               choices = c(
-                "State Distribution" = "state",
-                "Municipality Heatmap" = "municipality", 
-                "Regional Clusters" = "regional",
-                "Document Density" = "density"
+                "Choropleth (Filled States)" = "states",
+                "Municipality Analysis" = "municipality", 
+                "Regional Patterns" = "regions",
+                "Density Mapping" = "density"
               ),
-              selected = "state"
+              selected = "states"
             )
           ),
           column(
@@ -41,11 +41,17 @@ mapUI <- function(id) {
               "Display Metric:",
               choices = c(
                 "Document Count" = "count",
-                "Per Capita" = "per_capita",
+                "Per Capita (per 100k)" = "per_capita",
                 "Activity Index" = "activity",
-                "Regulatory Density" = "density"
+                "Regulatory Density (per 1M)" = "density"
               ),
               selected = "count"
+            ),
+            # Metric description tooltip
+            tags$small(
+              class = "text-muted",
+              style = "font-size: 11px; margin-top: 2px; display: block;",
+              textOutput(ns("metric_description"))
             )
           ),
           column(
@@ -75,19 +81,81 @@ mapUI <- function(id) {
           )
         ),
         
+        # Enhanced color scale and visualization controls
+        fluidRow(
+          column(
+            width = 4,
+            selectInput(
+              ns("color_scale"),
+              "Color Scale:",
+              choices = c(
+                "Viridis (Blue-Purple-Yellow)" = "Viridis",
+                "Heat Map (Red)" = "Reds", 
+                "Ocean (Blue)" = "Blues",
+                "Earth (Green-Brown)" = "RdYlGn",
+                "Plasma (Purple-Pink)" = "Plasma",
+                "Spectral (Rainbow)" = "Spectral"
+              ),
+              selected = "Viridis"
+            )
+          ),
+          column(
+            width = 4,
+            selectInput(
+              ns("density_threshold"),
+              "Density Display Threshold:",
+              choices = c(
+                "Show All States" = "all",
+                "Above Average Only" = "above_avg",
+                "Top 50%" = "top_50",
+                "Top 25%" = "top_25",
+                "Top 10%" = "top_10"
+              ),
+              selected = "all"
+            )
+          ),
+          column(
+            width = 4,
+            sliderInput(
+              ns("map_opacity"),
+              "Map Opacity:",
+              min = 0.3,
+              max = 1.0,
+              value = 0.85,
+              step = 0.05
+            )
+          )
+        ),
+        
         # Additional controls
         fluidRow(
           column(
-            width = 12,
+            width = 6,
             checkboxGroupInput(
               ns("map_options"),
               "Display Options:",
               choices = c(
                 "Show state labels" = "labels",
                 "Include population data" = "population",
-                "Animate over time" = "animate"
+                "Animate over time" = "animate",
+                "High contrast mode" = "high_contrast"
               ),
               selected = c("labels", "population"),
+              inline = TRUE
+            )
+          ),
+          column(
+            width = 6,
+            checkboxGroupInput(
+              ns("density_options"),
+              "Density Enhancement:",
+              choices = c(
+                "Normalize by population" = "normalize_pop",
+                "Show regional patterns" = "regional",
+                "Highlight outliers" = "outliers",
+                "Show trend indicators" = "trends"
+              ),
+              selected = c("normalize_pop"),
               inline = TRUE
             )
           )
@@ -104,6 +172,50 @@ mapUI <- function(id) {
           )
         ),
         
+        # Data overview panel
+        fluidRow(
+          column(
+            width = 12,
+            wellPanel(
+              style = "background-color: #f8f9fa; margin-bottom: 15px; padding: 15px;",
+              fluidRow(
+                column(
+                  width = 3,
+                  div(
+                    style = "text-align: center;",
+                    h4(textOutput(ns("total_documents")), style = "color: #007bff; margin-bottom: 5px;"),
+                    p("Total Documents", style = "margin: 0; font-weight: bold; color: #666;")
+                  )
+                ),
+                column(
+                  width = 3,
+                  div(
+                    style = "text-align: center;",
+                    h4(textOutput(ns("avg_density")), style = "color: #28a745; margin-bottom: 5px;"),
+                    p("National Average", style = "margin: 0; font-weight: bold; color: #666;")
+                  )
+                ),
+                column(
+                  width = 3,
+                  div(
+                    style = "text-align: center;",
+                    h4(textOutput(ns("highest_state")), style = "color: #dc3545; margin-bottom: 5px;"),
+                    p("Highest State", style = "margin: 0; font-weight: bold; color: #666;")
+                  )
+                ),
+                column(
+                  width = 3,
+                  div(
+                    style = "text-align: center;",
+                    h4(textOutput(ns("regional_leader")), style = "color: #ffc107; margin-bottom: 5px;"),
+                    p("Leading Region", style = "margin: 0; font-weight: bold; color: #666;")
+                  )
+                )
+              )
+            )
+          )
+        ),
+        
         # Main map output
         plotlyOutput(ns("interactive_brazil_map"), height = "600px"),
         
@@ -115,7 +227,7 @@ mapUI <- function(id) {
             style = "text-align: center;",
             downloadButton(
               ns("download_map"), 
-              "Download Map",
+              "Download Choropleth",
               class = "btn-primary"
             ),
             actionButton(
@@ -160,10 +272,46 @@ mapUI <- function(id) {
         title = "State-by-State Statistics",
         status = "warning",
         solidHeader = TRUE,
-        width = 12,
+        width = 8,
         collapsible = TRUE,
         collapsed = TRUE,
         DT::dataTableOutput(ns("map_statistics_table"))
+      ),
+      
+      # Help and guidance panel
+      box(
+        title = "Density Visualization Guide",
+        status = "info",
+        solidHeader = TRUE,
+        width = 4,
+        collapsible = TRUE,
+        collapsed = TRUE,
+        div(
+          style = "padding: 10px;",
+          h5("Understanding the Metrics", style = "color: #17a2b8; margin-bottom: 15px;"),
+          tags$ul(
+            tags$li(strong("Document Count:"), " Raw number of legislative documents"),
+            tags$li(strong("Per Capita:"), " Documents per 100,000 inhabitants"),
+            tags$li(strong("Activity Index:"), " Composite score considering both volume and population"),
+            tags$li(strong("Regulatory Density:"), " Documents per million inhabitants (fine-grained analysis)")
+          ),
+          br(),
+          h5("Color Scales", style = "color: #17a2b8; margin-bottom: 10px;"),
+          tags$ul(
+            tags$li(strong("Viridis:"), " Colorblind-friendly blue-purple-yellow"),
+            tags$li(strong("Heat Map:"), " Traditional red intensity"),
+            tags$li(strong("Ocean:"), " Blue gradient for density mapping"),
+            tags$li(strong("Spectral:"), " Rainbow scale for maximum contrast")
+          ),
+          br(),
+          h5("Accessibility Features", style = "color: #17a2b8; margin-bottom: 10px;"),
+          tags$ul(
+            tags$li("High contrast mode for better visibility"),
+            tags$li("Adjustable opacity levels"),
+            tags$li("Threshold filtering to focus on significant patterns"),
+            tags$li("Screen reader compatible tooltips")
+          )
+        )
       )
     )
   )

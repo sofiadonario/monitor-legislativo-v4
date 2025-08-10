@@ -12,7 +12,8 @@
 #' @return plotly object with choropleth map
 create_professional_choropleth <- function(state_data, boundaries, geojson, 
                                          metric_column, map_metric = "count",
-                                         colorscale = "Viridis", show_labels = FALSE) {
+                                         colorscale = "Viridis", show_labels = FALSE,
+                                         opacity = 0.85, high_contrast = FALSE) {
   
   tryCatch({
     cat("🗺️ Creating professional choropleth map\n")
@@ -67,8 +68,11 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
           colorscale = colorscale,
           reversescale = FALSE,
         marker = list(
-          line = list(color = "white", width = 1.5),
-          opacity = 0.85
+          line = list(
+            color = if (high_contrast) "black" else "white", 
+            width = if (high_contrast) 2 else 1.5
+          ),
+          opacity = opacity
         ),
         colorbar = list(
           title = list(
@@ -180,6 +184,11 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
         stop("Choropleth creation completely failed")
       })
     })
+  } else {
+    # No proper GeoJSON available, signal for fallback
+    cat("🔄 No proper GeoJSON available, using fallback\n")
+    return(NULL)
+  }
     
   }, error = function(e) {
     cat("❌ Professional choropleth creation failed:", e$message, "\n")
@@ -195,7 +204,8 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
 #' @param show_labels Whether to show state labels
 #' @return plotly object with enhanced circle-based map
 create_enhanced_fallback_map <- function(state_data, metric_column, map_metric = "count",
-                                       colorscale = "Viridis", show_labels = FALSE) {
+                                       colorscale = "Viridis", show_labels = FALSE,
+                                       opacity = 0.85, high_contrast = FALSE) {
   
   tryCatch({
     cat("🔄 Creating enhanced fallback map with area-filling circles\n")
@@ -231,8 +241,11 @@ create_enhanced_fallback_map <- function(state_data, metric_column, map_metric =
         color = ~get(metric_column),
         colorscale = colorscale,
         reversescale = FALSE,
-        opacity = 0.8,
-        line = list(color = "white", width = 3),
+        opacity = opacity,
+        line = list(
+          color = if (high_contrast) "black" else "white", 
+          width = if (high_contrast) 4 else 3
+        ),
         colorbar = list(
           title = list(
             text = switch(map_metric,
@@ -283,10 +296,13 @@ create_enhanced_fallback_map <- function(state_data, metric_column, map_metric =
 #' @param map_type Type of map display (states, municipalities, regions, density)
 #' @param colorscale Plotly colorscale name
 #' @param show_labels Whether to display state code labels
+#' @param opacity Map opacity level (0.3 to 1.0)
+#' @param high_contrast Whether to use high contrast mode
 #' @return plotly object with the best available map type
 generate_choropleth_map <- function(state_data, geospatial_system, metric_column,
                                   map_metric = "count", map_type = "states", 
-                                  colorscale = "Viridis", show_labels = FALSE) {
+                                  colorscale = "Viridis", show_labels = FALSE,
+                                  opacity = 0.85, high_contrast = FALSE) {
   
   cat("🎯 Generating choropleth map - metric:", map_metric, "type:", map_type, "\n")
   
@@ -320,7 +336,9 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
       metric_column = metric_column,
       map_metric = map_metric,
       colorscale = final_colorscale,
-      show_labels = show_labels
+      show_labels = show_labels,
+      opacity = opacity,
+      high_contrast = high_contrast
     )
     
     if (!is.null(choropleth_map)) {
@@ -357,7 +375,9 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
     metric_column = metric_column,
     map_metric = map_metric,
     colorscale = final_colorscale,
-    show_labels = show_labels
+    show_labels = show_labels,
+    opacity = opacity,
+    high_contrast = high_contrast
   )
   
   if (!is.null(fallback_map)) {

@@ -34,6 +34,8 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
     map_metric_debounced <- debounce(reactive(input$map_metric), 500)
     map_category_debounced <- debounce(reactive(input$map_category), 500)
     map_date_range_debounced <- debounce(reactive(input$map_date_range), 1000)
+    color_scale_debounced <- debounce(reactive(input$color_scale %||% "Viridis"), 300)
+    density_threshold_debounced <- debounce(reactive(input$density_threshold %||% "all"), 300)
     
     # Filtered data for maps
     map_data <- reactive({
@@ -62,6 +64,17 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
       }
       
       data
+    })
+    
+    # Metric description output
+    output$metric_description <- renderText({
+      metric <- map_metric_debounced()
+      switch(metric,
+        "count" = "Total number of documents by state",
+        "per_capita" = "Documents per 100,000 inhabitants",
+        "activity" = "Composite activity score (documents × log population)",
+        "density" = "Regulatory density per 1 million inhabitants"
+      )
     })
     
     # State-level aggregated data
@@ -119,12 +132,86 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
       state_data
     })
     
+    # Summary statistics outputs for overview panel
+    output$total_documents <- renderText({
+      req(state_map_data())
+      total <- sum(state_map_data()$documents, na.rm = TRUE)
+      format(total, big.mark = ",")
+    })
+    
+    output$avg_density <- renderText({
+      req(state_map_data())
+      data <- state_map_data()
+      metric <- map_metric_debounced()
+      
+      avg_value <- switch(metric,
+        "count" = round(mean(data$documents, na.rm = TRUE), 0),
+        "per_capita" = round(mean(data$per_capita, na.rm = TRUE), 1),
+        "activity" = round(mean(data$activity_index, na.rm = TRUE), 1),
+        "density" = round(mean(data$density, na.rm = TRUE), 1)
+      )
+      
+      paste0(format(avg_value, big.mark = ","), 
+             switch(metric,
+               "count" = " docs",
+               "per_capita" = "/100k",
+               "activity" = " pts",
+               "density" = "/1M"
+             ))
+    })
+    
+    output$highest_state <- renderText({
+      req(state_map_data())
+      data <- state_map_data()
+      metric <- map_metric_debounced()
+      
+      value_col <- switch(metric,
+        "count" = "documents",
+        "per_capita" = "per_capita",
+        "activity" = "activity_index",
+        "density" = "density"
+      )
+      
+      if (value_col %in% names(data) && nrow(data) > 0) {
+        max_row <- data[which.max(data[[value_col]]), ]
+        if (nrow(max_row) > 0) {
+          return(max_row$state_code[1])
+        }
+      }
+      "N/A"
+    })
+    
+    output$regional_leader <- renderText({
+      req(state_map_data())
+      data <- state_map_data()
+      metric <- map_metric_debounced()
+      
+      value_col <- switch(metric,
+        "count" = "documents",
+        "per_capita" = "per_capita", 
+        "activity" = "activity_index",
+        "density" = "density"
+      )
+      
+      if (value_col %in% names(data) && "region" %in% names(data) && nrow(data) > 0) {
+        region_sums <- aggregate(data[[value_col]], by = list(region = data$region), FUN = sum, na.rm = TRUE)
+        if (nrow(region_sums) > 0) {
+          top_region <- region_sums[which.max(region_sums$x), "region"]
+          return(top_region)
+        }
+      }
+      "N/A"
+    })
+    
     # Main interactive Brazil map
     output$interactive_brazil_map <- renderPlotly({
       req(state_map_data())
       
       data <- state_map_data()
       metric <- map_metric_debounced()
+      map_type <- map_type_debounced()
+      color_scale <- color_scale_debounced()
+      density_threshold <- density_threshold_debounced()
       
       # Select metric column
       value_col <- switch(metric,
@@ -133,6 +220,22 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
         "activity" = "activity_index",
         "density" = "density"
       )
+      
+      # Apply density threshold filtering
+      if (density_threshold != "all" && value_col %in% names(data)) {
+        threshold_value <- switch(density_threshold,
+          "above_avg" = mean(data[[value_col]], na.rm = TRUE),
+          "top_50" = quantile(data[[value_col]], 0.5, na.rm = TRUE),
+          "top_25" = quantile(data[[value_col]], 0.75, na.rm = TRUE),
+          "top_10" = quantile(data[[value_col]], 0.9, na.rm = TRUE)
+        )
+        data <- data[data[[value_col]] >= threshold_value, ]
+      }
+      
+      # Get map options
+      map_options <- input$map_options %||% c()
+      density_options <- input$density_options %||% c()
+      map_opacity <- input$map_opacity %||% 0.85
       
       # Create hover text
       data$hover_text <- paste0(
@@ -144,28 +247,46 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
         "Activity Index: ", data$activity_index
       )
       
-      # Try to use choropleth generator if available
-      if (exists("generate_choropleth_map")) {
-        tryCatch({
-          generate_choropleth_map(
-            data = data,
-            value_column = value_col,
-            title = paste("Brazilian Documents -", 
-                         switch(metric,
-                                "count" = "Total Count",
-                                "per_capita" = "Per Capita",
-                                "activity" = "Activity Index",
-                                "density" = "Regulatory Density")),
-            show_labels = "labels" %in% input$map_options
-          )
+      # Initialize geospatial system if available
+      geospatial_sys <- NULL
+      if (exists("initialize_geospatial_system")) {
+        geospatial_sys <- tryCatch({
+          initialize_geospatial_system()
         }, error = function(e) {
-          # Fallback to simple scatter map
-          create_fallback_map(data, value_col)
+          cat("⚠️ Could not initialize geospatial system:", e$message, "\n")
+          list(boundaries = NULL, geojson = NULL, available = FALSE)
         })
-      } else {
-        # Direct fallback implementation
-        create_fallback_map(data, value_col)
       }
+      
+      # Try to use professional choropleth first
+      if (exists("generate_choropleth_map") && !is.null(geospatial_sys)) {
+        tryCatch({
+          choropleth_result <- generate_choropleth_map(
+            state_data = data,
+            geospatial_system = geospatial_sys,
+            metric_column = value_col,
+            map_metric = metric,
+            map_type = map_type,
+            colorscale = color_scale,
+            show_labels = "labels" %in% map_options,
+            opacity = map_opacity,
+            high_contrast = "high_contrast" %in% map_options
+          )
+          
+          if (!is.null(choropleth_result)) {
+            cat("✅ Using professional choropleth map\n")
+            return(choropleth_result)
+          } else {
+            cat("⚠️ Choropleth returned NULL - using fallback\n")
+          }
+        }, error = function(e) {
+          cat("❌ Choropleth generation failed:", e$message, "\n")
+        })
+      }
+      
+      # Fallback to enhanced circles
+      cat("🔄 Using enhanced circle-based map as fallback\n")
+      create_fallback_map(data, value_col, color_scale, map_opacity, map_options)
     })
     
     # Municipality detail map
@@ -332,13 +453,14 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
     # Download map handler
     output$download_map <- downloadHandler(
       filename = function() {
-        paste0("brazil_map_", Sys.Date(), ".html")
+        paste0("brazil_choropleth_map_", Sys.Date(), ".html")
       },
       content = function(file) {
         # Create a standalone HTML file with the plot
         p <- isolate({
           data <- state_map_data()
           metric <- input$map_metric
+          map_type <- input$map_type
           value_col <- switch(metric,
             "count" = "documents",
             "per_capita" = "per_capita",
@@ -346,13 +468,37 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
             "density" = "density"
           )
           
-          if (exists("generate_choropleth_map")) {
-            generate_choropleth_map(data, value_col, 
-                                  paste("Brazilian Documents -", metric),
-                                  show_labels = "labels" %in% input$map_options)
-          } else {
-            create_fallback_map(data, value_col)
+          # Initialize geospatial system for download
+          geospatial_sys <- NULL
+          if (exists("initialize_geospatial_system")) {
+            geospatial_sys <- tryCatch({
+              initialize_geospatial_system()
+            }, error = function(e) {
+              list(boundaries = NULL, geojson = NULL, available = FALSE)
+            })
           }
+          
+          # Try choropleth first
+          if (exists("generate_choropleth_map") && !is.null(geospatial_sys)) {
+            choropleth_result <- tryCatch({
+              generate_choropleth_map(
+                state_data = data,
+                geospatial_system = geospatial_sys,
+                metric_column = value_col,
+                map_metric = metric,
+                map_type = map_type,
+                colorscale = "Viridis",
+                show_labels = "labels" %in% input$map_options
+              )
+            }, error = function(e) NULL)
+            
+            if (!is.null(choropleth_result)) {
+              return(choropleth_result)
+            }
+          }
+          
+          # Fallback to enhanced circles
+          create_fallback_map(data, value_col)
         })
         
         htmlwidgets::saveWidget(p, file, selfcontained = TRUE)
@@ -361,10 +507,14 @@ map_server_logic <- function(input, output, session, analytics_data, pool) {
 }
 
 # Helper function for fallback map
-create_fallback_map <- function(data, value_col) {
+create_fallback_map <- function(data, value_col, color_scale = "Viridis", opacity = 0.85, map_options = c()) {
   # Calculate marker sizes
   max_value <- max(data[[value_col]], na.rm = TRUE)
   data$marker_size <- sqrt(data[[value_col]] / max_value) * 100
+  
+  # Adjust for high contrast mode
+  line_color <- if ("high_contrast" %in% map_options) "black" else "white"
+  line_width <- if ("high_contrast" %in% map_options) 2 else 0.5
   
   plot_ly(
     data = data,
@@ -376,29 +526,42 @@ create_fallback_map <- function(data, value_col) {
     marker = list(
       size = ~marker_size,
       color = ~get(value_col),
-      colorscale = 'Viridis',
+      colorscale = color_scale,
       cmin = 0,
       cmax = max_value,
+      opacity = opacity,
       colorbar = list(
-        title = switch(value_col,
-          "documents" = "Documents",
-          "per_capita" = "Per 100k",
-          "activity_index" = "Index",
-          "density" = "Per Million"
-        )
+        title = list(
+          text = switch(value_col,
+            "documents" = "Documents",
+            "per_capita" = "Per 100k",
+            "activity_index" = "Index",
+            "density" = "Per Million"
+          ),
+          font = list(size = 12)
+        ),
+        thickness = 20,
+        len = 0.8,
+        x = 1.02,
+        bordercolor = line_color,
+        borderwidth = 1
       ),
-      line = list(color = 'white', width = 0.5)
+      line = list(color = line_color, width = line_width)
     ),
     text = ~hover_text,
     hoverinfo = 'text'
   ) %>%
     layout(
-      title = paste("Document Distribution -", 
-                   switch(value_col,
-                          "documents" = "Total Count",
-                          "per_capita" = "Per Capita", 
-                          "activity_index" = "Activity Index",
-                          "density" = "Regulatory Density")),
+      title = list(
+        text = paste("Document Distribution -", 
+                     switch(value_col,
+                            "documents" = "Total Count",
+                            "per_capita" = "Per Capita", 
+                            "activity_index" = "Activity Index",
+                            "density" = "Regulatory Density")),
+        font = list(size = 16, family = "Arial"),
+        x = 0.5
+      ),
       geo = list(
         scope = 'south america',
         showland = TRUE,
@@ -408,6 +571,7 @@ create_fallback_map <- function(data, value_col) {
         showcountries = TRUE,
         countrycolor = toRGB("gray80")
       ),
-      margin = list(l = 0, r = 0, t = 50, b = 0)
+      margin = list(l = 0, r = 0, t = 50, b = 0),
+      font = list(family = "Arial, sans-serif")
     )
 } # End of create_fallback_map function
