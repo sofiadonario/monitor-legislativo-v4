@@ -3047,7 +3047,7 @@ server <- function(input, output, session) {
       # Get geospatial system for true choropleth mapping
       geo_system <- geospatial_system()
       
-      # Enhanced Brazilian states data with all required information
+      # Enhanced Brazilian states data with all required information for choropleth mapping
       brazil_states <- data.frame(
         state_code = c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
                       "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", 
@@ -3157,11 +3157,17 @@ server <- function(input, output, session) {
         # Try to use professional choropleth mapping
         if (!is.null(geo_system) && !is.null(geo_system$available) && geo_system$available) {
           cat("✨ Using professional choropleth with state boundaries\n")
+          cat("🔍 DEBUG: geo_system available =", geo_system$available, "\n")
+          cat("🔍 DEBUG: geo_system state_count =", geo_system$state_count, "\n")
+          cat("🔍 DEBUG: generate_choropleth_map exists =", exists("generate_choropleth_map"), "\n")
+          cat("🔍 DEBUG: map_data rows =", nrow(map_data), "\n")
+          cat("🔍 DEBUG: metric_column =", metric_column, "\n")
           
           # Use the generate_choropleth_map function from choropleth_generator.R
           choropleth_result <- tryCatch({
             if (exists("generate_choropleth_map")) {
-              generate_choropleth_map(
+              cat("🔍 DEBUG: Calling generate_choropleth_map...\n")
+              result <- generate_choropleth_map(
                 state_data = map_data,
                 geospatial_system = geo_system,
                 metric_column = metric_column,
@@ -3170,11 +3176,15 @@ server <- function(input, output, session) {
                 colorscale = colorscale_choice,
                 show_labels = show_labels
               )
+              cat("🔍 DEBUG: generate_choropleth_map returned:", !is.null(result), "\n")
+              result
             } else {
+              cat("🔍 DEBUG: generate_choropleth_map function does not exist\n")
               NULL
             }
           }, error = function(e) {
-            cat("⚠️ Choropleth generation failed:", e$message, "\n")
+            cat("❌ Choropleth generation failed:", e$message, "\n")
+            cat("🔍 DEBUG: Error details:", toString(e), "\n")
             NULL
           })
           
