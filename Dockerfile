@@ -7,10 +7,12 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libcurl4-openssl-dev \
     libxml2-dev \
+    libgdal-dev \
+    libudunits2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install required R packages
-RUN R -e "install.packages(c('DBI', 'RPostgres', 'pool', 'shiny', 'shinydashboard', 'DT', 'plotly', 'dplyr', 'RColorBrewer', 'stringr', 'scales', 'lubridate', 'tidyr', 'jsonlite'), repos='https://cran.rstudio.com/')"
+RUN R -e "install.packages(c('DBI','RPostgres','pool','shiny','shinydashboard','DT','plotly','dplyr','RColorBrewer','stringr','scales','lubridate','tidyr','jsonlite','magrittr','sf','geobr','geojsonio','R.utils'), repos='https://cran.rstudio.com/')"
 
 # Set working directory
 WORKDIR /srv/shiny-server
