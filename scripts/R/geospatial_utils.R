@@ -54,13 +54,18 @@ get_brazil_boundaries <- function(cache_dir = "cache/boundaries", force_refresh 
     })
     
     # Ensure proper coordinate reference system
-    if (sf::st_crs(boundaries)$input != "EPSG:4326") {
+    if (!is.null(sf::st_crs(boundaries)) && sf::st_crs(boundaries)$input != "EPSG:4326") {
       cat("🔄 Converting to WGS84 (EPSG:4326)\n")
       boundaries <- sf::st_transform(boundaries, 4326)
     }
     
     # Simplify for web performance while preserving topology
-    boundaries <- sf::st_simplify(boundaries, dTolerance = 0.005, preserveTopology = TRUE)
+    boundaries <- tryCatch({
+      sf::st_simplify(boundaries, dTolerance = 0.005, preserveTopology = TRUE)
+    }, error = function(e) {
+      cat("⚠️ Simplification failed:", e$message, "- using original geometry\n")
+      boundaries
+    })
     
     # Validate data quality
     if (nrow(boundaries) < 26) {

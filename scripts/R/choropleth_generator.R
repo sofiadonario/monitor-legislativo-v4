@@ -1,6 +1,15 @@
 # Advanced Choropleth Map Generation for Brazilian Legislative Data
 # Professional choropleth implementation with full state boundary fills
 
+# Ensure pipe operator is available without requiring global library calls
+if (!exists("%>%")) {
+  if (requireNamespace("magrittr", quietly = TRUE)) {
+    `%>%` <- magrittr::`%>%`
+  } else if (requireNamespace("dplyr", quietly = TRUE)) {
+    `%>%` <- dplyr::`%>%`
+  }
+}
+
 #' Create professional choropleth map with filled state boundaries
 #' @param state_data Data frame with state_code and metric columns
 #' @param boundaries sf object with Brazilian state boundaries  
@@ -354,7 +363,11 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
   )
   
   # Attempt professional choropleth with real boundaries
-  if (!is.null(geospatial_system) && isTRUE(geospatial_system$available)) {
+  safe_geo_available <- tryCatch({
+    is.list(geospatial_system) && isTRUE(geospatial_system[["available"]])
+  }, error = function(e) FALSE)
+
+  if (safe_geo_available) {
     cat("🗺️ Using professional choropleth with state boundaries\n")
     
     # Additional safety check for geospatial system components
