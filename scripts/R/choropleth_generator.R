@@ -53,10 +53,13 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
     )
     
     # Check if we have proper GeoJSON or simplified data
-    has_proper_geojson <- is.list(geojson) && 
-                         !is.null(geojson$type) && 
-                         geojson$type == "FeatureCollection" && 
-                         !identical(geojson$features, "simplified")
+    # Safely check geojson properties to avoid "closure not subsettable" errors
+    has_proper_geojson <- FALSE
+    if (!is.null(geojson) && is.list(geojson)) {
+      has_proper_geojson <- !is.null(geojson$type) && 
+                           geojson$type == "FeatureCollection" && 
+                           !identical(geojson$features, "simplified")
+    }
     
     # Method 1: Try choroplethmapbox only if we have proper GeoJSON
     if (has_proper_geojson) {

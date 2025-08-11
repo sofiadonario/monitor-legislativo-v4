@@ -101,10 +101,25 @@ sf_to_plotly_geojson <- function(boundaries, cache_dir = "cache/boundaries") {
   if (file.exists(cache_file)) {
     tryCatch({
       cat("📄 Loading cached GeoJSON\n")
+      
+      # Ensure jsonlite is available before using it
+      if (!requireNamespace("jsonlite", quietly = TRUE)) {
+        cat("⚠️ jsonlite package not available - cannot load cached GeoJSON\n")
+        return(NULL)
+      }
+      
       geojson_text <- readLines(cache_file, warn = FALSE)
-      return(jsonlite::fromJSON(paste(geojson_text, collapse = "")))
+      # Use explicit package reference with safety check
+      json_result <- tryCatch({
+        getFromNamespace("fromJSON", "jsonlite")(paste(geojson_text, collapse = ""))
+      }, error = function(e2) {
+        cat("⚠️ Failed to parse cached GeoJSON:", e2$message, "\n")
+        NULL
+      })
+      return(json_result)
     }, error = function(e) {
-      cat("⚠️ Cached GeoJSON invalid - regenerating\n")
+      cat("⚠️ Cached GeoJSON load error:", e$message, "\n")
+      NULL
     })
   }
   

@@ -24,7 +24,8 @@ RUN install2.r --error --skipinstalled \
     stringr \
     scales \
     lubridate \
-    tidyr
+    tidyr \
+    jsonlite
 
 # Set working directory
 WORKDIR /app
