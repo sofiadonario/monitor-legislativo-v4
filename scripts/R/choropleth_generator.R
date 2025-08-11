@@ -130,7 +130,7 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
         hovertemplate = choropleth_data$hover_text,
         showscale = TRUE
       ) %>%
-      layout(
+      plotly::layout(
         mapbox = list(
           style = "carto-positron",
           zoom = 3.2,
@@ -154,7 +154,7 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
         )
         
         fig <- fig %>%
-          add_trace(
+          plotly::add_trace(
             data = label_data,
             lon = ~lon,
             lat = ~lat,
@@ -198,7 +198,7 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
           ),
           hovertemplate = choropleth_data$hover_text
         ) %>%
-        layout(
+        plotly::layout(
           geo = list(
             scope = "south america",
             projection = list(type = "natural earth"),
@@ -324,7 +324,7 @@ create_enhanced_fallback_map <- function(state_data, metric_column, map_metric =
       hoverinfo = "text",
       showlegend = FALSE
     ) %>%
-    layout(
+    plotly::layout(
       mapbox = list(
         style = "carto-positron",
         zoom = 3.2,
@@ -433,7 +433,7 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
       )
       
       choropleth_map <- choropleth_map %>%
-        layout(
+        plotly::layout(
           title = list(
             text = title_text,
             font = list(size = 16, family = "Arial"),
@@ -473,7 +473,7 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
     )
     
     fallback_map <- fallback_map %>%
-      layout(
+      plotly::layout(
         title = list(
           text = title_text,
           font = list(size = 16, family = "Arial"),
@@ -490,6 +490,12 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
             font = list(size = 10, color = "gray")
           )
         )
+      ) %>%
+      plotly::config(
+        displayModeBar = TRUE,
+        scrollZoom = TRUE,
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = c('pan2d', 'select2d', 'lasso2d')
       )
     
     cat("✅ Enhanced fallback map generated successfully\n")
