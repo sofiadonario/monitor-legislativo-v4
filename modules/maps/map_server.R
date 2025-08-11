@@ -247,6 +247,14 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         "Activity Index: ", data$activity_index
       )
       
+      # Ensure coordinate columns exist for fallback maps
+      if (!("lng" %in% names(data)) && ("lon" %in% names(data))) {
+        data$lng <- data$lon
+      }
+      if (!("lat" %in% names(data)) && ("latitude" %in% names(data))) {
+        data$lat <- data$latitude
+      }
+
       # Use provided geospatial system or fallback to none
       geospatial_sys <- geospatial_system
       if (is.null(geospatial_sys)) {

@@ -3223,7 +3223,7 @@ server <- function(input, output, session) {
           }
         }
         
-        # Fallback: Enhanced circle-based map
+          # Fallback: Enhanced circle-based map
         cat("🔄 Using enhanced fallback visualization\n")
         
         # Filter out states with no data for cleaner visualization (avoid tidy-eval)
@@ -3236,7 +3236,15 @@ server <- function(input, output, session) {
           120
         )
         
-        if (nrow(active_states) > 0) {
+          # Normalize coordinate columns for robustness
+          if (!("lon" %in% names(active_states)) && ("lng" %in% names(active_states))) {
+            active_states$lon <- active_states$lng
+          }
+          if (!("lat" %in% names(active_states)) && ("latitude" %in% names(active_states))) {
+            active_states$lat <- active_states$latitude
+          }
+
+          if (nrow(active_states) > 0 && all(c("lon","lat") %in% names(active_states))) {
           # Create enhanced scatter plot with optimized circle sizes
           fallback_map <- plot_ly(
             data = active_states,
@@ -3323,7 +3331,9 @@ server <- function(input, output, session) {
           
           cat("✅ Enhanced fallback map created with", nrow(active_states), "active states\n")
           return(fallback_map)
-        }
+          } else {
+            cat("⚠️ Missing lon/lat columns for fallback map\n")
+          }
       }
       
       # Ultimate fallback - loading or error state

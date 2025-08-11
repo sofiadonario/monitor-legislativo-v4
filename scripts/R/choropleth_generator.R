@@ -250,6 +250,24 @@ create_enhanced_fallback_map <- function(state_data, metric_column, map_metric =
     # Prepare data (avoid tidy-eval to prevent closure errors in some envs)
     metric_values <- state_data[[metric_column]]
     map_data <- state_data[!is.na(metric_values) & metric_values > 0, , drop = FALSE]
+
+    # Standardize coordinate column names: accept lng/longitude -> lon
+    if (!("lon" %in% names(map_data))) {
+      if ("lng" %in% names(map_data)) {
+        map_data$lon <- map_data$lng
+      } else if ("longitude" %in% names(map_data)) {
+        map_data$lon <- map_data$longitude
+      }
+    }
+    # Ensure latitude column exists: accept latitude -> lat
+    if (!("lat" %in% names(map_data)) && ("latitude" %in% names(map_data))) {
+      map_data$lat <- map_data$latitude
+    }
+    
+    # Validate coordinates are present
+    if (!("lon" %in% names(map_data)) || !("lat" %in% names(map_data))) {
+      stop("Missing required coordinate columns (lon/lat or lng/lat)")
+    }
     
     # Calculate appropriate circle sizes (logarithmic scaling for visual balance)
     map_data$circle_size <- pmin(pmax(log10(pmax(map_data[[metric_column]], 1) + 1) * 50, 35), 120)
