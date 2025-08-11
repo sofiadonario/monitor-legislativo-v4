@@ -18,13 +18,26 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
   tryCatch({
     cat("🗺️ Creating professional choropleth map\n")
     
-    # Validate inputs
+    # Enhanced input validation with type checking
     if (is.null(boundaries) || is.null(geojson) || is.null(state_data)) {
       stop("Missing required data for choropleth creation")
     }
     
+    # Check geojson is not a closure or function
+    if (is.function(geojson) || inherits(geojson, "closure")) {
+      cat("⚠️ GeoJSON is a function/closure, not usable data\n")
+      stop("GeoJSON data is not in the expected format (appears to be a function)")
+    }
+    
     if (!metric_column %in% names(state_data)) {
       stop("Metric column '", metric_column, "' not found in data")
+    }
+    
+    # Additional safety check for state_data structure
+    required_cols <- c("state_code", "state_name", metric_column)
+    missing_cols <- required_cols[!required_cols %in% names(state_data)]
+    if (length(missing_cols) > 0) {
+      stop("Missing required columns in state_data: ", paste(missing_cols, collapse = ", "))
     }
     
     # Prepare data for choropleth
@@ -55,10 +68,18 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
     # Check if we have proper GeoJSON or simplified data
     # Safely check geojson properties to avoid "closure not subsettable" errors
     has_proper_geojson <- FALSE
-    if (!is.null(geojson) && is.list(geojson)) {
-      has_proper_geojson <- !is.null(geojson$type) && 
-                           geojson$type == "FeatureCollection" && 
-                           !identical(geojson$features, "simplified")
+    if (!is.null(geojson)) {
+      # Use tryCatch to safely access geojson properties
+      has_proper_geojson <- tryCatch({
+        # Check if geojson is a list and has the required structure
+        is.list(geojson) && 
+        !is.null(geojson[["type"]]) && 
+        geojson[["type"]] == "FeatureCollection" && 
+        !identical(geojson[["features"]], "simplified")
+      }, error = function(e) {
+        cat("⚠️ Error checking GeoJSON structure:", e$message, "\n")
+        FALSE
+      })
     }
     
     # Method 1: Try choroplethmapbox only if we have proper GeoJSON
@@ -333,20 +354,40 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
   )
   
   # Attempt professional choropleth with real boundaries
-  if (!is.null(geospatial_system) && geospatial_system$available) {
+  if (!is.null(geospatial_system) && isTRUE(geospatial_system$available)) {
     cat("🗺️ Using professional choropleth with state boundaries\n")
     
-    choropleth_map <- create_professional_choropleth(
-      state_data = state_data,
-      boundaries = geospatial_system$boundaries,
-      geojson = geospatial_system$geojson,
-      metric_column = metric_column,
-      map_metric = map_metric,
-      colorscale = final_colorscale,
-      show_labels = show_labels,
-      opacity = opacity,
-      high_contrast = high_contrast
-    )
+    # Additional safety check for geospatial system components
+    geojson_safe <- tryCatch({
+      geospatial_system$geojson
+    }, error = function(e) {
+      cat("⚠️ Error accessing geospatial_system$geojson:", e$message, "\n")
+      NULL
+    })
+    
+    boundaries_safe <- tryCatch({
+      geospatial_system$boundaries
+    }, error = function(e) {
+      cat("⚠️ Error accessing geospatial_system$boundaries:", e$message, "\n")
+      NULL
+    })
+    
+    if (!is.null(geojson_safe) && !is.null(boundaries_safe)) {
+      choropleth_map <- create_professional_choropleth(
+        state_data = state_data,
+        boundaries = boundaries_safe,
+        geojson = geojson_safe,
+        metric_column = metric_column,
+        map_metric = map_metric,
+        colorscale = final_colorscale,
+        show_labels = show_labels,
+        opacity = opacity,
+        high_contrast = high_contrast
+      )
+    } else {
+      cat("⚠️ Geospatial system components not safely accessible\n")
+      choropleth_map <- NULL
+    }
     
     if (!is.null(choropleth_map)) {
       # Add title

@@ -108,10 +108,31 @@ sf_to_plotly_geojson <- function(boundaries, cache_dir = "cache/boundaries") {
         return(NULL)
       }
       
+      # Try to load jsonlite explicitly to avoid namespace issues
+      tryCatch({
+        library(jsonlite, quietly = TRUE)
+      }, error = function(e) {
+        cat("⚠️ Cannot load jsonlite library:", e$message, "\n")
+      })
+      
       geojson_text <- readLines(cache_file, warn = FALSE)
       # Use explicit package reference with safety check
       json_result <- tryCatch({
-        getFromNamespace("fromJSON", "jsonlite")(paste(geojson_text, collapse = ""))
+        # More robust approach - ensure fromJSON is a function before calling
+        fromJSON_func <- getFromNamespace("fromJSON", "jsonlite")
+        if (is.function(fromJSON_func)) {
+          result <- fromJSON_func(paste(geojson_text, collapse = ""))
+          # Validate the result is a proper list/object
+          if (is.list(result) || is.character(result)) {
+            result
+          } else {
+            cat("⚠️ fromJSON returned unexpected type:", typeof(result), "\n")
+            NULL
+          }
+        } else {
+          cat("⚠️ fromJSON is not available as a function\n")
+          NULL
+        }
       }, error = function(e2) {
         cat("⚠️ Failed to parse cached GeoJSON:", e2$message, "\n")
         NULL
@@ -246,14 +267,28 @@ initialize_geospatial_system <- function() {
   }
   
   # Return system with memory cleanup information
-  system_result <- list(
-    boundaries = boundaries,
-    geojson = geojson,
-    available = success,
-    state_count = if (!is.null(boundaries)) nrow(boundaries) else 0,
-    cache_dir = cache_dir,
-    initialized_at = Sys.time()
-  )
+  # Ensure all components are safely accessible
+  system_result <- tryCatch({
+    list(
+      boundaries = boundaries,
+      geojson = geojson,
+      available = success,
+      state_count = if (!is.null(boundaries)) nrow(boundaries) else 0,
+      cache_dir = cache_dir,
+      initialized_at = Sys.time()
+    )
+  }, error = function(e) {
+    cat("⚠️ Error creating geospatial system result:", e$message, "\n")
+    list(
+      boundaries = NULL,
+      geojson = NULL,
+      available = FALSE,
+      state_count = 0,
+      cache_dir = cache_dir,
+      initialized_at = Sys.time(),
+      error = e$message
+    )
+  })
   
   # Trigger garbage collection to free up memory
   if (success) {
