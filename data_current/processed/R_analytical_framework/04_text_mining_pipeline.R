@@ -317,10 +317,10 @@ perform_sentiment_analysis <- function(text_data, text_column = "combined_text")
   sentiment_results <- text_data %>%
     mutate(
       # Basic sentiment using sentimentr
-      sentiment_score = sentiment(get(text_column))$sentiment,
+      sentiment_score = sentiment(.data[[text_column]])$sentiment,
       
       # Custom lexicon-based sentiment
-      custom_sentiment = map_dbl(get(text_column), function(text) {
+      custom_sentiment = map_dbl(.data[[text_column]], function(text) {
         words <- str_split(str_to_lower(text), "\\s+")[[1]]
         positive_matches <- sum(words %in% legal_positive)
         negative_matches <- sum(words %in% legal_negative)
