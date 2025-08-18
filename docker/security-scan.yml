@@ -1,0 +1,259 @@
+# =============================================================================
+# CONTAINER SECURITY SCANNING CONFIGURATION
+# Brazilian Legislative Monitoring System - Security Compliance
+# =============================================================================
+
+# Security scanning pipeline configuration for CI/CD
+security_scan:
+  name: "Monitor Legislativo Security Scan"
+  version: "1.0"
+  
+  # Container vulnerability scanning
+  vulnerability_scan:
+    enabled: true
+    tools:
+      - name: "trivy"
+        enabled: true
+        config:
+          severity: "HIGH,CRITICAL"
+          exit_code: 1
+          format: "json"
+          output: "security_scan_results/trivy-report.json"
+          ignore_unfixed: false
+          timeout: "10m"
+        commands:
+          - "trivy image --severity HIGH,CRITICAL --format json --output security_scan_results/trivy-report.json monitor_legislativo:latest"
+          - "trivy fs --severity HIGH,CRITICAL --format json --output security_scan_results/trivy-fs-report.json ."
+          
+      - name: "grype"
+        enabled: true
+        config:
+          fail_on: "high"
+          output_format: "json"
+          output_file: "security_scan_results/grype-report.json"
+        commands:
+          - "grype monitor_legislativo:latest -o json --file security_scan_results/grype-report.json"
+          
+      - name: "docker-bench-security"
+        enabled: true
+        config:
+          output: "security_scan_results/docker-bench-report.log"
+        commands:
+          - "docker run --rm --net host --pid host --userns host --cap-add audit_control -v /etc:/etc:ro -v /usr/bin/containerd:/usr/bin/containerd:ro -v /usr/bin/runc:/usr/bin/runc:ro -v /usr/lib/systemd:/usr/lib/systemd:ro -v /var/lib:/var/lib:ro -v /var/run/docker.sock:/var/run/docker.sock:ro --label docker_bench_security docker/docker-bench-security"
+
+  # Base image security verification
+  base_image_verification:
+    enabled: true
+    allowed_registries:
+      - "docker.io"
+      - "rocker"
+    allowed_base_images:
+      - "rocker/shiny:4.3.1"
+      - "postgres:15-alpine"
+      - "redis:7-alpine"
+    signature_verification: true
+    
+  # Secrets detection
+  secrets_scan:
+    enabled: true
+    tools:
+      - name: "gitleaks"
+        enabled: true
+        config:
+          config_file: ".gitleaks.toml"
+          output: "security_scan_results/gitleaks-report.json"
+        commands:
+          - "gitleaks detect --source . --report-format json --report-path security_scan_results/gitleaks-report.json"
+          
+      - name: "truffleHog"
+        enabled: true  
+        config:
+          output: "security_scan_results/trufflehog-report.json"
+        commands:
+          - "trufflehog filesystem . --json > security_scan_results/trufflehog-report.json"
+
+  # Container compliance checks
+  compliance_checks:
+    enabled: true
+    standards:
+      - name: "CIS Docker Benchmark"
+        enabled: true
+        level: "Level 1"
+        
+      - name: "NIST SP 800-190"
+        enabled: true
+        
+      - name: "Brazilian LGPD Compliance"
+        enabled: true
+        custom_checks:
+          - "Check for encrypted data at rest"
+          - "Verify audit logging capabilities"  
+          - "Validate access controls"
+          - "Check data retention policies"
+
+  # Security policies
+  security_policies:
+    # Container runtime security
+    container_policies:
+      - policy: "no_root_user"
+        description: "Containers must not run as root user"
+        enforcement: "enforce"
+        
+      - policy: "read_only_root_filesystem"
+        description: "Root filesystem should be read-only when possible"
+        enforcement: "warn"
+        
+      - policy: "no_privileged_containers"
+        description: "Containers must not run in privileged mode"
+        enforcement: "enforce"
+        
+      - policy: "drop_all_capabilities"
+        description: "Drop all capabilities by default, add only necessary ones"
+        enforcement: "enforce"
+        
+      - policy: "no_host_network"
+        description: "Containers should not use host network"
+        enforcement: "enforce"
+        
+      - policy: "resource_limits"
+        description: "All containers must have resource limits defined"
+        enforcement: "warn"
+        
+    # Image security policies  
+    image_policies:
+      - policy: "trusted_base_images"
+        description: "Only use verified base images from trusted registries"
+        enforcement: "enforce"
+        
+      - policy: "minimal_base_images"
+        description: "Use minimal base images (alpine, distroless) when possible"
+        enforcement: "warn"
+        
+      - policy: "no_secrets_in_images"
+        description: "Images must not contain secrets or credentials"
+        enforcement: "enforce"
+        
+      - policy: "latest_tag_forbidden"
+        description: "Do not use 'latest' tag in production"
+        enforcement: "enforce"
+        
+      - policy: "regular_updates"
+        description: "Base images must be updated regularly"
+        enforcement: "warn"
+
+  # Automated security scanning workflow
+  automation:
+    triggers:
+      - "on_build"
+      - "on_push" 
+      - "scheduled_daily"
+      - "on_pull_request"
+      
+    notifications:
+      slack:
+        enabled: false
+        webhook_url: "${SLACK_WEBHOOK_URL}"
+        channels: ["#security-alerts", "#devops"]
+        
+      email:
+        enabled: true
+        recipients: ["security@company.com", "devops@company.com"]
+        
+    report_retention:
+      days: 90
+      location: "security_scan_results/"
+      
+  # Report configuration
+  reporting:
+    formats:
+      - "json"
+      - "html" 
+      - "pdf"
+      
+    include_sections:
+      - "executive_summary"
+      - "vulnerability_details"
+      - "compliance_status"
+      - "remediation_recommendations"
+      - "trend_analysis"
+      
+    custom_metrics:
+      - name: "security_score"
+        calculation: "100 - (critical_vulns * 10 + high_vulns * 3 + medium_vulns * 1)"
+        
+      - name: "compliance_percentage"
+        calculation: "(passed_checks / total_checks) * 100"
+
+# =============================================================================
+# GITLEAKS CONFIGURATION for Secrets Detection
+# =============================================================================
+---
+title: "GitLeaks Config for Monitor Legislativo"
+rules:
+  - description: "AWS Access Key"
+    regex: 'AKIA[0-9A-Z]{16}'
+    tags: ["key", "AWS"]
+    
+  - description: "AWS Secret Key"
+    regex: '[A-Za-z0-9/+=]{40}'
+    tags: ["key", "AWS"]
+    
+  - description: "Database URL with credentials"
+    regex: '(?i)(postgresql|mysql|mongodb)://[^:\s]+:[^@\s]+@[^\s]+'
+    tags: ["database", "credentials"]
+    
+  - description: "Generic Password"
+    regex: '(?i)(password|pwd|pass)\s*[:=]\s*["\']?[^\s"\']{8,}["\']?'
+    tags: ["password"]
+    
+  - description: "Generic API Key"
+    regex: '(?i)(api_key|apikey|api-key)\s*[:=]\s*["\']?[A-Za-z0-9]{20,}["\']?'
+    tags: ["api", "key"]
+    
+  - description: "Generic Secret"
+    regex: '(?i)(secret|token)\s*[:=]\s*["\']?[A-Za-z0-9]{16,}["\']?'
+    tags: ["secret"]
+    
+  - description: "Railway Database URL"
+    regex: '(?i)railway.*database.*url.*[:=].*'
+    tags: ["railway", "database"]
+    
+  - description: "Brazilian CPF/CNPJ"
+    regex: '\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b|\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b'
+    tags: ["pii", "brazil"]
+
+allowlist:
+  description: "Allowlisted files and patterns"
+  files:
+    - ".gitleaks.toml"
+    - "security-scan.yml"
+    - "*.md"
+    - "*.example"
+    
+  regexes:
+    - 'example.*password'
+    - 'test.*secret'
+    - 'placeholder.*key'
+
+# =============================================================================
+# SECURITY SCANNING SCRIPTS
+# =============================================================================
+
+# Usage Instructions:
+# 1. Install required tools: trivy, grype, gitleaks, trufflehog
+# 2. Run full security scan: ./scripts/security_scan.sh
+# 3. View reports in security_scan_results/ directory
+# 4. Configure CI/CD pipeline to run scans automatically
+# 5. Set up notifications for critical vulnerabilities
+#
+# Prerequisites:
+# - Docker installed and running
+# - Internet connection for vulnerability database updates
+# - Proper permissions to scan container images
+# - Valid configuration for notification channels
+#
+# Brazilian Compliance Notes:
+# - LGPD compliance checks included
+# - Brazilian locale-specific PII detection
+# - Government security standards compliance
+# - Data sovereignty requirements validation

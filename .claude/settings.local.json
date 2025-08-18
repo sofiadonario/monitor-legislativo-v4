@@ -147,7 +147,8 @@
       "Bash(du:*)",
       "Bash(/mnt/c/Program Files/Git/bin/git.exe --version)",
       "Bash(/mnt/c/Program Files/Git/bin/git.exe add railway.toml Dockerfile)",
-      "Bash(/mnt/c/Program Files/Git/bin/git.exe commit -m \"fix: Railway deployment config\")"
+      "Bash(/mnt/c/Program Files/Git/bin/git.exe commit -m \"fix: Railway deployment config\")",
+      "Bash(./scripts/verify_security_config.sh:*)"
     ]
   },
   "enableAllProjectMcpServers": false
