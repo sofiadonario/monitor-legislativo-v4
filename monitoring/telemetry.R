@@ -53,8 +53,8 @@ PRIVACY_LEVELS <- list(
   )
 )
 
-# Global telemetry state
-TELEMETRY_STATE <- reactiveValues(
+# Global telemetry state (non-reactive for stability)
+TELEMETRY_STATE <- list(
   initialized = FALSE,
   user_consent = list(),
   session_data = list(),
