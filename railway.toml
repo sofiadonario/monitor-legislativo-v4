@@ -4,9 +4,11 @@ dockerfilePath = "Dockerfile"
 dockerContext = "."
 
 [deploy]
-startCommand = "bash -c './railway_migrate.sh && R -e \"shiny::runApp(host=\\\"0.0.0.0\\\", port=3838)\"'"
-healthcheckPath = "/health"
-healthcheckTimeout = 60
+# Start application directly (migrations can be run manually if needed)
+startCommand = "R -e \"shiny::runApp(host='0.0.0.0', port=3838)\""
+# Health check disabled for R Shiny application
+# healthcheckPath = "/health"  
+# healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 # Railway memory limit optimization for R Shiny

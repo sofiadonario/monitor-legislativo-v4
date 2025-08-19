@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Railway Migration Script - Runs during deployment
-# ==================================================
+# Railway Migration Script - Non-blocking version
+# ================================================
 
 echo "========================================="
 echo "RAILWAY DEPLOYMENT MIGRATIONS"
@@ -9,13 +9,17 @@ echo "========================================="
 
 # Check if DATABASE_URL is available (should be in Railway environment)
 if [ -z "$DATABASE_URL" ]; then
-    echo "❌ DATABASE_URL not found in Railway environment"
-    echo "   Migrations will be skipped - check Railway variables configuration"
+    echo "⚠️ DATABASE_URL not found in Railway environment"
+    echo "   Migrations will be skipped - application will start anyway"
     exit 0
 fi
 
-echo "✅ DATABASE_URL found - proceeding with migrations"
+echo "✅ DATABASE_URL found - attempting migrations"
 echo ""
+
+# Set timeout for the entire migration process
+MIGRATION_TIMEOUT=60
+echo "⏰ Migration timeout: ${MIGRATION_TIMEOUT} seconds"
 
 # Function to execute SQL safely
 execute_sql_safe() {

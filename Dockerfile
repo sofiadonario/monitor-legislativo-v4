@@ -61,9 +61,10 @@ USER shinyapp
 # Expose port
 EXPOSE 3838
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3838/health || exit 1
+# Health check disabled for R Shiny application
+# Note: Shiny apps don't automatically handle /health endpoints
+# Railway will monitor the application via the main port
 
-# Start with migration and application
-CMD ["bash", "-c", "./railway_migrate.sh && R -e \"shiny::runApp(host='0.0.0.0', port=3838)\""]
+# Start application directly (migrations can be run separately)
+# CMD ["bash", "-c", "./railway_migrate.sh && R -e \"shiny::runApp(host='0.0.0.0', port=3838)\""]
+CMD ["R", "-e", "shiny::runApp(host='0.0.0.0', port=3838)"]
