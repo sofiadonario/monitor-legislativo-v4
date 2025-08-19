@@ -153,3 +153,4 @@ Monitor Legislativo v4 is designed for academic research on Brazilian transport 
 ---
 
 **Monitor Legislativo v4** - Unified R Service for Brazilian Legislative Research# Railway Deployment Trigger
+Real dataset deployed: Tue Aug 19 17:14:34 -03 2025
