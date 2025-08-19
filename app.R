@@ -1353,14 +1353,15 @@ server <- function(input, output, session) {
       if (monitoring_system_loaded) {
         end_session_tracking(session)
         decrement_session_count()
-        log_info("User session ended", list(session_id = session$token), session)
+        # Temporarily disabled to avoid reactive errors
+        # log_info("User session ended", list(session_id = session$token), session)
       }
     })
     
-    log_info("User session started", list(
-      session_id = session$token,
-      user_agent = session$clientData$user_agent
-    ), session)
+    # Session logging temporarily disabled to avoid reactive errors
+    # log_info("User session started", list(
+    #   session_id = session$token
+    # ), session)
   }
   
   # Authentication System Integration

@@ -146,11 +146,12 @@ store_user_consent <- function(session, granted = TRUE) {
     ip_hash = if (TELEMETRY_CONFIG$anonymize_data) "session_ip_anonymized" else NA
   )
   
-  log_info("User consent recorded", list(
-    session_id = anonymize_session_id(session_id),
-    consent_granted = granted,
-    privacy_level = TELEMETRY_CONFIG$privacy_level
-  ), session)
+  # Temporarily disabled to avoid reactive errors
+  # log_info("User consent recorded", list(
+  #   session_id = anonymize_session_id(session_id),
+  #   consent_granted = granted,
+  #   privacy_level = TELEMETRY_CONFIG$privacy_level
+  # ), session)
   
   return(granted)
 }
@@ -195,10 +196,11 @@ start_session_tracking <- function(session) {
   
   TELEMETRY_STATE$session_data[[session_id]] <- session_data
   
-  log_info("Session tracking started", list(
-    session_id = anon_session_id,
-    privacy_level = TELEMETRY_CONFIG$privacy_level
-  ), session)
+  # Temporarily disabled to avoid reactive errors
+  # log_info("Session tracking started", list(
+  #   session_id = anon_session_id,
+  #   privacy_level = TELEMETRY_CONFIG$privacy_level
+  # ), session)
 }
 
 end_session_tracking <- function(session) {
@@ -209,14 +211,14 @@ end_session_tracking <- function(session) {
     session_data$end_time <- Sys.time()
     session_data$duration_seconds <- as.numeric(difftime(session_data$end_time, session_data$start_time, units = "secs"))
     
-    # Log session summary
-    log_info("Session ended", list(
-      session_id = anonymize_session_id(session_id),
-      duration_seconds = round(session_data$duration_seconds, 2),
-      page_views = session_data$page_views,
-      feature_interactions = session_data$feature_interactions,
-      errors_encountered = session_data$errors_encountered
-    ), session)
+    # Log session summary - temporarily disabled to avoid reactive errors
+    # log_info("Session ended", list(
+    #   session_id = anonymize_session_id(session_id),
+    #   duration_seconds = round(session_data$duration_seconds, 2),
+    #   page_views = session_data$page_views,
+    #   feature_interactions = session_data$feature_interactions,
+    #   errors_encountered = session_data$errors_encountered
+    # ), session)
     
     # Clean up session data
     TELEMETRY_STATE$session_data[[session_id]] <- NULL
