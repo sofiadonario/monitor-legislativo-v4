@@ -19,8 +19,8 @@ RUN apt-get update && apt-get upgrade -y && \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install required R packages
-RUN R -e "install.packages(c('DBI','RPostgres','pool','shiny','shinydashboard','DT','plotly','dplyr','RColorBrewer','stringr','scales','lubridate','tidyr','jsonlite','magrittr','sf','geobr','geojsonio','R.utils','yaml'), repos='https://cran.rstudio.com/')"
+# Install required R packages (core + optional packages from app.R)
+RUN R -e "install.packages(c('DBI','RPostgres','pool','shiny','shinydashboard','DT','plotly','dplyr','RColorBrewer','stringr','scales','lubridate','tidyr','jsonlite','magrittr','sf','geobr','geojsonio','R.utils','yaml','shinyjs','htmltools','leaflet','echarts4r'), repos='https://cran.rstudio.com/')"
 
 # Set working directory
 WORKDIR /app
