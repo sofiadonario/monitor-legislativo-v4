@@ -297,8 +297,8 @@ handle_oauth_callback <- function(provider, auth_code, state) {
     
     # Create session
     request_info <- list(
-      ip_address = session$clientData$remote_addr,
-      user_agent = session$clientData$user_agent
+      ip_address = "session_ip_authenticated",
+      user_agent = "session_created"
     )
     
     session_info <- create_user_session(user_record, token_data, request_info)

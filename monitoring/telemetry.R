@@ -143,7 +143,7 @@ store_user_consent <- function(session, granted = TRUE) {
   TELEMETRY_STATE$user_consent[[session_id]] <- list(
     granted = granted,
     timestamp = Sys.time(),
-    ip_hash = if (TELEMETRY_CONFIG$anonymize_data) digest::digest(session$clientData$remote_addr) else NA
+    ip_hash = if (TELEMETRY_CONFIG$anonymize_data) "session_ip_anonymized" else NA
   )
   
   log_info("User consent recorded", list(
@@ -184,7 +184,7 @@ start_session_tracking <- function(session) {
   session_data <- list(
     session_id = anon_session_id,
     start_time = Sys.time(),
-    user_agent = if (privacy_settings$track_user_agent) session$clientData$user_agent else NA,
+    user_agent = if (privacy_settings$track_user_agent) "tracking_enabled" else NA,
     screen_resolution = paste(session$clientData$pixelratio, 
                              session$clientData$output_width, 
                              session$clientData$output_height, sep = "x"),

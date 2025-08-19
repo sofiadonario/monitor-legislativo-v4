@@ -427,7 +427,7 @@ log_auth_event <- function(event, user_info, session) {
     email = user_info$email %||% "unknown",
     provider = user_info$provider %||% "unknown",
     ip_address = session$clientData$ip_address %||% "unknown",
-    user_agent = session$clientData$user_agent %||% "unknown"
+    user_agent = "session_authenticated"
   )
   
   # Create logs directory if it doesn't exist

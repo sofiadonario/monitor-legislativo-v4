@@ -83,11 +83,11 @@ get_session_context <- function(session = NULL) {
   
   if (!is.null(session) && LOGGER_CONFIG$include_session) {
     context$session_id <- session$token
-    context$user_agent <- session$clientData$user_agent
+    context$user_agent <- "session_logged"
     
     # Only include IP if explicitly enabled (LGPD compliance)
     if (LOGGER_CONFIG$include_ip) {
-      context$client_ip <- session$clientData$remote_addr
+      context$client_ip <- "session_ip_logged"
     }
   }
   

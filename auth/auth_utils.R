@@ -299,7 +299,7 @@ log_user_activity <- function(session, action, details = NULL) {
     user_id = user_info$id %||% "anonymous",
     user_email = user_info$email %||% "unknown",
     ip_address = session$clientData$ip_address %||% "unknown",
-    user_agent = session$clientData$user_agent %||% "unknown",
+    user_agent = "session_logged",
     details = details
   )
   
