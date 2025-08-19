@@ -1,6 +1,6 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "docker/Dockerfile.secure"
+dockerfilePath = "Dockerfile"
 dockerContext = "."
 
 [deploy]
