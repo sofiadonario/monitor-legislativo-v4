@@ -107,6 +107,32 @@ tryCatch({
   cat("⚠️ Enhanced visualization system not available:", e$message, "\n")
   cat("   Continuing with standard visualizations\n")
 })
+
+# Load Advanced Analytics System
+# ===============================
+advanced_analytics_loaded <- FALSE
+tryCatch({
+  source("modules/analytics/analytics_integration.R")
+  source("modules/analytics/analytics_ui.R")
+  source("modules/analytics/analytics_server.R")
+  
+  advanced_analytics_loaded <- TRUE
+  cat("✅ Advanced Analytics System loaded successfully\n")
+  cat("   📊 Temporal trend analysis: ENABLED\n")
+  cat("   🏷️ Smart categorization: ENABLED\n")
+  cat("   🇧🇷 Brazilian legal context: ENABLED\n")
+  cat("   📈 Productivity metrics: ENABLED\n")
+  cat("   🎯 Policy influence tracking: ENABLED\n")
+  cat("   ⚖️ Regulatory impact assessment: ENABLED\n")
+  cat("   🚀 Railway optimization: ENABLED\n")
+  
+}, error = function(e) {
+  cat("⚠️ Advanced Analytics loading failed:", e$message, "\n")
+  cat("   Continuing with basic analytics only\n")
+  advanced_analytics_loaded <- FALSE
+})
+
+log_info("Advanced analytics integration completed")
 }, error = function(e) {
   cat("⚠️ Geospatial utilities not available - using basic maps:", e$message, "\n")
 })

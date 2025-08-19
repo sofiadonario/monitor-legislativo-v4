@@ -554,5 +554,96 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
   return(NULL)
 }
 
-cat("🎨 Professional choropleth generator loaded\n")
-cat("📊 Functions available: create_professional_choropleth, create_enhanced_fallback_map, generate_choropleth_map\n")
+# Integration with Advanced Maps System
+# Try to load advanced system if available
+advanced_maps_available <- FALSE
+tryCatch({
+  # Check if advanced maps integration is available
+  if (file.exists("modules/maps/advanced_maps_integration.R")) {
+    source("modules/maps/advanced_maps_integration.R")
+    assign("ADVANCED_MAPS_SYSTEM", initialize_advanced_maps_system(), envir = .GlobalEnv)
+    advanced_maps_available <- TRUE
+    cat("🚀 Advanced Maps System integrated successfully\n")
+  }
+}, error = function(e) {
+  cat("⚠️ Advanced Maps System not available, using standard choropleth\n")
+})
+
+#' Enhanced choropleth generation with advanced features integration
+#' @param state_data Data frame with state information and metrics
+#' @param geospatial_system Initialized geospatial system
+#' @param metric_column Name of the data column to visualize
+#' @param advanced_options List of advanced options (clustering, animation, etc.)
+generate_enhanced_choropleth_map <- function(state_data, geospatial_system, metric_column,
+                                           map_metric = "count", map_type = "states", 
+                                           colorscale = "Viridis", show_labels = FALSE,
+                                           opacity = 0.85, high_contrast = FALSE,
+                                           advanced_options = list()) {
+  
+  # Check if advanced system is available and options are requested
+  use_advanced <- advanced_maps_available && 
+                 exists("ADVANCED_MAPS_SYSTEM") && 
+                 (length(advanced_options) > 0 || 
+                  !is.null(advanced_options$clustering) ||
+                  !is.null(advanced_options$animation) ||
+                  !is.null(advanced_options$optimization))
+  
+  if (use_advanced) {
+    cat("🚀 Using Advanced Maps System for enhanced choropleth\n")
+    
+    tryCatch({
+      # Use advanced system
+      advanced_choropleth <- ADVANCED_MAPS_SYSTEM$create_choropleth(
+        data = state_data,
+        metric_column = metric_column,
+        map_type = map_type,
+        options = list(
+          resolution = advanced_options$resolution %||% "medium",
+          clustering = advanced_options$clustering %||% FALSE,
+          animation = advanced_options$animation %||% FALSE,
+          optimization = advanced_options$optimization %||% TRUE,
+          webgl = advanced_options$webgl %||% TRUE,
+          colorscale = colorscale,
+          opacity = opacity,
+          high_contrast = high_contrast
+        )
+      )
+      
+      if (!is.null(advanced_choropleth)) {
+        cat("✅ Advanced choropleth created successfully\n")
+        return(advanced_choropleth)
+      } else {
+        cat("⚠️ Advanced choropleth failed, falling back to standard\n")
+      }
+      
+    }, error = function(e) {
+      cat("❌ Advanced choropleth error:", e$message, "- falling back\n")
+    })
+  }
+  
+  # Fall back to original implementation
+  cat("🗺️ Using standard choropleth generation\n")
+  return(generate_choropleth_map(
+    state_data = state_data,
+    geospatial_system = geospatial_system,
+    metric_column = metric_column,
+    map_metric = map_metric,
+    map_type = map_type,
+    colorscale = colorscale,
+    show_labels = show_labels,
+    opacity = opacity,
+    high_contrast = high_contrast
+  ))
+}
+
+# Utility operator for advanced options
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
+cat("🎨 Enhanced choropleth generator loaded\n")
+cat("📊 Functions available: create_professional_choropleth, create_enhanced_fallback_map, generate_choropleth_map, generate_enhanced_choropleth_map\n")
+if (advanced_maps_available) {
+  cat("🚀 Advanced Maps System: AVAILABLE\n")
+  cat("🎯 Advanced features: clustering, animation, optimization, WebGL acceleration\n")
+} else {
+  cat("⚠️ Advanced Maps System: NOT AVAILABLE (using standard features only)\n")
+}
