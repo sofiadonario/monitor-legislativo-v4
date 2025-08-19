@@ -148,6 +148,34 @@ tryCatch({
   database_connection_loaded <- FALSE
 })
 
+# Load Database Performance Optimization
+# ========================================
+performance_optimization_loaded <- FALSE
+tryCatch({
+  source("db/performance_optimization.R")
+  source("db/query_monitor.R")
+  
+  # Initialize query monitoring
+  init_query_monitoring()
+  
+  performance_optimization_loaded <- TRUE
+  cat("✅ Database performance optimization loaded successfully\n")
+  cat("   Query caching: ENABLED\n")
+  cat("   Connection pooling: OPTIMIZED\n")
+  cat("   Performance monitoring: ACTIVE\n")
+  
+  # Log performance optimization status
+  if (exists("log_info")) {
+    log_info("Database performance optimization loaded successfully")
+    log_info("Query monitoring initialized")
+  }
+  
+}, error = function(e) {
+  cat("⚠️ Performance optimization loading failed:", e$message, "\n")
+  cat("   Continuing without performance optimizations\n")
+  performance_optimization_loaded <- FALSE
+})
+
 # Enhanced fallback system if database connection fails
 if (!database_connection_loaded) {
   cat("🔧 Initializing enhanced fallback system...\n")

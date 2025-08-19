@@ -148,7 +148,15 @@
       "Bash(/mnt/c/Program Files/Git/bin/git.exe --version)",
       "Bash(/mnt/c/Program Files/Git/bin/git.exe add railway.toml Dockerfile)",
       "Bash(/mnt/c/Program Files/Git/bin/git.exe commit -m \"fix: Railway deployment config\")",
-      "Bash(./scripts/verify_security_config.sh:*)"
+      "Bash(./scripts/verify_security_config.sh:*)",
+      "Bash(./scripts/security/remove_hardcoded_credentials.sh:*)",
+      "Bash(./scripts/verify_implementation.sh:*)",
+      "Bash(if [ -z \"$DATABASE_URL\" ])",
+      "Bash(then echo \"DATABASE_URL not set - will use Railway environment during deployment\")",
+      "Bash(else echo \"DATABASE_URL is configured\")",
+      "Bash(fi)",
+      "Bash(./scripts/security/mcp_scan_setup.sh:*)",
+      "Bash(./scripts/security/manual_security_scan.sh:*)"
     ]
   },
   "enableAllProjectMcpServers": false

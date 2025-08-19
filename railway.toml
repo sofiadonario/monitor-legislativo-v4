@@ -1,10 +1,10 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "railway/Dockerfile"
+dockerfilePath = "docker/Dockerfile.secure"
 dockerContext = "."
 
 [deploy]
-startCommand = "R -e \"shiny::runApp('/srv/shiny-server/app.R', host='0.0.0.0', port=3838)\""
+startCommand = "bash -c './railway_migrate.sh && R -e \"shiny::runApp(host=\\\"0.0.0.0\\\", port=3838)\"'"
 healthcheckPath = "/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
