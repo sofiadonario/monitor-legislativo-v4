@@ -96,6 +96,17 @@ tryCatch({
   source("scripts/R/geospatial_utils.R")
   source("scripts/R/choropleth_generator.R")
   cat("✅ Geospatial utilities loaded successfully\n")
+
+# Load Enhanced Visualization System
+# ==================================
+tryCatch({
+  source("scripts/R/progressive_loading_enhancement.R")
+  source("scripts/R/enhanced_dashboard_integration.R")
+  cat("✅ Enhanced visualization system loaded successfully\n")
+}, error = function(e) {
+  cat("⚠️ Enhanced visualization system not available:", e$message, "\n")
+  cat("   Continuing with standard visualizations\n")
+})
 }, error = function(e) {
   cat("⚠️ Geospatial utilities not available - using basic maps:", e$message, "\n")
 })
@@ -906,7 +917,33 @@ ui <- function(request) {
           )
         ),
         fluidRow(
-          # Enhanced Geographic Visualization Placeholder
+          # Enhanced Geographic Visualization with Progressive Loading
+          box(
+            title = "🗺️ Enhanced Brazilian States Analysis", status = "primary", solidHeader = TRUE, width = 8,
+            div(
+              style = "height: 450px;",
+              conditionalPanel(
+                condition = "output.progressive_choropleth_available == true",
+                plotlyOutput("progressive_choropleth", height = "420px")
+              ),
+              conditionalPanel(
+                condition = "output.progressive_choropleth_available != true",
+                div(
+                  style = "height: 400px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; border-radius: 8px;",
+                  div(
+                    style = "text-align: center; color: white; padding: 20px;",
+                    h4("🚀 Progressive Choropleth Visualization", style = "color: white; margin-bottom: 15px;"),
+                    p("Enhanced geographic visualization with Brazilian state boundaries and WebGL acceleration"),
+                    p("📊 Optimized for 134k+ documents with smart sampling and real-time interactivity"),
+                    br(),
+                    actionButton("load_progressive_geo", "Load Progressive Map", 
+                               class = "btn-warning btn-lg",
+                               style = "color: #333; font-weight: bold;")
+                  )
+                )
+              )
+            )
+          ),
           box(
             title = "🇧🇷 Brazilian States Geographic Analysis", status = "warning", solidHeader = TRUE, width = 8,
             div(
@@ -930,6 +967,17 @@ ui <- function(request) {
           box(
             title = "🎛️ Geographic Analytics Controls", status = "warning", solidHeader = TRUE, width = 4,
             selectInput("geo_metric", "Select Metric:",
+            # Progressive Loading Controls
+            h5("⚡ Performance Settings", style = "color: #f39c12; margin-bottom: 10px;"),
+            fluidRow(
+              column(6,
+                numericInput("sample_size_geo", "Sample Size:", value = 2000, min = 500, max = 10000, step = 500)
+              ),
+              column(6,
+                checkboxInput("use_webgl_geo", "WebGL Acceleration", value = TRUE)
+              )
+            ),
+            br(),
               choices = list(
                 "Document Count" = "count",
                 "Regulatory Density" = "density",
@@ -1334,6 +1382,51 @@ server <- function(input, output, session) {
   # =============================
   if (monitoring_system_loaded) {
     # Start session tracking
+
+  # PROGRESSIVE LOADING ENHANCEMENTS
+  # ===============================
+  
+  # Progressive choropleth availability
+  output$progressive_choropleth_available <- reactive({
+    exists("create_progressive_choropleth") && exists("connection")
+  })
+  outputOptions(output, "progressive_choropleth_available", suspendWhenHidden = FALSE)
+  
+  # Progressive choropleth map
+  output$progressive_choropleth <- renderPlotly({
+    req(input$load_progressive_geo > 0)
+    
+    if (exists("create_progressive_choropleth")) {
+      withProgress(message = "Loading enhanced geographic visualization...", value = 0, {
+        incProgress(0.3, detail = "Sampling documents...")
+        
+        sample_size <- input$sample_size_geo %||% 2000
+        use_webgl <- input$use_webgl_geo %||% TRUE
+        
+        incProgress(0.6, detail = "Generating choropleth...")
+        
+        map_result <- create_progressive_choropleth(
+          connection = if(exists("connection")) connection else NULL,
+          sample_size = sample_size,
+          metric_type = input$geo_metric %||% "count"
+        )
+        
+        incProgress(1, detail = "Complete!")
+        
+        if (!is.null(map_result)) {
+          map_result
+        } else {
+          # Fallback plot
+          plot_ly(type = "scatter", mode = "markers", x = c(0), y = c(0)) %>%
+            layout(title = "Map generation failed - please try again")
+        }
+      })
+    } else {
+      plot_ly(type = "scatter", mode = "markers", x = c(0), y = c(0)) %>%
+        layout(title = "Progressive loading system not available")
+    }
+  })
+  
     start_session_tracking(session)
     increment_session_count()
     
@@ -2619,8 +2712,39 @@ server <- function(input, output, session) {
   })
   
   # Geographic Distribution
+  # Enhanced geographic distribution with WebGL acceleration
   output$analytics_geographic_dist <- renderPlotly({
-    docs <- analytics_data()
+    tryCatch({
+      if (exists("analytics_data") && !is.null(analytics_data$geographic_dist)) {
+        geo_data <- analytics_data$geographic_dist
+        
+        # Use WebGL for large datasets
+        plot_type <- if (nrow(geo_data) > 1000) "scattergl" else "bar"
+        
+        if (plot_type == "scattergl") {
+          # WebGL scatter for performance
+          plot_ly(geo_data, x = ~estado, y = ~n, type = "scattergl", mode = "markers",
+                 marker = list(size = ~sqrt(n) * 3, opacity = 0.7, color = ~n, colorscale = "Viridis")) %>%
+            layout(title = "Geographic Distribution (WebGL Accelerated)",
+                   xaxis = list(title = "State"), yaxis = list(title = "Documents"))
+        } else {
+          # Standard bar chart
+          plot_ly(geo_data, x = ~estado, y = ~n, type = "bar", text = ~n, textposition = "auto",
+                 marker = list(color = ~n, colorscale = "Viridis", line = list(color = "white", width = 1))) %>%
+            layout(title = "Geographic Distribution by State",
+                   xaxis = list(title = "Brazilian States", tickangle = -45),
+                   yaxis = list(title = "Number of Documents"),
+                   hovermode = "closest")
+        }
+      } else {
+        plot_ly(type = "scatter", mode = "markers", x = c(0), y = c(0)) %>%
+          layout(title = "Loading geographic data...")
+      }
+    }, error = function(e) {
+      plot_ly(type = "scatter", mode = "markers", x = c(0), y = c(0)) %>%
+        layout(title = paste("Error:", e$message))
+    })
+  })
     
     if(nrow(docs) > 0 && "state" %in% names(docs)) {
       state_counts <- docs %>%

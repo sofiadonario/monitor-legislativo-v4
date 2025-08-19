@@ -156,7 +156,15 @@
       "Bash(else echo \"DATABASE_URL is configured\")",
       "Bash(fi)",
       "Bash(./scripts/security/mcp_scan_setup.sh:*)",
-      "Bash(./scripts/security/manual_security_scan.sh:*)"
+      "Bash(./scripts/security/manual_security_scan.sh:*)",
+      "Bash(./populate_railway_db.sh:*)",
+      "Bash(./debug_data_display.R)",
+      "Bash(./import_real_dataset.sh:*)",
+      "Bash(./import_real_dataset_fixed.sh:*)",
+      "Bash(npm:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(claude --version)",
+      "Bash(claude mcp:*)"
     ]
   },
   "enableAllProjectMcpServers": false

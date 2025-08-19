@@ -74,21 +74,68 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
       "<extra></extra>"
     )
     
-    # Check if we have proper GeoJSON or simplified data
-    # Safely check geojson properties to avoid "closure not subsettable" errors
+    # Enhanced GeoJSON validation to prevent closure errors
     has_proper_geojson <- FALSE
     if (!is.null(geojson)) {
-      # Use tryCatch to safely access geojson properties
+      # Multiple safety checks to avoid closure subsetting errors
       has_proper_geojson <- tryCatch({
-        # Check if geojson is a list and has the required structure
-        is.list(geojson) && 
-        !is.null(geojson[["type"]]) && 
-        geojson[["type"]] == "FeatureCollection" && 
-        !identical(geojson[["features"]], "simplified")
+        # First check if it's a proper R object (not a closure/function)
+        if (is.function(geojson) || inherits(geojson, "closure")) {
+          cat("⚠️ GeoJSON is a function/closure - cannot use for mapping\n")
+          return(FALSE)
+        }
+        
+        # Check if it's a list with proper structure
+        if (!is.list(geojson)) {
+          cat("⚠️ GeoJSON is not a list structure\n")
+          return(FALSE)
+        }
+        
+        # Safe property access using [[]] instead of $
+        geojson_type <- tryCatch({
+          geojson[["type"]]
+        }, error = function(e) {
+          cat("⚠️ Cannot access geojson type:", e$message, "\n")
+          return(NULL)
+        })
+        
+        # Check for FeatureCollection type
+        if (is.null(geojson_type) || geojson_type != "FeatureCollection") {
+          cat("⚠️ GeoJSON is not a FeatureCollection\n")
+          return(FALSE)
+        }
+        
+        # Check for features property
+        geojson_features <- tryCatch({
+          geojson[["features"]]
+        }, error = function(e) {
+          cat("⚠️ Cannot access geojson features:", e$message, "\n")
+          return(NULL)
+        })
+        
+        # Validate features
+        if (is.null(geojson_features)) {
+          cat("⚠️ GeoJSON has no features\n")
+          return(FALSE)
+        }
+        
+        # Check if features is not just a simplified placeholder
+        if (identical(geojson_features, "simplified") || 
+            (is.character(geojson_features) && length(geojson_features) == 1)) {
+          cat("⚠️ GeoJSON features are simplified/placeholder\n")
+          return(FALSE)
+        }
+        
+        # If we get here, the GeoJSON should be valid
+        cat("✅ GeoJSON structure validated successfully\n")
+        return(TRUE)
+        
       }, error = function(e) {
-        cat("⚠️ Error checking GeoJSON structure:", e$message, "\n")
-        FALSE
+        cat("⚠️ Error during GeoJSON validation:", e$message, "\n")
+        return(FALSE)
       })
+    } else {
+      cat("⚠️ GeoJSON is NULL\n")
     }
     
     # Method 1: Try choroplethmapbox only if we have proper GeoJSON
