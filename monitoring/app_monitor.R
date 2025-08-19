@@ -25,8 +25,8 @@ MONITOR_CONFIG <- list(
   )
 )
 
-# Global monitoring state
-MONITOR_STATE <- reactiveValues(
+# Global monitoring state (non-reactive for stability)
+MONITOR_STATE <- list(
   active_sessions = 0,
   peak_sessions = 0,
   total_requests = 0,
