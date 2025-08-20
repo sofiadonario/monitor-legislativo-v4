@@ -4,14 +4,14 @@ dockerfilePath = "Dockerfile"
 dockerContext = "."
 
 [deploy]
-# Start application directly (migrations can be run manually if needed)
-startCommand = "R -e \"shiny::runApp(host='0.0.0.0', port=3838)\""
-# Health check disabled for R Shiny application
-# healthcheckPath = "/health"  
-# healthcheckTimeout = 60
+# Use Railway-optimized R app with deployment fixes
+startCommand = "Rscript app_railway.R"
+# Health check endpoint (handled by health_check.R)
+healthcheckPath = "/"
+healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-# Railway memory limit optimization for R Shiny
+# Railway memory limit optimization for R Shiny (2GB RAM, 1 CPU)
 memoryLimit = 2048
 cpuLimit = 1000
 
@@ -23,16 +23,21 @@ SHINY_LOG_LEVEL = "WARN"
 RAILWAY_ENVIRONMENT = "production"
 TZ = "America/Sao_Paulo"
 
-# R Optimization Settings
+# R Optimization Settings  
 R_MAX_NUM_DLLS = "150"
 R_GC_MEM_GROW = "3"
 OMP_NUM_THREADS = "2"
 SHINY_WORKER_TIMEOUT = "300"
+R_MAX_VSIZE = "2G"
+
+# Railway Deployment Settings
+RAILWAY_DEPLOYMENT = "true"
+LOG_LEVEL = "INFO"
+HEALTH_CHECK_DETAILED = "true"
 
 # Database Configuration (Use Railway's internal service variables)
 # DATABASE_URL will be automatically provided by Railway PostgreSQL service
 # PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD will be auto-injected
 
 # Security Settings
-RAILWAY_DEPLOYMENT = "true"
 NODE_ENV = "production"
