@@ -4,8 +4,8 @@ dockerfilePath = "Dockerfile"
 dockerContext = "."
 
 [deploy]
-# Use Railway-optimized R app with deployment fixes
-startCommand = "Rscript app_railway.R"
+# Use Railway startup script for better error handling
+startCommand = "./railway_startup.sh"
 # Health check endpoint (handled by health_check.R)
 healthcheckPath = "/"
 healthcheckTimeout = 30
@@ -17,7 +17,7 @@ cpuLimit = 1000
 
 [env]
 # Application Configuration
-PORT = "3838"
+# PORT is dynamically provided by Railway, don't hardcode it
 R_CONFIG_ACTIVE = "production"
 SHINY_LOG_LEVEL = "WARN"
 RAILWAY_ENVIRONMENT = "production"

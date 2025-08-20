@@ -2771,45 +2771,6 @@ server <- function(input, output, session) {
         layout(title = paste("Error:", e$message))
     })
   })
-    
-    if(nrow(docs) > 0 && "state" %in% names(docs)) {
-      state_counts <- docs %>%
-        filter(!is.na(state), state != "") %>%
-        count(state) %>%
-        arrange(desc(n)) %>%
-        head(15)
-      
-      p <- ggplot(state_counts, aes(x = reorder(state, n), y = n)) +
-        geom_col(fill = "lightblue") +
-        coord_flip() +
-        labs(
-          title = "Top 15 States by Document Volume",
-          x = "State",
-          y = "Number of Documents"
-        ) +
-        theme_minimal()
-      
-      ggplotly(p)
-    } else {
-      # Fallback geographic data
-      fallback_states <- data.frame(
-        state = c("SP", "RJ", "MG", "DF", "RS", "PR", "SC", "BA", "GO", "ES"),
-        n = c(25000, 18000, 15000, 12000, 10000, 8000, 7000, 6000, 5000, 4000)
-      )
-      
-      p <- ggplot(fallback_states, aes(x = reorder(state, n), y = n)) +
-        geom_col(fill = "lightblue") +
-        coord_flip() +
-        labs(
-          title = "Top 10 States by Document Volume",
-          x = "State",
-          y = "Number of Documents"
-        ) +
-        theme_minimal()
-      
-      ggplotly(p)
-    }
-  })
   
   # Top States Table
   output$analytics_top_states <- DT::renderDataTable({
@@ -4472,6 +4433,12 @@ cat("All systems integrated and ready\n")
 cat("📊 Monitoring System:", if(monitoring_system_loaded) "ENABLED" else "DISABLED", "\n")
 cat("🔐 Authentication System:", if(auth_system_loaded) "ENABLED" else "DISABLED", "\n")
 cat("🔗 Database Connection:", if(database_connection_loaded) "CONNECTED" else "FALLBACK MODE", "\n")
+
+# Get PORT from environment variable (Railway provides this)
+port <- as.numeric(Sys.getenv("PORT", "3838"))
+host <- "0.0.0.0"  # Listen on all interfaces for Railway
+
+cat(sprintf("Starting server on %s:%d\n", host, port))
 cat("Access your dashboard at: http://localhost or Railway deployment URL\n")
 
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server, options = list(host = host, port = port))

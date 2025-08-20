@@ -499,5 +499,11 @@ if (exists("log_info")) {
 
 cat("\n🚀 Starting Shiny application on Railway...\n")
 
-# Create and run the Shiny app
-shinyApp(ui = ui, server = server)
+# Get PORT from environment variable (Railway provides this)
+port <- as.numeric(Sys.getenv("PORT", "3838"))
+host <- "0.0.0.0"  # Listen on all interfaces for Railway
+
+cat(sprintf("Starting server on %s:%d\n", host, port))
+
+# Create and run the Shiny app with explicit host and port
+shinyApp(ui = ui, server = server, options = list(host = host, port = port))
