@@ -1,10 +1,17 @@
-# Secure Railway Dockerfile for R Shiny Application
+# OPTIMIZED RAILWAY DOCKERFILE FOR R SHINY APPLICATION
+# ====================================================
+# Production-ready, memory-optimized for Railway deployment
 FROM rocker/shiny:4.3.1
+
+# Set memory and CPU limits for Railway
+ENV R_MAX_VSIZE=2G \
+    R_NSIZE=1000000 \
+    R_VSIZE=1000000000
 
 # Create non-root user for security
 RUN groupadd -r shinyapp && useradd -r -g shinyapp -u 1001 shinyapp
 
-# Install system dependencies with security updates
+# Install system dependencies with security updates and memory optimization
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     libpq-dev \
@@ -15,45 +22,116 @@ RUN apt-get update && apt-get upgrade -y && \
     libudunits2-dev \
     libproj-dev \
     libgeos-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libfribidi-dev \
+    libharfbuzz-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libtiff5-dev \
     ca-certificates \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    htop \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/*
 
-# Install required R packages (core + optional packages from app.R)
-RUN R -e "install.packages(c('DBI','RPostgres','pool','shiny','shinydashboard','DT','plotly','dplyr','RColorBrewer','stringr','scales','lubridate','tidyr','jsonlite','magrittr','sf','geobr','geojsonio','R.utils','yaml','shinyjs','htmltools','leaflet','echarts4r'), repos='https://cran.rstudio.com/')"
+# Install R packages in stages to avoid memory issues
+# Stage 1: Core packages (required for basic functionality)
+RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
+    install.packages(c('shiny', 'shinydashboard', 'DT', 'plotly', 'dplyr', 'RColorBrewer'), \
+    dependencies = TRUE, Ncpus = 2)" && \
+    rm -rf /tmp/R* && \
+    R -e "gc()"
+
+# Stage 2: Database and connection packages
+RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
+    install.packages(c('DBI', 'RPostgres', 'pool', 'jsonlite'), \
+    dependencies = TRUE, Ncpus = 2)" && \
+    rm -rf /tmp/R* && \
+    R -e "gc()"
+
+# Stage 3: Data manipulation packages
+RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
+    install.packages(c('stringr', 'scales', 'lubridate', 'tidyr', 'magrittr'), \
+    dependencies = TRUE, Ncpus = 2)" && \
+    rm -rf /tmp/R* && \
+    R -e "gc()"
+
+# Stage 4: Geospatial packages (memory intensive)
+RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
+    install.packages(c('sf', 'geobr'), \
+    dependencies = TRUE, Ncpus = 1)" && \
+    rm -rf /tmp/R* && \
+    R -e "gc()"
+
+# Stage 5: Additional visualization and utility packages
+RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
+    install.packages(c('geojsonio', 'R.utils', 'yaml', 'shinyjs', 'htmltools', 'leaflet'), \
+    dependencies = TRUE, Ncpus = 2)" && \
+    rm -rf /tmp/R* && \
+    R -e "gc()"
+
+# Stage 6: Optional packages (can fail without breaking deployment)
+RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
+    tryCatch({ \
+      install.packages(c('echarts4r', 'digest'), dependencies = TRUE, Ncpus = 2) \
+    }, error = function(e) { \
+      cat('Optional packages installation failed, continuing...\\n') \
+    })" && \
+    rm -rf /tmp/R* && \
+    R -e "gc()"
 
 # Set working directory
 WORKDIR /app
 
-# Copy application files (secure connection system)
+# Copy Railway deployment fixes first
+COPY railway_deployment_fix.R ./
+COPY app_railway.R ./
+COPY railway_startup.sh ./
+
+# Copy original application (fallback)
 COPY app.R ./
+
+# Copy essential system files
 COPY railway_migrate.sh ./
-COPY db/ ./db/
-COPY auth/ ./auth/
-COPY monitoring/ ./monitoring/
-
-# Copy modules directory with maps
-COPY modules/ ./modules/
-
-# Copy configuration and data directories
-COPY data/ ./data/
-COPY fixes/ ./fixes/
-COPY scripts/ ./scripts/
-COPY config/ ./config/
 COPY health_check.R ./
 
-# Create required directories
-RUN mkdir -p analytics_output logs cache
+# Copy core directories (with error handling)
+COPY --chown=shinyapp:shinyapp db/ ./db/
+COPY --chown=shinyapp:shinyapp auth/ ./auth/
+COPY --chown=shinyapp:shinyapp monitoring/ ./monitoring/
 
-# Set secure permissions
-RUN chown -R shinyapp:shinyapp /app && \
+# Copy modules directory with maps (optional)
+COPY --chown=shinyapp:shinyapp modules/ ./modules/
+
+# Copy configuration and data directories (optional)
+COPY --chown=shinyapp:shinyapp data/ ./data/
+COPY --chown=shinyapp:shinyapp fixes/ ./fixes/
+COPY --chown=shinyapp:shinyapp scripts/ ./scripts/
+COPY --chown=shinyapp:shinyapp config/ ./config/
+
+# Create required directories with proper ownership
+RUN mkdir -p analytics_output logs cache tmp && \
+    chown -R shinyapp:shinyapp /app && \
     chmod -R 755 /app && \
-    chmod +x /app/railway_migrate.sh
+    chmod +x /app/railway_migrate.sh && \
+    chmod +x /app/railway_startup.sh
 
 # Remove any potentially dangerous files that might have been copied
-RUN find /app -name "*.R" -path "*/RAILWAY_PRODUCTION_DB_FIX.R" -delete || true && \
-    find /app -name "*password*" -delete || true && \
-    find /app -name "*secret*" -delete || true
+RUN find /app -name "*.R" -path "*/RAILWAY_PRODUCTION_DB_FIX.R" -delete 2>/dev/null || true && \
+    find /app -name "*password*" -delete 2>/dev/null || true && \
+    find /app -name "*secret*" -delete 2>/dev/null || true && \
+    find /app -name ".env*" -delete 2>/dev/null || true
+
+# Set Railway-specific environment variables
+ENV SHINY_HOST=0.0.0.0 \
+    SHINY_PORT=3838 \
+    RAILWAY_DEPLOYMENT=true \
+    R_LIBS_USER=/usr/local/lib/R/site-library \
+    LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8
 
 # Switch to non-root user
 USER shinyapp
@@ -61,10 +139,9 @@ USER shinyapp
 # Expose port
 EXPOSE 3838
 
-# Health check disabled for R Shiny application
-# Note: Shiny apps don't automatically handle /health endpoints
-# Railway will monitor the application via the main port
+# Health check for Railway monitoring
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3838/ || exit 1
 
-# Start application directly (migrations can be run separately)
-# CMD ["bash", "-c", "./railway_migrate.sh && R -e \"shiny::runApp(host='0.0.0.0', port=3838)\""]
-CMD ["R", "-e", "shiny::runApp(host='0.0.0.0', port=3838)"]
+# Use Railway startup script with comprehensive error handling
+CMD ["./railway_startup.sh"]
