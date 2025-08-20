@@ -4,8 +4,8 @@ dockerfilePath = "Dockerfile"
 dockerContext = "."
 
 [deploy]
-# Use Railway startup script for better error handling
-startCommand = "./railway_startup.sh"
+# Use simple R startup script
+startCommand = "Rscript start.R"
 # Health check endpoint (handled by health_check.R)
 healthcheckPath = "/"
 healthcheckTimeout = 30
