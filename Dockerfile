@@ -1,7 +1,7 @@
 # OPTIMIZED RAILWAY DOCKERFILE FOR R SHINY APPLICATION
 # ====================================================
 # Production-ready, memory-optimized for Railway deployment
-FROM rocker/shiny:4.3.1
+FROM rocker/shiny:4.5.1
 
 # Set memory and CPU limits for Railway
 ENV R_MAX_VSIZE=2G \
@@ -90,6 +90,8 @@ WORKDIR /app
 COPY railway_deployment_fix.R ./
 COPY app_railway.R ./
 COPY railway_startup.sh ./
+COPY start.R ./
+COPY railway_start_production.R ./
 
 # Copy original application (fallback)
 COPY app.R ./
@@ -141,7 +143,7 @@ EXPOSE 3838
 
 # Health check for Railway monitoring
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:3838/ || exit 1
+  CMD curl -f http://localhost:3838/health || exit 1
 
-# Use Railway startup script with comprehensive error handling
-CMD ["./railway_startup.sh"]
+# Use production R script with health check support
+CMD ["Rscript", "railway_start_production.R"]
