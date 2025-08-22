@@ -101,6 +101,7 @@ COPY railway_ultra_minimal.R ./
 COPY railway_shiny_bypass.R ./
 COPY railway_production_server.R ./
 COPY railway_direct_server.R ./
+COPY railway_stable_server.R ./
 
 # Copy original application (fallback)
 COPY app.R ./
@@ -154,5 +155,5 @@ EXPOSE 3838
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
 
-# Use direct httpuv server to avoid Shiny version issues
-CMD ["Rscript", "railway_direct_server.R"]
+# Use stable server with status dashboard
+CMD ["Rscript", "railway_stable_server.R"]
