@@ -96,6 +96,7 @@ COPY railway_combined_startup.R ./
 COPY railway_simple_startup.R ./
 COPY railway_basic_startup.R ./
 COPY railway_start_production.R ./
+COPY railway_minimal_health.R ./
 
 # Copy original application (fallback)
 COPY app.R ./
@@ -149,5 +150,5 @@ EXPOSE 3838
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
 
-# Use basic startup script based on working start.R
-CMD ["Rscript", "railway_basic_startup.R"]
+# Use minimal health check server for reliable deployment
+CMD ["Rscript", "railway_minimal_health.R"]
