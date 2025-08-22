@@ -5,8 +5,8 @@ dockerContext = "."
 buildCommand = "docker build -t monitor-legislativo ."
 
 [deploy]
-# Use ultra minimal server to bypass version check issues
-startCommand = "Rscript railway_ultra_minimal.R"
+# Use production server with Shiny app and health checks
+startCommand = "Rscript railway_production_server.R"
 # Health check endpoint (handled by the production script)
 healthcheckPath = "/health"
 healthcheckTimeout = 60
