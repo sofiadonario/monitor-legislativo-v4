@@ -5,8 +5,8 @@ dockerContext = "."
 buildCommand = "docker build -t monitor-legislativo ."
 
 [deploy]
-# Use app loader that tries Shiny app first, falls back to status
-startCommand = "Rscript railway_app_loader.R"
+# Use diagnostic server to debug app loading issues
+startCommand = "Rscript railway_diagnostic.R"
 # Health check endpoint (handled by the production script)
 healthcheckPath = "/health"
 healthcheckTimeout = 60

@@ -103,6 +103,7 @@ COPY railway_production_server.R ./
 COPY railway_direct_server.R ./
 COPY railway_stable_server.R ./
 COPY railway_app_loader.R ./
+COPY railway_diagnostic.R ./
 
 # Copy original application (fallback)
 COPY app.R ./
@@ -156,5 +157,5 @@ EXPOSE 3838
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
 
-# Use app loader that tries Shiny app first, falls back to status
-CMD ["Rscript", "railway_app_loader.R"]
+# Use diagnostic server to debug app loading issues
+CMD ["Rscript", "railway_diagnostic.R"]
