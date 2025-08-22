@@ -5,8 +5,8 @@ dockerContext = "."
 buildCommand = "docker build -t monitor-legislativo ."
 
 [deploy]
-# Use final startup script with simplified health check support
-startCommand = "Rscript railway_start_final.R"
+# Use health check startup script
+startCommand = "Rscript railway_health_startup.R"
 # Health check endpoint (handled by the production script)
 healthcheckPath = "/health"
 healthcheckTimeout = 60

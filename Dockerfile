@@ -93,9 +93,6 @@ COPY railway_startup.sh ./
 COPY start.R ./
 COPY railway_health_startup.R ./
 COPY railway_start_production.R ./
-COPY railway_start_simple.R ./
-COPY railway_proxy_server.R ./
-COPY railway_start_final.R ./
 
 # Copy original application (fallback)
 COPY app.R ./
