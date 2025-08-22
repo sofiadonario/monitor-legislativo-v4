@@ -93,6 +93,7 @@ COPY railway_startup.sh ./
 COPY start.R ./
 COPY railway_health_startup.R ./
 COPY railway_combined_startup.R ./
+COPY railway_simple_startup.R ./
 COPY railway_start_production.R ./
 
 # Copy original application (fallback)
@@ -147,5 +148,5 @@ EXPOSE 3838
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
 
-# Use combined startup script (health check + app)
-CMD ["Rscript", "railway_combined_startup.R"]
+# Use simple startup script without version comparison issues
+CMD ["Rscript", "railway_simple_startup.R"]
