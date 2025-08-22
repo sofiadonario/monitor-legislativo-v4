@@ -5,8 +5,8 @@ dockerContext = "."
 buildCommand = "docker build -t monitor-legislativo ."
 
 [deploy]
-# Use production server with Shiny app and health checks
-startCommand = "Rscript railway_production_server.R"
+# Use direct httpuv server to avoid Shiny version issues
+startCommand = "Rscript railway_direct_server.R"
 # Health check endpoint (handled by the production script)
 healthcheckPath = "/health"
 healthcheckTimeout = 60
