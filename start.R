@@ -3,42 +3,65 @@
 
 cat("Starting R Shiny application for Railway...\n")
 
+# Load required libraries
+suppressWarnings(suppressMessages({
+  library(shiny, warn.conflicts = FALSE)
+}))
+
 # Get PORT from environment
 port <- as.numeric(Sys.getenv("PORT", "3838"))
 host <- "0.0.0.0"
 
 cat(sprintf("Configuration: host=%s, port=%d\n", host, port))
 
-# Try to load the app
+# Suppress version warnings and run app directly
+options(warn = -1)  # Suppress warnings temporarily
+
+# Try to load the main application
 tryCatch({
-  # Check if app.R exists
   if (!file.exists("app.R")) {
     stop("app.R file not found!")
   }
   
-  cat("Loading Shiny application from app.R...\n")
+  cat("Loading main application...\n")
+  source("app.R", local = TRUE)
   
-  # Run the Shiny app directly
-  shiny::runApp(
-    appDir = ".",
-    host = host,
-    port = port,
-    launch.browser = FALSE
-  )
 }, error = function(e) {
-  cat("ERROR starting application:\n")
-  cat(e$message, "\n")
+  cat("ERROR loading main app:", e$message, "\n")
+  cat("Starting minimal fallback server...\n")
   
-  # Try a minimal fallback
-  cat("Attempting minimal fallback server...\n")
-  library(shiny)
-  
+  # Simple fallback UI
   ui <- fluidPage(
-    h1("Monitor Legislativo v4"),
-    p("Application is starting up. Please refresh in a moment.")
+    titlePanel("Monitor Legislativo v4"),
+    mainPanel(
+      h3("System Status: Starting Up"),
+      p("The Brazilian Legislative Monitor is initializing..."),
+      p("If this message persists, please contact the administrator."),
+      br(),
+      verbatimTextOutput("status")
+    )
   )
   
-  server <- function(input, output, session) {}
+  server <- function(input, output, session) {
+    output$status <- renderText({
+      paste0("Server Time: ", Sys.time(), 
+             "\nHost: ", host,
+             "\nPort: ", port,
+             "\nR Version: ", R.version.string)
+    })
+  }
   
+  # Run fallback app
   shinyApp(ui, server, options = list(host = host, port = port))
 })
+
+# If we get here, the main app loaded successfully
+cat("Starting server on", host, "port", port, "\n")
+cat("Access your dashboard at: http://localhost or Railway deployment URL\n")
+
+# Start the main Shiny application
+shinyApp(ui = ui, server = server, options = list(
+  host = host,
+  port = port,
+  launch.browser = FALSE
+))
