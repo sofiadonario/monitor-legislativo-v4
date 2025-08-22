@@ -5,8 +5,8 @@ dockerContext = "."
 buildCommand = "docker build -t monitor-legislativo ."
 
 [deploy]
-# Use minimal health check server for reliable deployment
-startCommand = "Rscript railway_minimal_health.R"
+# Use ultra minimal server to bypass version check issues
+startCommand = "Rscript railway_ultra_minimal.R"
 # Health check endpoint (handled by the production script)
 healthcheckPath = "/health"
 healthcheckTimeout = 60
