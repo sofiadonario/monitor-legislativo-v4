@@ -2,7 +2,7 @@
 # Railway Production Final - Run the actual Shiny app
 # ====================================================
 
-cat("=== Monitor Legislativo v4 - Production Server ===\n")
+cat("=== Monitor Legislativo v4 - Production Server [v2] ===\n")
 
 # Get configuration
 port <- as.numeric(Sys.getenv("PORT", "3838"))
