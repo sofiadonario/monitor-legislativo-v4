@@ -993,6 +993,13 @@ ui <- function(request) {
           box(
             title = "🎛️ Geographic Analytics Controls", status = "warning", solidHeader = TRUE, width = 4,
             selectInput("geo_metric", "Select Metric:",
+              choices = list(
+                "Document Count" = "count",
+                "Regulatory Density" = "density",
+                "Per Capita Documents" = "per_capita"
+              ),
+              selected = "count"
+            ),
             # Progressive Loading Controls
             h5("⚡ Performance Settings", style = "color: #f39c12; margin-bottom: 10px;"),
             fluidRow(
@@ -1004,13 +1011,6 @@ ui <- function(request) {
               )
             ),
             br(),
-              choices = list(
-                "Document Count" = "count",
-                "Regulatory Density" = "density",
-                "Per Capita Documents" = "per_capita"
-              ),
-              selected = "count"
-            ),
             selectInput("geo_category", "Document Category:",
               choices = list(
                 "All Documents" = "all",
