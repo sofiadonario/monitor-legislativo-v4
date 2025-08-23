@@ -156,6 +156,21 @@ tryCatch({
   source("db/connection.R")
   cat("✅ Secure database connection loaded successfully\n")
   
+  # Railway-specific database fix
+  if (Sys.getenv("RAILWAY_ENVIRONMENT") == "production" || 
+      Sys.getenv("RAILWAY_DEPLOYMENT") == "true") {
+    cat("🚂 Railway environment detected - applying database fix\n")
+    tryCatch({
+      source("db/railway_db_fix.R")
+      if (exists("railway_db_pool") && !is.null(railway_db_pool)) {
+        con_pool <- railway_db_pool
+        cat("✅ Railway database pool activated\n")
+      }
+    }, error = function(e) {
+      cat("⚠️ Railway database fix error:", e$message, "\n")
+    })
+  }
+  
   # Verify the connection functions are available
   if (exists("get_connection_status") && exists("get_total_documents") && exists("get_library_documents")) {
     database_connection_loaded <- TRUE
