@@ -106,6 +106,7 @@ COPY railway_app_loader.R ./
 COPY railway_diagnostic.R ./
 COPY railway_production_final.R ./
 COPY railway_working_server.R ./
+COPY railway_full_app.R ./
 
 # Copy original application (fallback)
 COPY app.R ./
@@ -159,5 +160,5 @@ EXPOSE 3838
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
 
-# Use working server with status dashboard
-CMD ["Rscript", "railway_working_server.R"]
+# Use full app server - runs the complete Shiny dashboard
+CMD ["Rscript", "railway_full_app.R"]
