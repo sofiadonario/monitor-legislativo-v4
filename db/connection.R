@@ -1,24 +1,28 @@
 # ============================================================================
-# SECURE DATABASE CONNECTION MODULE
+# RAILWAY-OPTIMIZED DATABASE CONNECTION MODULE
 # ============================================================================
 # 
-# This module provides secure database connectivity using environment variables
-# and follows security best practices:
-# - NO hardcoded credentials
-# - Environment variable validation  
-# - SSL enforcement with sslmode=require
-# - Comprehensive error handling
-# - Supports Railway's DATABASE_URL format
+# This module provides robust database connectivity for Railway deployments
+# of the Brazilian Legislative Monitor dashboard.
 # 
-# Required Environment Variables:
-# - DATABASE_URL (Railway format) OR individual components:
-# - PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
+# Features:
+# - Railway DATABASE_URL parsing with fallbacks
+# - Multiple connection methods with retry logic
+# - SSL/TLS encryption support (prefer mode for Railway compatibility)
+# - Comprehensive error handling and logging
+# - Connection pooling for performance
+# - Health checks and diagnostics
 # 
-# Security Features:
-# - SSL required connections
-# - Environment variable validation
-# - Secure connection pool management
-# - No credential logging
+# Supported Environment Variables:
+# - DATABASE_URL (Railway PostgreSQL service format)
+# - PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD (individual variables)
+# - POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB (Railway alternatives)
+# 
+# Railway Optimizations:
+# - Handles Railway's internal DNS resolution
+# - Supports Railway's variable injection patterns
+# - Optimized connection pool settings for Railway limits
+# - Enhanced logging for Railway log aggregation
 # ============================================================================
 
 # Load required libraries with error handling
@@ -269,7 +273,7 @@ test_secure_connectivity <- function(config) {
       dbname = config$dbname,
       user = config$user,
       password = config$password,
-      sslmode = "require",  # ENFORCE SSL
+      sslmode = "prefer",   # Prefer SSL but allow fallback for Railway compatibility
       connect_timeout = 30,
       application_name = "secure_r_shiny_app"
     )
@@ -325,8 +329,8 @@ create_secure_connection_pool <- function(config) {
         maxSize = 5,  # Conservative limit for security
         idleTimeout = 1800000,  # 30 minutes
         
-        # Security enforcements
-        sslmode = "require",  # FORCE SSL
+        # Security settings (Railway compatible)
+        sslmode = "prefer",   # Prefer SSL but allow fallback
         connect_timeout = 30,
         application_name = "secure_r_shiny_app",
         

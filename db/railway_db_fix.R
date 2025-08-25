@@ -18,14 +18,17 @@ get_railway_connection <- function() {
   cat("PGUSER:", Sys.getenv("PGUSER"), "\n")
   cat("RAILWAY_ENVIRONMENT:", Sys.getenv("RAILWAY_ENVIRONMENT"), "\n")
   
-  # Railway PostgreSQL connection details (from your previous setup)
-  # These should be coming from environment variables, but as fallback:
+  # Railway PostgreSQL connection - USE ENVIRONMENT VARIABLES ONLY
+  # SECURITY: Never use hardcoded credentials in production
+  cat("⚠️ DEPRECATED: This connection method is insecure\n")
+  cat("🔒 Use db/connection.R with proper environment variables instead\n")
+  
   railway_config <- list(
-    host = "nozomi.proxy.rlwy.net",
-    port = 44844,
-    dbname = "railway",
-    user = "postgres",
-    password = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY"
+    host = Sys.getenv("PGHOST", "postgres"),
+    port = as.integer(Sys.getenv("PGPORT", "5432")),
+    dbname = Sys.getenv("PGDATABASE", "railway"),
+    user = Sys.getenv("PGUSER", "postgres"),
+    password = Sys.getenv("PGPASSWORD", "")
   )
   
   # Try to connect using environment variables first
@@ -90,13 +93,19 @@ get_railway_connection <- function() {
 create_railway_pool <- function() {
   cat("Creating Railway database pool...\n")
   
-  # Railway PostgreSQL configuration
+  # Railway PostgreSQL configuration - DO NOT USE HARDCODED CREDENTIALS
+  # This is a SECURITY RISK and should be replaced with environment variables
+  cat("⚠️ WARNING: This file contains hardcoded credentials and should not be used\n")
+  cat("💡 Use the secure connection module in db/connection.R instead\n")
+  cat("🔒 Ensure DATABASE_URL environment variable is properly set in Railway\n")
+  
+  # DEPRECATED - Use environment variables instead
   railway_config <- list(
-    host = "nozomi.proxy.rlwy.net",
-    port = 44844,
-    dbname = "railway",
-    user = "postgres",
-    password = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY"
+    host = Sys.getenv("PGHOST", "postgres"),
+    port = as.integer(Sys.getenv("PGPORT", "5432")),
+    dbname = Sys.getenv("PGDATABASE", "railway"),
+    user = Sys.getenv("PGUSER", "postgres"),
+    password = Sys.getenv("PGPASSWORD", "")
   )
   
   tryCatch({
