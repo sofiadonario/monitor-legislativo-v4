@@ -615,7 +615,9 @@ if (!database_connection_loaded) {
       }
       
     }, error = function(e) {
-      cat("⚠️ Error loading CSV:", e$message, "\n")
+      cat("❌ ERROR loading CSV:", e$message, "\n")
+      cat("❌ Full error details:", toString(e), "\n") 
+      cat("❌ This will fall back to minimal 3-document dataset\n")
     })
     
     # Minimal fallback if CSV loading fails
