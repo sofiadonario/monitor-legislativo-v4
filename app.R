@@ -580,39 +580,19 @@ if (!database_connection_loaded) {
       if(!is.null(csv_path)) {
         cat("📁 Loading CSV fallback data from:", csv_path, "\n")
         
-        # Read CSV with proper encoding - sample to match database size (~134k)
-        # First check file size to decide on sampling strategy
-        line_count_cmd <- paste("wc -l <", shQuote(csv_path))
-        total_lines <- as.numeric(system(line_count_cmd, intern = TRUE)) - 1 # exclude header
+        # Read CSV with proper encoding - use full dataset
+        cat("📊 Reading CSV file:", csv_path, "\n")
         
-        if(total_lines > 200000) {
-          # Large file - use sampling to get ~134k records
-          cat("📊 Large CSV detected (", format(total_lines, big.mark = ","), "lines), sampling to match database size\n")
-          
-          # Read header first
-          header <- read.csv(csv_path, nrows = 1, stringsAsFactors = FALSE)
-          
-          # Calculate sampling ratio to get ~134k records
-          sample_ratio <- min(1.0, 134014 / total_lines)
-          
-          # Use system command to sample the file efficiently
-          temp_file <- tempfile(fileext = ".csv")
-          
-          # Create sampled file using awk (more efficient for large files)
-          sample_cmd <- sprintf("awk 'NR==1 || (NR>1 && rand() < %f)' %s > %s", 
-                               sample_ratio, shQuote(csv_path), shQuote(temp_file))
-          system(sample_cmd)
-          
-          # Read the sampled file
-          all_docs <- read.csv(temp_file, stringsAsFactors = FALSE, encoding = "UTF-8")
-          
-          # Clean up temp file
-          unlink(temp_file)
-          
-          cat("✅ Sampled", nrow(all_docs), "documents from CSV\n")
-          
+        # Check file size using R's file.size() for better cross-platform compatibility
+        file_size_mb <- file.size(csv_path) / (1024 * 1024)
+        
+        if(file_size_mb > 300) {
+          # Very large file - read first 200k rows to avoid memory issues
+          cat("📊 Large file detected (", round(file_size_mb, 1), "MB), reading first 200k rows\n")
+          all_docs <- read.csv(csv_path, nrows = 200000, stringsAsFactors = FALSE, encoding = "UTF-8")
         } else {
-          # Smaller file - read directly
+          # Read the full file
+          cat("📊 Loading full file (", round(file_size_mb, 1), "MB)\n")
           all_docs <- read.csv(csv_path, stringsAsFactors = FALSE, encoding = "UTF-8")
         }
         
