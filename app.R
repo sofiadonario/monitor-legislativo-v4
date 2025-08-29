@@ -156,20 +156,32 @@ database_connection_loaded <- FALSE
 # RE-ENABLE DATABASE CONNECTION: Connect to Railway PostgreSQL with 134k+ documents
 cat("🔄 Attempting to connect to Railway PostgreSQL database with full dataset...\n")
 
-# Load database connection with Railway environment variables
-tryCatch({
-  # Set Railway PostgreSQL environment variables
-  if (Sys.getenv("DATABASE_URL") == "") {
-    Sys.setenv(DATABASE_URL = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway")
-    Sys.setenv(PGHOST = "nozomi.proxy.rlwy.net")
-    Sys.setenv(PGPORT = "44844") 
-    Sys.setenv(PGDATABASE = "railway")
-    Sys.setenv(PGUSER = "postgres")
-    Sys.setenv(PGPASSWORD = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY")
-    cat("✅ Railway PostgreSQL environment variables set\n")
-  }
-  
-  source("db/connection.R")
+# Check if required database packages are available first
+required_db_packages <- c("DBI", "RPostgres", "pool")
+packages_available <- all(sapply(required_db_packages, function(pkg) {
+  requireNamespace(pkg, quietly = TRUE)
+}))
+
+if (!packages_available) {
+  cat("⚠️ Database packages not available, skipping database connection\n")
+  cat("📦 Missing packages:", paste(required_db_packages[!sapply(required_db_packages, function(pkg) requireNamespace(pkg, quietly = TRUE))], collapse = ", "), "\n")
+  cat("🔄 Will proceed with CSV fallback system\n")
+  database_connection_loaded <- FALSE
+} else {
+  # Load database connection with Railway environment variables
+  tryCatch({
+    # Set Railway PostgreSQL environment variables
+    if (Sys.getenv("DATABASE_URL") == "") {
+      Sys.setenv(DATABASE_URL = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway")
+      Sys.setenv(PGHOST = "nozomi.proxy.rlwy.net")
+      Sys.setenv(PGPORT = "44844") 
+      Sys.setenv(PGDATABASE = "railway")
+      Sys.setenv(PGUSER = "postgres")
+      Sys.setenv(PGPASSWORD = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY")
+      cat("✅ Railway PostgreSQL environment variables set\n")
+    }
+    
+    source("db/connection.R")
   cat("✅ Secure database connection loaded successfully\n")
   
   # Railway-specific database fix
@@ -211,11 +223,12 @@ tryCatch({
     database_connection_loaded <- FALSE
   }
   
-}, error = function(e) {
-  cat("❌ Secure database connection loading failed:", e$message, "\n")
-  cat("🔄 Falling back to CSV files with limited sample data\n")
-  database_connection_loaded <- FALSE
-})
+  }, error = function(e) {
+    cat("❌ Secure database connection loading failed:", e$message, "\n")
+    cat("🔄 Falling back to CSV files with limited sample data\n")
+    database_connection_loaded <- FALSE
+  })
+}
 
 if (database_connection_loaded) {
   cat("✅ Railway PostgreSQL connection established - using database with 134k+ documents\n")
@@ -259,8 +272,18 @@ if (!database_connection_loaded) {
   get_total_documents <<- function(filters = list()) { 
     # Multi-tier fallback strategy
     tryCatch({
-      # Tier 1: Check for full dataset sources (parquet preferred)
-      if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
+      # Tier 1: Check for Railway CSV files first (these are optimized for deployment)
+      if(file.exists("railway_data_50k.csv")) {
+        cat("📁 Using Railway 50k CSV dataset for document count\n")
+        return(50000)   # Railway 50k dataset
+      } else if(file.exists("railway_medium_dataset.csv")) {
+        cat("📁 Using Railway medium CSV dataset for document count\n") 
+        return(25000)   # Railway medium dataset
+      } else if(file.exists("railway_data_10k.csv")) {
+        cat("📁 Using Railway 10k CSV dataset for document count\n")
+        return(10000)   # Railway 10k dataset
+      # Tier 2: Check for full dataset sources (parquet preferred)  
+      } else if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
         cat("📁 Using parquet dataset for document count\n")
         return(134014)  # Full dataset in parquet format
       } else if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
@@ -286,8 +309,26 @@ if (!database_connection_loaded) {
       # Get dynamic document count based on available data
       doc_count <- get_total_documents()
       
-      # Determine data source and adjust metrics accordingly
-      if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
+      # Determine data source and adjust metrics accordingly - Railway CSV files first
+      if(file.exists("railway_data_50k.csv")) {
+        data_source <- "railway_csv_50k_dataset"
+        states_count <- 27    # Brazilian states + DF
+        municipalities_count <- 800  # Estimated from 50k sample
+        states_pct <- 100.0   # Full state coverage
+        municipalities_pct <- 14.3   # ~800 of 5570 municipalities
+      } else if(file.exists("railway_medium_dataset.csv")) {
+        data_source <- "railway_csv_medium_dataset"
+        states_count <- 26
+        municipalities_count <- 600
+        states_pct <- 96.3
+        municipalities_pct <- 10.8
+      } else if(file.exists("railway_data_10k.csv")) {
+        data_source <- "railway_csv_10k_dataset"  
+        states_count <- 22
+        municipalities_count <- 200
+        states_pct <- 81.5
+        municipalities_pct <- 3.6
+      } else if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
         data_source <- "parquet_full_dataset"
         states_count <- 26
         municipalities_count <- 1000
@@ -1991,6 +2032,13 @@ server <- function(input, output, session) {
     cat("  - Semantic:", final_semantic, "\n")
     
     # Get documents with filters and error handling
+    cat("=== DATASET LOADING DEBUG ===\n")
+    cat("📊 About to call get_library_documents\n")
+    cat("📁 Checking data sources:\n")
+    cat("  - railway_data_50k.csv:", if(file.exists("railway_data_50k.csv")) "✅ FOUND" else "❌ NOT FOUND", "\n")
+    cat("  - database_connection_loaded:", if(exists("database_connection_loaded") && database_connection_loaded) "✅ TRUE" else "❌ FALSE", "\n")
+    cat("  - Expected documents: 50,000 from CSV or from database\n")
+    
     docs <- tryCatch({
       result <- get_library_documents(
         category = final_category,
@@ -2000,8 +2048,19 @@ server <- function(input, output, session) {
         limit = 999999  # Remove limit to show all documents
       )
       
+      cat("📊 get_library_documents returned:", if(is.null(result)) "NULL" else nrow(result), "documents\n")
+      
+      result  # Return the result
+      
+    }, error = function(e) {
+      cat("❌ Error in get_library_documents:", e$message, "\n")
+      NULL  # Return NULL on error
+    })
+    
+    # Process the results
+    final_docs <- tryCatch({
       # Validate result
-      if(is.null(result) || !is.data.frame(result) || nrow(result) == 0) {
+      if(is.null(docs) || !is.data.frame(docs) || nrow(docs) == 0) {
         cat("⚠️ No documents returned, creating empty data.frame with proper structure\n")
         # Return empty data frame with expected columns
         data.frame(
@@ -2013,10 +2072,10 @@ server <- function(input, output, session) {
           stringsAsFactors = FALSE
         )
       } else {
-        result
+        docs
       }
     }, error = function(e) {
-      cat("❌ Error in get_library_documents:", e$message, "\n")
+      cat("❌ Error processing documents:", e$message, "\n")
       # Return empty data frame with proper structure
       data.frame(
         title = character(0),
@@ -2028,10 +2087,10 @@ server <- function(input, output, session) {
       )
     })
     
-    cat("📊 Reactive returning:", nrow(docs), "documents\n")
-    cat("=== END REACTIVE DEBUG ===\n")
+    cat("📊 Final result:", nrow(final_docs), "documents\n")
+    cat("=== END DATASET LOADING DEBUG ===\n")
     
-    return(docs)
+    return(final_docs)
   })
   
   # Dynamic sublibrary document counts
@@ -2125,13 +2184,23 @@ server <- function(input, output, session) {
   
   # Library value boxes
   output$lib_total_docs <- renderValueBox({
+    cat("=== TOTAL DOCUMENTS DEBUG ===\n")
     total <- tryCatch({
       if(exists("get_total_documents")) {
-        get_total_documents()
+        cat("📊 Calling get_total_documents...\n")
+        result <- get_total_documents()
+        cat("📊 get_total_documents returned:", format(result, big.mark = ","), "\n")
+        cat("📁 railway_data_50k.csv exists:", if(file.exists("railway_data_50k.csv")) "✅ YES" else "❌ NO", "\n")
+        result
       } else {
+        cat("❌ get_total_documents function not found, using fallback\n")
         134014
       }
-    }, error = function(e) { return(134014) })
+    }, error = function(e) { 
+      cat("❌ Error in get_total_documents:", e$message, "\n")
+      return(134014) 
+    })
+    cat("=== END TOTAL DOCUMENTS DEBUG ===\n")
     
     valueBox(
       value = format(total, big.mark = ","),

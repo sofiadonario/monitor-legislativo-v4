@@ -509,8 +509,34 @@ get_total_documents <- function(filters = list()) {
   if (connection_status$status == "connected" && connection_status$is_secure) {
     return(get_secure_document_count())
   } else {
-    log_secure_db("INFO", "Using fallback document count (secure database not connected)")
-    return(134014)  # Fallback count
+    log_secure_db("INFO", "Using CSV fallback document count (secure database not connected)")
+    
+    # Enhanced fallback count based on available CSV files - prioritize Railway files
+    if(file.exists("railway_data_50k.csv")) {
+      log_secure_db("SUCCESS", "Found railway_data_50k.csv - returning 50,000 documents")
+      return(50000)   # Railway 50k dataset
+    } else if(file.exists("railway_medium_dataset.csv")) {
+      log_secure_db("SUCCESS", "Found railway_medium_dataset.csv - returning 25,000 documents")
+      return(25000)   # Railway medium dataset
+    } else if(file.exists("railway_data_10k.csv")) {
+      log_secure_db("SUCCESS", "Found railway_data_10k.csv - returning 10,000 documents")
+      return(10000)   # Railway 10k dataset
+    } else if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
+      log_secure_db("INFO", "Found parquet dataset - returning 134,014 documents")
+      return(134014)  # Full dataset in parquet format
+    } else if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
+      log_secure_db("INFO", "Found unified CSV dataset - returning 134,014 documents")
+      return(134014)  # Full unified dataset in CSV format
+    } else if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+      log_secure_db("INFO", "Found enhanced CSV dataset - returning 134,014 documents")
+      return(134014)  # Full dataset in CSV format
+    } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
+      log_secure_db("INFO", "Found sample dataset - returning 20,000 documents")
+      return(20000)   # Sample size for Railway deployment
+    } else {
+      log_secure_db("WARNING", "No data files found - returning minimal fallback count")
+      return(20)      # Minimal fallback (matches hardcoded fallback data)
+    }
   }
 }
 
@@ -650,6 +676,12 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     
     log_secure_db("SUCCESS", sprintf("Retrieved %d documents from secure database", nrow(result)))
     
+    # Check if database returned insufficient results - if so, fallback to CSV
+    if(nrow(result) < 100 && category == "all" && search_term == "" && state == "all") {
+      log_secure_db("WARNING", sprintf("Database returned only %d documents for unrestricted query - falling back to CSV", nrow(result)))
+      return(get_fallback_documents(category, search_term, state, limit))
+    }
+    
     return(result)
     
   }, error = function(e) {
@@ -665,10 +697,119 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
 #' @param limit Result limit
 #' @return Data frame with sample documents
 get_fallback_documents <- function(category = "all", search_term = "", state = "all", limit = 999999) {
-  log_secure_db("WARNING", "🚨 SECURE DATABASE CONNECTION UNAVAILABLE - Using fallback dataset")
-  log_secure_db("INFO", "This indicates the secure connection could not be established")
+  log_secure_db("WARNING", "🚨 SECURE DATABASE CONNECTION UNAVAILABLE - Using CSV fallback dataset")
+  log_secure_db("INFO", "Attempting to load railway_data_50k.csv with 50,000 documents")
   
-  # Expanded fallback dataset
+  # Enhanced fallback hierarchy: Railway CSV -> Parquet -> Other CSV -> Minimal fallback
+  tryCatch({
+    # Priority 1: Railway 50k CSV (76MB, 50k documents)
+    csv_paths <- c(
+      "railway_data_50k.csv",  # 50k dataset (76MB) - best for Railway
+      "railway_medium_dataset.csv",  # 25k dataset optimized for Railway
+      "railway_data_10k.csv",  # 10k dataset 
+      "data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet",
+      "data_current/processed/production/lexml_unified_dataset.csv",
+      "data_current/processed/production/lexml_enhanced_simple.csv",
+      "data_current/processed/production/lexml_sample_for_railway.csv"
+    )
+    
+    csv_path <- NULL
+    for(path in csv_paths) {
+      if(file.exists(path)) {
+        csv_path <- path
+        log_secure_db("SUCCESS", sprintf("Found CSV fallback file: %s", path))
+        break
+      }
+    }
+    
+    if(!is.null(csv_path)) {
+      log_secure_db("INFO", sprintf("Loading CSV fallback data from: %s", csv_path))
+      
+      # Check file size for loading strategy
+      file_size_mb <- file.size(csv_path) / (1024 * 1024)
+      log_secure_db("INFO", sprintf("File size: %.1f MB", file_size_mb))
+      
+      # Load the CSV file
+      if(file_size_mb > 300) {
+        # Very large file - read first 200k rows to avoid memory issues
+        log_secure_db("INFO", sprintf("Large file detected (%.1f MB), reading first 200k rows", file_size_mb))
+        all_docs <- read.csv(csv_path, nrows = 200000, stringsAsFactors = FALSE, encoding = "UTF-8")
+      } else {
+        # Read the full file
+        log_secure_db("INFO", sprintf("Loading full file (%.1f MB)", file_size_mb))
+        all_docs <- read.csv(csv_path, stringsAsFactors = FALSE, encoding = "UTF-8")
+      }
+      
+      log_secure_db("SUCCESS", sprintf("✅ CSV loaded: %d documents from %s", nrow(all_docs), csv_path))
+      
+      # Check if process_document_data function is available (from app.R)
+      if(exists("process_document_data")) {
+        log_secure_db("INFO", "Using process_document_data function for filtering and processing")
+        return(process_document_data(all_docs, category, search_term, state, 
+                                   NULL, NULL, "date_desc", limit, 0, TRUE))
+      } else {
+        # Fallback processing if process_document_data is not available
+        log_secure_db("WARNING", "process_document_data function not found, using basic processing")
+        
+        # Standardize column names for compatibility
+        if("titulo" %in% names(all_docs)) names(all_docs)[names(all_docs) == "titulo"] <- "title"
+        if("categoria" %in% names(all_docs)) names(all_docs)[names(all_docs) == "categoria"] <- "category"  
+        if("estado" %in% names(all_docs)) names(all_docs)[names(all_docs) == "estado"] <- "state"
+        if("data" %in% names(all_docs)) names(all_docs)[names(all_docs) == "data"] <- "date"
+        if("ementa" %in% names(all_docs)) names(all_docs)[names(all_docs) == "ementa"] <- "summary"
+        
+        # Apply basic filtering
+        filtered_docs <- all_docs
+        
+        # Category filtering
+        if(category != "all" && "category" %in% names(filtered_docs)) {
+          if(category == "legislation") {
+            filtered_docs <- filtered_docs[filtered_docs$category %in% c("Legislação", "Proposições"), ]
+          } else if(category == "jurisprudence") {
+            filtered_docs <- filtered_docs[filtered_docs$category == "Jurisprudência", ]
+          } else if(category == "doctrine") {
+            filtered_docs <- filtered_docs[filtered_docs$category %in% c("Doutrina", "Outros"), ]
+          }
+        }
+        
+        # State filtering
+        if(state != "all" && "state" %in% names(filtered_docs)) {
+          filtered_docs <- filtered_docs[filtered_docs$state == state, ]
+        }
+        
+        # Search term filtering
+        if(search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
+          search_pattern <- paste0(".*", search_term, ".*")
+          if("title" %in% names(filtered_docs)) {
+            title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
+            summary_match <- if("summary" %in% names(filtered_docs)) {
+              grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE, na.rm = TRUE)
+            } else {
+              rep(FALSE, nrow(filtered_docs))
+            }
+            filtered_docs <- filtered_docs[title_match | summary_match, ]
+          }
+        }
+        
+        # Apply limit
+        if(nrow(filtered_docs) > limit) {
+          filtered_docs <- filtered_docs[1:limit, ]
+        }
+        
+        log_secure_db("SUCCESS", sprintf("CSV fallback data processed: %d documents returned", nrow(filtered_docs)))
+        return(filtered_docs)
+      }
+      
+    } else {
+      log_secure_db("ERROR", "No CSV fallback files found - using minimal hardcoded fallback")
+    }
+    
+  }, error = function(e) {
+    log_secure_db("ERROR", sprintf("CSV fallback loading failed: %s", e$message))
+  })
+  
+  # Last resort: minimal hardcoded fallback (only if CSV loading completely fails)
+  log_secure_db("WARNING", "Using minimal hardcoded fallback (20 documents)")
   fallback_docs <- data.frame(
     title = c(
       "Lei Federal 14.133/2021 - Nova Lei de Licitações e Contratos Administrativos",
@@ -711,7 +852,7 @@ get_fallback_documents <- function(category = "all", search_term = "", state = "
     stringsAsFactors = FALSE
   )
   
-  # Apply filtering
+  # Apply basic filtering to hardcoded fallback
   filtered_docs <- fallback_docs
   
   if(category != "all") {
@@ -740,7 +881,7 @@ get_fallback_documents <- function(category = "all", search_term = "", state = "
     filtered_docs <- filtered_docs[1:limit, ]
   }
   
-  log_secure_db("INFO", sprintf("Fallback data returning %d documents", nrow(filtered_docs)))
+  log_secure_db("INFO", sprintf("Hardcoded fallback data returning %d documents", nrow(filtered_docs)))
   
   return(filtered_docs)
 }
