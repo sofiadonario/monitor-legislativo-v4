@@ -570,8 +570,9 @@ if (!database_connection_loaded) {
         }
       }
       
-      # Fallback to CSV files
+      # Fallback to CSV files - Railway deployable version first
       csv_paths <- c(
+        "railway_data_10k.csv",  # 10k dataset that's included in git
         "data_current/processed/production/lexml_unified_dataset.csv",
         "data_current/processed/production/lexml_enhanced_simple.csv",
         "data_current/processed/production/lexml_sample_for_railway.csv"
