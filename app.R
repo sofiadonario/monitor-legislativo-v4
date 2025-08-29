@@ -150,55 +150,63 @@ tryCatch({
   ), envir = .GlobalEnv)
 })
 
-# Load Secure Database Connection - PRODUCTION VERSION
+# Load Secure Database Connection - PRODUCTION VERSION  
 database_connection_loaded <- FALSE
-tryCatch({
-  source("db/connection.R")
-  cat("✅ Secure database connection loaded successfully\n")
-  
-  # Railway-specific database fix
-  if (Sys.getenv("RAILWAY_ENVIRONMENT") == "production" || 
-      Sys.getenv("RAILWAY_DEPLOYMENT") == "true") {
-    cat("🚂 Railway environment detected - applying database fix\n")
-    tryCatch({
-      source("db/railway_db_fix.R")
-      if (exists("railway_db_pool") && !is.null(railway_db_pool)) {
-        con_pool <- railway_db_pool
-        cat("✅ Railway database pool activated\n")
-      }
-    }, error = function(e) {
-      cat("⚠️ Railway database fix error:", e$message, "\n")
-    })
-  }
-  
-  # Verify the connection functions are available
-  if (exists("get_connection_status") && exists("get_total_documents") && exists("get_library_documents")) {
-    database_connection_loaded <- TRUE
-    
-    # Test connection status
-    status <- get_connection_status()
-    cat("📊 Database Status:", status$status, "\n")
-    cat("🔌 Connection Method:", status$connection_method, "\n")
-    cat("🔒 SSL Status:", if(status$ssl_enabled) "ENABLED" else "UNKNOWN", "\n")
-    cat("🛡️ Security Status:", if(status$is_secure) "SECURE" else "INSECURE", "\n")
-    cat("📄 Document Count:", format(status$document_count, big.mark = ","), "\n")
-    
-    if (status$status == "connected" && status$is_secure) {
-      cat("🎉 Secure database connection is active and ready!\n")
-    } else if (status$status == "connected" && !status$is_secure) {
-      cat("⚠️ Database connected but security status uncertain\n")
-    } else {
-      cat("⚠️ Database connection issue:", status$error, "\n")
-    }
-  } else {
-    cat("⚠️ Connection functions not properly loaded\n")
-    database_connection_loaded <- FALSE
-  }
-  
-}, error = function(e) {
-  cat("❌ Secure database connection loading failed:", e$message, "\n")
-  database_connection_loaded <- FALSE
-})
+
+# FORCE CSV LOADING: Skip database connection to use local CSV files
+cat("🔄 Forcing CSV data loading (skipping database connection)\n")
+database_connection_loaded <- FALSE
+
+# Original database loading code (commented out to force CSV usage)
+# tryCatch({
+#   source("db/connection.R")
+#   cat("✅ Secure database connection loaded successfully\n")
+#   
+#   # Railway-specific database fix
+#   if (Sys.getenv("RAILWAY_ENVIRONMENT") == "production" || 
+#       Sys.getenv("RAILWAY_DEPLOYMENT") == "true") {
+#     cat("🚂 Railway environment detected - applying database fix\n")
+#     tryCatch({
+#       source("db/railway_db_fix.R")
+#       if (exists("railway_db_pool") && !is.null(railway_db_pool)) {
+#         con_pool <- railway_db_pool
+#         cat("✅ Railway database pool activated\n")
+#       }
+#     }, error = function(e) {
+#       cat("⚠️ Railway database fix error:", e$message, "\n")
+#     })
+#   }
+#   
+#   # Verify the connection functions are available
+#   if (exists("get_connection_status") && exists("get_total_documents") && exists("get_library_documents")) {
+#     database_connection_loaded <- TRUE
+#     
+#     # Test connection status
+#     status <- get_connection_status()
+#     cat("📊 Database Status:", status$status, "\n")
+#     cat("🔌 Connection Method:", status$connection_method, "\n")
+#     cat("🔒 SSL Status:", if(status$ssl_enabled) "ENABLED" else "UNKNOWN", "\n")
+#     cat("🛡️ Security Status:", if(status$is_secure) "SECURE" else "INSECURE", "\n")
+#     cat("📄 Document Count:", format(status$document_count, big.mark = ","), "\n")
+#     
+#     if (status$status == "connected" && status$is_secure) {
+#       cat("🎉 Secure database connection is active and ready!\n")
+#     } else if (status$status == "connected" && !status$is_secure) {
+#       cat("⚠️ Database connected but security status uncertain\n")
+#     } else {
+#       cat("⚠️ Database connection issue:", status$error, "\n")
+#     }
+#   } else {
+#     cat("⚠️ Connection functions not properly loaded\n")
+#     database_connection_loaded <- FALSE
+#   }
+#   
+# }, error = function(e) {
+#   cat("❌ Secure database connection loading failed:", e$message, "\n")
+#   database_connection_loaded <- FALSE
+# })
+
+cat("🔄 Database connection disabled - will use CSV files with full 134k+ documents\n")
 
 # Load Database Performance Optimization
 # ========================================
