@@ -345,9 +345,12 @@ if (!database_connection_loaded) {
       })
     }
     
-    # Filter empty rows and ensure we have required columns
+    # Filter empty rows more intelligently - keep documents with title OR summary
     cat("📊 Before filtering empty rows:", nrow(all_docs), "documents\n")
-    all_docs <- all_docs[!is.na(all_docs$title) & all_docs$title != "", ]
+    # Keep documents that have either title or summary content
+    has_content <- (!is.na(all_docs$title) & all_docs$title != "") |
+                   (!"summary" %in% names(all_docs) | (!is.na(all_docs$summary) & all_docs$summary != ""))
+    all_docs <- all_docs[has_content, ]
     cat("📊 After filtering empty rows:", nrow(all_docs), "documents\n")
     
     # Apply filters
@@ -407,7 +410,7 @@ if (!database_connection_loaded) {
       filtered_docs <- filtered_docs[(offset + 1):nrow(filtered_docs), ]
     }
     
-    if(nrow(filtered_docs) > limit) {
+    if(limit > 0 && nrow(filtered_docs) > limit) {
       filtered_docs <- filtered_docs[1:limit, ]
     }
     
@@ -530,7 +533,7 @@ if (!database_connection_loaded) {
 
   get_library_documents <<- function(category = "all", search_term = "", state = "all", 
                                    date_start = NULL, date_end = NULL, sort_by = "date_desc", 
-                                   limit = 100, offset = 0, use_semantic_search = TRUE) {
+                                   limit = 999999, offset = 0, use_semantic_search = TRUE) {
     # Enhanced fallback hierarchy: Database -> Parquet -> Full CSV -> Sample CSV -> Minimal
     tryCatch({
       # Try parquet file first (best fallback for full dataset)
