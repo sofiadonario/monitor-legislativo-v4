@@ -606,7 +606,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
         d.tipo as document_type,
         d.categoria_original as raw_category
       FROM %s d
-      LEFT JOIN document_categories dc ON d.category_id = dc.id
+      LEFT JOIN document_categories dc ON d.categoria = dc.name
       WHERE d.titulo IS NOT NULL AND d.titulo != ''", main_table)
     
     # Build parameters list for secure parameterized queries
