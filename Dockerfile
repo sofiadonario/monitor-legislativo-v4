@@ -115,6 +115,11 @@ COPY app.R ./
 COPY railway_migrate.sh ./
 COPY health_check.R ./
 
+# Copy Railway CSV data files (CRITICAL for fallback when database unavailable)
+COPY railway_data_50k.csv ./
+COPY railway_data_10k.csv ./
+COPY railway_medium_dataset.csv ./
+
 # Copy core directories (with error handling)
 COPY --chown=shinyapp:shinyapp db/ ./db/
 COPY --chown=shinyapp:shinyapp auth/ ./auth/

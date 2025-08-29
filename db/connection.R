@@ -713,6 +713,11 @@ get_fallback_documents <- function(category = "all", search_term = "", state = "
       "data_current/processed/production/lexml_sample_for_railway.csv"
     )
     
+    # DIAGNOSTIC: Log current directory and available files
+    log_secure_db("DEBUG", sprintf("Current working directory: %s", getwd()))
+    all_files <- list.files(".", pattern = "*.csv", recursive = FALSE)
+    log_secure_db("DEBUG", sprintf("CSV files found in current directory: %s", paste(all_files, collapse = ", ")))
+    
     csv_path <- NULL
     for(path in csv_paths) {
       if(file.exists(path)) {
