@@ -103,6 +103,8 @@ rsconnect/
 !lexml_overview/use_version/Geral.csv
 !data_current/processed/production/sample_data.csv
 !railway_data_10k.csv
+!railway_data_50k.csv
+!railway_medium_dataset.csv
 
 # Analytics outputs
 analytics_output/

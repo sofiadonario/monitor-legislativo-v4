@@ -153,60 +153,75 @@ tryCatch({
 # Load Secure Database Connection - PRODUCTION VERSION  
 database_connection_loaded <- FALSE
 
-# FORCE CSV LOADING: Skip database connection to use local CSV files
-cat("🔄 Forcing CSV data loading (skipping database connection)\n")
-database_connection_loaded <- FALSE
+# RE-ENABLE DATABASE CONNECTION: Connect to Railway PostgreSQL with 134k+ documents
+cat("🔄 Attempting to connect to Railway PostgreSQL database with full dataset...\n")
 
-# Original database loading code (commented out to force CSV usage)
-# tryCatch({
-#   source("db/connection.R")
-#   cat("✅ Secure database connection loaded successfully\n")
-#   
-#   # Railway-specific database fix
-#   if (Sys.getenv("RAILWAY_ENVIRONMENT") == "production" || 
-#       Sys.getenv("RAILWAY_DEPLOYMENT") == "true") {
-#     cat("🚂 Railway environment detected - applying database fix\n")
-#     tryCatch({
-#       source("db/railway_db_fix.R")
-#       if (exists("railway_db_pool") && !is.null(railway_db_pool)) {
-#         con_pool <- railway_db_pool
-#         cat("✅ Railway database pool activated\n")
-#       }
-#     }, error = function(e) {
-#       cat("⚠️ Railway database fix error:", e$message, "\n")
-#     })
-#   }
-#   
-#   # Verify the connection functions are available
-#   if (exists("get_connection_status") && exists("get_total_documents") && exists("get_library_documents")) {
-#     database_connection_loaded <- TRUE
-#     
-#     # Test connection status
-#     status <- get_connection_status()
-#     cat("📊 Database Status:", status$status, "\n")
-#     cat("🔌 Connection Method:", status$connection_method, "\n")
-#     cat("🔒 SSL Status:", if(status$ssl_enabled) "ENABLED" else "UNKNOWN", "\n")
-#     cat("🛡️ Security Status:", if(status$is_secure) "SECURE" else "INSECURE", "\n")
-#     cat("📄 Document Count:", format(status$document_count, big.mark = ","), "\n")
-#     
-#     if (status$status == "connected" && status$is_secure) {
-#       cat("🎉 Secure database connection is active and ready!\n")
-#     } else if (status$status == "connected" && !status$is_secure) {
-#       cat("⚠️ Database connected but security status uncertain\n")
-#     } else {
-#       cat("⚠️ Database connection issue:", status$error, "\n")
-#     }
-#   } else {
-#     cat("⚠️ Connection functions not properly loaded\n")
-#     database_connection_loaded <- FALSE
-#   }
-#   
-# }, error = function(e) {
-#   cat("❌ Secure database connection loading failed:", e$message, "\n")
-#   database_connection_loaded <- FALSE
-# })
+# Load database connection with Railway environment variables
+tryCatch({
+  # Set Railway PostgreSQL environment variables
+  if (Sys.getenv("DATABASE_URL") == "") {
+    Sys.setenv(DATABASE_URL = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway")
+    Sys.setenv(PGHOST = "nozomi.proxy.rlwy.net")
+    Sys.setenv(PGPORT = "44844") 
+    Sys.setenv(PGDATABASE = "railway")
+    Sys.setenv(PGUSER = "postgres")
+    Sys.setenv(PGPASSWORD = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY")
+    cat("✅ Railway PostgreSQL environment variables set\n")
+  }
+  
+  source("db/connection.R")
+  cat("✅ Secure database connection loaded successfully\n")
+  
+  # Railway-specific database fix
+  if (Sys.getenv("RAILWAY_ENVIRONMENT") == "production" || 
+      Sys.getenv("RAILWAY_DEPLOYMENT") == "true") {
+    cat("🚂 Railway environment detected - applying database fix\n")
+    tryCatch({
+      source("db/railway_db_fix.R")
+      if (exists("railway_db_pool") && !is.null(railway_db_pool)) {
+        con_pool <- railway_db_pool
+        cat("✅ Railway database pool activated\n")
+      }
+    }, error = function(e) {
+      cat("⚠️ Railway database fix error:", e$message, "\n")
+    })
+  }
+  
+  # Verify the connection functions are available
+  if (exists("get_connection_status") && exists("get_total_documents") && exists("get_library_documents")) {
+    database_connection_loaded <- TRUE
+    
+    # Test connection status
+    status <- get_connection_status()
+    cat("📊 Database Status:", status$status, "\n")
+    cat("🔌 Connection Method:", status$connection_method, "\n")
+    cat("🔒 SSL Status:", if(status$ssl_enabled) "ENABLED" else "UNKNOWN", "\n")
+    cat("🛡️ Security Status:", if(status$is_secure) "SECURE" else "INSECURE", "\n")
+    cat("📄 Document Count:", format(status$document_count, big.mark = ","), "\n")
+    
+    if (status$status == "connected" && status$is_secure) {
+      cat("🎉 Secure database connection is active and ready!\n")
+    } else if (status$status == "connected" && !status$is_secure) {
+      cat("⚠️ Database connected but security status uncertain\n")
+    } else {
+      cat("⚠️ Database connection issue:", status$error, "\n")
+    }
+  } else {
+    cat("⚠️ Connection functions not properly loaded\n")
+    database_connection_loaded <- FALSE
+  }
+  
+}, error = function(e) {
+  cat("❌ Secure database connection loading failed:", e$message, "\n")
+  cat("🔄 Falling back to CSV files with limited sample data\n")
+  database_connection_loaded <- FALSE
+})
 
-cat("🔄 Database connection disabled - will use CSV files with full 134k+ documents\n")
+if (database_connection_loaded) {
+  cat("✅ Railway PostgreSQL connection established - using database with 134k+ documents\n")
+} else {
+  cat("⚠️ Database connection failed - will use CSV fallback with sample data\n")
+}
 
 # Load Database Performance Optimization
 # ========================================
@@ -570,9 +585,11 @@ if (!database_connection_loaded) {
         }
       }
       
-      # Fallback to CSV files - Railway deployable version first
+      # Fallback to CSV files - Railway deployable versions first
       csv_paths <- c(
-        "railway_data_10k.csv",  # 10k dataset that's included in git
+        "railway_data_50k.csv",  # 50k dataset (37MB) - best balance for Railway
+        "railway_medium_dataset.csv",  # 25k dataset optimized for Railway
+        "railway_data_10k.csv",  # 10k dataset that's included in git  
         "data_current/processed/production/lexml_unified_dataset.csv",
         "data_current/processed/production/lexml_enhanced_simple.csv",
         "data_current/processed/production/lexml_sample_for_railway.csv"
@@ -612,7 +629,12 @@ if (!database_connection_loaded) {
                                    date_start, date_end, sort_by, limit, offset, use_semantic_search))
         
       } else {
-        cat("⚠️ CSV file not found, using minimal fallback\n")
+        cat("⚠️ CSV file not found, checking file existence:\n")
+        for(path in csv_paths) {
+          exists <- file.exists(path)
+          cat(sprintf("  - %s: %s\n", path, if(exists) "EXISTS" else "NOT FOUND"))
+        }
+        cat("⚠️ Using minimal fallback\n")
       }
       
     }, error = function(e) {
