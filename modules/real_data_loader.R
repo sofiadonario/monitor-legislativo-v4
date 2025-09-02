@@ -15,9 +15,15 @@ load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
       if(use_cache && exists(".real_data_cache", envir = .GlobalEnv)) {
         data <- get(".real_data_cache", envir = .GlobalEnv)
       } else {
-        # Use data.table for faster loading
-        data <- data.table::fread("data_current/processed/production/lexml_unified_dataset.csv", 
-                                  encoding = "UTF-8")
+        # Use data.table for faster loading - with error handling
+        if(requireNamespace("data.table", quietly = TRUE)) {
+          data <- data.table::fread("data_current/processed/production/lexml_unified_dataset.csv", 
+                                    encoding = "UTF-8")
+        } else {
+          # Fallback to base R read.csv if data.table not available
+          data <- read.csv("data_current/processed/production/lexml_unified_dataset.csv", 
+                          stringsAsFactors = FALSE, encoding = "UTF-8")
+        }
         
         # Cache for performance
         if(use_cache) {

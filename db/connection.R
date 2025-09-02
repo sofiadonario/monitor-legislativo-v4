@@ -698,18 +698,18 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
 #' @return Data frame with sample documents
 get_fallback_documents <- function(category = "all", search_term = "", state = "all", limit = 999999) {
   log_secure_db("WARNING", "🚨 SECURE DATABASE CONNECTION UNAVAILABLE - Using CSV fallback dataset")
-  log_secure_db("INFO", "Attempting to load railway_data_50k.csv with 50,000 documents")
+  log_secure_db("INFO", "Attempting to load full dataset with 134,014 documents (corrected priority order)")
   
-  # Enhanced fallback hierarchy: Railway CSV -> Parquet -> Other CSV -> Minimal fallback
+  # Enhanced fallback hierarchy: Full Dataset -> Parquet -> Railway CSV -> Minimal fallback
   tryCatch({
-    # Priority 1: Railway 50k CSV (76MB, 50k documents)
+    # CORRECTED PRIORITY: Full dataset FIRST (134k documents), Railway fallback LAST
     csv_paths <- c(
-      "railway_data_50k.csv",  # 50k dataset (76MB) - best for Railway
-      "railway_medium_dataset.csv",  # 25k dataset optimized for Railway
-      "railway_data_10k.csv",  # 10k dataset 
+      "data_current/processed/production/lexml_unified_dataset.csv",  # Full 134k dataset (194MB) - PRIORITY 1
+      "data_current/processed/production/lexml_enhanced_simple.csv",  # Enhanced dataset
       "data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet",
-      "data_current/processed/production/lexml_unified_dataset.csv",
-      "data_current/processed/production/lexml_enhanced_simple.csv",
+      "railway_data_50k.csv",  # 50k dataset (73MB) - Railway fallback only
+      "railway_medium_dataset.csv",  # 25k dataset - fallback
+      "railway_data_10k.csv",  # 10k dataset - fallback
       "data_current/processed/production/lexml_sample_for_railway.csv"
     )
     
