@@ -2902,10 +2902,6 @@ server <- function(input, output, session) {
           )
         )
       }
-          # Administrative trend (growing)
-          rpois(length(months), lambda = 300) + seq_along(months) * 10
-        )
-      )
       
       # Create plotly visualization
       p <- plot_ly(trend_data, 
