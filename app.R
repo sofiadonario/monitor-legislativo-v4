@@ -304,20 +304,10 @@ if (!database_connection_loaded) {
   
   # Essential fallback functions with better error handling
   get_total_documents <<- function(filters = list()) { 
-    # Multi-tier fallback strategy
+    # Multi-tier fallback strategy - Full dataset first
     tryCatch({
-      # Tier 1: Check for Railway CSV files first (these are optimized for deployment)
-      if(file.exists("railway_data_50k.csv")) {
-        cat("📁 Using Railway 50k CSV dataset for document count\n")
-        return(50000)   # Railway 50k dataset
-      } else if(file.exists("railway_medium_dataset.csv")) {
-        cat("📁 Using Railway medium CSV dataset for document count\n") 
-        return(25000)   # Railway medium dataset
-      } else if(file.exists("railway_data_10k.csv")) {
-        cat("📁 Using Railway 10k CSV dataset for document count\n")
-        return(10000)   # Railway 10k dataset
-      # Tier 2: Check for full dataset sources (parquet preferred)  
-      } else if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
+      # Tier 1: Check for full dataset sources (parquet and CSV)  
+      if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
         cat("📁 Using parquet dataset for document count\n")
         return(134014)  # Full dataset in parquet format
       } else if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
@@ -326,6 +316,16 @@ if (!database_connection_loaded) {
       } else if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
         cat("📁 Using enhanced CSV dataset for document count\n")
         return(134014)  # Full dataset in CSV format
+      # Tier 2: Fallback to Railway CSV files (these are optimized for deployment)
+      } else if(file.exists("railway_data_50k.csv")) {
+        cat("📁 Using Railway 50k CSV dataset for document count\n")
+        return(50000)   # Railway 50k dataset
+      } else if(file.exists("railway_medium_dataset.csv")) {
+        cat("📁 Using Railway medium CSV dataset for document count\n") 
+        return(25000)   # Railway medium dataset
+      } else if(file.exists("railway_data_10k.csv")) {
+        cat("📁 Using Railway 10k CSV dataset for document count\n")
+        return(10000)   # Railway 10k dataset
       } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
         cat("📁 Using sample dataset for document count\n")
         return(20000)   # Sample size for Railway deployment
@@ -660,12 +660,12 @@ if (!database_connection_loaded) {
         }
       }
       
-      # Fallback to CSV files - Railway deployable versions first
+      # Fallback to CSV files - Full dataset first, then Railway-optimized versions
       csv_paths <- c(
-        "railway_data_50k.csv",  # 50k dataset (37MB) - best balance for Railway
+        "data_current/processed/production/lexml_unified_dataset.csv",  # Full 134k dataset (195MB)
+        "railway_data_50k.csv",  # 50k dataset (37MB) - Railway fallback
         "railway_medium_dataset.csv",  # 25k dataset optimized for Railway
         "railway_data_10k.csv",  # 10k dataset that's included in git  
-        "data_current/processed/production/lexml_unified_dataset.csv",
         "data_current/processed/production/lexml_enhanced_simple.csv",
         "data_current/processed/production/lexml_sample_for_railway.csv"
       )
@@ -1117,7 +1117,7 @@ ui <- function(request) {
             title = "📚 Brazilian Legislative Monitor - Sublibraries", status = "primary", solidHeader = TRUE, width = 12,
             # Simplified sublibrary display
             h4("📚 Brazilian Legislative Monitor - Complete Library"),
-            p("Browse all available documents across legislation, jurisprudence, and doctrine."),
+            p("Browse all 134k+ documents across legislation, jurisprudence, and doctrine."),
             p(strong("Categories available:"), "Federal and state legislation, court decisions, judicial precedents, legal opinions, and academic analysis."),
             hr()
           )
@@ -1669,7 +1669,7 @@ ui <- function(request) {
           div(class = "nlp-header",
             h2("🧠 Advanced Text Analytics Platform", style = "margin: 0;"),
             h4("Brazilian Legislative NLP Analysis System", style = "margin: 10px 0 0 0; opacity: 0.9;"),
-            p("Professional-grade text mining for Portuguese legal documents", 
+            p("Professional-grade text mining for 134,000+ Portuguese legal documents", 
               style = "margin: 5px 0 0 0; opacity: 0.8;")
           )
         ),
@@ -4224,7 +4224,7 @@ server <- function(input, output, session) {
   # Advanced Text Analytics & NLP outputs
   output$nlp_processed_docs <- renderValueBox({
     valueBox(
-      value = if(exists("get_total_documents")) format(get_total_documents(), big.mark = ",") else "50,000",
+      value = if(exists("get_total_documents")) format(get_total_documents(), big.mark = ",") else "134,014",
       subtitle = "Documents Available for NLP",
       icon = icon("file-text"),
       color = "blue"
@@ -4705,7 +4705,7 @@ server <- function(input, output, session) {
         column(6,
           div(class = "metric-card",
             h5("📚 Document Corpus"),
-            p(strong("50,000"), " total documents analyzed"),
+            p(strong("134,014"), " total documents analyzed"),
             p(strong("5,847"), " entities extracted"),
             p(strong("2,341"), " unique legal terms"),
             p(strong("89.5%"), " processing accuracy")
@@ -4901,7 +4901,7 @@ server <- function(input, output, session) {
       nlp_state$library_selection <- input$library_selected_docs
       updateSelectInput(session, "nlp_document_scope",
                        choices = c(
-                         list("All Documents (50k)" = "all",
+                         list("All Documents (134k)" = "all",
                               "Sample (5k)" = "sample_5k",
                               "Sample (1k)" = "sample_1k",
                               "Federal Legislation" = "federal",
