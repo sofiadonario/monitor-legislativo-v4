@@ -894,7 +894,6 @@ ui <- function(request) {
           menuItem("📚 Library", tabName = "library", icon = icon("book")),
           menuItem("📈 Advanced Analytics", tabName = "analytics", icon = icon("chart-area")),
           menuItem("🗺️ Geographic Analysis", tabName = "geographic", icon = icon("map-marked-alt")),
-          menuItem("🗺️ Interactive Maps", tabName = "maps", icon = icon("globe-americas")),
           menuItem("🏙️ São Paulo Analysis", tabName = "saopaulo", icon = icon("city")),
           menuItem("🧠 Text Analytics", tabName = "nlp", icon = icon("brain")),
           if(monitoring_system_loaded) {
@@ -1377,129 +1376,174 @@ ui <- function(request) {
         )
       ),
       
-      # Geographic Analysis Tab
+      # Unified Geographic Analysis Tab
       tabItem(tabName = "geographic",
+          # View Mode Toggle
+          fluidRow(
+            column(12,
+              div(style = "background: #f4f4f4; padding: 15px; margin-bottom: 20px; border-radius: 5px;",
+                fluidRow(
+                  column(8,
+                    h4(style = "margin: 0; color: #2c3e50;", "🗺️ Geographic Analysis"),
+                    p(style = "margin: 5px 0 0 0; color: #7f8c8d;", "Explore legislative activity distribution across Brazilian states")
+                  ),
+                  column(4,
+                    div(style = "text-align: right;",
+                      radioButtons("geo_view_mode", "View Mode:", 
+                        choices = list(
+                          "🔍 Simple View" = "simple",
+                          "⚙️ Advanced Analysis" = "advanced"
+                        ),
+                        selected = "simple",
+                        inline = TRUE
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          ),
+          
+          # Key Metrics
           fluidRow(
             valueBoxOutput("geo_total_states"),
             valueBoxOutput("geo_total_municipalities"), 
             valueBoxOutput("geo_most_active_state")
           ),
+          
           fluidRow(
             # Interactive Brazilian Map
             box(
-              title = "🗺️ Interactive Geographic Distribution", status = "primary", solidHeader = TRUE, width = 8,
-              plotlyOutput("geo_brazil_map", height = "500px")
+              title = "🗺️ Interactive Map", status = "primary", solidHeader = TRUE, width = 8,
+              div(style = "position: relative;",
+                # Help tooltip for map
+                div(style = "position: absolute; top: 5px; right: 15px; z-index: 1000;",
+                  tags$i(class = "fa fa-question-circle", 
+                    style = "color: #3c8dbc; cursor: help;",
+                    title = "Click on states to see details. Darker colors indicate more legislative activity."
+                  )
+                ),
+                plotlyOutput("geo_brazil_map", height = "500px")
+              )
             ),
-            # Geographic Controls
+            # Simplified Controls
             box(
-              title = "🎛️ Geographic Analysis Controls", status = "info", solidHeader = TRUE, width = 4,
-              selectInput("geo_analysis_metric", "Analysis Metric:",
-                choices = list(
-                  "Document Count" = "count",
-                  "Documents per Capita" = "per_capita",
-                  "Regulatory Density" = "density",
-                  "Activity Index" = "activity"
-                ),
-                selected = "count"
+              title = "🎛️ Map Settings", status = "info", solidHeader = TRUE, width = 4,
+              
+              # Simple Mode Controls
+              conditionalPanel(
+                condition = "input.geo_view_mode == 'simple'",
+                div(
+                  h5(style = "color: #2c3e50;", "What to Show:"),
+                  selectInput("geo_analysis_metric", NULL,
+                    choices = list(
+                      "📊 Total Documents" = "count",
+                      "👥 Documents per Person" = "per_capita",
+                      "📈 Activity Level" = "activity"
+                    ),
+                    selected = "count"
+                  ),
+                  br(),
+                  div(style = "background: #e3f2fd; padding: 10px; border-radius: 5px;",
+                    h6(style = "margin: 0 0 5px 0; color: #1976d2;", "💡 Quick Guide:"),
+                    tags$ul(style = "margin: 0; padding-left: 20px; color: #424242;",
+                      tags$li("Hover over states for details"),
+                      tags$li("Darker colors = more activity"),
+                      tags$li("Switch to Advanced for more options")
+                    )
+                  )
+                )
               ),
-              selectInput("geo_category_filter", "Document Category:",
-                choices = list(
-                  "All Documents" = "all",
-                  "Legislation" = "legislation",
-                  "Jurisprudence" = "jurisprudence",
-                  "Doctrine" = "doctrine"
-                ),
-                selected = "all"
-              ),
-              selectInput("geo_time_filter", "Time Period:",
-                choices = list(
-                  "All Years" = "all",
-                  "Last 5 Years" = "recent",
-                  "2020-2025" = "2020_2025",
-                  "2015-2019" = "2015_2019",
-                  "2010-2014" = "2010_2014"
-                ),
-                selected = "all"
-              ),
-              br(),
-              h5("📈 Analysis Features:"),
-              tags$ul(
-                tags$li("State-by-state distribution"),
-                tags$li("Regional comparative analysis"),
-                tags$li("Population-adjusted metrics"),
-                tags$li("Temporal geographic trends")
+              
+              # Advanced Mode Controls
+              conditionalPanel(
+                condition = "input.geo_view_mode == 'advanced'",
+                div(
+                  div(style = "position: relative;",
+                    selectInput("geo_analysis_metric", "Analysis Metric:",
+                      choices = list(
+                        "Document Count" = "count",
+                        "Documents per Capita" = "per_capita",
+                        "Regulatory Density" = "density",
+                        "Activity Index" = "activity"
+                      ),
+                      selected = "count"
+                    ),
+                    tags$small(style = "color: #666; font-style: italic;",
+                      "Choose how to measure legislative activity across states"
+                    )
+                  ),
+                  br(),
+                  div(style = "position: relative;",
+                    selectInput("geo_category_filter", "Document Category:",
+                      choices = list(
+                        "All Documents" = "all",
+                        "Legislation" = "legislation",
+                        "Jurisprudence" = "jurisprudence",
+                        "Doctrine" = "doctrine"
+                      ),
+                      selected = "all"
+                    ),
+                    tags$small(style = "color: #666; font-style: italic;",
+                      "Filter by type of legal document"
+                    )
+                  ),
+                  br(),
+                  div(style = "position: relative;",
+                    selectInput("geo_time_filter", "Time Period:",
+                      choices = list(
+                        "All Years" = "all",
+                        "Last 5 Years" = "recent",
+                        "2020-2025" = "2020_2025",
+                        "2015-2019" = "2015_2019",
+                        "2010-2014" = "2010_2014"
+                      ),
+                      selected = "all"
+                    ),
+                    tags$small(style = "color: #666; font-style: italic;",
+                      "Focus analysis on specific time periods"
+                    )
+                  ),
+                  br(),
+                  div(style = "background: #f8f9fa; padding: 10px; border-left: 4px solid #007bff; margin-top: 15px;",
+                    h6(style = "margin: 0 0 5px 0; color: #007bff;", "📊 Metric Explanations:"),
+                    tags$ul(style = "font-size: 11px; margin: 0; color: #495057;",
+                      tags$li(tags$b("Document Count:"), " Total legislative documents per state"),
+                      tags$li(tags$b("Per Capita:"), " Documents adjusted for state population"),
+                      tags$li(tags$b("Regulatory Density:"), " Legislative activity intensity"),
+                      tags$li(tags$b("Activity Index:"), " Composite activity score (0-100)")
+                    )
+                  )
+                )
               )
             )
           ),
-          fluidRow(
-            # State Ranking Table
-            box(
-              title = "🏆 State Rankings", status = "success", solidHeader = TRUE, width = 6,
-              DT::dataTableOutput("geo_state_rankings")
+          
+          # Additional Analysis (shown only in Advanced mode)
+          conditionalPanel(
+            condition = "input.geo_view_mode == 'advanced'",
+            fluidRow(
+              # State Ranking Table
+              box(
+                title = "🏆 State Rankings", status = "success", solidHeader = TRUE, width = 6,
+                DT::dataTableOutput("geo_state_rankings")
+              ),
+              # Regional Analysis
+              box(
+                title = "🌎 Regional Analysis", status = "warning", solidHeader = TRUE, width = 6,
+                plotlyOutput("geo_regional_analysis")
+              )
             ),
-            # Regional Analysis
-            box(
-              title = "🌎 Regional Analysis", status = "warning", solidHeader = TRUE, width = 6,
-              plotlyOutput("geo_regional_analysis")
-            )
-          ),
-          fluidRow(
-            # Geographic Trends Over Time
-            box(
-              title = "📅 Geographic Trends Over Time", status = "info", solidHeader = TRUE, width = 12,
-              plotlyOutput("geo_temporal_trends", height = "400px")
+            fluidRow(
+              # Geographic Trends Over Time
+              box(
+                title = "📅 Geographic Trends Over Time", status = "info", solidHeader = TRUE, width = 12,
+                plotlyOutput("geo_temporal_trends", height = "400px")
+              )
             )
           )
       ),
         
-      # Interactive Maps Tab - Using Module or Simple Integration or Inline Fallback
-      if (exists("mapUI", mode = "function")) {
-        mapUI("maps_module")
-      } else if (exists("create_maps_tab_ui", mode = "function")) {
-        create_maps_tab_ui()
-      } else if (exists("create_inline_maps_ui", mode = "function")) {
-        create_inline_maps_ui()
-      } else {
-        # Detailed error display
-        tabItem(tabName = "maps",
-          fluidRow(
-            box(
-              title = "🗺️ Interactive Maps Dashboard", status = "warning", solidHeader = TRUE, width = 12,
-              h4("Map module not loaded. Debugging information:"),
-              tags$ul(
-                tags$li(paste("mapUI exists:", exists("mapUI", mode = "function"))),
-                tags$li(paste("mapServer exists:", exists("mapServer", mode = "function"))),
-                tags$li(paste("create_maps_tab_ui exists:", exists("create_maps_tab_ui", mode = "function"))),
-                tags$li(paste("create_inline_maps_ui exists:", exists("create_inline_maps_ui", mode = "function"))),
-                tags$li(paste("SIMPLE_MAP_UI_AVAILABLE:", exists("SIMPLE_MAP_UI_AVAILABLE") && isTRUE(SIMPLE_MAP_UI_AVAILABLE))),
-                tags$li(paste("INLINE_MAPS_AVAILABLE:", exists("INLINE_MAPS_AVAILABLE") && isTRUE(INLINE_MAPS_AVAILABLE))),
-                tags$li(paste("brazil_states data loaded:", exists("brazil_states"))),
-                tags$li(paste("clean_map_data function:", exists("clean_map_data", mode = "function")))
-              ),
-              if (exists("MAP_MODULE_STATUS")) {
-                tagList(
-                  h5("Module Loading Status:"),
-                  tags$ul(
-                    tags$li(paste("Module loaded:", MAP_MODULE_STATUS$module_loaded)),
-                    tags$li(paste("Simple loaded:", MAP_MODULE_STATUS$simple_loaded)),
-                    if (length(MAP_MODULE_STATUS$error_messages) > 0) {
-                      tags$li("Errors:", tags$ul(
-                        lapply(MAP_MODULE_STATUS$error_messages, function(msg) tags$li(msg))
-                      ))
-                    }
-                  )
-                )
-              } else {
-                p("MAP_MODULE_STATUS not available")
-              },
-              hr(),
-              p("Working directory:", getwd()),
-              p("Files in modules/maps/:", 
-                paste(list.files("modules/maps/", pattern = "\\.R$"), collapse = ", "))
-            )
-          )
-        )
-      },
         
       # Enhanced São Paulo State Analysis Tab
       if (sp_system_loaded && exists("enhanced_sao_paulo_tab")) {
