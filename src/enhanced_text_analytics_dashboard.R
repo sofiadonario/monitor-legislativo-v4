@@ -180,10 +180,10 @@ create_analytics_overview_tab <- function() {
         height = 400,
         div(class = "progress-container",
           h4("Current Analysis Pipeline Status"),
-          progressBar(id = "preprocessing_progress", value = 0, title = "Text Preprocessing", status = "info"),
-          progressBar(id = "entity_progress", value = 0, title = "Entity Recognition", status = "warning"),
-          progressBar(id = "sentiment_progress", value = 0, title = "Sentiment Analysis", status = "success"),
-          progressBar(id = "topic_progress", value = 0, title = "Topic Modeling", status = "primary"),
+          progressBar(id = "preprocessing_progress", value = 0, title = "Text Preprocessing"),
+          progressBar(id = "entity_progress", value = 0, title = "Entity Recognition"),
+          progressBar(id = "sentiment_progress", value = 0, title = "Sentiment Analysis"),
+          progressBar(id = "topic_progress", value = 0, title = "Topic Modeling"),
           br(),
           verbatimTextOutput("processing_log_overview")
         )
