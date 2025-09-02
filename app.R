@@ -663,6 +663,68 @@ if (!database_connection_loaded) {
   get_library_documents <<- function(category = "all", search_term = "", state = "all", 
                                    date_start = NULL, date_end = NULL, sort_by = "date_desc", 
                                    limit = 999999, offset = 0, use_semantic_search = TRUE) {
+    # PRIORITY 1: Use Real Data System (134k documents)
+    if(real_data_system_loaded) {
+      cat("🚀 Using Real Data System (134k+ documents)\n")
+      
+      # Load full real dataset
+      real_data <- load_real_legislative_data(limit = NULL, use_cache = TRUE)
+      
+      if(!is.null(real_data) && nrow(real_data) > 0) {
+        cat("✅ Real Data System loaded:", nrow(real_data), "documents\n")
+        
+        # Apply filters using real data system
+        filtered_data <- real_data
+        
+        # Apply category filter
+        if(category != "all") {
+          filtered_data <- filtered_data %>% 
+            filter(grepl(category, categoria, ignore.case = TRUE))
+        }
+        
+        # Apply search filter
+        if(search_term != "" && !is.null(search_term)) {
+          filtered_data <- filtered_data %>%
+            filter(grepl(search_term, paste(titulo, assunto, texto), ignore.case = TRUE))
+        }
+        
+        # Apply state filter
+        if(state != "all") {
+          filtered_data <- filtered_data %>%
+            filter(grepl(state, estado, ignore.case = TRUE))
+        }
+        
+        # Apply date filters
+        if(!is.null(date_start) || !is.null(date_end)) {
+          filtered_data$date_parsed <- as.Date(filtered_data$data, format = "%Y-%m-%d")
+          if(!is.null(date_start)) {
+            filtered_data <- filtered_data %>% filter(date_parsed >= as.Date(date_start))
+          }
+          if(!is.null(date_end)) {
+            filtered_data <- filtered_data %>% filter(date_parsed <= as.Date(date_end))
+          }
+        }
+        
+        # Apply sorting
+        if(sort_by == "date_desc") {
+          filtered_data$date_parsed <- as.Date(filtered_data$data, format = "%Y-%m-%d")
+          filtered_data <- filtered_data %>% arrange(desc(date_parsed))
+        }
+        
+        # Apply limit and offset
+        total_rows <- nrow(filtered_data)
+        if(offset > 0) {
+          filtered_data <- filtered_data %>% slice((offset + 1):n())
+        }
+        if(limit < nrow(filtered_data)) {
+          filtered_data <- filtered_data %>% slice(1:limit)
+        }
+        
+        cat("📊 Filtered results:", nrow(filtered_data), "out of", total_rows, "total documents\n")
+        return(filtered_data)
+      }
+    }
+    
     # Enhanced fallback hierarchy: Database -> Parquet -> Full CSV -> Sample CSV -> Minimal
     tryCatch({
       # Try parquet file first (best fallback for full dataset)
