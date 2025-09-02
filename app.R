@@ -1117,7 +1117,7 @@ ui <- function(request) {
             title = "📚 Brazilian Legislative Monitor - Sublibraries", status = "primary", solidHeader = TRUE, width = 12,
             # Simplified sublibrary display
             h4("📚 Brazilian Legislative Monitor - Complete Library"),
-            p("Browse all 134k+ documents across legislation, jurisprudence, and doctrine."),
+            p("Browse all available documents across legislation, jurisprudence, and doctrine."),
             p(strong("Categories available:"), "Federal and state legislation, court decisions, judicial precedents, legal opinions, and academic analysis."),
             hr()
           )
@@ -1252,7 +1252,7 @@ ui <- function(request) {
                     style = "text-align: center; color: white; padding: 20px;",
                     h4("🚀 Progressive Choropleth Visualization", style = "color: white; margin-bottom: 15px;"),
                     p("Enhanced geographic visualization with Brazilian state boundaries and WebGL acceleration"),
-                    p("📊 Optimized for 134k+ documents with smart sampling and real-time interactivity"),
+                    p("📊 Optimized for large datasets with smart sampling and real-time interactivity"),
                     br(),
                     actionButton("load_progressive_geo", "Load Progressive Map", 
                                class = "btn-warning btn-lg",
@@ -1669,7 +1669,7 @@ ui <- function(request) {
           div(class = "nlp-header",
             h2("🧠 Advanced Text Analytics Platform", style = "margin: 0;"),
             h4("Brazilian Legislative NLP Analysis System", style = "margin: 10px 0 0 0; opacity: 0.9;"),
-            p("Professional-grade text mining for 134,000+ Portuguese legal documents", 
+            p("Professional-grade text mining for Portuguese legal documents", 
               style = "margin: 5px 0 0 0; opacity: 0.8;")
           )
         ),
@@ -1787,7 +1787,7 @@ ui <- function(request) {
                   column(4,
                     selectInput("nlp_document_scope", "Document Scope:",
                       choices = list(
-                        "All Documents (134k)" = "all",
+                        "All Documents" = "all",
                         "Sample (5k)" = "sample_5k",
                         "Sample (1k)" = "sample_1k",
                         "Federal Legislation" = "federal",
@@ -4224,7 +4224,7 @@ server <- function(input, output, session) {
   # Advanced Text Analytics & NLP outputs
   output$nlp_processed_docs <- renderValueBox({
     valueBox(
-      value = "134,014",
+      value = if(exists("get_total_documents")) format(get_total_documents(), big.mark = ",") else "50,000",
       subtitle = "Documents Available for NLP",
       icon = icon("file-text"),
       color = "blue"
@@ -4705,7 +4705,7 @@ server <- function(input, output, session) {
         column(6,
           div(class = "metric-card",
             h5("📚 Document Corpus"),
-            p(strong("134,014"), " total documents analyzed"),
+            p(strong("50,000"), " total documents analyzed"),
             p(strong("5,847"), " entities extracted"),
             p(strong("2,341"), " unique legal terms"),
             p(strong("89.5%"), " processing accuracy")
@@ -4901,7 +4901,7 @@ server <- function(input, output, session) {
       nlp_state$library_selection <- input$library_selected_docs
       updateSelectInput(session, "nlp_document_scope",
                        choices = c(
-                         list("All Documents (134k)" = "all",
+                         list("All Documents (50k)" = "all",
                               "Sample (5k)" = "sample_5k",
                               "Sample (1k)" = "sample_1k",
                               "Federal Legislation" = "federal",
