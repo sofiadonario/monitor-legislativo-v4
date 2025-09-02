@@ -2042,7 +2042,7 @@ server <- function(input, output, session) {
         last_check = Sys.time()
       )
       
-      cat("🔄 Data status check:", status$database_connected, status$get_library_docs_available, "\n")
+      # Debug: Data status check removed to reduce log noise
       return(status)
     })
     
