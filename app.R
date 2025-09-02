@@ -1022,7 +1022,7 @@ ui <- function(request) {
                   div(class = "progress progress-sm", 
                     div(class = "progress-bar bg-success", style = "width: 94%", "94%")
                   ),
-                  small("Document metadata coverage")
+                  tags$small("Document metadata coverage")
                 )
               ),
               column(3,
@@ -1031,7 +1031,7 @@ ui <- function(request) {
                   div(class = "progress progress-sm",
                     div(class = "progress-bar bg-info", style = "width: 87%", "87%")
                   ),
-                  small("Data freshness score")
+                  tags$small("Data freshness score")
                 )
               ),
               column(3,
@@ -1040,7 +1040,7 @@ ui <- function(request) {
                   div(class = "progress progress-sm",
                     div(class = "progress-bar bg-warning", style = "width: 91%", "91%")
                   ),
-                  small("Validation success rate")
+                  tags$small("Validation success rate")
                 )
               ),
               column(3,
@@ -1049,7 +1049,7 @@ ui <- function(request) {
                   div(class = "progress progress-sm",
                     div(class = "progress-bar bg-primary", style = "width: 96%", "96%")
                   ),
-                  small("Geographic coverage")
+                  tags$small("Geographic coverage")
                 )
               )
             ),

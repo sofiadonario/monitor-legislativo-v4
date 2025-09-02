@@ -296,7 +296,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
     div(
       h5(summary_text, style = "color: #2c3e50; margin-bottom: 5px;"),
       if (values$performance_metrics$last_search_time > 0) {
-        small(
+        tags$small(
           sprintf("Search completed in %dms", round(values$performance_metrics$last_search_time)),
           style = "color: #27ae60;"
         )

@@ -580,7 +580,7 @@ monitoring_server <- function(id) {
             br(),
             alert$message,
             br(),
-            small(format(alert$timestamp, "%Y-%m-%d %H:%M:%S"))
+            tags$small(format(alert$timestamp, "%Y-%m-%d %H:%M:%S"))
           )
         )
       })
