@@ -1887,12 +1887,12 @@ ui <- function(request) {
               
               h5("Overall Progress:", style = "margin-bottom: 10px;"),
               progressBar(id = "nlp_overall_progress", value = 0, 
-                         title = "Analysis Progress", status = "info"),
+                         title = "Analysis Progress"),
               br(),
               
               h5("Stage Progress:", style = "margin-bottom: 10px;"),
               progressBar(id = "nlp_stage_progress", value = 0, 
-                         title = "Current Stage", status = "primary"),
+                         title = "Current Stage"),
               br(),
               
               verbatimTextOutput("nlp_processing_log", placeholder = TRUE)
