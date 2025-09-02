@@ -3406,8 +3406,22 @@ server <- function(input, output, session) {
   })
   
   output$lib_database_status <- renderValueBox({
-    # Enhanced database status checking
+    # Enhanced status checking - prioritize real data system
     status_info <- tryCatch({
+      # Check Real Data System first (more reliable)
+      if (real_data_system_loaded) {
+        data <- load_real_legislative_data(limit = 10, use_cache = TRUE)
+        if (!is.null(data) && nrow(data) > 0) {
+          return(list(
+            connected = TRUE,
+            method = "real_data_system",
+            message = "Real Data System Active",
+            source = "134k+ documents from ./data_current"
+          ))
+        }
+      }
+      
+      # Fallback to database status check
       if (database_connection_loaded && exists("get_connection_status")) {
         status <- get_connection_status()
         list(
@@ -3432,9 +3446,15 @@ server <- function(input, output, session) {
     
     # Determine display values based on connection status
     if (status_info$connected) {
-      status_text <- "CONNECTED"
-      status_color <- "green"
-      status_icon <- icon("database")
+      if (status_info$method == "real_data_system") {
+        status_text <- "REAL DATA"
+        status_color <- "green"
+        status_icon <- icon("check-circle")
+      } else {
+        status_text <- "DATABASE"
+        status_color <- "green" 
+        status_icon <- icon("database")
+      }
     } else if (status_info$method == "fallback_mode") {
       status_text <- "FALLBACK"
       status_color <- "yellow"
