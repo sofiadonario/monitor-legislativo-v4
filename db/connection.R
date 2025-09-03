@@ -504,7 +504,7 @@ get_connection_status <- function() {
 #' @param filters Optional filters list
 #' @return Integer document count
 get_total_documents <- function(filters = list()) {
-  if (connection_status$status == "connected" && connection_status$is_secure) {
+  if (connection_status$status == "connected") {
     return(get_secure_document_count())
   } else {
     log_secure_db("INFO", "Using CSV fallback document count (secure database not connected)")
@@ -552,7 +552,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
                                  date_start = NULL, date_end = NULL, sort_by = "date_desc", 
                                  limit = 999999, offset = 0) {
   
-  if (is.null(secure_db_pool) || connection_status$status != "connected" || !connection_status$is_secure) {
+  if (is.null(secure_db_pool) || connection_status$status != "connected") {
     log_secure_db("WARNING", "Secure database not connected, using fallback data")
     return(get_fallback_documents(category, search_term, state, limit))
   }
