@@ -29,7 +29,8 @@
       "mcp__filesystem__edit_file",
       "Bash(sed:*)",
       "Bash(R:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []
