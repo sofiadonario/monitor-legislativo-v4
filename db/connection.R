@@ -80,66 +80,63 @@ parse_database_url <- function(database_url) {
   }
   
   tryCatch({
-    # Parse PostgreSQL URL format: postgresql://user:password@host:port/dbname
-    if (!grepl("^postgresql://", database_url)) {
-      cat("⚠️ DATABASE_URL does not start with postgresql://\n")
+    # Support both postgres:// and postgresql:// schemes
+    if (!grepl("^postgres(?:ql)?://", database_url)) {
+      cat("⚠️ DATABASE_URL does not start with postgres:// or postgresql://\n")
       return(NULL)
     }
     
     # Remove protocol
-    url_without_protocol <- sub("^postgresql://", "", database_url)
+    url_without_protocol <- sub("^postgres(?:ql)?://", "", database_url)
     
-    # Split auth and connection parts
-    url_parts <- strsplit(url_without_protocol, "@")[[1]]
-    if (length(url_parts) != 2) {
+    # Split at the LAST '@' to tolerate '@' in passwords (rare but possible if encoded)
+    at_pos <- regexpr("@(?=[^@]*$)", url_without_protocol, perl = TRUE)
+    if (at_pos[1] == -1) {
       cat("⚠️ Invalid DATABASE_URL format: missing @ separator\n")
       return(NULL)
     }
+    auth_part <- substr(url_without_protocol, 1, at_pos[1] - 1)
+    connection_part <- substr(url_without_protocol, at_pos[1] + 1, nchar(url_without_protocol))
     
-    auth_part <- url_parts[1]
-    connection_part <- url_parts[2]
-    
-    # Parse auth (user:password)
-    auth_split <- strsplit(auth_part, ":")[[1]]
-    if (length(auth_split) != 2) {
+    # Parse auth: split only on the FIRST ':' to allow ':' inside password
+    colon_pos <- regexpr(":", auth_part, fixed = TRUE)
+    if (colon_pos[1] == -1) {
       cat("⚠️ Invalid DATABASE_URL format: missing user:password\n")
       return(NULL)
     }
+    user <- substr(auth_part, 1, colon_pos[1] - 1)
+    password <- substr(auth_part, colon_pos[1] + 1, nchar(auth_part))
     
-    user <- auth_split[1]
-    password <- auth_split[2]
+    # Separate any query string from the path (e.g., ?sslmode=require)
+    question_pos <- regexpr("\\?", connection_part)
+    query <- NULL
+    if (question_pos[1] != -1) {
+      query <- substr(connection_part, question_pos[1] + 1, nchar(connection_part))
+      connection_part <- substr(connection_part, 1, question_pos[1] - 1)
+    }
     
-    # Parse connection (host:port/dbname)
-    if (grepl("/", connection_part)) {
-      host_port_db <- strsplit(connection_part, "/")[[1]]
-      if (length(host_port_db) != 2) {
-        cat("⚠️ Invalid DATABASE_URL format: incorrect host:port/database\n")
-        return(NULL)
-      }
-      
-      host_port <- host_port_db[1]
-      dbname <- host_port_db[2]
-    } else {
-      cat("⚠️ Invalid DATABASE_URL format: missing database name\n")
+    # Parse connection (host[:port]/dbname)
+    if (!grepl("/", connection_part, fixed = TRUE)) {
+      cat("⚠️ Invalid DATABASE_URL format: missing /database name\n")
       return(NULL)
     }
+    host_port <- sub("/.*$", "", connection_part)
+    dbname <- sub("^[^/]+/", "", connection_part)
     
-    # Parse host:port
-    if (grepl(":", host_port)) {
-      host_port_split <- strsplit(host_port, ":")[[1]]
-      if (length(host_port_split) != 2) {
-        cat("⚠️ Invalid DATABASE_URL format: incorrect host:port\n")
-        return(NULL)
-      }
-      
-      host <- host_port_split[1]
-      port <- as.integer(host_port_split[2])
+    # Strip any remaining query params from dbname just in case
+    dbname <- sub("\\?.*$", "", dbname)
+    
+    # Port is optional
+    if (grepl(":", host_port, fixed = TRUE)) {
+      # Split at the LAST ':' to tolerate IPv6 (not typical here, but safer)
+      last_colon <- regexpr(":(?=[^:]*$)", host_port, perl = TRUE)
+      host <- substr(host_port, 1, last_colon[1] - 1)
+      port <- as.integer(substr(host_port, last_colon[1] + 1, nchar(host_port)))
     } else {
       host <- host_port
-      port <- 5432L  # Default PostgreSQL port
+      port <- 5432L
     }
     
-    # Validate port is numeric
     if (is.na(port) || port <= 0 || port > 65535) {
       cat("⚠️ Invalid port number in DATABASE_URL\n")
       return(NULL)
@@ -152,7 +149,8 @@ parse_database_url <- function(database_url) {
       port = port,
       dbname = dbname,
       user = user,
-      password = password
+      password = password,
+      query = query
     ))
     
   }, error = function(e) {
@@ -676,12 +674,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     
     log_secure_db("SUCCESS", sprintf("Retrieved %d documents from secure database", nrow(result)))
     
-    # Check if database returned insufficient results - if so, fallback to CSV
-    if(nrow(result) < 100 && category == "all" && search_term == "" && state == "all") {
-      log_secure_db("WARNING", sprintf("Database returned only %d documents for unrestricted query - falling back to CSV", nrow(result)))
-      return(get_fallback_documents(category, search_term, state, limit))
-    }
-    
+    # Do not fallback based on small result sizes; only on connection/query errors
     return(result)
     
   }, error = function(e) {
