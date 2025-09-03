@@ -670,12 +670,30 @@ if (!database_connection_loaded) {
         if(exists(".real_data_cache", envir = .GlobalEnv)) {
           data <- get(".real_data_cache", envir = .GlobalEnv)
           cat("✅ Using cached real data:", nrow(data), "documents\n")
-          data
-        } else {
-          load_real_legislative_data(limit = NULL, use_cache = TRUE)
+          return(data)
         }
+        
+        # Set a reasonable timeout for data loading
+        cat("📊 Loading real data (this may take a moment)...\n")
+        # Use R.utils::withTimeout if available, otherwise set a simple limit
+        if(requireNamespace("R.utils", quietly = TRUE)) {
+          data <- R.utils::withTimeout({
+            load_real_legislative_data(limit = NULL, use_cache = TRUE)  
+          }, timeout = 30)  # 30 second timeout
+        } else {
+          # Fallback: just load without timeout
+          data <- load_real_legislative_data(limit = NULL, use_cache = TRUE)
+        }
+        
+        if(is.null(data)) {
+          cat("⚠️ Real data loading returned NULL, falling back to CSV\n")
+          return(NULL)
+        }
+        
+        data
       }, error = function(e) {
         cat("⚠️ Real Data System timeout/error:", e$message, "\n")
+        cat("   Falling back to CSV loading system\n")
         NULL
       })
       
@@ -687,20 +705,44 @@ if (!database_connection_loaded) {
         
         # Apply category filter
         if(category != "all") {
-          filtered_data <- filtered_data %>% 
-            filter(grepl(category, categoria, ignore.case = TRUE))
+          if(requireNamespace("dplyr", quietly = TRUE)) {
+            filtered_data <- filtered_data %>% 
+              filter(grepl(category, categoria, ignore.case = TRUE))
+          } else {
+            # Base R fallback for filtering
+            if("categoria" %in% names(filtered_data)) {
+              filtered_data <- filtered_data[grepl(category, filtered_data$categoria, ignore.case = TRUE), ]
+            }
+          }
         }
         
         # Apply search filter
         if(search_term != "" && !is.null(search_term)) {
-          filtered_data <- filtered_data %>%
-            filter(grepl(search_term, paste(titulo, assunto, texto), ignore.case = TRUE))
+          if(requireNamespace("dplyr", quietly = TRUE)) {
+            filtered_data <- filtered_data %>%
+              filter(grepl(search_term, paste(titulo, assunto, texto), ignore.case = TRUE))
+          } else {
+            # Base R fallback for search filtering
+            search_cols <- c("titulo", "assunto", "texto", "ementa")
+            available_cols <- search_cols[search_cols %in% names(filtered_data)]
+            if(length(available_cols) > 0) {
+              search_text <- do.call(paste, c(filtered_data[available_cols], sep = " "))
+              filtered_data <- filtered_data[grepl(search_term, search_text, ignore.case = TRUE), ]
+            }
+          }
         }
         
         # Apply state filter
         if(state != "all") {
-          filtered_data <- filtered_data %>%
-            filter(grepl(state, estado, ignore.case = TRUE))
+          if(requireNamespace("dplyr", quietly = TRUE)) {
+            filtered_data <- filtered_data %>%
+              filter(grepl(state, estado, ignore.case = TRUE))
+          } else {
+            # Base R fallback for state filtering
+            if("estado" %in% names(filtered_data)) {
+              filtered_data <- filtered_data[grepl(state, filtered_data$estado, ignore.case = TRUE), ]
+            }
+          }
         }
         
         # Apply date filters

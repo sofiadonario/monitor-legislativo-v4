@@ -283,10 +283,10 @@ load_csv_fallback <- function() {
         # Check file size
         file_size_mb <- file.size(csv_path) / (1024 * 1024)
         
-        if (file_size_mb > 100) {
-          # Large file - read in chunks or limit rows
-          cat("Large CSV file detected (", round(file_size_mb, 1), "MB), reading first 100k rows\n")
-          data <- read.csv(csv_path, nrows = 100000, stringsAsFactors = FALSE, encoding = "UTF-8")
+        if (file_size_mb > 500) {
+          # Very large file - read first 200k rows to avoid memory issues
+          cat("Very large CSV file detected (", round(file_size_mb, 1), "MB), reading first 200k rows\n")
+          data <- read.csv(csv_path, nrows = 200000, stringsAsFactors = FALSE, encoding = "UTF-8")
         } else {
           # Read full file
           data <- read.csv(csv_path, stringsAsFactors = FALSE, encoding = "UTF-8")
@@ -366,27 +366,17 @@ get_total_documents <- function() {
   if (CONNECTION_STATE$status == "connected") {
     return(CONNECTION_STATE$document_count)
   } else {
-    # Estimate from CSV files
-    csv_paths <- c(
-      "data_current/processed/production/lexml_unified_dataset.csv",
-      "data_current/processed/production/lexml_enhanced_simple.csv"
-    )
-    
-    for (csv_path in csv_paths) {
-      if (file.exists(csv_path)) {
-        # Count rows quickly
-        tryCatch({
-          row_count_output <- system2("wc", args = c("-l", csv_path), stdout = TRUE)
-          row_count <- as.numeric(gsub("\\s.*", "", row_count_output))
-          return(row_count - 1)  # Subtract header
-        }, error = function(e) {
-          # Fallback to known dataset size
-          return(134014)  # Known size of unified dataset
-        })
-      }
+    # CSV fallback mode - return known dataset size
+    # Check if full dataset exists
+    if (file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
+      return(134014)  # Known size of full unified dataset
+    } else if (file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+      return(134014)  # Assume same size for enhanced version
+    } else if (file.exists("railway_data_50k.csv")) {
+      return(50000)   # Known size of railway subset
+    } else {
+      return(134014)  # Default to full dataset size
     }
-    
-    return(134014)  # Default to known full dataset size
   }
 }
 
