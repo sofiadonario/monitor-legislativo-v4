@@ -115,6 +115,14 @@ tryCatch({
 tryCatch({
   source("scripts/R/geospatial_utils.R")
   source("scripts/R/choropleth_generator.R")
+  # Geographic enhancements (GeoJSON handler, optimization, enhanced UI)
+  if (file.exists("modules/geographic/app_integration.R")) {
+    tryCatch({
+      source("modules/geographic/app_integration.R")
+    }, error = function(e) {
+      cat("⚠️ Failed to load geographic enhancements:", e$message, "\n")
+    })
+  }
   cat("✅ Geospatial utilities loaded successfully\n")
 
 # Load Enhanced Visualization System
@@ -753,14 +761,14 @@ if (!database_connection_loaded) {
         }
       }
       
-      # Fallback to CSV files - Full dataset first, then Railway-optimized versions
+      # Fallback to CSV files - CORRECTED PRIORITY: Full dataset first, Railway files last
       csv_paths <- c(
-        "data_current/processed/production/lexml_unified_dataset.csv",  # Full 134k dataset (195MB)
-        "railway_data_50k.csv",  # 50k dataset (37MB) - Railway fallback
-        "railway_medium_dataset.csv",  # 25k dataset optimized for Railway
-        "railway_data_10k.csv",  # 10k dataset that's included in git  
-        "data_current/processed/production/lexml_enhanced_simple.csv",
-        "data_current/processed/production/lexml_sample_for_railway.csv"
+        "data_current/processed/production/lexml_unified_dataset.csv",  # Full 134k dataset (195MB) - PRIORITY 1
+        "data_current/processed/production/lexml_enhanced_simple.csv",  # Enhanced dataset - PRIORITY 2
+        "data_current/processed/production/lexml_sample_for_railway.csv",  # Sample dataset - PRIORITY 3
+        "railway_data_50k.csv",  # 50k dataset (37MB) - Railway fallback only
+        "railway_medium_dataset.csv",  # 25k dataset - Railway fallback only
+        "railway_data_10k.csv"  # 10k dataset - Railway fallback only
       )
       
       csv_path <- NULL
@@ -1470,7 +1478,7 @@ ui <- function(request) {
       ),
       
       # Unified Geographic Analysis Tab
-      tabItem(tabName = "geographic",
+      if (exists("enhanced_geographic_tab_item")) enhanced_geographic_tab_item else tabItem(tabName = "geographic",
           # View Mode Toggle
           fluidRow(
             column(12,
@@ -2135,6 +2143,10 @@ server <- function(input, output, session) {
         
         incProgress(0.6, detail = "Generating choropleth...")
         
+        # Respect WebGL toggle by updating progressive config at runtime
+        if (exists("PROGRESSIVE_CONFIG")) {
+          PROGRESSIVE_CONFIG$visualization$use_webgl <<- isTRUE(use_webgl)
+        }
         map_result <- create_progressive_choropleth(
           connection = if(exists("connection")) connection else NULL,
           sample_size = sample_size,
@@ -2157,6 +2169,26 @@ server <- function(input, output, session) {
     }
   })
   
+  # Enhanced Geographic Server Integration
+  if (exists("enhanced_geographic_server")) {
+    # Try to get an existing pool if available
+    pool_for_geo <- NULL
+    if (exists("create_secure_connection_pool") && exists("DB_CONFIG")) {
+      # Avoid creating a new pool if one already exists in scope
+      pool_for_geo <- tryCatch({ get("pool", inherits = TRUE) }, error = function(e) NULL)
+      if (is.null(pool_for_geo)) {
+        pool_for_geo <- tryCatch({ create_secure_connection_pool(DB_CONFIG) }, error = function(e) NULL)
+      }
+    } else if (exists("pool")) {
+      pool_for_geo <- pool
+    }
+    tryCatch({
+      enhanced_geographic_server(input, output, session, pool_for_geo)
+    }, error = function(e) {
+      cat("⚠️ Enhanced geographic server failed:", e$message, "\n")
+    })
+  }
+
     start_session_tracking(session)
     increment_session_count()
     
@@ -5419,6 +5451,14 @@ server <- function(input, output, session) {
   
   # Brazilian Map - Enhanced Geographic Distribution
   output$geo_brazil_map <- renderPlotly({
+    on.exit({
+      suppressWarnings({
+        if (exists("brazil_states", inherits = FALSE)) rm(brazil_states)
+        if (exists("state_positions", inherits = FALSE)) rm(state_positions)
+        if (exists("map_data", inherits = FALSE)) rm(map_data)
+      })
+      gc(verbose = FALSE, reset = TRUE)
+    }, add = TRUE)
     docs <- analytics_data()
     
     # Create Brazilian states data with full names for map

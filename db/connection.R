@@ -509,25 +509,25 @@ get_total_documents <- function(filters = list()) {
   } else {
     log_secure_db("INFO", "Using CSV fallback document count (secure database not connected)")
     
-    # Enhanced fallback count based on available CSV files - prioritize Railway files
-    if(file.exists("railway_data_50k.csv")) {
-      log_secure_db("SUCCESS", "Found railway_data_50k.csv - returning 50,000 documents")
-      return(50000)   # Railway 50k dataset
-    } else if(file.exists("railway_medium_dataset.csv")) {
-      log_secure_db("SUCCESS", "Found railway_medium_dataset.csv - returning 25,000 documents")
-      return(25000)   # Railway medium dataset
-    } else if(file.exists("railway_data_10k.csv")) {
-      log_secure_db("SUCCESS", "Found railway_data_10k.csv - returning 10,000 documents")
-      return(10000)   # Railway 10k dataset
-    } else if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
-      log_secure_db("INFO", "Found parquet dataset - returning 134,014 documents")
+    # Enhanced fallback count based on available CSV files - prioritize FULL DATASET first
+    if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
+      log_secure_db("SUCCESS", "Found parquet dataset - returning 134,014 documents")
       return(134014)  # Full dataset in parquet format
     } else if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
-      log_secure_db("INFO", "Found unified CSV dataset - returning 134,014 documents")
+      log_secure_db("SUCCESS", "Found unified CSV dataset - returning 134,014 documents")
       return(134014)  # Full unified dataset in CSV format
     } else if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
-      log_secure_db("INFO", "Found enhanced CSV dataset - returning 134,014 documents")
+      log_secure_db("SUCCESS", "Found enhanced CSV dataset - returning 134,014 documents")
       return(134014)  # Full dataset in CSV format
+    } else if(file.exists("railway_data_50k.csv")) {
+      log_secure_db("WARNING", "Using railway_data_50k.csv fallback - returning 50,000 documents")
+      return(50000)   # Railway 50k dataset (fallback only)
+    } else if(file.exists("railway_medium_dataset.csv")) {
+      log_secure_db("WARNING", "Using railway_medium_dataset.csv fallback - returning 25,000 documents")
+      return(25000)   # Railway medium dataset (fallback only)
+    } else if(file.exists("railway_data_10k.csv")) {
+      log_secure_db("WARNING", "Using railway_data_10k.csv fallback - returning 10,000 documents")
+      return(10000)   # Railway 10k dataset (fallback only)
     } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
       log_secure_db("INFO", "Found sample dataset - returning 20,000 documents")
       return(20000)   # Sample size for Railway deployment
@@ -698,12 +698,12 @@ get_fallback_documents <- function(category = "all", search_term = "", state = "
     # CORRECTED PRIORITY: Full dataset FIRST (134k documents), Railway fallback LAST
     csv_paths <- c(
       "data_current/processed/production/lexml_unified_dataset.csv",  # Full 134k dataset (194MB) - PRIORITY 1
-      "data_current/processed/production/lexml_enhanced_simple.csv",  # Enhanced dataset
-      "data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet",
+      "data_current/processed/production/lexml_enhanced_simple.csv",  # Enhanced dataset - PRIORITY 2
+      "data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet",  # PRIORITY 3
+      "data_current/processed/production/lexml_sample_for_railway.csv",  # PRIORITY 4
       "railway_data_50k.csv",  # 50k dataset (73MB) - Railway fallback only
       "railway_medium_dataset.csv",  # 25k dataset - fallback
-      "railway_data_10k.csv",  # 10k dataset - fallback
-      "data_current/processed/production/lexml_sample_for_railway.csv"
+      "railway_data_10k.csv"  # 10k dataset - fallback
     )
     
     # DIAGNOSTIC: Log current directory and available files

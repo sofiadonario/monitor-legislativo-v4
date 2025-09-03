@@ -330,7 +330,7 @@ get_library_documents_optimized <- function(category = "all", search_term = "", 
     date_start = date_start,
     date_end = date_end,
     sort_by = sort_by,
-    limit = min(limit, 10000),  # Cap limit for caching
+    limit = limit,  # Remove artificial limit cap to allow full dataset access
     offset = offset
   )
   

@@ -28,7 +28,8 @@
       "Bash(grep:*)",
       "mcp__filesystem__edit_file",
       "Bash(sed:*)",
-      "Bash(R:*)"
+      "Bash(R:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
