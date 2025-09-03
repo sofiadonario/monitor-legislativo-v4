@@ -675,8 +675,20 @@ if (!database_connection_loaded) {
     if(real_data_system_loaded) {
       cat("🚀 Using Real Data System (134k+ documents)\n")
       
-      # Load full real dataset
-      real_data <- load_real_legislative_data(limit = NULL, use_cache = TRUE)
+      # Load full real dataset - with timeout protection
+      real_data <- tryCatch({
+        # Try with cache first
+        if(exists(".real_data_cache", envir = .GlobalEnv)) {
+          data <- get(".real_data_cache", envir = .GlobalEnv)
+          cat("✅ Using cached real data:", nrow(data), "documents\n")
+          data
+        } else {
+          load_real_legislative_data(limit = NULL, use_cache = TRUE)
+        }
+      }, error = function(e) {
+        cat("⚠️ Real Data System timeout/error:", e$message, "\n")
+        NULL
+      })
       
       if(!is.null(real_data) && nrow(real_data) > 0) {
         cat("✅ Real Data System loaded:", nrow(real_data), "documents\n")
