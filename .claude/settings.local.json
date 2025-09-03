@@ -30,7 +30,10 @@
       "Bash(sed:*)",
       "Bash(R:*)",
       "Bash(find:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

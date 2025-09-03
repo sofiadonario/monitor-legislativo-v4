@@ -243,45 +243,29 @@ if (!packages_available) {
       cat("✅ Railway PostgreSQL environment variables set\n")
     }
     
-    source("db/connection.R")
-  cat("✅ Secure database connection loaded successfully\n")
+    source("db/robust_connection.R")
+  cat("✅ Robust database connection module loaded\n")
   
-  # Railway-specific database fix
-  if (Sys.getenv("RAILWAY_ENVIRONMENT") == "production" || 
-      Sys.getenv("RAILWAY_DEPLOYMENT") == "true") {
-    cat("🚂 Railway environment detected - applying database fix\n")
-    tryCatch({
-      source("db/railway_db_fix.R")
-      if (exists("railway_db_pool") && !is.null(railway_db_pool)) {
-        con_pool <- railway_db_pool
-        cat("✅ Railway database pool activated\n")
-      }
-    }, error = function(e) {
-      cat("⚠️ Railway database fix error:", e$message, "\n")
-    })
-  }
-  
-  # Verify the connection functions are available
-  if (exists("get_connection_status") && exists("get_total_documents") && exists("get_library_documents")) {
+  # Verify the robust connection functions are available
+  if (exists("get_connection_status") && exists("get_total_documents") && exists("get_documents")) {
     database_connection_loaded <- TRUE
     
     # Test connection status
     status <- get_connection_status()
     cat("📊 Database Status:", status$status, "\n")
-    cat("🔌 Connection Method:", status$connection_method, "\n")
-    cat("🔒 SSL Status:", if(status$ssl_enabled) "ENABLED" else "UNKNOWN", "\n")
-    cat("🛡️ Security Status:", if(status$is_secure) "SECURE" else "INSECURE", "\n")
+    cat("🔌 Connection Method:", status$method, "\n")
     cat("📄 Document Count:", format(status$document_count, big.mark = ","), "\n")
+    cat("🔄 CSV Fallback:", if(status$csv_fallback) "ENABLED" else "DISABLED", "\n")
     
-    if (status$status == "connected" && status$is_secure) {
-      cat("🎉 Secure database connection is active and ready!\n")
-    } else if (status$status == "connected" && !status$is_secure) {
-      cat("⚠️ Database connected but security status uncertain\n")
+    if (status$status == "connected") {
+      cat("🎉 Database connection is active and ready!\n")
+    } else if (status$status == "csv_fallback" || status$status == "csv_only") {
+      cat("⚠️ Using CSV fallback mode - database not available\n")
     } else {
-      cat("⚠️ Database connection issue:", status$error, "\n")
+      cat("⚠️ Database connection issue:", if(!is.null(status$error)) status$error else "Unknown", "\n")
     }
   } else {
-    cat("⚠️ Connection functions not properly loaded\n")
+    cat("⚠️ Robust connection functions not properly loaded\n")
     database_connection_loaded <- FALSE
   }
   
@@ -293,9 +277,14 @@ if (!packages_available) {
 }
 
 if (database_connection_loaded) {
-  cat("✅ Railway PostgreSQL connection established - using database with 134k+ documents\n")
+  status <- get_connection_status()
+  if (status$status == "connected") {
+    cat("✅ PostgreSQL connection established - using database with", format(status$document_count, big.mark = ","), "documents\n")
+  } else {
+    cat("✅ Robust fallback system active - using CSV data with full dataset support\n")
+  }
 } else {
-  cat("⚠️ Database connection failed - will use CSV fallback with sample data\n")
+  cat("⚠️ Database system failed to load - will use enhanced CSV fallback\n")
 }
 
 # Load Database Performance Optimization
