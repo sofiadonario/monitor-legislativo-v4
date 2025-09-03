@@ -2,8 +2,17 @@
 # Loads authentic Brazilian legislative data from ./data_current
 # Replaces ALL sample/mock implementations with real data
 
-library(dplyr)
-library(data.table)
+# Load packages if available, continue without them if not
+tryCatch({
+  library(dplyr)
+}, error = function(e) {
+  cat("⚠️ dplyr not available, using base R equivalents\n")
+})
+tryCatch({
+  library(data.table)
+}, error = function(e) {
+  cat("⚠️ data.table not available, using base R read.csv\n")
+})
 
 # Core real data loading function
 load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {

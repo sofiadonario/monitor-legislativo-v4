@@ -382,13 +382,31 @@ if (!database_connection_loaded) {
       # Get dynamic document count based on available data
       doc_count <- get_total_documents()
       
-      # Determine data source and adjust metrics accordingly - Railway CSV files first
-      if(file.exists("railway_data_50k.csv")) {
+      # Determine data source and adjust metrics accordingly - Full dataset first, Railway files last
+      if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
+        data_source <- "csv_unified_dataset"
+        states_count <- 27    # All Brazilian states + DF
+        municipalities_count <- 2000
+        states_pct <- 100.0
+        municipalities_pct <- 36.0
+      } else if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+        data_source <- "csv_full_dataset"
+        states_count <- 27
+        municipalities_count <- 2000
+        states_pct <- 100.0
+        municipalities_pct <- 36.0
+      } else if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
+        data_source <- "parquet_full_dataset"
+        states_count <- 27
+        municipalities_count <- 2000
+        states_pct <- 100.0
+        municipalities_pct <- 36.0
+      } else if(file.exists("railway_data_50k.csv")) {
         data_source <- "railway_csv_50k_dataset"
-        states_count <- 27    # Brazilian states + DF
-        municipalities_count <- 2000  # Estimated from full dataset coverage
-        states_pct <- 100.0   # Full state coverage
-        municipalities_pct <- 36.0   # ~2000 of 5570 municipalities
+        states_count <- 26    # Reduced coverage
+        municipalities_count <- 1000  # Reduced from full dataset
+        states_pct <- 96.3   # Partial state coverage
+        municipalities_pct <- 18.0   # ~1000 of 5570 municipalities
       } else if(file.exists("railway_medium_dataset.csv")) {
         data_source <- "railway_csv_medium_dataset"
         states_count <- 26
@@ -401,24 +419,6 @@ if (!database_connection_loaded) {
         municipalities_count <- 200
         states_pct <- 81.5
         municipalities_pct <- 3.6
-      } else if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
-        data_source <- "parquet_full_dataset"
-        states_count <- 26
-        municipalities_count <- 1000
-        states_pct <- 96.3
-        municipalities_pct <- 18.0
-      } else if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
-        data_source <- "csv_unified_dataset"
-        states_count <- 26
-        municipalities_count <- 1000
-        states_pct <- 96.3
-        municipalities_pct <- 18.0
-      } else if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
-        data_source <- "csv_full_dataset"
-        states_count <- 26
-        municipalities_count <- 1000
-        states_pct <- 96.3
-        municipalities_pct <- 18.0
       } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
         data_source <- "csv_sample_dataset"
         states_count <- 21
@@ -772,10 +772,14 @@ if (!database_connection_loaded) {
       )
       
       csv_path <- NULL
+      cat("📁 Checking CSV files in priority order:\n")
       for(path in csv_paths) {
-        if(file.exists(path)) {
+        exists <- file.exists(path)
+        size_mb <- if(exists) round(file.size(path) / (1024 * 1024), 1) else 0
+        cat(sprintf("  - %s: %s", path, if(exists) paste0("✅ EXISTS (", size_mb, " MB)") else "❌ NOT FOUND"), "\n")
+        if(exists && is.null(csv_path)) {
           csv_path <- path
-          break
+          cat("    ⬆️ SELECTED FOR LOADING\n")
         }
       }
       
@@ -3249,6 +3253,7 @@ server <- function(input, output, session) {
       )
       
       cat("📊 get_library_documents returned:", if(is.null(result)) "NULL" else nrow(result), "documents\n")
+      cat("📊 Documents for table display:", if(is.null(result)) 0 else nrow(result), "\n")
       
       result  # Return the result
       
