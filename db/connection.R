@@ -36,9 +36,20 @@ for (pkg in required_packages) {
 }
 
 if (length(missing_packages) > 0) {
-  cat("❌ CRITICAL: Missing required packages:", paste(missing_packages, collapse = ", "), "\n")
+  cat("⚠️ WARNING: Missing database packages:", paste(missing_packages, collapse = ", "), "\n")
   cat("🔧 Install with: install.packages(c(", paste0("'", missing_packages, "'", collapse = ", "), "))\n")
-  stop("Cannot proceed without required database packages")
+  cat("📁 Falling back to CSV data mode\n")
+  
+  # Set global flag to indicate database is not available
+  assign("database_available", FALSE, envir = .GlobalEnv)
+  
+  # Define dummy functions to prevent errors
+  get_connection_pool <- function() NULL
+  get_db_connection <- function() NULL
+  check_db_health <- function() FALSE
+  close_connection_pool <- function() invisible(NULL)
+  
+  return(invisible(NULL))  # Exit gracefully without stopping
 }
 
 # Load packages
