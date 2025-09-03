@@ -460,7 +460,7 @@ get_library_documents_optimized <- function(category = "all", search_term = "", 
   
   param_count <- param_count + 1
   base_query <- paste(base_query, sprintf("LIMIT $%d", param_count))
-  params[[param_count]] <- min(limit, 50000)  # Safety limit
+  params[[param_count]] <- limit
   
   cat("📊 Executing optimized parameterized query with", length(params), "parameters\n")
   
