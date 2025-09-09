@@ -380,8 +380,12 @@ simpleMapServer <- function(id, data_source) {
 # DATA LOADING UTILITIES
 # ======================
 load_legislative_data <- function() {
-  # Try multiple data sources
-  if (file.exists("railway_data_50k.csv")) {
+  # Try multiple data sources - CORRECTED PRIORITY: Full dataset first
+  if (file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
+    data <- read.csv("data_current/processed/production/lexml_unified_dataset.csv", stringsAsFactors = FALSE)
+  } else if (file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+    data <- read.csv("data_current/processed/production/lexml_enhanced_simple.csv", stringsAsFactors = FALSE)  
+  } else if (file.exists("railway_data_50k.csv")) {
     data <- read.csv("railway_data_50k.csv", stringsAsFactors = FALSE)
     
     # Add coordinates if missing

@@ -640,11 +640,12 @@ interactiveMapsServer <- function(id, data_source = NULL) {
 
 # Load data with multiple fallbacks
 load_map_data_fallback <- function() {
-  # Try multiple file paths
+  # Try multiple file paths - CORRECTED PRIORITY: Full dataset first
   paths <- c(
-    "railway_data_50k.csv",
     "data_current/processed/production/lexml_unified_dataset.csv",
-    "data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet"
+    "data_current/processed/production/lexml_enhanced_simple.csv",
+    "data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet",
+    "railway_data_50k.csv"
   )
   
   for (path in paths) {

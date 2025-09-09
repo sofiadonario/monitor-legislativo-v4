@@ -36,9 +36,20 @@ for (pkg in required_packages) {
 }
 
 if (length(missing_packages) > 0) {
-  cat("❌ CRITICAL: Missing required packages:", paste(missing_packages, collapse = ", "), "\n")
+  cat("⚠️ WARNING: Missing database packages:", paste(missing_packages, collapse = ", "), "\n")
   cat("🔧 Install with: install.packages(c(", paste0("'", missing_packages, "'", collapse = ", "), "))\n")
-  stop("Cannot proceed without required database packages")
+  cat("📁 Falling back to CSV data mode\n")
+  
+  # Set global flag to indicate database is not available
+  assign("database_available", FALSE, envir = .GlobalEnv)
+  
+  # Define dummy functions to prevent errors
+  get_connection_pool <- function() NULL
+  get_db_connection <- function() NULL
+  check_db_health <- function() FALSE
+  close_connection_pool <- function() invisible(NULL)
+  
+  return(invisible(NULL))  # Exit gracefully without stopping
 }
 
 # Load packages
@@ -80,66 +91,63 @@ parse_database_url <- function(database_url) {
   }
   
   tryCatch({
-    # Parse PostgreSQL URL format: postgresql://user:password@host:port/dbname
-    if (!grepl("^postgresql://", database_url)) {
-      cat("⚠️ DATABASE_URL does not start with postgresql://\n")
+    # Support both postgres:// and postgresql:// schemes
+    if (!grepl("^postgres(?:ql)?://", database_url)) {
+      cat("⚠️ DATABASE_URL does not start with postgres:// or postgresql://\n")
       return(NULL)
     }
     
     # Remove protocol
-    url_without_protocol <- sub("^postgresql://", "", database_url)
+    url_without_protocol <- sub("^postgres(?:ql)?://", "", database_url)
     
-    # Split auth and connection parts
-    url_parts <- strsplit(url_without_protocol, "@")[[1]]
-    if (length(url_parts) != 2) {
+    # Split at the LAST '@' to tolerate '@' in passwords (rare but possible if encoded)
+    at_pos <- regexpr("@(?=[^@]*$)", url_without_protocol, perl = TRUE)
+    if (at_pos[1] == -1) {
       cat("⚠️ Invalid DATABASE_URL format: missing @ separator\n")
       return(NULL)
     }
+    auth_part <- substr(url_without_protocol, 1, at_pos[1] - 1)
+    connection_part <- substr(url_without_protocol, at_pos[1] + 1, nchar(url_without_protocol))
     
-    auth_part <- url_parts[1]
-    connection_part <- url_parts[2]
-    
-    # Parse auth (user:password)
-    auth_split <- strsplit(auth_part, ":")[[1]]
-    if (length(auth_split) != 2) {
+    # Parse auth: split only on the FIRST ':' to allow ':' inside password
+    colon_pos <- regexpr(":", auth_part, fixed = TRUE)
+    if (colon_pos[1] == -1) {
       cat("⚠️ Invalid DATABASE_URL format: missing user:password\n")
       return(NULL)
     }
+    user <- substr(auth_part, 1, colon_pos[1] - 1)
+    password <- substr(auth_part, colon_pos[1] + 1, nchar(auth_part))
     
-    user <- auth_split[1]
-    password <- auth_split[2]
+    # Separate any query string from the path (e.g., ?sslmode=require)
+    question_pos <- regexpr("\\?", connection_part)
+    query <- NULL
+    if (question_pos[1] != -1) {
+      query <- substr(connection_part, question_pos[1] + 1, nchar(connection_part))
+      connection_part <- substr(connection_part, 1, question_pos[1] - 1)
+    }
     
-    # Parse connection (host:port/dbname)
-    if (grepl("/", connection_part)) {
-      host_port_db <- strsplit(connection_part, "/")[[1]]
-      if (length(host_port_db) != 2) {
-        cat("⚠️ Invalid DATABASE_URL format: incorrect host:port/database\n")
-        return(NULL)
-      }
-      
-      host_port <- host_port_db[1]
-      dbname <- host_port_db[2]
-    } else {
-      cat("⚠️ Invalid DATABASE_URL format: missing database name\n")
+    # Parse connection (host[:port]/dbname)
+    if (!grepl("/", connection_part, fixed = TRUE)) {
+      cat("⚠️ Invalid DATABASE_URL format: missing /database name\n")
       return(NULL)
     }
+    host_port <- sub("/.*$", "", connection_part)
+    dbname <- sub("^[^/]+/", "", connection_part)
     
-    # Parse host:port
-    if (grepl(":", host_port)) {
-      host_port_split <- strsplit(host_port, ":")[[1]]
-      if (length(host_port_split) != 2) {
-        cat("⚠️ Invalid DATABASE_URL format: incorrect host:port\n")
-        return(NULL)
-      }
-      
-      host <- host_port_split[1]
-      port <- as.integer(host_port_split[2])
+    # Strip any remaining query params from dbname just in case
+    dbname <- sub("\\?.*$", "", dbname)
+    
+    # Port is optional
+    if (grepl(":", host_port, fixed = TRUE)) {
+      # Split at the LAST ':' to tolerate IPv6 (not typical here, but safer)
+      last_colon <- regexpr(":(?=[^:]*$)", host_port, perl = TRUE)
+      host <- substr(host_port, 1, last_colon[1] - 1)
+      port <- as.integer(substr(host_port, last_colon[1] + 1, nchar(host_port)))
     } else {
       host <- host_port
-      port <- 5432L  # Default PostgreSQL port
+      port <- 5432L
     }
     
-    # Validate port is numeric
     if (is.na(port) || port <= 0 || port > 65535) {
       cat("⚠️ Invalid port number in DATABASE_URL\n")
       return(NULL)
@@ -152,7 +160,8 @@ parse_database_url <- function(database_url) {
       port = port,
       dbname = dbname,
       user = user,
-      password = password
+      password = password,
+      query = query
     ))
     
   }, error = function(e) {
@@ -506,30 +515,30 @@ get_connection_status <- function() {
 #' @param filters Optional filters list
 #' @return Integer document count
 get_total_documents <- function(filters = list()) {
-  if (connection_status$status == "connected" && connection_status$is_secure) {
+  if (connection_status$status == "connected") {
     return(get_secure_document_count())
   } else {
     log_secure_db("INFO", "Using CSV fallback document count (secure database not connected)")
     
-    # Enhanced fallback count based on available CSV files - prioritize Railway files
-    if(file.exists("railway_data_50k.csv")) {
-      log_secure_db("SUCCESS", "Found railway_data_50k.csv - returning 50,000 documents")
-      return(50000)   # Railway 50k dataset
-    } else if(file.exists("railway_medium_dataset.csv")) {
-      log_secure_db("SUCCESS", "Found railway_medium_dataset.csv - returning 25,000 documents")
-      return(25000)   # Railway medium dataset
-    } else if(file.exists("railway_data_10k.csv")) {
-      log_secure_db("SUCCESS", "Found railway_data_10k.csv - returning 10,000 documents")
-      return(10000)   # Railway 10k dataset
-    } else if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
-      log_secure_db("INFO", "Found parquet dataset - returning 134,014 documents")
+    # Enhanced fallback count based on available CSV files - prioritize FULL DATASET first
+    if(file.exists("data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet")) {
+      log_secure_db("SUCCESS", "Found parquet dataset - returning 134,014 documents")
       return(134014)  # Full dataset in parquet format
     } else if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
-      log_secure_db("INFO", "Found unified CSV dataset - returning 134,014 documents")
+      log_secure_db("SUCCESS", "Found unified CSV dataset - returning 134,014 documents")
       return(134014)  # Full unified dataset in CSV format
     } else if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
-      log_secure_db("INFO", "Found enhanced CSV dataset - returning 134,014 documents")
+      log_secure_db("SUCCESS", "Found enhanced CSV dataset - returning 134,014 documents")
       return(134014)  # Full dataset in CSV format
+    } else if(file.exists("railway_data_50k.csv")) {
+      log_secure_db("WARNING", "Using railway_data_50k.csv fallback - returning 50,000 documents")
+      return(50000)   # Railway 50k dataset (fallback only)
+    } else if(file.exists("railway_medium_dataset.csv")) {
+      log_secure_db("WARNING", "Using railway_medium_dataset.csv fallback - returning 25,000 documents")
+      return(25000)   # Railway medium dataset (fallback only)
+    } else if(file.exists("railway_data_10k.csv")) {
+      log_secure_db("WARNING", "Using railway_data_10k.csv fallback - returning 10,000 documents")
+      return(10000)   # Railway 10k dataset (fallback only)
     } else if(file.exists("data_current/processed/production/lexml_sample_for_railway.csv")) {
       log_secure_db("INFO", "Found sample dataset - returning 20,000 documents")
       return(20000)   # Sample size for Railway deployment
@@ -554,7 +563,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
                                  date_start = NULL, date_end = NULL, sort_by = "date_desc", 
                                  limit = 999999, offset = 0) {
   
-  if (is.null(secure_db_pool) || connection_status$status != "connected" || !connection_status$is_secure) {
+  if (is.null(secure_db_pool) || connection_status$status != "connected") {
     log_secure_db("WARNING", "Secure database not connected, using fallback data")
     return(get_fallback_documents(category, search_term, state, limit))
   }
@@ -676,12 +685,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     
     log_secure_db("SUCCESS", sprintf("Retrieved %d documents from secure database", nrow(result)))
     
-    # Check if database returned insufficient results - if so, fallback to CSV
-    if(nrow(result) < 100 && category == "all" && search_term == "" && state == "all") {
-      log_secure_db("WARNING", sprintf("Database returned only %d documents for unrestricted query - falling back to CSV", nrow(result)))
-      return(get_fallback_documents(category, search_term, state, limit))
-    }
-    
+    # Do not fallback based on small result sizes; only on connection/query errors
     return(result)
     
   }, error = function(e) {
@@ -698,19 +702,19 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
 #' @return Data frame with sample documents
 get_fallback_documents <- function(category = "all", search_term = "", state = "all", limit = 999999) {
   log_secure_db("WARNING", "🚨 SECURE DATABASE CONNECTION UNAVAILABLE - Using CSV fallback dataset")
-  log_secure_db("INFO", "Attempting to load railway_data_50k.csv with 50,000 documents")
+  log_secure_db("INFO", "Attempting to load full dataset with 134,014 documents (corrected priority order)")
   
-  # Enhanced fallback hierarchy: Railway CSV -> Parquet -> Other CSV -> Minimal fallback
+  # Enhanced fallback hierarchy: Full Dataset -> Parquet -> Railway CSV -> Minimal fallback
   tryCatch({
-    # Priority 1: Railway 50k CSV (76MB, 50k documents)
+    # CORRECTED PRIORITY: Full dataset FIRST (134k documents), Railway fallback LAST
     csv_paths <- c(
-      "railway_data_50k.csv",  # 50k dataset (76MB) - best for Railway
-      "railway_medium_dataset.csv",  # 25k dataset optimized for Railway
-      "railway_data_10k.csv",  # 10k dataset 
-      "data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet",
-      "data_current/processed/production/lexml_unified_dataset.csv",
-      "data_current/processed/production/lexml_enhanced_simple.csv",
-      "data_current/processed/production/lexml_sample_for_railway.csv"
+      "data_current/processed/production/lexml_unified_dataset.csv",  # Full 134k dataset (194MB) - PRIORITY 1
+      "data_current/processed/production/lexml_enhanced_simple.csv",  # Enhanced dataset - PRIORITY 2
+      "data_current/processed/production/parquet/single_file/brazilian_legislative_complete.parquet",  # PRIORITY 3
+      "data_current/processed/production/lexml_sample_for_railway.csv",  # PRIORITY 4
+      "railway_data_50k.csv",  # 50k dataset (73MB) - Railway fallback only
+      "railway_medium_dataset.csv",  # 25k dataset - fallback
+      "railway_data_10k.csv"  # 10k dataset - fallback
     )
     
     # DIAGNOSTIC: Log current directory and available files

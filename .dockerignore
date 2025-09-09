@@ -337,3 +337,11 @@ mock_auth*
 cache/
 tmp/
 temp/
+ 
+# =============================
+# Explicit include: full dataset
+# Allow ONLY this file from data_current to be sent in build context
+!data_current/
+!data_current/processed/
+!data_current/processed/production/
+!data_current/processed/production/lexml_unified_dataset.csv

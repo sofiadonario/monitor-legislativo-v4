@@ -27,7 +27,17 @@
       "mcp__filesystem__get_file_info",
       "Bash(grep:*)",
       "mcp__filesystem__edit_file",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(R:*)",
+      "Bash(find:*)",
+      "Bash(timeout:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(python3:*)",
+      "Bash(psql:*)",
+      "Bash(chmod:*)",
+      "Bash(railway login:*)",
+      "Bash(cp:*)"
     ],
     "deny": [],
     "ask": []

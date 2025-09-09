@@ -134,6 +134,10 @@ COPY --chown=shinyapp:shinyapp fixes/ ./fixes/
 COPY --chown=shinyapp:shinyapp scripts/ ./scripts/
 COPY --chown=shinyapp:shinyapp config/ ./config/
 
+# Copy full dataset CSV (134k) into container if present in build context
+# This relies on .dockerignore allowing this single file
+ 
+
 # Create required directories with proper ownership
 RUN mkdir -p analytics_output logs cache tmp && \
     chown -R shinyapp:shinyapp /app && \

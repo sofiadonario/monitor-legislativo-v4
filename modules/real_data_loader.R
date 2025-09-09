@@ -2,8 +2,17 @@
 # Loads authentic Brazilian legislative data from ./data_current
 # Replaces ALL sample/mock implementations with real data
 
-library(dplyr)
-library(data.table)
+# Load packages if available, continue without them if not
+tryCatch({
+  library(dplyr)
+}, error = function(e) {
+  cat("⚠️ dplyr not available, using base R equivalents\n")
+})
+tryCatch({
+  library(data.table)
+}, error = function(e) {
+  cat("⚠️ data.table not available, using base R read.csv\n")
+})
 
 # Core real data loading function
 load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
@@ -15,9 +24,15 @@ load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
       if(use_cache && exists(".real_data_cache", envir = .GlobalEnv)) {
         data <- get(".real_data_cache", envir = .GlobalEnv)
       } else {
-        # Use data.table for faster loading
-        data <- data.table::fread("data_current/processed/production/lexml_unified_dataset.csv", 
-                                  encoding = "UTF-8")
+        # Use data.table for faster loading - with error handling
+        if(requireNamespace("data.table", quietly = TRUE)) {
+          data <- data.table::fread("data_current/processed/production/lexml_unified_dataset.csv", 
+                                    encoding = "UTF-8")
+        } else {
+          # Fallback to base R read.csv if data.table not available
+          data <- read.csv("data_current/processed/production/lexml_unified_dataset.csv", 
+                          stringsAsFactors = FALSE, encoding = "UTF-8")
+        }
         
         # Cache for performance
         if(use_cache) {

@@ -51,17 +51,25 @@ initialize_enhanced_executive_summary <- function(input, output, session, get_do
           }
         }
         
-        # Fallback to CSV data
-        if (file.exists("railway_data_50k.csv")) {
+        # Fallback to CSV data - CORRECTED PRIORITY: Full dataset first
+        if (file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
+          docs <- read.csv("data_current/processed/production/lexml_unified_dataset.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+        } else if (file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+          docs <- read.csv("data_current/processed/production/lexml_enhanced_simple.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+        } else if (file.exists("railway_data_50k.csv")) {
           docs <- read.csv("railway_data_50k.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-          # Standardize column names for compatibility
-          if ("titulo" %in% names(docs)) names(docs)[names(docs) == "titulo"] <- "title"
-          if ("categoria" %in% names(docs)) names(docs)[names(docs) == "categoria"] <- "category"
-          if ("estado" %in% names(docs)) names(docs)[names(docs) == "estado"] <- "state" 
-          if ("data" %in% names(docs)) names(docs)[names(docs) == "data"] <- "date"
-          if ("ementa" %in% names(docs)) names(docs)[names(docs) == "ementa"] <- "summary"
-          if ("jurisdicao" %in% names(docs)) names(docs)[names(docs) == "jurisdicao"] <- "jurisdiction"
-          return(docs)
+        } else {
+          return(data.frame())
+        }
+        
+        # Standardize column names for compatibility (applies to all loaded data)
+        if ("titulo" %in% names(docs)) names(docs)[names(docs) == "titulo"] <- "title"
+        if ("categoria" %in% names(docs)) names(docs)[names(docs) == "categoria"] <- "category"
+        if ("estado" %in% names(docs)) names(docs)[names(docs) == "estado"] <- "state" 
+        if ("data" %in% names(docs)) names(docs)[names(docs) == "data"] <- "date"
+        if ("ementa" %in% names(docs)) names(docs)[names(docs) == "ementa"] <- "summary"
+        if ("jurisdicao" %in% names(docs)) names(docs)[names(docs) == "jurisdicao"] <- "jurisdiction"
+        return(docs)
         }
         
         # Final fallback - empty dataframe
