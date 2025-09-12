@@ -1,0 +1,75 @@
+# Code Owners for Monitor Legislativo v4
+# This file defines who owns what code and who should review PRs
+
+# Global ownership - all files require review from project owner
+* @sofiadonario
+
+# Core R application files
+*.R @sofiadonario
+R/ @sofiadonario
+app.R @sofiadonario
+server.R @sofiadonario
+ui.R @sofiadonario
+global.R @sofiadonario
+
+# Infrastructure & deployment configurations
+railway.toml @sofiadonario
+railway-*.toml @sofiadonario
+Dockerfile @sofiadonario
+Dockerfile.* @sofiadonario
+.railwayignore @sofiadonario
+
+# GitHub workflows and automation
+.github/ @sofiadonario
+.github/workflows/ @sofiadonario
+
+# API endpoints and backend services
+api/ @sofiadonario
+api/**/*.R @sofiadonario
+
+# Database schemas and migrations
+database/ @sofiadonario
+*.sql @sofiadonario
+
+# Security and monitoring configurations
+security/ @sofiadonario
+monitoring/ @sofiadonario
+performance/ @sofiadonario
+
+# Academic research modules
+R/analytics/ @sofiadonario
+R/modules/citation_module.R @sofiadonario
+R/modules/export_module.R @sofiadonario
+
+# Geographic analysis and IBGE integration
+R/modules/geographic_module.R @sofiadonario
+R/utils/ibge_integration.R @sofiadonario
+R/utils/spatial_processing.R @sofiadonario
+
+# Documentation requiring academic review
+docs/ @sofiadonario
+*.md @sofiadonario
+README.md @sofiadonario
+
+# Configuration files
+config/ @sofiadonario
+*.yml @sofiadonario
+*.yaml @sofiadonario
+.env.* @sofiadonario
+
+# Test files - ensure quality standards
+tests/ @sofiadonario
+testing/ @sofiadonario
+
+# Package management
+renv.lock @sofiadonario
+DESCRIPTION @sofiadonario
+NAMESPACE @sofiadonario
+
+# Data processing and analytics
+data_current/ @sofiadonario
+R/utils/data_processing.R @sofiadonario
+
+# Brazilian legislative context files
+R/utils/brazilian_divisions.R @sofiadonario
+R/modules/search_module*.R @sofiadonario
