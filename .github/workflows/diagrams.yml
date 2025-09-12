@@ -77,7 +77,7 @@ jobs:
 
       - name: Create or Update PR Comment
         if: github.event_name == 'pull_request' && steps.diagram_changes.outputs.diagrams_changed == 'true'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
