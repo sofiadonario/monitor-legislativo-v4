@@ -84,6 +84,14 @@ cache/
 packrat/lib*/
 rsconnect/
 
+# renv (R package management)
+renv/library/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/staging/
+
 #################################################
 # Large Data Files & Exports
 #################################################
@@ -145,6 +153,9 @@ archive/debug_files/
 archive/config_files/
 archive/old-files/
 archive/miscellaneous/
+archive/legacy_data/
+archive/legacy_environments/
+archive/legacy_node/
 
 # Development tools and duplicates
 dev-tools/node_modules/

@@ -1,0 +1,14 @@
+```mermaid
+graph TD;
+  subgraph "Prefect Flow"
+    A[Scheduler] -->|Cron| B[Start Flow]
+    B --> C[Fetch Sources (LexML & APIs)]
+    C --> D[Parse & Normalize]
+    D --> E[Validate Documents]
+    E --> F[Store in DB]
+    F --> G[Trigger ML Analysis]
+    G --> H[Update Cache]
+    H --> I[Notify Frontend via SSE]
+  end
+  I --> J[Users See New Data]
+``` 

@@ -1,0 +1,413 @@
+---
+title: "Getting Started with Monitor Legislativo R SDK"
+author: "Monitor Legislativo Research Team"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with Monitor Legislativo R SDK}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE  # Set to FALSE to prevent actual API calls during vignette building
+)
+```
+
+# Introdução
+
+O Monitor Legislativo R SDK oferece acesso programático abrangente ao maior banco de dados de legislação brasileira, contendo mais de 134.000 documentos legislativos. Este SDK foi especialmente desenvolvido para pesquisadores acadêmicos, permitindo análises sophisticadas da legislação brasileira usando R.
+
+## Características Principais
+
+- **134k+ Documentos**: Acesso completo à legislação brasileira
+- **Busca Avançada**: Processamento de linguagem natural em português
+- **Análise Geográfica**: Mapeamento e análise espacial de dados legislativos
+- **Citações ABNT**: Geração automática de citações acadêmicas
+- **Exportação Múltipla**: Suporte a CSV, JSON, Excel, BibTeX e outros formatos
+- **Integração Tidyverse**: Compatibilidade total com o ecossistema tidyverse
+
+## Instalação
+
+```{r installation}
+# Instalação via devtools (desenvolvimento)
+if (!require(devtools)) install.packages("devtools")
+devtools::install_github("monitor-legislativo/r-sdk")
+
+# Carregar biblioteca
+library(monitor.legislativo)
+```
+
+## Configuração Inicial
+
+### 1. Obter Chave de API
+
+Para usar o SDK, você precisa de uma chave de API do Monitor Legislativo:
+
+1. Acesse [https://monitor-legislativo.br/api/register](https://monitor-legislativo.br/api/register)
+2. Registre-se como pesquisador acadêmico
+3. Obtenha sua chave de API gratuita
+
+### 2. Configurar Autenticação
+
+```{r setup}
+library(monitor.legislativo)
+
+# Configurar chave de API
+ml_set_api_key("sua_chave_de_api_aqui")
+
+# Verificar autenticação
+auth_info <- ml_authenticate()
+print(auth_info)
+```
+
+### 3. Armazenamento Seguro da Chave
+
+Para evitar expor sua chave no código, use armazenamento seguro:
+
+```{r secure_storage}
+# Armazenar chave de forma segura
+ml_set_api_key("sua_chave_de_api_aqui", store_securely = TRUE)
+
+# Em sessões futuras, carregar automaticamente
+ml_set_api_key(store_securely = TRUE)
+```
+
+## Primeiros Passos
+
+### Busca Básica de Documentos
+
+```{r basic_search}
+# Busca simples
+resultados <- ml_search("lei de licitações")
+print(resultados)
+
+# Busca com filtros
+resultados_filtrados <- ml_search(
+  query = "transporte público",
+  filters = list(
+    category = "Lei",
+    state = "SP",
+    date_start = "2020-01-01"
+  ),
+  limit = 100
+)
+
+head(resultados_filtrados)
+```
+
+### Explorando os Resultados
+
+```{r explore_results}
+# Verificar estrutura dos dados
+glimpse(resultados_filtrados)
+
+# Estatísticas básicas
+cat("Total de documentos:", nrow(resultados_filtrados), "\n")
+cat("Estados únicos:", length(unique(resultados_filtrados$state)), "\n")
+cat("Categorias únicas:", length(unique(resultados_filtrados$category)), "\n")
+
+# Distribuição por categoria
+table(resultados_filtrados$category)
+```
+
+### Obter Documento Específico
+
+```{r get_document}
+# Obter primeiro documento da busca
+doc_id <- resultados_filtrados$id[1]
+documento <- ml_get_document(doc_id, include_content = TRUE)
+
+# Examinar documento
+print(documento$title)
+print(documento$summary)
+print(substr(documento$content, 1, 500))  # Primeiros 500 caracteres
+```
+
+## Análises Básicas
+
+### 1. Análise Temporal
+
+```{r temporal_analysis}
+library(ggplot2)
+library(lubridate)
+
+# Analisar tendências temporais
+trends <- ml_analyze_trends(
+  query = "sustentabilidade",
+  time_granularity = "month",
+  date_range = c("2020-01-01", "2023-12-31")
+)
+
+# Visualizar tendências
+ggplot(trends$time_series, aes(x = date, y = volume)) +
+  geom_line(color = "steelblue", size = 1) +
+  geom_smooth(method = "loess", se = TRUE, alpha = 0.3) +
+  labs(
+    title = "Evolução da Legislação sobre Sustentabilidade",
+    x = "Período",
+    y = "Número de Documentos",
+    caption = "Fonte: Monitor Legislativo"
+  ) +
+  theme_minimal()
+```
+
+### 2. Análise Geográfica
+
+```{r geographic_analysis}
+# Análise por estados
+geo_analysis <- ml_geographic_analysis(
+  query = "meio ambiente",
+  geographic_level = "state",
+  aggregation = "count"
+)
+
+# Ver top 10 estados
+top_states <- geo_analysis %>%
+  arrange(desc(document_count)) %>%
+  head(10)
+
+print(top_states)
+
+# Gráfico de barras
+ggplot(top_states, aes(x = reorder(name, document_count), y = document_count)) +
+  geom_col(fill = "forestgreen", alpha = 0.8) +
+  coord_flip() +
+  labs(
+    title = "Legislação Ambiental por Estado",
+    x = "Estado",
+    y = "Número de Documentos",
+    caption = "Fonte: Monitor Legislativo"
+  ) +
+  theme_minimal()
+```
+
+### 3. Análise de Categorias
+
+```{r category_analysis}
+# Distribuição por categoria de documento
+category_stats <- resultados_filtrados %>%
+  count(category, sort = TRUE) %>%
+  mutate(percentage = round(n / sum(n) * 100, 1))
+
+print(category_stats)
+
+# Gráfico de pizza
+ggplot(category_stats, aes(x = "", y = n, fill = category)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  labs(
+    title = "Distribuição por Tipo de Documento",
+    caption = "Fonte: Monitor Legislativo"
+  ) +
+  theme_void() +
+  theme(legend.position = "right")
+```
+
+## Exportação de Dados
+
+### CSV para Análise Externa
+
+```{r export_csv}
+# Exportar resultados para CSV
+ml_export_data(
+  data = resultados_filtrados,
+  file_path = "legislacao_transporte_sp.csv",
+  format = "csv",
+  include_metadata = TRUE
+)
+```
+
+### Citações Acadêmicas
+
+```{r citations}
+# Gerar citações ABNT
+citacoes <- ml_generate_citations(
+  documents = head(resultados_filtrados, 5),
+  citation_style = "abnt",
+  include_urls = TRUE
+)
+
+# Imprimir citações
+for (i in seq_along(citacoes)) {
+  cat(i, ". ", citacoes[i], "\n\n", sep = "")
+}
+```
+
+### Bibliografia Completa
+
+```{r bibliography}
+# Criar bibliografia formatada
+bibliografia <- ml_create_bibliography(
+  documents = resultados_filtrados,
+  title = "Bibliografia: Legislação de Transporte Público em São Paulo",
+  sort_by = "date",
+  group_by = "category"
+)
+
+# Salvar bibliografia
+writeLines(bibliografia, "bibliografia_transporte_sp.txt")
+```
+
+## Análises Avançadas
+
+### Dashboard de Métricas
+
+```{r dashboard}
+# Obter métricas gerais da plataforma
+metrics <- ml_get_metrics(
+  time_period = "month",
+  breakdown_by = "category",
+  include_trends = TRUE
+)
+
+# Examinar estatísticas
+print(metrics$summary)
+print(metrics$breakdown)
+```
+
+### Análise de Municípios
+
+```{r municipalities}
+# Obter municípios de São Paulo com estatísticas
+municipios_sp <- ml_get_municipalities(
+  state = "SP",
+  include_stats = TRUE,
+  min_population = 100000,
+  order_by = "document_count"
+)
+
+# Top 10 municípios por atividade legislativa
+top_municipios <- head(municipios_sp, 10)
+print(top_municipios[c("name", "population", "document_count")])
+```
+
+### Comparação Temporal
+
+```{r temporal_comparison}
+# Comparar período pré e pós pandemia
+comparacao <- ml_comparative_analysis(
+  period1 = c("2018-01-01", "2019-12-31"),
+  period2 = c("2020-01-01", "2021-12-31"),
+  comparison_metrics = c("volume", "diversity", "geographic"),
+  significance_test = TRUE
+)
+
+print(comparacao$summary)
+```
+
+## Dataset Personalizado
+
+### Criação de Dataset Temático
+
+```{r dataset_creation}
+# Criar dataset sobre educação
+dataset_educacao <- ml_create_dataset(
+  search_params = list(
+    query = "educação",
+    filters = list(
+      category = c("Lei", "Decreto"),
+      date_start = "2020-01-01"
+    ),
+    limit = 2000
+  ),
+  processing = list(
+    include_geographic = TRUE,
+    include_temporal_analysis = TRUE,
+    include_citations = TRUE
+  ),
+  output_config = list(
+    formats = c("csv", "json", "excel"),
+    organize_by = "state",
+    compression = "gzip"
+  ),
+  dataset_name = "Legislacao_Educacao_Brasil_2020_2024",
+  description = "Dataset completo sobre legislação educacional brasileira de 2020-2024"
+)
+
+print(dataset_educacao$statistics)
+```
+
+## Boas Práticas
+
+### 1. Gestão de Rate Limits
+
+```{r rate_limits}
+# Verificar limites de uso
+auth_info <- ml_authenticate(check_usage = TRUE)
+print(auth_info$usage_stats)
+
+# Configurar timeouts maiores para operações lentas
+ml_set_options(timeout = 60, verbose = TRUE)
+```
+
+### 2. Cache e Performance
+
+```{r cache}
+# Habilitar cache para melhor performance
+ml_set_options(cache_enabled = TRUE)
+
+# Para datasets grandes, usar processamento em lotes
+big_search <- ml_search("lei", limit = 5000)
+chunks <- split(big_search$id, ceiling(seq_along(big_search$id) / 100))
+
+# Processar em lotes
+for (chunk in chunks) {
+  docs <- ml_get_documents(chunk, batch_size = 50)
+  # Processar cada lote...
+}
+```
+
+### 3. Tratamento de Erros
+
+```{r error_handling}
+# Usar tryCatch para operações que podem falhar
+resultado_seguro <- tryCatch({
+  ml_search("termo_muito_específico", limit = 1000)
+}, error = function(e) {
+  warning("Busca falhou: ", e$message)
+  return(tibble::tibble())  # Retornar tibble vazio
+})
+
+# Validar IDs antes de buscar documentos
+ids_para_buscar <- c("doc_1", "doc_2", "doc_3")
+validacao <- ml_validate_documents(ids_para_buscar, return_missing = TRUE)
+
+# Buscar apenas IDs válidos
+if (length(validacao$existing) > 0) {
+  docs_validos <- ml_get_documents(validacao$existing)
+}
+```
+
+## Próximos Passos
+
+Agora que você configurou o SDK e explorou as funcionalidades básicas, recomendamos:
+
+1. **Explorar Vinhetas Específicas**:
+   - `vignette("advanced-search")` - Técnicas avançadas de busca
+   - `vignette("geographic-analysis")` - Análise espacial detalhada
+   - `vignette("temporal-analysis")` - Estudos longitudinais
+   - `vignette("citation-management")` - Gestão de referências acadêmicas
+
+2. **Consultar Documentação da API**:
+   - [Documentação Completa](https://monitor-legislativo.br/docs)
+   - [Exemplos de Uso](https://monitor-legislativo.br/examples)
+
+3. **Participar da Comunidade**:
+   - [GitHub Issues](https://github.com/monitor-legislativo/r-sdk/issues)
+   - [Fórum de Pesquisadores](https://forum.monitor-legislativo.br)
+
+## Suporte
+
+Para suporte técnico ou dúvidas sobre o SDK:
+
+- **Email**: api-support@monitor-legislativo.br
+- **GitHub**: [monitor-legislativo/r-sdk](https://github.com/monitor-legislativo/r-sdk)
+- **Documentação**: https://monitor-legislativo.br/r-sdk
+
+---
+
+*Este SDK foi desenvolvido pela equipe do Monitor Legislativo para apoiar a pesquisa acadêmica sobre legislação brasileira. Para citar este trabalho em suas publicações, use a função `ml_generate_citations()` com o próprio SDK como referência.*

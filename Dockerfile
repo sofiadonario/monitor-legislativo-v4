@@ -59,10 +59,20 @@ RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
     rm -rf /tmp/R* && \
     R -e "gc()"
 
-# Stage 4: Geospatial packages (memory intensive)
+# Stage 4: Geospatial packages (memory intensive) - Railway optimized
 RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
-    install.packages(c('sf', 'geobr'), \
-    dependencies = TRUE, Ncpus = 1)" && \
+    tryCatch({ \
+      install.packages(c('sf'), dependencies = TRUE, Ncpus = 1); \
+      cat('sf installed successfully\\n') \
+    }, error = function(e) { \
+      cat('sf installation failed:', e\$message, '\\n') \
+    }); \
+    tryCatch({ \
+      install.packages(c('geobr'), dependencies = TRUE, Ncpus = 1); \
+      cat('geobr installed successfully\\n') \
+    }, error = function(e) { \
+      cat('geobr installation failed:', e\$message, '\\n') \
+    })" && \
     rm -rf /tmp/R* && \
     R -e "gc()"
 

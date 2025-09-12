@@ -1,0 +1,1708 @@
+openapi: 3.0.3
+info:
+  title: Monitor Legislativo API - API Pública v1
+  description: |
+    # Monitor Legislativo API - Sistema de Monitoramento Legislativo Brasileiro
+    
+    API REST abrangente para acesso programático ao sistema de monitoramento legislativo brasileiro, 
+    construída especificamente para pesquisadores acadêmicos, desenvolvedores governamentais e 
+    organizações de tecnologia cívica.
+    
+    ## Recursos Principais
+    
+    - **134.000+ Documentos Legislativos**: Dataset completo da legislação brasileira
+    - **Busca Textual Avançada**: Busca em português com suporte a termos jurídicos
+    - **Análise Geográfica**: Integração IBGE com mapas coropléticos interativos
+    - **Citações Acadêmicas**: Geração automática de citações (ABNT, APA, Chicago)
+    - **Alto Desempenho**: PostgreSQL + Redis para respostas sub-segundo
+    - **Conformidade LGPD**: Proteção e privacidade de dados
+    - **Infraestrutura Escalável**: Deploy no Railway com alta disponibilidade
+    
+    ## Autenticação e Autorização
+    
+    Todos os endpoints requerem uma chave de API válida. Inclua sua chave no cabeçalho `Authorization`:
+    
+    ```http
+    Authorization: Bearer SUA_CHAVE_API
+    ```
+    
+    Ou use o cabeçalho `X-API-Key`:
+    
+    ```http
+    X-API-Key: SUA_CHAVE_API
+    ```
+    
+    ### Níveis de Acesso
+    
+    - **Demo (demo)**: 100 requisições/dia, dados limitados
+    - **Acadêmico (academic)**: 10.000 requisições/dia, acesso completo
+    - **Premium (premium)**: 100.000 requisições/dia, recursos avançados
+    
+    ## Fluxo de Trabalho para Pesquisa Acadêmica
+    
+    1. **Descoberta**: Use `/api/v1/documents` para explorar o dataset
+    2. **Busca**: Use `/api/v1/search` para encontrar documentos específicos
+    3. **Análise**: Use `/api/v1/analytics` para estatísticas e métricas
+    4. **Geográfica**: Use `/api/v1/geographic` para análise espacial
+    5. **Exportação**: Use `/api/v1/export` para download de dados
+    6. **Citações**: Use `/api/v1/citations` para referências acadêmicas
+    
+    ## Conformidade e Padrões
+    
+    - **LGPD**: Lei Geral de Proteção de Dados Pessoais
+    - **ABNT**: Associação Brasileira de Normas Técnicas
+    - **OpenAPI 3.0**: Especificação padrão para APIs REST
+    - **ISO 8601**: Formato de data e hora
+    - **UTF-8**: Codificação de caracteres
+    
+    ## Suporte e Documentação
+    
+    - **Documentação Completa**: https://monitorlegislativo.gov.br/api/docs
+    - **Guia de Início Rápido**: https://monitorlegislativo.gov.br/api/quickstart
+    - **Exemplos de Código**: https://github.com/monitorlegislativo/examples
+    - **Suporte**: api@monitorlegislativo.gov.br
+    
+  version: 1.0.0
+  termsOfService: https://monitorlegislativo.gov.br/termos
+  contact:
+    name: Equipe de Desenvolvimento Monitor Legislativo
+    email: api@monitorlegislativo.gov.br
+    url: https://github.com/monitorlegislativo/api
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+  x-logo:
+    url: https://monitorlegislativo.gov.br/assets/logo-api.png
+    altText: Monitor Legislativo API
+
+servers:
+  - url: https://monitorlegislativo.up.railway.app/api/v1
+    description: Servidor de Produção (Railway)
+    variables:
+      version:
+        default: v1
+        description: Versão da API
+  - url: http://localhost:8000/api/v1
+    description: Servidor de Desenvolvimento
+  - url: https://api.monitorlegislativo.gov.br/v1
+    description: Servidor Governamental Oficial
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+tags:
+  - name: system
+    description: Endpoints de sistema e monitoramento
+    externalDocs:
+      description: Documentação de Sistema
+      url: https://monitorlegislativo.gov.br/docs/system
+  - name: auth
+    description: Autenticação e gerenciamento de usuários
+    externalDocs:
+      description: Guia de Autenticação
+      url: https://monitorlegislativo.gov.br/docs/auth
+  - name: documents
+    description: Operações com documentos legislativos
+    externalDocs:
+      description: Guia de Documentos
+      url: https://monitorlegislativo.gov.br/docs/documents
+  - name: search
+    description: Busca textual avançada e filtros
+    externalDocs:
+      description: Guia de Busca
+      url: https://monitorlegislativo.gov.br/docs/search
+  - name: geographic
+    description: Análise geográfica e integração IBGE
+    externalDocs:
+      description: Guia Geográfico
+      url: https://monitorlegislativo.gov.br/docs/geographic
+  - name: analytics
+    description: Métricas, estatísticas e dashboards
+    externalDocs:
+      description: Guia de Analytics
+      url: https://monitorlegislativo.gov.br/docs/analytics
+  - name: citations
+    description: Geração de citações acadêmicas
+    externalDocs:
+      description: Guia de Citações
+      url: https://monitorlegislativo.gov.br/docs/citations
+  - name: export
+    description: Exportação de dados em massa
+    externalDocs:
+      description: Guia de Exportação
+      url: https://monitorlegislativo.gov.br/docs/export
+  - name: admin
+    description: Administração e gerenciamento (Admin apenas)
+    externalDocs:
+      description: Guia de Administração
+      url: https://monitorlegislativo.gov.br/docs/admin
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token de autenticação JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Chave de API para autenticação
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+        - message
+        - code
+        - timestamp
+      properties:
+        error:
+          type: boolean
+          example: true
+          description: Indica se ocorreu um erro
+        message:
+          type: string
+          example: "Documento não encontrado"
+          description: Mensagem de erro em português
+        code:
+          type: integer
+          example: 404
+          description: Código HTTP do erro
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+          description: Timestamp do erro em ISO 8601
+        details:
+          type: object
+          description: Detalhes adicionais do erro
+          additionalProperties: true
+
+    SuccessResponse:
+      type: object
+      required:
+        - error
+        - message
+        - data
+        - timestamp
+      properties:
+        error:
+          type: boolean
+          example: false
+          description: Indica que não houve erro
+        message:
+          type: string
+          example: "Dados recuperados com sucesso"
+          description: Mensagem de sucesso em português
+        data:
+          description: Dados retornados pela API
+          oneOf:
+            - type: object
+            - type: array
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+          description: Timestamp da resposta em ISO 8601
+        meta:
+          type: object
+          description: Metadados da resposta (paginação, filtros, etc.)
+          properties:
+            total:
+              type: integer
+              description: Total de registros
+            page:
+              type: integer
+              description: Página atual
+            limit:
+              type: integer
+              description: Limite por página
+            has_next:
+              type: boolean
+              description: Indica se há próxima página
+
+    Document:
+      type: object
+      required:
+        - id
+        - titulo
+        - data_publicacao
+        - estado
+        - species
+      properties:
+        id:
+          type: string
+          example: "doc_12345"
+          description: Identificador único do documento
+        titulo:
+          type: string
+          example: "Lei nº 14.133, de 1º de abril de 2021"
+          description: Título completo do documento
+        ementa:
+          type: string
+          example: "Lei de Licitações e Contratos Administrativos"
+          description: Ementa ou resumo do documento
+        data_publicacao:
+          type: string
+          format: date
+          example: "2021-04-01"
+          description: Data de publicação em YYYY-MM-DD
+        estado:
+          type: string
+          example: "SP"
+          description: Estado de origem (código de 2 letras)
+        municipio:
+          type: string
+          example: "São Paulo"
+          description: Município de origem
+        species:
+          type: string
+          example: "Lei"
+          description: Tipo de documento (Lei, Decreto, etc.)
+        numero:
+          type: string
+          example: "14.133"
+          description: Número do documento
+        ano:
+          type: integer
+          example: 2021
+          description: Ano de publicação
+        orgao:
+          type: string
+          example: "Presidência da República"
+          description: Órgão emissor
+        assunto:
+          type: array
+          items:
+            type: string
+          example: ["Licitações", "Contratos Administrativos"]
+          description: Assuntos/tags do documento
+        texto_completo:
+          type: string
+          description: Texto completo do documento (apenas para documentos específicos)
+        url_oficial:
+          type: string
+          format: uri
+          example: "http://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm"
+          description: URL oficial do documento
+        arquivo_pdf:
+          type: string
+          format: uri
+          description: URL do arquivo PDF do documento
+        created_at:
+          type: string
+          format: date-time
+          description: Data de criação no sistema
+        updated_at:
+          type: string
+          format: date-time
+          description: Data da última atualização
+
+    DocumentSearch:
+      type: object
+      properties:
+        query:
+          type: string
+          example: "licitação pública"
+          description: Termo de busca
+        filters:
+          type: object
+          properties:
+            estado:
+              type: string
+              example: "SP"
+              description: Filtro por estado
+            ano_inicio:
+              type: integer
+              example: 2020
+              description: Ano inicial
+            ano_fim:
+              type: integer
+              example: 2024
+              description: Ano final
+            species:
+              type: string
+              example: "Lei"
+              description: Tipo de documento
+            orgao:
+              type: string
+              example: "Presidência da República"
+              description: Órgão emissor
+        sort:
+          type: string
+          enum: [relevance, date_desc, date_asc, title]
+          default: relevance
+          description: Ordenação dos resultados
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 50
+          description: Limite de resultados
+        offset:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Offset para paginação
+
+    GeographicAnalysis:
+      type: object
+      required:
+        - region
+        - count
+        - percentage
+      properties:
+        region:
+          type: string
+          example: "SP"
+          description: Código da região analisada
+        region_name:
+          type: string
+          example: "São Paulo"
+          description: Nome completo da região
+        count:
+          type: integer
+          example: 1250
+          description: Número de documentos na região
+        percentage:
+          type: number
+          format: float
+          example: 12.5
+          description: Percentual do total
+        density:
+          type: number
+          format: float
+          example: 0.85
+          description: Densidade legislativa (docs/área)
+        coordinates:
+          type: object
+          properties:
+            lat:
+              type: number
+              format: float
+            lng:
+              type: number
+              format: float
+          description: Coordenadas geográficas da região
+
+    Citation:
+      type: object
+      required:
+        - document_id
+        - style
+        - citation
+      properties:
+        document_id:
+          type: string
+          example: "doc_12345"
+          description: ID do documento citado
+        style:
+          type: string
+          enum: [abnt, apa, chicago, vancouver]
+          example: "abnt"
+          description: Estilo de citação
+        citation:
+          type: string
+          example: "BRASIL. Lei nº 14.133, de 1º de abril de 2021. Lei de Licitações e Contratos Administrativos. Brasília, DF: Presidência da República, 2021."
+          description: Citação formatada
+        bibtex:
+          type: string
+          description: Formato BibTeX para LaTeX
+        endnote:
+          type: string
+          description: Formato EndNote
+        ris:
+          type: string
+          description: Formato RIS para gerenciadores de referência
+
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - tier
+        - status
+      properties:
+        id:
+          type: string
+          example: "user_abc123"
+          description: ID único do usuário
+        email:
+          type: string
+          format: email
+          example: "pesquisador@universidade.edu.br"
+          description: Email do usuário
+        name:
+          type: string
+          example: "Dr. João Silva"
+          description: Nome completo
+        institution:
+          type: string
+          example: "Universidade de São Paulo"
+          description: Instituição acadêmica
+        tier:
+          type: string
+          enum: [demo, academic, premium]
+          example: "academic"
+          description: Nível de acesso
+        status:
+          type: string
+          enum: [active, suspended, pending_verification]
+          example: "active"
+          description: Status da conta
+        api_key:
+          type: string
+          example: "ml_ak_abc123..."
+          description: Chave de API (apenas em respostas específicas)
+        rate_limit:
+          type: object
+          properties:
+            daily_requests:
+              type: integer
+              example: 10000
+            remaining_today:
+              type: integer
+              example: 8750
+            reset_time:
+              type: string
+              format: date-time
+        created_at:
+          type: string
+          format: date-time
+        verified_at:
+          type: string
+          format: date-time
+
+    AnalyticsReport:
+      type: object
+      properties:
+        period:
+          type: string
+          example: "2024-01"
+          description: Período da análise
+        total_documents:
+          type: integer
+          example: 134000
+          description: Total de documentos
+        documents_by_state:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeographicAnalysis'
+        documents_by_type:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            Lei: 45000
+            Decreto: 38000
+            Portaria: 25000
+        temporal_distribution:
+          type: array
+          items:
+            type: object
+            properties:
+              year:
+                type: integer
+              count:
+                type: integer
+        top_keywords:
+          type: array
+          items:
+            type: object
+            properties:
+              keyword:
+                type: string
+              frequency:
+                type: integer
+        regional_insights:
+          type: object
+          description: Insights regionais específicos
+
+paths:
+  # SYSTEM ENDPOINTS
+  /health:
+    get:
+      tags: [system]
+      summary: Verificação de saúde do sistema
+      description: |
+        Endpoint para verificar o status de saúde do sistema e suas dependências.
+        Usado para monitoramento e health checks automáticos.
+      operationId: getHealthStatus
+      security: []
+      responses:
+        '200':
+          description: Sistema operacional
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: "healthy"
+                          version:
+                            type: string
+                            example: "1.0.0"
+                          database:
+                            type: string
+                            example: "connected"
+                          cache:
+                            type: string
+                            example: "operational"
+                          uptime:
+                            type: string
+                            example: "15d 4h 32m"
+              examples:
+                healthy:
+                  summary: Sistema saudável
+                  value:
+                    error: false
+                    message: "Sistema operacional"
+                    data:
+                      status: "healthy"
+                      version: "1.0.0"
+                      database: "connected"
+                      cache: "operational"
+                      uptime: "15d 4h 32m"
+                    timestamp: "2024-01-15T10:30:00Z"
+
+  /info:
+    get:
+      tags: [system]
+      summary: Informações da API
+      description: |
+        Retorna informações detalhadas sobre a API, incluindo versão, recursos
+        disponíveis e limites de uso.
+      operationId: getApiInfo
+      security: []
+      responses:
+        '200':
+          description: Informações da API
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /metrics:
+    get:
+      tags: [system]
+      summary: Métricas do sistema
+      description: |
+        Endpoint para métricas do sistema (Prometheus format).
+        Requer autenticação de administrador.
+      operationId: getSystemMetrics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Métricas do sistema
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  # HELP api_requests_total Total number of API requests
+                  # TYPE api_requests_total counter
+                  api_requests_total{method="GET",endpoint="/documents"} 12345
+
+  # AUTHENTICATION ENDPOINTS
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Registro de novo usuário
+      description: |
+        Registra um novo usuário no sistema. Para usuários acadêmicos,
+        é necessário verificação institucional posterior.
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - name
+                - institution
+                - tier
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "pesquisador@usp.br"
+                name:
+                  type: string
+                  example: "Dr. João Silva"
+                institution:
+                  type: string
+                  example: "Universidade de São Paulo"
+                tier:
+                  type: string
+                  enum: [demo, academic]
+                  example: "academic"
+                research_area:
+                  type: string
+                  example: "Direito Constitucional"
+                justification:
+                  type: string
+                  example: "Pesquisa sobre federalismo brasileiro"
+      responses:
+        '201':
+          description: Usuário registrado com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/verify:
+    post:
+      tags: [auth]
+      summary: Verificação de email
+      description: |
+        Verifica o email do usuário usando código enviado por email.
+      operationId: verifyEmail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - verification_code
+              properties:
+                email:
+                  type: string
+                  format: email
+                verification_code:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: Email verificado com sucesso
+        '400':
+          description: Código inválido
+
+  /auth/api-key:
+    get:
+      tags: [auth]
+      summary: Recuperar chave de API
+      description: |
+        Recupera a chave de API do usuário autenticado.
+      operationId: getApiKey
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Chave de API
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          api_key:
+                            type: string
+                            example: "ml_ak_abc123..."
+                          tier:
+                            type: string
+                            example: "academic"
+                          rate_limit:
+                            type: object
+
+    post:
+      tags: [auth]
+      summary: Regenerar chave de API
+      description: |
+        Gera uma nova chave de API, invalidando a anterior.
+      operationId: regenerateApiKey
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Nova chave de API gerada
+
+  # DOCUMENTS ENDPOINTS
+  /documents:
+    get:
+      tags: [documents]
+      summary: Listar documentos legislativos
+      description: |
+        Lista documentos legislativos com suporte a filtros avançados e paginação.
+        Endpoint principal para exploração do dataset.
+      operationId: listDocuments
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum: [AC, AL, AP, AM, BA, CE, DF, ES, GO, MA, MT, MS, MG, PA, PB, PR, PE, PI, RJ, RN, RS, RO, RR, SC, SP, SE, TO]
+          description: Filtro por estado brasileiro
+          example: SP
+        - name: ano
+          in: query
+          schema:
+            type: integer
+            minimum: 1988
+            maximum: 2024
+          description: Filtro por ano de publicação
+          example: 2023
+        - name: species
+          in: query
+          schema:
+            type: string
+          description: Tipo de documento (Lei, Decreto, etc.)
+          example: Lei
+        - name: orgao
+          in: query
+          schema:
+            type: string
+          description: Órgão emissor
+          example: "Presidência da República"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+          description: Número máximo de resultados
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Número de resultados a pular (paginação)
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [date_desc, date_asc, title, relevance]
+            default: date_desc
+          description: Ordenação dos resultados
+      responses:
+        '200':
+          description: Lista de documentos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Document'
+              examples:
+                documentos_sp:
+                  summary: Documentos de São Paulo
+                  value:
+                    error: false
+                    message: "134 documentos encontrados"
+                    data:
+                      - id: "doc_sp_001"
+                        titulo: "Lei nº 17.293, de 15 de outubro de 2020"
+                        ementa: "Institui o Programa de Proteção e Defesa do Usuário de Serviços Públicos do Estado de São Paulo"
+                        data_publicacao: "2020-10-15"
+                        estado: "SP"
+                        species: "Lei"
+                        numero: "17.293"
+                        ano: 2020
+                    meta:
+                      total: 134
+                      limit: 50
+                      offset: 0
+                      has_next: true
+                    timestamp: "2024-01-15T10:30:00Z"
+        '400':
+          description: Parâmetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /documents/{id}:
+    get:
+      tags: [documents]
+      summary: Obter documento específico
+      description: |
+        Retorna os detalhes completos de um documento legislativo específico,
+        incluindo texto completo quando disponível.
+      operationId: getDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID único do documento
+          example: "doc_sp_001"
+        - name: include_full_text
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Incluir texto completo do documento
+      responses:
+        '200':
+          description: Detalhes do documento
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Document'
+        '404':
+          description: Documento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /documents/categories:
+    get:
+      tags: [documents]
+      summary: Categorias de documentos
+      description: |
+        Lista todas as categorias e tipos de documentos disponíveis no sistema.
+      operationId: getDocumentCategories
+      responses:
+        '200':
+          description: Categorias disponíveis
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          species:
+                            type: array
+                            items:
+                              type: string
+                            example: ["Lei", "Decreto", "Medida Provisória", "Portaria"]
+                          orgaos:
+                            type: array
+                            items:
+                              type: string
+                            example: ["Presidência da República", "Ministério da Fazenda"]
+                          estados:
+                            type: array
+                            items:
+                              type: string
+                            example: ["SP", "RJ", "MG", "RS"]
+
+  /documents/stats:
+    get:
+      tags: [documents]
+      summary: Estatísticas de documentos
+      description: |
+        Retorna estatísticas agregadas dos documentos, útil para análises exploratórias.
+      operationId: getDocumentStats
+      parameters:
+        - name: groupBy
+          in: query
+          schema:
+            type: string
+            enum: [estado, ano, species, orgao]
+            default: estado
+          description: Agrupar estatísticas por campo
+      responses:
+        '200':
+          description: Estatísticas de documentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # SEARCH ENDPOINTS
+  /search:
+    post:
+      tags: [search]
+      summary: Busca textual avançada
+      description: |
+        Realiza busca textual avançada nos documentos legislativos com suporte
+        a termos jurídicos em português e múltiplos filtros.
+      operationId: searchDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentSearch'
+            examples:
+              busca_simples:
+                summary: Busca simples
+                value:
+                  query: "licitação pública"
+                  limit: 20
+              busca_avancada:
+                summary: Busca avançada com filtros
+                value:
+                  query: "direitos humanos AND educação"
+                  filters:
+                    estado: "SP"
+                    ano_inicio: 2020
+                    species: "Lei"
+                  sort: "relevance"
+                  limit: 50
+      responses:
+        '200':
+          description: Resultados da busca
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/Document'
+                            - type: object
+                              properties:
+                                relevance_score:
+                                  type: number
+                                  format: float
+                                  description: Score de relevância (0-1)
+                                highlights:
+                                  type: array
+                                  items:
+                                    type: string
+                                  description: Trechos destacados
+        '400':
+          description: Query de busca inválida
+
+  /search/suggest:
+    get:
+      tags: [search]
+      summary: Sugestões de busca
+      description: |
+        Fornece sugestões de termos de busca baseadas no input do usuário.
+      operationId: getSearchSuggestions
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Termo parcial para sugestões
+          example: "licit"
+      responses:
+        '200':
+          description: Sugestões de busca
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            term:
+                              type: string
+                            frequency:
+                              type: integer
+                            category:
+                              type: string
+
+  /search/similar:
+    get:
+      tags: [search]
+      summary: Documentos similares
+      description: |
+        Encontra documentos similares a um documento específico usando análise semântica.
+      operationId: getSimilarDocuments
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ID do documento de referência
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          description: Número de documentos similares
+      responses:
+        '200':
+          description: Documentos similares
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/Document'
+                            - type: object
+                              properties:
+                                similarity_score:
+                                  type: number
+                                  format: float
+
+  # GEOGRAPHIC ENDPOINTS
+  /geographic/analysis:
+    get:
+      tags: [geographic]
+      summary: Análise geográfica de documentos
+      description: |
+        Realiza análise geográfica dos documentos legislativos com integração IBGE
+        para visualizações em mapas coropléticos.
+      operationId: getGeographicAnalysis
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [state, region, municipality]
+            default: state
+          description: Nível de agregação geográfica
+        - name: metric
+          in: query
+          schema:
+            type: string
+            enum: [count, density, per_capita]
+            default: count
+          description: Métrica de análise
+        - name: year
+          in: query
+          schema:
+            type: integer
+          description: Filtro por ano específico
+      responses:
+        '200':
+          description: Análise geográfica
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GeographicAnalysis'
+
+  /geographic/choropleth:
+    get:
+      tags: [geographic]
+      summary: Dados para mapa coroplético
+      description: |
+        Retorna dados formatados especificamente para criação de mapas coropléticos
+        com coordenadas e valores agregados.
+      operationId: getChoroplethData
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [state, municipality]
+            default: state
+        - name: metric
+          in: query
+          schema:
+            type: string
+            enum: [count, density]
+            default: count
+      responses:
+        '200':
+          description: Dados para mapa coroplético
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          features:
+                            type: array
+                            description: Features GeoJSON
+                          metadata:
+                            type: object
+                            description: Metadados do mapa
+
+  /geographic/ibge:
+    get:
+      tags: [geographic]
+      summary: Integração com dados IBGE
+      description: |
+        Fornece dados integrados com o IBGE para análises demográficas e socioeconômicas.
+      operationId: getIbgeIntegration
+      parameters:
+        - name: indicator
+          in: query
+          schema:
+            type: string
+            enum: [population, gdp, education, development_index]
+          description: Indicador IBGE
+        - name: year
+          in: query
+          schema:
+            type: integer
+            default: 2022
+          description: Ano de referência
+      responses:
+        '200':
+          description: Dados IBGE integrados
+
+  # ANALYTICS ENDPOINTS
+  /analytics/dashboard:
+    get:
+      tags: [analytics]
+      summary: Dados para dashboard
+      description: |
+        Retorna dados agregados e métricas para construção de dashboards analíticos.
+      operationId: getDashboardData
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [last_month, last_year, all_time]
+            default: last_year
+          description: Período de análise
+      responses:
+        '200':
+          description: Dados do dashboard
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AnalyticsReport'
+
+  /analytics/trends:
+    get:
+      tags: [analytics]
+      summary: Análise de tendências
+      description: |
+        Identifica tendências temporais e padrões nos dados legislativos.
+      operationId: getTrends
+      parameters:
+        - name: timeframe
+          in: query
+          schema:
+            type: string
+            enum: [monthly, yearly]
+            default: yearly
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [all, by_state, by_type]
+            default: all
+      responses:
+        '200':
+          description: Análise de tendências
+
+  /analytics/keywords:
+    get:
+      tags: [analytics]
+      summary: Análise de palavras-chave
+      description: |
+        Extrai e analisa palavras-chave mais frequentes nos documentos.
+      operationId: getKeywordAnalysis
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [last_month, last_year, all_time]
+            default: last_year
+        - name: min_frequency
+          in: query
+          schema:
+            type: integer
+            minimum: 2
+            default: 10
+          description: Frequência mínima da palavra-chave
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Análise de palavras-chave
+
+  # CITATIONS ENDPOINTS
+  /citations/generate:
+    post:
+      tags: [citations]
+      summary: Gerar citação acadêmica
+      description: |
+        Gera citações acadêmicas formatadas para documentos legislativos
+        nos principais estilos acadêmicos (ABNT, APA, Chicago, Vancouver).
+      operationId: generateCitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document_id
+                - style
+              properties:
+                document_id:
+                  type: string
+                  example: "doc_sp_001"
+                style:
+                  type: string
+                  enum: [abnt, apa, chicago, vancouver]
+                  example: "abnt"
+                format:
+                  type: string
+                  enum: [text, bibtex, endnote, ris]
+                  default: text
+                additional_authors:
+                  type: array
+                  items:
+                    type: string
+                  description: Autores adicionais para incluir
+      responses:
+        '200':
+          description: Citação gerada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Citation'
+              examples:
+                citacao_abnt:
+                  summary: Citação ABNT
+                  value:
+                    error: false
+                    message: "Citação gerada com sucesso"
+                    data:
+                      document_id: "doc_sp_001"
+                      style: "abnt"
+                      citation: "BRASIL. Lei nº 14.133, de 1º de abril de 2021. Lei de Licitações e Contratos Administrativos. Brasília, DF: Presidência da República, 2021. Disponível em: <http://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm>. Acesso em: 15 jan. 2024."
+                      bibtex: "@misc{brasil2021lei14133,\n  title={Lei n° 14.133, de 1° de abril de 2021},\n  author={Brasil},\n  year={2021},\n  publisher={Presidência da República},\n  url={http://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm}\n}"
+                    timestamp: "2024-01-15T10:30:00Z"
+
+  /citations/batch:
+    post:
+      tags: [citations]
+      summary: Gerar múltiplas citações
+      description: |
+        Gera citações para múltiplos documentos de uma vez, útil para
+        bibliografias extensas.
+      operationId: generateBatchCitations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document_ids
+                - style
+              properties:
+                document_ids:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 50
+                  example: ["doc_sp_001", "doc_rj_002", "doc_mg_003"]
+                style:
+                  type: string
+                  enum: [abnt, apa, chicago, vancouver]
+                format:
+                  type: string
+                  enum: [text, bibtex, endnote, ris]
+                  default: text
+      responses:
+        '200':
+          description: Citações geradas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Citation'
+
+  /citations/styles:
+    get:
+      tags: [citations]
+      summary: Estilos de citação disponíveis
+      description: |
+        Lista todos os estilos de citação suportados com exemplos.
+      operationId: getCitationStyles
+      responses:
+        '200':
+          description: Estilos de citação
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            style:
+                              type: string
+                            name:
+                              type: string
+                            description:
+                              type: string
+                            example:
+                              type: string
+
+  # EXPORT ENDPOINTS
+  /export/documents:
+    post:
+      tags: [export]
+      summary: Exportar documentos
+      description: |
+        Exporta documentos em diversos formatos para análise offline.
+        Suporta filtros avançados e múltiplos formatos de saída.
+      operationId: exportDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filters:
+                  type: object
+                  description: Filtros de documentos (mesmo formato da busca)
+                format:
+                  type: string
+                  enum: [json, csv, xlsx, xml]
+                  default: csv
+                  description: Formato de exportação
+                fields:
+                  type: array
+                  items:
+                    type: string
+                  description: Campos específicos para exportar
+                  example: ["id", "titulo", "data_publicacao", "estado"]
+                max_records:
+                  type: integer
+                  maximum: 10000
+                  default: 1000
+                  description: Número máximo de registros
+      responses:
+        '200':
+          description: Arquivo de exportação
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Parâmetros de exportação inválidos
+
+  /export/analytics:
+    post:
+      tags: [export]
+      summary: Exportar relatório analítico
+      description: |
+        Gera e exporta relatórios analíticos completos em PDF ou Excel.
+      operationId: exportAnalyticsReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - report_type
+              properties:
+                report_type:
+                  type: string
+                  enum: [geographic, temporal, keyword, comprehensive]
+                format:
+                  type: string
+                  enum: [pdf, xlsx]
+                  default: pdf
+                parameters:
+                  type: object
+                  description: Parâmetros específicos do relatório
+                include_charts:
+                  type: boolean
+                  default: true
+                language:
+                  type: string
+                  enum: [pt, en]
+                  default: pt
+      responses:
+        '200':
+          description: Relatório gerado
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  # ADMIN ENDPOINTS
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: Listar usuários (Admin)
+      description: |
+        Lista todos os usuários do sistema com filtros e paginação.
+        Requer privilégios de administrador.
+      operationId: listUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, active, suspended, pending_verification]
+            default: all
+        - name: tier
+          in: query
+          schema:
+            type: string
+            enum: [all, demo, academic, premium]
+            default: all
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+        '403':
+          description: Acesso negado
+
+  /admin/users/{user_id}:
+    patch:
+      tags: [admin]
+      summary: Atualizar usuário (Admin)
+      description: |
+        Atualiza dados de um usuário específico, incluindo tier e status.
+      operationId: updateUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tier:
+                  type: string
+                  enum: [demo, academic, premium]
+                status:
+                  type: string
+                  enum: [active, suspended, pending_verification]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Usuário atualizado
+        '403':
+          description: Acesso negado
+        '404':
+          description: Usuário não encontrado
+
+  /admin/usage:
+    get:
+      tags: [admin]
+      summary: Estatísticas de uso (Admin)
+      description: |
+        Retorna estatísticas detalhadas de uso da API.
+      operationId: getUsageStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: weekly
+      responses:
+        '200':
+          description: Estatísticas de uso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+x-readme:
+  explorer-enabled: true
+  proxy-enabled: true
+  samples-enabled: true
+  samples-languages:
+    - curl
+    - javascript
+    - python
+    - r
+
+x-code-samples:
+  - lang: 'curl'
+    source: |
+      # Buscar documentos de São Paulo
+      curl -X GET "https://monitorlegislativo.up.railway.app/api/v1/documents?estado=SP&limit=10" \
+        -H "X-API-Key: SUA_CHAVE_API"
+  
+  - lang: 'python'
+    source: |
+      import requests
+      
+      # Configurar autenticação
+      headers = {"X-API-Key": "SUA_CHAVE_API"}
+      base_url = "https://monitorlegislativo.up.railway.app/api/v1"
+      
+      # Buscar documentos
+      response = requests.get(f"{base_url}/documents", 
+                            params={"estado": "SP", "limit": 10},
+                            headers=headers)
+      
+      if response.status_code == 200:
+          data = response.json()
+          for doc in data["data"]:
+              print(f"{doc['titulo']} - {doc['data_publicacao']}")
+  
+  - lang: 'r'
+    source: |
+      library(httr)
+      library(jsonlite)
+      
+      # Configurar autenticação
+      api_key <- "SUA_CHAVE_API"
+      base_url <- "https://monitorlegislativo.up.railway.app/api/v1"
+      
+      # Buscar documentos
+      response <- GET(
+        paste0(base_url, "/documents"),
+        query = list(estado = "SP", limit = 10),
+        add_headers(`X-API-Key` = api_key)
+      )
+      
+      if (status_code(response) == 200) {
+        data <- fromJSON(content(response, "text"))
+        print(data$data)
+      }
+  
+  - lang: 'javascript'
+    source: |
+      // Configurar cliente
+      const apiKey = 'SUA_CHAVE_API';
+      const baseUrl = 'https://monitorlegislativo.up.railway.app/api/v1';
+      
+      // Buscar documentos
+      fetch(`${baseUrl}/documents?estado=SP&limit=10`, {
+        headers: {
+          'X-API-Key': apiKey
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        data.data.forEach(doc => {
+          console.log(`${doc.titulo} - ${doc.data_publicacao}`);
+        });
+      })
+      .catch(error => console.error('Erro:', error));

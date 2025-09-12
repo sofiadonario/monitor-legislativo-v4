@@ -1,0 +1,550 @@
+/*
+===========================================================================
+BRAZILIAN LEGISLATIVE MONITORING SYSTEM - ACCESSIBILITY FRAMEWORK
+===========================================================================
+WCAG 2.1 AA Compliance Implementation
+eMAG (Brazilian Government Accessibility) Standards
+Screen Reader Optimization for Legal Professionals
+===========================================================================
+*/
+
+/* ==============================================
+   FOCUS MANAGEMENT AND KEYBOARD NAVIGATION
+   ============================================== */
+
+/* High-visibility focus indicators */
+*:focus {
+  outline: 3px solid var(--verde-brasil-primary, #009639);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 150, 57, 0.2);
+}
+
+/* Enhanced focus for interactive elements */
+button:focus,
+.btn:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus,
+.shiny-input-container:focus-within {
+  outline: 3px solid var(--verde-brasil-primary, #009639);
+  outline-offset: 2px;
+  box-shadow: 
+    0 0 0 1px rgba(0, 150, 57, 0.2),
+    0 0 0 4px rgba(0, 150, 57, 0.1);
+}
+
+/* Focus-visible for keyboard users only */
+@supports selector(:focus-visible) {
+  *:focus {
+    outline: none;
+  }
+  
+  *:focus-visible {
+    outline: 3px solid var(--verde-brasil-primary, #009639);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 1px rgba(0, 150, 57, 0.2);
+  }
+}
+
+/* Skip links for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--verde-brasil-primary, #009639);
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: bold;
+  z-index: 10000;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* ==============================================
+   SCREEN READER OPTIMIZATIONS
+   ============================================== */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only-focusable:active,
+.sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Enhanced semantic markup */
+.landmark-heading {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--verde-brasil-primary, #009639);
+  margin: 0 0 var(--spacing-md, 1rem) 0;
+}
+
+/* Status announcements for screen readers */
+.sr-status {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.sr-status[aria-live="polite"],
+.sr-status[aria-live="assertive"] {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ==============================================
+   COLOR ACCESSIBILITY AND CONTRAST
+   ============================================== */
+
+/* High contrast color scheme */
+.high-contrast {
+  --verde-brasil-primary: #006600;
+  --verde-brasil-secondary: #004400;
+  --verde-brasil-light: #008800;
+  --cinza-brasil: #000000;
+  --cinza-claro: #FFFFFF;
+  --cinza-escuro: #000000;
+  --text-color: #000000;
+  --bg-color: #FFFFFF;
+}
+
+.high-contrast * {
+  border-color: #000000 !important;
+}
+
+.high-contrast button,
+.high-contrast .btn {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast button:hover,
+.high-contrast .btn:hover {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Color-blind friendly palette */
+.colorblind-friendly {
+  /* Use patterns and shapes instead of color alone */
+}
+
+.colorblind-friendly .success {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="white" d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>');
+}
+
+.colorblind-friendly .error {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="white" d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>');
+}
+
+/* ==============================================
+   FONT SCALING AND READABILITY
+   ============================================== */
+
+/* Respect user's font size preferences */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    font-size: calc(1rem + 0.25vw);
+  }
+}
+
+/* Enhanced readability */
+.enhanced-readability {
+  font-family: "OpenDyslexic", "Comic Sans MS", Verdana, Arial, sans-serif;
+  line-height: 1.8;
+  letter-spacing: 0.05em;
+  word-spacing: 0.15em;
+}
+
+/* Large text mode */
+.large-text {
+  font-size: 1.25em;
+  line-height: 1.6;
+}
+
+.large-text h1 { font-size: 2.5em; }
+.large-text h2 { font-size: 2.25em; }
+.large-text h3 { font-size: 2em; }
+.large-text h4 { font-size: 1.75em; }
+.large-text h5 { font-size: 1.5em; }
+.large-text h6 { font-size: 1.25em; }
+
+/* ==============================================
+   FORM ACCESSIBILITY ENHANCEMENTS
+   ============================================== */
+
+/* Enhanced form labeling */
+.form-group {
+  margin-bottom: var(--spacing-lg, 1.5rem);
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  color: var(--cinza-escuro, #424242);
+  margin-bottom: var(--spacing-sm, 0.5rem);
+  font-size: var(--font-size-base, 1rem);
+}
+
+.form-label.required::after {
+  content: " *";
+  color: #d32f2f;
+  font-weight: bold;
+  speak: literal-punctuation;
+}
+
+/* Enhanced form controls */
+.form-control {
+  border: 2px solid var(--cinza-brasil, #757575);
+  border-radius: var(--radius-md, 0.5rem);
+  padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
+  font-size: var(--font-size-base, 1rem);
+  background-color: white;
+  transition: all 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: var(--verde-brasil-primary, #009639);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(0, 150, 57, 0.1);
+}
+
+.form-control[aria-invalid="true"] {
+  border-color: #d32f2f;
+}
+
+.form-control[aria-invalid="true"]:focus {
+  border-color: #d32f2f;
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+}
+
+/* Error messages */
+.form-error {
+  display: block;
+  color: #d32f2f;
+  font-size: var(--font-size-sm, 0.875rem);
+  margin-top: var(--spacing-xs, 0.25rem);
+  font-weight: 500;
+}
+
+.form-error::before {
+  content: "⚠️ ";
+  margin-right: var(--spacing-xs, 0.25rem);
+}
+
+/* Help text */
+.form-help {
+  display: block;
+  color: var(--cinza-brasil, #757575);
+  font-size: var(--font-size-sm, 0.875rem);
+  margin-top: var(--spacing-xs, 0.25rem);
+}
+
+/* ==============================================
+   TABLE ACCESSIBILITY
+   ============================================== */
+
+.accessible-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--spacing-lg, 1.5rem) 0;
+}
+
+.accessible-table caption {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--verde-brasil-primary, #009639);
+  text-align: left;
+  padding: var(--spacing-md, 1rem) 0;
+}
+
+.accessible-table th {
+  background-color: var(--verde-brasil-primary, #009639);
+  color: white;
+  font-weight: 600;
+  text-align: left;
+  padding: var(--spacing-md, 1rem);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.accessible-table td {
+  padding: var(--spacing-md, 1rem);
+  border: 1px solid #e0e0e0;
+  vertical-align: top;
+}
+
+.accessible-table tbody tr:nth-child(even) {
+  background-color: rgba(0, 150, 57, 0.05);
+}
+
+.accessible-table tbody tr:hover {
+  background-color: rgba(0, 150, 57, 0.1);
+}
+
+/* ==============================================
+   NAVIGATION AND MENU ACCESSIBILITY
+   ============================================== */
+
+/* Accessible dropdown menus */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: var(--z-dropdown, 1000);
+  display: none;
+  min-width: 10rem;
+  padding: var(--spacing-sm, 0.5rem) 0;
+  margin: 0;
+  font-size: var(--font-size-base, 1rem);
+  color: var(--cinza-escuro, #424242);
+  text-align: left;
+  list-style: none;
+  background-color: white;
+  background-clip: padding-box;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-md, 0.5rem);
+  box-shadow: var(--shadow-lg);
+}
+
+.dropdown-menu[aria-expanded="true"] {
+  display: block;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
+  clear: both;
+  font-weight: 400;
+  color: var(--cinza-escuro, #424242);
+  text-align: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  background-color: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  color: var(--verde-brasil-primary, #009639);
+  background-color: rgba(0, 150, 57, 0.1);
+}
+
+/* ==============================================
+   NOTIFICATION AND ALERT ACCESSIBILITY
+   ============================================== */
+
+.alert {
+  position: relative;
+  padding: var(--spacing-md, 1rem);
+  margin-bottom: var(--spacing-lg, 1.5rem);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md, 0.5rem);
+  font-weight: 500;
+}
+
+.alert-success {
+  color: #1b5e20;
+  background-color: #e8f5e8;
+  border-color: #4caf50;
+}
+
+.alert-info {
+  color: #0d47a1;
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.alert-warning {
+  color: #e65100;
+  background-color: #fff3e0;
+  border-color: #ff9800;
+}
+
+.alert-error,
+.alert-danger {
+  color: #b71c1c;
+  background-color: #ffebee;
+  border-color: #f44336;
+}
+
+/* Alert icons for better comprehension */
+.alert::before {
+  margin-right: var(--spacing-sm, 0.5rem);
+  font-weight: bold;
+}
+
+.alert-success::before {
+  content: "✓";
+  color: #4caf50;
+}
+
+.alert-info::before {
+  content: "ℹ";
+  color: #2196f3;
+}
+
+.alert-warning::before {
+  content: "⚠";
+  color: #ff9800;
+}
+
+.alert-error::before,
+.alert-danger::before {
+  content: "✕";
+  color: #f44336;
+}
+
+/* ==============================================
+   LOADING AND PROGRESS INDICATORS
+   ============================================== */
+
+/* Accessible loading spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border: 0.25rem solid rgba(0, 150, 57, 0.25);
+  border-right-color: var(--verde-brasil-primary, #009639);
+  border-radius: 50%;
+  animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  margin-left: var(--spacing-sm, 0.5rem);
+  color: var(--verde-brasil-primary, #009639);
+  font-weight: 500;
+}
+
+/* Progress bar */
+.progress {
+  display: flex;
+  height: 1rem;
+  overflow: hidden;
+  font-size: var(--font-size-xs, 0.75rem);
+  background-color: #e0e0e0;
+  border-radius: var(--radius-md, 0.5rem);
+}
+
+.progress-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  color: white;
+  text-align: center;
+  white-space: nowrap;
+  background-color: var(--verde-brasil-primary, #009639);
+  transition: width 0.6s ease;
+}
+
+/* ==============================================
+   RESPONSIVE ACCESSIBILITY ENHANCEMENTS
+   ============================================== */
+
+/* Touch target size for mobile */
+@media (max-width: 767.98px) {
+  button, 
+  .btn, 
+  a[role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    min-height: 48px;
+    min-width: 48px;
+    font-size: var(--font-size-lg, 1.125rem);
+  }
+  
+  .form-control {
+    min-height: 48px;
+    font-size: var(--font-size-lg, 1.125rem);
+  }
+}
+
+/* ==============================================
+   PRINT ACCESSIBILITY
+   ============================================== */
+
+@media print {
+  .alert::before,
+  .form-error::before {
+    content: none;
+  }
+  
+  .alert {
+    border: 2px solid black !important;
+    background: white !important;
+    color: black !important;
+  }
+  
+  .sr-only {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: normal !important;
+  }
+}
+
+/* ==============================================
+   REDUCED MOTION ACCESSIBILITY
+   ============================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+    border-right-color: var(--verde-brasil-primary, #009639);
+  }
+  
+  .progress-bar {
+    transition: none;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

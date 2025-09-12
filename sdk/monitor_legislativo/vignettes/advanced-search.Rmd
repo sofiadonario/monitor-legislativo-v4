@@ -1,0 +1,647 @@
+---
+title: "Advanced Search Techniques"
+author: "Monitor Legislativo Research Team"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Advanced Search Techniques}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Técnicas Avançadas de Busca
+
+Esta vinheta demonstra técnicas avançadas de busca no Monitor Legislativo, incluindo operadores booleanos, busca em campos específicos, filtros complexos e otimização de consultas para pesquisa acadêmica.
+
+```{r setup}
+library(monitor.legislativo)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+```
+
+## Operadores de Busca
+
+### 1. Operadores Booleanos
+
+```{r boolean_operators}
+# Operador AND - ambos termos devem estar presentes
+results_and <- ml_search_advanced(
+  query = "transporte AND sustentável",
+  search_fields = c("title", "summary", "content")
+)
+
+# Operador OR - qualquer um dos termos
+results_or <- ml_search_advanced(
+  query = "transporte OR mobilidade",
+  search_fields = c("title", "summary")
+)
+
+# Operador NOT - excluir termo
+results_not <- ml_search_advanced(
+  query = "transporte NOT aéreo",
+  search_fields = c("title", "summary")
+)
+
+# Combinação complexa
+results_complex <- ml_search_advanced(
+  query = "(transporte OR mobilidade) AND (sustentável OR verde) NOT (aéreo OR marítimo)",
+  search_fields = c("title", "summary", "content")
+)
+
+print(paste("AND:", nrow(results_and)))
+print(paste("OR:", nrow(results_or)))
+print(paste("NOT:", nrow(results_not)))
+print(paste("Complex:", nrow(results_complex)))
+```
+
+### 2. Busca por Frase Exata
+
+```{r phrase_search}
+# Busca por frase exata
+phrase_results <- ml_search_advanced(
+  query = "código de trânsito brasileiro",
+  phrase_search = TRUE,
+  boost_legal_terms = TRUE
+)
+
+# Comparar com busca normal
+normal_results <- ml_search_advanced(
+  query = "código de trânsito brasileiro",
+  phrase_search = FALSE
+)
+
+print(paste("Phrase search:", nrow(phrase_results)))
+print(paste("Normal search:", nrow(normal_results)))
+
+# Analisar relevância
+phrase_results %>%
+  arrange(desc(relevance_score)) %>%
+  select(title, relevance_score) %>%
+  head(10)
+```
+
+### 3. Busca em Campos Específicos
+
+```{r field_specific_search}
+# Busca apenas em títulos
+title_only <- ml_search_advanced(
+  query = "lei complementar",
+  search_fields = "title",
+  include_snippets = FALSE
+)
+
+# Busca apenas em resumos
+summary_only <- ml_search_advanced(
+  query = "lei complementar",
+  search_fields = "summary",
+  include_snippets = FALSE
+)
+
+# Busca em múltiplos campos específicos
+multi_field <- ml_search_advanced(
+  query = "lei complementar",
+  search_fields = c("title", "author"),
+  include_snippets = TRUE
+)
+
+# Comparar resultados
+comparison <- data.frame(
+  Field = c("Title Only", "Summary Only", "Multi-field"),
+  Results = c(nrow(title_only), nrow(summary_only), nrow(multi_field))
+)
+
+print(comparison)
+```
+
+## Filtros Avançados
+
+### 1. Filtros Temporais Complexos
+
+```{r temporal_filters}
+# Período específico
+periodo_covid <- ml_search_documents(
+  query = "saúde pública",
+  date_start = "2020-03-01",
+  date_end = "2021-12-31"
+)
+
+# Comparar com período anterior
+periodo_pre_covid <- ml_search_documents(
+  query = "saúde pública", 
+  date_start = "2018-01-01",
+  date_end = "2019-12-31"
+)
+
+# Análise comparativa
+covid_analysis <- data.frame(
+  Periodo = c("Pré-COVID", "COVID"),
+  Documentos = c(nrow(periodo_pre_covid), nrow(periodo_covid)),
+  Media_Relevancia = c(
+    mean(periodo_pre_covid$relevance_score, na.rm = TRUE),
+    mean(periodo_covid$relevance_score, na.rm = TRUE)
+  )
+)
+
+print(covid_analysis)
+
+# Visualizar tendência temporal
+temporal_data <- bind_rows(
+  periodo_pre_covid %>% mutate(period = "Pré-COVID"),
+  periodo_covid %>% mutate(period = "COVID")
+)
+
+ggplot(temporal_data, aes(x = as.Date(date), fill = period)) +
+  geom_histogram(bins = 20, alpha = 0.7) +
+  facet_wrap(~period, scales = "free_y") +
+  labs(
+    title = "Distribuição Temporal: Legislação de Saúde Pública",
+    x = "Data",
+    y = "Número de Documentos"
+  ) +
+  theme_minimal()
+```
+
+### 2. Filtros Geográficos Avançados
+
+```{r geographic_filters}
+# Múltiplos estados
+sudeste <- ml_search_documents(
+  query = "meio ambiente",
+  state = c("SP", "RJ", "MG", "ES"),
+  limit = 500
+)
+
+# Municípios específicos
+capitais <- ml_search(
+  query = "urbanização",
+  filters = list(
+    municipality = c("São Paulo", "Rio de Janeiro", "Belo Horizonte", "Salvador")
+  ),
+  limit = 300
+)
+
+# Análise regional
+regional_analysis <- sudeste %>%
+  count(state, category) %>%
+  arrange(state, desc(n))
+
+print(regional_analysis)
+
+# Visualização
+ggplot(regional_analysis, aes(x = state, y = n, fill = category)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Legislação Ambiental por Estado (Sudeste)",
+    x = "Estado",
+    y = "Número de Documentos",
+    fill = "Categoria"
+  ) +
+  theme_minimal()
+```
+
+### 3. Filtros por Categoria e Tipo
+
+```{r category_filters}
+# Múltiplas categorias
+legal_framework <- ml_search_documents(
+  query = "educação",
+  category = c("Lei", "Lei Complementar", "Decreto"),
+  limit = 1000
+)
+
+# Análise por tipo de documento
+category_stats <- legal_framework %>%
+  count(category, sort = TRUE) %>%
+  mutate(
+    percentage = round(n / sum(n) * 100, 1),
+    cumulative = cumsum(percentage)
+  )
+
+print(category_stats)
+
+# Análise de complexidade por categoria
+complexity_by_category <- legal_framework %>%
+  group_by(category) %>%
+  summarise(
+    count = n(),
+    avg_title_length = mean(nchar(title), na.rm = TRUE),
+    avg_summary_length = mean(nchar(summary), na.rm = TRUE),
+    .groups = "drop"
+  )
+
+print(complexity_by_category)
+```
+
+## Busca Fuzzy e Tolerância a Erros
+
+```{r fuzzy_search}
+# Busca com tolerância a erros de digitação
+fuzzy_results <- ml_search(
+  query = "codigo sivil",  # Erro intencional: "sivil" em vez de "civil"
+  fuzzy = TRUE,
+  limit = 50
+)
+
+# Busca exata para comparação
+exact_results <- ml_search(
+  query = "codigo sivil",
+  fuzzy = FALSE,
+  limit = 50
+)
+
+print(paste("Fuzzy search results:", nrow(fuzzy_results)))
+print(paste("Exact search results:", nrow(exact_results)))
+
+# Verificar se encontrou "código civil"
+fuzzy_titles <- fuzzy_results$title[1:10]
+has_civil <- str_detect(fuzzy_titles, "(?i)civil")
+print(paste("Documents with 'civil' found:", sum(has_civil, na.rm = TRUE)))
+```
+
+## Busca com Boost de Termos Jurídicos
+
+```{r legal_boost}
+# Busca com boost automático de termos jurídicos
+boosted_search <- ml_search_advanced(
+  query = "direito administrativo licitação",
+  boost_legal_terms = TRUE,
+  search_fields = c("title", "summary", "content")
+)
+
+# Busca sem boost
+normal_search <- ml_search_advanced(
+  query = "direito administrativo licitação",
+  boost_legal_terms = FALSE,
+  search_fields = c("title", "summary", "content")
+)
+
+# Comparar relevância média
+boost_avg <- mean(boosted_search$relevance_score, na.rm = TRUE)
+normal_avg <- mean(normal_search$relevance_score, na.rm = TRUE)
+
+print(paste("Boosted average relevance:", round(boost_avg, 3)))
+print(paste("Normal average relevance:", round(normal_avg, 3)))
+
+# Analisar top resultados
+top_boosted <- boosted_search %>%
+  arrange(desc(relevance_score)) %>%
+  select(title, relevance_score) %>%
+  head(5)
+
+print("Top boosted results:")
+print(top_boosted)
+```
+
+## Filtros de Conteúdo Avançados
+
+```{r content_filters}
+# Filtrar documentos que mencionam artigos específicos
+artigo_filter <- ml_filter_documents(
+  documents = legal_framework,
+  text_filter = "Art\\.?\\s*\\d+",  # Regex para "Art. 1", "Art 1", etc.
+  has_content = TRUE
+)
+
+# Filtrar por complexidade (documentos longos)
+complex_docs <- ml_filter_documents(
+  documents = legal_framework,
+  text_filter = ".{1000,}",  # Documentos com mais de 1000 caracteres no summary
+  sort_by = "relevance"
+)
+
+# Filtrar por autor específico
+author_filter <- ml_filter_documents(
+  documents = legal_framework,
+  author_filter = "Prefeitura|Câmara|Assembleia",  # Regex para tipos de autores
+  sort_by = "date_desc"
+)
+
+print(paste("Documents with articles:", nrow(artigo_filter)))
+print(paste("Complex documents:", nrow(complex_docs)))
+print(paste("Specific authors:", nrow(author_filter)))
+```
+
+## Busca de Documentos Similares
+
+```{r similarity_search}
+# Obter um documento específico
+base_doc <- ml_get_document("doc_example_123")
+
+# Encontrar documentos similares
+similar_docs <- ml_search_similar(
+  document_id = "doc_example_123",
+  limit = 20,
+  similarity_threshold = 0.7
+)
+
+# Encontrar similares por conteúdo
+content_similar <- ml_search_similar(
+  content = "Esta lei dispõe sobre o sistema de transporte público municipal",
+  limit = 15,
+  similarity_threshold = 0.6
+)
+
+# Analisar distribuição de similaridade
+similarity_stats <- similar_docs %>%
+  summarise(
+    count = n(),
+    avg_similarity = mean(similarity_score),
+    min_similarity = min(similarity_score),
+    max_similarity = max(similarity_score)
+  )
+
+print(similarity_stats)
+
+# Visualizar distribuição
+ggplot(similar_docs, aes(x = similarity_score)) +
+  geom_histogram(bins = 10, fill = "skyblue", alpha = 0.7) +
+  labs(
+    title = "Distribuição de Scores de Similaridade",
+    x = "Score de Similaridade",
+    y = "Número de Documentos"
+  ) +
+  theme_minimal()
+```
+
+## Análise de Sugestões de Busca
+
+```{r search_suggestions}
+# Obter sugestões para termo parcial
+suggestions_trans <- ml_search_suggestions("trans", limit = 10)
+suggestions_meio <- ml_search_suggestions("meio", limit = 10)
+suggestions_lei <- ml_search_suggestions("lei", limit = 10)
+
+# Organizar sugestões
+all_suggestions <- data.frame(
+  base_term = c(rep("trans", length(suggestions_trans)),
+                rep("meio", length(suggestions_meio)),
+                rep("lei", length(suggestions_lei))),
+  suggestion = c(suggestions_trans, suggestions_meio, suggestions_lei)
+)
+
+print(all_suggestions)
+
+# Testar relevância das sugestões
+suggestion_relevance <- map_dfr(suggestions_trans[1:5], function(term) {
+  results <- ml_search(term, limit = 10)
+  tibble(
+    term = term,
+    result_count = nrow(results),
+    avg_relevance = mean(results$relevance_score, na.rm = TRUE)
+  )
+})
+
+print(suggestion_relevance)
+```
+
+## Tendências de Busca
+
+```{r search_trends}
+# Obter tendências de busca recentes
+recent_trends <- ml_search_trends(period = "week", limit = 20)
+monthly_trends <- ml_search_trends(period = "month", limit = 30)
+
+# Analisar tendências
+trends_analysis <- recent_trends %>%
+  arrange(desc(searches)) %>%
+  mutate(
+    change_numeric = as.numeric(str_extract(change_percent, "-?\\d+")),
+    trend_direction = case_when(
+      change_numeric > 10 ~ "Rising",
+      change_numeric < -10 ~ "Falling",
+      TRUE ~ "Stable"
+    )
+  )
+
+print(trends_analysis)
+
+# Visualizar tendências
+ggplot(head(trends_analysis, 15), aes(x = reorder(term, searches), y = searches)) +
+  geom_col(aes(fill = trend_direction), alpha = 0.8) +
+  coord_flip() +
+  scale_fill_manual(values = c("Rising" = "green", "Falling" = "red", "Stable" = "blue")) +
+  labs(
+    title = "Tendências de Busca - Últimas Semanas",
+    x = "Termo de Busca",
+    y = "Número de Buscas",
+    fill = "Tendência"
+  ) +
+  theme_minimal()
+```
+
+## Otimização de Consultas
+
+### 1. Paginação Eficiente
+
+```{r pagination}
+# Função para busca paginada eficiente
+efficient_paginated_search <- function(query, total_limit = 1000, page_size = 100) {
+  all_results <- tibble()
+  offset <- 0
+  
+  while (nrow(all_results) < total_limit) {
+    batch <- ml_search(
+      query = query,
+      limit = min(page_size, total_limit - nrow(all_results)),
+      offset = offset
+    )
+    
+    if (nrow(batch) == 0) break
+    
+    all_results <- bind_rows(all_results, batch)
+    offset <- offset + nrow(batch)
+    
+    # Pausa para respeitar rate limits
+    Sys.sleep(0.1)
+  }
+  
+  return(all_results)
+}
+
+# Usar busca paginada
+large_search <- efficient_paginated_search("sustentabilidade", total_limit = 500)
+print(paste("Total results collected:", nrow(large_search)))
+```
+
+### 2. Cache de Resultados
+
+```{r caching}
+# Habilitar cache para consultas repetidas
+ml_set_options(cache_enabled = TRUE)
+
+# Primeira busca (será cached)
+start_time <- Sys.time()
+cached_search <- ml_search("energia renovável", limit = 100)
+first_duration <- Sys.time() - start_time
+
+# Segunda busca (usará cache)
+start_time <- Sys.time()
+cached_search_2 <- ml_search("energia renovável", limit = 100)
+second_duration <- Sys.time() - start_time
+
+print(paste("First search time:", first_duration))
+print(paste("Second search time:", second_duration))
+print(paste("Cache speedup:", round(as.numeric(first_duration / second_duration), 2), "x"))
+```
+
+### 3. Busca em Lotes
+
+```{r batch_search}
+# Lista de termos para buscar
+search_terms <- c(
+  "transporte público",
+  "mobilidade urbana", 
+  "sustentabilidade",
+  "energia renovável",
+  "meio ambiente"
+)
+
+# Função para busca em lotes
+batch_search_results <- map_dfr(search_terms, function(term) {
+  results <- ml_search(term, limit = 50)
+  results$search_term <- term
+  return(results)
+})
+
+# Analisar resultados agregados
+term_analysis <- batch_search_results %>%
+  group_by(search_term) %>%
+  summarise(
+    total_docs = n(),
+    avg_relevance = mean(relevance_score, na.rm = TRUE),
+    unique_states = n_distinct(state),
+    unique_categories = n_distinct(category),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(total_docs))
+
+print(term_analysis)
+```
+
+## Validação e Qualidade dos Resultados
+
+```{r result_validation}
+# Função para validar qualidade dos resultados
+validate_search_quality <- function(search_results, query) {
+  validation <- list(
+    total_results = nrow(search_results),
+    relevance_distribution = summary(search_results$relevance_score),
+    null_values = search_results %>% 
+      summarise_all(~sum(is.na(.))) %>%
+      gather(column, null_count) %>%
+      filter(null_count > 0),
+    date_range = range(search_results$date, na.rm = TRUE),
+    category_distribution = table(search_results$category),
+    state_coverage = length(unique(search_results$state[!is.na(search_results$state)]))
+  )
+  
+  return(validation)
+}
+
+# Validar uma busca
+validation_results <- validate_search_quality(large_search, "sustentabilidade")
+
+print("Validation Results:")
+print(validation_results$relevance_distribution)
+print(paste("States covered:", validation_results$state_coverage))
+print("Category distribution:")
+print(validation_results$category_distribution)
+```
+
+## Estratégias de Busca por Domínio
+
+### 1. Pesquisa Jurídica
+
+```{r legal_research}
+# Busca focada em jurisprudência
+jurisprudence_search <- ml_search_advanced(
+  query = "jurisprudência OR precedente OR súmula",
+  search_fields = c("title", "summary", "content"),
+  boost_legal_terms = TRUE,
+  filters = list(
+    category = c("Acórdão", "Decisão", "Súmula")
+  )
+)
+
+# Busca por institutos jurídicos específicos
+legal_institutes <- ml_search_advanced(
+  query = "responsabilidade civil OR dano moral OR nexo causal",
+  phrase_search = FALSE,
+  boost_legal_terms = TRUE
+)
+```
+
+### 2. Pesquisa de Políticas Públicas
+
+```{r policy_research}
+# Busca por programas governamentais
+policy_programs <- ml_search(
+  query = "programa",
+  filters = list(
+    category = c("Decreto", "Portaria", "Resolução"),
+    date_start = "2020-01-01"
+  ),
+  limit = 200
+)
+
+# Análise de implementação de políticas
+implementation_terms <- c("implementação", "execução", "operacionalização")
+implementation_results <- map_dfr(implementation_terms, function(term) {
+  ml_search(term, limit = 100) %>% mutate(search_term = term)
+})
+```
+
+### 3. Pesquisa Ambiental
+
+```{r environmental_research}
+# Termos ambientais específicos
+environmental_terms <- c(
+  "biodiversidade",
+  "recursos hídricos", 
+  "mudanças climáticas",
+  "licenciamento ambiental",
+  "área de preservação"
+)
+
+environmental_results <- map_dfr(environmental_terms, function(term) {
+  ml_search(term, limit = 50) %>% 
+    mutate(environmental_topic = term)
+})
+
+# Análise por tópico ambiental
+environmental_analysis <- environmental_results %>%
+  group_by(environmental_topic) %>%
+  summarise(
+    documents = n(),
+    avg_relevance = mean(relevance_score, na.rm = TRUE),
+    recent_docs = sum(as.Date(date) > as.Date("2020-01-01"), na.rm = TRUE),
+    .groups = "drop"
+  )
+
+print(environmental_analysis)
+```
+
+## Conclusão
+
+As técnicas avançadas de busca permitem:
+
+1. **Precisão**: Operadores booleanos e busca em campos específicos
+2. **Flexibilidade**: Busca fuzzy e tolerância a erros
+3. **Relevância**: Boost de termos jurídicos e análise de similaridade
+4. **Eficiência**: Paginação, cache e busca em lotes
+5. **Qualidade**: Validação e análise de resultados
+
+Para casos de uso específicos, combine múltiplas técnicas para obter os melhores resultados para sua pesquisa acadêmica.
+
+---
+
+*Para mais informações sobre busca avançada, consulte a documentação completa da API em https://monitor-legislativo.br/docs/advanced-search*

@@ -1,0 +1,767 @@
+/* ===================================================
+   Monitor Legislativo v4 - Touch Optimization
+   Touch-Friendly Interface for Tablets and Mobile
+   Enhanced UX for Academic Research on Touch Devices
+   =================================================== */
+
+/* ===========================
+   Touch Device Detection
+   =========================== */
+
+/* Touch-enabled devices */
+@media (hover: none) and (pointer: coarse), (hover: hover) and (pointer: coarse) {
+  
+  /* Enhanced touch targets */
+  button,
+  .btn,
+  a,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  .nav-link,
+  .dropdown-toggle,
+  .pagination .page-link,
+  .close,
+  .modal-close {
+    min-height: 48px !important;
+    min-width: 48px !important;
+    padding: 12px 16px !important;
+    margin: 4px !important;
+  }
+  
+  /* Form controls optimization */
+  input,
+  select,
+  textarea,
+  .form-control {
+    min-height: 48px !important;
+    padding: 12px 16px !important;
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    border-radius: 8px !important;
+  }
+  
+  /* Checkbox and radio buttons */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 24px !important;
+    min-height: 24px !important;
+    margin: 12px !important;
+  }
+  
+  /* Navigation enhancements */
+  .sidebar-menu > li > a {
+    padding: 20px !important;
+    font-size: 1.1rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  .nav-link {
+    padding: 16px 20px !important;
+    font-size: 1rem !important;
+  }
+  
+  /* Table touch optimization */
+  .table td,
+  .table th {
+    padding: 16px 12px !important;
+    font-size: 0.95rem !important;
+  }
+  
+  /* Card and box touch improvements */
+  .box-header {
+    padding: 20px !important;
+  }
+  
+  .box-body {
+    padding: 20px !important;
+  }
+  
+  /* Modal touch optimization */
+  .modal-header {
+    padding: 20px !important;
+  }
+  
+  .modal-body {
+    padding: 20px !important;
+  }
+  
+  .modal-footer {
+    padding: 16px 20px !important;
+  }
+}
+
+/* ===========================
+   Tablet-Specific Optimizations
+   =========================== */
+
+/* Tablet portrait and landscape */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  
+  /* Dashboard layout adjustments */
+  .main-sidebar {
+    width: 280px !important;
+  }
+  
+  .content-wrapper {
+    margin-left: 280px !important;
+  }
+  
+  /* Search interface enhancements */
+  .search-controls-bar {
+    flex-direction: column !important;
+    gap: 16px !important;
+    align-items: stretch !important;
+  }
+  
+  .search-controls-bar .view-controls {
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+  }
+  
+  /* Advanced filters layout */
+  .advanced-filters-content .row {
+    margin-bottom: 16px !important;
+  }
+  
+  .advanced-filters-content .col-3 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    margin-bottom: 16px !important;
+  }
+  
+  /* Value boxes responsive sizing */
+  .small-box {
+    margin-bottom: 20px !important;
+  }
+  
+  .small-box .inner h3 {
+    font-size: 2rem !important;
+  }
+  
+  /* Table responsive improvements */
+  .table-responsive {
+    border-radius: 8px !important;
+    box-shadow: var(--shadow-base) !important;
+  }
+  
+  /* Insight cards layout */
+  .insight-card {
+    margin-bottom: 20px !important;
+    padding: 20px !important;
+  }
+}
+
+/* Tablet landscape specific */
+@media screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+  
+  /* Maximize horizontal space */
+  .container-fluid {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  
+  /* Sidebar collapse optimization */
+  .sidebar-collapse .main-sidebar {
+    width: 60px !important;
+  }
+  
+  .sidebar-collapse .content-wrapper {
+    margin-left: 60px !important;
+  }
+  
+  /* Two-column layout for forms */
+  .advanced-filters-content .col-3 {
+    flex: 0 0 25% !important;
+    max-width: 25% !important;
+  }
+}
+
+/* ===========================
+   Touch Gestures and Interactions
+   =========================== */
+
+/* Touch active states */
+.touch-active,
+button:active,
+.btn:active,
+a:active,
+.nav-link:active {
+  transform: scale(0.98) !important;
+  background-color: rgba(52, 152, 219, 0.1) !important;
+  transition: all 0.1s ease !important;
+}
+
+/* Swipe gesture indicators */
+.swipe-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent 0%, var(--primary-light) 50%, transparent 100%);
+  border-radius: 2px;
+  opacity: 0.6;
+  animation: swipe-hint 2s ease-in-out infinite;
+}
+
+.swipe-indicator.left {
+  left: 8px;
+}
+
+.swipe-indicator.right {
+  right: 8px;
+}
+
+@keyframes swipe-hint {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+/* Pull to refresh indicator */
+.pull-to-refresh {
+  position: relative;
+  overflow: hidden;
+}
+
+.pull-to-refresh::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--primary-light);
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.pull-to-refresh.pulling::before {
+  opacity: 1;
+  top: 10px;
+}
+
+/* ===========================
+   Touch-Friendly Data Tables
+   =========================== */
+
+/* Enhanced table for touch */
+.touch-table {
+  border-spacing: 0 8px !important;
+}
+
+.touch-table tbody tr {
+  background: var(--white) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--shadow-sm) !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+}
+
+.touch-table tbody td {
+  display: block !important;
+  padding: 12px 16px !important;
+  border: none !important;
+  position: relative !important;
+}
+
+.touch-table tbody td::before {
+  content: attr(data-label) ": " !important;
+  font-weight: 600 !important;
+  color: var(--primary-dark) !important;
+  display: inline-block !important;
+  width: 120px !important;
+}
+
+.touch-table tbody td:first-child {
+  border-radius: 8px 8px 0 0 !important;
+  background: var(--light-gray) !important;
+  font-weight: 600 !important;
+}
+
+.touch-table tbody td:last-child {
+  border-radius: 0 0 8px 8px !important;
+  border-bottom: none !important;
+}
+
+/* Table actions for touch */
+.table-actions {
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+}
+
+.table-actions .btn {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+/* ===========================
+   Touch Navigation Patterns
+   =========================== */
+
+/* Tab bar for mobile navigation */
+.mobile-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border-top: 1px solid var(--medium-gray);
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 8px 20px;
+  z-index: var(--z-fixed);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-tab-bar .tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: var(--dark-gray);
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  min-width: 64px;
+}
+
+.mobile-tab-bar .tab-item:hover,
+.mobile-tab-bar .tab-item.active {
+  color: var(--primary-dark);
+  background: rgba(52, 152, 219, 0.1);
+}
+
+.mobile-tab-bar .tab-item i {
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+
+.mobile-tab-bar .tab-item span {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Floating action button */
+.fab {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--white);
+  border: none;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  z-index: var(--z-fixed);
+  transition: all 0.3s ease;
+}
+
+.fab:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-xl);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* ===========================
+   Touch-Optimized Search
+   =========================== */
+
+/* Search interface improvements */
+.touch-search {
+  position: relative;
+}
+
+.touch-search .search-input {
+  padding-right: 120px !important;
+  border-radius: 25px !important;
+  border: 2px solid var(--medium-gray) !important;
+  font-size: 16px !important;
+}
+
+.touch-search .search-button {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 20px !important;
+  padding: 8px 16px !important;
+  font-size: 0.9rem !important;
+}
+
+.touch-search .search-clear {
+  position: absolute;
+  right: 80px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--dark-gray);
+  font-size: 1.2rem;
+  padding: 8px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Search suggestions for touch */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border: 1px solid var(--medium-gray);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-suggestion {
+  padding: 16px;
+  border-bottom: 1px solid var(--light-gray);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.search-suggestion:hover,
+.search-suggestion:focus {
+  background-color: rgba(52, 152, 219, 0.05);
+}
+
+.search-suggestion:last-child {
+  border-bottom: none;
+}
+
+.search-suggestion i {
+  margin-right: 12px;
+  color: var(--primary-light);
+  width: 16px;
+}
+
+/* ===========================
+   Touch-Friendly Forms
+   =========================== */
+
+/* Form groups for touch */
+.touch-form .form-group {
+  margin-bottom: 24px !important;
+}
+
+.touch-form .form-label {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+  color: var(--secondary-dark) !important;
+}
+
+.touch-form .form-control {
+  border: 2px solid var(--medium-gray) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.touch-form .form-control:focus {
+  border-color: var(--primary-light) !important;
+  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1) !important;
+}
+
+/* Multi-select for touch */
+.touch-multiselect {
+  border: 2px solid var(--medium-gray);
+  border-radius: 8px;
+  padding: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.touch-multiselect .option {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 4px;
+  margin: 4px 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.touch-multiselect .option:hover {
+  background-color: rgba(52, 152, 219, 0.05);
+}
+
+.touch-multiselect .option input[type="checkbox"] {
+  margin-right: 12px;
+  transform: scale(1.2);
+}
+
+/* ===========================
+   Touch-Optimized Modals
+   =========================== */
+
+/* Full-screen modals on mobile */
+@media (max-width: 767.98px) {
+  .modal-dialog {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  
+  .modal-content {
+    height: 100% !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .modal-body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  .modal-header {
+    flex-shrink: 0 !important;
+    border-radius: 0 !important;
+  }
+  
+  .modal-footer {
+    flex-shrink: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* Modal gestures */
+.modal-content {
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-drag-indicator {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: var(--medium-gray);
+  border-radius: 2px;
+  opacity: 0.5;
+}
+
+/* ===========================
+   Touch-Optimized Data Visualization
+   =========================== */
+
+/* Chart container improvements */
+.touch-chart-container {
+  position: relative;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: var(--shadow-base);
+  margin-bottom: 20px;
+}
+
+.touch-chart-container .chart-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.touch-chart-container .chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  justify-content: center;
+}
+
+.touch-chart-container .legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  background: var(--light-gray);
+  border-radius: 16px;
+}
+
+.touch-chart-container .legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* ===========================
+   Accessibility for Touch
+   =========================== */
+
+/* High contrast mode for touch */
+@media (prefers-contrast: high) {
+  button,
+  .btn,
+  input,
+  select,
+  textarea {
+    border-width: 3px !important;
+    border-color: var(--black) !important;
+  }
+  
+  .touch-active,
+  button:active,
+  .btn:active {
+    background-color: var(--primary-light) !important;
+    color: var(--white) !important;
+  }
+}
+
+/* Reduced motion for touch */
+@media (prefers-reduced-motion: reduce) {
+  .touch-active,
+  button:active,
+  .btn:active,
+  a:active {
+    transform: none !important;
+    transition: none !important;
+  }
+  
+  .swipe-indicator {
+    animation: none !important;
+  }
+  
+  .pull-to-refresh::before {
+    animation: none !important;
+  }
+}
+
+/* Focus visible for touch */
+button:focus-visible,
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--primary-light) !important;
+  outline-offset: 2px !important;
+}
+
+/* ===========================
+   Touch Performance Optimizations
+   =========================== */
+
+/* Hardware acceleration */
+.touch-accelerated {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Smooth scrolling for touch */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+}
+
+/* Touch callout disable for UI elements */
+.no-touch-callout {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Enable touch callout for text content */
+.touch-callout {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* ===========================
+   Responsive Breakpoints for Touch
+   =========================== */
+
+/* Small phones */
+@media (max-width: 480px) {
+  .touch-hide-small {
+    display: none !important;
+  }
+  
+  .touch-full-width-small {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  .touch-stack-small {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  .touch-stack-small > * {
+    margin-bottom: 12px !important;
+    width: 100% !important;
+  }
+}
+
+/* Medium phones */
+@media (min-width: 481px) and (max-width: 767px) {
+  .touch-hide-medium {
+    display: none !important;
+  }
+  
+  .touch-half-width-medium {
+    width: 50% !important;
+  }
+}
+
+/* Small tablets */
+@media (min-width: 768px) and (max-width: 991px) {
+  .touch-hide-tablet {
+    display: none !important;
+  }
+  
+  .touch-third-width-tablet {
+    width: 33.333% !important;
+  }
+}
+
+/* Large tablets */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .touch-hide-large-tablet {
+    display: none !important;
+  }
+  
+  .touch-quarter-width-large-tablet {
+    width: 25% !important;
+  }
+}

@@ -3,10 +3,10 @@ name: Production Deployment - Monitor Legislativo v4
 on:
   push:
     branches: [main]
-    paths: ['r-shiny-app/**']
+    paths: ['app.R', 'Dockerfile', 'railway*.toml', 'railway_*.R', '**.R']
   pull_request:
     branches: [main]
-    paths: ['r-shiny-app/**']
+    paths: ['app.R', 'Dockerfile', 'railway*.toml', 'railway_*.R', '**.R']
   workflow_dispatch:
 
 env:
@@ -17,9 +17,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./r-shiny-app
+    # Note: Working directory is now project root since app.R is at root level
 
     steps:
     - name: Checkout code
@@ -129,8 +127,8 @@ jobs:
       id: build
       uses: docker/build-push-action@v5
       with:
-        context: ./r-shiny-app
-        file: ./r-shiny-app/Dockerfile.production
+        context: .
+        file: ./Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -149,12 +147,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Install Railway CLI
+      run: |
+        npm install -g @railway/cli
+        
     - name: Deploy to Railway Staging
       run: |
         echo "Deploying to staging environment..."
-        # Add Railway CLI deployment commands here
-        # railway login --token ${{ secrets.RAILWAY_TOKEN }}
-        # railway deploy --service staging
+        railway login --token ${{ secrets.RAILWAY_TOKEN }}
+        railway deploy --service staging --detach
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
   deploy-production:
     name: Deploy to Production
@@ -172,17 +175,26 @@ jobs:
         echo "Running pre-deployment checks..."
         # Add any pre-deployment verification scripts here
 
+    - name: Install Railway CLI
+      run: |
+        npm install -g @railway/cli
+        
     - name: Deploy to Production
       run: |
         echo "Deploying to production environment..."
-        # Add production deployment commands here
-        # railway deploy --service production
+        railway login --token ${{ secrets.RAILWAY_TOKEN }}
+        railway deploy --service production --detach
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
     - name: Run smoke tests
       run: |
         echo "Running smoke tests..."
-        # Add smoke tests here
-        # curl -f https://your-production-url/health
+        sleep 30  # Wait for deployment to stabilize
+        # Get Railway service URL and test health endpoint
+        railway status --service production
+        # Note: Replace with actual production URL when available
+        # curl -f https://monitor-legislativo-production.up.railway.app/health
 
     - name: Notify deployment
       uses: 8398a7/action-slack@v3

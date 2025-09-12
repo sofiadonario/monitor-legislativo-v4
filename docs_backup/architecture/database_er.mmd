@@ -1,0 +1,38 @@
+```mermaid
+erDiagram
+  DOCUMENTS {
+      uuid id PK
+      string urn
+      string title
+      date publication_date
+      int municipality_id FK
+      uuid collection_id FK
+  }
+  MUNICIPALITIES {
+      int id PK
+      string name
+      string state_code
+  }
+  COLLECTIONS {
+      uuid id PK
+      string name
+      date collected_at
+  }
+  SEARCH_CACHE {
+      uuid id PK
+      string query
+      text results_json
+      timestamp cached_at
+  }
+  ANALYSIS_RESULTS {
+      uuid id PK
+      uuid document_id FK
+      text analysis_json
+      timestamp analysed_at
+  }
+
+  DOCUMENTS ||--o{ ANALYSIS_RESULTS : "generates"
+  DOCUMENTS }o--|| MUNICIPALITIES : "in_municipality"
+  DOCUMENTS }o--|| COLLECTIONS : "part_of"
+  SEARCH_CACHE }o--o{ DOCUMENTS : "caches"
+``` 

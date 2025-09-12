@@ -613,7 +613,6 @@ mapUI <- function(id) {
           )
         )
       )
-      )
     ),
     
     # Enhanced Analysis Panels
@@ -812,6 +811,5 @@ mapUI <- function(id) {
     
     # Modal for Document Details Integration
     uiOutput(ns("document_detail_modal"))
-  )
   )
 }

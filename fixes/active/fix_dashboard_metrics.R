@@ -4,7 +4,7 @@
 get_lexml_dashboard_metrics <<- function() {
   cat("📊 get_lexml_dashboard_metrics - using documents view\n")
   
-  if (!exists(".db_pool") || is.null(.db_pool) || !inherits(.db_pool, "Pool")) {
+  if (!exists("secure_db_pool") || is.null(secure_db_pool) || !inherits(secure_db_pool, "Pool")) {
     cat("⚠️ No database pool available\n")
     return(list(
       total_documents = 0,
@@ -17,11 +17,11 @@ get_lexml_dashboard_metrics <<- function() {
   
   tryCatch({
     # Get total documents
-    total_result <- dbGetQuery(.db_pool, "SELECT COUNT(*) as count FROM documents")
+    total_result <- dbGetQuery(secure_db_pool, "SELECT COUNT(*) as count FROM documents")
     total_documents <- if(nrow(total_result) > 0) total_result$count[1] else 0
     
     # Get state coverage
-    state_result <- dbGetQuery(.db_pool, "
+    state_result <- dbGetQuery(secure_db_pool, "
       SELECT COUNT(DISTINCT estado) as state_count 
       FROM documents 
       WHERE estado IS NOT NULL AND estado <> '' AND estado <> 'BR'
@@ -30,7 +30,7 @@ get_lexml_dashboard_metrics <<- function() {
     states_percentage <- round((states_with_docs / 27) * 100, 1) # Brazil has 27 states
     
     # Get municipality data - Note: most documents don't have municipality data
-    mun_result <- dbGetQuery(.db_pool, "
+    mun_result <- dbGetQuery(secure_db_pool, "
       SELECT COUNT(DISTINCT municipality) as mun_count 
       FROM documents 
       WHERE municipality IS NOT NULL 
@@ -42,7 +42,7 @@ get_lexml_dashboard_metrics <<- function() {
     municipalities_percentage <- if(municipalities_with_docs > 0) ">0" else "0"
     
     # Get date range
-    date_result <- dbGetQuery(.db_pool, "
+    date_result <- dbGetQuery(secure_db_pool, "
       SELECT 
         MIN(data_publicacao::date) as min_date,
         MAX(data_publicacao::date) as max_date
@@ -96,13 +96,13 @@ get_available_states <<- function() {
 get_lexml_update_summary <<- function() {
   cat("📋 get_lexml_update_summary called\n")
   
-  if (!exists(".db_pool") || is.null(.db_pool) || !inherits(.db_pool, "Pool")) {
+  if (!exists("secure_db_pool") || is.null(secure_db_pool) || !inherits(secure_db_pool, "Pool")) {
     return("Database not connected")
   }
   
   tryCatch({
     # Get counts by species and transport category
-    summary_data <- dbGetQuery(.db_pool, "
+    summary_data <- dbGetQuery(secure_db_pool, "
       SELECT 
         species,
         transport_category,

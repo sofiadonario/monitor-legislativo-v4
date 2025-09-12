@@ -1,0 +1,1077 @@
+openapi: 3.0.3
+info:
+  title: Monitor Legislativo API
+  description: |
+    Comprehensive REST API for Brazilian Legislative Monitoring System - Sprint 6B Implementation
+    
+    This API provides programmatic access to Brazil's legislative data with advanced search capabilities,
+    geographic analysis, and academic research features. Built with performance optimizations and
+    LGPD compliance standards.
+    
+    ## Features
+    - **134,000+ Legislative Documents**: Complete dataset of Brazilian legislative documents
+    - **Full-Text Search**: Advanced search with Portuguese language support
+    - **Geographic Analysis**: IBGE-integrated spatial analysis and choropleth maps
+    - **Academic Citations**: Automated citation generation (ABNT, APA, Chicago)
+    - **Performance Optimized**: PostgreSQL + Redis caching for sub-second responses
+    - **LGPD Compliant**: Data protection and privacy compliance
+    - **Railway Deployed**: Scalable cloud infrastructure
+    
+    ## Authentication
+    All endpoints require an API key. Include your key in the `Authorization` header:
+    ```
+    Authorization: Bearer YOUR_API_KEY
+    ```
+    
+    Or use the `X-API-Key` header:
+    ```
+    X-API-Key: YOUR_API_KEY
+    ```
+    
+    ## Rate Limits
+    - **Demo Tier**: 100 requests/minute, 10,000 requests/day
+    - **Academic Tier**: 1,000 requests/minute, 100,000 requests/day
+    - **Premium Tier**: 2,000 requests/minute, 1,000,000 requests/day
+    
+    ## Support
+    For API support, documentation, and academic access requests:
+    - Email: api@monitorlegislativo.gov.br
+    - Documentation: https://monitorlegislativo.gov.br/api/docs
+    - GitHub: https://github.com/monitorlegislativo/api
+  version: 1.0.0
+  termsOfService: https://monitorlegislativo.gov.br/terms
+  contact:
+    name: Monitor Legislativo Development Team
+    email: api@monitorlegislativo.gov.br
+    url: https://github.com/monitorlegislativo/api
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://monitorlegislativo.up.railway.app/api/v1
+    description: Production server on Railway
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health check endpoint
+      description: Check API system health and database connectivity
+      security: []
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                error: false
+                message: "Monitor Legislativo API is operational"
+                data:
+                  status: "healthy"
+                  version: "1.0.0"
+                  database: "connected"
+                  uptime: "running"
+                timestamp: "2024-12-10T10:30:00Z"
+
+  /info:
+    get:
+      tags:
+        - System
+      summary: API information
+      description: Get API configuration and feature information
+      security: []
+      responses:
+        '200':
+          description: API information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiInfoResponse'
+
+  /documents:
+    get:
+      tags:
+        - Documents
+      summary: List legislative documents
+      description: |
+        Retrieve legislative documents with advanced filtering and pagination.
+        Supports filtering by category, state, date range, and full-text search.
+      parameters:
+        - name: category
+          in: query
+          description: Document category filter
+          schema:
+            type: string
+            enum: [legislation, jurisprudence, doctrine, other, all]
+            default: all
+        - name: state
+          in: query
+          description: Brazilian state code filter
+          schema:
+            type: string
+            pattern: '^[A-Z]{2}$'
+            example: SP
+        - name: municipality
+          in: query
+          description: Municipality name filter
+          schema:
+            type: string
+            maxLength: 100
+        - name: search
+          in: query
+          description: Search term for title, summary, or content
+          schema:
+            type: string
+            maxLength: 200
+        - name: date_start
+          in: query
+          description: Start date filter (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: date_end
+          in: query
+          description: End date filter (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: author
+          in: query
+          description: Document author filter
+          schema:
+            type: string
+            maxLength: 100
+        - name: document_type
+          in: query
+          description: Document type filter (Lei, Decreto, etc.)
+          schema:
+            type: string
+            maxLength: 50
+        - name: sort_by
+          in: query
+          description: Sort method
+          schema:
+            type: string
+            enum: [date_desc, date_asc, title_asc, title_desc, relevance]
+            default: date_desc
+        - name: limit
+          in: query
+          description: Maximum results (default 100, max 10000)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+            default: 100
+        - name: offset
+          in: query
+          description: Results offset for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{id}:
+    get:
+      tags:
+        - Documents
+      summary: Get document by ID
+      description: Retrieve a specific legislative document by its unique identifier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Document unique identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/search:
+    post:
+      tags:
+        - Documents
+      summary: Advanced document search
+      description: |
+        Perform advanced search with multiple criteria, filters, and highlighting.
+        Supports full-text search with Portuguese language processing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdvancedSearchRequest'
+            example:
+              query: "lei orgânica município"
+              categories: ["legislation"]
+              states: ["SP", "RJ"]
+              date_range:
+                start: "2020-01-01"
+                end: "2024-12-31"
+              sort_by: "relevance"
+              limit: 50
+              highlight: true
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  /documents/categories:
+    get:
+      tags:
+        - Documents
+      summary: Get available document categories
+      description: Retrieve list of available document categories and subcategories
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriesResponse'
+
+  /search:
+    post:
+      tags:
+        - Search
+      summary: Full-text search
+      description: |
+        Perform full-text search across all legislative documents with advanced
+        Portuguese language processing and legal term boosting.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  /search/suggestions:
+    get:
+      tags:
+        - Search
+      summary: Search suggestions
+      description: Get search suggestions and autocomplete for legal terms
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Partial search query
+          schema:
+            type: string
+            maxLength: 100
+        - name: limit
+          in: query
+          description: Maximum suggestions (default 10, max 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Suggestions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestionsResponse'
+
+  /geographic/analysis:
+    get:
+      tags:
+        - Geographic
+      summary: Geographic analysis
+      description: |
+        Perform geographic analysis of legislative documents by state, region, or municipality.
+        Includes IBGE data integration and statistical analysis.
+      parameters:
+        - name: level
+          in: query
+          description: Geographic analysis level
+          schema:
+            type: string
+            enum: [state, region, municipality]
+            default: state
+        - name: metric
+          in: query
+          description: Analysis metric
+          schema:
+            type: string
+            enum: [count, density, growth, distribution]
+            default: count
+        - name: category
+          in: query
+          description: Filter by document category
+          schema:
+            type: string
+            enum: [legislation, jurisprudence, doctrine, other, all]
+            default: all
+        - name: period
+          in: query
+          description: Time period filter
+          schema:
+            type: string
+            enum: [all, last_year, last_month]
+            default: all
+      responses:
+        '200':
+          description: Geographic analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeographicAnalysisResponse'
+
+  /geographic/choropleth:
+    get:
+      tags:
+        - Geographic
+      summary: Choropleth map data
+      description: |
+        Get choropleth map data for visualization of legislative document distribution
+        across Brazilian states or regions.
+      parameters:
+        - name: level
+          in: query
+          description: Geographic level
+          schema:
+            type: string
+            enum: [state, region]
+            default: state
+        - name: metric
+          in: query
+          description: Data metric
+          schema:
+            type: string
+            enum: [count, density, per_capita]
+            default: count
+        - name: format
+          in: query
+          description: Output format
+          schema:
+            type: string
+            enum: [geojson, simple]
+            default: simple
+      responses:
+        '200':
+          description: Choropleth data generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChoroplethResponse'
+
+  /analytics/dashboard:
+    get:
+      tags:
+        - Analytics
+      summary: Dashboard metrics
+      description: |
+        Get comprehensive dashboard metrics including document counts, geographic coverage,
+        API usage statistics, and system performance indicators.
+      parameters:
+        - name: refresh
+          in: query
+          description: Force refresh of cached metrics
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Dashboard metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+
+  /analytics/trends:
+    get:
+      tags:
+        - Analytics
+      summary: Temporal trends
+      description: |
+        Analyze temporal trends and patterns in legislative document publication
+        over different time periods.
+      parameters:
+        - name: period
+          in: query
+          description: Time period granularity
+          schema:
+            type: string
+            enum: [weekly, monthly, yearly]
+            default: monthly
+        - name: metric
+          in: query
+          description: Metric to analyze
+          schema:
+            type: string
+            enum: [documents, states, municipalities, categories]
+            default: documents
+        - name: limit
+          in: query
+          description: Number of periods to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 12
+      responses:
+        '200':
+          description: Trend analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendsResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique document identifier
+        title:
+          type: string
+          description: Document title
+          maxLength: 500
+        category:
+          type: string
+          enum: [legislation, jurisprudence, doctrine, other]
+          description: Document category
+        state:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: Brazilian state code
+        municipality:
+          type: string
+          description: Municipality name
+        date:
+          type: string
+          format: date
+          description: Publication date
+        url:
+          type: string
+          format: uri
+          description: Original document URL
+        summary:
+          type: string
+          description: Document summary or abstract
+          maxLength: 2000
+        urn:
+          type: string
+          description: Legal document URN
+        author:
+          type: string
+          description: Document author
+        document_type:
+          type: string
+          description: Specific document type (Lei, Decreto, etc.)
+        subjects:
+          type: string
+          description: Document subjects or keywords
+        last_modified:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+      required:
+        - id
+        - title
+        - category
+
+    SearchResult:
+      allOf:
+        - $ref: '#/components/schemas/Document'
+        - type: object
+          properties:
+            relevance_score:
+              type: number
+              format: float
+              description: Search relevance score (0-1)
+            highlights:
+              type: object
+              description: Search term highlights
+              properties:
+                title:
+                  type: string
+                  description: Highlighted title
+                summary:
+                  type: string
+                  description: Highlighted summary
+
+    DocumentListResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total number of documents matching criteria
+            returned:
+              type: integer
+              description: Number of documents returned in this response
+            limit:
+              type: integer
+              description: Requested limit
+            offset:
+              type: integer
+              description: Requested offset
+            filters:
+              type: object
+              description: Applied filters
+            performance:
+              type: object
+              properties:
+                cached:
+                  type: boolean
+                query_time:
+                  type: number
+                  format: float
+        timestamp:
+          type: string
+          format: date-time
+
+    DocumentResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Document'
+        timestamp:
+          type: string
+          format: date-time
+
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Search query
+          maxLength: 200
+        filters:
+          type: object
+          properties:
+            category:
+              type: string
+              enum: [legislation, jurisprudence, doctrine, other]
+            state:
+              type: string
+              pattern: '^[A-Z]{2}$'
+            date_start:
+              type: string
+              format: date
+            date_end:
+              type: string
+              format: date
+        sort_by:
+          type: string
+          enum: [relevance, date_desc, date_asc, title_asc, title_desc]
+          default: relevance
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 50
+        offset:
+          type: integer
+          minimum: 0
+          default: 0
+        highlight:
+          type: boolean
+          default: true
+        include_snippets:
+          type: boolean
+          default: true
+
+    AdvancedSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Search query
+          maxLength: 200
+        categories:
+          type: array
+          items:
+            type: string
+            enum: [legislation, jurisprudence, doctrine, other]
+        states:
+          type: array
+          items:
+            type: string
+            pattern: '^[A-Z]{2}$'
+        municipalities:
+          type: array
+          items:
+            type: string
+        date_range:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+        authors:
+          type: array
+          items:
+            type: string
+        document_types:
+          type: array
+          items:
+            type: string
+        sort_by:
+          type: string
+          enum: [relevance, date_desc, date_asc, title_asc, title_desc]
+          default: relevance
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 100
+        offset:
+          type: integer
+          minimum: 0
+          default: 0
+        highlight:
+          type: boolean
+          default: false
+        include_content:
+          type: boolean
+          default: false
+
+    SearchResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        meta:
+          type: object
+          properties:
+            query:
+              type: string
+            processed_query:
+              type: string
+            total_results:
+              type: integer
+            returned_results:
+              type: integer
+            offset:
+              type: integer
+            limit:
+              type: integer
+            search_time:
+              type: number
+              format: float
+            sort_by:
+              type: string
+            filters_applied:
+              type: object
+            has_highlights:
+              type: boolean
+            search_type:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    GeographicAnalysisResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              region:
+                type: string
+              name:
+                type: string
+              count:
+                type: integer
+              percentage:
+                type: number
+                format: float
+              geographic_region:
+                type: string
+              earliest_date:
+                type: string
+                format: date
+              latest_date:
+                type: string
+                format: date
+        meta:
+          type: object
+          properties:
+            level:
+              type: string
+            metric:
+              type: string
+            total_regions:
+              type: integer
+            analysis_time:
+              type: number
+              format: float
+        timestamp:
+          type: string
+          format: date-time
+
+    ChoroplethResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            type:
+              type: string
+              example: FeatureCollection
+            level:
+              type: string
+            metric:
+              type: string
+            features:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  properties:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      value:
+                        type: number
+                      percentage:
+                        type: number
+            metadata:
+              type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    DashboardResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            overview:
+              type: object
+              properties:
+                total_documents:
+                  type: integer
+                states_with_docs:
+                  type: integer
+                municipalities_with_docs:
+                  type: integer
+                data_source:
+                  type: string
+            api:
+              type: object
+              properties:
+                api_requests_total:
+                  type: integer
+                api_uptime_hours:
+                  type: number
+                cache_hit_rate:
+                  type: number
+            system:
+              type: object
+              properties:
+                database_status:
+                  type: string
+                data_quality_score:
+                  type: number
+        timestamp:
+          type: string
+          format: date-time
+
+    TrendsResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              period:
+                type: string
+              value:
+                type: number
+              change_percentage:
+                type: number
+              trend_direction:
+                type: string
+                enum: [up, down, stable]
+        meta:
+          type: object
+          properties:
+            period:
+              type: string
+            metric:
+              type: string
+            data_points:
+              type: integer
+            statistics:
+              type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    SuggestionsResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+              category:
+                type: string
+              frequency:
+                type: integer
+              highlighted:
+                type: string
+        meta:
+          type: object
+          properties:
+            query:
+              type: string
+            total_suggestions:
+              type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    CategoriesResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              description:
+                type: string
+              subcategories:
+                type: array
+                items:
+                  type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    HealthResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [healthy, degraded, unhealthy]
+            version:
+              type: string
+            database:
+              type: string
+              enum: [connected, disconnected, error]
+            uptime:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ApiInfoResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            version:
+              type: string
+            title:
+              type: string
+            description:
+              type: string
+            features:
+              type: object
+            performance:
+              type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: true
+        message:
+          type: string
+          description: Error message
+        code:
+          type: integer
+          description: HTTP status code
+        details:
+          type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - error
+        - message
+        - code
+        - timestamp
+
+tags:
+  - name: System
+    description: System health and information endpoints
+  - name: Documents
+    description: Legislative document operations and retrieval
+  - name: Search
+    description: Full-text search capabilities with Portuguese language support
+  - name: Geographic
+    description: Geographic analysis and IBGE integration
+  - name: Analytics
+    description: Dashboard metrics, trends, and statistical analysis
+
+externalDocs:
+  description: Complete API Documentation and Tutorials
+  url: https://monitorlegislativo.gov.br/api/docs

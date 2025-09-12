@@ -17,12 +17,13 @@ tryCatch({
 # Core real data loading function
 load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
   tryCatch({
-    # Priority: Use full dataset from data_current
+    # Priority 1: Use full dataset from data_current
     if(file.exists("data_current/processed/production/lexml_unified_dataset.csv")) {
-      cat("📁 Loading real data from production dataset...\n")
+      cat("📁 Loading real data from production dataset (134k docs)...\n")
       
       if(use_cache && exists(".real_data_cache", envir = .GlobalEnv)) {
         data <- get(".real_data_cache", envir = .GlobalEnv)
+        cat("⚙️ Using cached data (", nrow(data), " documents)\n")
       } else {
         # Use data.table for faster loading - with error handling
         if(requireNamespace("data.table", quietly = TRUE)) {
@@ -34,6 +35,8 @@ load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
                           stringsAsFactors = FALSE, encoding = "UTF-8")
         }
         
+        cat("✅ Loaded", nrow(data), "documents from production dataset\n")
+        
         # Cache for performance
         if(use_cache) {
           assign(".real_data_cache", data, envir = .GlobalEnv)
@@ -43,6 +46,75 @@ load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
       # Apply limit if specified
       if(!is.null(limit) && limit < nrow(data)) {
         data <- data[sample(nrow(data), limit), ]
+        cat("🎯 Limited to", nrow(data), "documents\n")
+      }
+      
+      return(data)
+    }
+    
+    # Priority 2: Alternative dataset
+    if(file.exists("data_current/processed/production/lexml_enhanced_simple.csv")) {
+      cat("📁 Loading real data from enhanced simple dataset...\n")
+      
+      data <- read.csv("data_current/processed/production/lexml_enhanced_simple.csv", 
+                      stringsAsFactors = FALSE, encoding = "UTF-8")
+      cat("✅ Loaded", nrow(data), "documents from enhanced simple dataset\n")
+      
+      # Apply limit if specified
+      if(!is.null(limit) && limit < nrow(data)) {
+        data <- data[sample(nrow(data), limit), ]
+        cat("🎯 Limited to", nrow(data), "documents\n")
+      }
+      
+      return(data)
+    }
+    
+    # Priority 3: Railway 50k dataset
+    if(file.exists("railway_data_50k.csv")) {
+      cat("📁 Loading Railway 50k dataset...\n")
+      
+      data <- read.csv("railway_data_50k.csv", 
+                      stringsAsFactors = FALSE, encoding = "UTF-8")
+      cat("✅ Loaded", nrow(data), "documents from Railway 50k dataset\n")
+      
+      # Apply limit if specified
+      if(!is.null(limit) && limit < nrow(data)) {
+        data <- data[sample(nrow(data), limit), ]
+        cat("🎯 Limited to", nrow(data), "documents\n")
+      }
+      
+      return(data)
+    }
+    
+    # Priority 4: Railway medium dataset
+    if(file.exists("railway_medium_dataset.csv")) {
+      cat("📁 Loading Railway medium dataset...\n")
+      
+      data <- read.csv("railway_medium_dataset.csv", 
+                      stringsAsFactors = FALSE, encoding = "UTF-8")
+      cat("✅ Loaded", nrow(data), "documents from Railway medium dataset\n")
+      
+      # Apply limit if specified
+      if(!is.null(limit) && limit < nrow(data)) {
+        data <- data[sample(nrow(data), limit), ]
+        cat("🎯 Limited to", nrow(data), "documents\n")
+      }
+      
+      return(data)
+    }
+    
+    # Priority 5: Railway 10k dataset
+    if(file.exists("railway_data_10k.csv")) {
+      cat("📁 Loading Railway 10k dataset...\n")
+      
+      data <- read.csv("railway_data_10k.csv", 
+                      stringsAsFactors = FALSE, encoding = "UTF-8")
+      cat("✅ Loaded", nrow(data), "documents from Railway 10k dataset\n")
+      
+      # Apply limit if specified
+      if(!is.null(limit) && limit < nrow(data)) {
+        data <- data[sample(nrow(data), limit), ]
+        cat("🎯 Limited to", nrow(data), "documents\n")
       }
       
       return(data)
