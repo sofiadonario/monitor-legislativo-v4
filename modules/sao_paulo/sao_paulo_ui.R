@@ -1137,7 +1137,6 @@ sao_paulo_analysis_ui <- function() {
         });
       ")
     )
-  )
 }
 
 cat("✅ São Paulo Analysis UI Module loaded successfully!\n")

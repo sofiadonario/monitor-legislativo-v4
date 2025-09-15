@@ -74,7 +74,15 @@
       "Bash(sudo dd:*)",
       "Bash(sudo tee:*)",
       "Bash(sudo apt:*)",
-      "Bash(sudo apt install:*)"
+      "Bash(sudo apt install:*)",
+      "Bash(git pull:*)",
+      "Bash(if [ -f \"package.json\" ])",
+      "Bash(else echo \"No package.json found\")",
+      "Bash(if [ -d \"node_modules\" ])",
+      "Bash([ -f \"package.json\" ])",
+      "Bash(then npm test)",
+      "Bash(else echo \"Dependencies not installed\")",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

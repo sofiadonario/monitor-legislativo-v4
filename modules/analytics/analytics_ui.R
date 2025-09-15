@@ -560,12 +560,12 @@ create_analytics_table <- function(data, caption = "Resultados da Análise") {
       scrollX = TRUE,
       language = list(
         search = "Buscar:",
-        lengthMenu = "Mostrar _MENU_ registros por página",
+        lengthMenu = "Mostrar _MENU_ registros por pagina",
         info = "Mostrando _START_ a _END_ de _TOTAL_ registros",
         paginate = list(
           first = "Primeiro",
-          last = "Último",
-          next = "Próximo", 
+          last = "Ultimo",
+          next = "Proximo",
           previous = "Anterior"
         )
       )
