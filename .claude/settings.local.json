@@ -67,7 +67,14 @@
       "Bash(rm:*)",
       "WebFetch(domain:github.com)",
       "Bash(exit)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "mcp__github__create_pull_request",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr list:*)",
+      "Bash(sudo dd:*)",
+      "Bash(sudo tee:*)",
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)"
     ],
     "deny": [],
     "ask": []

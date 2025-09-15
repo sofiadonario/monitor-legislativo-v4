@@ -326,6 +326,7 @@ log_info("Advanced analytics integration completed")
 # =============================================
 sprint7b_system_loaded <- FALSE
 tryCatch({
+  sprint7b_system_loaded <- FALSE  # Initialize inside tryCatch scope
   source("R/sprint7b_integration_loader.R", local = TRUE)
   
   # Initialize Sprint 7B modules

@@ -918,7 +918,7 @@ sao_paulo_analysis_ui <- function() {
             tags$li("Data Processing: Optimized")
           )
         )
-      )
+      ),
       
       # Document Explorer Section
       div(class = "sp-table-container", style = "margin-bottom: 2rem;",
