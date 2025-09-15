@@ -39,6 +39,8 @@ WORKDIR /app
 COPY RAILWAY_PRODUCTION_DB_FIX.R ./
 COPY railway_db_connection_test.R ./
 COPY app.R ./
+COPY health_check.R ./
+COPY simple_health.R ./
 
 # Copy application modules, scripts, data, and fixes needed at runtime
 COPY scripts/ ./scripts/
@@ -49,15 +51,26 @@ COPY fixes/ ./fixes/
 # Verify all packages are properly installed
 RUN R -e "required_packages <- c('shiny','shinydashboard','DBI','RPostgres','dplyr','DT','plotly'); for (pkg in required_packages) { if (!require(pkg, character.only = TRUE)) { stop(paste('Package', pkg, 'not installed properly')) } }; cat('All required packages verified\n')"
 
-# Create healthcheck script
-RUN echo '#!/bin/bash\ncurl -f http://localhost:$PORT/ || exit 1' > /app/healthcheck.sh && \
+# Create healthcheck script that waits for app to be ready
+RUN echo '#!/bin/bash\n\
+# Wait for the port to be available\n\
+for i in {1..30}; do\n\
+  if curl -f -s http://localhost:$PORT/ >/dev/null 2>&1; then\n\
+    echo "App is responding"\n\
+    exit 0\n\
+  fi\n\
+  echo "Waiting for app... ($i/30)"\n\
+  sleep 2\n\
+done\n\
+echo "Health check failed - app not responding"\n\
+exit 1' > /app/healthcheck.sh && \
     chmod +x /app/healthcheck.sh
 
 # Expose port
 EXPOSE 3838
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# Add healthcheck with longer timeout for Shiny startup
+HEALTHCHECK --interval=30s --timeout=30s --start-period=120s --retries=3 \
   CMD /app/healthcheck.sh
 
 # Enhanced start command with proper error handling
