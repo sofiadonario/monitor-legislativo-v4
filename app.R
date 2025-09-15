@@ -1824,7 +1824,10 @@ ui <- function(request) {
       ),
       
       # Unified Geographic Analysis Tab
-      if (exists("enhanced_geographic_tab_item")) enhanced_geographic_tab_item else tabItem(tabName = "geographic",
+      if (exists("enhanced_geographic_tab_item") && inherits(enhanced_geographic_tab_item, "shiny.tag")) {
+        enhanced_geographic_tab_item
+      } else {
+        tabItem(tabName = "geographic",
           # View Mode Toggle
           fluidRow(
             column(12,
@@ -1989,12 +1992,29 @@ ui <- function(request) {
               )
             )
           )
-      ),
+        )
+      },
         
         
       # Enhanced São Paulo State Analysis Tab
       if (sp_system_loaded && exists("enhanced_sao_paulo_tab")) {
-        enhanced_sao_paulo_tab()
+        tryCatch({
+          result <- enhanced_sao_paulo_tab()
+          if (inherits(result, "shiny.tag")) {
+            result
+          } else {
+            # Fallback if function doesn't return proper UI
+            tabItem(tabName = "saopaulo",
+              h3("São Paulo Analysis"),
+              p("Enhanced São Paulo analysis temporarily unavailable.")
+            )
+          }
+        }, error = function(e) {
+          tabItem(tabName = "saopaulo",
+            h3("São Paulo Analysis"),
+            p("Error loading enhanced São Paulo analysis.")
+          )
+        })
       } else {
         # Fallback São Paulo tab
         tabItem(tabName = "saopaulo",
