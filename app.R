@@ -49,6 +49,27 @@ library(plotly)
 library(dplyr)
 library(RColorBrewer)
 
+# CRITICAL: Define progressBar function for UI components
+progressBar <- function(id, value, total = 100, title = "", display_pct = FALSE) {
+  percentage <- round((value / total) * 100, 1)
+  
+  color_class <- if (percentage > 80) "progress-bar-danger" else if (percentage > 60) "progress-bar-warning" else "progress-bar-success"
+  
+  div(
+    class = "progress",
+    div(
+      id = id,
+      class = paste("progress-bar", color_class),
+      role = "progressbar",
+      style = paste0("width: ", percentage, "%"),
+      `aria-valuenow` = value,
+      `aria-valuemin` = 0,
+      `aria-valuemax` = total,
+      if (display_pct) paste0(percentage, "%") else ""
+    )
+  )
+}
+
 # CRITICAL: Define get_lexml_dashboard_metrics function EARLY to ensure availability
 get_lexml_dashboard_metrics <- function() {
   cat("📊 Executing get_lexml_dashboard_metrics (EARLY DEFINITION)...\n")
