@@ -7052,7 +7052,7 @@ cat("📊 Monitoring System:", if(monitoring_system_loaded) "ENABLED" else "DISA
 cat("🔐 Authentication System:", if(auth_system_loaded) "ENABLED" else "DISABLED", "\n")
 cat("🔗 Database Connection:", if(database_connection_loaded) "CONNECTED" else "FALLBACK MODE", "\n")
 cat("🏙️ Enhanced São Paulo Analysis:", if(sp_system_loaded) "ENABLED" else "DISABLED", "\n")
-cat("🚀 Sprint 7B Advanced Analytics:", if(sprint7b_system_loaded) "ENABLED" else "DISABLED", "\n")
+cat("🚀 Sprint 7B Advanced Analytics:", if(exists("sprint7b_system_loaded") && sprint7b_system_loaded) "ENABLED" else "DISABLED", "\n")
 
 # Get PORT from environment variable (Railway provides this)
 port <- as.numeric(Sys.getenv("PORT", "3838"))
