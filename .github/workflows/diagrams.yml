@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Fetch full history for PR comments
 
@@ -134,7 +134,7 @@ jobs:
   lint-backend-structure:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Check for front-end TSX/TS in backend/src
         run: |
           set -e
