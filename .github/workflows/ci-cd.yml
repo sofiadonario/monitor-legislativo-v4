@@ -18,7 +18,7 @@ jobs:
   quality-checks:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
@@ -109,7 +109,7 @@ jobs:
           - 9200:9200
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -168,7 +168,7 @@ jobs:
         working-directory: ./web/frontend
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -216,7 +216,7 @@ jobs:
       web-image: ${{ steps.meta-web.outputs.tags }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -304,7 +304,7 @@ jobs:
     environment: staging
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -348,7 +348,7 @@ jobs:
     environment: production
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -398,7 +398,7 @@ jobs:
     if: github.ref == 'refs/heads/develop'
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up Python
       uses: actions/setup-python@v4
