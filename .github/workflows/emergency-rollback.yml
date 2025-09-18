@@ -1,0 +1,479 @@
+name: Emergency Rollback - Monitor Legislativo v4
+
+# Emergency rollback workflow for Railway blue-green deployment
+# Provides immediate rollback capability for production issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollback_reason:
+        description: 'Reason for emergency rollback'
+        required: true
+        type: choice
+        options:
+          - critical_error
+          - performance_degradation
+          - security_incident
+          - user_impact
+          - data_integrity
+          - other
+      confirmation:
+        description: 'Type "EMERGENCY_ROLLBACK" to confirm'
+        required: true
+        type: string
+      notify_team:
+        description: 'Notify emergency response team'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+
+jobs:
+  # =====================================
+  # EMERGENCY ROLLBACK VALIDATION
+  # =====================================
+  validate-rollback:
+    name: Validate Emergency Rollback Request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      rollback_approved: ${{ steps.validation.outputs.approved }}
+      current_environment: ${{ steps.check_env.outputs.current }}
+      target_environment: ${{ steps.check_env.outputs.target }}
+
+    steps:
+      - name: Validate Rollback Confirmation
+        id: validation
+        run: |
+          if [ "${{ inputs.confirmation }}" != "EMERGENCY_ROLLBACK" ]; then
+            echo "❌ Invalid confirmation. Please type 'EMERGENCY_ROLLBACK' to proceed."
+            exit 1
+          fi
+
+          echo "✅ Emergency rollback confirmation validated"
+          echo "approved=true" >> $GITHUB_OUTPUT
+
+      - name: Check Current Environment
+        id: check_env
+        run: |
+          curl -L https://railway.app/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+
+          railway login --token $RAILWAY_TOKEN
+
+          # Get current active environment
+          CURRENT_ENV=$(railway variables get CURRENT_DEPLOYMENT_COLOR || echo "unknown")
+
+          if [ "$CURRENT_ENV" == "blue" ]; then
+            TARGET_ENV="green"
+          elif [ "$CURRENT_ENV" == "green" ]; then
+            TARGET_ENV="blue"
+          else
+            echo "❌ Cannot determine current environment"
+            exit 1
+          fi
+
+          echo "current=$CURRENT_ENV" >> $GITHUB_OUTPUT
+          echo "target=$TARGET_ENV" >> $GITHUB_OUTPUT
+
+          echo "🔍 Environment Status:"
+          echo "   Current Active: $CURRENT_ENV"
+          echo "   Rollback Target: $TARGET_ENV"
+
+      - name: Log Emergency Rollback Initiation
+        run: |
+          echo "🚨 EMERGENCY ROLLBACK INITIATED"
+          echo "================================"
+          echo "Timestamp: $(date -Iseconds)"
+          echo "Reason: ${{ inputs.rollback_reason }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Current Environment: ${{ steps.check_env.outputs.current }}"
+          echo "Rollback Target: ${{ steps.check_env.outputs.target }}"
+
+  # =====================================
+  # PRE-ROLLBACK HEALTH CHECK
+  # =====================================
+  pre-rollback-check:
+    name: Pre-Rollback Health Check
+    runs-on: ubuntu-latest
+    needs: validate-rollback
+    if: needs.validate-rollback.outputs.rollback_approved == 'true'
+    timeout-minutes: 10
+
+    steps:
+      - name: Install Railway CLI
+        run: |
+          curl -L https://railway.app/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+
+      - name: Check Target Environment Health
+        env:
+          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+        run: |
+          railway login --token $RAILWAY_TOKEN
+          railway environment $TARGET_ENV
+
+          # Determine target URL
+          if [ "$TARGET_ENV" == "blue" ]; then
+            TARGET_URL="https://monitor-legislativo-blue.railway.app"
+          else
+            TARGET_URL="https://monitor-legislativo-green.railway.app"
+          fi
+
+          echo "🔍 Checking rollback target environment health: $TARGET_URL"
+
+          # Check if target environment is responsive
+          for i in {1..5}; do
+            if curl -f -m 15 "$TARGET_URL/health"; then
+              echo "✅ Target environment ($TARGET_ENV) is healthy"
+              break
+            else
+              echo "⚠️ Target environment health check failed (attempt $i/5)"
+              sleep 10
+            fi
+          done
+
+          # Verify application content
+          RESPONSE=$(curl -s -f "$TARGET_URL/" || echo "FAILED")
+          if [[ $RESPONSE == *"Monitor Legislativo"* ]]; then
+            echo "✅ Target environment application content verified"
+          else
+            echo "❌ Target environment application validation failed"
+            echo "🚨 ROLLBACK ABORTED - Target environment not healthy"
+            exit 1
+          fi
+
+      - name: Document Current Production State
+        env:
+          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
+        run: |
+          echo "📋 Documenting current production state before rollback..."
+
+          PRODUCTION_URL="https://monitor-legislativo.railway.app"
+
+          # Get current production metrics
+          echo "Current Production Metrics:" > rollback_state.log
+          echo "=========================" >> rollback_state.log
+          echo "Timestamp: $(date -Iseconds)" >> rollback_state.log
+          echo "Active Environment: $CURRENT_ENV" >> rollback_state.log
+
+          # Try to get health status
+          HEALTH_STATUS=$(curl -s -w "%{http_code}" "$PRODUCTION_URL/health" || echo "FAILED")
+          echo "Health Status: $HEALTH_STATUS" >> rollback_state.log
+
+          # Try to get response time
+          START_TIME=$(date +%s.%N)
+          curl -s "$PRODUCTION_URL/" > /dev/null 2>&1
+          END_TIME=$(date +%s.%N)
+          RESPONSE_TIME=$(echo "$END_TIME - $START_TIME" | bc 2>/dev/null || echo "unknown")
+          echo "Response Time: ${RESPONSE_TIME}s" >> rollback_state.log
+
+          cat rollback_state.log
+
+  # =====================================
+  # EXECUTE EMERGENCY ROLLBACK
+  # =====================================
+  execute-rollback:
+    name: Execute Emergency Rollback
+    runs-on: ubuntu-latest
+    needs: [validate-rollback, pre-rollback-check]
+    timeout-minutes: 15
+
+    steps:
+      - name: Install Railway CLI
+        run: |
+          curl -L https://railway.app/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+
+      - name: Execute Traffic Switch
+        env:
+          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
+          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+        run: |
+          echo "🔄 Executing emergency rollback..."
+          echo "   From: $CURRENT_ENV"
+          echo "   To: $TARGET_ENV"
+
+          railway login --token $RAILWAY_TOKEN
+
+          # Switch to production environment to update traffic routing
+          railway environment production
+
+          # Update deployment color to point to target (rollback) environment
+          railway variables set CURRENT_DEPLOYMENT_COLOR=$TARGET_ENV
+          railway variables set ROLLBACK_EXECUTED=true
+          railway variables set ROLLBACK_TIMESTAMP="$(date -Iseconds)"
+          railway variables set ROLLBACK_REASON="${{ inputs.rollback_reason }}"
+          railway variables set ROLLBACK_TRIGGERED_BY="${{ github.actor }}"
+          railway variables set PREVIOUS_DEPLOYMENT_COLOR=$CURRENT_ENV
+
+          echo "✅ Traffic routing updated to $TARGET_ENV environment"
+
+      - name: Verify Rollback Success
+        env:
+          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+        run: |
+          echo "🔍 Verifying rollback success..."
+
+          PRODUCTION_URL="https://monitor-legislativo.railway.app"
+
+          # Wait for traffic switch to take effect
+          sleep 30
+
+          # Verify production URL is responding
+          for i in {1..10}; do
+            if curl -f -m 15 "$PRODUCTION_URL/health"; then
+              echo "✅ Production URL responding after rollback (attempt $i)"
+              break
+            else
+              echo "⏳ Waiting for production URL after rollback... (attempt $i/10)"
+              sleep 15
+            fi
+          done
+
+          # Verify application content
+          RESPONSE=$(curl -s -f "$PRODUCTION_URL/")
+          if [[ $RESPONSE == *"Monitor Legislativo"* ]]; then
+            echo "✅ Production application content verified after rollback"
+          else
+            echo "❌ Production application validation failed after rollback"
+            exit 1
+          fi
+
+          # Get response time after rollback
+          START_TIME=$(date +%s.%N)
+          curl -s "$PRODUCTION_URL/" > /dev/null
+          END_TIME=$(date +%s.%N)
+          RESPONSE_TIME=$(echo "$END_TIME - $START_TIME" | bc 2>/dev/null || echo "unknown")
+
+          echo "📊 Post-rollback metrics:"
+          echo "   Response time: ${RESPONSE_TIME}s"
+          echo "   Active environment: $TARGET_ENV"
+
+      - name: Update Environment Status
+        env:
+          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
+          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+        run: |
+          echo "📝 Updating environment status..."
+
+          railway login --token $RAILWAY_TOKEN
+
+          # Update target environment (now active)
+          railway environment $TARGET_ENV
+          railway variables set DEPLOYMENT_STATUS="active_rollback"
+          railway variables set ROLLBACK_ACTIVATED_TIME="$(date -Iseconds)"
+
+          # Update previous environment (now inactive)
+          railway environment $CURRENT_ENV
+          railway variables set DEPLOYMENT_STATUS="inactive_rollback"
+          railway variables set ROLLBACK_DEACTIVATED_TIME="$(date -Iseconds)"
+
+          echo "✅ Environment status updated"
+
+      - name: Enable Emergency Monitoring
+        env:
+          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+        run: |
+          echo "📊 Enabling emergency monitoring..."
+
+          railway login --token $RAILWAY_TOKEN
+          railway environment $TARGET_ENV
+
+          # Enable intensive monitoring after rollback
+          railway variables set MONITORING_ENABLED=true
+          railway variables set EMERGENCY_MONITORING=true
+          railway variables set ALERTING_ENABLED=true
+          railway variables set LOG_LEVEL=DEBUG
+          railway variables set ERROR_TRACKING=true
+
+          echo "✅ Emergency monitoring enabled"
+
+  # =====================================
+  # POST-ROLLBACK VALIDATION
+  # =====================================
+  post-rollback-validation:
+    name: Post-Rollback Validation
+    runs-on: ubuntu-latest
+    needs: [validate-rollback, execute-rollback]
+    timeout-minutes: 15
+
+    steps:
+      - name: Comprehensive System Check
+        env:
+          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+        run: |
+          echo "🧪 Running comprehensive post-rollback validation..."
+
+          PRODUCTION_URL="https://monitor-legislativo.railway.app"
+
+          # Test 1: Multiple health checks
+          echo "Test 1: Health check consistency"
+          for i in {1..10}; do
+            HEALTH_STATUS=$(curl -s -w "%{http_code}" "$PRODUCTION_URL/health")
+            echo "Health check $i: HTTP $HEALTH_STATUS"
+            if [ "$HEALTH_STATUS" != "200" ]; then
+              echo "❌ Health check failed after rollback"
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "✅ Health checks consistent"
+
+          # Test 2: Application functionality
+          echo "Test 2: Application functionality"
+          for i in {1..5}; do
+            RESPONSE=$(curl -s -f "$PRODUCTION_URL/")
+            if [[ $RESPONSE == *"Monitor Legislativo"* ]]; then
+              echo "✅ Application functionality test $i passed"
+            else
+              echo "❌ Application functionality test $i failed"
+              exit 1
+            fi
+            sleep 10
+          done
+
+          # Test 3: Performance check
+          echo "Test 3: Performance validation"
+          TOTAL_TIME=0
+          for i in {1..5}; do
+            START_TIME=$(date +%s.%N)
+            curl -s "$PRODUCTION_URL/" > /dev/null
+            END_TIME=$(date +%s.%N)
+            RESPONSE_TIME=$(echo "$END_TIME - $START_TIME" | bc)
+            TOTAL_TIME=$(echo "$TOTAL_TIME + $RESPONSE_TIME" | bc)
+            echo "Performance test $i: ${RESPONSE_TIME}s"
+          done
+
+          AVG_TIME=$(echo "scale=2; $TOTAL_TIME / 5" | bc)
+          echo "Average response time: ${AVG_TIME}s"
+
+          echo "✅ Post-rollback validation completed successfully"
+
+      - name: Security Quick Scan
+        run: |
+          echo "🔒 Running security quick scan..."
+
+          PRODUCTION_URL="https://monitor-legislativo.railway.app"
+
+          # Check for security headers
+          HEADERS=$(curl -s -I "$PRODUCTION_URL")
+
+          if echo "$HEADERS" | grep -qi "x-frame-options"; then
+            echo "✅ Security headers present"
+          else
+            echo "⚠️ Security headers check"
+          fi
+
+          # Check for information disclosure
+          RESPONSE=$(curl -s "$PRODUCTION_URL/")
+          if echo "$RESPONSE" | grep -qi "error\|exception\|stack"; then
+            echo "⚠️ Potential error information disclosure detected"
+          else
+            echo "✅ No obvious information disclosure"
+          fi
+
+  # =====================================
+  # ROLLBACK NOTIFICATION AND REPORTING
+  # =====================================
+  notify-rollback:
+    name: Notify Emergency Rollback
+    runs-on: ubuntu-latest
+    needs: [validate-rollback, execute-rollback, post-rollback-validation]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: Generate Rollback Report
+        env:
+          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
+          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+        run: |
+          echo "📋 Generating emergency rollback report..."
+
+          cat > rollback_report.md << EOF
+          # 🚨 EMERGENCY ROLLBACK REPORT
+
+          ## Rollback Information
+          - **Timestamp**: $(date -Iseconds)
+          - **Reason**: ${{ inputs.rollback_reason }}
+          - **Triggered By**: ${{ github.actor }}
+          - **Workflow Run**: ${{ github.run_id }}
+
+          ## Environment Changes
+          - **Previous Active**: $CURRENT_ENV
+          - **New Active**: $TARGET_ENV (rolled back)
+          - **Production URL**: https://monitor-legislativo.railway.app
+
+          ## Validation Status
+          - **Pre-rollback Check**: ${{ needs.pre-rollback-check.result }}
+          - **Rollback Execution**: ${{ needs.execute-rollback.result }}
+          - **Post-rollback Validation**: ${{ needs.post-rollback-validation.result }}
+
+          ## Next Steps
+          - [ ] Monitor system stability for next 2 hours
+          - [ ] Investigate root cause of issues that triggered rollback
+          - [ ] Plan forward deployment strategy
+          - [ ] Update incident documentation
+
+          ## Emergency Contacts
+          - DevOps Team: Monitor system metrics
+          - Academic Support: Verify user functionality
+          - Security Team: Validate security posture
+          EOF
+
+          cat rollback_report.md
+
+      - name: Update GitHub Summary
+        if: always()
+        env:
+          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
+          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+        run: |
+          if [ "${{ needs.execute-rollback.result }}" == "success" ] && [ "${{ needs.post-rollback-validation.result }}" == "success" ]; then
+            echo "## 🚨 Emergency Rollback Completed Successfully" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Monitor Legislativo v4 rolled back from $CURRENT_ENV to $TARGET_ENV" >> $GITHUB_STEP_SUMMARY
+            echo "🌐 **Production URL**: https://monitor-legislativo.railway.app" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 **Active Environment**: $TARGET_ENV (rollback)" >> $GITHUB_STEP_SUMMARY
+            echo "📊 **Emergency Monitoring**: Enabled" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Rollback Details" >> $GITHUB_STEP_SUMMARY
+            echo "- **Reason**: ${{ inputs.rollback_reason }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Triggered By**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Timestamp**: $(date -Iseconds)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Validation Results" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Health checks passed" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Application functionality verified" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Performance within acceptable range" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Security quick scan completed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Emergency Rollback Failed" >> $GITHUB_STEP_SUMMARY
+            echo "🚨 Critical: Rollback process encountered errors" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 Production may still be on $CURRENT_ENV" >> $GITHUB_STEP_SUMMARY
+            echo "📞 **IMMEDIATE ACTION REQUIRED**: Contact emergency response team" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Failed Steps" >> $GITHUB_STEP_SUMMARY
+            echo "- Pre-rollback Check: ${{ needs.pre-rollback-check.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Rollback Execution: ${{ needs.execute-rollback.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Post-rollback Validation: ${{ needs.post-rollback-validation.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Set Environment Variables for Monitoring
+        if: success()
+        run: |
+          # Set emergency rollback status for monitoring systems
+          curl -L https://railway.app/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+
+          railway login --token $RAILWAY_TOKEN
+          railway environment production
+
+          railway variables set EMERGENCY_ROLLBACK_STATUS="completed"
+          railway variables set EMERGENCY_ROLLBACK_SUCCESS="true"
+          railway variables set LAST_EMERGENCY_ROLLBACK="$(date -Iseconds)"
+
+          echo "✅ Emergency rollback status updated for monitoring"

@@ -1,0 +1,127 @@
+# MONITOR LEGISLATIVO V4 - PRODUCTION DOCKER IGNORE
+# ==================================================
+# Optimized for Railway deployment with minimal image size
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+.github/workflows/
+
+# Documentation (exclude from production)
+*.md
+docs/
+*.txt
+*.pdf
+
+# Development files
+.vscode/
+.idea/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Environment files (security)
+.env
+.env.*
+!.env.railway
+*.key
+*.pem
+*.p12
+*password*
+*secret*
+
+# Development dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# R development files
+.Rhistory
+.RData
+.Ruserdata
+renv/
+packrat/
+.Rproj.user/
+
+# Large development datasets (keep only production data)
+data/raw/
+data/temp/
+data/dev/
+data_backup/
+backup_*/
+archive/
+exports/
+analytics_output/*.png
+analytics_output/*.html
+*.png
+*.html
+!data_current/processed/production/
+
+# Keep only essential CSV files for Railway
+*.csv
+!railway_data_50k.csv
+!railway_medium_dataset.csv
+!railway_data_10k.csv
+
+# Testing artifacts
+test_results/
+coverage/
+*.test.log
+*test_results.rds
+
+# Cache and temporary files
+cache/
+tmp/
+logs/
+*.cache
+*.lock
+
+# Legacy and backup files
+legacy/
+app_backup.R
+app.R.backup*
+*_backup.*
+*_old.*
+
+# Development tools
+dev-tools/
+debug_*
+diagnose_*
+test_*
+recruitment/
+lexml_overview/
+lexml_env/
+
+# Large binary files
+*.so
+*.dll
+*.dylib
+*.exe
+
+# Database dumps and large data
+*.sql
+*.dump
+*.sqlite
+*.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Railway specific exclusions
+.railway-deploy*
+.redeploy
+railway_deploy_*.sh
+
+# Security exclusions
+security_scan_*.log
+vulnerability_report.*
+
+# Monitoring logs (generated at runtime)
+monitoring/logs/
+performance/logs/

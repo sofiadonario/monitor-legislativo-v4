@@ -82,7 +82,10 @@
       "Bash([ -f \"package.json\" ])",
       "Bash(then npm test)",
       "Bash(else echo \"Dependencies not installed\")",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Read(///**)",
+      "Bash(sudo rm:*)",
+      "Bash(sudo:*)"
     ],
     "deny": [],
     "ask": []

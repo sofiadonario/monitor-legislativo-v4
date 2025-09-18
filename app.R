@@ -49,6 +49,17 @@ library(plotly)
 library(dplyr)
 library(RColorBrewer)
 
+# NOVO SISTEMA DE MÓDULOS - CARREGAR PRIMEIRO
+# ============================================
+tryCatch({
+  source("modules/core/app_initializer.R")
+  initialize_app_with_modules()
+  cat("✅ Sistema de módulos inicializado\n")
+}, error = function(e) {
+  cat("⚠️ Erro ao inicializar sistema de módulos:", e$message, "\n")
+  cat("   Continuando com sistema legado...\n")
+})
+
 # CRITICAL: Define progressBar function for UI components
 progressBar <- function(id, value, total = 100, title = "", display_pct = FALSE) {
   percentage <- round((value / total) * 100, 1)
