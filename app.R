@@ -1311,7 +1311,8 @@ cat("📊 All systems loaded\n")
 # ========================================
 
 # Check if authentication is enabled
-auth_enabled <- auth_system_loaded && exists("auth_config") && auth_config$enabled
+auth_enabled <- FALSE  # Temporarily disable auth for deployment stability
+# auth_enabled <- auth_system_loaded && exists("auth_config") && auth_config$enabled
 
 # Main UI function
 ui <- function(request) {
@@ -1366,9 +1367,7 @@ ui <- function(request) {
           menuItem("🗺️ Geographic Analysis", tabName = "geographic", icon = icon("map-marked-alt")),
           menuItem("🏙️ São Paulo Analysis", tabName = "saopaulo", icon = icon("city")),
           menuItem("🧠 Text Analytics", tabName = "nlp", icon = icon("brain")),
-          if(monitoring_system_loaded) {
-            menuItem("⚙️ System Monitoring", tabName = "monitoring", icon = icon("tachometer-alt"))
-          }
+          menuItem("⚙️ System Monitoring", tabName = "monitoring", icon = icon("tachometer-alt"))
         )
       ),
   
@@ -2460,15 +2459,22 @@ ui <- function(request) {
       ), # closes enhanced NLP tabItem
         
         # System Monitoring Tab
-        if(monitoring_system_loaded) {
-          tabItem(tabName = "monitoring",
-            h2("⚙️ System Monitoring Dashboard"),
-            p("Real-time application monitoring, performance metrics, and system health."),
-            
-            # Load monitoring UI module
+        tabItem(tabName = "monitoring",
+          h2("⚙️ System Monitoring Dashboard"),
+          p("Real-time application monitoring, performance metrics, and system health."),
+
+          # Load monitoring UI module (conditional content inside tab)
+          if(monitoring_system_loaded && exists("monitoring_ui")) {
             monitoring_ui("monitoring_dashboard")
-          )
-        }
+          } else {
+            div(
+              class = "alert alert-info",
+              h4("Monitoring System"),
+              p("System monitoring is not currently available."),
+              p("This feature requires additional monitoring modules to be loaded.")
+            )
+          }
+        )
         
     ) # closes tabItems
   ) # closes dashboardBody
