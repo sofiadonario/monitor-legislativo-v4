@@ -87,7 +87,8 @@
       "Bash(sudo rm:*)",
       "Bash(sudo:*)",
       "Bash(railway variables:*)",
-      "Bash(railway up:*)"
+      "Bash(railway up:*)",
+      "Bash(railway deploy:*)"
     ],
     "deny": [],
     "ask": []
