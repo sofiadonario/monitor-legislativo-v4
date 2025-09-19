@@ -2020,25 +2020,27 @@ ui <- function(request) {
         
         
       # Enhanced São Paulo State Analysis Tab
-      if (sp_system_loaded && exists("enhanced_sao_paulo_tab")) {
-        tryCatch({
-          result <- enhanced_sao_paulo_tab()
-          if (inherits(result, "shiny.tag")) {
-            result
-          } else {
-            # Fallback if function doesn't return proper UI
+      # Always return a valid tabItem to prevent shiny.tag errors
+      {
+        if (sp_system_loaded && exists("enhanced_sao_paulo_tab")) {
+          tryCatch({
+            result <- enhanced_sao_paulo_tab()
+            if (inherits(result, "shiny.tag")) {
+              result
+            } else {
+              # Fallback if function doesn't return proper UI
+              tabItem(tabName = "saopaulo",
+                h3("São Paulo Analysis"),
+                p("Enhanced São Paulo analysis temporarily unavailable.")
+              )
+            }
+          }, error = function(e) {
             tabItem(tabName = "saopaulo",
               h3("São Paulo Analysis"),
-              p("Enhanced São Paulo analysis temporarily unavailable.")
+              p("Error loading enhanced São Paulo analysis.")
             )
-          }
-        }, error = function(e) {
-          tabItem(tabName = "saopaulo",
-            h3("São Paulo Analysis"),
-            p("Error loading enhanced São Paulo analysis.")
-          )
-        })
-      } else {
+          })
+        } else {
         # Fallback São Paulo tab
         tabItem(tabName = "saopaulo",
           fluidRow(
