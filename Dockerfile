@@ -96,7 +96,8 @@ RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); \
 # Set working directory
 WORKDIR /app
 
-# Copy Railway deployment fixes first
+# Copy Railway deployment fixes first (INCLUDING LOG COLLECTOR FIX)
+COPY railway_log_collector_fix.R ./
 COPY railway_deployment_fix.R ./
 COPY app_railway.R ./
 COPY railway_startup.sh ./
@@ -143,6 +144,9 @@ COPY --chown=shinyapp:shinyapp data/ ./data/
 COPY --chown=shinyapp:shinyapp fixes/ ./fixes/
 COPY --chown=shinyapp:shinyapp scripts/ ./scripts/
 COPY --chown=shinyapp:shinyapp config/ ./config/
+
+# Copy R Architecture Consolidation implementation (CRITICAL)
+COPY --chown=shinyapp:shinyapp R/ ./R/
 
 # Copy full dataset CSV (134k) into container if present in build context
 # This relies on .dockerignore allowing this single file

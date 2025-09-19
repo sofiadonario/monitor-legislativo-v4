@@ -97,25 +97,44 @@ create_fallback_db_pool <- function() {
       tryCatch({
         database_url <- Sys.getenv("DATABASE_URL")
         if (nchar(database_url) > 0) {
-          # Parse DATABASE_URL
-          parsed <- gsub("postgres://", "", database_url)
-          parts <- strsplit(parsed, "[/@:]")[[1]]
+          # Parse DATABASE_URL properly
+          # Format: postgresql://user:password@host:port/database
+          url_pattern <- "^postgres(?:ql)?://([^:]+):([^@]+)@([^:]+):(\\d+)/(.+)$"
           
-          if (length(parts) >= 5) {
-            secure_db_pool <<- DBI::dbConnect(
-              RPostgres::Postgres(),
-              host = parts[2],
-              port = as.numeric(parts[3]),
-              dbname = parts[4],
-              user = parts[1],
-              password = strsplit(parts[2], "@")[[1]][1]
-            )
-            cat("✅ Database connection established\n")
-            return(TRUE)
+          if (grepl(url_pattern, database_url)) {
+            matches <- regmatches(database_url, regexec(url_pattern, database_url))[[1]]
+            
+            if (length(matches) == 6) {
+              # Extract components
+              db_user <- matches[2]
+              db_password <- matches[3]
+              db_host <- matches[4]
+              db_port <- as.integer(matches[5])
+              db_name <- matches[6]
+              
+              # Validate port is not NA
+              if (!is.na(db_port)) {
+                secure_db_pool <<- DBI::dbConnect(
+                  RPostgres::Postgres(),
+                  host = db_host,
+                  port = db_port,
+                  dbname = db_name,
+                  user = db_user,
+                  password = db_password
+                )
+                cat("✅ Database connection established\n")
+                return(TRUE)
+              } else {
+                cat("⚠️ Invalid port in DATABASE_URL\n")
+              }
+            }
+          } else {
+            cat("⚠️ DATABASE_URL format not recognized\n")
           }
         }
       }, error = function(e) {
         cat("⚠️ Database connection failed:", e$message, "\n")
+        cat(" ", "\n") # Add space to prevent log concatenation issues
       })
     }
     

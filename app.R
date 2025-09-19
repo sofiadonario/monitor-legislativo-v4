@@ -1,6 +1,18 @@
 # RAILWAY BRAZILIAN LEGISLATIVE MONITORING SYSTEM - MINIMAL WORKING VERSION
 # ============================================================================
 
+# CRITICAL RAILWAY LOG COLLECTOR FIX - LOAD FIRST TO PREVENT BROKEN PIPE
+# =======================================================================
+tryCatch({
+  if (file.exists("railway_log_collector_fix.R")) {
+    source("railway_log_collector_fix.R")
+    apply_railway_log_fix()
+    cat("✅ Railway log collector fix applied\n")
+  }
+}, error = function(e) {
+  cat("⚠️ Railway log collector fix failed:", e$message, "\n")
+})
+
 # CRITICAL RAILWAY FIXES - LOAD FIRST
 # ===================================
 tryCatch({

@@ -2,6 +2,16 @@
 # Railway Full App Server - Runs the ACTUAL Shiny Dashboard
 # ==========================================================
 
+# CRITICAL: Apply Railway Log Collector Fix FIRST
+# ===============================================
+tryCatch({
+  source("railway_log_collector_fix.R")
+  apply_railway_log_fix()
+  cat("✅ Railway log collector fix applied\n")
+}, error = function(e) {
+  cat("⚠️ Log collector fix failed, continuing:", e$message, "\n")
+})
+
 cat("=== Monitor Legislativo v4 - FULL APPLICATION ===\n")
 
 # Get configuration
@@ -31,10 +41,16 @@ fix_shiny_version_check <- function() {
 fix_shiny_version_check()
 
 # Now load Shiny - it won't fail on version checks
-suppressWarnings(suppressMessages({
-  library(shiny)
-  library(httpuv)
-}))
+# Use safe loading if fix is available
+if (exists("safe_library")) {
+  safe_library("shiny")
+  safe_library("httpuv")
+} else {
+  suppressWarnings(suppressMessages({
+    library(shiny)
+    library(httpuv)
+  }))
+}
 
 # Load your FULL application
 cat("Loading Monitor Legislativo Dashboard...\n")

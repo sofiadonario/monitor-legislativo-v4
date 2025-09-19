@@ -565,7 +565,7 @@ create_analytics_table <- function(data, caption = "Resultados da Análise") {
         paginate = list(
           first = "Primeiro",
           last = "Ultimo",
-          next = "Proximo",
+          next = "Próximo",
           previous = "Anterior"
         )
       )
