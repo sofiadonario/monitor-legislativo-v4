@@ -1848,10 +1848,9 @@ ui <- function(request) {
       
       # Unified Geographic Analysis Tab
       # Always return a valid tabItem to prevent shiny.tag errors
-      {
-        if (exists("enhanced_geographic_tab_item") && inherits(enhanced_geographic_tab_item, "shiny.tag")) {
-          enhanced_geographic_tab_item
-        } else {
+      if (exists("enhanced_geographic_tab_item") && inherits(enhanced_geographic_tab_item, "shiny.tag")) {
+        enhanced_geographic_tab_item
+      } else {
         tabItem(tabName = "geographic",
           # View Mode Toggle
           fluidRow(
@@ -2017,32 +2016,30 @@ ui <- function(request) {
               )
             )
           )
-        )
-      },
+        ),
         
         
       # Enhanced São Paulo State Analysis Tab
       # Always return a valid tabItem to prevent shiny.tag errors
-      {
-        if (sp_system_loaded && exists("enhanced_sao_paulo_tab")) {
-          tryCatch({
-            result <- enhanced_sao_paulo_tab()
-            if (inherits(result, "shiny.tag")) {
-              result
-            } else {
-              # Fallback if function doesn't return proper UI
-              tabItem(tabName = "saopaulo",
-                h3("São Paulo Analysis"),
-                p("Enhanced São Paulo analysis temporarily unavailable.")
-              )
-            }
-          }, error = function(e) {
+      if (sp_system_loaded && exists("enhanced_sao_paulo_tab")) {
+        tryCatch({
+          result <- enhanced_sao_paulo_tab()
+          if (inherits(result, "shiny.tag")) {
+            result
+          } else {
+            # Fallback if function doesn't return proper UI
             tabItem(tabName = "saopaulo",
               h3("São Paulo Analysis"),
-              p("Error loading enhanced São Paulo analysis.")
+              p("Enhanced São Paulo analysis temporarily unavailable.")
             )
-          })
-        } else {
+          }
+        }, error = function(e) {
+          tabItem(tabName = "saopaulo",
+            h3("São Paulo Analysis"),
+            p("Error loading enhanced São Paulo analysis.")
+          )
+        })
+      } else {
         # Fallback São Paulo tab
         tabItem(tabName = "saopaulo",
           fluidRow(
@@ -2084,8 +2081,7 @@ ui <- function(request) {
               )
             )
           )
-        )
-      },
+        ),
         
       # Enhanced Text Analytics & NLP Tab with Professional Academic Interface
       tabItem(tabName = "nlp",
