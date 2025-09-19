@@ -86,7 +86,8 @@
       "Read(///**)",
       "Bash(sudo rm:*)",
       "Bash(sudo:*)",
-      "Bash(railway variables:*)"
+      "Bash(railway variables:*)",
+      "Bash(railway up:*)"
     ],
     "deny": [],
     "ask": []
