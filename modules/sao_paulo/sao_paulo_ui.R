@@ -79,7 +79,7 @@ sao_paulo_analysis_ui <- function() {
     NULL
   }
   
-  return(tabItem(tabName = "saopaulo",
+  result <- tabItem(tabName = "saopaulo",
 
     # Include CSS and accessibility improvements
     css_include,
@@ -1137,7 +1137,9 @@ sao_paulo_analysis_ui <- function() {
         });
       ")
     )
-  )) # Close tabItem and return statement
+  ) # Close tabItem
+
+  return(result)
 }
 
 cat("✅ São Paulo Analysis UI Module loaded successfully!\n")
