@@ -1847,9 +1847,11 @@ ui <- function(request) {
       ),
       
       # Unified Geographic Analysis Tab
-      if (exists("enhanced_geographic_tab_item") && inherits(enhanced_geographic_tab_item, "shiny.tag")) {
-        enhanced_geographic_tab_item
-      } else {
+      # Always return a valid tabItem to prevent shiny.tag errors
+      {
+        if (exists("enhanced_geographic_tab_item") && inherits(enhanced_geographic_tab_item, "shiny.tag")) {
+          enhanced_geographic_tab_item
+        } else {
         tabItem(tabName = "geographic",
           # View Mode Toggle
           fluidRow(
