@@ -1848,10 +1848,7 @@ ui <- function(request) {
       
       # Unified Geographic Analysis Tab
       # Always return a valid tabItem to prevent shiny.tag errors
-      if (exists("enhanced_geographic_tab_item") && inherits(enhanced_geographic_tab_item, "shiny.tag")) {
-        enhanced_geographic_tab_item
-      } else {
-        tabItem(tabName = "geographic",
+      tabItem(tabName = "geographic",
           # View Mode Toggle
           fluidRow(
             column(12,
@@ -2021,67 +2018,47 @@ ui <- function(request) {
         
       # Enhanced São Paulo State Analysis Tab
       # Always return a valid tabItem to prevent shiny.tag errors
-      if (sp_system_loaded && exists("enhanced_sao_paulo_tab")) {
-        tryCatch({
-          result <- enhanced_sao_paulo_tab()
-          if (inherits(result, "shiny.tag")) {
-            result
-          } else {
-            # Fallback if function doesn't return proper UI
-            tabItem(tabName = "saopaulo",
-              h3("São Paulo Analysis"),
-              p("Enhanced São Paulo analysis temporarily unavailable.")
-            )
-          }
-        }, error = function(e) {
-          tabItem(tabName = "saopaulo",
-            h3("São Paulo Analysis"),
-            p("Error loading enhanced São Paulo analysis.")
-          )
-        })
-      } else {
-        # Fallback São Paulo tab
-        tabItem(tabName = "saopaulo",
-          fluidRow(
-            div(
-              class = "content-header",
-              style = "background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; margin-bottom: 20px; border-radius: 8px;",
-              h1("🏙️ São Paulo Legislative Analysis", style = "margin: 0; font-weight: bold;"),
-              p("Analysis of Brazil's largest state and economic powerhouse", style = "margin: 5px 0 0 0; opacity: 0.9;"),
-              p("Loading enhanced analytics...", style = "margin: 5px 0 0 0; opacity: 0.8; font-size: 14px;")
-            )
-          ),
-          fluidRow(
-            valueBoxOutput("sp_total_docs", width = 3),
-            valueBoxOutput("sp_municipalities", width = 3),
-            valueBoxOutput("sp_transport_docs", width = 3),
-            valueBoxOutput("sp_regulatory_activity", width = 3)
-          ),
-          fluidRow(
-            box(
-              title = "🚊 Enhanced São Paulo Transport Analysis", status = "primary", solidHeader = TRUE, width = 8,
-              div(
-                style = "text-align: center; padding: 40px;",
-                h4("Advanced Analytics Loading..."),
-                p("Enhanced São Paulo analysis including RMSP governance, transport modal analysis, and comparative state features."),
-                div(class = "alert alert-info", "System initializing enhanced modules...")
-              )
-            ),
-            box(
-              title = "📊 São Paulo Features", status = "info", solidHeader = TRUE, width = 4,
-              div(
-                h5("🎯 Enhanced Capabilities:"),
-                tags$ul(
-                  tags$li("🚇 Metro/CPTM integration analysis"),
-                  tags$li("🏙️ RMSP metropolitan governance"),
-                  tags$li("📈 Comparative state analysis"),
-                  tags$li("🎓 Academic research portal"),
-                  tags$li("🔍 Advanced document explorer")
-                )
-              )
-            )
+      tabItem(tabName = "saopaulo",
+        fluidRow(
+          div(
+            class = "content-header",
+            style = "background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; margin-bottom: 20px; border-radius: 8px;",
+            h1("🏙️ São Paulo Legislative Analysis", style = "margin: 0; font-weight: bold;"),
+            p("Analysis of Brazil's largest state and economic powerhouse", style = "margin: 5px 0 0 0; opacity: 0.9;"),
+            p("Loading enhanced analytics...", style = "margin: 5px 0 0 0; opacity: 0.8; font-size: 14px;")
           )
         ),
+        fluidRow(
+          valueBoxOutput("sp_total_docs", width = 3),
+          valueBoxOutput("sp_municipalities", width = 3),
+          valueBoxOutput("sp_transport_docs", width = 3),
+          valueBoxOutput("sp_regulatory_activity", width = 3)
+        ),
+        fluidRow(
+          box(
+            title = "🚊 Enhanced São Paulo Transport Analysis", status = "primary", solidHeader = TRUE, width = 8,
+            div(
+              style = "text-align: center; padding: 40px;",
+              h4("Advanced Analytics Loading..."),
+              p("Enhanced São Paulo analysis including RMSP governance, transport modal analysis, and comparative state features."),
+              div(class = "alert alert-info", "System initializing enhanced modules...")
+            )
+          ),
+          box(
+            title = "📊 São Paulo Features", status = "info", solidHeader = TRUE, width = 4,
+            div(
+              h5("🎯 Enhanced Capabilities:"),
+              tags$ul(
+                tags$li("🚇 Metro/CPTM integration analysis"),
+                tags$li("🏙️ RMSP metropolitan governance"),
+                tags$li("📈 Comparative state analysis"),
+                tags$li("🎓 Academic research portal"),
+                tags$li("🔍 Advanced document explorer")
+              )
+            )
+          )
+        )
+      ),
         
       # Enhanced Text Analytics & NLP Tab with Professional Academic Interface
       tabItem(tabName = "nlp",
