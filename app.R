@@ -169,6 +169,17 @@ if (file.exists("get_library_documents_FIXED.R")) {
   cat("✅ Zero results fix applied\n")
 }
 
+# CRITICAL CHART RENDERING FIXES - Load early to ensure charts work
+# ==================================================================
+tryCatch({
+  if (file.exists("CRITICAL_CHART_FIXES.R")) {
+    source("CRITICAL_CHART_FIXES.R")
+    cat("✅ Chart rendering fixes applied\n")
+  }
+}, error = function(e) {
+  cat("⚠️ Chart rendering fixes failed:", e$message, "\n")
+})
+
 # Load Railway Geospatial Optimization FIRST (before any geospatial packages)
 # ===========================================================================
 tryCatch({
