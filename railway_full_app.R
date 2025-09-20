@@ -55,6 +55,19 @@ if (exists("safe_library")) {
 # Load your FULL application
 cat("Loading Monitor Legislativo Dashboard...\n")
 
+# CRITICAL: Load chart fixes FIRST (before app.R loads anything)
+cat("🚨 Loading CRITICAL CHART FIXES before app startup...\n")
+tryCatch({
+  if (file.exists("CRITICAL_CHART_FIXES.R")) {
+    source("CRITICAL_CHART_FIXES.R")
+    cat("✅ CRITICAL CHART FIXES loaded successfully\n")
+  } else {
+    cat("❌ CRITICAL_CHART_FIXES.R not found\n")
+  }
+}, error = function(e) {
+  cat("❌ Critical chart fixes failed:", e$message, "\n")
+})
+
 tryCatch({
   # Source your app.R which has all the features
   source("app.R")
