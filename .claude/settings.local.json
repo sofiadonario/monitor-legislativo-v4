@@ -90,7 +90,8 @@
       "Bash(railway up:*)",
       "Bash(railway deploy:*)",
       "Bash(railway ps:*)",
-      "Bash(railway:*)"
+      "Bash(railway:*)",
+      "WebFetch(domain:monitor-legislativo-unified-production-bbf2.up.railway.app)"
     ],
     "deny": [],
     "ask": []

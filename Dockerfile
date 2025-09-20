@@ -126,10 +126,8 @@ COPY app.R ./
 COPY railway_migrate.sh ./
 COPY health_check.R ./
 
-# Copy Railway CSV data files (CRITICAL for fallback when database unavailable)
-COPY railway_data_50k.csv ./
-COPY railway_data_10k.csv ./
-COPY railway_medium_dataset.csv ./
+# Copy data directory with actual CSV files (CRITICAL for fallback when database unavailable)
+COPY --chown=shinyapp:shinyapp data_current/ ./data_current/
 
 # Copy CRITICAL FIX FILES (ESSENTIAL for chart rendering and data loading)
 COPY CRITICAL_CHART_FIXES.R ./
@@ -137,6 +135,10 @@ COPY CRITICAL_ZERO_RESULTS_FIX.R ./
 COPY fix_analytics_data_function.R ./
 COPY fix_analytics_data_reactive.R ./
 COPY RAILWAY_DIAGNOSTIC_TEST.R ./
+COPY RAILWAY_DATA_FIX.R ./
+COPY emergency_data.R ./
+COPY railway_emergency_test.R ./
+COPY analytics_data_emergency_override.R ./
 
 # Copy core directories (with error handling)
 COPY --chown=shinyapp:shinyapp db/ ./db/

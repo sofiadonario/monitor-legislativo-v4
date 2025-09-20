@@ -176,6 +176,12 @@ tryCatch({
     source("CRITICAL_CHART_FIXES.R")
     cat("✅ Chart rendering fixes applied\n")
   }
+  
+  # Load Railway data fix to ensure data loads properly
+  if (file.exists("RAILWAY_DATA_FIX.R")) {
+    source("RAILWAY_DATA_FIX.R")
+    cat("✅ Railway data fix applied\n")
+  }
 }, error = function(e) {
   cat("⚠️ Chart rendering fixes failed:", e$message, "\n")
 })

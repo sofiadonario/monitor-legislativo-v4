@@ -41,7 +41,17 @@ for (file in c("railway_data_50k.csv", "railway_data_10k.csv", "railway_medium_d
 }
 
 if (!data_available) {
-  cat("❌ No CSV data files found\n")
+  cat("❌ No CSV data files found - ACTIVATING EMERGENCY DATASET\n")
+
+  # Load emergency dataset
+  cat("🚨 Loading emergency dataset system...\n")
+  if (file.exists("emergency_data.R")) {
+    source("emergency_data.R")
+    cat("✅ Emergency dataset system loaded\n")
+    data_available <- TRUE
+  } else {
+    cat("❌ emergency_data.R not found\n")
+  }
 }
 
 # 4. Test function availability
@@ -78,6 +88,30 @@ if (exists("analytics_data_fixed_csv")) {
   cat("✅ analytics_data_FIXED function created globally\n")
 }
 
+# Create emergency fallback functions
+if (exists("emergency_analytics_data")) {
+
+  # Primary emergency function
+  analytics_data_EMERGENCY <<- function() {
+    emergency_analytics_data()
+  }
+
+  # Emergency library documents function
+  get_library_documents_EMERGENCY <<- function(limit = 100, offset = 0, categoria = NULL, modal = NULL, estado = NULL, ano = NULL) {
+    emergency_get_library_documents(limit = limit, offset = offset, categoria = categoria, modal = modal, estado = estado, ano = ano)
+  }
+
+  cat("✅ Emergency fallback functions created globally\n")
+
+  # Test emergency functions
+  tryCatch({
+    test_emergency <- analytics_data_EMERGENCY()
+    cat("✅ Emergency functions tested successfully:", nrow(test_emergency), "documents\n")
+  }, error = function(e) {
+    cat("❌ Emergency function test failed:", e$message, "\n")
+  })
+}
+
 # 6. Verify visualization packages
 cat("6. Verifying visualization packages...\n")
 required_packages <- c("plotly", "ggplot2", "dplyr")
@@ -94,19 +128,34 @@ cat("7. Creating test chart functions...\n")
 
 # Test function for charts
 test_chart_data <<- function() {
+  # Try CSV data first
   tryCatch({
-    data <- analytics_data_fixed_csv()
-    if (nrow(data) > 0) {
-      cat("✅ Test chart data available:", nrow(data), "documents\n")
-      return(data)
-    } else {
-      cat("❌ No data available for charts\n")
-      return(NULL)
+    if (exists("analytics_data_fixed_csv")) {
+      data <- analytics_data_fixed_csv()
+      if (nrow(data) > 0) {
+        cat("✅ Test chart data available (CSV):", nrow(data), "documents\n")
+        return(data)
+      }
     }
   }, error = function(e) {
-    cat("❌ Test chart data failed:", e$message, "\n")
-    return(NULL)
+    cat("⚠️ CSV chart data failed:", e$message, "\n")
   })
+
+  # Try emergency data as fallback
+  tryCatch({
+    if (exists("analytics_data_EMERGENCY")) {
+      data <- analytics_data_EMERGENCY()
+      if (nrow(data) > 0) {
+        cat("✅ Test chart data available (EMERGENCY):", nrow(data), "documents\n")
+        return(data)
+      }
+    }
+  }, error = function(e) {
+    cat("❌ Emergency chart data failed:", e$message, "\n")
+  })
+
+  cat("❌ No data available for charts\n")
+  return(NULL)
 }
 
 cat("\n==========================================\n")
@@ -115,13 +164,55 @@ cat("==========================================\n")
 
 # Final test
 cat("Final test - loading sample data...\n")
+final_test_success <- FALSE
+
+# Try CSV data first
 tryCatch({
   if (exists("analytics_data_fixed_csv")) {
     final_test <- analytics_data_fixed_csv()
-    cat("✅ FINAL TEST SUCCESSFUL:", nrow(final_test), "documents available for charts\n")
+    if (nrow(final_test) > 0) {
+      cat("✅ FINAL TEST SUCCESSFUL (CSV):", nrow(final_test), "documents available for charts\n")
+      final_test_success <- TRUE
+    }
   }
 }, error = function(e) {
-  cat("❌ FINAL TEST FAILED:", e$message, "\n")
+  cat("⚠️ CSV final test failed:", e$message, "\n")
 })
+
+# Try emergency data if CSV failed
+if (!final_test_success) {
+  tryCatch({
+    if (exists("analytics_data_EMERGENCY")) {
+      final_test <- analytics_data_EMERGENCY()
+      if (nrow(final_test) > 0) {
+        cat("✅ FINAL TEST SUCCESSFUL (EMERGENCY):", nrow(final_test), "documents available for charts\n")
+        final_test_success <- TRUE
+      }
+    }
+  }, error = function(e) {
+    cat("❌ Emergency final test failed:", e$message, "\n")
+  })
+}
+
+if (!final_test_success) {
+  cat("❌ ALL FINAL TESTS FAILED - No data available\n")
+}
+
+# 8. Apply emergency reactive override for analytics_data
+cat("8. Applying emergency reactive override...\n")
+if (file.exists("analytics_data_emergency_override.R")) {
+  source("analytics_data_emergency_override.R")
+  cat("✅ Emergency reactive override loaded\n")
+
+  # Apply the override
+  tryCatch({
+    override_analytics_data_with_emergency()
+    cat("✅ Emergency reactive override applied\n")
+  }, error = function(e) {
+    cat("⚠️ Emergency reactive override failed:", e$message, "\n")
+  })
+} else {
+  cat("⚠️ analytics_data_emergency_override.R not found\n")
+}
 
 cat("==========================================\n")
