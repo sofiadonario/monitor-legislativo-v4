@@ -131,6 +131,12 @@ COPY railway_data_50k.csv ./
 COPY railway_data_10k.csv ./
 COPY railway_medium_dataset.csv ./
 
+# Copy CRITICAL FIX FILES (ESSENTIAL for chart rendering and data loading)
+COPY CRITICAL_CHART_FIXES.R ./
+COPY CRITICAL_ZERO_RESULTS_FIX.R ./
+COPY fix_analytics_data_function.R ./
+COPY fix_analytics_data_reactive.R ./
+
 # Copy core directories (with error handling)
 COPY --chown=shinyapp:shinyapp db/ ./db/
 COPY --chown=shinyapp:shinyapp auth/ ./auth/
