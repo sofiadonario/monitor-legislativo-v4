@@ -55,6 +55,18 @@ if (exists("safe_library")) {
 # Load your FULL application
 cat("Loading Monitor Legislativo Dashboard...\n")
 
+# RAILWAY DIAGNOSTIC TEST - Check what files are available
+cat("🔍 Running Railway diagnostic test...\n")
+tryCatch({
+  if (file.exists("RAILWAY_DIAGNOSTIC_TEST.R")) {
+    source("RAILWAY_DIAGNOSTIC_TEST.R")
+  } else {
+    cat("❌ RAILWAY_DIAGNOSTIC_TEST.R not found\n")
+  }
+}, error = function(e) {
+  cat("❌ Diagnostic test failed:", e$message, "\n")
+})
+
 # CRITICAL: Load chart fixes FIRST (before app.R loads anything)
 cat("🚨 Loading CRITICAL CHART FIXES before app startup...\n")
 tryCatch({

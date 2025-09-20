@@ -136,6 +136,7 @@ COPY CRITICAL_CHART_FIXES.R ./
 COPY CRITICAL_ZERO_RESULTS_FIX.R ./
 COPY fix_analytics_data_function.R ./
 COPY fix_analytics_data_reactive.R ./
+COPY RAILWAY_DIAGNOSTIC_TEST.R ./
 
 # Copy core directories (with error handling)
 COPY --chown=shinyapp:shinyapp db/ ./db/
