@@ -243,6 +243,17 @@ if (exists("safe_renderText") && is.function(safe_renderText)) {
   cat("✅ Global renderText masking applied for crash prevention\n")
 }
 
+# Apply safe render wrappers for renderUI and renderPlotly where available
+if (exists("safe_renderUI") && is.function(safe_renderUI)) {
+  renderUI <- safe_renderUI
+  cat("✅ Global renderUI masking applied for crash prevention\n")
+}
+
+if (exists("safe_renderPlotly") && is.function(safe_renderPlotly)) {
+  renderPlotly <- safe_renderPlotly
+  cat("✅ Global renderPlotly masking applied for crash prevention\n")
+}
+
 # Enable detailed Shiny error reporting in production logs for diagnostics
 options(
   shiny.fullstacktrace = TRUE,
