@@ -426,7 +426,8 @@ tryCatch({
     original_validate <- get("validateSingleValue", envir = shiny_ns)
     unlockBinding("validateSingleValue", shiny_ns)
     assign("validateSingleValue", function(value, name, ...) {
-      if (length(value) == 0) {
+      len <- length(value)
+      if (len == 0L) {
         cat("[validateSingleValue]", name, "len=0", "class=", paste(class(value), collapse = ","), "\n", file = stderr())
         value_str <- tryCatch(capture.output(str(value)), error = function(...) "<unable to str>")
         cat(paste(value_str, collapse = "\n"), "\n", file = stderr())
@@ -442,11 +443,14 @@ tryCatch({
           NULL
         )
 
-        if (is.null(fallback)) {
-          fallback <- "—"
-        }
-
+        if (is.null(fallback)) fallback <- "—"
         return(fallback)
+      }
+
+      if (len > 1L) {
+        cat("[validateSingleValue]", name, "len=", len, "class=", paste(class(value), collapse = ","), "\n", file = stderr())
+        append_len0_summary("validateSingleValue_multi", list(name = name, len = len, preview = as.character(value[seq_len(min(5, len))])))
+        value <- value[1L]
       }
 
       original_validate(value, name, ...)
