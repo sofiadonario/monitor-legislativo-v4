@@ -76,6 +76,17 @@ diag_log_error <- function(e, context = NULL) {
 safe_renderText <- function(expr, default = "—", context = NULL) {
   shiny::renderText({
     val <- tryCatch(force(expr), error = function(e) { diag_log_error(e, context); default })
+
+    output_info <- tryCatch(shiny::getCurrentOutputInfo(), error = function(...) NULL)
+    output_id <- context %||% if (!is.null(output_info)) output_info$outputId else "<unknown>"
+
+    value_len <- if (is.null(val)) 0L else length(val)
+    if (value_len == 0L) {
+      message(sprintf("[safe_renderText] %s produced length-0 value; using default '%s'", output_id, default))
+    } else if (value_len > 1L) {
+      message(sprintf("[safe_renderText] %s produced length-%d value; truncating", output_id, value_len))
+    }
+
     scalar_chr(val, default)
   })
 }
