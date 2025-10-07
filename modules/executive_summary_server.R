@@ -100,7 +100,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   # ============================================================================
   
   # Total Documents with trend
-  output$exec_enhanced_total_docs <- renderValueBox({
+  output$exec_enhanced_total_docs <- shinydashboard::renderValueBox({
     cat("[RENDER] exec_enhanced_total_docs: START\n", file = stderr())
     analytics <- analytics_data()
     cat("[RENDER] exec_enhanced_total_docs: Got analytics\n", file = stderr())
@@ -147,7 +147,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   })
   
   # States Coverage with performance indicator
-  output$exec_enhanced_states_coverage <- renderValueBox({
+  output$exec_enhanced_states_coverage <- shinydashboard::renderValueBox({
     cat("[EXEC DEBUG] exec_enhanced_states_coverage starting...\n", file = stderr())
     analytics <- analytics_data()
     cat("[EXEC DEBUG] exec_enhanced_states_coverage got analytics data\n", file = stderr())

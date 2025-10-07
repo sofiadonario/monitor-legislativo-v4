@@ -33,7 +33,7 @@ analytics_server <- function(input, output, session, get_data) {
   # ============================================================================
   
   # Total documents value box
-  output$analytics_total_docs <- renderValueBox({
+  output$analytics_total_docs <- shinydashboard::renderValueBox({
     results <- analytics_results()
     require_rows(results, "Sem dados analíticos")
     value_boxes <- create_analytics_value_boxes(results)
@@ -41,7 +41,7 @@ analytics_server <- function(input, output, session, get_data) {
   })
   
   # Temporal coverage value box
-  output$analytics_temporal_coverage <- renderValueBox({
+  output$analytics_temporal_coverage <- shinydashboard::renderValueBox({
     tryCatch({
       results <- analytics_results()
       value_boxes <- create_analytics_value_boxes(results)
@@ -53,7 +53,7 @@ analytics_server <- function(input, output, session, get_data) {
   })
   
   # Processing status value box
-  output$analytics_processing_status <- renderValueBox({
+  output$analytics_processing_status <- shinydashboard::renderValueBox({
     tryCatch({
       results <- analytics_results()
       value_boxes <- create_analytics_value_boxes(results)
@@ -65,7 +65,7 @@ analytics_server <- function(input, output, session, get_data) {
   })
 
   # Data quality value box
-  output$analytics_data_quality <- renderValueBox({
+  output$analytics_data_quality <- shinydashboard::renderValueBox({
     tryCatch({
       results <- analytics_results()
       value_boxes <- create_analytics_value_boxes(results)

@@ -664,7 +664,7 @@ server <- function(input, output, session) {
   }, context = "system_status")
 
   # Value boxes (fallback implementations with scalar safety)
-  output$total_docs <- renderValueBox({
+  output$total_docs <- shinydashboard::renderValueBox({
     cat("[RENDER] total_docs: START\n", file = stderr())
     tryCatch({
       metrics <- get_lexml_dashboard_metrics()
@@ -681,7 +681,7 @@ server <- function(input, output, session) {
     })
   })
 
-  output$states_covered <- renderValueBox({
+  output$states_covered <- shinydashboard::renderValueBox({
     cat("[RENDER] states_covered: START\n", file = stderr())
     tryCatch({
       metrics <- get_lexml_dashboard_metrics()
@@ -698,7 +698,7 @@ server <- function(input, output, session) {
     })
   })
 
-  output$municipalities_covered <- renderValueBox({
+  output$municipalities_covered <- shinydashboard::renderValueBox({
     cat("[RENDER] municipalities_covered: START\n", file = stderr())
     tryCatch({
       metrics <- get_lexml_dashboard_metrics()
