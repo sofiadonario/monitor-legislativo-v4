@@ -225,6 +225,16 @@ for (module_file in module_files) {
 if (exists("safe_valueBox") && is.function(safe_valueBox)) {
   valueBox <- safe_valueBox
   cat("✅ Global valueBox masking applied for crash prevention\n")
+
+  # Also override shinydashboard::valueBox at the namespace level
+  tryCatch({
+    sd_ns <- asNamespace("shinydashboard")
+    unlockBinding("valueBox", sd_ns)
+    assign("valueBox", function(value, ...) safe_valueBox(value, ...), envir = sd_ns)
+    lockBinding("valueBox", sd_ns)
+  }, error = function(e) {
+    cat("[valueBox-hook] unable to override shinydashboard::valueBox:", conditionMessage(e), "\n", file = stderr())
+  })
 }
 
 # Global hammer: mask renderText to enforce scalar safety
