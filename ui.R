@@ -90,7 +90,10 @@ ui <- function(request) {
       dashboardBody(
         # Add custom styles and JavaScript
         add_custom_styles(),
-        shinyjs::useShinyjs(),
+        # Optional: shinyjs integration (graceful degradation if not installed)
+        if (requireNamespace("shinyjs", quietly = TRUE)) {
+          shinyjs::useShinyjs()
+        },
         
         # Custom CSS for Brazilian theme
         tags$head(
