@@ -263,6 +263,7 @@ options(
     calls <- sys.calls()
     formatted <- capture.output(print(calls))
     cat(paste(formatted, collapse = "\n"), "\n", file = stderr())
+    append_len0_summary("shiny_error", list(message = conditionMessage(e), calls = formatted))
     stop(e)
   }
 )
@@ -535,3 +536,17 @@ cat("Demo Mode:", app_config$use_demo_data, "\n")
 cat("Auth Enabled:", app_config$auth_enabled, "\n")
 cat("Monitoring:", ifelse(monitoring_enabled, "Enabled", "Disabled"), "\n")
 cat("========================================\n\n")
+# Export tracing variables for diagnostics
+if (is.null(getOption("ml4_len0_summaries"))) {
+  options(ml4_len0_summaries = list())
+}
+
+append_len0_summary <- function(source_name, details) {
+  summaries <- getOption("ml4_len0_summaries")
+  summaries[[length(summaries) + 1]] <- list(
+    timestamp = Sys.time(),
+    source = source_name,
+    details = details
+  )
+  options(ml4_len0_summaries = summaries)
+}

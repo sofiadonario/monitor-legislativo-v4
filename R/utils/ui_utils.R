@@ -82,9 +82,13 @@ safe_renderText <- function(expr, default = "—", context = NULL) {
 
     value_len <- if (is.null(val)) 0L else length(val)
     if (value_len == 0L) {
-      message(sprintf("[safe_renderText] %s produced length-0 value; using default '%s'", output_id, default))
+      msg <- sprintf("[safe_renderText] %s produced length-0 value; using default '%s'", output_id, default)
+      message(msg)
+      append_len0_summary("safe_renderText", list(output_id = output_id, default = default, value = val))
     } else if (value_len > 1L) {
-      message(sprintf("[safe_renderText] %s produced length-%d value; truncating", output_id, value_len))
+      msg <- sprintf("[safe_renderText] %s produced length-%d value; truncating", output_id, value_len)
+      message(msg)
+      append_len0_summary("safe_renderText_multi", list(output_id = output_id, value = val))
     }
 
     scalar_chr(val, default)
