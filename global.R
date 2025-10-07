@@ -233,6 +233,12 @@ if (exists("safe_renderText") && is.function(safe_renderText)) {
   cat("✅ Global renderText masking applied for crash prevention\n")
 }
 
+# Enable detailed Shiny error reporting in production logs for diagnostics
+options(
+  shiny.fullstacktrace = TRUE,
+  shiny.sanitize.errors = FALSE
+)
+
 # LOAD SYSTEM MODULES
 # ===================
 
