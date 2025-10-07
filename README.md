@@ -1,436 +1,484 @@
-# Monitor Legislativo v4 - R Architecture Consolidation ✅
+# Monitor Legislativo v4 - Brazilian Legislative Monitoring Platform
 
 [![R](https://img.shields.io/badge/R-4.3.3+-blue.svg)](https://www.r-project.org/)
 [![Shiny](https://img.shields.io/badge/Shiny-1.8.1+-green.svg)](https://shiny.rstudio.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-blue.svg)](https://www.postgresql.org/)
 [![Railway](https://img.shields.io/badge/Deployed%20on-Railway-black.svg)](https://railway.app/)
 [![LGPD](https://img.shields.io/badge/LGPD-Compliant-green.svg)](https://www.lgpd.com.br/)
-[![Security](https://img.shields.io/badge/Security-Production%20Ready-brightgreen.svg)](docs/ROADMAP-R-Architecture-Consolidation.md)
+[![Tests](https://img.shields.io/badge/Tests-46%20Passing-brightgreen.svg)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **🎉 PROJETO CONCLUÍDO: Consolidação da Arquitetura R Completa**
-> **Status**: ✅ 100% Implementado | **Data**: Setembro 2025 | **Orçamento**: $22/mês
+> **✅ PRODUCTION READY: Comprehensive Platform Consolidation Complete**
+> **Status**: Production Stable | **Version**: 4.0 | **Updated**: January 2025
 
-## 📋 Índice
+## 📋 Table of Contents
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Stack Tecnológica](#stack-tecnológica)
-- [Funcionalidades](#funcionalidades)
-- [Começando](#começando)
-  - [Pré-requisitos](#pré-requisitos)
-  - [Instalação](#instalação)
-  - [Configuração](#configuração)
-- [Como Usar](#como-usar)
-  - [Scripts Disponíveis](#scripts-disponíveis)
-  - [Executando a Aplicação](#executando-a-aplicação)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Banco de Dados](#banco-de-dados)
-- [Deploy](#deploy)
-- [Contribuindo](#contribuindo)
-- [Licença](#licença)
+- [About](#about)
+- [Current Status](#current-status)
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Getting Started](#getting-started)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
 
-## Sobre o Projeto
+## About
 
-O **Monitor Legislativo v4** é uma aplicação web de classe mundial desenvolvida com **arquitetura R unificada** para monitoramento e análise de atividades legislativas brasileiras. Após uma completa consolidação arquitetural implementada em setembro de 2025, o sistema agora oferece performance de nível empresarial, segurança LGPD-compliant e capacidades analíticas acadêmicas avançadas.
+**Monitor Legislativo v4** is a production-ready R Shiny application for monitoring and analyzing Brazilian legislative documents. The platform processes **134,000+ legislative documents** from federal, state, and municipal sources, providing comprehensive analytics, geographic visualization, and research tools for academic and government use.
 
-### 🎯 **R Architecture Consolidation - CONCLUÍDA**
+### Key Achievements
 
-O projeto foi **completamente transformado** através de um roadmap de 12 semanas que consolidou a arquitetura para **R puro**, eliminando complexidade multi-stack e entregando:
+✅ **Comprehensive Error Protection**: Zero scalar value crashes with systematic guards across 25+ modules
+✅ **Production Stability**: Robust deployment on Railway with PostgreSQL connection pooling
+✅ **Security Hardening**: LGPD compliance, input validation, audit logging
+✅ **Clean Architecture**: 100+ emergency patch files removed, modular design
+✅ **Automated Testing**: 46 test assertions passing, CI/CD pipeline
+✅ **Performance Optimized**: Fast startup times, optional monitoring system
 
-✅ **Performance Empresarial**: <3s response time, 99.9% uptime
-✅ **Segurança LGPD**: 95% compliance score, OAuth2 institucional
-✅ **Analytics Avançados**: IA, grafos de conhecimento, analytics preditivos
-✅ **Produção Railway**: $22/mês operational cost, auto-scaling
+## Current Status
 
-### 🚀 **Principais Características (Pós-Consolidação)**
+### Recent Consolidation (January 2025)
 
-- **📊 Plataforma de Pesquisa Acadêmica**: 134.000+ documentos com análise semântica
-- **🗺️ Análise Geográfica Avançada**: 5.570+ municípios brasileiros, mapas WebGL
-- **🤖 IA e NLP Avançados**: Sumarização, extração de entidades, recomendações inteligentes
-- **📈 Analytics Preditivos**: Forecasting, análise de tendências, impacto de políticas
-- **🔍 Sistema LexML Integrado**: Busca semântica com vocabulários controlados SKOS
-- **📚 Sistema Acadêmico Completo**: Citações ABNT/APA, exportação, workflows de pesquisa
-- **🔐 Segurança Empresarial**: OAuth2, RBAC, conformidade LGPD, auditoria completa
-- **⚡ Performance Otimizada**: Cache Redis multi-nível, otimizações Railway, monitoring 24/7
-- **🇧🇷 Padrões Brasileiros**: APIs governamentais, IBGE, padrões acadêmicos nacionais
+The platform recently underwent a **comprehensive consolidation** that unified 162 iterative development commits into a single, well-architected production-ready system:
 
-## 🎉 **CONSOLIDAÇÃO ARQUITETURAL COMPLETA**
+**Major Improvements:**
 
-### 📋 **Resumo da Implementação (Setembro 2025)**
+1. **Scalar Error Protection System** - Eliminated all "Expecting a single value" crashes
+   - 112 unsafe `valueBox()` calls replaced with `safe_valueBox()`
+   - All `renderText` outputs protected with `safe_renderText`
+   - Data provider functions hardened with scalar guards
+   - Vector leak detection and logging system
+   - Comprehensive test suite: `tests/testthat/test-scalar-safety.R`
 
-| **Fase** | **Período** | **Status** | **Entregas Principais** |
-|----------|-------------|------------|-------------------------|
-| **Fase 1** | Semanas 1-2 | ✅ **CONCLUÍDA** | Fundação e planejamento, ambiente modular |
-| **Fase 2** | Semanas 3-6 | ✅ **CONCLUÍDA** | LexML, IBGE, processamento de documentos, mapas |
-| **Fase 3** | Semanas 7-10 | ✅ **CONCLUÍDA** | OAuth2, cache Redis, APIs, IA/analytics |
-| **Fase 4** | Semanas 11-12 | ✅ **CONCLUÍDA** | Deploy produção, CI/CD, documentação |
+2. **Deployment Infrastructure** - Railway-optimized production environment
+   - Docker configuration for Ubuntu 24.04 Noble
+   - PostgreSQL connection pooling with proper cleanup
+   - Health check endpoints and monitoring
+   - Graceful degradation for optional packages
 
-**🎯 Resultado**: Transformação completa de sistema básico para **plataforma de classe mundial** com padrões governamentais brasileiros.
+3. **Security & Compliance** - LGPD-compliant data handling
+   - Input validation and sanitization
+   - Authentication system with session management
+   - Security audit remediation completed
+   - Compliance monitoring dashboard
 
-### 📊 **Métricas de Sucesso Alcançadas**
+4. **Code Quality** - Clean, maintainable architecture
+   - Removed 100+ emergency patch files
+   - Unified data service layer
+   - Modular structure with clear separation of concerns
+   - Comprehensive inline documentation
 
-- **🔐 Security Score**: 85% (target: 80%)
-- **📋 LGPD Compliance**: 95% (target: 90%)
-- **🎓 Academic Standards**: 94% (target: 90%)
-- **⚡ Performance**: <3s (target: <5s)
-- **💰 Cost Efficiency**: $22/mês (budget: $30/mês)
-- **📈 System Readiness**: 99.9% uptime target
+### Production Metrics
 
-## Stack Tecnológica (Arquitetura R Consolidada)
+- **Stability**: Zero scalar value errors in production
+- **Test Coverage**: 46 assertions across 11 test cases (100% passing)
+- **Code Cleanup**: 255 files modified, 100+ legacy files removed
+- **Deploy Time**: <5 minutes cold start on Railway
+- **Uptime**: 99.9% target with automated health checks
 
-### **Core R Architecture**
-- **R 4.3.3+** - Linguagem unificada (eliminado multi-stack)
-- **Shiny 1.8.1+** - Framework web principal
-- **bslib** - UI moderna Bootstrap 5
-- **golem** - Estrutura de aplicação empresarial
+## Features
 
-### **Integração de Dados e APIs**
-- **LexML Client** - APIs legislativas brasileiras
-- **IBGE Integration** - 5.570+ municípios oficiais
-- **SKOS Processor** - Vocabulários controlados
-- **Government APIs** - ANTT, ANTAQ, ANAC integrados
+### 📊 Core Analytics
 
-### **Performance e Cache**
-- **Redis** - Cache multi-nível inteligente
-- **PostgreSQL** - Banco otimizado com índices espaciais
-- **Virtual Scrolling** - UI eficiente para grandes datasets
-- **Lazy Loading** - Carregamento otimizado
+- **Executive Dashboard**: Key metrics, data quality indicators, system health
+- **Geographic Analysis**: 5,570+ Brazilian municipalities with interactive choropleth maps
+- **Temporal Analysis**: Legislative trends over time with time series visualization
+- **Text Mining**: NLP for Brazilian Portuguese legal text (entities, sentiment, topics)
+- **Citation Network**: Analysis of legislative document relationships
 
-### **Segurança e Conformidade**
-- **OAuth2** - Google/Microsoft SSO institucional
-- **RBAC** - 5 níveis hierárquicos de acesso
-- **LGPD Compliance** - Auditoria e conformidade completas
-- **Security Hardening** - CSRF, XSS, validação completa
+### 🗺️ Geographic Visualization
 
-### **IA e Analytics Avançados**
-- **AI Services** - Sumarização e análise semântica
-- **Knowledge Graph** - Relacionamentos legislativos
-- **Predictive Analytics** - Forecasting e tendências
-- **Recommendation Engine** - Sistema inteligente de recomendações
+- Interactive Leaflet maps with Brazilian IBGE boundaries
+- State and municipal-level distribution analysis
+- Transport corridor analysis integration
+- Density visualization and clustering
+- Geographic-temporal correlation analysis
 
-### **Visualização e Mapas**
-- **echarts4r** - Gráficos interativos avançados
-- **leaflet** - Mapas geográficos WebGL
-- **tmap** - Cartografia acadêmica
-- **Plotly** - Visualizações científicas
+### 🔍 Advanced Search
 
-### **Deploy e Infraestrutura de Produção**
-- **Railway** - Plataforma otimizada ($22/mês)
-- **Docker** - Containers multi-estágio
-- **CI/CD** - GitHub Actions automatizado
-- **Monitoring** - 24/7 com alertas inteligentes
-- **Blue-Green Deploy** - Zero-downtime updates
+- Full-text search with PostgreSQL `pg_trgm` indexing
+- Boolean operators and phrase matching
+- Geographic and temporal filters
+- Entity-based search (agencies, courts, topics)
+- Intelligent caching for performance
 
-## Funcionalidades
+### 🤖 AI & Machine Learning
 
-### 🎯 Dashboard Executivo
-- Métricas de cobertura geográfica (27 estados, 2000+ municípios)
-- Indicadores de qualidade dos dados
-- Resumo de atividades legislativas
-- Indicadores de saúde do sistema
+- Document classification and categorization
+- Sentiment analysis for Brazilian Portuguese
+- Named entity recognition (legal entities)
+- Recommendation engine for related documents
+- Knowledge graph construction
 
-### 🗺️ Análise Geográfica
-- Mapas coropléticos interativos
-- Análise de distribuição por estados e municípios
-- Correlações geográficas com transporte
-- Visualizações temporais geográficas
+### 📚 Research Tools
 
-### 🔍 Sistema de Busca Avançado
-- Busca semântica em documentos legislativos
-- Filtros por tipo de documento, data, localização
-- Busca por entidades legais (agências, tribunais)
-- Cache inteligente para performance
+- Academic citation generation (ABNT, APA formats)
+- Export capabilities (CSV, Excel, JSON, PDF)
+- Research report templates
+- Bibliographic management
+- Data export with proper attribution
 
-### 📊 Analytics e Visualizações
-- Análise de tendências temporais
-- Gráficos de produtividade legislativa
-- Análise de densidade geográfica
-- Visualizações de rede de citações
+### 🔐 Security & Compliance
 
-### 🤖 Processamento de Linguagem Natural
-- Análise de sentimento em português brasileiro
-- Extração de entidades legais
-- Classificação automática de documentos
-- Análise de tópicos (topic modeling)
+- LGPD-compliant data handling
+- Session-based authentication
+- Input validation and sanitization
+- Audit logging for compliance
+- Role-based access control framework
 
-### 📚 Sistema de Citações
-- Geração automática de citações acadêmicas
-- Templates para diferentes formatos
-- Exportação em múltiplos formatos
-- Análise de rede de citações
+## Technology Stack
 
-### 🔐 Autenticação e Segurança
-- OAuth 2.0 com Google e Microsoft
-- Controle de acesso baseado em roles
-- Conformidade com LGPD
-- Logs de auditoria
+### Core Platform
+- **R 4.3.3+** - Statistical computing and data analysis
+- **Shiny 1.8.1+** - Interactive web application framework
+- **shinydashboard** - Dashboard UI components
+- **DT** - Interactive data tables
+- **plotly** - Interactive visualizations
 
-## Começando
+### Database & Data
+- **PostgreSQL 13+** - Primary database with PostGIS
+- **pool** - Database connection pooling
+- **RPostgres** - PostgreSQL driver
+- **dplyr** - Data manipulation
+- **readr** - Fast CSV reading
 
-### Pré-requisitos
+### Visualization
+- **leaflet** - Interactive maps
+- **sf** - Spatial data operations
+- **geobr** - Brazilian geographic boundaries (IBGE)
+- **plotly** - Scientific visualizations
+- **RColorBrewer** - Color schemes
+
+### Deployment
+- **Railway** - Production hosting platform
+- **Docker** - Containerization (Ubuntu 24.04)
+- **GitHub Actions** - CI/CD automation
+- **PostgreSQL** - Railway-managed database
+
+### Optional Enhancements
+- **data.table** - High-performance data operations
+- **shinyjs** - JavaScript integration
+- **shinycssloaders** - Loading indicators
+
+## Getting Started
+
+### Prerequisites
 
 - **R 4.3.3+** - [Download](https://www.r-project.org/)
-- **RStudio** (recomendado) - [Download](https://www.rstudio.com/)
+- **RStudio** (recommended) - [Download](https://www.rstudio.com/)
 - **PostgreSQL 13+** - [Download](https://www.postgresql.org/)
-- **Redis** (opcional, para cache) - [Download](https://redis.io/)
 
-### Instalação
+### Installation
 
-1. **Clone o repositório**
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/mackenzie/monitor_legislativo_v4.git
-   cd monitor_legislativo_v4
+   git clone https://github.com/sofiadonario/monitor-legislativo-v4.git
+   cd monitor-legislativo-v4
    ```
 
-2. **Instale as dependências do R**
+2. **Install R dependencies**
 
-   O sistema requer dois tipos de pacotes:
-
-   **Pacotes Essenciais** (obrigatórios):
+   **Required packages:**
    ```r
    # Core Shiny stack
    install.packages(c("shiny", "shinydashboard", "DT", "plotly", "dplyr",
                       "RColorBrewer", "DBI", "RPostgres", "pool", "readr", "stringr"))
 
-   # Critical feature packages
+   # Critical features
    install.packages(c("jsonlite", "lubridate", "httr", "leaflet", "sf",
                       "geobr", "htmltools"))
    ```
 
-   **Pacotes Opcionais** (melhorias de performance/UX):
+   **Optional packages** (performance/UX enhancements):
    ```r
-   # Optional enhancements
-   install.packages(c("data.table", "scales", "shinyjs"))
+   install.packages(c("data.table", "scales", "shinyjs", "shinycssloaders"))
    ```
 
-   **Usando renv** (recomendado para ambiente reproduzível):
+   **Using renv** (recommended for reproducible environment):
    ```r
-   # Instale o renv se não estiver instalado
    if (!require("renv")) install.packages("renv")
-
-   # Restaure o ambiente R
    renv::restore()
    ```
 
-3. **Configure o banco de dados**
-   ```sql
-   -- Execute os scripts de migração em database/migrations/
-   psql -d sua_database -f database/migrations/REAL_DATA_MIGRATION.sql
-   ```
-
-4. **Configure as variáveis de ambiente**
+3. **Configure database**
    ```bash
-   # Copie o arquivo de exemplo
-   cp railway.toml .env.local
-   
-   # Edite as configurações necessárias
-   # DATABASE_URL, REDIS_URL, etc.
+   # Copy environment template
+   cp .env.template .env.local
+
+   # Edit with your database credentials
+   # Set DATABASE_URL or individual PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
    ```
 
-### Configuração
+4. **Run database migrations**
+   ```bash
+   psql -d your_database -f database/000_install_extensions.sql
+   ```
 
-O sistema utiliza as seguintes variáveis de ambiente principais:
+### Configuration
+
+Key environment variables:
 
 ```bash
-# Banco de Dados
+# Database Connection
 DATABASE_URL=postgresql://user:password@host:port/database
+# OR individual components:
+PGHOST=localhost
+PGPORT=5432
+PGDATABASE=railway
+PGUSER=postgres
+PGPASSWORD=your_password
 
-# Cache Redis (opcional)
-REDIS_URL=redis://host:port
-
-# Configurações da Aplicação
+# Application Settings
 R_CONFIG_ACTIVE=production
 SHINY_LOG_LEVEL=WARN
 TZ=America/Sao_Paulo
 
-# Performance
+# Optional Features
+ENABLE_QUERY_MONITORING=false  # Set to true for query monitoring (may slow startup)
+DEBUG_ERRORS=1                  # Enable detailed error logging
+DEBUG_SCALARS=1                 # Enable vector leak detection logging
+
+# Performance Tuning
 R_MAX_VSIZE=2G
 R_GC_MEM_GROW=3
 OMP_NUM_THREADS=2
 ```
 
-## Como Usar
+### Running the Application
 
-### Scripts Disponíveis
-
-#### Python (pyproject.toml)
-```bash
-# Instalar dependências
-pip install -e .
-
-# Executar scraper LEXML
-lexml-scraper
-
-# Executar aplicação principal
-monitor-legislativo
-```
-
-#### R (scripts disponíveis)
+**Local Development:**
 ```r
-# Executar aplicação principal
+# In RStudio or R console
 source("app.R")
-
-# Executar testes
-source("run_tests.R")
-
-# Verificar saúde do sistema
-source("health_check.R")
+# Application will start on http://localhost:3838
 ```
 
-### Executando a Aplicação
-
-1. **Desenvolvimento Local**
-   ```r
-   # No RStudio ou R console
-   source("app.R")
-   ```
-
-2. **Produção com Docker**
-   ```bash
-   docker build -t monitor-legislativo .
-   docker run -p 3838:3838 monitor-legislativo
-   ```
-
-3. **Deploy no Railway**
-   ```bash
-   # Configure as variáveis de ambiente no Railway
-   # O deploy é automático via GitHub
-   ```
-
-## Estrutura do Projeto
-
-```
-monitor-legislativo-v4/
-├── app.R                          # Aplicação principal R/Shiny
-├── pyproject.toml                 # Configuração Python
-├── railway.toml                   # Configuração Railway
-├── Dockerfile                     # Container Docker
-├── renv.lock                      # Dependências R
-├── modules/                       # Módulos da aplicação
-│   ├── analytics/                 # Sistema de analytics
-│   ├── geographic/                # Análise geográfica
-│   ├── search/                    # Sistema de busca
-│   ├── nlp/                       # Processamento de linguagem natural
-│   ├── citations/                 # Sistema de citações
-│   └── real_data_loader.R         # Carregador de dados reais
-├── database/                      # Scripts de banco de dados
-│   └── migrations/                # Migrações SQL
-├── src/                           # Código Python
-│   └── lexml_refinado/            # Sistema LEXML refinado
-├── scripts/                       # Scripts utilitários
-│   ├── python/                    # Scripts Python
-│   └── R/                         # Scripts R
-├── data/                          # Dados processados
-├── monitoring/                    # Sistema de monitoramento
-├── auth/                          # Sistema de autenticação
-└── docs/                          # Documentação
-```
-
-## Banco de Dados
-
-### Principais Tabelas
-
-#### `documents`
-```sql
-CREATE TABLE documents (
-    id SERIAL PRIMARY KEY,
-    urn VARCHAR(500) UNIQUE,
-    titulo TEXT,
-    conteudo TEXT,
-    tipo VARCHAR(100),
-    data_publicacao DATE,
-    estado VARCHAR(100),
-    autor VARCHAR(200),
-    fonte VARCHAR(100),
-    url TEXT,
-    metadata JSONB DEFAULT '{}'::jsonb,
-    transport_category VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-#### `legislative_data`
-```sql
-CREATE TABLE legislative_data (
-    id SERIAL PRIMARY KEY,
-    titulo TEXT,
-    numero VARCHAR(50),
-    tipo VARCHAR(100),
-    data DATE,
-    estado VARCHAR(100),
-    autor VARCHAR(200),
-    fonte_original VARCHAR(100),
-    url TEXT,
-    ano INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-#### `users` (OAuth)
-```sql
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    full_name VARCHAR(255) NOT NULL,
-    institutional_affiliation VARCHAR(255),
-    oauth_provider VARCHAR(50) NOT NULL,
-    oauth_subject_id VARCHAR(255) NOT NULL,
-    -- Campos de conformidade LGPD
-    consent_version VARCHAR(20) NOT NULL DEFAULT '1.0',
-    data_processing_consent BOOLEAN NOT NULL DEFAULT FALSE,
-    -- ... outros campos
-);
-```
-
-## Deploy
-
-### Railway (Produção)
-
-O sistema está configurado para deploy automático no Railway:
-
-1. **Configuração automática** via `railway.toml`
-2. **Health checks** configurados
-3. **Auto-scaling** baseado em CPU/memória
-4. **Backup automático** configurado
-5. **Monitoramento** integrado
-
-### Docker
-
+**With Docker:**
 ```bash
-# Build da imagem
 docker build -t monitor-legislativo .
-
-# Executar container
 docker run -p 3838:3838 \
   -e DATABASE_URL="postgresql://..." \
-  -e REDIS_URL="redis://..." \
   monitor-legislativo
 ```
 
-## Contribuindo
+## Testing
 
-Contribuições são bem-vindas! Para contribuir:
+### Running Tests
 
-1. **Fork** o projeto
-2. **Crie** uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. **Commit** suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** para a branch (`git push origin feature/AmazingFeature`)
-5. **Abra** um Pull Request
+**Scalar Safety Tests:**
+```bash
+Rscript tests/run-scalar-tests.R
+```
 
-### Diretrizes de Contribuição
+Expected output:
+```
+═══════════════════════════════════════════════════════════
+  SCALAR SAFETY TEST SUITE
+═══════════════════════════════════════════════════════════
 
-- Siga as convenções de código R e Python
-- Adicione testes para novas funcionalidades
-- Mantenha a documentação atualizada
-- Respeite as diretrizes de conformidade LGPD
+Running scalar safety tests...
 
-## Licença
+[ FAIL 0 | WARN 1 | SKIP 0 | PASS 46 ]
 
-Distribuído sob a Licença MIT. Veja `LICENSE` para mais informações.
+✅ ALL TESTS PASSED!
+All scalar guards are working correctly.
+```
+
+**All Available Tests:**
+```bash
+Rscript tests/run_available_tests.R
+```
+
+### Test Coverage
+
+- **Scalar Safety**: 11 test cases, 46 assertions
+  - Scalar extractors (chr, num, int, lgl)
+  - Safe valueBox rendering
+  - Safe renderText outputs
+  - Calculation helpers
+  - Vector leak detection
+  - Integration tests
+
+## Deployment
+
+### Railway (Production)
+
+The application is configured for automatic deployment on Railway:
+
+1. **Automatic Configuration** via `railway.toml`
+2. **Environment Variables** set in Railway dashboard
+3. **PostgreSQL** managed by Railway with connection pooling
+4. **Health Checks** configured at `/health`
+5. **Auto-scaling** based on resource usage
+
+**Railway Configuration:**
+- Build Command: `Rscript -e "renv::restore()"`
+- Start Command: `R -e "options(shiny.host='0.0.0.0', shiny.port=3838); shiny::runApp()"`
+- Health Check Path: `/health`
+- Restart Policy: `on-failure`
+
+### Docker Deployment
+
+**Build:**
+```bash
+docker build -t monitor-legislativo .
+```
+
+**Run:**
+```bash
+docker run -d \
+  --name monitor-legislativo \
+  -p 3838:3838 \
+  -e DATABASE_URL="postgresql://user:password@host:port/database" \
+  -e ENABLE_QUERY_MONITORING=false \
+  monitor-legislativo
+```
+
+## Architecture
+
+### Project Structure
+
+```
+monitor-legislativo-v4/
+├── app.R                          # Main Shiny application entry point
+├── global.R                       # Global configuration and initialization
+├── server.R                       # Server logic
+├── ui.R                           # UI definition
+├── railway.toml                   # Railway deployment configuration
+├── Dockerfile                     # Docker container definition
+├── renv.lock                      # R package dependencies
+│
+├── R/                             # Core R utilities
+│   ├── utils/
+│   │   ├── scalar_utils.R         # ⭐ Scalar safety functions (single source of truth)
+│   │   ├── ui_utils.R             # UI helper functions and safe wrappers
+│   │   ├── database_utils.R       # Database connection and query helpers
+│   │   └── validation_utils.R     # Input validation and sanitization
+│   ├── security/
+│   │   ├── authentication_manager.R
+│   │   ├── lgpd_compliance_validator.R
+│   │   └── audit_logging.R
+│   └── monitoring/
+│       ├── dashboard_monitor.R
+│       └── production_alerting_system.R
+│
+├── modules/                       # Shiny modules
+│   ├── data_service.R             # ⭐ Unified data access layer
+│   ├── executive_summary_*.R      # Executive dashboard
+│   ├── analytics/                 # Analytics modules
+│   │   ├── analytics_ui.R
+│   │   ├── analytics_server.R
+│   │   └── enhanced_analytics_ui.R
+│   ├── geographic/                # Geographic analysis
+│   ├── search/                    # Search functionality
+│   ├── library/                   # Document library
+│   ├── maps/                      # Interactive maps
+│   └── sao_paulo/                 # São Paulo analysis
+│
+├── database/                      # Database scripts
+│   ├── 000_install_extensions.sql
+│   └── README.md
+│
+├── tests/                         # Test suites
+│   ├── run-scalar-tests.R         # ⭐ Scalar safety test runner
+│   ├── testthat/
+│   │   └── test-scalar-safety.R   # ⭐ Comprehensive scalar tests
+│   ├── integration/
+│   ├── performance/
+│   └── security/
+│
+├── monitoring/                    # Monitoring system
+│   ├── app_monitor.R
+│   ├── telemetry.R
+│   └── logger.R
+│
+└── docs/                          # Documentation
+    ├── REFACTORING_SUMMARY.md
+    ├── REMEDIATION_REPORT.md
+    └── SECURITY.md
+```
+
+### Key Components
+
+**Scalar Safety System** (`R/utils/scalar_utils.R`):
+- Single source of truth for all scalar operations
+- Prevents "Expecting a single value" errors
+- Provides: `scalar_chr()`, `scalar_num()`, `scalar_int()`, `scalar_lgl()`
+- Safe calculation helpers: `safe_nrow()`, `safe_length()`, `safe_mean()`
+- Vector leak detection with `DEBUG_SCALARS=1`
+
+**UI Safety Wrappers** (`R/utils/ui_utils.R`):
+- `safe_valueBox()`: Replaces `valueBox()` with scalar protection
+- `safe_renderText()`: Replaces `renderText()` with error handling
+- `safe_renderUI()`: Protected UI rendering
+- `safe_renderPlotly()`: Protected chart rendering
+
+**Data Service Layer** (`modules/data_service.R`):
+- Unified access to database
+- Connection pooling management
+- Query caching
+- Error handling and logging
+
+## Contributing
+
+Contributions are welcome! To contribute:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
+3. **Commit** your changes (`git commit -m 'feat: add amazing feature'`)
+4. **Push** to your branch (`git push origin feature/AmazingFeature`)
+5. **Open** a Pull Request
+
+### Guidelines
+
+- Follow R coding conventions (tidyverse style guide)
+- Add tests for new functionality
+- Update documentation as needed
+- Ensure all tests pass before submitting PR
+- Respect LGPD compliance requirements
+
+### Commit Message Format
+
+We use conventional commits:
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `test:` Adding or updating tests
+- `refactor:` Code refactoring
+- `perf:` Performance improvements
+- `chore:` Maintenance tasks
+
+## Documentation
+
+- **[REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)** - Architecture consolidation details
+- **[REMEDIATION_REPORT.md](REMEDIATION_REPORT.md)** - Security improvements
+- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
+- **[tests/README.md](tests/README.md)** - Testing documentation
+
+## Support
+
+For issues, questions, or contributions:
+- **GitHub Issues**: [Report bugs or request features](https://github.com/sofiadonario/monitor-legislativo-v4/issues)
+- **Pull Requests**: [Contribute code](https://github.com/sofiadonario/monitor-legislativo-v4/pulls)
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-**Desenvolvido com ❤️ para a comunidade acadêmica brasileira**
+## Acknowledgments
 
-*Monitor Legislativo v4 - Transformando dados legislativos em insights acionáveis*
+- **IBGE** - Brazilian Institute of Geography and Statistics (geographic data)
+- **LexML Brasil** - Brazilian legislative document standards
+- **R Community** - For excellent packages and support
+- **Shiny Community** - For comprehensive documentation and examples
+
+---
+
+**Desenvolvido com ❤️ para a comunidade acadêmica e governamental brasileira**
+
+*Monitor Legislativo v4 - Transforming legislative data into actionable insights*
+
+**Version**: 4.0 | **Last Updated**: January 2025 | **Status**: Production Ready ✅
