@@ -279,6 +279,7 @@ tryCatch({
         cat("[validateSingleValue]", name, "len=0", "class=", paste(class(value), collapse = ","), "\n", file = stderr())
         value_str <- tryCatch(capture.output(str(value)), error = function(...) "<unable to str>")
         cat(paste(value_str, collapse = "\n"), "\n", file = stderr())
+        append_len0_summary("validateSingleValue", list(name = name, value_str = value_str))
 
         fallback <- switch(typeof(value),
           "logical" = NA,
@@ -294,7 +295,7 @@ tryCatch({
           fallback <- "—"
         }
 
-        return(original_validate(fallback, name, ...))
+        return(fallback)
       }
 
       original_validate(value, name, ...)
