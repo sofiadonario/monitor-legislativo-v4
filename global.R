@@ -236,7 +236,14 @@ if (exists("safe_renderText") && is.function(safe_renderText)) {
 # Enable detailed Shiny error reporting in production logs for diagnostics
 options(
   shiny.fullstacktrace = TRUE,
-  shiny.sanitize.errors = FALSE
+  shiny.sanitize.errors = FALSE,
+  shiny.error = function(e) {
+    cat("[SHINY ERROR]", conditionMessage(e), "\n", file = stderr())
+    calls <- sys.calls()
+    formatted <- capture.output(print(calls))
+    cat(paste(formatted, collapse = "\n"), "\n", file = stderr())
+    stop(e)
+  }
 )
 
 # LOAD SYSTEM MODULES
