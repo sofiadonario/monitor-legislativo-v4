@@ -227,6 +227,12 @@ if (exists("safe_valueBox") && is.function(safe_valueBox)) {
   cat("✅ Global valueBox masking applied for crash prevention\n")
 }
 
+# Global hammer: mask renderText to enforce scalar safety
+if (exists("safe_renderText") && is.function(safe_renderText)) {
+  renderText <- safe_renderText
+  cat("✅ Global renderText masking applied for crash prevention\n")
+}
+
 # LOAD SYSTEM MODULES
 # ===================
 
