@@ -246,6 +246,26 @@ options(
   }
 )
 
+# Instrument shiny's validateSingleValue to log zero-length issues
+tryCatch({
+  shiny_ns <- asNamespace("shiny")
+  if (exists("validateSingleValue", envir = shiny_ns, inherits = FALSE)) {
+    original_validate <- get("validateSingleValue", envir = shiny_ns)
+    unlockBinding("validateSingleValue", shiny_ns)
+    assign("validateSingleValue", function(value, name, ...) {
+      if (length(value) == 0) {
+        cat("[validateSingleValue]", name, "len=0", "class=", paste(class(value), collapse = ","), "\n", file = stderr())
+        value_str <- tryCatch(capture.output(str(value)), error = function(...) "<unable to str>")
+        cat(paste(value_str, collapse = "\n"), "\n", file = stderr())
+      }
+      original_validate(value, name, ...)
+    }, envir = shiny_ns)
+    lockBinding("validateSingleValue", shiny_ns)
+  }
+}, error = function(e) {
+  cat("[validateSingleValue-hook] unable to install tracer:", conditionMessage(e), "\n", file = stderr())
+})
+
 # LOAD SYSTEM MODULES
 # ===================
 
