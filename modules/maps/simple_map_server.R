@@ -30,7 +30,7 @@ output$interactive_brazil_map <- renderPlotly({
     if ("state" %in% names(data)) {
       valid_data <- data[!is.na(data$state) & data$state != "" & data$state %in% brazil_states$state_code, ]
       
-      if (nrow(valid_data) > 0) {
+      if (!is.null(valid_data) && is.data.frame(valid_data) && nrow(valid_data) > 0) {
         state_list <- unique(valid_data$state)
         state_counts <- data.frame(
           state = state_list,
@@ -123,7 +123,7 @@ output$temporal_map_animation <- renderPlotly({
     
     if ("year" %in% names(data) && "state" %in% names(data)) {
       yearly_data <- data[!is.na(data$year) & data$year >= 2020 & data$year <= 2025, ]
-      if (nrow(yearly_data) > 0) {
+      if (!is.null(yearly_data) && is.data.frame(yearly_data) && nrow(yearly_data) > 0) {
         plot_ly(
           data = yearly_data,
           x = ~year,

@@ -208,7 +208,7 @@ if (!exists("database_connection_loaded") || !database_connection_loaded) {
         search_pattern <- paste0(".*", search_term, ".*")
         title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
         summary_match <- if("summary" %in% names(filtered_docs)) {
-          grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE, na.rm = TRUE)
+          safe_grepl(search_pattern, filtered_docs$summary)
         } else {
           rep(FALSE, nrow(filtered_docs))
         }
@@ -249,7 +249,7 @@ if (!exists("database_connection_loaded") || !database_connection_loaded) {
       search_pattern <- paste0(".*", search_term, ".*")
       title_match <- grepl(search_pattern, docs$title, ignore.case = TRUE)
       summary_match <- if("summary" %in% names(docs)) {
-        grepl(search_pattern, docs$summary, ignore.case = TRUE, na.rm = TRUE)
+        safe_grepl(search_pattern, docs$summary)
       } else {
         rep(FALSE, nrow(docs))
       }
@@ -288,7 +288,7 @@ if (!exists("database_connection_loaded") || !database_connection_loaded) {
             semantic_pattern <- paste0(".*", term, ".*")
             title_semantic <- grepl(semantic_pattern, docs$title, ignore.case = TRUE)
             summary_semantic <- if("summary" %in% names(docs)) {
-              grepl(semantic_pattern, docs$summary, ignore.case = TRUE, na.rm = TRUE)
+              safe_grepl(semantic_pattern, docs$summary)
             } else {
               rep(FALSE, nrow(docs))
             }
@@ -318,7 +318,7 @@ if (!exists("database_connection_loaded") || !database_connection_loaded) {
           
           # Summary matches
           if("summary" %in% names(filtered_docs) && 
-             grepl(search_pattern, filtered_docs$summary[i], ignore.case = TRUE, na.rm = TRUE)) {
+             safe_grepl(search_pattern, filtered_docs$summary[i])) {
             score <- score + 2
           }
           
@@ -343,7 +343,7 @@ if (!exists("database_connection_loaded") || !database_connection_loaded) {
       search_pattern <- paste0(".*", search_term, ".*")
       title_match <- grepl(search_pattern, docs$title, ignore.case = TRUE)
       summary_match <- if("summary" %in% names(docs)) {
-        grepl(search_pattern, docs$summary, ignore.case = TRUE, na.rm = TRUE)
+        safe_grepl(search_pattern, docs$summary)
       } else {
         rep(FALSE, nrow(docs))
       }

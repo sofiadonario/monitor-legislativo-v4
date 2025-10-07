@@ -367,7 +367,7 @@ track_performance_event <- function(event_type, duration_ms, session = NULL, met
   }
   
   # Keep only recent events
-  if (nrow(TELEMETRY_STATE$performance_events) > 10000) {
+  if (!is.null(TELEMETRY_STATE$performance_events) && is.data.frame(TELEMETRY_STATE$performance_events) && nrow(TELEMETRY_STATE$performance_events) > 10000) {
     TELEMETRY_STATE$performance_events <- tail(TELEMETRY_STATE$performance_events, 5000)
   }
 }
@@ -397,14 +397,14 @@ track_error_event <- function(error_type, error_message, session = NULL, context
   TELEMETRY_STATE$error_events <- rbind(TELEMETRY_STATE$error_events, new_error)
   
   # Keep only recent errors
-  if (nrow(TELEMETRY_STATE$error_events) > 5000) {
+  if (!is.null(TELEMETRY_STATE$error_events) && is.data.frame(TELEMETRY_STATE$error_events) && nrow(TELEMETRY_STATE$error_events) > 5000) {
     TELEMETRY_STATE$error_events <- tail(TELEMETRY_STATE$error_events, 2000)
   }
 }
 
 # Analytics and insights
 get_feature_usage_analytics <- function(days = 7) {
-  if (nrow(TELEMETRY_STATE$feature_usage) == 0) {
+  if (is.null(TELEMETRY_STATE$feature_usage) || !is.data.frame(TELEMETRY_STATE$feature_usage) || nrow(TELEMETRY_STATE$feature_usage) == 0) {
     return(list(
       total_interactions = 0,
       unique_features = 0,
@@ -419,7 +419,7 @@ get_feature_usage_analytics <- function(days = 7) {
     as.POSIXct(TELEMETRY_STATE$feature_usage$timestamp) >= cutoff_time,
   ]
   
-  if (nrow(recent_usage) == 0) {
+  if (is.null(recent_usage) || !is.data.frame(recent_usage) || nrow(recent_usage) == 0) {
     return(list(
       total_interactions = 0,
       unique_features = 0,
@@ -457,7 +457,7 @@ get_feature_usage_analytics <- function(days = 7) {
 }
 
 get_performance_analytics <- function(days = 7) {
-  if (nrow(TELEMETRY_STATE$performance_events) == 0) {
+  if (is.null(TELEMETRY_STATE$performance_events) || !is.data.frame(TELEMETRY_STATE$performance_events) || nrow(TELEMETRY_STATE$performance_events) == 0) {
     return(list(
       total_events = 0,
       avg_duration_ms = 0,
@@ -530,10 +530,32 @@ init_telemetry <- function() {
   TELEMETRY_STATE$initialized <- TRUE
   
   # Schedule periodic cleanup
-  observe({
-    invalidateLater(24 * 60 * 60 * 1000) # Daily cleanup
+  # TEMPORARILY DISABLED: observe() called from global.R causes issues
+  # The global reactive observer may be triggering scalar errors
+  # TODO: Move this to server function when we identify root cause
+  cat("[TELEMETRY] Periodic cleanup observer DISABLED for debugging\n")
+
+  # Manual cleanup on init instead
+  tryCatch({
+    cat("[TELEMETRY] Running manual cleanup on init...\n")
     cleanup_old_telemetry_data()
+    cat("[TELEMETRY] Manual cleanup completed\n")
+  }, error = function(e) {
+    cat("[TELEMETRY ERROR] Manual cleanup failed:", conditionMessage(e), "\n")
   })
+
+  # tryCatch({
+  #   observe({
+  #     cat("[TELEMETRY] Observer executing...\n")
+  #     invalidateLater(24 * 60 * 60 * 1000) # Daily cleanup
+  #     cleanup_old_telemetry_data()
+  #     cat("[TELEMETRY] Observer completed successfully\n")
+  #   })
+  #   cat("[TELEMETRY] Observer registered successfully\n")
+  # }, error = function(e) {
+  #   cat("[TELEMETRY ERROR] Failed to register observer:", conditionMessage(e), "\n")
+  #   cat("[TELEMETRY ERROR] This is expected if called before shinyApp() starts\n")
+  # })
   
   log_info("Telemetry system initialized", list(
     privacy_level = TELEMETRY_CONFIG$privacy_level,

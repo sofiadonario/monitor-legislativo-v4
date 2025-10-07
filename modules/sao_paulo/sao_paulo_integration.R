@@ -252,7 +252,7 @@ fallback_sao_paulo_server <- function(input, output, session, analytics_data) {
   
   # Basic value boxes with fallback data
   output$sp_total_docs <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = format(28500, big.mark = ","),
       subtitle = "São Paulo Documents",
       icon = icon("file-text"),
@@ -261,7 +261,7 @@ fallback_sao_paulo_server <- function(input, output, session, analytics_data) {
   })
   
   output$sp_municipalities <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = 142,
       subtitle = "SP Municipalities", 
       icon = icon("city"),
@@ -270,7 +270,7 @@ fallback_sao_paulo_server <- function(input, output, session, analytics_data) {
   })
   
   output$sp_transport_docs <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = format(8500, big.mark = ","),
       subtitle = "Transport Documents",
       icon = icon("subway"),
@@ -279,7 +279,7 @@ fallback_sao_paulo_server <- function(input, output, session, analytics_data) {
   })
   
   output$sp_regulatory_activity <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = "LEADING",
       subtitle = "National Rank",
       icon = icon("trophy"),

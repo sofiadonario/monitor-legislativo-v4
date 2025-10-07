@@ -14,10 +14,21 @@
 # - Academic coordinate transformation protocols with precision validation
 # - Brazilian Administrative Code (IBGE) standardization and validation
 
-library(sf)
-library(geobr)
-library(dplyr)
-library(lwgeom)
+# Load geospatial libraries with graceful lwgeom fallback
+suppressPackageStartupMessages({
+  library(sf)
+  library(geobr)
+  library(dplyr)
+})
+
+has_lwgeom <- requireNamespace("lwgeom", quietly = TRUE)
+
+if (!has_lwgeom) {
+  message("[brazil_coord] 'lwgeom' not available – using sf fallbacks for geometry operations.")
+} else {
+  message("[brazil_coord] 'lwgeom' available – advanced geometry operations enabled.")
+  suppressPackageStartupMessages(library(lwgeom))
+}
 
 # Brazilian Coordinate Reference Systems Constants
 # ==============================================
@@ -389,7 +400,7 @@ validate_brazil_boundaries <- function(boundaries, level) {
   # Validate administrative completeness
   if (level == "state") {
     expected_states <- 27  # 26 states + 1 federal district
-    if (nrow(boundaries) != expected_states) {
+    if (!is.null(boundaries) && is.data.frame(boundaries) && nrow(boundaries) != expected_states) {
       warning(paste("Expected 27 Brazilian states, found", nrow(boundaries)))
     }
   }
@@ -448,7 +459,7 @@ transform_brazil_coordinates <- function(spatial_data,
     transformed_data <- sf::st_transform(spatial_data, crs = target_crs)
     
     # Precision validation
-    if (validate_precision && nrow(transformed_data) > 0) {
+    if (validate_precision && !is.null(transformed_data) && is.data.frame(transformed_data) && nrow(transformed_data) > 0) {
       transformed_centroids <- sf::st_coordinates(sf::st_centroid(transformed_data))
       
       # Calculate transformation quality metrics

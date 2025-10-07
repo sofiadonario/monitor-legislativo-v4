@@ -657,7 +657,7 @@ add_enhanced_geographic_server_logic <- function(input, output, session, db_pool
     # Traditional geographic outputs (for compatibility)
     output$traditional_total_docs <- renderValueBox({
       
-      valueBox(
+      safe_valueBox(
         value = "134k+",
         subtitle = "Legislative Documents",
         icon = icon("file-text"),
@@ -667,7 +667,7 @@ add_enhanced_geographic_server_logic <- function(input, output, session, db_pool
     
     output$traditional_states_covered <- renderValueBox({
       
-      valueBox(
+      safe_valueBox(
         value = "27",
         subtitle = "States & Federal District", 
         icon = icon("map"),
@@ -677,7 +677,7 @@ add_enhanced_geographic_server_logic <- function(input, output, session, db_pool
     
     output$traditional_avg_per_state <- renderValueBox({
       
-      valueBox(
+      safe_valueBox(
         value = "~5k",
         subtitle = "Average per State",
         icon = icon("chart-bar"),

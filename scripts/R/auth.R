@@ -7,24 +7,11 @@ library(digest)
 library(futile.logger)
 
 # Default academic credentials (change in production)
-# In production, store these securely or use institutional SSO
-.auth_credentials <- list(
-  "admin" = list(
-    password_hash = digest("admin123", algo = "sha256"),
-    role = "admin",
-    name = "Administrator"
-  ),
-  "researcher" = list(
-    password_hash = digest("research123", algo = "sha256"),
-    role = "user", 
-    name = "Researcher"
-  ),
-  "student" = list(
-    password_hash = digest("student123", algo = "sha256"),
-    role = "user",
-    name = "Student"
-  )
-)
+# Load secure configuration
+source("R/config/secure_config.R")
+
+# Load credentials from environment or configuration file
+.auth_credentials <- get_auth_credentials()
 
 #' Authenticate user credentials
 #' @param username Username

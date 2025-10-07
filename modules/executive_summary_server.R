@@ -63,8 +63,8 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       # Get fresh data
       tryCatch({
         doc_data <- get_document_data()
-        
-        if (nrow(doc_data) > 0) {
+
+        if (!is.null(doc_data) && is.data.frame(doc_data) && nrow(doc_data) > 0) {
           # Generate comprehensive analytics
           analytics_results <- generate_executive_summary_analytics(doc_data, cache_enabled = TRUE)
           
@@ -101,39 +101,43 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Total Documents with trend
   output$exec_enhanced_total_docs <- renderValueBox({
+    cat("[RENDER] exec_enhanced_total_docs: START\n", file = stderr())
     analytics <- analytics_data()
+    cat("[RENDER] exec_enhanced_total_docs: Got analytics\n", file = stderr())
     
     tryCatch({
-      total_docs <- analytics$dashboard_summary$total_documents
-      trend_data <- analytics$temporal_analysis$statistical_insights$year_over_year_growth
+      total_docs <- scalar_num(analytics$dashboard_summary$total_documents, 0)
+      trend_data <- scalar_num(analytics$temporal_analysis$statistical_insights$year_over_year_growth, 0)
       
-      trend_text <- if (!is.null(trend_data) && !is.na(trend_data)) {
+      trend_text <- if (!is.null(trend_data) && length(trend_data) > 0 && !is.na(trend_data)) {
         sprintf("%.1f%% YoY", trend_data)
       } else {
         "No trend data"
       }
       
-      trend_direction <- if (!is.null(trend_data) && !is.na(trend_data)) {
+      trend_direction <- if (!is.null(trend_data) && length(trend_data) > 0 && !is.na(trend_data)) {
         if (trend_data > 0) "increasing" else if (trend_data < 0) "decreasing" else "stable"
       } else {
         "stable"
       }
       
-      valueBox(
-        value = format(total_docs, big.mark = ","),
-        subtitle = HTML(paste0("Total Documents<br><small style='color: ", 
-                              ifelse(trend_direction == "increasing", "#28a745", 
-                                    ifelse(trend_direction == "decreasing", "#dc3545", "#6c757d")), 
-                              ";'><i class='fa fa-", 
-                              ifelse(trend_direction == "increasing", "arrow-up", 
-                                    ifelse(trend_direction == "decreasing", "arrow-down", "minus")),
-                              "'></i> ", trend_text, "</small>")),
+      # Safe color and icon selection
+      trend_color <- if (isTRUE(trend_direction == "increasing")) "#28a745" else if (isTRUE(trend_direction == "decreasing")) "#dc3545" else "#6c757d"
+      trend_icon <- if (isTRUE(trend_direction == "increasing")) "arrow-up" else if (isTRUE(trend_direction == "decreasing")) "arrow-down" else "minus"
+
+      cat(sprintf("[RENDER] exec_enhanced_total_docs: Creating valueBox with total_docs=%s (class=%s, length=%d)\n",
+                  total_docs, class(total_docs), length(total_docs)), file = stderr())
+
+      safe_valueBox(
+        value = value_box_scalar(total_docs, format_fn = function(x) format(x, big.mark = ",")),
+        subtitle = HTML(paste0("Total Documents<br><small style='color: ", trend_color,
+                              ";'><i class='fa fa-", trend_icon, "'></i> ", trend_text, "</small>")),
         icon = icon("file-text"),
         color = "blue"
       )
       
     }, error = function(e) {
-      valueBox(
+      safe_valueBox(
         value = "Error",
         subtitle = "Total Documents",
         icon = icon("exclamation-triangle"),
@@ -144,26 +148,32 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # States Coverage with performance indicator
   output$exec_enhanced_states_coverage <- renderValueBox({
+    cat("[EXEC DEBUG] exec_enhanced_states_coverage starting...\n", file = stderr())
     analytics <- analytics_data()
+    cat("[EXEC DEBUG] exec_enhanced_states_coverage got analytics data\n", file = stderr())
     
     tryCatch({
-      states_covered <- analytics$dashboard_summary$states_covered
+      # Safe nested access
+      states_covered <- tryCatch(analytics$dashboard_summary$states_covered, error = function(e) 0)
+      if (is.null(states_covered) || length(states_covered) == 0 || !is.numeric(states_covered)) states_covered <- 0
+      
       coverage_pct <- (states_covered / 27) * 100
       
-      performance_color <- if (coverage_pct >= 90) "green" 
-                          else if (coverage_pct >= 70) "yellow" 
+      # Safe comparison with scalar value
+      performance_color <- if (isTRUE(coverage_pct >= 90)) "green" 
+                          else if (isTRUE(coverage_pct >= 70)) "yellow" 
                           else "red"
       
-      valueBox(
-        value = paste0(states_covered, "/27"),
+      safe_valueBox(
+        value = value_box_scalar(paste0(scalar_num(states_covered, 0), "/27")),
         subtitle = HTML(paste0("States Covered<br><small style='color: #6c757d;'>",
-                              sprintf("%.1f%% Coverage", coverage_pct), "</small>")),
+                              sprintf("%.1f%% Coverage", scalar_num(coverage_pct, 0)), "</small>")),
         icon = icon("map"),
         color = performance_color
       )
       
     }, error = function(e) {
-      valueBox(
+      safe_valueBox(
         value = "Error",
         subtitle = "States Coverage",
         icon = icon("exclamation-triangle"),
@@ -174,29 +184,33 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Monthly Activity with moving average
   output$exec_enhanced_monthly_activity <- renderValueBox({
+    cat("[EXEC DEBUG] exec_enhanced_monthly_activity starting...\n", file = stderr())
     analytics <- analytics_data()
+    cat("[EXEC DEBUG] exec_enhanced_monthly_activity got analytics data\n", file = stderr())
     
     tryCatch({
-      monthly_avg <- analytics$temporal_analysis$summary$recent_monthly_avg
+      # Safe nested access
+      monthly_avg <- tryCatch(analytics$temporal_analysis$summary$recent_monthly_avg, error = function(e) NULL)
       
-      if (!is.null(monthly_avg) && !is.na(monthly_avg)) {
-        activity_level <- if (monthly_avg > 1000) "High" 
-                         else if (monthly_avg > 500) "Medium" 
+      if (!is.null(monthly_avg) && length(monthly_avg) > 0 && !is.na(monthly_avg) && is.numeric(monthly_avg)) {
+        # Safe comparisons with isTRUE
+        activity_level <- if (isTRUE(monthly_avg > 1000)) "High" 
+                         else if (isTRUE(monthly_avg > 500)) "Medium" 
                          else "Low"
         
-        color <- if (activity_level == "High") "green"
-                else if (activity_level == "Medium") "yellow"
+        color <- if (isTRUE(activity_level == "High")) "green"
+                else if (isTRUE(activity_level == "Medium")) "yellow"
                 else "orange"
         
-        valueBox(
-          value = format(round(monthly_avg), big.mark = ","),
+        safe_valueBox(
+          value = value_box_scalar(round(scalar_num(monthly_avg, 0)), format_fn = function(x) format(x, big.mark = ",")),
           subtitle = HTML(paste0("Monthly Average<br><small style='color: #6c757d;'>",
                                 activity_level, " Activity</small>")),
           icon = icon("chart-line"),
           color = color
         )
       } else {
-        valueBox(
+        safe_valueBox(
           value = "N/A",
           subtitle = "Monthly Average",
           icon = icon("chart-line"),
@@ -205,7 +219,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       }
       
     }, error = function(e) {
-      valueBox(
+      safe_valueBox(
         value = "Error",
         subtitle = "Monthly Activity",
         icon = icon("exclamation-triangle"),
@@ -216,12 +230,15 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Data Freshness with quality score
   output$exec_enhanced_data_freshness <- renderValueBox({
+    cat("[EXEC DEBUG] exec_enhanced_data_freshness starting...\n", file = stderr())
     analytics <- analytics_data()
+    cat("[EXEC DEBUG] exec_enhanced_data_freshness got analytics data\n", file = stderr())
     
     tryCatch({
-      quality_score <- analytics$kpi_analysis$core_kpis$complete_metadata_pct
-      
-      if (!is.null(quality_score) && !is.na(quality_score)) {
+      quality_score <- tryCatch(analytics$kpi_analysis$core_kpis$complete_metadata_pct, error = function(e) NULL)
+      if (is.null(quality_score) || length(quality_score) == 0 || !is.numeric(quality_score)) quality_score <- NULL
+
+      if (!is.null(quality_score) && length(quality_score) > 0 && !is.na(quality_score)) {
         quality_level <- if (quality_score >= 95) "Excellent"
                         else if (quality_score >= 90) "Good"
                         else if (quality_score >= 80) "Fair"
@@ -232,15 +249,15 @@ init_executive_summary_server <- function(input, output, session, get_document_d
                 else if (quality_level == "Fair") "yellow"
                 else "red"
         
-        valueBox(
-          value = sprintf("%.1f%%", quality_score),
+        safe_valueBox(
+          value = value_box_scalar(sprintf("%.1f%%", scalar_num(quality_score, 0))),
           subtitle = HTML(paste0("Data Quality<br><small style='color: #6c757d;'>",
                                 quality_level, "</small>")),
           icon = icon("check-circle"),
           color = color
         )
       } else {
-        valueBox(
+        safe_valueBox(
           value = "N/A",
           subtitle = "Data Quality",
           icon = icon("check-circle"),
@@ -249,7 +266,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       }
       
     }, error = function(e) {
-      valueBox(
+      safe_valueBox(
         value = "Error",
         subtitle = "Data Quality",
         icon = icon("exclamation-triangle"),
@@ -266,18 +283,20 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   output$exec_kpi_total_documents <- renderUI({
     analytics <- analytics_data()
     
-    total_docs <- analytics$dashboard_summary$total_documents
-    growth <- analytics$temporal_analysis$statistical_insights$year_over_year_growth
+    # Safe nested access
+    total_docs <- tryCatch(analytics$dashboard_summary$total_documents, error = function(e) 0)
+    if (is.null(total_docs) || !is.numeric(total_docs)) total_docs <- 0
+    
+    growth <- tryCatch(analytics$temporal_analysis$statistical_insights$year_over_year_growth, error = function(e) NULL)
     
     div(class = "insight-item",
       div(class = "insight-icon", icon("file-text")),
       div(class = "insight-text",
         span(class = "kpi-number", format(total_docs, big.mark = ",")),
         span("Total Documents"),
-        if (!is.null(growth) && !is.na(growth)) {
-          span(class = ifelse(growth > 0, "trend-indicator trend-up", 
-                             ifelse(growth < 0, "trend-indicator trend-down", "trend-indicator trend-stable")),
-               sprintf("%.1f%% YoY", growth))
+        if (!is.null(growth) && length(growth) > 0 && !is.na(growth) && is.numeric(growth)) {
+          trend_class <- if (isTRUE(growth > 0)) "trend-indicator trend-up" else if (isTRUE(growth < 0)) "trend-indicator trend-down" else "trend-indicator trend-stable"
+          span(class = trend_class, sprintf("%.1f%% YoY", growth))
         }
       )
     )
@@ -286,7 +305,9 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   output$exec_kpi_monthly_growth <- renderUI({
     analytics <- analytics_data()
     
-    monthly_avg <- analytics$temporal_analysis$summary$recent_monthly_avg
+    # Safe nested access
+    monthly_avg <- tryCatch(analytics$temporal_analysis$summary$recent_monthly_avg, error = function(e) 0)
+    if (is.null(monthly_avg) || !is.numeric(monthly_avg)) monthly_avg <- 0
     
     div(class = "insight-item",
       div(class = "insight-icon", icon("chart-line")),
@@ -301,9 +322,13 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   output$exec_kpi_data_quality <- renderUI({
     analytics <- analytics_data()
     
-    quality_score <- analytics$kpi_analysis$core_kpis$complete_metadata_pct
-    quality_level <- if (quality_score >= 95) "EXCELLENT"
-                    else if (quality_score >= 90) "GOOD" 
+    # Safe nested access
+    quality_score <- tryCatch(analytics$kpi_analysis$core_kpis$complete_metadata_pct, error = function(e) 0)
+    if (is.null(quality_score) || !is.numeric(quality_score)) quality_score <- 0
+    
+    # Safe comparisons
+    quality_level <- if (isTRUE(quality_score >= 95)) "EXCELLENT"
+                    else if (isTRUE(quality_score >= 90)) "GOOD" 
                     else "NEEDS_IMPROVEMENT"
     
     div(class = "insight-item",
@@ -322,7 +347,9 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Advanced Trends Chart
   output$exec_advanced_trends <- renderPlotly({
+    cat("[EXEC DEBUG] exec_advanced_trends starting...\n", file = stderr())
     analytics <- analytics_data()
+    cat("[EXEC DEBUG] exec_advanced_trends got analytics data\n", file = stderr())
     
     tryCatch({
       trends_data <- analytics$temporal_analysis$monthly_trends
@@ -352,9 +379,9 @@ init_executive_summary_server <- function(input, output, session, get_document_d
             )
         }
         
-        # Add forecast if available and enabled
+        # Add forecast if available and enabled (safe Boolean guard)
         forecast_data <- analytics$temporal_analysis$forecast_results$next_6_months
-        if (!is.null(forecast_data) && input$exec_show_forecast == TRUE) {
+        if (!is.null(forecast_data) && is.data.frame(forecast_data) && nrow(forecast_data) > 0 && isTRUE(input$exec_show_forecast)) {
           p <- p %>%
             add_trace(
               data = forecast_data,
@@ -563,3 +590,13 @@ init_executive_summary_server <- function(input, output, session, get_document_d
 }
 
 cat("🎯 Executive Summary Server Functions ready for integration\n")
+
+# ============================================================================
+# WRAPPER FUNCTION FOR APP.R COMPATIBILITY
+# ============================================================================
+# app.R looks for executive_summary_server(), so we provide a wrapper
+executive_summary_server <- function(input, output, session) {
+  # Get document data function from global environment
+  get_doc_data <- if (exists("get_documents")) get_documents else function(...) data.frame()
+  init_executive_summary_server(input, output, session, get_doc_data)
+}

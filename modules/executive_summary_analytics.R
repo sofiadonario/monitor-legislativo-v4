@@ -25,10 +25,19 @@ required_packages <- c(
   "tidytext", "stringr", "jsonlite", "memoise", "future", "promises"
 )
 
-missing_packages <- setdiff(required_packages, rownames(installed.packages()))
-if (length(missing_packages) > 0) {
-  cat("📦 Installing missing packages:", paste(missing_packages, collapse = ", "), "\n")
-  install.packages(missing_packages, quiet = TRUE)
+# Never install packages at runtime in production
+if (identical(tolower(Sys.getenv("RAILWAY_ENVIRONMENT")), "production")) {
+  missing_packages <- setdiff(required_packages, rownames(installed.packages()))
+  if (length(missing_packages) > 0) {
+    message("[exec_summary_analytics] Runtime install disabled in production. Missing: ",
+            paste(missing_packages, collapse = ", "))
+  }
+} else if (isTRUE(as.logical(Sys.getenv("ALLOW_RUNTIME_INSTALL", "FALSE")))) {
+  missing_packages <- setdiff(required_packages, rownames(installed.packages()))
+  if (length(missing_packages) > 0) {
+    cat("📦 Missing packages:", paste(missing_packages, collapse = ", "), "\n")
+    message("[startup] Runtime install skipped; all packages must be baked into the image")
+  }
 }
 
 # Load packages
@@ -94,7 +103,7 @@ perform_temporal_analysis <- function(data) {
       ) %>%
       filter(!is.na(parsed_date), year >= 1980, year <= 2025)
     
-    if (nrow(temporal_data) == 0) {
+    if (is.null(temporal_data) || !is.data.frame(temporal_data) || nrow(temporal_data) == 0) {
       return(list(error = "No valid temporal data available"))
     }
     
@@ -106,9 +115,9 @@ perform_temporal_analysis <- function(data) {
         document_count = n(),
         unique_categories = n_distinct(categoria, na.rm = TRUE),
         unique_states = n_distinct(estado, na.rm = TRUE),
-        federal_docs = sum(grepl("Federal", jurisdicao, na.rm = TRUE)),
-        state_docs = sum(grepl("Estadual", jurisdicao, na.rm = TRUE)),
-        municipal_docs = sum(grepl("Municipal", jurisdicao, na.rm = TRUE)),
+        federal_docs = sum(safe_grepl("Federal", jurisdicao), na.rm = TRUE),
+        state_docs = sum(safe_grepl("Estadual", jurisdicao), na.rm = TRUE),
+        municipal_docs = sum(safe_grepl("Municipal", jurisdicao), na.rm = TRUE),
         .groups = "drop"
       ) %>%
       arrange(year_month) %>%
@@ -119,8 +128,9 @@ perform_temporal_analysis <- function(data) {
           (document_count - lag(document_count)) / lag(document_count) * 100,
           NA
         ),
-        moving_avg_3m = (document_count + lag(document_count, 1, default = document_count) + 
-                        lag(document_count, 2, default = document_count)) / 3
+        moving_avg_3m = (document_count + lag(document_count, 1, default = NA_real_) + 
+                        lag(document_count, 2, default = NA_real_)) / 3,
+        quarter_label = quarter(year_month)
       )
     
     # Yearly analysis for longer trends
@@ -131,8 +141,7 @@ perform_temporal_analysis <- function(data) {
         legislation_pct = mean(categoria == "Legislação", na.rm = TRUE) * 100,
         jurisprudence_pct = mean(categoria == "Jurisprudência", na.rm = TRUE) * 100,
         doctrine_pct = mean(categoria == "Doutrina", na.rm = TRUE) * 100,
-        transport_related = sum(grepl("transporte|rodoviário|ferroviário|aéreo|marítimo", 
-                                     tolower(paste(titulo, ementa)), na.rm = TRUE)),
+        transport_related = sum(safe_grepl("transporte|rodoviário|ferroviário|aéreo|marítimo", paste(titulo, ementa)), na.rm = TRUE),
         .groups = "drop"
       ) %>%
       filter(year >= 2000) %>%
@@ -140,7 +149,7 @@ perform_temporal_analysis <- function(data) {
     
     # Change point detection for significant trend changes
     trend_changes <- list()
-    if (nrow(yearly_trends) > 10 && requireNamespace("changepoint", quietly = TRUE)) {
+    if (!is.null(yearly_trends) && is.data.frame(yearly_trends) && nrow(yearly_trends) > 10 && requireNamespace("changepoint", quietly = TRUE)) {
       tryCatch({
         cpt_analysis <- changepoint::cpt.mean(yearly_trends$document_count, method = "PELT")
         change_years <- yearly_trends$year[changepoint::cpts(cpt_analysis)]
@@ -162,23 +171,23 @@ perform_temporal_analysis <- function(data) {
     statistical_insights <- list(
       current_year_total = nrow(recent_period),
       previous_year_total = nrow(previous_period),
-      year_over_year_growth = ifelse(
-        nrow(previous_period) > 0,
-        ((nrow(recent_period) - nrow(previous_period)) / nrow(previous_period)) * 100,
-        NA
-      ),
+      year_over_year_growth = if (nrow(previous_period) > 0) {
+        ((nrow(recent_period) - nrow(previous_period)) / nrow(previous_period)) * 100
+      } else {
+        NA_real_
+      },
       monthly_volatility = sd(monthly_trends$document_count, na.rm = TRUE),
       seasonal_patterns = list(
-        q1_avg = mean(temporal_data$document_count[temporal_data$quarter == 1], na.rm = TRUE),
-        q2_avg = mean(temporal_data$document_count[temporal_data$quarter == 2], na.rm = TRUE),
-        q3_avg = mean(temporal_data$document_count[temporal_data$quarter == 3], na.rm = TRUE),
-        q4_avg = mean(temporal_data$document_count[temporal_data$quarter == 4], na.rm = TRUE)
+        q1_avg = if (any(monthly_trends$quarter_label == 1, na.rm = TRUE)) mean(monthly_trends$document_count[monthly_trends$quarter_label == 1], na.rm = TRUE) else NA_real_,
+        q2_avg = if (any(monthly_trends$quarter_label == 2, na.rm = TRUE)) mean(monthly_trends$document_count[monthly_trends$quarter_label == 2], na.rm = TRUE) else NA_real_,
+        q3_avg = if (any(monthly_trends$quarter_label == 3, na.rm = TRUE)) mean(monthly_trends$document_count[monthly_trends$quarter_label == 3], na.rm = TRUE) else NA_real_,
+        q4_avg = if (any(monthly_trends$quarter_label == 4, na.rm = TRUE)) mean(monthly_trends$document_count[monthly_trends$quarter_label == 4], na.rm = TRUE) else NA_real_
       )
     )
     
     # Forecasting for next 6 months (if sufficient data)
     forecast_results <- list()
-    if (nrow(monthly_trends) >= 12) {
+    if (!is.null(monthly_trends) && is.data.frame(monthly_trends) && nrow(monthly_trends) >= 12) {
       tryCatch({
         ts_data <- ts(monthly_trends$document_count, frequency = 12)
         forecast_model <- forecast::auto.arima(ts_data)
@@ -192,10 +201,15 @@ perform_temporal_analysis <- function(data) {
           upper_bound = as.numeric(forecast_6m$upper[, 2])
         )
         
-        forecast_results$trend_direction <- ifelse(
-          mean(forecast_results$next_6_months$predicted_count) > mean(tail(monthly_trends$document_count, 3)),
-          "increasing", "decreasing"
-        )
+        forecast_results$trend_direction <- if (length(forecast_results$next_6_months$predicted_count) > 0 && nrow(monthly_trends) >= 3) {
+          if (mean(forecast_results$next_6_months$predicted_count) > mean(tail(monthly_trends$document_count, 3))) {
+            "increasing"
+          } else {
+            "decreasing"
+          }
+        } else {
+          "stable"
+        }
         
       }, error = function(e) {
         forecast_results$error <- "Forecasting failed - insufficient data"
@@ -214,7 +228,7 @@ perform_temporal_analysis <- function(data) {
         total_documents_analyzed = nrow(temporal_data),
         date_range = paste(min(temporal_data$year), "-", max(temporal_data$year)),
         recent_monthly_avg = round(mean(tail(monthly_trends$document_count, 3)), 0),
-        trend_status = ifelse(!is.null(trend_changes$change_years), "Dynamic", "Stable")
+        trend_status = if (!is.null(trend_changes$change_years) && length(trend_changes$change_years) > 0) "Dynamic" else "Stable"
       )
     ))
     
@@ -260,8 +274,7 @@ analyze_geographic_distribution <- function(data) {
         legislation_count = sum(categoria == "Legislação", na.rm = TRUE),
         jurisprudence_count = sum(categoria == "Jurisprudência", na.rm = TRUE),
         doctrine_count = sum(categoria == "Doutrina", na.rm = TRUE),
-        transport_related = sum(grepl("transporte|rodoviário|logística", 
-                                     tolower(paste(titulo, ementa)), na.rm = TRUE)),
+        transport_related = sum(safe_grepl("transporte|rodoviário|logística", paste(titulo, ementa)), na.rm = TRUE),
         recent_activity = sum(year(as.Date(date)) >= (year(Sys.Date()) - 1), na.rm = TRUE),
         avg_docs_per_month = document_count / 12,  # Assuming 1-year analysis period
         .groups = "drop"
@@ -287,8 +300,7 @@ analyze_geographic_distribution <- function(data) {
         avg_per_state = round(n() / n_distinct(state_clean), 0),
         legislation_pct = (sum(categoria == "Legislação", na.rm = TRUE) / n()) * 100,
         jurisprudence_pct = (sum(categoria == "Jurisprudência", na.rm = TRUE) / n()) * 100,
-        transport_focus = (sum(grepl("transporte|rodoviário|logística", 
-                                   tolower(paste(titulo, ementa)), na.rm = TRUE)) / n()) * 100,
+        transport_focus = (sum(safe_grepl("transporte|rodoviário|logística", paste(titulo, ementa)), na.rm = TRUE) / n()) * 100,
         .groups = "drop"
       ) %>%
       arrange(desc(document_count))
@@ -300,8 +312,7 @@ analyze_geographic_distribution <- function(data) {
       summarise(
         document_count = n(),
         unique_states = n_distinct(estado, na.rm = TRUE),
-        transport_docs = sum(grepl("transporte|rodoviário|logística", 
-                                  tolower(paste(titulo, ementa)), na.rm = TRUE)),
+        transport_docs = sum(safe_grepl("transporte|rodoviário|logística", paste(titulo, ementa)), na.rm = TRUE),
         avg_per_category = n() / n_distinct(categoria, na.rm = TRUE),
         .groups = "drop"
       ) %>%
@@ -355,7 +366,7 @@ analyze_geographic_distribution <- function(data) {
       coverage_gaps = coverage_gaps,
       summary = list(
         states_with_data = nrow(state_analysis),
-        most_active_region = regional_analysis$region[1],
+        most_active_region = scalar_chr(regional_analysis$region, "N/A"),
         coverage_percentage = (nrow(state_analysis) / 27) * 100,  # 26 states + DF
         transport_specialized_states = nrow(filter(hotspots, specialization == "Transport Hub"))
       )
@@ -384,15 +395,15 @@ analyze_document_patterns <- function(data) {
     document_types <- data %>%
       mutate(
         doc_type_enhanced = case_when(
-          grepl("lei complementar", tolower(titulo)) ~ "Lei Complementar",
-          grepl("lei federal|lei nº|lei n°", tolower(titulo)) ~ "Lei",
-          grepl("decreto federal|decreto nº|decreto n°", tolower(titulo)) ~ "Decreto",
-          grepl("medida provisória|mp nº|mp n°", tolower(titulo)) ~ "Medida Provisória",
-          grepl("resolução|res nº", tolower(titulo)) ~ "Resolução",
-          grepl("portaria|port nº", tolower(titulo)) ~ "Portaria",
-          grepl("instrução normativa|in nº", tolower(titulo)) ~ "Instrução Normativa",
-          grepl("súmula|acórdão", tolower(titulo)) ~ "Jurisprudência",
-          grepl("parecer|nota técnica", tolower(titulo)) ~ "Parecer Técnico",
+          safe_grepl("lei complementar", titulo) ~ "Lei Complementar",
+          safe_grepl("lei federal|lei nº|lei n°", titulo) ~ "Lei",
+          safe_grepl("decreto federal|decreto nº|decreto n°", titulo) ~ "Decreto",
+          safe_grepl("medida provisória|mp nº|mp n°", titulo) ~ "Medida Provisória",
+          safe_grepl("resolução|res nº", titulo) ~ "Resolução",
+          safe_grepl("portaria|port nº", titulo) ~ "Portaria",
+          safe_grepl("instrução normativa|in nº", titulo) ~ "Instrução Normativa",
+          safe_grepl("súmula|acórdão", titulo) ~ "Jurisprudência",
+          safe_grepl("parecer|nota técnica", titulo) ~ "Parecer Técnico",
           TRUE ~ tipo
         )
       )
@@ -410,12 +421,12 @@ analyze_document_patterns <- function(data) {
     transport_classification <- data %>%
       mutate(
         transport_mode = case_when(
-          grepl("rodoviário|caminhão|frete|estrada|rodovia", tolower(paste(titulo, ementa))) ~ "Rodoviário",
-          grepl("ferroviário|ferrovia|trem|locomotiva", tolower(paste(titulo, ementa))) ~ "Ferroviário",
-          grepl("aéreo|aviação|aeroporto|aeronave", tolower(paste(titulo, ementa))) ~ "Aéreo",
-          grepl("aquaviário|marítimo|porto|navegação|navio", tolower(paste(titulo, ementa))) ~ "Aquaviário",
-          grepl("multimodal|intermodal|logística", tolower(paste(titulo, ementa))) ~ "Multimodal",
-          grepl("urbano|metrô|ônibus|brt", tolower(paste(titulo, ementa))) ~ "Urbano",
+          safe_grepl("rodoviário|caminhão|frete|estrada|rodovia", paste(titulo, ementa)) ~ "Rodoviário",
+          safe_grepl("ferroviário|ferrovia|trem|locomotiva", paste(titulo, ementa)) ~ "Ferroviário",
+          safe_grepl("aéreo|aviação|aeroporto|aeronave", paste(titulo, ementa)) ~ "Aéreo",
+          safe_grepl("aquaviário|marítimo|porto|navegação|navio", paste(titulo, ementa)) ~ "Aquaviário",
+          safe_grepl("multimodal|intermodal|logística", paste(titulo, ementa)) ~ "Multimodal",
+          safe_grepl("urbano|metrô|ônibus|brt", paste(titulo, ementa)) ~ "Urbano",
           TRUE ~ "Geral"
         )
       ) %>%
@@ -426,14 +437,14 @@ analyze_document_patterns <- function(data) {
     agency_patterns <- data %>%
       mutate(
         agency_involved = case_when(
-          grepl("antt", tolower(paste(titulo, ementa))) ~ "ANTT",
-          grepl("antaq", tolower(paste(titulo, ementa))) ~ "ANTAQ",
-          grepl("anac", tolower(paste(titulo, ementa))) ~ "ANAC",
-          grepl("anp", tolower(paste(titulo, ementa))) ~ "ANP",
-          grepl("contran", tolower(paste(titulo, ementa))) ~ "CONTRAN",
-          grepl("denatran", tolower(paste(titulo, ementa))) ~ "DENATRAN",
-          grepl("dnit", tolower(paste(titulo, ementa))) ~ "DNIT",
-          grepl("ibama", tolower(paste(titulo, ementa))) ~ "IBAMA",
+          safe_grepl("antt", paste(titulo, ementa)) ~ "ANTT",
+          safe_grepl("antaq", paste(titulo, ementa)) ~ "ANTAQ",
+          safe_grepl("anac", paste(titulo, ementa)) ~ "ANAC",
+          safe_grepl("anp", paste(titulo, ementa)) ~ "ANP",
+          safe_grepl("contran", paste(titulo, ementa)) ~ "CONTRAN",
+          safe_grepl("denatran", paste(titulo, ementa)) ~ "DENATRAN",
+          safe_grepl("dnit", paste(titulo, ementa)) ~ "DNIT",
+          safe_grepl("ibama", paste(titulo, ementa)) ~ "IBAMA",
           TRUE ~ "Outros"
         )
       ) %>%
@@ -451,7 +462,8 @@ analyze_document_patterns <- function(data) {
     keyword_frequency <- data.frame(
       keyword = transport_keywords,
       frequency = sapply(transport_keywords, function(k) {
-        sum(grepl(k, tolower(paste(data$titulo, data$ementa)), na.rm = TRUE))
+        text_combined <- paste(data$titulo, data$ementa, sep = " ")
+        sum(safe_grepl(k, text_combined), na.rm = TRUE)
       }),
       stringsAsFactors = FALSE
     ) %>%
@@ -476,8 +488,8 @@ analyze_document_patterns <- function(data) {
       filter(!is.na(year_month)) %>%
       count(year_month) %>%
       arrange(year_month)
-    
-    if (nrow(monthly_counts) > 6) {
+
+    if (!is.null(monthly_counts) && is.data.frame(monthly_counts) && nrow(monthly_counts) > 6) {
       mean_monthly <- mean(monthly_counts$n)
       sd_monthly <- sd(monthly_counts$n)
       threshold <- mean_monthly + 2 * sd_monthly
@@ -507,13 +519,12 @@ analyze_document_patterns <- function(data) {
     
     # Pattern insights
     pattern_insights <- list(
-      dominant_document_type = type_distribution$doc_type_enhanced[1],
-      dominant_transport_mode = transport_classification$transport_mode[1],
-      most_active_agency = agency_patterns$agency_involved[1],
+      dominant_document_type = scalar_chr(type_distribution$doc_type_enhanced, "N/A"),
+      dominant_transport_mode = scalar_chr(transport_classification$transport_mode, "N/A"),
+      most_active_agency = scalar_chr(agency_patterns$agency_involved, "N/A"),
       top_keywords = head(keyword_frequency$keyword, 5),
       classification_coverage = (sum(!is.na(document_types$doc_type_enhanced)) / nrow(data)) * 100,
-      transport_relevance = (sum(grepl("transporte|rodoviário|logística", 
-                                      tolower(paste(data$titulo, data$ementa)), na.rm = TRUE)) / nrow(data)) * 100
+      transport_relevance = (sum(safe_grepl("transporte|rodoviário|logística", paste(data$titulo, data$ementa)), na.rm = TRUE) / nrow(data)) * 100
     )
     
     cat("✅ Document pattern analysis completed\n")
@@ -578,10 +589,8 @@ generate_executive_kpis <- function(data, temporal_analysis, geographic_analysis
       recent_data_pct = (sum(as.Date(data$date) >= (current_date - days(30)), na.rm = TRUE) / nrow(data)) * 100,
       
       # Transport Focus Metrics
-      transport_relevance_pct = (sum(grepl("transporte|rodoviário|logística|frete", 
-                                          tolower(paste(data$titulo, data$ementa)), na.rm = TRUE)) / nrow(data)) * 100,
-      regulatory_agency_mentions = sum(grepl("antt|antaq|anac|contran|dnit", 
-                                           tolower(paste(data$titulo, data$ementa)), na.rm = TRUE))
+      transport_relevance_pct = (sum(safe_grepl("transporte|rodoviário|logística|frete", paste(data$titulo, data$ementa)), na.rm = TRUE) / nrow(data)) * 100,
+      regulatory_agency_mentions = sum(safe_grepl("antt|antaq|anac|contran|dnit", paste(data$titulo, data$ementa)), na.rm = TRUE)
     )
     
     # Trend Indicators
@@ -603,7 +612,7 @@ generate_executive_kpis <- function(data, temporal_analysis, geographic_analysis
     regional_performance <- list()
     if (!is.null(geographic_analysis$regional_analysis)) {
       regional_performance <- list(
-        most_active_region = geographic_analysis$regional_analysis$region[1],
+        most_active_region = scalar_chr(geographic_analysis$regional_analysis$region, "N/A"),
         regional_concentration_index = max(geographic_analysis$regional_analysis$document_count) / 
                                       sum(geographic_analysis$regional_analysis$document_count),
         transport_specialized_regions = sum(geographic_analysis$regional_analysis$transport_focus > 20),
@@ -618,7 +627,7 @@ generate_executive_kpis <- function(data, temporal_analysis, geographic_analysis
         sum(data$categoria == "Legislação", na.rm = TRUE) / 
         sum(data$categoria == "Jurisprudência", na.rm = TRUE), 2
       ),
-      federal_dominance_pct = (sum(grepl("Federal", data$jurisdicao, na.rm = TRUE)) / nrow(data)) * 100,
+      federal_dominance_pct = (sum(safe_grepl("Federal", data$jurisdicao), na.rm = TRUE) / nrow(data)) * 100,
       recent_legislative_activity = sum(
         year(as.Date(data$date)) == current_year & 
         data$categoria == "Legislação", na.rm = TRUE
@@ -764,7 +773,7 @@ generate_executive_summary_analytics <- function(data, cache_enabled = TRUE) {
   
   tryCatch({
     # Validate input data
-    if (nrow(data) == 0) {
+    if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
       stop("No data provided for analysis")
     }
     
@@ -818,9 +827,9 @@ generate_executive_summary_analytics <- function(data, cache_enabled = TRUE) {
         trend_direction = kpi_results$trend_indicators$trend_direction,
         alert_count = length(kpi_results$alert_system),
         top_insights = list(
-          kpi_results$actionable_insights$priority_actions[[1]],
-          kpi_results$actionable_insights$strategic_recommendations[[1]],
-          kpi_results$actionable_insights$operational_improvements[[1]]
+          scalar_chr(kpi_results$actionable_insights$priority_actions, "N/A"),
+          scalar_chr(kpi_results$actionable_insights$strategic_recommendations, "N/A"),
+          scalar_chr(kpi_results$actionable_insights$operational_improvements, "N/A")
         )
       )
     )

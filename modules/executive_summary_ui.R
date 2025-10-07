@@ -22,11 +22,40 @@ required_ui_packages <- c("shiny", "shinydashboard", "shinydashboardPlus",
                          "shinyWidgets", "DT", "plotly", "leaflet", "htmltools", 
                          "shinycssloaders", "shinyjs")
 
-for (pkg in required_ui_packages) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    install.packages(pkg, quiet = TRUE)
+# Never install packages at runtime in production
+if (identical(tolower(Sys.getenv("RAILWAY_ENVIRONMENT")), "production")) {
+  # Load only if available, skip if not
+  for (pkg in required_ui_packages) {
+    if (requireNamespace(pkg, quietly = TRUE)) {
+      suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+    } else {
+      message("[exec_summary_ui] Package '", pkg, "' not available, skipping")
+    }
   }
-  suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+} else if (isTRUE(as.logical(Sys.getenv("ALLOW_RUNTIME_INSTALL", "FALSE")))) {
+  # Only install if explicitly allowed via env var
+  for (pkg in required_ui_packages) {
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      message("[startup] Runtime install skipped; all packages must be baked into the image")
+    }
+    suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+  }
+} else {
+  # Default: load only available packages
+  for (pkg in required_ui_packages) {
+    if (requireNamespace(pkg, quietly = TRUE)) {
+      suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+    }
+  }
+}
+
+# Safe spinner wrapper (shinycssloaders optional)
+with_spinner_safe <- function(ui_element, type = 4, color = NULL, ...) {
+  if (requireNamespace("shinycssloaders", quietly = TRUE)) {
+    shinycssloaders::withSpinner(ui_element, type = type, color = color, ...)
+  } else {
+    ui_element
+  }
 }
 
 cat("✅ Enhanced Executive Summary UI components loaded\n")
@@ -42,13 +71,13 @@ create_enhanced_value_box <- function(value, subtitle, icon_name, color, trend =
   # Create trend indicator HTML
   trend_html <- ""
   if (!is.null(trend) && !is.null(trend_direction)) {
-    trend_color <- case_when(
+    trend_color <- dplyr::case_when(
       trend_direction == "increasing" ~ "#28a745",  # Green
       trend_direction == "decreasing" ~ "#dc3545",  # Red
       TRUE ~ "#6c757d"  # Gray for stable
     )
-    
-    trend_icon <- case_when(
+
+    trend_icon <- dplyr::case_when(
       trend_direction == "increasing" ~ "arrow-up",
       trend_direction == "decreasing" ~ "arrow-down",
       TRUE ~ "minus"
@@ -74,7 +103,7 @@ create_enhanced_value_box <- function(value, subtitle, icon_name, color, trend =
   # Combine all HTML content
   subtitle_with_extras <- HTML(paste0(subtitle, trend_html, info_html))
   
-  valueBox(
+  safe_valueBox(
     value = value,
     subtitle = subtitle_with_extras,
     icon = icon(icon_name),
@@ -221,7 +250,7 @@ create_advanced_visualizations_ui <- function() {
         ),
         
         # Main trend visualization
-        shinycssloaders::withSpinner(
+        with_spinner_safe(
           plotlyOutput("exec_advanced_trends", height = "400px"),
           type = 4, color = "#3498db"
         ),
@@ -260,7 +289,7 @@ create_advanced_visualizations_ui <- function() {
         ),
         
         # Geographic visualization
-        shinycssloaders::withSpinner(
+        with_spinner_safe(
           plotlyOutput("exec_geographic_analysis", height = "300px"),
           type = 4, color = "#28a745"
         ),
@@ -387,7 +416,7 @@ create_advanced_tables_ui <- function() {
         ),
         
         # Pattern analysis table
-        shinycssloaders::withSpinner(
+        with_spinner_safe(
           DT::dataTableOutput("exec_pattern_analysis_table"),
           type = 4, color = "#007bff"
         ),
@@ -431,7 +460,7 @@ create_advanced_tables_ui <- function() {
         ),
         
         # High-impact documents table
-        shinycssloaders::withSpinner(
+        with_spinner_safe(
           DT::dataTableOutput("exec_high_impact_documents"),
           type = 4, color = "#17a2b8"
         ),
@@ -774,3 +803,9 @@ create_enhanced_executive_summary_ui <- function() {
 }
 
 cat("🎯 Enhanced Executive Summary UI components ready for integration\n")
+
+# ============================================================================
+# WRAPPER FUNCTION FOR APP.R COMPATIBILITY
+# ============================================================================
+# app.R looks for executive_summary_ui(), so we provide a wrapper
+executive_summary_ui <- create_enhanced_executive_summary_ui

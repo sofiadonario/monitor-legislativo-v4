@@ -35,29 +35,45 @@ analytics_server <- function(input, output, session, get_data) {
   # Total documents value box
   output$analytics_total_docs <- renderValueBox({
     results <- analytics_results()
+    require_rows(results, "Sem dados analíticos")
     value_boxes <- create_analytics_value_boxes(results)
-    value_boxes$total_docs
+    safe_valueBox(value_boxes$total_docs$value %||% "—", "Documentos", icon = icon("file"))
   })
   
   # Temporal coverage value box
   output$analytics_temporal_coverage <- renderValueBox({
-    results <- analytics_results()
-    value_boxes <- create_analytics_value_boxes(results)
-    value_boxes$temporal_coverage
+    tryCatch({
+      results <- analytics_results()
+      value_boxes <- create_analytics_value_boxes(results)
+      value_boxes$temporal_coverage %||% safe_valueBox("—", "Cobertura", icon = icon("calendar"))
+    }, error = function(e) {
+      if (identical(Sys.getenv("APP_DEBUG"), "1")) diag_log_error(e, "analytics_temporal_coverage")
+      safe_valueBox("—", "Cobertura", icon = icon("calendar"))
+    })
   })
   
   # Processing status value box
   output$analytics_processing_status <- renderValueBox({
-    results <- analytics_results()
-    value_boxes <- create_analytics_value_boxes(results)
-    value_boxes$processing_status
+    tryCatch({
+      results <- analytics_results()
+      value_boxes <- create_analytics_value_boxes(results)
+      value_boxes$processing_status %||% safe_valueBox("—", "Status", icon = icon("clock"))
+    }, error = function(e) {
+      if (identical(Sys.getenv("APP_DEBUG"), "1")) diag_log_error(e, "analytics_processing_status")
+      safe_valueBox("—", "Status", icon = icon("clock"))
+    })
   })
-  
+
   # Data quality value box
   output$analytics_data_quality <- renderValueBox({
-    results <- analytics_results()
-    value_boxes <- create_analytics_value_boxes(results)
-    value_boxes$data_quality
+    tryCatch({
+      results <- analytics_results()
+      value_boxes <- create_analytics_value_boxes(results)
+      value_boxes$data_quality %||% safe_valueBox("—", "Qualidade", icon = icon("check-circle"))
+    }, error = function(e) {
+      if (identical(Sys.getenv("APP_DEBUG"), "1")) diag_log_error(e, "analytics_data_quality")
+      safe_valueBox("—", "Qualidade", icon = icon("check-circle"))
+    })
   })
   
   # ============================================================================
@@ -230,9 +246,8 @@ analytics_server <- function(input, output, session, get_data) {
   update_temporal_analysis_ui <- function(temporal_results) {
     
     # Temporal trend plot
-    output$temporal_trend_plot <- renderPlotly({
-      
-      if ("temporal_summary" %in% names(temporal_results) && nrow(temporal_results$temporal_summary) > 0) {
+    output$temporal_trend_plot <- safe_renderPlotly({
+      if ("temporal_summary" %in% names(temporal_results) && has_rows(temporal_results$temporal_summary)) {
         
         temporal_data <- temporal_results$temporal_summary
         
@@ -271,11 +286,10 @@ analytics_server <- function(input, output, session, get_data) {
             )
           )
       }
-    })
+    }, context = "analytics$temporal_trend_plot")
     
     # Temporal metrics
-    output$temporal_metrics <- renderUI({
-      
+    output$temporal_metrics <- safe_renderUI({
       if ("productivity_metrics" %in% names(temporal_results)) {
         metrics <- temporal_results$productivity_metrics
         
@@ -304,7 +318,7 @@ analytics_server <- function(input, output, session, get_data) {
       } else {
         tags$p("Métricas temporais não disponíveis")
       }
-    })
+    }, context = "analytics$temporal_metrics")
     
     # Historical context
     output$historical_context <- renderUI({
@@ -345,7 +359,7 @@ analytics_server <- function(input, output, session, get_data) {
         
         cat_data <- categorization_results$categorization_summary$legal_type_distribution
         
-        if (nrow(cat_data) > 0) {
+        if (!is.null(cat_data) && is.data.frame(cat_data) && nrow(cat_data) > 0) {
           
           # Limit to top 10 categories for readability
           cat_data <- cat_data %>% head(10)
@@ -418,7 +432,7 @@ analytics_server <- function(input, output, session, get_data) {
         
         citations <- categorization_results$cross_references$citation_network
         
-        if (nrow(citations) > 0) {
+        if (!is.null(citations) && is.data.frame(citations) && nrow(citations) > 0) {
           display_data <- citations %>%
             select(citations, frequency) %>%
             arrange(desc(frequency)) %>%
@@ -452,7 +466,7 @@ analytics_server <- function(input, output, session, get_data) {
         
         authority_data <- legal_context_results$federal_system_analysis$authority_distribution
         
-        if (nrow(authority_data) > 0) {
+        if (!is.null(authority_data) && is.data.frame(authority_data) && nrow(authority_data) > 0) {
           
           p <- ggplot(authority_data, aes(x = reorder(authority_level, percentage), y = percentage)) +
             geom_col(fill = c("#2E86AB", "#A23B72", "#F18F01", "#C73E1D")[1:nrow(authority_data)]) +
@@ -552,7 +566,7 @@ analytics_server <- function(input, output, session, get_data) {
         
         prod_data <- productivity_results$productivity_summary
         
-        if (nrow(prod_data) > 0) {
+        if (!is.null(prod_data) && is.data.frame(prod_data) && nrow(prod_data) > 0) {
           
           # Handle different time period formats
           if ("year" %in% names(prod_data)) {
@@ -578,7 +592,7 @@ analytics_server <- function(input, output, session, get_data) {
             scale_y_continuous(labels = scales::comma_format())
           
           # Rotate x-axis labels if needed
-          if (nrow(prod_data) > 10) {
+          if (!is.null(prod_data) && is.data.frame(prod_data) && nrow(prod_data) > 10) {
             p <- p + theme(axis.text.x = element_text(angle = 45, hjust = 1))
           }
           
@@ -750,7 +764,7 @@ analytics_server <- function(input, output, session, get_data) {
         
         high_impact <- impact_results$comprehensive_synthesis$high_impact_documents
         
-        if (nrow(high_impact) > 0) {
+        if (!is.null(high_impact) && is.data.frame(high_impact) && nrow(high_impact) > 0) {
           
           display_data <- high_impact %>%
             select(title, total_impact_score, year, state) %>%

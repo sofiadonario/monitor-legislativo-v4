@@ -25,14 +25,25 @@ library(memoise)
 library(parallel)
 library(jsonlite)
 
-# Load spatial processing packages
-spatial_packages <- c("geobr", "rmapshaper", "lwgeom", "s2")
-for (pkg in spatial_packages) {
+# Load spatial processing packages with graceful fallbacks
+required_packages <- c("geobr", "rmapshaper", "s2")
+optional_packages <- c("lwgeom")
+
+for (pkg in required_packages) {
   tryCatch({
     suppressPackageStartupMessages(library(pkg, character.only = TRUE))
   }, error = function(e) {
     cat("⚠️", pkg, "not available, using fallbacks\n")
   })
+}
+
+# Handle optional packages (like lwgeom) gracefully
+has_lwgeom <- requireNamespace("lwgeom", quietly = TRUE)
+if (has_lwgeom) {
+  suppressPackageStartupMessages(library(lwgeom))
+  message("[spatial_joins] 'lwgeom' available – advanced geometry operations enabled.")
+} else {
+  message("[spatial_joins] 'lwgeom' not available – using sf fallbacks for geometry operations.")
 }
 
 # ============================================================================

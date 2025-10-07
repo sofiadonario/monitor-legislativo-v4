@@ -978,8 +978,8 @@ if (requireNamespace("R6", quietly = TRUE)) {
               LIMIT 50
             ")
           })
-          
-          if (nrow(categories) > 0) {
+
+          if (!is.null(categories) && is.data.frame(categories) && nrow(categories) > 0) {
             # Create named vector for selectInput
             category_choices <- setNames(
               categories$category,
@@ -1015,8 +1015,8 @@ if (requireNamespace("R6", quietly = TRUE)) {
               ORDER BY estado
             ")
           })
-          
-          if (nrow(states) > 0) {
+
+          if (!is.null(states) && is.data.frame(states) && nrow(states) > 0) {
             # Create named vector
             state_choices <- setNames(
               states$estado,
@@ -1054,8 +1054,8 @@ if (requireNamespace("R6", quietly = TRUE)) {
               FROM state_counts
             ")
           })
-          
-          if (nrow(range_data) > 0) {
+
+          if (!is.null(range_data) && is.data.frame(range_data) && nrow(range_data) > 0) {
             return(c(
               min = max(1, range_data$min_count[1]),
               max = range_data$max_count[1]

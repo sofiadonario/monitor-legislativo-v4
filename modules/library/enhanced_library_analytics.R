@@ -29,24 +29,25 @@ optimize_fulltext_search <- function(query, documents_df, limit = 100) {
   # Multi-field search with weighted relevance scoring
   search_results <- documents_df %>%
     mutate(
+      metadata_text = paste(coalesce(categoria, ""), coalesce(tipo_documento, ""), sep = " "),
       # Title relevance (highest weight)
       title_score = case_when(
-        grepl(processed_query$exact, title, ignore.case = TRUE) ~ 10,
-        grepl(processed_query$partial, title, ignore.case = TRUE) ~ 7,
-        grepl(processed_query$stemmed, title, ignore.case = TRUE) ~ 5,
+        safe_grepl(processed_query$exact, title) ~ 10,
+        safe_grepl(processed_query$partial, title) ~ 7,
+        safe_grepl(processed_query$stemmed, title) ~ 5,
         TRUE ~ 0
       ),
       # Content relevance (medium weight)  
       content_score = case_when(
-        !is.na(ementa) && grepl(processed_query$exact, ementa, ignore.case = TRUE) ~ 6,
-        !is.na(ementa) && grepl(processed_query$partial, ementa, ignore.case = TRUE) ~ 4,
-        !is.na(ementa) && grepl(processed_query$stemmed, ementa, ignore.case = TRUE) ~ 2,
+        safe_grepl(processed_query$exact, ementa) ~ 6,
+        safe_grepl(processed_query$partial, ementa) ~ 4,
+        safe_grepl(processed_query$stemmed, ementa) ~ 2,
         TRUE ~ 0
       ),
       # Metadata relevance (lower weight)
       metadata_score = case_when(
-        grepl(processed_query$exact, paste(categoria, tipo_documento, na.rm = TRUE), ignore.case = TRUE) ~ 3,
-        grepl(processed_query$partial, paste(categoria, tipo_documento, na.rm = TRUE), ignore.case = TRUE) ~ 1,
+        safe_grepl(processed_query$exact, metadata_text) ~ 3,
+        safe_grepl(processed_query$partial, metadata_text) ~ 1,
         TRUE ~ 0
       ),
       # Calculate total relevance score
@@ -54,7 +55,8 @@ optimize_fulltext_search <- function(query, documents_df, limit = 100) {
     ) %>%
     filter(relevance_score > 0) %>%
     arrange(desc(relevance_score), desc(as.Date(data_documento))) %>%
-    head(limit)
+    head(limit) %>%
+    select(-metadata_text)
   
   search_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs")) * 1000
   

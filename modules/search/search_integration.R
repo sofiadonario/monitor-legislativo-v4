@@ -175,7 +175,7 @@ integrate_search_server <- function(input, output, session, get_data_function = 
   output$search_total_docs <- renderValueBox({
     total_docs <- get_total_documents_count()
     
-    valueBox(
+    safe_valueBox(
       value = format(total_docs, big.mark = "."),
       subtitle = "Documentos Legislativos",
       icon = icon("file-alt"),
@@ -186,7 +186,7 @@ integrate_search_server <- function(input, output, session, get_data_function = 
   output$search_avg_quality <- renderValueBox({
     avg_quality <- get_average_content_quality()
     
-    valueBox(
+    safe_valueBox(
       value = paste(round(avg_quality, 1), "/10"),
       subtitle = "Qualidade Média",
       icon = icon("star"),
@@ -197,7 +197,7 @@ integrate_search_server <- function(input, output, session, get_data_function = 
   output$search_recent_updates <- renderValueBox({
     recent_count <- get_recent_updates_count()
     
-    valueBox(
+    safe_valueBox(
       value = format(recent_count, big.mark = "."),
       subtitle = "Atualizados (30 dias)",
       icon = icon("clock"),
@@ -208,7 +208,7 @@ integrate_search_server <- function(input, output, session, get_data_function = 
   output$search_coverage_states <- renderValueBox({
     state_count <- get_states_coverage_count()
     
-    valueBox(
+    safe_valueBox(
       value = paste(state_count, "/27"),
       subtitle = "Estados Cobertos",
       icon = icon("map-marker-alt"),

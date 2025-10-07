@@ -194,10 +194,24 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   # Render temporal facets
   output$temporal_facets <- renderUI({
     facets <- facet_data()$years
-    
-    if (nrow(facets) > 0) {
-      # Create year range slider instead of checkboxes
-      year_range <- range(facets$name, na.rm = TRUE)
+
+    if (!is.null(facets) && is.data.frame(facets) && nrow(facets) > 0) {
+      # Create year range slider instead of checkboxes - safe extraction
+      year_vals <- facets$name[!is.na(facets$name)]
+
+      # Explicit handling of empty/single year cases
+      if (length(year_vals) == 0) {
+        return(p("No year data available", style = "color: #999; padding: 10px;"))
+      }
+      if (length(year_vals) == 1) {
+        return(p(paste("Single year only:", year_vals[1]), style = "color: #999; padding: 10px;"))
+      }
+
+      # Safe range calculation with validation
+      year_range <- range(year_vals, na.rm = TRUE)
+      if (any(is.infinite(year_range)) || any(is.na(year_range))) {
+        return(p("Invalid year data", style = "color: #999; padding: 10px;"))
+      }
       
       tagList(
         sliderInput(
@@ -275,10 +289,15 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   # Results summary
   output$search_results_summary <- renderUI({
     filtered_data <- filtered_documents()
-    total_count <- nrow(documents_data())
-    filtered_count <- nrow(filtered_data)
     
-    summary_text <- if (nchar(values$search_query) > 0) {
+    # Safe nrow() calls
+    total_count <- if (!is.null(documents_data()) && is.data.frame(documents_data())) nrow(documents_data()) else 0
+    filtered_count <- if (!is.null(filtered_data) && is.data.frame(filtered_data)) nrow(filtered_data) else 0
+    
+    # Safe string length check
+    has_search_query <- !is.null(values$search_query) && is.character(values$search_query) && length(values$search_query) > 0 && nchar(values$search_query) > 0
+    
+    summary_text <- if (has_search_query) {
       sprintf("Found %s results for '%s' (from %s total documents)", 
              format(filtered_count, big.mark = ","),
              values$search_query,
@@ -293,11 +312,15 @@ enhanced_library_server <- function(input, output, session, documents_data) {
       summary_text <- paste0(summary_text, filter_summary)
     }
     
+    # Safe performance time check
+    search_time <- tryCatch(values$performance_metrics$last_search_time, error = function(e) 0)
+    show_perf <- !is.null(search_time) && length(search_time) > 0 && is.numeric(search_time) && search_time > 0
+    
     div(
       h5(summary_text, style = "color: #2c3e50; margin-bottom: 5px;"),
-      if (values$performance_metrics$last_search_time > 0) {
+      if (show_perf) {
         tags$small(
-          sprintf("Search completed in %dms", round(values$performance_metrics$last_search_time)),
+          sprintf("Search completed in %dms", round(search_time)),
           style = "color: #27ae60;"
         )
       }
@@ -338,7 +361,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   output$enhanced_documents_table <- DT::renderDataTable({
     filtered_data <- filtered_documents()
     
-    if (nrow(filtered_data) == 0) {
+    if (is.null(filtered_data) || !is.data.frame(filtered_data) || nrow(filtered_data) == 0) {
       return(DT::datatable(
         data.frame(Message = "No documents found matching your criteria"),
         options = list(dom = 't', searching = FALSE, paging = FALSE, info = FALSE)
@@ -387,7 +410,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   output$enhanced_documents_cards <- renderUI({
     filtered_data <- filtered_documents()
     
-    if (nrow(filtered_data) == 0) {
+    if (is.null(filtered_data) || !is.data.frame(filtered_data) || nrow(filtered_data) == 0) {
       return(div(
         style = "text-align: center; padding: 50px; color: #999;",
         h4("No documents found"),
@@ -495,7 +518,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
       time_window_days = 30
     )
     
-    if (nrow(trending_docs) == 0) {
+    if (is.null(trending_docs) || !is.data.frame(trending_docs) || nrow(trending_docs) == 0) {
       return(p("No trending documents available"))
     }
     
@@ -518,7 +541,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
           span(class = "trending-badge", "TRENDING")
         ),
         
-        if (!is.na(doc$ementa) && nchar(doc$ementa) > 0) {
+        if (!is.null(doc$ementa) && length(doc$ementa) > 0 && !is.na(doc$ementa[1]) && nchar(doc$ementa[1]) > 0) {
           div(
             style = "margin-top: 8px; color: #555; font-size: 13px;",
             substr(doc$ementa, 1, 150),
@@ -543,10 +566,15 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   # Performance value boxes
   output$search_performance_box <- renderValueBox({
     metrics <- performance_metrics()
-    avg_time <- round(metrics$search_performance$avg_response_time, 0)
-    
-    valueBox(
-      value = paste0(avg_time, "ms"),
+    req(metrics)
+
+    avg_time <- tryCatch({
+      scalar_num(metrics$search_performance$avg_response_time, default = 0)
+    }, error = function(e) 0)
+    avg_time <- round(avg_time, 0)
+
+    safe_valueBox(
+      value = value_box_scalar(paste0(avg_time, "ms")),
       subtitle = "Avg Search Time",
       icon = icon("clock"),
       color = if (avg_time < 200) "green" else if (avg_time < 500) "yellow" else "red"
@@ -555,10 +583,15 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   output$cache_performance_box <- renderValueBox({
     metrics <- performance_metrics()
-    hit_rate <- round(metrics$cache_performance$hit_rate * 100, 1)
-    
-    valueBox(
-      value = paste0(hit_rate, "%"),
+    req(metrics)
+
+    hit_rate <- tryCatch({
+      rate <- scalar_num(metrics$cache_performance$hit_rate, default = 0)
+      round(rate * 100, 1)
+    }, error = function(e) 0)
+
+    safe_valueBox(
+      value = value_box_scalar(paste0(hit_rate, "%")),
       subtitle = "Cache Hit Rate",
       icon = icon("database"),
       color = if (hit_rate > 80) "green" else if (hit_rate > 50) "yellow" else "red"
@@ -567,10 +600,15 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   output$system_health_box <- renderValueBox({
     metrics <- performance_metrics()
-    memory_mb <- as.numeric(gsub(" Mb", "", metrics$system_status$memory_usage))
-    
-    valueBox(
-      value = paste0(round(memory_mb), "MB"),
+    req(metrics)
+
+    memory_mb <- tryCatch({
+      mem_str <- scalar_chr(metrics$system_status$memory_usage, default = "0 Mb")
+      scalar_num(gsub(" Mb", "", mem_str), default = 0)
+    }, error = function(e) 0)
+
+    safe_valueBox(
+      value = value_box_scalar(paste0(round(memory_mb), "MB")),
       subtitle = "Memory Usage",
       icon = icon("memory"),
       color = if (memory_mb < 100) "green" else if (memory_mb < 200) "yellow" else "red"
@@ -578,10 +616,10 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   })
   
   output$user_activity_box <- renderValueBox({
-    search_count <- length(values$user_session_data$searches)
-    
-    valueBox(
-      value = search_count,
+    search_count <- safe_length(values$user_session_data$searches, default = 0L)
+
+    safe_valueBox(
+      value = value_box_scalar(search_count),
       subtitle = "Searches This Session",
       icon = icon("search"),
       color = "blue"
@@ -594,7 +632,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   # Get selected items from facet UI
   get_selected_facet_items <- function(base_id, facet_data) {
-    if (nrow(facet_data) == 0) return(character(0))
+    if (is.null(facet_data) || !is.data.frame(facet_data) || nrow(facet_data) == 0) return(character(0))
     
     selected_items <- character(0)
     for (i in 1:min(nrow(facet_data), 20)) {  # Check up to 20 items
@@ -609,7 +647,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   # Apply facet filters to data
   apply_facet_filters <- function(data, filters) {
-    if (nrow(data) == 0 || length(filters) == 0) return(data)
+    if ((is.null(data) || !is.data.frame(data) || nrow(data) == 0) || (is.null(filters) || length(filters) == 0)) return(data)
     
     filtered_data <- data
     
@@ -623,12 +661,15 @@ enhanced_library_server <- function(input, output, session, documents_data) {
       filtered_data <- filtered_data[filtered_data$estado %in% filters$states, ]
     }
     
-    # Apply year filter
+    # Apply year filter - safe vector handling
     if ("years" %in% names(filters) && length(filters$years) > 0) {
-      filtered_data <- filtered_data[
-        !is.na(filtered_data$data_documento) & 
-        year(as.Date(filtered_data$data_documento)) %in% filters$years, 
-      ]
+      if (!is.null(filtered_data) && is.data.frame(filtered_data) && nrow(filtered_data) > 0 && "data_documento" %in% names(filtered_data)) {
+        valid_rows <- !is.na(filtered_data$data_documento) &
+                      year(as.Date(filtered_data$data_documento)) %in% filters$years
+        # Ensure valid_rows is a logical vector with no NAs
+        valid_rows[is.na(valid_rows)] <- FALSE
+        filtered_data <- filtered_data[valid_rows, , drop = FALSE]
+      }
     }
     
     # Apply document type filter

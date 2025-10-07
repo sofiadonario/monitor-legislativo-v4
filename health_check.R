@@ -225,6 +225,22 @@ handle_health_request <- function(path = "/health") {
   )
 }
 
+health_status <- function() {
+  pool <- getOption("ml4.pool")
+  db_ok <- FALSE
+  if (!is.null(pool)) {
+    db_ok <- tryCatch({
+      con <- pool::poolCheckout(pool); on.exit(pool::poolReturn(con), add = TRUE)
+      TRUE
+    }, error = function(e) FALSE)
+  }
+  list(
+    status = if (db_ok) "ok" else "degraded",
+    db = if (db_ok) "ok" else "degraded",
+    ts = as.character(Sys.time())
+  )
+}
+
 # Export health check function for use in main application
 if (!exists("get_health_status", mode = "function", envir = .GlobalEnv)) {
   assign("get_health_status", perform_health_check, envir = .GlobalEnv)
@@ -233,6 +249,7 @@ if (!exists("get_health_status", mode = "function", envir = .GlobalEnv)) {
 # Export for direct use
 list(
   health_check = perform_health_check,
+  health_status = health_status,
   liveness_check = liveness_check,
   readiness_check = readiness_check,
   handle_request = handle_health_request

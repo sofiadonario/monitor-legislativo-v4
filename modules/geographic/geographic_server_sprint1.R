@@ -191,9 +191,9 @@ geographic_server_sprint1 <- function(id, pool, enable_webgl = TRUE, memory_limi
             )
           
           incProgress(0.6, detail = "Calculating spatial statistics...")
-          
+
           # Add spatial autocorrelation if enough data points
-          if (nrow(geographic_data) >= 10) {
+          if (!is.null(geographic_data) && is.data.frame(geographic_data) && nrow(geographic_data) >= 10) {
             tryCatch({
               # Create spatial weights matrix
               coords <- sf::st_centroid(geographic_data) %>% sf::st_coordinates()

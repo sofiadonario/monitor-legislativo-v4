@@ -540,9 +540,10 @@ interactiveMapsServer <- function(id, data_source = NULL) {
     
     # Statistics boxes
     output$total_visible <- renderValueBox({
-      valueBox(
-        value = format(nrow(values$filtered_data %||% values$map_data %||% data.frame()), 
-          big.mark = ","),
+      n_docs <- safe_nrow(values$filtered_data %||% values$map_data, default = 0L)
+
+      safe_valueBox(
+        value = value_box_scalar(n_docs, format_fn = function(x) format(x, big.mark = ",")),
         subtitle = "Visible Documents",
         icon = icon("file-alt"),
         color = "blue"
@@ -551,12 +552,13 @@ interactiveMapsServer <- function(id, data_source = NULL) {
     
     output$states_covered <- renderValueBox({
       data <- values$filtered_data %||% values$map_data
-      states <- if (!is.null(data) && "state" %in% names(data)) {
-        length(unique(data$state))
-      } else { 0 }
-      
-      valueBox(
-        value = states,
+      states <- safe_n_distinct(
+        if (!is.null(data) && "state" %in% names(data)) data$state else NULL,
+        default = 0L
+      )
+
+      safe_valueBox(
+        value = value_box_scalar(states),
         subtitle = "States",
         icon = icon("map"),
         color = "green"
@@ -565,13 +567,17 @@ interactiveMapsServer <- function(id, data_source = NULL) {
     
     output$top_state <- renderValueBox({
       data <- values$filtered_data %||% values$map_data
-      top <- if (!is.null(data) && "state" %in% names(data)) {
-        tbl <- table(data$state)
-        if (length(tbl) > 0) names(tbl)[which.max(tbl)] else "N/A"
-      } else { "N/A" }
-      
-      valueBox(
-        value = top,
+      top <- tryCatch({
+        if (!is.null(data) && "state" %in% names(data) && nrow(data) > 0) {
+          tbl <- table(data$state)
+          scalar_chr(if (length(tbl) > 0) names(tbl)[which.max(tbl)] else NULL, default = "N/A")
+        } else {
+          "N/A"
+        }
+      }, error = function(e) "N/A")
+
+      safe_valueBox(
+        value = value_box_scalar(top),
         subtitle = "Most Active State",
         icon = icon("trophy"),
         color = "yellow"
@@ -580,12 +586,13 @@ interactiveMapsServer <- function(id, data_source = NULL) {
     
     output$density_score <- renderValueBox({
       data <- values$filtered_data %||% values$map_data
-      density <- if (!is.null(data) && nrow(data) > 0) {
-        round(nrow(data) / 27, 0)  # Documents per state average
-      } else { 0 }
-      
-      valueBox(
-        value = density,
+      density <- tryCatch({
+        n <- safe_nrow(data, default = 0L)
+        scalar_int(if (n > 0) round(n / 27, 0) else NULL, default = 0L)
+      }, error = function(e) 0L)
+
+      safe_valueBox(
+        value = value_box_scalar(density),
         subtitle = "Avg per State",
         icon = icon("chart-bar"),
         color = "red"

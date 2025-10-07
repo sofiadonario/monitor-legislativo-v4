@@ -486,8 +486,8 @@ get_secure_document_count <- function() {
     for (query in table_queries) {
       tryCatch({
         result <- dbGetQuery(secure_db_pool, query)
-        if (nrow(result) > 0 && !is.na(result$count)) {
-          count <- as.numeric(result$count)
+        if (nrow(result) > 0 && !is.na(scalar(result$count))) {
+          count <- as.numeric(scalar(result$count, 0))
           log_secure_db("INFO", sprintf("Document count retrieved: %s", format(count, big.mark = ",")))
           return(count)
         }
@@ -792,7 +792,7 @@ get_fallback_documents <- function(category = "all", search_term = "", state = "
           if("title" %in% names(filtered_docs)) {
             title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
             summary_match <- if("summary" %in% names(filtered_docs)) {
-              grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE, na.rm = TRUE)
+              safe_grepl(search_pattern, filtered_docs$summary)
             } else {
               rep(FALSE, nrow(filtered_docs))
             }

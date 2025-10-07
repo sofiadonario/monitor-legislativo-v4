@@ -1,7 +1,7 @@
 # ============================================================================
 # DATABASE PERFORMANCE OPTIMIZATION MODULE FOR RAILWAY POSTGRESQL
 # ============================================================================
-# 
+#
 # This module provides optimized database operations for the R Shiny application
 # running on Railway's PostgreSQL infrastructure. It addresses the main
 # performance bottlenecks identified in the current implementation:
@@ -10,7 +10,7 @@
 # 2. Slow get_library_documents() function
 # 3. Missing database indexes
 # 4. Inefficient query patterns
-# 
+#
 # Optimizations implemented:
 # - Cached table selection mechanism
 # - Optimized query functions with connection pooling
@@ -20,6 +20,15 @@
 #
 # Production-ready for Railway PostgreSQL deployment
 # ============================================================================
+
+# Quiet logging for monitoring
+quiet_no_pool <- function(msg) {
+  grepl("No database pool available (for monitoring|for table caching|for performance monitoring)", msg)
+}
+
+log_warn <- function(msg) {
+  if (!quiet_no_pool(msg)) message(msg)
+}
 
 cat("🚀 Loading Database Performance Optimization Module for Railway PostgreSQL\n")
 
@@ -59,8 +68,18 @@ suppressPackageStartupMessages({
 #' Get cached table information to avoid repeated expensive table discovery
 #' @return List with main table name and metadata
 get_cached_table_info <- function() {
+  # Guard: only run when monitoring is enabled and pool is available
+  if (!exists("ENABLE_QUERY_MONITORING") || !isTRUE(ENABLE_QUERY_MONITORING)) {
+    return(.table_cache)
+  }
+
+  db_pool <- getOption("app_db_pool", NULL)
+  if (is.null(db_pool)) {
+    return(.table_cache)
+  }
+
   current_time <- Sys.time()
-  
+
   # Check if cache is still valid
   if (!is.null(.table_cache$last_updated)) {
     minutes_since_update <- as.numeric(difftime(current_time, .table_cache$last_updated, units = "mins"))
@@ -69,21 +88,11 @@ get_cached_table_info <- function() {
       return(.table_cache)
     }
   }
-  
+
   cat("🔄 Refreshing table cache...\n")
-  
-  # Get database pool from connection system
-  pool <- NULL
-  if (exists("secure_db_pool") && !is.null(secure_db_pool)) {
-    pool <- secure_db_pool
-  } else if (exists("get_database_pool")) {
-    pool <- get_database_pool()
-  }
-  
-  if (is.null(pool)) {
-    cat("❌ No database pool available for table caching\n")
-    return(.table_cache)
-  }
+
+  # Use the guarded database pool
+  pool <- db_pool
   
   tryCatch({
     # Get all available tables efficiently
@@ -119,8 +128,8 @@ get_cached_table_info <- function() {
           for (query in count_queries) {
             tryCatch({
               result <- dbGetQuery(pool, query)
-              if (nrow(result) > 0 && !is.na(result$count[1])) {
-                count <- result$count[1]
+              if (nrow(result) > 0 && !is.na(scalar(result$count))) {
+                count <- scalar_num(result$count, 0)
                 break
               }
             }, error = function(e) {
@@ -224,7 +233,16 @@ set_query_cache <- function(cache_key, data, ttl_seconds = .query_cache_ttl) {
 #' @param cache_ttl Cache TTL in seconds
 #' @return Query result or NULL on failure
 execute_optimized_query <- function(query, params = NULL, cache_key = NULL, cache_ttl = .query_cache_ttl) {
-  
+  # Guard: only run when monitoring is enabled and pool is available
+  if (!exists("ENABLE_QUERY_MONITORING") || !isTRUE(ENABLE_QUERY_MONITORING)) {
+    return(NULL)
+  }
+
+  db_pool <- getOption("app_db_pool", NULL)
+  if (is.null(db_pool)) {
+    return(NULL)
+  }
+
   # Check cache first if cache_key provided
   if (!is.null(cache_key)) {
     cached_result <- get_query_cache(cache_key)
@@ -232,19 +250,9 @@ execute_optimized_query <- function(query, params = NULL, cache_key = NULL, cach
       return(cached_result)
     }
   }
-  
-  # Get database pool
-  pool <- NULL
-  if (exists("secure_db_pool") && !is.null(secure_db_pool)) {
-    pool <- secure_db_pool
-  } else if (exists("get_database_pool")) {
-    pool <- get_database_pool()
-  }
-  
-  if (is.null(pool)) {
-    cat("❌ No database pool available for query execution\n")
-    return(NULL)
-  }
+
+  # Use the guarded database pool
+  pool <- db_pool
   
   start_time <- Sys.time()
   
@@ -648,23 +656,23 @@ get_dashboard_metrics_optimized <- function() {
       # Execute optimized count queries
       total_result <- execute_optimized_query(metrics_queries$total_docs)
       if (!is.null(total_result) && nrow(total_result) > 0) {
-        total_docs <- total_result$count[1]
+        total_docs <- scalar_num(total_result$count, 0)
       }
       
       states_result <- execute_optimized_query(metrics_queries$unique_states)
       if (!is.null(states_result) && nrow(states_result) > 0) {
-        unique_states <- states_result$count[1]
+        unique_states <- scalar_num(states_result$count, 0)
       }
       
       munic_result <- execute_optimized_query(metrics_queries$unique_municipalities)
       if (!is.null(munic_result) && nrow(munic_result) > 0) {
-        unique_municipalities <- munic_result$count[1]
+        unique_municipalities <- scalar_num(munic_result$count, 0)
       }
       
       date_result <- execute_optimized_query(metrics_queries$date_range)
-      if (!is.null(date_result) && nrow(date_result) > 0 && !is.na(date_result$min_date[1]) && !is.na(date_result$max_date[1])) {
-        min_date <- as.Date(date_result$min_date[1])
-        max_date <- as.Date(date_result$max_date[1])
+      if (!is.null(date_result) && nrow(date_result) > 0 && !is.na(scalar(date_result$min_date)) && !is.na(scalar(date_result$max_date))) {
+        min_date <- as.Date(scalar(date_result$min_date))
+        max_date <- as.Date(scalar(date_result$max_date))
         date_range_years <- as.numeric(difftime(max_date, min_date, units = "days")) / 365.25
       }
       
@@ -764,20 +772,30 @@ clear_performance_cache <- function(confirm = FALSE) {
 
 #' Warm up caches with common queries
 warm_up_caches <- function() {
+  # Guard: only run when monitoring is enabled and pool is available
+  if (!exists("ENABLE_QUERY_MONITORING") || !isTRUE(ENABLE_QUERY_MONITORING)) {
+    return(invisible(FALSE))
+  }
+
+  db_pool <- getOption("app_db_pool", NULL)
+  if (is.null(db_pool)) {
+    return(invisible(FALSE))
+  }
+
   cat("🔥 Warming up performance caches...\n")
-  
+
   # Warm up table cache
   get_cached_table_info()
-  
+
   # Warm up common query patterns
   tryCatch({
     get_library_documents_optimized(limit = 10)
-    get_library_documents_optimized(category = "legislation", limit = 10) 
+    get_library_documents_optimized(category = "legislation", limit = 10)
     get_dashboard_metrics_optimized()
   }, error = function(e) {
     cat("⚠️ Cache warm-up partially failed:", e$message, "\n")
   })
-  
+
   cat("✅ Cache warm-up completed\n")
 }
 
@@ -790,9 +808,11 @@ cat("🚀 Ready to optimize Railway PostgreSQL performance\n")
 cat("💾 Caching system initialized\n")
 cat("📊 Performance monitoring active\n")
 
-# Auto-initialize table cache
+# Auto-initialize table cache (guarded)
 tryCatch({
-  get_cached_table_info()
+  if (exists("ENABLE_QUERY_MONITORING") && isTRUE(ENABLE_QUERY_MONITORING)) {
+    get_cached_table_info()
+  }
 }, error = function(e) {
   cat("⚠️ Initial table cache setup failed:", e$message, "\n")
 })

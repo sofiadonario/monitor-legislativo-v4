@@ -559,8 +559,8 @@ generate_basic_autocomplete_fallback <- function(query) {
 #' @param data Base dataset
 #' @return Filtered search results
 perform_fallback_search <- function(query, filters, data) {
-  
-  if (nrow(data) == 0) {
+
+  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
     return(data.frame())
   }
   
@@ -690,7 +690,7 @@ get_municipalities_for_states <- function(states) {
 #' @param results Search results data frame
 #' @return HTML div with formatted results
 render_results_list <- function(results) {
-  if (nrow(results) == 0) return(div())
+  if (is.null(results) || !is.data.frame(results) || nrow(results) == 0) return(div())
   
   result_items <- apply(results, 1, function(row) {
     div(class = "result-item list-item",
@@ -719,7 +719,7 @@ render_results_list <- function(results) {
 #' @param results Search results data frame
 #' @return HTML div with card-formatted results
 render_results_cards <- function(results) {
-  if (nrow(results) == 0) return(div())
+  if (is.null(results) || !is.data.frame(results) || nrow(results) == 0) return(div())
   
   # Group results into rows of 2 cards
   n_results <- nrow(results)
@@ -766,7 +766,7 @@ render_results_cards <- function(results) {
 #' @param results Search results data frame
 #' @return Formatted data frame for DT
 format_results_table <- function(results) {
-  if (nrow(results) == 0) return(data.frame())
+  if (is.null(results) || !is.data.frame(results) || nrow(results) == 0) return(data.frame())
   
   # Select and format columns for table display
   table_data <- results %>%

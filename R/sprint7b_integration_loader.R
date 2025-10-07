@@ -58,14 +58,19 @@ load_sprint7b_modules <- function() {
     
     # 2. Automated Report Generation
     if ("automated_reports" %in% SPRINT7B_CONFIG$enabled_modules) {
-      tryCatch({
-        source("R/modules/reports/automated_reports.R", local = TRUE)
-        module_status$automated_reports <- TRUE
-        cat("✅ Automated Report Generation loaded\n")
-      }, error = function(e) {
-        cat("⚠️ Failed to load Automated Reports:", e$message, "\n")
+      if (file.exists("R/modules/reports/automated_reports.R")) {
+        tryCatch({
+          source("R/modules/reports/automated_reports.R", local = TRUE)
+          module_status$automated_reports <- TRUE
+          cat("✅ Automated Report Generation loaded\n")
+        }, error = function(e) {
+          cat("⚠️ Failed to load Automated Reports:", e$message, "\n")
+          module_status$automated_reports <- FALSE
+        })
+      } else {
+        cat("ℹ️ Automated Reports module file not found, skipping\n")
         module_status$automated_reports <- FALSE
-      })
+      }
     }
     
     # 3. Regional Analysis Tools
@@ -93,14 +98,19 @@ load_sprint7b_modules <- function() {
     }
     
     # 5. Extended API Endpoints
-    tryCatch({
-      source("api/endpoints/analytics_sprint7b.R", local = TRUE)
-      module_status$api_extensions <- TRUE
-      cat("✅ Sprint 7B API extensions loaded\n")
-    }, error = function(e) {
-      cat("⚠️ Failed to load API extensions:", e$message, "\n")
+    if (file.exists("api/endpoints/analytics_sprint7b.R")) {
+      tryCatch({
+        source("api/endpoints/analytics_sprint7b.R", local = TRUE)
+        module_status$api_extensions <- TRUE
+        cat("✅ Sprint 7B API extensions loaded\n")
+      }, error = function(e) {
+        cat("⚠️ Failed to load API extensions:", e$message, "\n")
+        module_status$api_extensions <- FALSE
+      })
+    } else {
+      cat("ℹ️ Sprint 7B API extensions file not found, skipping\n")
       module_status$api_extensions <- FALSE
-    })
+    }
     
     # Store module status globally
     SPRINT7B_STATE$module_status <<- module_status

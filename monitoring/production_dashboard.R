@@ -391,7 +391,7 @@ dashboard_server <- function(input, output, session) {
     status_text <- if (!is.null(values$health_status)) 
                      values$health_status$status else "Unknown"
     
-    valueBox(
+    safe_valueBox(
       value = toupper(status_text),
       subtitle = "Status do Sistema",
       icon = icon("heartbeat"),
@@ -403,7 +403,7 @@ dashboard_server <- function(input, output, session) {
     user_count <- if (!is.null(values$system_metrics)) 
                     values$system_metrics$concurrent_users else 0
     
-    valueBox(
+    safe_valueBox(
       value = user_count,
       subtitle = "Usuários Ativos",
       icon = icon("users"),
@@ -417,7 +417,7 @@ dashboard_server <- function(input, output, session) {
       paste(hours, "h")
     } else "N/A"
     
-    valueBox(
+    safe_valueBox(
       value = uptime,
       subtitle = "Uptime",
       icon = icon("clock"),

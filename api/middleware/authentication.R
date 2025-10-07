@@ -16,43 +16,21 @@
 
 cat("🔐 Loading Authentication Middleware\n")
 
-# API key storage (in production, this would be in a secure database)
-API_KEYS <- list(
-  "demo_key_12345" = list(
-    name = "Demo API Key",
-    tier = "demo",
-    rate_limit_per_minute = 100,
-    quota_per_day = 10000,
-    permissions = c("read"),
-    created_at = Sys.time(),
-    last_used = NULL,
-    usage_count = 0
-  ),
-  "academic_key_67890" = list(
-    name = "Academic Research Key",
-    tier = "academic",
-    rate_limit_per_minute = 1000,
-    quota_per_day = 100000,
-    permissions = c("read", "export", "bulk"),
-    created_at = Sys.time(),
-    last_used = NULL,
-    usage_count = 0
-  ),
-  "premium_key_abcdef" = list(
-    name = "Premium API Key",
-    tier = "premium",
-    rate_limit_per_minute = 2000,
-    quota_per_day = 1000000,
-    permissions = c("read", "export", "bulk", "admin"),
-    created_at = Sys.time(),
-    last_used = NULL,
-    usage_count = 0
-  )
+# Load secure configuration
+source("R/config/secure_config.R")
+source("R/auth/auth_state_manager.R")
+
+# Initialize auth state manager
+auth_manager <- AuthStateManager$new(
+  backend = Sys.getenv("AUTH_BACKEND", "file"),
+  connection = if(exists("db")) db else NULL
 )
 
-# Rate limiting storage (in production, use Redis)
-RATE_LIMITS <- list()
-DAILY_QUOTAS <- list()
+# Load and store API keys from configuration
+API_KEYS <- get_api_keys()
+for (key_id in names(API_KEYS)) {
+  auth_manager$store_api_key(key_id, API_KEYS[[key_id]])
+}
 
 # Helper function to extract API key from request
 extract_api_key <- function(req) {

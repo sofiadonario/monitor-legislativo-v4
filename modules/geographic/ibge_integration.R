@@ -443,8 +443,8 @@ link_documents_to_geography <- function(db_pool, states_data = NULL, municipalit
       
       DBI::dbGetQuery(conn, query)
     })
-    
-    if (nrow(documents_sample) == 0) {
+
+    if (is.null(documents_sample) || !is.data.frame(documents_sample) || nrow(documents_sample) == 0) {
       cat("⚠️ No documents with geographic information found\n")
       return(linking_results)
     }
@@ -681,14 +681,14 @@ validate_spatial_data <- function(spatial_data, level = "unknown", expected_coun
     
     # Filter out invalid geometries
     clean_data <- spatial_data[valid_geometries & !empty_geometries, ]
-    
-    if (nrow(clean_data) == 0) {
+
+    if (is.null(clean_data) || !is.data.frame(clean_data) || nrow(clean_data) == 0) {
       return(NULL)
     }
-    
+
     # Check expected count
     if (!is.null(expected_count)) {
-      if (nrow(clean_data) < expected_count * 0.8) {  # Allow 20% tolerance
+      if (!is.null(clean_data) && is.data.frame(clean_data) && nrow(clean_data) < expected_count * 0.8) {  # Allow 20% tolerance
         warning(paste("Expected", expected_count, "features, found", nrow(clean_data)))
       }
     }

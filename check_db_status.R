@@ -35,13 +35,17 @@ if(require(DBI, quietly = TRUE) && require(RPostgres, quietly = TRUE)) {
     
     if(host != "") {
       tryCatch({
+        # Load secure configuration
+        source("R/config/secure_config.R")
+        db_config <- get_db_config()
+
         con <- dbConnect(
           RPostgres::Postgres(),
-          host = host,
-          port = port,
-          dbname = "railway",
-          user = "postgres",
-          password = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY"
+          host = db_config$host,
+          port = db_config$port,
+          dbname = db_config$dbname,
+          user = db_config$user,
+          password = db_config$password
         )
         
         cat("\n✅ DATABASE CONNECTED!\n\n")

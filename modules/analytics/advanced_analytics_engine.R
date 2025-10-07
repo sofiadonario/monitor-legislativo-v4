@@ -25,12 +25,9 @@ for (pkg in required_packages) {
 }
 
 if (length(missing_packages) > 0) {
-  cat("⚠️ Installing missing packages:", paste(missing_packages, collapse = ", "), "\n")
-  tryCatch({
-    install.packages(missing_packages, quiet = TRUE)
-  }, error = function(e) {
-    cat("❌ Package installation failed. Some features may be limited.\n")
-  })
+  cat("⚠️ Missing packages:", paste(missing_packages, collapse = ", "), "\n")
+  message("[startup] Runtime install skipped; all packages must be baked into the image")
+  cat("❌ Package installation disabled. Some features may be limited.\n")
 }
 
 # Load libraries with error handling

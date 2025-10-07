@@ -518,7 +518,7 @@ monitoring_server <- function(id) {
       })
       
       output$top_features_table <- DT::renderDataTable({
-        if (nrow(analytics$top_features) > 0) {
+        if (!is.null(analytics$top_features) && is.data.frame(analytics$top_features) && nrow(analytics$top_features) > 0) {
           analytics$top_features[1:min(10, nrow(analytics$top_features)),]
         } else {
           data.frame(feature = character(0), usage_count = numeric(0))

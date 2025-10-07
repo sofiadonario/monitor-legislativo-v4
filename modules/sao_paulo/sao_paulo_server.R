@@ -91,15 +91,13 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   
   output$sp_total_docs <- renderValueBox({
     sp_data <- sp_analytics_data()
-    
-    total_docs <- if (!is.null(sp_data$transport_modals$summary$total_sp_docs)) {
-      sp_data$transport_modals$summary$total_sp_docs
-    } else {
-      28500
-    }
-    
-    valueBox(
-      value = format(total_docs, big.mark = ","),
+
+    total_docs <- tryCatch({
+      scalar_int(sp_data$transport_modals$summary$total_sp_docs, default = 28500L)
+    }, error = function(e) 28500L)
+
+    safe_valueBox(
+      value = value_box_scalar(total_docs, format_fn = function(x) format(x, big.mark = ",")),
       subtitle = "São Paulo Documents",
       icon = icon("file-text"),
       color = "blue",
@@ -109,15 +107,13 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   
   output$sp_municipalities <- renderValueBox({
     sp_data <- sp_analytics_data()
-    
-    municipalities <- if (!is.null(sp_data$rmsp_governance$summary$total_rmsp_municipalities)) {
-      sp_data$rmsp_governance$summary$total_rmsp_municipalities
-    } else {
-      142
-    }
-    
-    valueBox(
-      value = municipalities,
+
+    municipalities <- tryCatch({
+      scalar_int(sp_data$rmsp_governance$summary$total_rmsp_municipalities, default = 142L)
+    }, error = function(e) 142L)
+
+    safe_valueBox(
+      value = value_box_scalar(municipalities),
       subtitle = "SP Municipalities",
       icon = icon("city"),
       color = "green"
@@ -126,15 +122,13 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   
   output$sp_transport_docs <- renderValueBox({
     sp_data <- sp_analytics_data()
-    
-    transport_docs <- if (!is.null(sp_data$transport_modals$summary$transport_related_docs)) {
-      sp_data$transport_modals$summary$transport_related_docs
-    } else {
-      8500
-    }
-    
-    valueBox(
-      value = format(transport_docs, big.mark = ","),
+
+    transport_docs <- tryCatch({
+      scalar_int(sp_data$transport_modals$summary$transport_related_docs, default = 8500L)
+    }, error = function(e) 8500L)
+
+    safe_valueBox(
+      value = value_box_scalar(transport_docs, format_fn = function(x) format(x, big.mark = ",")),
       subtitle = "Transport Documents",
       icon = icon("subway"),
       color = "yellow"
@@ -142,8 +136,8 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   })
   
   output$sp_regulatory_activity <- renderValueBox({
-    valueBox(
-      value = "LEADING",
+    safe_valueBox(
+      value = value_box_scalar("LEADING"),
       subtitle = "National Rank",
       icon = icon("trophy"),
       color = "purple"

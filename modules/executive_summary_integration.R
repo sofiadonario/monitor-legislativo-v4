@@ -46,7 +46,7 @@ initialize_enhanced_executive_summary <- function(input, output, session, get_do
         # Try to get data from the main data sources
         if (exists("get_library_documents")) {
           docs <- get_library_documents(limit = 50000)  # Large limit for analytics
-          if (nrow(docs) > 0) {
+          if (!is.null(docs) && is.data.frame(docs) && nrow(docs) > 0) {
             return(docs)
           }
         }
@@ -62,13 +62,9 @@ initialize_enhanced_executive_summary <- function(input, output, session, get_do
           return(data.frame())
         }
         
-        # Standardize column names for compatibility (applies to all loaded data)
-        if ("titulo" %in% names(docs)) names(docs)[names(docs) == "titulo"] <- "title"
-        if ("categoria" %in% names(docs)) names(docs)[names(docs) == "categoria"] <- "category"
-        if ("estado" %in% names(docs)) names(docs)[names(docs) == "estado"] <- "state" 
-        if ("data" %in% names(docs)) names(docs)[names(docs) == "data"] <- "date"
-        if ("ementa" %in% names(docs)) names(docs)[names(docs) == "ementa"] <- "summary"
-        if ("jurisdicao" %in% names(docs)) names(docs)[names(docs) == "jurisdicao"] <- "jurisdiction"
+        # Preserve dual column names (Portuguese + English) for compatibility
+        # This ensures analytics modules can use Portuguese names while UI uses English
+        docs <- preserve_dual_column_names(docs)
         return(docs)
         }
         
@@ -155,7 +151,7 @@ init_fallback_executive_summary <- function(input, output, session) {
   # Fallback value boxes
   output$exec_enhanced_total_docs <- renderValueBox({
     m <- get_basic_metrics()
-    valueBox(
+    safe_valueBox(
       value = format(m$total_documents, big.mark = ","),
       subtitle = "Total Documents",
       icon = icon("file-text"),
@@ -165,7 +161,7 @@ init_fallback_executive_summary <- function(input, output, session) {
   
   output$exec_enhanced_states_coverage <- renderValueBox({
     m <- get_basic_metrics()
-    valueBox(
+    safe_valueBox(
       value = paste0(m$states_with_docs, "/27"),
       subtitle = "States Covered",
       icon = icon("map"),
@@ -174,7 +170,7 @@ init_fallback_executive_summary <- function(input, output, session) {
   })
   
   output$exec_enhanced_monthly_activity <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = "1,250",
       subtitle = "Monthly Average",
       icon = icon("chart-line"), 
@@ -183,7 +179,7 @@ init_fallback_executive_summary <- function(input, output, session) {
   })
   
   output$exec_enhanced_data_freshness <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = "92%",
       subtitle = "Data Quality",
       icon = icon("check-circle"),

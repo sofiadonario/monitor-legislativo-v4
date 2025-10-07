@@ -228,9 +228,7 @@ generate_unified_insights <- function(analyses) {
     key_metrics$citations <- list(
       total_citations = analyses$citations$total_citations_found %||% 0,
       network_density = analyses$citations$network_density %||% 0,
-      most_cited = if (length(analyses$citations$most_cited_instruments %||% c()) > 0) {
-        analyses$citations$most_cited_instruments[1]
-      } else "none"
+      most_cited = scalar_chr(analyses$citations$most_cited_instruments, "none")
     )
   }
   

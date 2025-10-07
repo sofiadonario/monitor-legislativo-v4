@@ -1,0 +1,57 @@
+version: 2
+updates:
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+    labels:
+      - "dependencies"
+      - "security"
+      - "github-actions"
+    reviewers:
+      - "sofiadonario"
+    assignees:
+      - "sofiadonario"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "infrastructure"
+    reviewers:
+      - "sofiadonario"
+    assignees:
+      - "sofiadonario"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
+
+  # Monitor for security vulnerabilities more frequently
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    labels:
+      - "security"
+      - "critical"
+    reviewers:
+      - "sofiadonario"
+    assignees:
+      - "sofiadonario"
+    # Only for security updates
+    target-branch: "main"

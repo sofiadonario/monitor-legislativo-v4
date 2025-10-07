@@ -1,17 +1,53 @@
 -- ============================================================================
 -- ADVANCED SEARCH SETUP FOR MONITOR LEGISLATIVO V4
 -- ============================================================================
--- 
+--
 -- PostgreSQL full-text search configuration optimized for Brazilian legal documents
 -- Includes Portuguese language configuration, performance indices, and search optimization
 -- Target: <2s response time for complex queries on 134k+ documents
--- 
+--
 -- Week 3 Implementation: Advanced Search System
+--
+-- PREREQUISITES:
+--   1. Run database/000_install_extensions.sql FIRST to install all required extensions
+--   2. Verify extensions are installed in Railway PostgreSQL Extensions UI
 -- ============================================================================
 
--- Enable necessary PostgreSQL extensions
+-- ============================================================================
+-- EXTENSION VERIFICATION
+-- ============================================================================
+-- Verify critical extensions are installed (installed via 000_install_extensions.sql)
+-- These are REQUIRED for search functionality to work
+
+DO $$
+BEGIN
+    -- Check pg_trgm (trigram search)
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm') THEN
+        RAISE EXCEPTION 'CRITICAL: pg_trgm extension not installed! Run 000_install_extensions.sql first.';
+    END IF;
+
+    -- Check unaccent (Brazilian Portuguese accent handling)
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'unaccent') THEN
+        RAISE EXCEPTION 'CRITICAL: unaccent extension not installed! Run 000_install_extensions.sql first.';
+    END IF;
+
+    -- Check recommended extensions (warnings only)
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'btree_gin') THEN
+        RAISE WARNING 'RECOMMENDED: btree_gin extension not installed. Install for better composite query performance.';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements') THEN
+        RAISE WARNING 'RECOMMENDED: pg_stat_statements extension not installed. Install for query performance monitoring.';
+    END IF;
+
+    RAISE NOTICE 'Extension verification complete - all critical extensions installed.';
+END $$;
+
+-- Fallback: Create extensions if not installed (for development environments)
+-- In production (Railway), install via Extensions UI first
 CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS btree_gin;  -- Recommended for composite indexes
 
 -- ============================================================================
 -- PORTUGUESE TEXT SEARCH CONFIGURATION

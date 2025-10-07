@@ -11,23 +11,29 @@ suppressPackageStartupMessages({
   library(data.table)
 })
 
-# Railway PostgreSQL configuration (external endpoint)
+# Railway PostgreSQL configuration from environment variables
 RAILWAY_DB_CONFIG <- list(
-  # External Railway endpoint (accessible from outside Railway network)
-  external_url = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway",
-  
-  # Internal Railway endpoint (only works within Railway network)
-  internal_url = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@postgres.railway.internal:5432/railway",
-  
-  # Connection parameters
-  host_external = "nozomi.proxy.rlwy.net",
-  port_external = 44844,
-  host_internal = "postgres.railway.internal", 
-  port_internal = 5432,
-  database = "railway",
-  username = "postgres",
-  password = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY"
+  # Get database URL from environment or fail gracefully
+  external_url = Sys.getenv("DATABASE_URL", ""),
+  internal_url = Sys.getenv("DATABASE_INTERNAL_URL", ""),
+
+  # Connection parameters from environment
+  host_external = Sys.getenv("PGHOST_EXTERNAL", ""),
+  port_external = as.numeric(Sys.getenv("PGPORT_EXTERNAL", "5432")),
+  host_internal = Sys.getenv("PGHOST_INTERNAL", "postgres.railway.internal"),
+  port_internal = as.numeric(Sys.getenv("PGPORT_INTERNAL", "5432")),
+  database = Sys.getenv("PGDATABASE", "railway"),
+  username = Sys.getenv("PGUSER", "postgres"),
+  password = Sys.getenv("PGPASSWORD", "")
 )
+
+# Validate configuration
+if (RAILWAY_DB_CONFIG$external_url == "") {
+  cat("⚠️ Warning: DATABASE_URL not configured. Please set environment variables:\n")
+  cat("   DATABASE_URL, PGHOST_EXTERNAL, PGPORT_EXTERNAL, PGUSER, PGPASSWORD\n")
+  cat("   Exiting setup...\n")
+  quit(save = "no", status = 1)
+}
 
 cat("Railway Database Configuration:\n")
 cat("  External endpoint:", RAILWAY_DB_CONFIG$host_external, ":", RAILWAY_DB_CONFIG$port_external, "\n")

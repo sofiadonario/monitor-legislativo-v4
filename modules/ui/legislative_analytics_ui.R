@@ -363,10 +363,10 @@ legislative_analytics_server <- function(input, output, session, connection = NU
   output$nlp_entities_box <- renderValueBox({
     results <- analysis_results()
     entities_count <- if (!is.null(results) && !is.null(results$analyses$nlp)) {
-      results$analyses$nlp$summary$entities_found %||% 0
+      scalar_num(results$analyses$nlp$summary$entities_found, default = 0)
     } else 0
-    
-    valueBox(
+
+    safe_valueBox(
       value = entities_count,
       subtitle = "Legal Entities Found",
       icon = icon("search"),
@@ -377,10 +377,10 @@ legislative_analytics_server <- function(input, output, session, connection = NU
   output$citations_network_box <- renderValueBox({
     results <- analysis_results()
     citations_count <- if (!is.null(results) && !is.null(results$analyses$citations)) {
-      results$analyses$citations$total_citations_found %||% 0
+      scalar_num(results$analyses$citations$total_citations_found, default = 0)
     } else 0
-    
-    valueBox(
+
+    safe_valueBox(
       value = citations_count,
       subtitle = "Citations Analyzed",
       icon = icon("network-wired"),
@@ -391,10 +391,10 @@ legislative_analytics_server <- function(input, output, session, connection = NU
   output$transport_policies_box <- renderValueBox({
     results <- analysis_results()
     transport_docs <- if (!is.null(results) && !is.null(results$analyses$transport)) {
-      results$analyses$transport$summary$decarbonization_docs %||% 0
+      scalar_num(results$analyses$transport$summary$decarbonization_docs, default = 0)
     } else 0
-    
-    valueBox(
+
+    safe_valueBox(
       value = transport_docs,
       subtitle = "Transport Policies",
       icon = icon("truck"),
@@ -405,10 +405,10 @@ legislative_analytics_server <- function(input, output, session, connection = NU
   output$constitutional_compliance_box <- renderValueBox({
     results <- analysis_results()
     constitutional_docs <- if (!is.null(results) && !is.null(results$analyses$constitutional)) {
-      results$analyses$constitutional$summary$constitutional_documents %||% 0
+      scalar_num(results$analyses$constitutional$summary$constitutional_documents, default = 0)
     } else 0
-    
-    valueBox(
+
+    safe_valueBox(
       value = constitutional_docs,
       subtitle = "Constitutional Refs",
       icon = icon("balance-scale"),

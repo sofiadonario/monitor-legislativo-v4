@@ -236,8 +236,10 @@ create_minimal_server <- function(input, output, session) {
   # Value boxes
   output$total_projetos_box <- renderValueBox({
     data <- app_data()
-    valueBox(
-      value = nrow(data$projetos),
+    validate(need(!is.null(data) && nrow(data$projetos) > 0, "Sem dados para exibir"))
+    n <- scalar_num(nrow(data$projetos))
+    safe_valueBox(
+      value = scales::comma(n, accuracy = 1),
       subtitle = "Total de Projetos",
       icon = icon("file-text"),
       color = "blue"

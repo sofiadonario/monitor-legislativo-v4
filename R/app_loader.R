@@ -289,7 +289,7 @@ create_modular_app <- function(enable_monitoring = FALSE, enable_auth = FALSE) {
           134014
         }
         
-        valueBox(
+        safe_valueBox(
           value = format_number(total_docs),
           subtitle = "Total Documents",
           icon = icon("file-alt"),
@@ -298,7 +298,7 @@ create_modular_app <- function(enable_monitoring = FALSE, enable_auth = FALSE) {
       })
       
       output$exec_states_coverage <- renderValueBox({
-        valueBox(
+        safe_valueBox(
           value = "27",
           subtitle = "States Covered",
           icon = icon("map"),
@@ -307,7 +307,7 @@ create_modular_app <- function(enable_monitoring = FALSE, enable_auth = FALSE) {
       })
       
       output$exec_recent_additions <- renderValueBox({
-        valueBox(
+        safe_valueBox(
           value = "1,247",
           subtitle = "Recent Additions",
           icon = icon("plus-circle"),
@@ -316,7 +316,7 @@ create_modular_app <- function(enable_monitoring = FALSE, enable_auth = FALSE) {
       })
       
       output$exec_data_freshness <- renderValueBox({
-        valueBox(
+        safe_valueBox(
           value = "99.2%",
           subtitle = "Data Freshness",
           icon = icon("sync-alt"),

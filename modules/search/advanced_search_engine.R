@@ -339,10 +339,10 @@ get_legal_term_suggestions <- function(pool, partial_query, limit) {
     partial_query,
     as.integer(limit)
   )
-  
+
   result <- dbGetQuery(pool, sql_query, params = params)
-  
-  if (nrow(result) > 0) {
+
+  if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
     return(setNames(result$term, paste0(result$category, " (", result$frequency, ")")))
   }
   
@@ -372,11 +372,11 @@ get_popular_search_suggestions <- function(pool, partial_query, limit) {
     partial_query,
     as.integer(limit)
   )
-  
+
   result <- dbGetQuery(pool, sql_query, params = params)
-  
-  if (nrow(result) > 0) {
-    return(setNames(result$search_term_normalized, 
+
+  if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
+    return(setNames(result$search_term_normalized,
                    paste0("Popular (", result$search_frequency, " searches)")))
   }
   
@@ -420,11 +420,11 @@ get_document_title_suggestions <- function(pool, partial_query, filters, limit) 
       data_publicacao DESC
     LIMIT $%d
   ", where_conditions, param_count)
-  
+
   result <- dbGetQuery(pool, sql_query, params = params)
-  
-  if (nrow(result) > 0) {
-    return(setNames(result$titulo, 
+
+  if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
+    return(setNames(result$titulo,
                    paste0(result$tipo, " (", format(result$data_publicacao, "%Y"), ")")))
   }
   

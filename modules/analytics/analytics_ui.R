@@ -377,25 +377,25 @@ create_analytics_value_boxes <- function(analytics_results = NULL) {
   # Default values when no analytics results
   if (is.null(analytics_results) || "error" %in% names(analytics_results)) {
     return(list(
-      total_docs = valueBox(
+      total_docs = safe_valueBox(
         value = "134K+",
         subtitle = "Documentos Legislativos",
         icon = icon("file-text"),
         color = "blue"
       ),
-      temporal_coverage = valueBox(
+      temporal_coverage = safe_valueBox(
         value = "1820-2025",
         subtitle = "Cobertura Temporal",
         icon = icon("calendar"),
         color = "green"
       ),
-      processing_status = valueBox(
+      processing_status = safe_valueBox(
         value = "Aguardando",
         subtitle = "Status do Processamento",
         icon = icon("clock"),
         color = "yellow"
       ),
-      data_quality = valueBox(
+      data_quality = safe_valueBox(
         value = "98%+",
         subtitle = "Qualidade dos Dados",
         icon = icon("check-circle"),
@@ -406,24 +406,24 @@ create_analytics_value_boxes <- function(analytics_results = NULL) {
   
   # Extract metrics from analytics results
   total_docs <- if ("metadata" %in% names(analytics_results)) {
-    format(analytics_results$metadata$documents_analyzed, big.mark = ",")
+    format(scalar_num(analytics_results$metadata$documents_analyzed, default = 134000), big.mark = ",")
   } else {
     "134K+"
   }
-  
-  temporal_coverage <- if ("temporal_analysis" %in% names(analytics_results) && 
+
+  temporal_coverage <- if ("temporal_analysis" %in% names(analytics_results) &&
                           "data_quality" %in% names(analytics_results$temporal_analysis)) {
-    analytics_results$temporal_analysis$data_quality$date_coverage
+    scalar_chr(analytics_results$temporal_analysis$data_quality$date_coverage, default = "1820-2025")
   } else {
     "1820-2025"
   }
-  
+
   processing_status <- if ("metadata" %in% names(analytics_results)) {
     "Concluído"
   } else {
     "Aguardando"
   }
-  
+
   data_quality <- if ("executive_summary" %in% names(analytics_results) &&
                      "data_quality" %in% names(analytics_results$executive_summary)) {
     "98%+"
@@ -432,25 +432,25 @@ create_analytics_value_boxes <- function(analytics_results = NULL) {
   }
   
   return(list(
-    total_docs = valueBox(
+    total_docs = safe_valueBox(
       value = total_docs,
       subtitle = "Documentos Analisados",
       icon = icon("file-text"),
       color = "blue"
     ),
-    temporal_coverage = valueBox(
+    temporal_coverage = safe_valueBox(
       value = temporal_coverage,
       subtitle = "Cobertura Temporal",
       icon = icon("calendar"),
       color = "green"
     ),
-    processing_status = valueBox(
+    processing_status = safe_valueBox(
       value = processing_status,
       subtitle = "Status da Análise",
       icon = icon("check"),
       color = if(processing_status == "Concluído") "green" else "yellow"
     ),
-    data_quality = valueBox(
+    data_quality = safe_valueBox(
       value = data_quality,
       subtitle = "Qualidade dos Dados",
       icon = icon("check-circle"),
@@ -560,12 +560,12 @@ create_analytics_table <- function(data, caption = "Resultados da Análise") {
       scrollX = TRUE,
       language = list(
         search = "Buscar:",
-        lengthMenu = "Mostrar _MENU_ registros por página",
+        lengthMenu = "Mostrar _MENU_ registros por pagina",
         info = "Mostrando _START_ a _END_ de _TOTAL_ registros",
         paginate = list(
           first = "Primeiro",
           last = "Último",
-          next = "Próximo", 
+          "next" = "Próximo",
           previous = "Anterior"
         )
       )

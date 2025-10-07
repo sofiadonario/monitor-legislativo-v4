@@ -247,7 +247,7 @@ function(query = "", legal_terms = NULL, states = NULL, regions = NULL,
                          gsub("ORDER BY.*", "", enhanced_query))
       count_query <- gsub("LIMIT.*", "", count_query)
       total_result <- dbGetQuery(secure_db_pool, count_query, params)
-      total_count <- total_result$total[1]
+      total_count <- scalar_num(total_result$total, 0)
       
     } else {
       # Fallback to basic functionality

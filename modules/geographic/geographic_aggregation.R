@@ -423,9 +423,9 @@ if (requireNamespace("R6", quietly = TRUE)) {
             ")
             
             result <- DBI::dbGetQuery(conn, base_query)
-            
+
             # Data validation
-            if (nrow(result) > 0) {
+            if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
               result <- result %>%
                 filter(document_count >= AGGREGATION_CONFIG$levels$state$min_documents) %>%
                 mutate(
@@ -486,10 +486,10 @@ if (requireNamespace("R6", quietly = TRUE)) {
             if (!is.null(top_n) && is.numeric(top_n)) {
               base_query <- paste(base_query, "LIMIT", top_n)
             }
-            
+
             result <- DBI::dbGetQuery(conn, base_query)
-            
-            if (nrow(result) > 0) {
+
+            if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
               result <- result %>%
                 mutate(
                   avg_content_length = round(as.numeric(avg_content_length), 2),

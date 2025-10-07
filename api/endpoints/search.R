@@ -37,14 +37,16 @@ LEGAL_TERMS_BOOST <- c(
 
 # Helper function to clean and prepare search query
 prepare_search_query <- function(query, boost_legal_terms = TRUE) {
+  # Load search sanitizer
+  source("R/utils/search_sanitizer.R")
+
   if (is.null(query) || nchar(trimws(query)) == 0) {
     return("")
   }
-  
-  # Basic cleaning
-  clean_query <- tolower(trimws(query))
-  clean_query <- gsub("[^\\w\\s\\-\\.]", " ", clean_query, perl = TRUE)
-  clean_query <- gsub("\\s+", " ", clean_query)
+
+  # Use proper sanitization with accent preservation
+  clean_query <- sanitize_search_query(query, preserve_accents = TRUE, escape_regex = FALSE)
+  clean_query <- tolower(clean_query)
   
   # Remove Portuguese stopwords
   words <- strsplit(clean_query, "\\s+")[[1]]
@@ -236,7 +238,7 @@ function(req) {
         ", main_table)
         
         total_result <- dbGetQuery(secure_db_pool, count_query, params = list(processed_query))
-        total_count <- if (nrow(total_result) > 0) total_result$total[1] else 0
+        total_count <- scalar_num(total_result$total, 0)
         
       } else {
         # Fallback if no table available
@@ -341,7 +343,7 @@ function(q = "", limit = 10, category = NULL) {
         text = term,
         category = "legal",
         frequency = sample(100:5000, 1), # Mock frequency data
-        highlighted = gsub(paste0("(", q, ")"), "<mark>\\1</mark>", term, ignore.case = TRUE)
+        highlighted = highlight_search_terms(term, c(q))
       )
     })
     

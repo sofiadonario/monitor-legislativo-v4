@@ -157,7 +157,7 @@ server <- function(input, output, session) {
   # Executive value boxes
   output$exec_total_docs <- renderValueBox({
     metrics <- dashboard_metrics()
-    valueBox(
+    safe_valueBox(
       value = format(metrics$total_documents, big.mark = ","),
       subtitle = "Documentos Legislativos",
       icon = icon("file-text"),
@@ -167,7 +167,7 @@ server <- function(input, output, session) {
   
   output$exec_states_coverage <- renderValueBox({
     metrics <- dashboard_metrics()
-    valueBox(
+    safe_valueBox(
       value = paste0(metrics$states_with_docs, "/27"),
       subtitle = "Estados Cobertos",
       icon = icon("map"),
@@ -176,7 +176,7 @@ server <- function(input, output, session) {
   })
   
   output$exec_recent_additions <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = sample(50:500, 1),
       subtitle = "Documentos Este Mês",
       icon = icon("plus"),
@@ -185,7 +185,7 @@ server <- function(input, output, session) {
   })
   
   output$exec_data_freshness <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = "98%",
       subtitle = "Qualidade dos Dados",
       icon = icon("check-circle"),
@@ -195,7 +195,7 @@ server <- function(input, output, session) {
   
   # KPI value boxes
   output$exec_federal_docs <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = format(sample(10000:50000, 1), big.mark = ","),
       subtitle = "Federal",
       icon = icon("landmark"),
@@ -205,7 +205,7 @@ server <- function(input, output, session) {
   })
   
   output$exec_state_docs <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = format(sample(20000:80000, 1), big.mark = ","),
       subtitle = "Estadual", 
       icon = icon("building"),
@@ -215,7 +215,7 @@ server <- function(input, output, session) {
   })
   
   output$exec_municipal_docs <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = format(sample(5000:30000, 1), big.mark = ","),
       subtitle = "Municipal",
       icon = icon("city"),
@@ -225,7 +225,7 @@ server <- function(input, output, session) {
   })
   
   output$exec_jurisprudence_docs <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = format(sample(1000:10000, 1), big.mark = ","),
       subtitle = "Jurisprudência",
       icon = icon("balance-scale"),
@@ -235,7 +235,7 @@ server <- function(input, output, session) {
   })
   
   output$exec_doctrine_docs <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = format(sample(500:5000, 1), big.mark = ","),
       subtitle = "Doutrina",
       icon = icon("graduation-cap"),
@@ -245,7 +245,7 @@ server <- function(input, output, session) {
   })
   
   output$exec_active_themes <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = sample(50:200, 1),
       subtitle = "Temas Ativos",
       icon = icon("tags"),
@@ -317,8 +317,8 @@ server <- function(input, output, session) {
     # Apply additional client-side filters if needed
     if (!is.null(input$library_search_term) && input$library_search_term != "") {
       search_pattern <- input$library_search_term
-      data <- data[grepl(search_pattern, data$titulo, ignore.case = TRUE) |
-                   grepl(search_pattern, data$ementa, ignore.case = TRUE, na.rm = TRUE), ]
+      data <- data[safe_grepl(search_pattern, data$titulo) |
+                   safe_grepl(search_pattern, data$ementa), ]
     }
     
     # Prepare display data
@@ -367,7 +367,7 @@ server <- function(input, output, session) {
     data <- legislative_data()
     count <- if(is.null(data)) 0 else nrow(data)
     
-    valueBox(
+    safe_valueBox(
       value = format(count, big.mark = ","),
       subtitle = "Total de Resultados",
       icon = icon("file-text"),
@@ -379,7 +379,7 @@ server <- function(input, output, session) {
     data <- legislative_data()
     states <- if(is.null(data)) 0 else length(unique(data$estado))
     
-    valueBox(
+    safe_valueBox(
       value = states,
       subtitle = "Estados Representados",
       icon = icon("map"),
@@ -391,7 +391,7 @@ server <- function(input, output, session) {
     data <- legislative_data()
     categories <- if(is.null(data)) 0 else length(unique(data$categoria))
     
-    valueBox(
+    safe_valueBox(
       value = categories,
       subtitle = "Categorias Encontradas",
       icon = icon("tags"),
@@ -410,7 +410,7 @@ server <- function(input, output, session) {
                                              units = "days")) / 365, 1)
     }
     
-    valueBox(
+    safe_valueBox(
       value = paste(span_years, "anos"),
       subtitle = "Período Coberto",
       icon = icon("calendar"),

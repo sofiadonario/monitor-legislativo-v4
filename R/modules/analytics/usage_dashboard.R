@@ -269,46 +269,46 @@ get_realtime_usage_metrics <- function() {
     
     metrics <- list(
       realtime = list(
-        active_sessions = length(active_sessions),
-        queries_last_hour = sum(difftime(current_time, recent_queries$timestamp, units = "hours") <= 1),
-        queries_last_24h = nrow(recent_queries),
+        active_sessions = scalar_int(length(active_sessions), default = 0),
+        queries_last_hour = scalar_int(sum(difftime(current_time, recent_queries$timestamp, units = "hours") <= 1), default = 0),
+        queries_last_24h = scalar_int(nrow(recent_queries), default = 0),
         avg_session_duration = if (length(active_sessions) > 0) {
-          mean(sapply(active_sessions, function(s) {
+          scalar_num(mean(sapply(active_sessions, function(s) {
             difftime(s$last_activity, s$start_time, units = "mins")
-          }), na.rm = TRUE)
+          }), na.rm = TRUE), default = 0)
         } else 0
       ),
-      
+
       geographic = list(
         distribution = as.list(geographic_distribution),
         top_regions = names(sort(geographic_distribution, decreasing = TRUE))[1:5]
       ),
-      
+
       queries = list(
         type_distribution = as.list(query_type_distribution),
-        avg_results_per_query = mean(recent_queries$results_count, na.rm = TRUE) %||% 0,
-        total_searches = nrow(USAGE_STATE$query_logs)
+        avg_results_per_query = scalar_num(mean(recent_queries$results_count, na.rm = TRUE), default = 0),
+        total_searches = scalar_int(nrow(USAGE_STATE$query_logs), default = 0)
       ),
-      
+
       performance = list(
-        avg_response_time = round(perf_metrics$avg_response_time %||% 0, 3),
-        p95_response_time = round(perf_metrics$p95_response_time %||% 0, 3),
-        uptime_hours = round(difftime(current_time, API_STATE$start_time %||% current_time, units = "hours"), 2),
+        avg_response_time = scalar_num(round(perf_metrics$avg_response_time %||% 0, 3), default = 0),
+        p95_response_time = scalar_num(round(perf_metrics$p95_response_time %||% 0, 3), default = 0),
+        uptime_hours = scalar_num(round(difftime(current_time, API_STATE$start_time %||% current_time, units = "hours"), 2), default = 0),
         cache_efficiency = "85%" # Mock value - would integrate with actual cache metrics
       ),
-      
+
       research_patterns = list(
         most_searched_topics = get_trending_topics(recent_queries),
         peak_usage_hours = get_peak_usage_hours(),
         user_journey_insights = get_user_journey_insights(active_sessions)
       ),
-      
+
       consent_compliance = list(
-        total_sessions = length(USAGE_STATE$consent_records),
-        consent_rate = mean(sapply(USAGE_STATE$consent_records, function(c) c$consent_given), na.rm = TRUE) * 100,
-        anonymous_sessions = sum(!sapply(USAGE_STATE$consent_records, function(c) c$consent_given))
+        total_sessions = scalar_int(length(USAGE_STATE$consent_records), default = 0),
+        consent_rate = scalar_num(mean(sapply(USAGE_STATE$consent_records, function(c) c$consent_given), na.rm = TRUE) * 100, default = 0),
+        anonymous_sessions = scalar_int(sum(!sapply(USAGE_STATE$consent_records, function(c) c$consent_given)), default = 0)
       ),
-      
+
       metadata = list(
         last_updated = current_time,
         data_retention_days = 30,
@@ -368,9 +368,9 @@ get_peak_usage_hours <- function() {
     hour_distribution <- table(factor(hours, levels = 0:23))
     
     return(list(
-      peak_hour = as.numeric(names(which.max(hour_distribution))),
+      peak_hour = scalar_int(as.numeric(names(which.max(hour_distribution))), default = 14),
       distribution = as.list(hour_distribution),
-      peak_description = paste("Maior atividade às", names(which.max(hour_distribution)), "h")
+      peak_description = paste("Maior atividade às", scalar_chr(names(which.max(hour_distribution)), default = "14"), "h")
     ))
     
   }, error = function(e) {
@@ -395,21 +395,21 @@ get_user_journey_insights <- function(active_sessions) {
     session_duration <- sapply(active_sessions, function(s) {
       difftime(s$last_activity, s$start_time, units = "mins")
     })
-    
+
     # Calculate insights
-    avg_queries <- mean(session_queries, na.rm = TRUE)
-    bounce_rate <- sum(session_queries <= 1) / length(session_queries) * 100
-    avg_duration <- mean(as.numeric(session_duration), na.rm = TRUE)
-    
+    avg_queries <- scalar_num(mean(session_queries, na.rm = TRUE), default = 0)
+    bounce_rate <- scalar_num(sum(session_queries <= 1) / length(session_queries) * 100, default = 0)
+    avg_duration <- scalar_num(mean(as.numeric(session_duration), na.rm = TRUE), default = 0)
+
     # Engagement score based on queries and duration
-    engagement_score <- min(100, (avg_queries * 10 + avg_duration * 2))
-    
+    engagement_score <- scalar_num(min(100, (avg_queries * 10 + avg_duration * 2)), default = 0)
+
     return(list(
-      avg_queries_per_session = round(avg_queries, 1),
-      bounce_rate = round(bounce_rate, 1),
-      avg_session_duration_mins = round(avg_duration, 1),
-      engagement_score = round(engagement_score, 1),
-      total_active_researchers = length(active_sessions)
+      avg_queries_per_session = scalar_num(round(avg_queries, 1), default = 0),
+      bounce_rate = scalar_num(round(bounce_rate, 1), default = 0),
+      avg_session_duration_mins = scalar_num(round(avg_duration, 1), default = 0),
+      engagement_score = scalar_num(round(engagement_score, 1), default = 0),
+      total_active_researchers = scalar_int(length(active_sessions), default = 0)
     ))
     
   }, error = function(e) {
@@ -598,26 +598,26 @@ create_usage_dashboard_server <- function(input, output, session) {
   
   # Overview value boxes
   output$activeSessionsBox <- renderValueBox({
-    valueBox(
-      value = metrics()$realtime$active_sessions,
+    safe_valueBox(
+      value = scalar_num(metrics()$realtime$active_sessions, default = 0),
       subtitle = "Sessões Ativas",
       icon = icon("users"),
       color = "blue"
     )
   })
-  
+
   output$queriesHourBox <- renderValueBox({
-    valueBox(
-      value = metrics()$realtime$queries_last_hour,
+    safe_valueBox(
+      value = scalar_num(metrics()$realtime$queries_last_hour, default = 0),
       subtitle = "Consultas/Hora",
       icon = icon("search"),
       color = "green"
     )
   })
-  
+
   output$avgResponseBox <- renderValueBox({
-    valueBox(
-      value = paste0(metrics()$performance$avg_response_time, "s"),
+    safe_valueBox(
+      value = paste0(scalar_num(metrics()$performance$avg_response_time, default = 0), "s"),
       subtitle = "Tempo Médio Resposta",
       icon = icon("clock"),
       color = "yellow"
@@ -681,16 +681,16 @@ create_usage_dashboard_server <- function(input, output, session) {
   })
   
   # Engagement metrics
-  output$engagementMetrics <- renderText({
+  output$engagementMetrics <- safe_renderText({
     insights <- metrics()$research_patterns$user_journey_insights
-    
+
     paste0(
-      "Consultas por Sessão: ", insights$avg_queries_per_session, "\n",
-      "Taxa de Rejeição: ", insights$bounce_rate, "%\n",
-      "Score de Engajamento: ", insights$engagement_score, "\n",
-      "Duração Média da Sessão: ", insights$avg_session_duration_mins, " min"
+      "Consultas por Sessão: ", scalar_num(insights$avg_queries_per_session, default = 0), "\n",
+      "Taxa de Rejeição: ", scalar_num(insights$bounce_rate, default = 0), "%\n",
+      "Score de Engajamento: ", scalar_num(insights$engagement_score, default = 0), "\n",
+      "Duração Média da Sessão: ", scalar_num(insights$avg_session_duration_mins, default = 0), " min"
     )
-  })
+  }, context = "engagementMetrics")
   
   # Geographic map
   output$geographicMap <- renderLeaflet({
@@ -708,14 +708,14 @@ create_usage_dashboard_server <- function(input, output, session) {
   })
   
   # Additional outputs for other tabs...
-  output$lgpdStatus <- renderText({
+  output$lgpdStatus <- safe_renderText({
     compliance <- metrics()$consent_compliance
-    
+
     paste0(
-      "Taxa de Consentimento: ", round(compliance$consent_rate, 1), "%\n",
-      "Sessões Anônimas: ", compliance$anonymous_sessions, "\n",
-      "Retenção de Dados: ", metrics()$metadata$data_retention_days, " dias\n",
-      "Status LGPD: ", if (metrics()$metadata$lgpd_compliant) "✅ Conforme" else "❌ Não Conforme"
+      "Taxa de Consentimento: ", round(scalar_num(compliance$consent_rate, default = 0), 1), "%\n",
+      "Sessões Anônimas: ", scalar_num(compliance$anonymous_sessions, default = 0), "\n",
+      "Retenção de Dados: ", scalar_num(metrics()$metadata$data_retention_days, default = 0), " dias\n",
+      "Status LGPD: ", if (scalar_lgl(metrics()$metadata$lgpd_compliant, default = FALSE)) "✅ Conforme" else "❌ Não Conforme"
     )
   })
 }

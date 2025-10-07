@@ -1079,7 +1079,7 @@ citationServer <- function(id, reactive_data) {
         search_pattern <- paste0(".*", input$document_search, ".*")
         filtered_data <- filtered_data[
           grepl(search_pattern, filtered_data$titulo, ignore.case = TRUE) |
-          grepl(search_pattern, filtered_data$ementa, ignore.case = TRUE, na.rm = TRUE), 
+          safe_grepl(search_pattern, filtered_data$ementa), 
         ]
       }
       
@@ -1093,7 +1093,7 @@ citationServer <- function(id, reactive_data) {
           "instrucao_normativa" = "instrução normativa|instrucao normativa"
         )
         filtered_data <- filtered_data[
-          grepl(type_pattern, filtered_data$tipo_documento, ignore.case = TRUE, na.rm = TRUE),
+          safe_grepl(type_pattern, filtered_data$tipo_documento),
         ]
       }
       
@@ -1181,9 +1181,9 @@ citationServer <- function(id, reactive_data) {
       req(values$found_documents, values$selected_rows)
       
       selected_docs <- values$found_documents[values$selected_rows, ]
-      
+
       # Show progress for bulk operations
-      if (nrow(selected_docs) > 10) {
+      if (!is.null(selected_docs) && is.data.frame(selected_docs) && nrow(selected_docs) > 10) {
         withProgress(message = 'Gerando citações...', value = 0, {
           citations <- lapply(1:nrow(selected_docs), function(i) {
             incProgress(1/nrow(selected_docs), detail = paste("Documento", i, "de", nrow(selected_docs)))

@@ -701,8 +701,8 @@ if (requireNamespace("R6", quietly = TRUE)) {
           choropleth_data <- states_geom %>%
             left_join(state_data, by = c("state_code" = "estado")) %>%
             filter(!is.na(document_count))
-          
-          if (nrow(choropleth_data) == 0) {
+
+          if (is.null(choropleth_data) || !is.data.frame(choropleth_data) || nrow(choropleth_data) == 0) {
             return(map)
           }
           
@@ -1113,9 +1113,9 @@ create_functional_leaflet_manager <- function(db_pool, ibge_system = NULL, densi
               LIMIT 27
             ")
           })
-          
-          if (nrow(state_data) > 0) {
-            
+
+          if (!is.null(state_data) && is.data.frame(state_data) && nrow(state_data) > 0) {
+
             # Add state information as markers (simplified)
             for (i in 1:min(10, nrow(state_data))) {
               # Approximate state center positions

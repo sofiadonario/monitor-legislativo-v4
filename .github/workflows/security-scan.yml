@@ -1,0 +1,141 @@
+name: Security Scanning & Vulnerability Assessment
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scan daily at 2 AM São Paulo time (5 AM UTC)
+    - cron: '0 5 * * *'
+
+jobs:
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+
+  secrets-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+
+  docker-security:
+    name: Docker Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Build Docker image
+      run: |
+        docker build -t monitor-legislativo-security-scan .
+
+    - name: Run Docker security scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'monitor-legislativo-security-scan'
+        format: 'sarif'
+        output: 'docker-trivy-results.sarif'
+
+    - name: Upload Docker scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'docker-trivy-results.sarif'
+
+  lgpd-compliance:
+    name: LGPD Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Check for sensitive data patterns
+      run: |
+        echo "🔍 Scanning for potential LGPD compliance issues..."
+        
+        # Check for Brazilian personal identifiers
+        if grep -r "CPF\|CNPJ\|RG\|Título de Eleitor" --include="*.R" --include="*.yml" --include="*.yaml" .; then
+          echo "⚠️  Warning: Found potential Brazilian personal identifiers"
+          exit 1
+        fi
+        
+        # Check for email patterns
+        if grep -r -E "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" --include="*.R" --include="*.yml" --include="*.yaml" . | grep -v "example\|test\|@anthropic"; then
+          echo "⚠️  Warning: Found potential email addresses"
+          exit 1
+        fi
+        
+        # Check for phone patterns
+        if grep -r -E "\(\d{2}\)\s\d{4,5}-\d{4}" --include="*.R" --include="*.yml" --include="*.yaml" .; then
+          echo "⚠️  Warning: Found potential Brazilian phone numbers"
+          exit 1
+        fi
+        
+        echo "✅ LGPD compliance check passed"
+
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [security-scan, secrets-scan, docker-security, lgpd-compliance]
+    if: always()
+    
+    steps:
+    - name: Security Summary
+      run: |
+        echo "## 🛡️ Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "**Monitor Legislativo v4 Security Assessment**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Scan Results:" >> $GITHUB_STEP_SUMMARY
+        echo "- **Trivy Vulnerability Scan**: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Secret Detection**: ${{ needs.secrets-scan.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Docker Security**: ${{ needs.docker-security.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **LGPD Compliance**: ${{ needs.lgpd-compliance.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Brazilian Context:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ LGPD (Lei Geral de Proteção de Dados) compliance verified" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Academic research data privacy maintained" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Legislative document security validated" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Generated**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY

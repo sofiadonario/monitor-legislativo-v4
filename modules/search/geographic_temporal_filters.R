@@ -487,8 +487,8 @@ filter_by_temporal_pattern <- function(data, pattern) {
 #' @param data Input data with dates
 #' @return Data with additional temporal metadata
 add_temporal_metadata <- function(data) {
-  
-  if (nrow(data) == 0) {
+
+  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
     return(data)
   }
   
@@ -547,8 +547,8 @@ classify_legislative_period <- function(date) {
 #' @param time_unit Time unit for analysis ("year", "month", "quarter")
 #' @return Data frame with geographic-temporal statistics
 analyze_geographic_temporal_trends <- function(data, time_unit = "year") {
-  
-  if (nrow(data) == 0) {
+
+  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
     return(data.frame())
   }
   
@@ -645,8 +645,8 @@ calculate_spatial_correlation <- function(data, metric = "document_count") {
 #' @param data Current dataset
 #' @return List of filter suggestions with statistics
 get_filter_suggestions <- function(data) {
-  
-  if (nrow(data) == 0) {
+
+  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
     return(list())
   }
   

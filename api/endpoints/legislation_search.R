@@ -233,7 +233,7 @@ function(req, res, q = NULL, estado = NULL, ano = NULL, tipo = NULL, municipio =
       count_query <- gsub("LIMIT.*", "", count_query)
       
       total_result <- dbGetQuery(secure_db_pool, count_query, query_info$params[1:(length(query_info$params)-2)])
-      total_count <- total_result$total[1]
+      total_count <- scalar_num(total_result$total, 0)
       
       # Format response data
       formatted_data <- format_response(result, format, fields)

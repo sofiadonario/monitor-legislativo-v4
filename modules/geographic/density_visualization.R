@@ -610,8 +610,8 @@ if (requireNamespace("R6", quietly = TRUE)) {
       add_statistical_classifications = function(data, mode) {
         
         tryCatch({
-          
-          if (nrow(data) < 3) {
+
+          if (is.null(data) || !is.data.frame(data) || nrow(data) < 3) {
             return(data)  # Not enough data for statistics
           }
           
@@ -903,9 +903,9 @@ create_functional_density_visualizer <- function(db_pool, geographic_aggregator 
             ORDER BY document_count DESC
           ")
         })
-        
-        if (nrow(state_data) == 0) {
-          return(leaflet() %>% addTiles() %>% 
+
+        if (is.null(state_data) || !is.data.frame(state_data) || nrow(state_data) == 0) {
+          return(leaflet() %>% addTiles() %>%
                  setView(-47.9218, -15.8267, 4) %>%
                  addMarkers(-47.9218, -15.8267, popup = "No data available"))
         }

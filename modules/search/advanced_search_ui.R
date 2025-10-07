@@ -905,7 +905,7 @@ includeCSS_search_styles <- function() {
       }
       
       /* Accessibility enhancements for autocomplete */
-      .autocomplete-item[aria-selected="true"] {
+      .autocomplete-item[aria-selected=\"true\"] {
         background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
         border-left: 4px solid #2196f3;
         outline: 2px solid #2196f3;
@@ -1362,14 +1362,14 @@ includeJS_search_behavior <- function() {
           currentSuggestions = data.suggestions;
           selectedSuggestionIndex = -1;
           
-          let html = '<div class="autocomplete-header">';
-          html += '<div class="autocomplete-stats">';
-          html += `<span class="suggestions-count">${data.suggestions.length} sugestões</span>`;
+          let html = '<div class=\"autocomplete-header\">';
+          html += '<div class=\"autocomplete-stats\">';
+          html += \\`<span class=\"suggestions-count\">\\${data.suggestions.length} sugestões</span>\\`;
           if (data.processing_time) {
-            html += `<span class="processing-time">${data.processing_time}ms</span>`;
+            html += \\`<span class=\"processing-time\">\\${data.processing_time}ms</span>\\`;
           }
           if (data.cache_hit) {
-            html += '<span class="cache-indicator" title="Cache hit"><i class="fas fa-bolt"></i></span>';
+            html += '<span class=\"cache-indicator\" title=\"Cache hit\"><i class=\"fas fa-bolt\"></i></span>';
           }
           html += '</div></div>';
           
@@ -1378,37 +1378,37 @@ includeJS_search_behavior <- function() {
             const iconClass = suggestion.icon || getCategoryIcon(suggestion.category);
             const categoryBadge = getCategoryBadge(suggestion.category);
             
-            html += `
-              <div class="autocomplete-item" 
-                   data-index="${index}" 
-                   data-value="${escapeHtml(suggestion.text)}"
-                   id="autocomplete-item-${index}"
-                   role="option"
-                   aria-selected="false">
-                <div class="autocomplete-content">
-                  <div class="autocomplete-icon">
-                    <i class="${iconClass}"></i>
+            html += \\`
+              <div class=\"autocomplete-item\"
+                   data-index=\"\\${index}\"
+                   data-value=\"\\${escapeHtml(suggestion.text)}\"
+                   id=\"autocomplete-item-\\${index}\"
+                   role=\"option\"
+                   aria-selected=\"false\">
+                <div class=\"autocomplete-content\">
+                  <div class=\"autocomplete-icon\">
+                    <i class=\"\\${iconClass}\"></i>
                   </div>
-                  <div class="autocomplete-text">
-                    <div class="autocomplete-main">${highlightQuery(suggestion.text, data.query)}</div>
-                    <div class="autocomplete-description">${escapeHtml(suggestion.description || '')}</div>
+                  <div class=\"autocomplete-text\">
+                    <div class=\"autocomplete-main\">\\${highlightQuery(suggestion.text, data.query)}</div>
+                    <div class=\"autocomplete-description\">\\${escapeHtml(suggestion.description || '')}</div>
                   </div>
-                  <div class="autocomplete-category">
-                    ${categoryBadge}
+                  <div class=\"autocomplete-category\">
+                    \\${categoryBadge}
                   </div>
-                  ${suggestion.score ? `<div class="autocomplete-score" title="Relevância: ${Math.round(suggestion.score * 100)}%">
-                    <div class="score-bar"><div class="score-fill" style="width: ${suggestion.score * 100}%"></div></div>
-                  </div>` : ''}
+                  \\${suggestion.score ? \\`<div class=\"autocomplete-score\" title=\"Relevância: \\${Math.round(suggestion.score * 100)}%\">
+                    <div class=\"score-bar\"><div class=\"score-fill\" style=\"width: \\${suggestion.score * 100}%\"></div></div>
+                  </div>\\` : ''}
                 </div>
               </div>
-            `;
+            \\`;
           });
           
           // Add footer with performance info
           if (data.total_found > data.suggestions.length) {
-            html += `<div class="autocomplete-footer">
-              <small class="text-muted">Mostrando ${data.suggestions.length} de ${data.total_found} sugestões</small>
-            </div>`;
+            html += \\`<div class=\"autocomplete-footer\">
+              <small class=\"text-muted\">Mostrando \\${data.suggestions.length} de \\${data.total_found} sugestões</small>
+            </div>\\`;
           }
           
           autocompleteDropdown.html(html).show();
@@ -1425,7 +1425,7 @@ includeJS_search_behavior <- function() {
           updateAriaAttributes();
           
           // Announce to screen readers
-          announceToScreenReader(`${data.suggestions.length} sugestões disponíveis para ${data.query}`);
+          announceToScreenReader(\\`\\${data.suggestions.length} sugestões disponíveis para \\${data.query}\\`);
         }
         
         function getCategoryIcon(category) {
@@ -1443,27 +1443,27 @@ includeJS_search_behavior <- function() {
         
         function getCategoryBadge(category) {
           const badges = {
-            'Document Types': '<span class="badge badge-primary">Documento</span>',
-            'Legal Authorities': '<span class="badge badge-success">Autoridade</span>',
-            'Transport Terms': '<span class="badge badge-info">Transporte</span>',
-            'Geographic Terms': '<span class="badge badge-warning">Geografia</span>',
-            'Legal Concepts': '<span class="badge badge-secondary">Conceito</span>',
-            'Transport Legal': '<span class="badge badge-dark">Lei Transport</span>',
-            'Common Phrases': '<span class="badge badge-light">Expressão</span>'
+            'Document Types': '<span class=\"badge badge-primary\">Documento</span>',
+            'Legal Authorities': '<span class=\"badge badge-success\">Autoridade</span>',
+            'Transport Terms': '<span class=\"badge badge-info\">Transporte</span>',
+            'Geographic Terms': '<span class=\"badge badge-warning\">Geografia</span>',
+            'Legal Concepts': '<span class=\"badge badge-secondary\">Conceito</span>',
+            'Transport Legal': '<span class=\"badge badge-dark\">Lei Transport</span>',
+            'Common Phrases': '<span class=\"badge badge-light\">Expressão</span>'
           };
-          return badges[category] || '<span class="badge badge-outline">Termo</span>';
+          return badges[category] || '<span class=\"badge badge-outline\">Termo</span>';
         }
         
         function highlightQuery(text, query) {
           if (!query || query.length < 2) return escapeHtml(text);
           
           const escapedQuery = escapeRegExp(query);
-          const regex = new RegExp(`(${escapedQuery})`, 'gi');
+          const regex = new RegExp(\\`(\\${escapedQuery})\\`, 'gi');
           return escapeHtml(text).replace(regex, '<mark>$1</mark>');
         }
         
         function escapeRegExp(string) {
-          return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          return string.replace(/[.*+?^${}()|\\[\\]\\\\]/g, '\\\\$&');
         }
         
         function hideAutocomplete() {
@@ -1485,7 +1485,7 @@ includeJS_search_behavior <- function() {
           }, {priority: 'event'});
           
           // Announce selection
-          announceToScreenReader(`Selecionado: ${suggestion.text}`);
+          announceToScreenReader(\\`Selecionado: \\${suggestion.text}\\`);
           
           // Optionally trigger search immediately
           performSearch();
@@ -1548,9 +1548,9 @@ includeJS_search_behavior <- function() {
         // Update search statistics
         function updateSearchStats(count) {
           $('#search_stats').html(
-            `<span class='stats-text'>${count.toLocaleString()} documentos encontrados</span>`
+            \\`<span class='stats-text'>\\${count.toLocaleString()} documentos encontrados</span>\\`
           );
-          announceToScreenReader(`${count} documentos encontrados`);
+          announceToScreenReader(\\`\\${count} documentos encontrados\\`);
         }
         
         // Form validation

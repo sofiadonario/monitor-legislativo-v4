@@ -935,7 +935,7 @@ get_visualization_mode_choices <- function() {
 #' @return Value box output
 create_responsive_value_box <- function(value, subtitle, icon, color = "blue", width = 4) {
   
-  valueBox(
+  safe_valueBox(
     value = value,
     subtitle = subtitle,
     icon = icon(icon),

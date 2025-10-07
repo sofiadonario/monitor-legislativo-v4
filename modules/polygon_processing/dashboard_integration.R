@@ -374,7 +374,7 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
   
   # Performance indicators
   output$memory_usage <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = paste0(round(values$memory_usage, 1), " MB"),
       subtitle = "Uso de Memória",
       icon = icon("memory"),
@@ -383,7 +383,7 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
   })
   
   output$query_time <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = paste0(round(values$last_query_time, 0), " ms"),
       subtitle = "Tempo de Consulta", 
       icon = icon("clock"),
@@ -392,7 +392,7 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
   })
   
   output$municipalities_loaded <- renderValueBox({
-    valueBox(
+    safe_valueBox(
       value = format(values$municipalities_count, big.mark = ","),
       subtitle = "Municípios Carregados",
       icon = icon("map-marker-alt"),

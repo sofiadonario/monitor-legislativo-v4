@@ -562,46 +562,66 @@ transportCorridorServer <- function(id, legislative_data = NULL) {
     
     # Statistics outputs
     output$corridor_length <- renderText({
-      if (!is.null(corridor_values$current_corridor)) {
-        if (input$corridor_type == "highways" && input$highway_select %in% names(brazil_highways)) {
-          return(brazil_highways[[input$highway_select]]$description %>%
-            stringr::str_extract("\\d+,?\\d*") %>%
-            stringr::str_remove(","))
-        } else if (input$corridor_type == "railways" && input$railway_select %in% names(brazil_railways)) {
-          return(as.character(brazil_railways[[input$railway_select]]$length_km))
+      result <- tryCatch({
+        if (!is.null(corridor_values$current_corridor)) {
+          if (input$corridor_type == "highways" && input$highway_select %in% names(brazil_highways)) {
+            extracted <- brazil_highways[[input$highway_select]]$description %>%
+              stringr::str_extract("\\d+,?\\d*") %>%
+              stringr::str_remove(",")
+            scalar_chr(extracted, default = "N/A")
+          } else if (input$corridor_type == "railways" && input$railway_select %in% names(brazil_railways)) {
+            scalar_chr(as.character(brazil_railways[[input$railway_select]]$length_km), default = "N/A")
+          } else {
+            "N/A"
+          }
+        } else {
+          "N/A"
         }
-      }
-      "N/A"
+      }, error = function(e) "N/A")
+
+      text_scalar(result, default = "N/A")
     })
     
     output$affected_states <- renderText({
-      if (!is.null(corridor_values$current_corridor)) {
-        states <- corridor_values$current_corridor$states
-        if (!is.null(states)) {
-          return(as.character(length(unique(states))))
+      result <- tryCatch({
+        if (!is.null(corridor_values$current_corridor)) {
+          states <- corridor_values$current_corridor$states
+          safe_n_distinct(states, default = 0L)
+        } else {
+          0L
         }
-      }
-      "0"
+      }, error = function(e) 0L)
+
+      text_scalar(result, default = "0")
     })
     
     output$documents_found <- renderText({
-      if (!is.null(corridor_values$affected_documents)) {
-        return(format(nrow(corridor_values$affected_documents), big.mark = ","))
-      }
-      "0"
+      result <- tryCatch({
+        n_docs <- safe_nrow(corridor_values$affected_documents, default = 0L)
+        format(n_docs, big.mark = ",")
+      }, error = function(e) "0")
+
+      text_scalar(result, default = "0")
     })
     
     output$activity_index <- renderText({
-      if (!is.null(corridor_values$affected_documents) && 
-          nrow(corridor_values$affected_documents) > 0) {
-        # Calculate activity index (documents per month)
-        days <- as.numeric(diff(input$corridor_dates))
-        if (days > 0) {
-          monthly_rate <- (nrow(corridor_values$affected_documents) / days) * 30
-          return(round(monthly_rate, 1))
+      result <- tryCatch({
+        n_docs <- safe_nrow(corridor_values$affected_documents, default = 0L)
+        if (n_docs > 0 && !is.null(input$corridor_dates) && length(input$corridor_dates) == 2) {
+          # Calculate activity index (documents per month)
+          days <- scalar_num(as.numeric(diff(input$corridor_dates)), default = 0)
+          if (days > 0) {
+            monthly_rate <- (n_docs / days) * 30
+            scalar_num(round(monthly_rate, 1), default = 0)
+          } else {
+            0
+          }
+        } else {
+          0
         }
-      }
-      "0"
+      }, error = function(e) 0)
+
+      text_scalar(result, default = "0")
     })
     
     # Timeline chart

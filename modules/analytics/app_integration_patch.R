@@ -136,7 +136,7 @@ analytics_integration_patch_3 <- '
     
     # Basic fallback analytics value boxes
     output$analytics_total_docs <- renderValueBox({
-      valueBox(
+      safe_valueBox(
         value = "134K+",
         subtitle = "Total Documents", 
         icon = icon("file-text"),
@@ -145,7 +145,7 @@ analytics_integration_patch_3 <- '
     })
     
     output$analytics_date_range <- renderValueBox({
-      valueBox(
+      safe_valueBox(
         value = "1820-2025", 
         subtitle = "Date Coverage",
         icon = icon("calendar"),
@@ -154,7 +154,7 @@ analytics_integration_patch_3 <- '
     })
     
     output$analytics_doc_types <- renderValueBox({
-      valueBox(
+      safe_valueBox(
         value = "5+",
         subtitle = "Document Types",
         icon = icon("tags"), 
@@ -307,7 +307,7 @@ analytics_integration_patch_5 <- '
     
     output$analytics_total_docs <- renderValueBox({
       boxes <- analytics_value_boxes()
-      valueBox(
+      safe_valueBox(
         value = boxes$total_docs,
         subtitle = "Documents Analyzed",
         icon = icon("file-text"),
@@ -317,7 +317,7 @@ analytics_integration_patch_5 <- '
     
     output$analytics_date_range <- renderValueBox({
       boxes <- analytics_value_boxes()
-      valueBox(
+      safe_valueBox(
         value = boxes$date_range,
         subtitle = "Temporal Coverage", 
         icon = icon("calendar"),
@@ -327,7 +327,7 @@ analytics_integration_patch_5 <- '
     
     output$analytics_doc_types <- renderValueBox({
       boxes <- analytics_value_boxes()
-      valueBox(
+      safe_valueBox(
         value = paste0(boxes$doc_types, "+"),
         subtitle = "Document Categories",
         icon = icon("tags"),
@@ -338,7 +338,7 @@ analytics_integration_patch_5 <- '
     # New enhanced value box for states
     output$analytics_states_covered <- renderValueBox({
       boxes <- analytics_value_boxes()
-      valueBox(
+      safe_valueBox(
         value = boxes$states_covered,
         subtitle = "States Covered",
         icon = icon("map"),

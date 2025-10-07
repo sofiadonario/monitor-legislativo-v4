@@ -100,7 +100,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         # Filter out invalid states
         valid_data <- data[!is.na(data$state) & data$state != "" & data$state %in% brazil_states$state_code, ]
         
-        if (nrow(valid_data) > 0) {
+        if (!is.null(valid_data) && is.data.frame(valid_data) && nrow(valid_data) > 0) {
           # Manual aggregation
           state_list <- unique(valid_data$state)
           state_counts <- data.frame(
@@ -147,83 +147,103 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
     # Summary statistics outputs for overview panel
     output$total_documents <- renderText({
       req(state_map_data())
-      total <- sum(state_map_data()$documents, na.rm = TRUE)
-      format(total, big.mark = ",")
+      total <- safe_sum(state_map_data()$documents, default = 0, na.rm = TRUE)
+      text_scalar(format(total, big.mark = ","))
     })
     
     output$avg_density <- renderText({
       req(state_map_data())
       data <- state_map_data()
-      metric <- map_metric_debounced()
-      
+      metric <- scalar_chr(map_metric_debounced(), default = "count")
+
       avg_value <- switch(metric,
-        "count" = round(mean(data$documents, na.rm = TRUE), 0),
-        "per_capita" = round(mean(data$per_capita, na.rm = TRUE), 1),
-        "activity" = round(mean(data$activity_index, na.rm = TRUE), 1),
-        "density" = round(mean(data$density, na.rm = TRUE), 1)
+        "count" = safe_mean(data$documents, default = 0, na.rm = TRUE),
+        "per_capita" = safe_mean(data$per_capita, default = 0, na.rm = TRUE),
+        "activity" = safe_mean(data$activity_index, default = 0, na.rm = TRUE),
+        "density" = safe_mean(data$density, default = 0, na.rm = TRUE)
       )
-      
-      paste0(format(avg_value, big.mark = ","), 
-             switch(metric,
-               "count" = " docs",
-               "per_capita" = "/100k",
-               "activity" = " pts",
-               "density" = "/1M"
-             ))
+
+      suffix <- switch(metric,
+        "count" = " docs",
+        "per_capita" = "/100k",
+        "activity" = " pts",
+        "density" = "/1M",
+        " docs"
+      )
+
+      text_scalar(paste0(format(round(avg_value, 1), big.mark = ","), suffix))
     })
     
     output$highest_state <- renderText({
       req(state_map_data())
       data <- state_map_data()
-      metric <- map_metric_debounced()
-      
-      value_col <- switch(metric,
-        "count" = "documents",
-        "per_capita" = "per_capita",
-        "activity" = "activity_index",
-        "density" = "density"
-      )
-      
-      if (value_col %in% names(data) && nrow(data) > 0) {
-        max_row <- data[which.max(data[[value_col]]), ]
-        if (nrow(max_row) > 0) {
-          return(max_row$state_code[1])
+      metric <- scalar_chr(map_metric_debounced(), default = "count")
+
+      result <- tryCatch({
+        value_col <- switch(metric,
+          "count" = "documents",
+          "per_capita" = "per_capita",
+          "activity" = "activity_index",
+          "density" = "density",
+          "documents"
+        )
+
+        if (value_col %in% names(data) && nrow(data) > 0) {
+          max_row <- data[which.max(data[[value_col]]), ]
+          if (!is.null(max_row) && is.data.frame(max_row) && nrow(max_row) > 0) {
+            scalar_chr(max_row$state_code, default = "N/A")
+          } else {
+            "N/A"
+          }
+        } else {
+          "N/A"
         }
-      }
-      "N/A"
+      }, error = function(e) "N/A")
+
+      text_scalar(result, default = "N/A")
     })
     
     output$coverage_percentage <- renderText({
       req(state_map_data())
       data <- state_map_data()
-      
-      total_states <- nrow(brazil_states)
-      states_with_data <- sum(data$documents > 0, na.rm = TRUE)
-      coverage_pct <- round((states_with_data / total_states) * 100, 1)
-      
-      paste0(coverage_pct, "%")
+
+      result <- tryCatch({
+        total_states <- safe_nrow(brazil_states, default = 27)
+        states_with_data <- safe_sum(data$documents > 0, default = 0, na.rm = TRUE)
+        if (total_states > 0) {
+          coverage_pct <- round((states_with_data / total_states) * 100, 1)
+          scalar_num(coverage_pct, default = 0)
+        } else {
+          0
+        }
+      }, error = function(e) 0)
+
+      text_scalar(paste0(result, "%"))
     })
     
     # Performance monitoring outputs
     output$render_time <- renderText({
-      if (!is.null(map_state$last_render_duration)) {
-        format(map_state$last_render_duration, digits = 0)
+      result <- if (!is.null(map_state$last_render_duration)) {
+        format(scalar_num(map_state$last_render_duration, default = 0), digits = 0)
       } else {
         "Calculating..."
       }
+      text_scalar(result)
     })
-    
+
     output$visible_points <- renderText({
-      if (map_state$visible_data_points > 0) {
-        format(map_state$visible_data_points, big.mark = ",")
+      points <- scalar_int(map_state$visible_data_points, default = 0L)
+      result <- if (points > 0) {
+        format(points, big.mark = ",")
       } else {
         "Loading..."
       }
+      text_scalar(result)
     })
-    
+
     output$performance_status <- renderText({
-      duration <- map_state$last_render_duration
-      if (is.null(duration)) {
+      duration <- scalar_num(map_state$last_render_duration, default = NA)
+      result <- if (is.na(duration)) {
         "Initializing"
       } else if (duration < 1000) {
         "Excellent"
@@ -234,15 +254,18 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
       } else {
         "Slow"
       }
+      text_scalar(result)
     })
-    
+
     output$loading_status <- renderText({
       req(map_state$visible_data_points)
-      if (map_state$visible_data_points > 0) {
-        paste("Processing", format(map_state$visible_data_points, big.mark = ","), "data points...")
+      points <- scalar_int(map_state$visible_data_points, default = 0L)
+      result <- if (points > 0) {
+        paste("Processing", format(points, big.mark = ","), "data points...")
       } else {
         "Preparing visualization..."
       }
+      text_scalar(result)
     })
     
     # Filter summary for user feedback
@@ -511,7 +534,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         data.frame(municipality = character(), count = numeric())
       })
       
-      if (nrow(municipality_data) > 0) {
+      if (!is.null(municipality_data) && is.data.frame(municipality_data) && nrow(municipality_data) > 0) {
         plot_ly(
           data = municipality_data,
           x = ~count,
@@ -553,7 +576,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         valid_data <- data[!is.na(data$state) & data$state != "" & 
                           !is.na(data$year) & data$year >= 2000 & data$year <= 2025, ]
         
-        if (nrow(valid_data) > 0) {
+        if (!is.null(valid_data) && is.data.frame(valid_data) && nrow(valid_data) > 0) {
           # Manual aggregation by state and year
           state_year_combinations <- unique(valid_data[, c("state", "year")])
           temporal_data <- data.frame(
@@ -587,7 +610,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         )
       }
       
-      if (nrow(temporal_data) > 0) {
+      if (!is.null(temporal_data) && is.data.frame(temporal_data) && nrow(temporal_data) > 0) {
         plot_ly(
           data = temporal_data,
           x = ~lng,

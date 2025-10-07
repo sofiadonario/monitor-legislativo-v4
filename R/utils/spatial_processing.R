@@ -8,10 +8,29 @@
 #' coordinate transformations, spatial joins, and boundary simplification.
 #' Optimized for Railway deployment constraints and large datasets.
 
-library(sf)
-library(dplyr)
-library(geosphere)
-library(lwgeom)
+# Load essential geospatial libraries
+suppressPackageStartupMessages({
+  library(sf)  # must exist (already built from source with system libs)
+  library(dplyr)
+})
+
+# Load optional packages with graceful fallback
+has_geosphere <- requireNamespace("geosphere", quietly = TRUE)
+if (has_geosphere) {
+  suppressPackageStartupMessages(library(geosphere))
+} else {
+  message("[spatial] 'geosphere' not available – spherical calculations limited to sf functions.")
+}
+
+has_lwgeom <- requireNamespace("lwgeom", quietly = TRUE)
+
+if (!has_lwgeom) {
+  message("[geospatial] 'lwgeom' not available – running without advanced spherical ops.")
+  # All lwgeom operations will use sf fallbacks or be skipped gracefully
+} else {
+  message("[geospatial] 'lwgeom' available – advanced ops enabled.")
+  suppressPackageStartupMessages(library(lwgeom))
+}
 
 # Brazilian coordinate systems
 BRAZIL_CRS <- list(

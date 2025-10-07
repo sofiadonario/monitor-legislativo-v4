@@ -681,15 +681,15 @@ create_enhanced_analytics_server <- function(input, output, session) {
   )
   
   # System status outputs
-  output$total_documents_processed <- renderText({
+  output$total_documents_processed <- safe_renderText({
     if (!is.null(analytics_state$analysis_results$sample_info)) {
-      format(analytics_state$analysis_results$sample_info$total_documents, big.mark = ",")
+      format(scalar_num(analytics_state$analysis_results$sample_info$total_documents, default = 134567), big.mark = ",")
     } else {
       "134,567"
     }
-  })
-  
-  output$analytics_completion <- renderText({
+  }, context = "total_documents_processed")
+
+  output$analytics_completion <- safe_renderText({
     if (analytics_state$processing_status == "completed") {
       "100%"
     } else if (analytics_state$processing_status == "processing") {
@@ -697,19 +697,19 @@ create_enhanced_analytics_server <- function(input, output, session) {
     } else {
       "Ready"
     }
-  })
-  
-  output$processing_time <- renderText({
+  }, context = "analytics_completion")
+
+  output$processing_time <- safe_renderText({
     if (!is.null(analytics_state$analysis_results$processing_time)) {
-      paste(round(analytics_state$analysis_results$processing_time, 1), "sec")
+      paste(round(scalar_num(analytics_state$analysis_results$processing_time, default = 0), 1), "sec")
     } else {
       "—"
     }
-  })
-  
-  output$last_update_time <- renderText({
-    format(analytics_state$last_updated, "%H:%M:%S")
-  })
+  }, context = "processing_time")
+
+  output$last_update_time <- safe_renderText({
+    format(scalar(analytics_state$last_updated, default = Sys.time()), "%H:%M:%S")
+  }, context = "last_update_time")
   
   # Statistical Analysis Server Logic
   observeEvent(input$run_statistical_analysis, {
@@ -896,29 +896,47 @@ create_enhanced_analytics_server <- function(input, output, session) {
     }
   })
   
-  output$network_metrics_summary <- renderText({
-    if (!is.null(analytics_state$analysis_results$network)) {
-      metrics <- analytics_state$analysis_results$network$network_metrics
-      paste("Nodes:", metrics$nodes, "\n",
-            "Edges:", metrics$edges, "\n", 
-            "Density:", round(metrics$density, 3), "\n",
-            "Clustering:", round(metrics$clustering_coefficient, 3))
+  output$network_metrics_summary <- safe_renderText({
+    network_results <- analytics_state$analysis_results$network
+
+    if (!is.null(network_results)) {
+      metrics <- network_results$network_metrics
+      nodes <- scalar_num(metrics$nodes, default = 0)
+      edges <- scalar_num(metrics$edges, default = 0)
+      density <- round(scalar_num(metrics$density, default = 0), 3)
+      clustering <- round(scalar_num(metrics$clustering_coefficient, default = 0), 3)
+
+      paste(
+        "Nodes:", nodes, "\n",
+        "Edges:", edges, "\n",
+        "Density:", density, "\n",
+        "Clustering:", clustering
+      )
     } else {
       "Build network to see metrics"
     }
-  })
+  }, context = "network_metrics_summary")
   
-  output$nlp_summary_stats <- renderText({
-    if (!is.null(analytics_state$analysis_results$nlp)) {
-      sentiment <- analytics_state$analysis_results$nlp$sentiment_summary
-      paste("Positive:", round(sentiment$positive * 100, 1), "%\n",
-            "Negative:", round(sentiment$negative * 100, 1), "%\n",
-            "Neutral:", round(sentiment$neutral * 100, 1), "%\n",
-            "Avg Score:", round(sentiment$avg_sentiment, 3))
+  output$nlp_summary_stats <- safe_renderText({
+    nlp_results <- analytics_state$analysis_results$nlp
+
+    if (!is.null(nlp_results)) {
+      sentiment <- nlp_results$sentiment_summary
+      positive <- round(scalar_num(sentiment$positive, default = 0) * 100, 1)
+      negative <- round(scalar_num(sentiment$negative, default = 0) * 100, 1)
+      neutral <- round(scalar_num(sentiment$neutral, default = 0) * 100, 1)
+      avg_score <- round(scalar_num(sentiment$avg_sentiment, default = 0), 3)
+
+      paste(
+        "Positive:", positive, "%\n",
+        "Negative:", negative, "%\n",
+        "Neutral:", neutral, "%\n",
+        "Avg Score:", avg_score
+      )
     } else {
       "Run NLP analysis to see stats"
     }
-  })
+  }, context = "nlp_summary_stats")
   
   # Report generation
   observeEvent(input$generate_research_report, {

@@ -897,7 +897,7 @@ create_research_tools_tabs <- function() {
 #' @export
 create_enhanced_value_box <- function(value, subtitle, icon, color = "blue", width = 3) {
   
-  shinydashboard::valueBox(
+  safe_valueBox(
     value = value,
     subtitle = subtitle,
     icon = icon,

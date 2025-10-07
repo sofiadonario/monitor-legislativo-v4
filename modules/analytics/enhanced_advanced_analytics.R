@@ -573,18 +573,18 @@ advanced_hypothesis_testing <- function(data, test_type = "policy_change",
           
           # Post-hoc analysis (Tukey HSD) if significant
           tukey_results <- NULL
-          if (anova_summary[[1]]$"Pr(>F)"[1] < alpha) {
+          if (scalar_num(anova_summary[[1]]$"Pr(>F)", 1) < alpha) {
             tukey_results <- TukeyHSD(anova_result)
           }
           
           results$jurisdictional_differences <- list(
             test_description = "Jurisdictional differences in temporal patterns",
             anova_test = list(
-              f_statistic = anova_summary[[1]]$"F value"[1],
-              p_value = anova_summary[[1]]$"Pr(>F)"[1],
-              df_between = anova_summary[[1]]$"Df"[1],
-              df_within = anova_summary[[1]]$"Df"[2],
-              significant = anova_summary[[1]]$"Pr(>F)"[1] < alpha
+              f_statistic = scalar_num(anova_summary[[1]]$"F value", NA),
+              p_value = scalar_num(anova_summary[[1]]$"Pr(>F)", 1),
+              df_between = scalar_num(anova_summary[[1]]$"Df", NA),
+              df_within = if(length(anova_summary[[1]]$"Df") >= 2) scalar_num(anova_summary[[1]]$"Df"[2], NA) else NA,
+              significant = scalar_num(anova_summary[[1]]$"Pr(>F)", 1) < alpha
             ),
             tukey_hsd = tukey_results,
             state_means = state_summary

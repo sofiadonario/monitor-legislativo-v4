@@ -102,7 +102,7 @@ check_export_feasibility <- function(data, format) {
 
 #' Split large dataset into chunks for memory-efficient processing
 chunk_dataset <- function(data, chunk_size = 5000) {
-  if (nrow(data) <= chunk_size) {
+  if (is.null(data) || !is.data.frame(data) || nrow(data) <= chunk_size) {
     return(list(data))
   }
   
@@ -344,7 +344,7 @@ convert_to_endnote_xml <- function(data, options = NULL) {
 #' Enhanced CSV conversion with memory optimization
 convert_to_csv_enhanced <- function(data, options = NULL) {
   # Use data.table for memory efficiency with large datasets
-  if (nrow(data) > 50000) {
+  if (!is.null(data) && is.data.frame(data) && nrow(data) > 50000) {
     temp_file <- tempfile(fileext = ".csv")
     
     # Write in chunks to avoid memory issues
@@ -377,7 +377,7 @@ convert_to_csv_enhanced <- function(data, options = NULL) {
 
 #' Enhanced Excel conversion with memory optimization
 convert_to_xlsx_enhanced <- function(data, options = NULL) {
-  if (nrow(data) > 100000) {
+  if (!is.null(data) && is.data.frame(data) && nrow(data) > 100000) {
     # For very large datasets, recommend chunked export
     return("Dataset muito grande para Excel. Use exportação em lote ou formato CSV.")
   }
@@ -879,9 +879,9 @@ exportServer <- function(id, reactive_data) {
           export_data$data <= input$export_date_range[2], 
         ]
       }
-      
+
       # Apply maximum records limit
-      if (nrow(export_data) > input$max_records) {
+      if (!is.null(export_data) && is.data.frame(export_data) && nrow(export_data) > input$max_records) {
         export_data <- export_data[1:input$max_records, ]
       }
       

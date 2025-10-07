@@ -381,8 +381,8 @@ geographic_server_enhanced <- function(id, pool, cache = NULL) {
           # Load data with sampling if needed
           start_time <- Sys.time()
           geo_data <- aggregate_geographic_data(pool, filters)
-          
-          if (nrow(geo_data) > input$sample_size) {
+
+          if (!is.null(geo_data) && is.data.frame(geo_data) && nrow(geo_data) > input$sample_size) {
             incProgress(0.7, detail = "Applying stratified sampling...")
             geo_data <- stratified_sample_documents(geo_data, input$sample_size)
           }
@@ -445,7 +445,7 @@ geographic_server_enhanced <- function(id, pool, cache = NULL) {
     
     # Value boxes
     output$total_states_box <- renderValueBox({
-      valueBox(
+      safe_valueBox(
         value = if (!is.null(values$geographic_data)) {
           n_distinct(values$geographic_data$estado)
         } else { 0 },
@@ -456,7 +456,7 @@ geographic_server_enhanced <- function(id, pool, cache = NULL) {
     })
     
     output$total_documents_box <- renderValueBox({
-      valueBox(
+      safe_valueBox(
         value = if (!is.null(values$geographic_data)) {
           format(sum(values$geographic_data$doc_count), big.mark = ",")
         } else { 0 },
@@ -474,7 +474,7 @@ geographic_server_enhanced <- function(id, pool, cache = NULL) {
         paste0(top_state$estado, " (", format(top_state$doc_count, big.mark = ","), ")")
       } else { "N/A" }
       
-      valueBox(
+      safe_valueBox(
         value = most_active,
         subtitle = "Most Active State",
         icon = icon("trophy"),
@@ -491,7 +491,7 @@ geographic_server_enhanced <- function(id, pool, cache = NULL) {
         else paste0(days_ago, " days ago")
       } else { "N/A" }
       
-      valueBox(
+      safe_valueBox(
         value = freshness,
         subtitle = "Latest Document",
         icon = icon("clock"),

@@ -1,6 +1,16 @@
 # ============================================================================
 # QUERY PERFORMANCE MONITORING SYSTEM - Railway PostgreSQL
 # ============================================================================
+
+# Quiet logging for monitoring
+quiet_no_pool <- function(msg) {
+  grepl("No database pool available (for monitoring|for table caching|for performance monitoring)", msg)
+}
+log_warn <- function(msg) {
+  if (!quiet_no_pool(msg)) message(msg)
+}
+
+# ============================================================================
 # 
 # This module provides comprehensive query performance monitoring for the
 # Brazilian Legislative Monitor R Shiny application running on Railway.
@@ -93,8 +103,18 @@ suppressPackageStartupMessages({
 #' @param config Optional configuration overrides
 #' @return TRUE if successful
 init_query_monitoring <- function(config = list()) {
+  # Guard: only run when monitoring is enabled and pool is available
+  if (!exists("ENABLE_QUERY_MONITORING") || !isTRUE(ENABLE_QUERY_MONITORING)) {
+    return(invisible(FALSE))
+  }
+
+  db_pool <- getOption("app_db_pool", NULL)
+  if (is.null(db_pool)) {
+    return(invisible(FALSE))
+  }
+
   cat("🚀 Initializing Query Performance Monitoring System...\n")
-  
+
   # Apply configuration overrides
   for (key in names(config)) {
     if (key %in% names(.monitor_config)) {
@@ -240,7 +260,7 @@ get_monitoring_pool <- function() {
     return(.db_pool)
   }
   
-  cat("⚠️ No database pool available for monitoring\n")
+  # Silently return NULL when no pool available (reduces log noise)
   return(NULL)
 }
 
@@ -283,7 +303,7 @@ monitor_query_execution <- function(query, params = NULL, pool = NULL,
   if (is.null(pool)) {
     pool <- get_monitoring_pool()
     if (is.null(pool)) {
-      return(list(result = NULL, error = "No database pool available"))
+      return(list(result = NULL, error = NULL))  # Silenced for log cleanliness
     }
   }
   
@@ -387,7 +407,7 @@ execute_query_direct <- function(query, params = NULL, pool = NULL) {
   }
   
   if (is.null(pool)) {
-    return(list(result = NULL, error = "No database pool available"))
+    return(list(result = NULL, error = NULL))  # Silenced for log cleanliness
   }
   
   tryCatch({

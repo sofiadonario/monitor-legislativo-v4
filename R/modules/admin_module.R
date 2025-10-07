@@ -795,7 +795,7 @@ adminServer <- function(id, session = NULL) {
     # Users table
     output$users_table <- DT::renderDataTable({
       # Initialize with sample data if empty
-      if (nrow(values$users_data) == 0) {
+      if (is.null(values$users_data) || !is.data.frame(values$users_data) || nrow(values$users_data) == 0) {
         values$users_data <- data.frame(
           id = 1:5,
           email = c("admin@sistema.gov.br", "pesquisador@univ.edu.br", 
