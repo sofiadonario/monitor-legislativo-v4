@@ -48,15 +48,25 @@ sanitize_search_query <- function(query, preserve_accents = TRUE, escape_regex =
 #' @param text Text to escape
 #' @return Text with escaped metacharacters
 escape_regex_chars <- function(text) {
-  # Escape all regex special characters
-  metacharacters <- c(".", "\\", "|", "(", ")", "[", "]", "{", "}",
-                     "^", "$", "*", "+", "?")
-
-  for (char in metacharacters) {
-    text <- gsub(paste0("\\", char), paste0("\\\\", char), text, fixed = TRUE)
+  if (is.null(text) || length(text) == 0) {
+    return(text)
   }
 
-  return(text)
+  specials <- c("\\", ".", "|", "(", ")", "[", "]", "{", "}", "^", "$", "*", "+", "?")
+
+  for (char in specials) {
+    pattern <- char
+    replacement <- paste0("\\\\", char)
+
+    if (char == "\\") {
+      pattern <- "\\\\"
+      replacement <- "\\\\\\\\"
+    }
+
+    text <- gsub(pattern, replacement, text, fixed = TRUE)
+  }
+
+  text
 }
 
 #' Create accent-insensitive regex pattern
@@ -64,32 +74,37 @@ escape_regex_chars <- function(text) {
 #' @param query Search query
 #' @return Regex pattern that matches accented variations
 create_accent_insensitive_pattern <- function(query) {
-  # Map of accent variations
-  accent_map <- list(
-    "a" = "[aáàâãäå]",
-    "e" = "[eéèêë]",
-    "i" = "[iíìîï]",
-    "o" = "[oóòôõö]",
-    "u" = "[uúùûü]",
-    "c" = "[cç]",
-    "n" = "[nñ]",
-    "A" = "[AÁÀÂÃÄÅ]",
-    "E" = "[EÉÈÊË]",
-    "I" = "[IÍÌÎÏ]",
-    "O" = "[OÓÒÔÕÖ]",
-    "U" = "[UÚÙÛÜ]",
-    "C" = "[CÇ]",
-    "N" = "[NÑ]"
-  )
-
-  pattern <- query
-
-  # Replace each character with its accent-insensitive version
-  for (char in names(accent_map)) {
-    pattern <- gsub(char, accent_map[[char]], pattern, ignore.case = FALSE)
+  if (is.null(query) || query == "") {
+    return("")
   }
 
-  return(pattern)
+  accent_map <- list(
+    a = c("a", "á", "à", "â", "ã", "ä", "å"),
+    e = c("e", "é", "è", "ê", "ë"),
+    i = c("i", "í", "ì", "î", "ï"),
+    o = c("o", "ó", "ò", "ô", "õ", "ö"),
+    u = c("u", "ú", "ù", "û", "ü"),
+    c = c("c", "ç"),
+    n = c("n", "ñ")
+  )
+
+  chars <- strsplit(query, "", perl = TRUE)[[1]]
+
+  parts <- vapply(chars, function(ch) {
+    base <- stringi::stri_trans_general(ch, "Latin-ASCII")
+    base_lower <- tolower(base)
+
+    if (!is.na(base_lower) && nzchar(base_lower) && base_lower %in% names(accent_map)) {
+      variants <- accent_map[[base_lower]]
+      variants <- unique(c(variants, toupper(variants)))
+      escaped_variants <- vapply(variants, escape_regex_chars, character(1), USE.NAMES = FALSE)
+      paste0("[", paste(escaped_variants, collapse = ""), "]")
+    } else {
+      escape_regex_chars(ch)
+    }
+  }, character(1), USE.NAMES = FALSE)
+
+  paste(parts, collapse = "")
 }
 
 #' Validate and clean search suggestions
@@ -108,6 +123,8 @@ clean_suggestions <- function(suggestions, max_length = 100) {
   # Clean each suggestion
   suggestions <- sapply(suggestions, function(s) {
     s <- trimws(s)
+    # Remove script tags entirely
+    s <- gsub("(?i)<script[^>]*?>.*?</script>", "", s, perl = TRUE)
     # Remove any HTML/script tags
     s <- gsub("<[^>]*>", "", s)
     # Limit length
@@ -207,6 +224,7 @@ highlight_search_terms <- function(text, search_terms,
     if (nchar(term) > 0) {
       # Create accent-insensitive pattern
       pattern <- create_accent_insensitive_pattern(term)
+      pattern <- paste0(pattern, "(?:es|s)?")
 
       # Use backreference to preserve original case
       text <- gsub(paste0("(", pattern, ")"),

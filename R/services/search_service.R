@@ -148,8 +148,9 @@ SearchService <- R6::R6Class("SearchService",
         return("")
       }
       # Remove potentially dangerous characters
-      search_term <- gsub("[<>\"';]", "", search_term)
-      return(trimws(search_term))
+      search_term <- gsub("[<>\";]", "", search_term)
+      search_term <- gsub("(?<![[:alnum:]])'(?![[:alnum:]])", "", search_term, perl = TRUE)
+      return(search_term)
     },
 
     #' Build cache key from parameters
