@@ -131,6 +131,157 @@ source("R/utils/ui_utils.R", local = TRUE)
 # ESSENTIAL PACKAGES
 # ==================
 library(shiny)
+
+# ==============================================================================
+# OVERRIDE SHINY RENDER FUNCTIONS WITH SAFETY WRAPPERS
+# ==============================================================================
+# This ensures that even direct calls to shiny::renderText use our safe wrappers
+# Prevents scalar value crashes across the entire application
+
+cat("Installing safety overrides for shiny render functions...\n")
+
+# Override shiny::renderText
+tryCatch({
+  shiny_ns <- asNamespace("shiny")
+  if (exists("renderText", envir = shiny_ns)) {
+    original_renderText <- get("renderText", envir = shiny_ns)
+    unlockBinding("renderText", shiny_ns)
+    assign(
+      "renderText",
+      function(expr, ..., env = parent.frame(), quoted = FALSE, outputArgs = list()) {
+        # Wrap the expression with our safe_renderText
+        safe_expr <- substitute({
+          tryCatch({
+            result <- expr
+            if (is.null(result)) return("—")
+            if (length(result) == 0) return("—")
+            if (length(result) > 1) {
+              cat("[renderText-override] Vector leak detected (length:", length(result), ") - using first value\n", file = stderr())
+              result <- result[1]
+            }
+            as.character(result)
+          }, error = function(e) {
+            cat("[renderText-override] Error:", conditionMessage(e), "\n", file = stderr())
+            "—"
+          })
+        }, list(expr = if (quoted) expr else substitute(expr)))
+
+        original_renderText(
+          expr = safe_expr,
+          env = env,
+          quoted = TRUE,
+          outputArgs = outputArgs,
+          ...
+        )
+      },
+      envir = shiny_ns
+    )
+    lockBinding("renderText", shiny_ns)
+    cat("✅ shiny::renderText override installed\n")
+  }
+}, error = function(e) {
+  cat("⚠️  [renderText-hook] unable to override shiny::renderText:", conditionMessage(e), "\n", file = stderr())
+})
+
+# Override shiny::renderUI
+tryCatch({
+  shiny_ns <- asNamespace("shiny")
+  if (exists("renderUI", envir = shiny_ns)) {
+    original_renderUI <- get("renderUI", envir = shiny_ns)
+    unlockBinding("renderUI", shiny_ns)
+    assign(
+      "renderUI",
+      function(expr, ..., env = parent.frame(), quoted = FALSE, outputArgs = list()) {
+        # Wrap the expression with error handling
+        safe_expr <- substitute({
+          tryCatch({
+            result <- expr
+            if (is.null(result)) return(tags$span())
+            result
+          }, error = function(e) {
+            cat("[renderUI-override] Error:", conditionMessage(e), "\n", file = stderr())
+            tags$div(
+              class = "alert alert-warning",
+              style = "margin: 10px;",
+              icon("exclamation-triangle"),
+              " Unable to render content"
+            )
+          })
+        }, list(expr = if (quoted) expr else substitute(expr)))
+
+        original_renderUI(
+          expr = safe_expr,
+          env = env,
+          quoted = TRUE,
+          outputArgs = outputArgs,
+          ...
+        )
+      },
+      envir = shiny_ns
+    )
+    lockBinding("renderUI", shiny_ns)
+    cat("✅ shiny::renderUI override installed\n")
+  }
+}, error = function(e) {
+  cat("⚠️  [renderUI-hook] unable to override shiny::renderUI:", conditionMessage(e), "\n", file = stderr())
+})
+
+# Override plotly::renderPlotly if package is available
+tryCatch({
+  if (requireNamespace("plotly", quietly = TRUE)) {
+    plotly_ns <- asNamespace("plotly")
+    if (exists("renderPlotly", envir = plotly_ns)) {
+      original_renderPlotly <- get("renderPlotly", envir = plotly_ns)
+      unlockBinding("renderPlotly", plotly_ns)
+      assign(
+        "renderPlotly",
+        function(expr, ..., env = parent.frame(), quoted = FALSE) {
+          # Wrap the expression with error handling
+          safe_expr <- substitute({
+            tryCatch({
+              result <- expr
+              if (is.null(result)) {
+                cat("[renderPlotly-override] NULL result - returning empty plot\n", file = stderr())
+                return(plotly::plot_ly() %>% plotly::layout(title = "No data available"))
+              }
+              result
+            }, error = function(e) {
+              cat("[renderPlotly-override] Error:", conditionMessage(e), "\n", file = stderr())
+              plotly::plot_ly() %>%
+                plotly::layout(
+                  title = list(text = "Chart Error", font = list(color = "red")),
+                  annotations = list(
+                    text = "Unable to render chart",
+                    showarrow = FALSE,
+                    xref = "paper",
+                    yref = "paper",
+                    x = 0.5,
+                    y = 0.5
+                  )
+                )
+            })
+          }, list(expr = if (quoted) expr else substitute(expr)))
+
+          original_renderPlotly(
+            expr = safe_expr,
+            env = env,
+            quoted = TRUE,
+            ...
+          )
+        },
+        envir = plotly_ns
+      )
+      lockBinding("renderPlotly", plotly_ns)
+      cat("✅ plotly::renderPlotly override installed\n")
+    }
+  }
+}, error = function(e) {
+  cat("⚠️  [renderPlotly-hook] unable to override plotly::renderPlotly:", conditionMessage(e), "\n", file = stderr())
+})
+
+cat("Safety override installation complete\n\n")
+
+# Continue loading packages
 library(shinydashboard)
 library(DT)
 library(plotly)
