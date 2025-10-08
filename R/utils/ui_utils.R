@@ -1,6 +1,86 @@
 ## ---- Scalar utilities now sourced from R/utils/scalar_utils.R ----
 # All scalar functions are loaded from the single source of truth
 
+# ==============================================================================
+# NAMESPACE-LEVEL SAFETY OVERRIDES (INJECTED FROM ui_utils.R)
+# ==============================================================================
+cat("🔧 Installing namespace-level safety overrides from ui_utils.R...\n", file = stderr())
+
+# Override shiny::renderText at namespace level
+if (requireNamespace("shiny", quietly = TRUE)) {
+  tryCatch({
+    shiny_ns <- asNamespace("shiny")
+    if (exists("renderText", envir = shiny_ns)) {
+      original_renderText <- get("renderText", envir = shiny_ns)
+      unlockBinding("renderText", shiny_ns)
+      assign(
+        "renderText",
+        function(expr, ..., env = parent.frame(), quoted = FALSE, outputArgs = list()) {
+          safe_expr <- substitute({
+            tryCatch({
+              result <- expr
+              if (is.null(result)) return("—")
+              if (length(result) == 0) return("—")
+              if (length(result) > 1) {
+                cat("[renderText-NS-OVERRIDE] Vector leak (len:", length(result), ")\n", file = stderr())
+                result <- result[1]
+              }
+              as.character(result)
+            }, error = function(e) {
+              cat("[renderText-NS-OVERRIDE] Error:", conditionMessage(e), "\n", file = stderr())
+              "—"
+            })
+          }, list(expr = if (quoted) expr else substitute(expr)))
+          original_renderText(expr = safe_expr, env = env, quoted = TRUE, outputArgs = outputArgs, ...)
+        },
+        envir = shiny_ns
+      )
+      lockBinding("renderText", shiny_ns)
+      cat("✅ [ui_utils.R] shiny::renderText namespace override installed\n", file = stderr())
+    }
+  }, error = function(e) {
+    cat("⚠️  [ui_utils.R] Failed to override renderText:", conditionMessage(e), "\n", file = stderr())
+  })
+}
+
+# Override shiny::validateSingleValue to log and prevent crashes
+if (requireNamespace("shiny", quietly = TRUE)) {
+  tryCatch({
+    shiny_ns <- asNamespace("shiny")
+    if (exists("validateSingleValue", envir = shiny_ns, inherits = FALSE)) {
+      original_validate <- get("validateSingleValue", envir = shiny_ns)
+      unlockBinding("validateSingleValue", shiny_ns)
+      assign("validateSingleValue", function(value, name, ...) {
+        len <- length(value)
+        if (len == 0L) {
+          cat("[validateSingleValue-NS] CRITICAL:", name, "len=0 class=", paste(class(value), collapse = ","), "\n", file = stderr())
+          cat("Stack:\n", paste(capture.output(sys.calls()), collapse = "\n"), "\n", file = stderr())
+
+          fallback <- switch(typeof(value),
+            "logical" = NA, "integer" = NA_integer_, "double" = NA_real_,
+            "character" = "—", "—"
+          )
+          cat("[validateSingleValue-NS] Returning fallback:", fallback, "\n", file = stderr())
+          return(fallback)
+        }
+
+        if (len > 1L) {
+          cat("[validateSingleValue-NS]", name, "len=", len, "- taking first\n", file = stderr())
+          value <- value[1L]
+        }
+
+        original_validate(value, name, ...)
+      }, envir = shiny_ns)
+      lockBinding("validateSingleValue", shiny_ns)
+      cat("✅ [ui_utils.R] shiny::validateSingleValue namespace override installed\n", file = stderr())
+    }
+  }, error = function(e) {
+    cat("⚠️  [ui_utils.R] Failed to override validateSingleValue:", conditionMessage(e), "\n", file = stderr())
+  })
+}
+
+cat("🔧 Namespace override installation from ui_utils.R complete\n", file = stderr())
+
 # Additional UI-specific validation helper
 require_rows <- function(df, msg = "Sem dados disponíveis") {
   shiny::validate(shiny::need(has_rows(df), msg)); df
