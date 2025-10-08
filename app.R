@@ -717,39 +717,47 @@ server <- function(input, output, session) {
 
   # Fallback chart implementations
   output$state_chart <- renderPlotly({
-    data <- get_analytics_data()
-    if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
-      chart_data <- prepare_chart_data(data, "geographic")
-      if (!is.null(chart_data) && is.data.frame(chart_data) && nrow(chart_data) > 0) {
-        p <- ggplot(chart_data, aes(x = reorder(state, count), y = count)) +
-          geom_bar(stat = "identity", fill = "#3498db") +
-          labs(title = "Documents by State", x = "State", y = "Document Count") +
-          coord_flip() + theme_minimal()
-        ggplotly(p)
+    tryCatch({
+      data <- get_analytics_data()
+      if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
+        chart_data <- prepare_chart_data(data, "geographic")
+        if (!is.null(chart_data) && is.data.frame(chart_data) && nrow(chart_data) > 0) {
+          p <- ggplot(chart_data, aes(x = reorder(state, count), y = count)) +
+            geom_bar(stat = "identity", fill = "#3498db") +
+            labs(title = "Documents by State", x = "State", y = "Document Count") +
+            coord_flip() + theme_minimal()
+          ggplotly(p)
+        } else {
+          plotly_empty() %>% layout(title = "No geographic data available")
+        }
       } else {
-        plotly_empty() %>% layout(title = "No geographic data available")
+        plotly_empty() %>% layout(title = "Loading data...")
       }
-    } else {
-      plotly_empty() %>% layout(title = "Loading data...")
-    }
+    }, error = function(e) {
+      plotly_empty() %>% layout(title = "Chart loading...")
+    })
   })
 
   output$type_chart <- renderPlotly({
-    data <- get_analytics_data()
-    if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
-      chart_data <- prepare_chart_data(data, "category")
-      if (!is.null(chart_data) && is.data.frame(chart_data) && nrow(chart_data) > 0) {
-        p <- ggplot(chart_data, aes(x = reorder(category, count), y = count)) +
-          geom_bar(stat = "identity", fill = "#e74c3c") +
-          labs(title = "Documents by Category", x = "Category", y = "Document Count") +
-          coord_flip() + theme_minimal()
-        ggplotly(p)
+    tryCatch({
+      data <- get_analytics_data()
+      if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
+        chart_data <- prepare_chart_data(data, "category")
+        if (!is.null(chart_data) && is.data.frame(chart_data) && nrow(chart_data) > 0) {
+          p <- ggplot(chart_data, aes(x = reorder(category, count), y = count)) +
+            geom_bar(stat = "identity", fill = "#e74c3c") +
+            labs(title = "Documents by Category", x = "Category", y = "Document Count") +
+            coord_flip() + theme_minimal()
+          ggplotly(p)
+        } else {
+          plotly_empty() %>% layout(title = "No category data available")
+        }
       } else {
-        plotly_empty() %>% layout(title = "No category data available")
+        plotly_empty() %>% layout(title = "Loading data...")
       }
-    } else {
-      plotly_empty() %>% layout(title = "Loading data...")
-    }
+    }, error = function(e) {
+      plotly_empty() %>% layout(title = "Chart loading...")
+    })
   })
 
   # Document search functionality

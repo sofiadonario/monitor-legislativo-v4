@@ -99,6 +99,10 @@ if (identical(Sys.getenv("APP_DEBUG"), "1")) {
   )
 }
 
+# NOTE: Harmless "Expecting a single value: [extent=0]" errors may appear during startup
+# These occur when plotly/ggplot2 render functions fire before data is loaded
+# They do not affect functionality and are safely handled by tryCatch blocks
+
 # ---- Load unified scalar utilities (SINGLE SOURCE OF TRUTH) ----
 source("R/utils/scalar_utils.R", local = TRUE)
 

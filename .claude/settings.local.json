@@ -9,7 +9,10 @@
       "Bash(git commit:*)",
       "Bash(find:*)",
       "Bash(git log:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(cd:*)",
+      "Bash(timeout 30 git commit -a -m \"fix: handle plotly startup errors with tryCatch blocks\")",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
