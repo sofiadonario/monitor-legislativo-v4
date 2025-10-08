@@ -36,22 +36,22 @@ fluidRow(
   )
 ),
 
-# Critical Metrics Dashboard - Enhanced Value Boxes
+# Critical Metrics Dashboard - Enhanced Value Boxes - ALL NOW uiOutput
 fluidRow(
   uiOutput("exec_total_docs", width = 3),
   uiOutput("exec_states_coverage", width = 3),
-  valueBoxOutput("exec_recent_additions", width = 3),
-  valueBoxOutput("exec_data_freshness", width = 3)
+  uiOutput("exec_recent_additions", width = 3),
+  uiOutput("exec_data_freshness", width = 3)
 ),
 
-# Key Performance Indicators
+# Key Performance Indicators - ALL NOW uiOutput
 fluidRow(
-  valueBoxOutput("exec_federal_docs", width = 2),
-  valueBoxOutput("exec_state_docs", width = 2), 
-  valueBoxOutput("exec_municipal_docs", width = 2),
-  valueBoxOutput("exec_jurisprudence_docs", width = 2),
-  valueBoxOutput("exec_doctrine_docs", width = 2),
-  valueBoxOutput("exec_active_themes", width = 2)
+  uiOutput("exec_federal_docs", width = 2),
+  uiOutput("exec_state_docs", width = 2),
+  uiOutput("exec_municipal_docs", width = 2),
+  uiOutput("exec_jurisprudence_docs", width = 2),
+  uiOutput("exec_doctrine_docs", width = 2),
+  uiOutput("exec_active_themes", width = 2)
 ),
 
 # Trend Visualizations Row
