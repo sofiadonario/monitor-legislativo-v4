@@ -51,16 +51,16 @@ if (requireNamespace("shiny", quietly = TRUE)) {
 
     # Check if validateSingleValue exists
     vsv_exists <- exists("validateSingleValue", envir = shiny_ns, inherits = FALSE)
-    cat("[DEBUG] validateSingleValue exists:", vsvexists, "\n", file = stderr())
+    cat("[DEBUG] validateSingleValue exists:", vsv_exists, "\n", file = stderr())
 
     # Try different export methods
     if (!vsv_exists) {
       # Try without inherits restriction
-      vsvexists <- exists("validateSingleValue", envir = shiny_ns, inherits = TRUE)
-      cat("[DEBUG] validateSingleValue with inherits=TRUE:", vsvexists, "\n", file = stderr())
+      vsv_exists <- exists("validateSingleValue", envir = shiny_ns, inherits = TRUE)
+      cat("[DEBUG] validateSingleValue with inherits=TRUE:", vsv_exists, "\n", file = stderr())
     }
 
-    if (vsvexists) {
+    if (vsv_exists) {
       cat("[DEBUG] Attempting to override validateSingleValue...\n", file = stderr())
       original_validate <- get("validateSingleValue", envir = shiny_ns)
       unlockBinding("validateSingleValue", shiny_ns)
