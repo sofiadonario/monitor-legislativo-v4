@@ -372,6 +372,46 @@ for (module_file in module_files) {
   }
 }
 
+# ==============================================================================
+# NUCLEAR OPTION: Direct validateSingleValue override injection
+# ==============================================================================
+cat("🚨 INJECTING validateSingleValue override DIRECTLY...\n", file = stderr())
+tryCatch({
+  shiny_ns <- asNamespace("shiny")
+  vsv_exists <- exists("validateSingleValue", envir = shiny_ns, inherits = FALSE)
+  cat("[INJECT] validateSingleValue exists (inherits=FALSE):", vsv_exists, "\n", file = stderr())
+
+  if (!vsv_exists) {
+    vsv_exists <- exists("validateSingleValue", envir = shiny_ns, inherits = TRUE)
+    cat("[INJECT] validateSingleValue exists (inherits=TRUE):", vsv_exists, "\n", file = stderr())
+  }
+
+  if (vsv_exists) {
+    original_vsv <- get("validateSingleValue", envir = shiny_ns)
+    unlockBinding("validateSingleValue", shiny_ns)
+    assign("validateSingleValue", function(value, name, ...) {
+      len <- length(value)
+      if (len == 0L) {
+        cat("[VSV-INJECT] CRASH PREVENTED:", name, "was length-0\n", file = stderr())
+        cat("[VSV-INJECT] Stack:", paste(head(sys.calls(), 10), collapse = " | "), "\n", file = stderr())
+        return(NA_character_)
+      }
+      if (len > 1L) {
+        cat("[VSV-INJECT]", name, "had length", len, "- using first\n", file = stderr())
+        value <- value[1L]
+      }
+      original_vsv(value, name, ...)
+    }, envir = shiny_ns)
+    lockBinding("validateSingleValue", shiny_ns)
+    cat("✅ validateSingleValue INJECTED successfully\n", file = stderr())
+  } else {
+    cat("❌ validateSingleValue NOT FOUND - listing validate functions:\n", file = stderr())
+    cat(paste(grep("validate", ls(shiny_ns), ignore.case = TRUE, value = TRUE), collapse = ", "), "\n", file = stderr())
+  }
+}, error = function(e) {
+  cat("❌ validateSingleValue injection FAILED:", e$message, "\n", file = stderr())
+})
+
 # Global hammer: mask valueBox to prevent length-0 crashes
 if (exists("safe_valueBox") && is.function(safe_valueBox)) {
   valueBox <- safe_valueBox
