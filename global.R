@@ -405,6 +405,49 @@ if (exists("safe_renderPlotly") && is.function(safe_renderPlotly)) {
   cat("✅ Global renderPlotly masking applied for crash prevention\n")
 }
 
+# Guard against glue() length-0 expansions that previously crashed value boxes
+if (requireNamespace("glue", quietly = TRUE)) {
+  tryCatch({
+    glue_ns <- asNamespace("glue")
+    original_glue <- get("glue", envir = glue_ns)
+    identity_transformer <- get("identity_transformer", envir = glue_ns)
+
+    safe_null_transformer <- function(inner_transformer, null_fallback) {
+      force(inner_transformer)
+      force(null_fallback)
+      function(text, envir) {
+        value <- inner_transformer(text, envir)
+        if (length(value) == 0L) return(null_fallback)
+        value
+      }
+    }
+
+    unlockBinding("glue", glue_ns)
+    assign(
+      "glue",
+      function(...,
+               .envir = parent.frame(),
+               .transformer = identity_transformer,
+               .null = "—",
+               .na = .null) {
+        wrapped_transformer <- safe_null_transformer(.transformer, .null)
+        original_glue(
+          ...,
+          .envir = .envir,
+          .transformer = wrapped_transformer,
+          .null = .null,
+          .na = .na
+        )
+      },
+      envir = glue_ns
+    )
+    lockBinding("glue", glue_ns)
+    cat("✅ Global glue null protection enabled\n")
+  }, error = function(e) {
+    cat("[glue-hook] unable to enable null protection:", conditionMessage(e), "\n", file = stderr())
+  })
+}
+
 # Enable detailed Shiny error reporting in production logs for diagnostics
 options(
   shiny.fullstacktrace = TRUE,
