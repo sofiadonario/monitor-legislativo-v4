@@ -394,6 +394,50 @@ if (exists("safe_renderText") && is.function(safe_renderText)) {
   cat("✅ Global renderText masking applied for crash prevention\n")
 }
 
+# Global hammer: mask renderValueBox to enforce scalar safety
+if (exists("safe_valueBox") && is.function(safe_valueBox)) {
+  # Override shinydashboard::renderValueBox globally
+  tryCatch({
+    shiny_ns <- asNamespace("shiny")
+    if (exists("renderValueBox", envir = shiny_ns, inherits = FALSE)) {
+      original_renderValueBox <- get("renderValueBox", envir = shiny_ns)
+      unlockBinding("renderValueBox", shiny_ns)
+      assign("renderValueBox", function(expr, env = parent.frame(), quoted = FALSE) {
+        if (!quoted) expr <- substitute(expr)
+        original_renderValueBox({
+          result <- tryCatch(eval(expr, envir = env), error = function(e) {
+            cat("[renderValueBox-override] Error:", conditionMessage(e), "\n", file = stderr())
+            safe_valueBox("Error", "Error", color = "red")
+          })
+          
+          # Ensure result is a proper valueBox with safe values
+          if (is.list(result) && "value" %in% names(result)) {
+            result$value <- scalar_chr(result$value, default = "—")
+          } else if (inherits(result, "shiny.tag")) {
+            # If it's already a tag, return as-is
+            return(result)
+          } else {
+            # Convert to safe valueBox
+            result <- safe_valueBox(
+              value = scalar_chr(result, default = "—"),
+              subtitle = result$subtitle %||% "Value",
+              icon = result$icon,
+              color = result$color %||% "aqua",
+              width = result$width %||% 4
+            )
+          }
+          
+          result
+        }, env = env, quoted = TRUE)
+      }, envir = shiny_ns)
+      lockBinding("renderValueBox", shiny_ns)
+      cat("✅ Global renderValueBox masking applied for crash prevention\n")
+    }
+  }, error = function(e) {
+    cat("[renderValueBox-hook] unable to override renderValueBox:", conditionMessage(e), "\n", file = stderr())
+  })
+}
+
 # Apply safe render wrappers for renderUI and renderPlotly where available
 if (exists("safe_renderUI") && is.function(safe_renderUI)) {
   renderUI <- safe_renderUI
@@ -462,7 +506,7 @@ options(
   }
 )
 
-# Instrument shiny's validateSingleValue to log zero-length issues
+# Instrument shiny's validateSingleValue to log zero-length issues and prevent crashes
 tryCatch({
   shiny_ns <- asNamespace("shiny")
   if (exists("validateSingleValue", envir = shiny_ns, inherits = FALSE)) {
@@ -471,11 +515,17 @@ tryCatch({
     assign("validateSingleValue", function(value, name, ...) {
       len <- length(value)
       if (len == 0L) {
-        cat("[validateSingleValue]", name, "len=0", "class=", paste(class(value), collapse = ","), "\n", file = stderr())
+        cat("[validateSingleValue] CRITICAL:", name, "len=0", "class=", paste(class(value), collapse = ","), "\n", file = stderr())
         value_str <- tryCatch(capture.output(str(value)), error = function(...) "<unable to str>")
         cat(paste(value_str, collapse = "\n"), "\n", file = stderr())
-        append_len0_summary("validateSingleValue", list(name = name, value_str = value_str))
+        
+        # Get stack trace for debugging
+        stack_trace <- tryCatch(capture.output(sys.calls()), error = function(...) "<unable to get stack>")
+        cat("Stack trace:\n", paste(stack_trace, collapse = "\n"), "\n", file = stderr())
+        
+        append_len0_summary("validateSingleValue", list(name = name, value_str = value_str, stack = stack_trace))
 
+        # Return safe fallback instead of crashing
         fallback <- switch(typeof(value),
           "logical" = NA,
           "integer" = NA_integer_,
@@ -483,10 +533,10 @@ tryCatch({
           "complex" = NA_complex_,
           "character" = "—",
           "raw" = raw(1),
-          NULL
+          "—"
         )
 
-        if (is.null(fallback)) fallback <- "—"
+        cat("[validateSingleValue] Returning safe fallback:", fallback, "for", name, "\n", file = stderr())
         return(fallback)
       }
 
@@ -499,6 +549,7 @@ tryCatch({
       original_validate(value, name, ...)
     }, envir = shiny_ns)
     lockBinding("validateSingleValue", shiny_ns)
+    cat("✅ validateSingleValue override installed for crash prevention\n")
   }
 }, error = function(e) {
   cat("[validateSingleValue-hook] unable to install tracer:", conditionMessage(e), "\n", file = stderr())
