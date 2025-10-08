@@ -54,49 +54,50 @@ fluidRow(
   uiOutput("exec_active_themes", width = 2)
 ),
 
+# TEMPORARILY DISABLED - Testing crash fix
 # Trend Visualizations Row
-fluidRow(
-  # Document Publication Trends
-  box(
-    title = "📈 Tendências de Publicação", 
-    status = "info", 
-    solidHeader = TRUE, 
-    width = 8,
-    plotlyOutput("exec_publication_trends", height = "300px"),
-    footer = "Padrões mensais de publicação em todas as jurisdições"
-  ),
-  # Geographic Distribution
-  box(
-    title = "🗺️ Distribuição Geográfica", 
-    status = "success", 
-    solidHeader = TRUE, 
-    width = 4,
-    plotlyOutput("exec_geographic_dist", height = "300px"),
-    footer = "Distribuição de documentos por estado"
-  )
-),
-
-# Legislative Themes and Recent Activity
-fluidRow(
-  # Top Legislative Themes
-  box(
-    title = "🏛️ Principais Temas Legislativos", 
-    status = "warning", 
-    solidHeader = TRUE, 
-    width = 6,
-    DT::dataTableOutput("exec_top_themes"),
-    footer = "Temas mais frequentes em todos os documentos"
-  ),
-  # Recent High-Impact Documents
-  box(
-    title = "📋 Documentos Recentes de Alto Impacto", 
-    status = "danger", 
-    solidHeader = TRUE, 
-    width = 6,
-    DT::dataTableOutput("exec_recent_docs"),
-    footer = "Últimos documentos legislativos importantes"
-  )
-),
+# fluidRow(
+#   # Document Publication Trends
+#   box(
+#     title = "📈 Tendências de Publicação",
+#     status = "info",
+#     solidHeader = TRUE,
+#     width = 8,
+#     plotlyOutput("exec_publication_trends", height = "300px"),
+#     footer = "Padrões mensais de publicação em todas as jurisdições"
+#   ),
+#   # Geographic Distribution
+#   box(
+#     title = "🗺️ Distribuição Geográfica",
+#     status = "success",
+#     solidHeader = TRUE,
+#     width = 4,
+#     plotlyOutput("exec_geographic_dist", height = "300px"),
+#     footer = "Distribuição de documentos por estado"
+#   )
+# ),
+#
+# # Legislative Themes and Recent Activity
+# fluidRow(
+#   # Top Legislative Themes
+#   box(
+#     title = "🏛️ Principais Temas Legislativos",
+#     status = "warning",
+#     solidHeader = TRUE,
+#     width = 6,
+#     DT::dataTableOutput("exec_top_themes"),
+#     footer = "Temas mais frequentes em todos os documentos"
+#   ),
+#   # Recent High-Impact Documents
+#   box(
+#     title = "📋 Documentos Recentes de Alto Impacto",
+#     status = "danger",
+#     solidHeader = TRUE,
+#     width = 6,
+#     DT::dataTableOutput("exec_recent_docs"),
+#     footer = "Últimos documentos legislativos importantes"
+#   )
+# ),
 
 # Data Quality and System Health
 fluidRow(
