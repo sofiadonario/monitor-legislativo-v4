@@ -38,8 +38,8 @@ fluidRow(
 
 # Critical Metrics Dashboard - Enhanced Value Boxes
 fluidRow(
-  valueBoxOutput("exec_total_docs", width = 3),
-  valueBoxOutput("exec_states_coverage", width = 3),
+  uiOutput("exec_total_docs", width = 3),
+  uiOutput("exec_states_coverage", width = 3),
   valueBoxOutput("exec_recent_additions", width = 3),
   valueBoxOutput("exec_data_freshness", width = 3)
 ),

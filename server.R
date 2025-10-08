@@ -154,25 +154,29 @@ server <- function(input, output, session) {
     }
   })
   
-  # Executive value boxes
-  output$exec_total_docs <- renderValueBox({
-    metrics <- dashboard_metrics()
-    safe_valueBox(
-      value = format(metrics$total_documents, big.mark = ","),
-      subtitle = "Documentos Legislativos",
-      icon = icon("file-text"),
-      color = "blue"
-    )
+  # Executive value boxes - ULTRA-SAFE: use renderUI instead of renderValueBox
+  output$exec_total_docs <- renderUI({
+    tryCatch({
+      metrics <- dashboard_metrics()
+      val <- scalar_chr(format(scalar_int(metrics$total_documents, 0), big.mark = ","), "0")
+      cat("[exec_total_docs] Rendering with value:", val, "\n", file = stderr())
+      valueBox(val, "Documentos Legislativos", icon = icon("file-text"), color = "blue", width = NULL)
+    }, error = function(e) {
+      cat("[exec_total_docs] CRASH PREVENTED:", e$message, "\n", file = stderr())
+      valueBox("—", "Documentos Legislativos", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+    })
   })
-  
-  output$exec_states_coverage <- renderValueBox({
-    metrics <- dashboard_metrics()
-    safe_valueBox(
-      value = paste0(metrics$states_with_docs, "/27"),
-      subtitle = "Estados Cobertos",
-      icon = icon("map"),
-      color = "green"
-    )
+
+  output$exec_states_coverage <- renderUI({
+    tryCatch({
+      metrics <- dashboard_metrics()
+      val <- scalar_chr(paste0(scalar_int(metrics$states_with_docs, 0), "/27"), "0/27")
+      cat("[exec_states_coverage] Rendering with value:", val, "\n", file = stderr())
+      valueBox(val, "Estados Cobertos", icon = icon("map"), color = "green", width = NULL)
+    }, error = function(e) {
+      cat("[exec_states_coverage] CRASH PREVENTED:", e$message, "\n", file = stderr())
+      valueBox("—", "Estados Cobertos", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+    })
   })
   
   output$exec_recent_additions <- renderValueBox({
