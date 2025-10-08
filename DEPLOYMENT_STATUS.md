@@ -4,14 +4,24 @@
 
 ### ✅ Code Status
 - **Branch**: `main`
-- **Latest Commit**: `79fef72` - "Add glue null guard to prevent empty scalar crashes"
-- **Pushed**: Yes (confirmed pushed to origin/main)
-- **Working Tree**: Clean (no uncommitted changes)
+- **Latest Commit**: `e37abe8` - "docs: update deployment status to latest commit"
+- **Previous Commit**: `80b475b` - "fix: comprehensive renderValueBox and validateSingleValue overrides"
+- **Pushed**: YES - just pushed at $(date)
+- **Working Tree**: Modified (.claude/settings.local.json - OK to ignore)
 
 ### 🚂 Railway Deployment
-- **Status**: Deployment triggered by push to main
-- **Expected**: New build with overrides should be starting/running
-- **Note**: Railway may take 3-5 minutes to build and deploy
+- **Previous Deploy**: Was running OLD commit `afe04e6a` (missing namespace overrides!)
+- **Status**: NEW deployment should be triggering from push to main
+- **Expected**: Build with COMPLETE namespace-level overrides
+- **Critical**: Must see "Installing safety overrides for shiny render functions..." in logs
+- **Note**: Railway takes 3-5 minutes to build and deploy
+
+### ⚠️ Previous Issue Identified
+Railway was running an old commit that had:
+- ✅ Global masking (safe_renderText assignment)
+- ❌ Missing namespace-level overrides (the critical ones!)
+
+This is why crashes still showed generic errors without diagnostic output.
 
 ---
 
@@ -50,18 +60,51 @@ All overrides are in `global.R` lines 133-282:
 
 ## 🔍 What To Look For In Next Logs
 
+### ⚡ CRITICAL: Namespace Override Installation
+
+**The previous deployment (`afe04e6a`) showed:**
+```
+✅ Global valueBox masking applied for crash prevention
+✅ Global renderText masking applied for crash prevention
+✅ Global renderUI masking applied for crash prevention
+✅ Global renderPlotly masking applied for crash prevention
+```
+
+**The NEW deployment (`e37abe8`) MUST show:**
+```
+Installing safety overrides for shiny render functions...
+✅ shiny::renderText override installed
+✅ shiny::renderUI override installed
+✅ plotly::renderPlotly override installed
+✅ validateSingleValue override installed for crash prevention
+Safety override installation complete
+```
+
+**PLUS the global masking messages.**
+
+⚠️ If you DON'T see "Installing safety overrides for shiny render functions...", the namespace overrides aren't loading!
+
 ### If Crash Still Happens
 
-**OLD LOGS (before override deployment):**
+**OLD LOGS (before namespace overrides):**
 ```
 Error: Expecting a single value: [extent=0]
 ```
+(No diagnostic output - crash kills the app)
 
-**NEW LOGS (with overrides deployed):**
+**NEW LOGS (with namespace overrides working):**
+```
+[validateSingleValue] CRITICAL: extent len=0 class= numeric
+Stack trace:
+...
+[validateSingleValue] Returning safe fallback: NA for extent
+```
+OR:
 ```
 [renderText-override] Vector leak detected (length: 0) - using first value
-[validateSingleValue] total_documents_processed len=0 class=numeric
 ```
+
+**Key difference**: The app should NOT crash - it should return fallback values and log detailed diagnostics.
 
 ### Diagnostic Log Patterns
 
