@@ -47,7 +47,21 @@ if (requireNamespace("shiny", quietly = TRUE)) {
 if (requireNamespace("shiny", quietly = TRUE)) {
   tryCatch({
     shiny_ns <- asNamespace("shiny")
-    if (exists("validateSingleValue", envir = shiny_ns, inherits = FALSE)) {
+    cat("[DEBUG] Checking for validateSingleValue in shiny namespace...\n", file = stderr())
+
+    # Check if validateSingleValue exists
+    vsv_exists <- exists("validateSingleValue", envir = shiny_ns, inherits = FALSE)
+    cat("[DEBUG] validateSingleValue exists:", vsvexists, "\n", file = stderr())
+
+    # Try different export methods
+    if (!vsv_exists) {
+      # Try without inherits restriction
+      vsvexists <- exists("validateSingleValue", envir = shiny_ns, inherits = TRUE)
+      cat("[DEBUG] validateSingleValue with inherits=TRUE:", vsvexists, "\n", file = stderr())
+    }
+
+    if (vsvexists) {
+      cat("[DEBUG] Attempting to override validateSingleValue...\n", file = stderr())
       original_validate <- get("validateSingleValue", envir = shiny_ns)
       unlockBinding("validateSingleValue", shiny_ns)
       assign("validateSingleValue", function(value, name, ...) {
@@ -73,9 +87,17 @@ if (requireNamespace("shiny", quietly = TRUE)) {
       }, envir = shiny_ns)
       lockBinding("validateSingleValue", shiny_ns)
       cat("✅ [ui_utils.R] shiny::validateSingleValue namespace override installed\n", file = stderr())
+    } else {
+      cat("⚠️  [ui_utils.R] validateSingleValue NOT FOUND in shiny namespace\n", file = stderr())
+      # List what IS in the namespace
+      cat("[DEBUG] Shiny namespace contents related to 'validate':\n", file = stderr())
+      shiny_names <- ls(envir = shiny_ns)
+      validate_funcs <- grep("validate", shiny_names, ignore.case = TRUE, value = TRUE)
+      cat(paste(validate_funcs, collapse = ", "), "\n", file = stderr())
     }
   }, error = function(e) {
     cat("⚠️  [ui_utils.R] Failed to override validateSingleValue:", conditionMessage(e), "\n", file = stderr())
+    cat("[DEBUG] Error details:", e$message, "\n", file = stderr())
   })
 }
 
