@@ -295,6 +295,9 @@ RUN R -e "options(repos = c(CRAN = 'https://packagemanager.rstudio.com/cran/__li
 # Set working directory
 WORKDIR /app
 
+# Cache buster - forces rebuild of application files layer
+ARG CACHE_DATE=2025-01-07
+
 # Copy essential application files
 COPY app_railway.R ./
 COPY start.R ./
