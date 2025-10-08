@@ -146,13 +146,18 @@ fluidRow(
       )
     )
   ),
-  # System Health
+  # System Health - DISABLED (no server code)
   box(
-    title = "🔧 Status do Sistema", 
-    status = "success", 
-    solidHeader = TRUE, 
+    title = "🔧 Status do Sistema",
+    status = "success",
+    solidHeader = TRUE,
     width = 4,
-    uiOutput("exec_system_health"),
+    # TEMPORARILY DISABLED - Testing crash fix (orphaned output)
+    # uiOutput("exec_system_health"),
+    div(
+      style = "padding: 20px; text-align: center;",
+      p("Status do sistema em desenvolvimento", style = "color: #7f8c8d;")
+    ),
     footer = "Monitoramento em tempo real"
   )
 )
