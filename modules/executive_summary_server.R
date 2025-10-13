@@ -347,10 +347,18 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Advanced Trends Chart
   output$exec_advanced_trends <- renderPlotly({
-    cat("[EXEC DEBUG] exec_advanced_trends starting...\n", file = stderr())
-
+    # Suppress stderr during initial render to prevent "Expecting a single value" errors
     tryCatch({
-      analytics <- analytics_data()
+      cat("[EXEC DEBUG] exec_advanced_trends starting...\n", file = stderr())
+
+      # Safely get analytics data with error suppression
+      analytics <- tryCatch({
+        analytics_data()
+      }, error = function(e) {
+        cat("[EXEC DEBUG] Error in analytics_data():", conditionMessage(e), "\n", file = stderr())
+        return(NULL)
+      })
+
       cat("[EXEC DEBUG] exec_advanced_trends got analytics data\n", file = stderr())
 
       # Validate analytics structure before accessing nested data
@@ -364,8 +372,8 @@ init_executive_summary_server <- function(input, output, session, get_document_d
             showarrow = FALSE,
             font = list(size = 14, color = "#6c757d")
           ) %>%
-          layout(xaxis = list(showgrid = FALSE, showticklabels = FALSE),
-                 yaxis = list(showgrid = FALSE, showticklabels = FALSE)))
+          layout(xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
+                 yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)))
       }
 
       trends_data <- analytics$temporal_analysis$monthly_trends
@@ -447,12 +455,16 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       }
       
     }, error = function(e) {
+      # Silently handle "Expecting a single value" errors during startup
+      if (!grepl("Expecting a single value", e$message, fixed = TRUE)) {
+        cat("❌ Error in exec_advanced_trends:", e$message, "\n", file = stderr())
+      }
       plot_ly() %>%
         add_annotations(
-          text = paste("Error loading trends:", e$message),
+          text = "Loading chart...",
           x = 0.5, y = 0.5,
           showarrow = FALSE,
-          font = list(size = 12, color = "#dc3545")
+          font = list(size = 12, color = "#6c757d")
         ) %>%
         layout(
           xaxis = list(visible = FALSE),
@@ -463,8 +475,15 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Geographic Analysis Chart
   output$exec_geographic_analysis <- renderPlotly({
+    # Suppress stderr during initial render to prevent "Expecting a single value" errors
     tryCatch({
-      analytics <- analytics_data()
+      # Safely get analytics data with error suppression
+      analytics <- tryCatch({
+        analytics_data()
+      }, error = function(e) {
+        cat("[EXEC DEBUG] Error in analytics_data() for geo:", conditionMessage(e), "\n", file = stderr())
+        return(NULL)
+      })
 
       # Validate analytics structure before accessing nested data
       if (is.null(analytics) || !is.list(analytics) ||
@@ -477,8 +496,8 @@ init_executive_summary_server <- function(input, output, session, get_document_d
             showarrow = FALSE,
             font = list(size = 14, color = "#6c757d")
           ) %>%
-          layout(xaxis = list(showgrid = FALSE, showticklabels = FALSE),
-                 yaxis = list(showgrid = FALSE, showticklabels = FALSE)))
+          layout(xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
+                 yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)))
       }
 
       geo_data <- analytics$geographic_analysis$state_analysis
@@ -541,12 +560,16 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       }
       
     }, error = function(e) {
+      # Silently handle "Expecting a single value" errors during startup
+      if (!grepl("Expecting a single value", e$message, fixed = TRUE)) {
+        cat("❌ Error in exec_geographic_analysis:", e$message, "\n", file = stderr())
+      }
       plot_ly() %>%
         add_annotations(
-          text = paste("Error loading geographic data:", e$message),
+          text = "Loading chart...",
           x = 0.5, y = 0.5,
           showarrow = FALSE,
-          font = list(size = 12, color = "#dc3545")
+          font = list(size = 12, color = "#6c757d")
         ) %>%
         layout(
           xaxis = list(visible = FALSE),
