@@ -57,6 +57,21 @@ Error: Expecting a single value: [extent=0].
 - **Actual result:** No guard logs emitted; extent errors persist, suggesting `validate(need())` guards may be swallowed by the existing tryCatch plumbing.
 - **Action taken:** Updated error handler to rethrow `shiny.silent.error` validations so startup gating can short-circuit renderers without triggering fallback plotly calls.
 
+### Follow-up Observation (October 13, 2025 14:58, validate rethrow redeploy)
+
+**Railway deployment:** `monitor-legislativo-unified / 9560eae0`
+
+**Excerpt:**
+```
+Listening on http://0.0.0.0:3838
+Error: Expecting a single value: [extent=0].
+Error: Expecting a single value: [extent=0].
+```
+
+- **Result:** Extent errors persist, still no `[EXEC GUARD]` markers.
+- **Hypothesis:** Analytics structures contain single-point/constant data that passes structural checks but still collapses Plotly's extent.
+- **Remediation:** Strengthened guards to require ≥2 distinct periods/values (temporal) and ≥2 regions/value variations (geographic) before rendering, otherwise surface `validate(need())` messages.
+
 ---
 
 ## Problem Statement
@@ -211,6 +226,9 @@ if (is.null(analytics) || !is.list(analytics) ||
 2. **Placeholder Strategy Revision (October 13, 2025 14:30)**
    - Replaced placeholder plotly calls with `validate(need(...))` gating to avoid invoking plotly on empty data
    - Ensures Shiny displays informative "Loading..." / "No data" messages without triggering extent calculations
+3. **Variation Guard (October 13, 2025 14:58)**
+   - Require multiple distinct periods/values before chart render
+   - Prevent plotly layout calculations when dataset collapses to a single point
 
 ---
 
@@ -228,6 +246,7 @@ if (is.null(analytics) || !is.list(analytics) ||
 - 🆕 Added guard instrumentation logs (`[EXEC GUARD]`, `[EXEC DEBUG]`, `[EXEC SUPPRESS]`) to confirm placeholder paths execute before plotly renders (pending redeploy validation)
 - 🆕 October 13, 2025 14:30: Swapped placeholder plots for Shiny `validate(need())` gates to stop plotly from running on empty data
 - 🆕 October 13, 2025 14:55: Adjusted error handlers to rethrow `shiny.silent.error` so validate gates are honored
+- 🆕 October 13, 2025 14:58: Added variation checks (period/value distinctness) before plotly renders
 
 **Lines 473-579:** `exec_geographic_analysis` renderPlotly
 - Mirror changes to trends chart
@@ -235,6 +254,7 @@ if (is.null(analytics) || !is.list(analytics) ||
 - 🆕 Added guard instrumentation logs mirroring temporal chart (pending redeploy validation)
 - 🆕 October 13, 2025 14:30: Applied identical `validate(need())` gating to geographic chart
 - 🆕 October 13, 2025 14:55: Adjusted error handlers to rethrow `shiny.silent.error` so validate gates are honored
+- 🆕 October 13, 2025 14:58: Added column presence and variation checks before plotly renders
 
 **Line 597:** `create_fallback_analytics()`
 - Added `monthly_trends = data.frame()` to temporal_analysis structure
@@ -298,7 +318,7 @@ Error: Expecting a single value: [extent=0].
 5. **Test data loads properly** once analytics complete
 6. **Instrument guard execution** to confirm suppression logic runs (🆕 instrumentation added; watch for `[EXEC GUARD]` logs)
 7. **Validate suppression handler** emits `[EXEC SUPPRESS]` when extent error is trapped (🆕 follow-up; first redeploy showed none)
-8. **Verify `validate(need())` messages** appear instead of extent errors on next deployment (pending after error handler rethrow change)
+8. **Verify `validate(need())` messages** appear instead of extent errors on next deployment (pending after variation guard change)
 
 ### Regression Prevention
 

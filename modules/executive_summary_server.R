@@ -384,6 +384,16 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         validate(need(FALSE, "No temporal data available yet"))
       }
 
+      # Require at least two distinct points before rendering
+      y_values <- suppressWarnings(as.numeric(trends_data$document_count))
+      distinct_periods <- length(unique(trends_data$year_month))
+      distinct_values <- length(unique(y_values[!is.na(y_values)]))
+      if (is.na(y_values[1]) || distinct_periods < 2 || distinct_values < 2) {
+        cat(sprintf("[EXEC GUARD] exec_advanced_trends insufficient variation (periods=%d, values=%d) – validating\n",
+                    distinct_periods, distinct_values), file = stderr())
+        validate(need(FALSE, "Waiting for additional temporal data..."))
+      }
+
       cat("[EXEC DEBUG] exec_advanced_trends rendering trends chart\n", file = stderr())
 
       # Create base plot
@@ -504,8 +514,6 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         validate(need(FALSE, "No geographic data available yet"))
       }
 
-      cat("[EXEC DEBUG] exec_geographic_analysis rendering geographic chart\n", file = stderr())
-      
       # Select metric based on input
       metric_col <- switch(input$exec_geo_metric %||% "count",
         "count" = "document_count",
@@ -520,6 +528,26 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         "transport" = "Transport Focus %",
         "recent" = "Recent Activity"
       )
+
+      if (!metric_col %in% names(geo_data)) {
+        cat("[EXEC GUARD] exec_geographic_analysis metric column missing – validating\n", file = stderr())
+        validate(need(FALSE, "Loading geographic data..."))
+      }
+      if (!"state_clean" %in% names(geo_data)) {
+        cat("[EXEC GUARD] exec_geographic_analysis state_clean column missing – validating\n", file = stderr())
+        validate(need(FALSE, "Loading geographic data..."))
+      }
+
+      metric_values <- suppressWarnings(as.numeric(geo_data[[metric_col]]))
+      distinct_regions <- length(unique(geo_data$state_clean))
+      distinct_metric <- length(unique(metric_values[!is.na(metric_values)]))
+      if (is.na(metric_values[1]) || distinct_regions < 2 || distinct_metric < 2) {
+        cat(sprintf("[EXEC GUARD] exec_geographic_analysis insufficient variation (regions=%d, values=%d) – validating\n",
+                    distinct_regions, distinct_metric), file = stderr())
+        validate(need(FALSE, "Waiting for additional geographic data..."))
+      }
+
+      cat("[EXEC DEBUG] exec_geographic_analysis rendering geographic chart\n", file = stderr())
       
       # Create bar chart
       geo_data_top <- head(geo_data[order(geo_data[[metric_col]], decreasing = TRUE), ], 15)
