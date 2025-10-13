@@ -147,6 +147,26 @@ cat("Installing safety overrides for shiny render functions...\n")
 # Override shiny::renderText
 tryCatch({
   shiny_ns <- asNamespace("shiny")
+  # Hook validate() to capture stack traces for "Expecting a single value" errors
+  if (exists("validate", envir = shiny_ns, inherits = FALSE)) {
+    original_validate <- get("validate", envir = shiny_ns)
+    unlockBinding("validate", shiny_ns)
+    assign("validate", function(...) {
+      tryCatch(
+        original_validate(...),
+        error = function(e) {
+          if (grepl("Expecting a single value", conditionMessage(e), fixed = TRUE)) {
+            cat("[TRACE] shiny::validate intercepted extent error\n", file = stderr())
+            stack <- tryCatch(utils::capture.output(sys.calls()), error = function(...) "<stack unavailable>")
+            cat(paste(stack, collapse = "\n"), "\n", file = stderr())
+          }
+          stop(e)
+        }
+      )
+    }, envir = shiny_ns)
+    lockBinding("validate", shiny_ns)
+    cat("✅ shiny::validate override installed for stack tracing\n")
+  }
   if (exists("renderText", envir = shiny_ns)) {
     original_renderText <- get("renderText", envir = shiny_ns)
     unlockBinding("renderText", shiny_ns)
