@@ -348,13 +348,29 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   # Advanced Trends Chart
   output$exec_advanced_trends <- renderPlotly({
     cat("[EXEC DEBUG] exec_advanced_trends starting...\n", file = stderr())
-    analytics <- analytics_data()
-    cat("[EXEC DEBUG] exec_advanced_trends got analytics data\n", file = stderr())
-    
+
     tryCatch({
+      analytics <- analytics_data()
+      cat("[EXEC DEBUG] exec_advanced_trends got analytics data\n", file = stderr())
+
+      # Validate analytics structure before accessing nested data
+      if (is.null(analytics) || !is.list(analytics) ||
+          is.null(analytics$temporal_analysis) ||
+          !is.list(analytics$temporal_analysis)) {
+        return(plot_ly() %>%
+          add_annotations(
+            text = "Loading analytics data...",
+            x = 0.5, y = 0.5,
+            showarrow = FALSE,
+            font = list(size = 14, color = "#6c757d")
+          ) %>%
+          layout(xaxis = list(showgrid = FALSE, showticklabels = FALSE),
+                 yaxis = list(showgrid = FALSE, showticklabels = FALSE)))
+      }
+
       trends_data <- analytics$temporal_analysis$monthly_trends
-      
-      if (!is.null(trends_data) && nrow(trends_data) > 0) {
+
+      if (!is.null(trends_data) && is.data.frame(trends_data) && nrow(trends_data) > 0) {
         
         # Create base plot
         p <- plot_ly(trends_data, x = ~year_month) %>%
@@ -447,12 +463,27 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Geographic Analysis Chart
   output$exec_geographic_analysis <- renderPlotly({
-    analytics <- analytics_data()
-    
     tryCatch({
+      analytics <- analytics_data()
+
+      # Validate analytics structure before accessing nested data
+      if (is.null(analytics) || !is.list(analytics) ||
+          is.null(analytics$geographic_analysis) ||
+          !is.list(analytics$geographic_analysis)) {
+        return(plot_ly() %>%
+          add_annotations(
+            text = "Loading geographic data...",
+            x = 0.5, y = 0.5,
+            showarrow = FALSE,
+            font = list(size = 14, color = "#6c757d")
+          ) %>%
+          layout(xaxis = list(showgrid = FALSE, showticklabels = FALSE),
+                 yaxis = list(showgrid = FALSE, showticklabels = FALSE)))
+      }
+
       geo_data <- analytics$geographic_analysis$state_analysis
-      
-      if (!is.null(geo_data) && nrow(geo_data) > 0) {
+
+      if (!is.null(geo_data) && is.data.frame(geo_data) && nrow(geo_data) > 0) {
         
         # Select metric based on input
         metric_col <- switch(input$exec_geo_metric %||% "count",
@@ -563,6 +594,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         alert_count = 0
       ),
       temporal_analysis = list(
+        monthly_trends = data.frame(),
         summary = list(recent_monthly_avg = 0),
         statistical_insights = list(year_over_year_growth = NA),
         forecast_results = NULL
