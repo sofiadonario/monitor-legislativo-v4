@@ -242,6 +242,7 @@ analytics_server <- function(input, output, session, get_data) {
     
     # Temporal trend plot
     output$temporal_trend_plot <- safe_renderPlotly({
+      cat("[TRACE] analytics:temporal_trend_plot start\n", file = stderr())
       if ("temporal_summary" %in% names(temporal_results) && has_rows(temporal_results$temporal_summary)) {
         
         temporal_data <- temporal_results$temporal_summary
@@ -349,6 +350,8 @@ analytics_server <- function(input, output, session, get_data) {
     # Categorization plot
     output$categorization_plot <- renderPlotly({
       
+      cat("[TRACE] analytics:categorization_plot start\n", file = stderr())
+      
       if ("categorization_summary" %in% names(categorization_results) &&
           "legal_type_distribution" %in% names(categorization_results$categorization_summary)) {
         
@@ -455,6 +458,7 @@ analytics_server <- function(input, output, session, get_data) {
     
     # Federal system plot
     output$federal_system_plot <- renderPlotly({
+      cat("[TRACE] analytics:federal_system_plot start\n", file = stderr())
       
       if ("federal_system_analysis" %in% names(legal_context_results) &&
           "authority_distribution" %in% names(legal_context_results$federal_system_analysis)) {
@@ -556,6 +560,7 @@ analytics_server <- function(input, output, session, get_data) {
     
     # Productivity plot
     output$productivity_plot <- renderPlotly({
+      cat("[TRACE] analytics:productivity_plot start\n", file = stderr())
       
       if ("productivity_summary" %in% names(productivity_results)) {
         

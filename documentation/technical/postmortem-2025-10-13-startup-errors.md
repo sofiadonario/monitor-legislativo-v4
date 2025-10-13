@@ -72,6 +72,20 @@ Error: Expecting a single value: [extent=0].
 - **Hypothesis:** Analytics structures contain single-point/constant data that passes structural checks but still collapses Plotly's extent.
 - **Remediation:** Strengthened guards to require ≥2 distinct periods/values (temporal) and ≥2 regions/value variations (geographic) before rendering, otherwise surface `validate(need())` messages.
 
+### Follow-up Observation (October 13, 2025 15:22, post-variation guard redeploy)
+
+**Railway deployment:** `monitor-legislativo-unified / 30d07806`
+
+**Excerpt:**
+```
+Listening on http://0.0.0.0:3838
+Error: Expecting a single value: [extent=0].
+Error: Expecting a single value: [extent=0].
+```
+
+- **Result:** Extent errors persist; still no `[EXEC DEBUG]`/`[EXEC GUARD]` instrumentation in logs.
+- **Inference:** Startup noise likely originates from a different `renderPlotly()` handler that executes before the executive summary guards. Expanded investigation required to identify the true emitter.
+
 ---
 
 ## Problem Statement
@@ -229,6 +243,9 @@ if (is.null(analytics) || !is.list(analytics) ||
 3. **Variation Guard (October 13, 2025 14:58)**
    - Require multiple distinct periods/values before chart render
    - Prevent plotly layout calculations when dataset collapses to a single point
+4. **Cross-Module Instrumentation (October 13, 2025 15:40)**
+   - Added `[TRACE] analytics:*` markers to key `renderPlotly` handlers in `modules/analytics/analytics_server.R`
+   - Added `[TRACE] library_analytics:*` markers to library analytics dashboard charts to pinpoint startup emitter
 
 ---
 
@@ -319,6 +336,7 @@ Error: Expecting a single value: [extent=0].
 6. **Instrument guard execution** to confirm suppression logic runs (🆕 instrumentation added; watch for `[EXEC GUARD]` logs)
 7. **Validate suppression handler** emits `[EXEC SUPPRESS]` when extent error is trapped (🆕 follow-up; first redeploy showed none)
 8. **Verify `validate(need())` messages** appear instead of extent errors on next deployment (pending after variation guard change)
+9. **Monitor `[TRACE] analytics:*` / `[TRACE] library_analytics:*` logs** to identify which module triggers the extent error (🆕 instrumentation)
 
 ### Regression Prevention
 

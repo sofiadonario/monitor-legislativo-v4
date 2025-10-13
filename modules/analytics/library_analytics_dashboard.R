@@ -392,6 +392,7 @@ library_analytics_server <- function(input, output, session) {
   
   # Search volume timeline
   output$search_volume_timeline <- renderPlotly({
+    cat("[TRACE] library_analytics:search_volume_timeline start\n", file = stderr())
     if (nrow(analytics_data$search_metrics) == 0) {
       # Generate sample data for demonstration
       sample_data <- data.frame(
@@ -422,6 +423,7 @@ library_analytics_server <- function(input, output, session) {
   
   # Performance metrics chart
   output$performance_metrics_chart <- renderPlotly({
+    cat("[TRACE] library_analytics:performance_metrics_chart start\n", file = stderr())
     # Sample performance data
     performance_data <- data.frame(
       timestamp = seq(Sys.time() - 3600, Sys.time(), by = "5 min"),
@@ -452,6 +454,7 @@ library_analytics_server <- function(input, output, session) {
   
   # Popular categories chart
   output$popular_categories_chart <- renderPlotly({
+    cat("[TRACE] library_analytics:popular_categories_chart start\n", file = stderr())
     category_data <- data.frame(
       category = c("Jurisprudência", "Legislação", "Doutrina", "Outros", "Proposições"),
       count = c(54617, 51086, 12809, 13850, 1651),
@@ -474,6 +477,7 @@ library_analytics_server <- function(input, output, session) {
   
   # Geographic usage chart
   output$geographic_usage_chart <- renderPlotly({
+    cat("[TRACE] library_analytics:geographic_usage_chart start\n", file = stderr())
     geo_data <- data.frame(
       state = c("SP", "MG", "RJ", "DF", "SC", "PR", "RS", "BA"),
       searches = c(1250, 890, 670, 580, 320, 290, 260, 210)
@@ -496,6 +500,7 @@ library_analytics_server <- function(input, output, session) {
   
   # Top search terms chart
   output$top_search_terms_chart <- renderPlotly({
+    cat("[TRACE] library_analytics:top_search_terms_chart start\n", file = stderr())
     terms_data <- data.frame(
       term = c("transporte", "mobilidade", "responsabilidade civil", "ANTT", 
                "código trânsito", "logística", "segurança", "regulamentação"),
