@@ -446,6 +446,9 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         )
       
     }, error = function(e) {
+      if (inherits(e, "shiny.silent.error")) {
+        stop(e)
+      }
       # Silently handle "Expecting a single value" errors during startup
       if (!grepl("Expecting a single value", e$message, fixed = TRUE)) {
         cat("❌ Error in exec_advanced_trends:", e$message, "\n", file = stderr())
@@ -544,6 +547,9 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         )
       
     }, error = function(e) {
+      if (inherits(e, "shiny.silent.error")) {
+        stop(e)
+      }
       # Silently handle "Expecting a single value" errors during startup
       if (!grepl("Expecting a single value", e$message, fixed = TRUE)) {
         cat("❌ Error in exec_geographic_analysis:", e$message, "\n", file = stderr())

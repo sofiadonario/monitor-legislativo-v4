@@ -42,6 +42,21 @@ Error: Expecting a single value: [extent=0].
 - **Instrumentation result:** No `[EXEC GUARD]` or `[EXEC SUPPRESS]` entries surfaced in startup logs, implying the defensive branches did not short-circuit before plotly executed.
 - **Conclusion:** The selective suppression remains ineffective; guard strategy updated to block plotly entirely until data ready.
 
+### Follow-up Observation (October 13, 2025 14:48, validate-gate redeploy)
+
+**Railway deployment:** `monitor-legislativo-unified / 9248a74d`
+
+**Excerpt:**
+```
+Listening on http://0.0.0.0:3838
+Error: Expecting a single value: [extent=0].
+Error: Expecting a single value: [extent=0].
+```
+
+- **Expected log markers:** `[EXEC DEBUG]`, `[EXEC GUARD]` from validate checks.
+- **Actual result:** No guard logs emitted; extent errors persist, suggesting `validate(need())` guards may be swallowed by the existing tryCatch plumbing.
+- **Action taken:** Updated error handler to rethrow `shiny.silent.error` validations so startup gating can short-circuit renderers without triggering fallback plotly calls.
+
 ---
 
 ## Problem Statement
@@ -212,12 +227,14 @@ if (is.null(analytics) || !is.list(analytics) ||
 - Safe placeholder return on all error paths
 - 🆕 Added guard instrumentation logs (`[EXEC GUARD]`, `[EXEC DEBUG]`, `[EXEC SUPPRESS]`) to confirm placeholder paths execute before plotly renders (pending redeploy validation)
 - 🆕 October 13, 2025 14:30: Swapped placeholder plots for Shiny `validate(need())` gates to stop plotly from running on empty data
+- 🆕 October 13, 2025 14:55: Adjusted error handlers to rethrow `shiny.silent.error` so validate gates are honored
 
 **Lines 473-579:** `exec_geographic_analysis` renderPlotly
 - Mirror changes to trends chart
 - Same defensive patterns applied
 - 🆕 Added guard instrumentation logs mirroring temporal chart (pending redeploy validation)
 - 🆕 October 13, 2025 14:30: Applied identical `validate(need())` gating to geographic chart
+- 🆕 October 13, 2025 14:55: Adjusted error handlers to rethrow `shiny.silent.error` so validate gates are honored
 
 **Line 597:** `create_fallback_analytics()`
 - Added `monthly_trends = data.frame()` to temporal_analysis structure
@@ -281,7 +298,7 @@ Error: Expecting a single value: [extent=0].
 5. **Test data loads properly** once analytics complete
 6. **Instrument guard execution** to confirm suppression logic runs (🆕 instrumentation added; watch for `[EXEC GUARD]` logs)
 7. **Validate suppression handler** emits `[EXEC SUPPRESS]` when extent error is trapped (🆕 follow-up; first redeploy showed none)
-8. **Verify `validate(need())` messages** appear instead of extent errors on next deployment (🆕 change)
+8. **Verify `validate(need())` messages** appear instead of extent errors on next deployment (pending after error handler rethrow change)
 
 ### Regression Prevention
 
