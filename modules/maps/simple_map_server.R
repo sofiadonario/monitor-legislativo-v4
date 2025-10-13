@@ -6,6 +6,7 @@ cat("Loading simple map server implementation...\n")
 # Main interactive Brazil map
 output$interactive_brazil_map <- renderPlotly({
   tryCatch({
+    cat("[TRACE] maps_simple:interactive_brazil_map start\n", file = stderr())
     cat("🗺️ Starting interactive Brazil map generation (simple)\n")
     
     # Get data
@@ -77,6 +78,7 @@ output$interactive_brazil_map <- renderPlotly({
 # Municipality detail map
 output$municipality_detail_map <- renderPlotly({
   tryCatch({
+    cat("[TRACE] maps_simple:municipality_detail_map start\n", file = stderr())
     # Simple bar chart of top states by document count
     data <- analytics_data()
     if (exists("clean_map_data")) {
@@ -116,6 +118,7 @@ output$municipality_detail_map <- renderPlotly({
 # Temporal evolution map
 output$temporal_map_animation <- renderPlotly({
   tryCatch({
+    cat("[TRACE] maps_simple:temporal_map_animation start\n", file = stderr())
     data <- analytics_data()
     if (exists("clean_map_data")) {
       data <- clean_map_data(data)

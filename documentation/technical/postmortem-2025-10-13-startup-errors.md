@@ -86,6 +86,21 @@ Error: Expecting a single value: [extent=0].
 - **Result:** Extent errors persist; still no `[EXEC DEBUG]`/`[EXEC GUARD]` instrumentation in logs.
 - **Inference:** Startup noise likely originates from a different `renderPlotly()` handler that executes before the executive summary guards. Expanded investigation required to identify the true emitter.
 
+### Follow-up Observation (October 13, 2025 15:39, cross-module trace redeploy)
+
+**Railway deployment:** `monitor-legislativo-unified / 8da2e212`
+
+**Excerpt:**
+```
+Listening on http://0.0.0.0:3838
+Error: Expecting a single value: [extent=0].
+Error: Expecting a single value: [extent=0].
+```
+
+- **Trace expectation:** Logs should now contain `[TRACE] analytics:*` or `[TRACE] library_analytics:*` before any extent error.
+- **Observation:** Production logs still show only the two extent errors—no trace markers—indicating the emitting handler is likely outside the instrumented analytics modules.
+- **Next step:** Expand instrumentation to additional `renderPlotly` outputs (maps, São Paulo module, geographic dashboards) until the emitter is identified.
+
 ---
 
 ## Problem Statement
@@ -246,6 +261,7 @@ if (is.null(analytics) || !is.list(analytics) ||
 4. **Cross-Module Instrumentation (October 13, 2025 15:40)**
    - Added `[TRACE] analytics:*` markers to key `renderPlotly` handlers in `modules/analytics/analytics_server.R`
    - Added `[TRACE] library_analytics:*` markers to library analytics dashboard charts to pinpoint startup emitter
+   - Added `[TRACE] maps_simple:*` and `[TRACE] sao_paulo:*` markers to map and São Paulo modules to continue narrowing the source
 
 ---
 

@@ -149,6 +149,7 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   # ============================================================================
   
   output$sp_transport_modals <- renderPlotly({
+    cat("[TRACE] sao_paulo:sp_transport_modals start\n", file = stderr())
     sp_data <- sp_analytics_data()
     
     if (!is.null(sp_data$transport_modals$modal_distribution)) {
@@ -199,6 +200,7 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   })
   
   output$sp_transport_temporal <- renderPlotly({
+    cat("[TRACE] sao_paulo:sp_transport_temporal start\n", file = stderr())
     # Enhanced temporal analysis
     temporal_data <- data.frame(
       year = rep(2015:2024, 4),
@@ -247,6 +249,7 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   })
   
   output$sp_transport_geographic <- renderPlotly({
+    cat("[TRACE] sao_paulo:sp_transport_geographic start\n", file = stderr())
     # Geographic distribution by RMSP municipalities
     geographic_data <- data.frame(
       municipality = c("São Paulo", "Guarulhos", "Campinas", "São Bernardo do Campo", "Santo André",
@@ -318,6 +321,7 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   # ============================================================================
   
   output$rmsp_cooperation <- renderPlotly({
+    cat("[TRACE] sao_paulo:rmsp_cooperation start\n", file = stderr())
     # RMSP inter-municipal cooperation analysis
     cooperation_data <- data.frame(
       municipality = c("São Paulo", "Guarulhos", "São Bernardo", "Santo André", "Campinas",
@@ -383,6 +387,7 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   })
   
   output$rmsp_policy_themes <- renderPlotly({
+    cat("[TRACE] sao_paulo:rmsp_policy_themes start\n", file = stderr())
     themes_data <- data.frame(
       theme = c("Metro Integration", "Regional Development", "Environmental Coordination", 
                "Economic Development", "Urban Planning", "Public Services"),
@@ -418,6 +423,7 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   # ============================================================================
   
   output$sp_state_comparison <- renderPlotly({
+    cat("[TRACE] sao_paulo:sp_state_comparison start\n", file = stderr())
     comparison_data <- data.frame(
       state = c("São Paulo", "Rio de Janeiro", "Minas Gerais", "Rio Grande do Sul", 
                "Paraná", "Santa Catarina", "Bahia", "Goiás"),
@@ -471,6 +477,7 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   })
   
   output$sp_leadership_trends <- renderPlotly({
+    cat("[TRACE] sao_paulo:sp_leadership_trends start\n", file = stderr())
     trends_data <- data.frame(
       year = rep(2015:2024, 3),
       state = rep(c("São Paulo", "Rio de Janeiro", "Minas Gerais"), each = 10),
@@ -512,6 +519,7 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   # ============================================================================
   
   output$sp_policy_innovation <- renderPlotly({
+    cat("[TRACE] sao_paulo:sp_policy_innovation start\n", file = stderr())
     innovation_data <- data.frame(
       area = c("Urban Mobility Integration", "Environmental Transport", "Digital Government", 
               "PPP Frameworks", "Metropolitan Governance", "Regulatory Sandboxes"),
@@ -543,6 +551,7 @@ sao_paulo_server <- function(input, output, session, analytics_data) {
   })
   
   output$sp_economic_correlation <- renderPlotly({
+    cat("[TRACE] sao_paulo:sp_economic_correlation start\n", file = stderr())
     correlation_data <- data.frame(
       policy_area = c("Transport Infrastructure", "Digital Services", "Environmental Regulation", 
                      "Economic Development", "Urban Planning", "Innovation Policy"),
