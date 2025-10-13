@@ -205,7 +205,16 @@ safe_renderUI <- function(expr, fallback = shiny::div(), context = NULL) {
 
 safe_renderPlotly <- function(expr, context = NULL) {
   plotly::renderPlotly({
-    tryCatch(force(expr), error = function(e) { diag_log_error(e, context); plotly::plot_ly() })
+    output_info <- tryCatch(shiny::getCurrentOutputInfo(), error = function(...) NULL)
+    output_id <- context %||% if (!is.null(output_info)) output_info$outputId else "<unknown>"
+    cat("[TRACE] safe_renderPlotly start:", output_id, "\n", file = stderr())
+    tryCatch(
+      force(expr),
+      error = function(e) {
+        diag_log_error(e, context %||% output_id)
+        plotly::plot_ly()
+      }
+    )
   })
 }
 
