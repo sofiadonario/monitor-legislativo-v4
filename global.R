@@ -278,6 +278,24 @@ tryCatch({
         },
         envir = plotly_ns
       )
+      # Override plot_ly itself to emit trace logs on every invocation
+      if (exists("plot_ly", envir = plotly_ns, inherits = FALSE)) {
+        original_plot_ly <- get("plot_ly", envir = plotly_ns)
+        unlockBinding("plot_ly", plotly_ns)
+        assign(
+          "plot_ly",
+          function(...) {
+            call_info <- tryCatch(sys.call(-1), error = function(...) NULL)
+            cat("[TRACE] plot_ly start", if (!is.null(call_info)) paste0(" caller=", deparse(call_info)) else "", "\n", file = stderr())
+            res <- original_plot_ly(...)
+            cat("[TRACE] plot_ly end\n", file = stderr())
+            res
+          },
+          envir = plotly_ns
+        )
+        lockBinding("plot_ly", plotly_ns)
+        cat("✅ plotly::plot_ly override installed\n")
+      }
       lockBinding("renderPlotly", plotly_ns)
       cat("✅ plotly::renderPlotly override installed\n")
     }
