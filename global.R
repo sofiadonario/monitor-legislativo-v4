@@ -2,6 +2,7 @@
 # ==================================================================
 # Clean Architecture - No Emergency Patches
 # LGPD Compliant | Brazilian Legal Context | Railway Optimized
+# Force redeploy: 2025-10-13 16:30 (complete trace instrumentation)
 
 # Ensure utils are sourced early
 safely_source <- function(path) if (file.exists(path)) source(path, chdir = TRUE, local = TRUE)
