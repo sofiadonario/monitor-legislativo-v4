@@ -245,6 +245,8 @@ tryCatch({
             output_info <- tryCatch(shiny::getCurrentOutputInfo(), error = function(...) NULL)
             output_id <- if (!is.null(output_info)) output_info$outputId else "<unknown>"
             cat("[TRACE] renderPlotly override start:", output_id, "\n", file = stderr())
+            override_stack <- tryCatch(utils::capture.output(sys.calls()), error = function(...) "<unavailable>")
+            cat(paste0("[TRACE] renderPlotly stack:\n", paste(override_stack, collapse = "\n")), "\n", file = stderr())
             tryCatch({
               result <- expr
               if (is.null(result)) {
@@ -287,6 +289,8 @@ tryCatch({
           function(...) {
             call_info <- tryCatch(sys.call(-1), error = function(...) NULL)
             cat("[TRACE] plot_ly start", if (!is.null(call_info)) paste0(" caller=", deparse(call_info)) else "", "\n", file = stderr())
+            call_stack <- tryCatch(utils::capture.output(sys.calls()), error = function(...) "<unavailable>")
+            cat(paste0("[TRACE] plot_ly stack:\n", paste(call_stack, collapse = "\n")), "\n", file = stderr())
             res <- original_plot_ly(...)
             cat("[TRACE] plot_ly end\n", file = stderr())
             res

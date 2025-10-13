@@ -262,7 +262,7 @@ if (is.null(analytics) || !is.list(analytics) ||
    - Added `[TRACE] analytics:*` markers to key `renderPlotly` handlers in `modules/analytics/analytics_server.R`
    - Added `[TRACE] library_analytics:*` markers to library analytics dashboard charts to pinpoint startup emitter
    - Added `[TRACE] maps_simple:*`, `[TRACE] maps_main:*`, `[TRACE] geographic:*`, and `[TRACE] sao_paulo:*` markers across map/geographic/São Paulo modules to continue narrowing the source
-  - Updated both the global `safe_renderPlotly()` wrapper and the plotly namespace overrides (`renderPlotly`, `plot_ly`) to emit `[TRACE] … start:<output_id>` for every Plotly invocation, guaranteeing visibility even when dedicated traces are missing
+  - Updated both the global `safe_renderPlotly()` wrapper and the plotly namespace overrides (`renderPlotly`, `plot_ly`) to emit `[TRACE] … start:<output_id>` plus the full `sys.calls()` stack for every Plotly invocation, guaranteeing visibility even when dedicated traces are missing
 
 ---
 
