@@ -359,12 +359,17 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         return(NULL)
       })
 
-      cat("[EXEC DEBUG] exec_advanced_trends got analytics data\n", file = stderr())
+      if (is.null(analytics)) {
+        cat("[EXEC GUARD] exec_advanced_trends analytics NULL – placeholder will be returned\n", file = stderr())
+      } else {
+        cat("[EXEC DEBUG] exec_advanced_trends got analytics data\n", file = stderr())
+      }
 
       # Validate analytics structure before accessing nested data
       if (is.null(analytics) || !is.list(analytics) ||
           is.null(analytics$temporal_analysis) ||
           !is.list(analytics$temporal_analysis)) {
+        cat("[EXEC GUARD] exec_advanced_trends temporal_analysis not ready – placeholder plot\n", file = stderr())
         return(plot_ly() %>%
           add_annotations(
             text = "Loading analytics data...",
@@ -377,8 +382,13 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       }
 
       trends_data <- analytics$temporal_analysis$monthly_trends
+      if (is.null(trends_data)) {
+        cat("[EXEC GUARD] exec_advanced_trends monthly_trends NULL – placeholder plot\n", file = stderr())
+      }
 
       if (!is.null(trends_data) && is.data.frame(trends_data) && nrow(trends_data) > 0) {
+        
+        cat("[EXEC DEBUG] exec_advanced_trends rendering trends chart\n", file = stderr())
         
         # Create base plot
         p <- plot_ly(trends_data, x = ~year_month) %>%
@@ -440,6 +450,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
           )
         
       } else {
+        cat("[EXEC GUARD] exec_advanced_trends insufficient data – placeholder plot\n", file = stderr())
         # Fallback empty plot
         plot_ly() %>%
           add_annotations(
@@ -458,6 +469,8 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       # Silently handle "Expecting a single value" errors during startup
       if (!grepl("Expecting a single value", e$message, fixed = TRUE)) {
         cat("❌ Error in exec_advanced_trends:", e$message, "\n", file = stderr())
+      } else {
+        cat("[EXEC SUPPRESS] exec_advanced_trends captured extent error\n", file = stderr())
       }
       plot_ly() %>%
         add_annotations(
@@ -477,6 +490,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   output$exec_geographic_analysis <- renderPlotly({
     # Suppress stderr during initial render to prevent "Expecting a single value" errors
     tryCatch({
+      cat("[EXEC DEBUG] exec_geographic_analysis starting...\n", file = stderr())
       # Safely get analytics data with error suppression
       analytics <- tryCatch({
         analytics_data()
@@ -485,10 +499,15 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         return(NULL)
       })
 
+      if (is.null(analytics)) {
+        cat("[EXEC GUARD] exec_geographic_analysis analytics NULL – placeholder will be returned\n", file = stderr())
+      }
+
       # Validate analytics structure before accessing nested data
       if (is.null(analytics) || !is.list(analytics) ||
           is.null(analytics$geographic_analysis) ||
           !is.list(analytics$geographic_analysis)) {
+        cat("[EXEC GUARD] exec_geographic_analysis geographic_analysis not ready – placeholder plot\n", file = stderr())
         return(plot_ly() %>%
           add_annotations(
             text = "Loading geographic data...",
@@ -501,8 +520,13 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       }
 
       geo_data <- analytics$geographic_analysis$state_analysis
+      if (is.null(geo_data)) {
+        cat("[EXEC GUARD] exec_geographic_analysis state_analysis NULL – placeholder plot\n", file = stderr())
+      }
 
       if (!is.null(geo_data) && is.data.frame(geo_data) && nrow(geo_data) > 0) {
+        
+        cat("[EXEC DEBUG] exec_geographic_analysis rendering geographic chart\n", file = stderr())
         
         # Select metric based on input
         metric_col <- switch(input$exec_geo_metric %||% "count",
@@ -542,9 +566,10 @@ init_executive_summary_server <- function(input, output, session, get_document_d
             xaxis = list(title = "State", tickangle = -45),
             yaxis = list(title = metric_title),
             margin = list(t = 50, b = 100, l = 60, r = 20)
-          )
+        )
         
       } else {
+        cat("[EXEC GUARD] exec_geographic_analysis insufficient data – placeholder plot\n", file = stderr())
         # Fallback empty plot
         plot_ly() %>%
           add_annotations(
@@ -563,6 +588,8 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       # Silently handle "Expecting a single value" errors during startup
       if (!grepl("Expecting a single value", e$message, fixed = TRUE)) {
         cat("❌ Error in exec_geographic_analysis:", e$message, "\n", file = stderr())
+      } else {
+        cat("[EXEC SUPPRESS] exec_geographic_analysis captured extent error\n", file = stderr())
       }
       plot_ly() %>%
         add_annotations(

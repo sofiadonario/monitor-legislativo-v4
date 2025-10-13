@@ -13,7 +13,8 @@
       "Bash(cd:*)",
       "Bash(timeout 30 git commit -a -m \"fix: handle plotly startup errors with tryCatch blocks\")",
       "Bash(git add:*)",
-      "Bash(GIT_OPTIONAL_LOCKS=0 git commit -a -m \"fix: handle plotly startup errors\" --no-verify)"
+      "Bash(GIT_OPTIONAL_LOCKS=0 git commit -a -m \"fix: handle plotly startup errors\" --no-verify)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "ask": []

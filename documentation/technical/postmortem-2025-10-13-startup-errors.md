@@ -2,14 +2,31 @@
 
 **Date:** October 13, 2025
 **Environment:** Railway Production (monitor-legislativo-unified)
-**Status:** ✅ RESOLVED
+**Status:** ⚠️ REOPENED
 **Severity:** Low (cosmetic - errors were harmless but appeared in logs)
 
 ---
 
 ## Executive Summary
 
-Resolved recurring startup errors in production deployment that appeared immediately after application initialization. The errors were harmless but created noise in production logs and could mask genuine issues. The fix implements selective error suppression while maintaining full error reporting for actual problems.
+Initial mitigation suppressed recurring startup errors in production deployment that appeared immediately after application initialization, but fresh logs from the October 13, 2025 13:05 deployment show the signature `"Expecting a single value: [extent=0]"` messages are still emitted. The remediation work improved defensive handling, yet the issue remains active and requires a renewed investigation to deliver a durable fix without masking genuine failures.
+
+---
+
+## Latest Observation (October 13, 2025 13:05, Railway dashboard timestamp)
+
+**Railway deployment:** `monitor-legislativo-unified / 4598cac2`
+
+**Excerpt:**
+```
+Listening on http://0.0.0.0:3838
+Error: Expecting a single value: [extent=0].
+Error: Expecting a single value: [extent=0].
+```
+
+**Implication:** Production still emits the startup extent errors despite the selective suppression changes. The postmortem remains open while we validate whether the new guards are being executed, misconfigured, or bypassed.
+
+**Next actions queued:** Redeploy with additional guard instrumentation (log tags: `[EXEC GUARD]`, `[EXEC SUPPRESS]`) to trace execution flow during startup.
 
 ---
 
@@ -110,6 +127,8 @@ ERROR: "Expecting a single value: [extent=0]"
 
 ## Solution Implementation
 
+> ⚠️ Deployment status: The defensive layers described below shipped to production on October 13, 2025. However, current telemetry indicates they are not yet preventing the startup extent errors, so the implementation should be treated as provisional until the follow-up investigation closes.
+
 ### Approach: Multi-Layer Error Handling
 
 Implemented a defense-in-depth strategy with three protective layers:
@@ -177,10 +196,12 @@ if (is.null(analytics) || !is.list(analytics) ||
 - Enhanced validation before accessing nested fields
 - Conditional error logging (suppress "Expecting a single value")
 - Safe placeholder return on all error paths
+- 🆕 Added guard instrumentation logs (`[EXEC GUARD]`, `[EXEC DEBUG]`, `[EXEC SUPPRESS]`) to confirm placeholder paths execute before plotly renders (pending redeploy validation)
 
 **Lines 473-579:** `exec_geographic_analysis` renderPlotly
 - Mirror changes to trends chart
 - Same defensive patterns applied
+- 🆕 Added guard instrumentation logs mirroring temporal chart (pending redeploy validation)
 
 **Line 597:** `create_fallback_analytics()`
 - Added `monthly_trends = data.frame()` to temporal_analysis structure
@@ -209,7 +230,9 @@ fix: suppress 'Expecting a single value: [extent=0]' startup errors
 
 ## Testing & Verification
 
-### Expected Behavior
+> ⚠️ October 13, 2025 13:05 (Railway dashboard): Verification failed—the production instance still logs two `"Expecting a single value: [extent=0]"` errors immediately after the listening message.
+
+### Expected Behavior (Target)
 
 **Before Fix:**
 ```
@@ -218,7 +241,7 @@ Error: Expecting a single value: [extent=0].
 Error: Expecting a single value: [extent=0].
 ```
 
-**After Fix:**
+**After Fix (Desired):**
 ```
 Listening on http://0.0.0.0:3838
 [EXEC DEBUG] exec_advanced_trends starting...
@@ -226,13 +249,22 @@ Listening on http://0.0.0.0:3838
 [EXEC DEBUG] exec_geographic_analysis starting...
 ```
 
+### Actual Production Behavior (13:05 deployment)
+```
+Listening on http://0.0.0.0:3838
+Error: Expecting a single value: [extent=0].
+Error: Expecting a single value: [extent=0].
+```
+
 ### Verification Steps
 
 1. **Monitor Railway deployment logs** after push
-2. **Check for clean startup** - no extent errors
+2. **Check for clean startup** - no extent errors (❌ failed 13:05)
 3. **Verify debug logging** still appears for other errors
 4. **Confirm UI displays** "Loading analytics data..." during initial load
 5. **Test data loads properly** once analytics complete
+6. **Instrument guard execution** to confirm suppression logic runs (🆕 instrumentation added; watch for `[EXEC GUARD]` logs)
+7. **Validate suppression handler** emits `[EXEC SUPPRESS]` when extent error is trapped (🆕 follow-up)
 
 ### Regression Prevention
 
@@ -296,9 +328,10 @@ Solution scales well because:
 
 ### Short Term
 
-1. **Monitor logs** for any new error patterns after deployment
-2. **Consider adding** startup completion flag to disable placeholders
-3. **Add telemetry** to track how often fallback plots are shown
+1. **Redeploy instrumentation patch** and monitor logs for `[EXEC GUARD]` / `[EXEC SUPPRESS]` signals
+2. **Monitor logs** for any new error patterns after redeployments
+3. **Consider adding** startup completion flag to disable placeholders once data is ready
+4. **Add telemetry** to track how often fallback plots are shown
 
 ### Long Term
 
@@ -353,16 +386,16 @@ safe_renderPlotly <- function(render_expr, loading_msg = "Loading data...") {
 
 ## Conclusion
 
-Successfully resolved production startup error noise through systematic investigation and multi-layer error handling. The fix maintains full debugging capability while eliminating false alarms from logs.
+The startup error mitigation remains incomplete. The defensive code paths were deployed, but production logs from the most recent release still surface the `"Expecting a single value: [extent=0]"` messages, indicating the guards either do not execute early enough or the failing code path bypasses them. Instrumentation has now been added to both renderers so we can trace execution order in the next deployment. The incident stays open while we confirm the suppression logic is wired into both relevant renderers.
 
-**Key Outcomes:**
-- ✅ Clean production logs on startup
-- ✅ No functional changes or regressions
-- ✅ Improved fallback data structures
-- ✅ Better error handling patterns documented
-- ✅ Foundation for reusable utilities
+**Current Outcomes:**
+- ⚠️ Startup logs still contain two extent errors (issue unresolved)
+- ✅ Fallback analytics structures now include `monthly_trends`
+- ✅ Error-handling patterns documented for future reuse
+- 🚧 Need instrumentation to confirm guard execution sequence
+- 🚧 Pending verification of placeholder plot behavior in production
 
-**Status:** Production deployment in progress. Expected completion: ~5 minutes.
+**Status:** Reopened investigation; next checkpoint after guard instrumentation redeploy and log verification.
 
 ---
 
