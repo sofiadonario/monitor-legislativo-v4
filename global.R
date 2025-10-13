@@ -242,6 +242,9 @@ tryCatch({
         function(expr, ..., env = parent.frame(), quoted = FALSE) {
           # Wrap the expression with error handling
           safe_expr <- substitute({
+            output_info <- tryCatch(shiny::getCurrentOutputInfo(), error = function(...) NULL)
+            output_id <- if (!is.null(output_info)) output_info$outputId else "<unknown>"
+            cat("[TRACE] renderPlotly override start:", output_id, "\n", file = stderr())
             tryCatch({
               result <- expr
               if (is.null(result)) {

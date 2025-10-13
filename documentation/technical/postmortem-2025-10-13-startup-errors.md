@@ -258,11 +258,11 @@ if (is.null(analytics) || !is.list(analytics) ||
 3. **Variation Guard (October 13, 2025 14:58)**
    - Require multiple distinct periods/values before chart render
    - Prevent plotly layout calculations when dataset collapses to a single point
-4. **Cross-Module Instrumentation (October 13, 2025 15:40-16:05)**
+4. **Cross-Module Instrumentation (October 13, 2025 15:40-16:10)**
    - Added `[TRACE] analytics:*` markers to key `renderPlotly` handlers in `modules/analytics/analytics_server.R`
    - Added `[TRACE] library_analytics:*` markers to library analytics dashboard charts to pinpoint startup emitter
    - Added `[TRACE] maps_simple:*`, `[TRACE] maps_main:*`, `[TRACE] geographic:*`, and `[TRACE] sao_paulo:*` markers across map/geographic/São Paulo modules to continue narrowing the source
-   - Updated global `safe_renderPlotly()` wrapper to emit `[TRACE] safe_renderPlotly start:<output_id>` for every Plotly renderer, guaranteeing visibility even when dedicated traces are missing
+   - Updated both the global `safe_renderPlotly()` wrapper and the plotly namespace override to emit `[TRACE] … start:<output_id>` for every Plotly renderer, guaranteeing visibility even when dedicated traces are missing
 
 ---
 
