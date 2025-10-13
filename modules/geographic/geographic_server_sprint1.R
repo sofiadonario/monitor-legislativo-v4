@@ -310,6 +310,7 @@ geographic_server_sprint1 <- function(id, pool, enable_webgl = TRUE, memory_limi
     
     # Legislative Density Analysis Dashboard
     output$density_analysis_plot <- renderPlotly({
+      cat("[TRACE] geographic:density_analysis_plot start\n", file = stderr())
       req(geo_cache$legislative_data)
       
       geo_data <- geo_cache$legislative_data

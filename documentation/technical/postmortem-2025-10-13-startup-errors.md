@@ -258,10 +258,10 @@ if (is.null(analytics) || !is.list(analytics) ||
 3. **Variation Guard (October 13, 2025 14:58)**
    - Require multiple distinct periods/values before chart render
    - Prevent plotly layout calculations when dataset collapses to a single point
-4. **Cross-Module Instrumentation (October 13, 2025 15:40)**
+4. **Cross-Module Instrumentation (October 13, 2025 15:40-16:00)**
    - Added `[TRACE] analytics:*` markers to key `renderPlotly` handlers in `modules/analytics/analytics_server.R`
    - Added `[TRACE] library_analytics:*` markers to library analytics dashboard charts to pinpoint startup emitter
-   - Added `[TRACE] maps_simple:*` and `[TRACE] sao_paulo:*` markers to map and São Paulo modules to continue narrowing the source
+   - Added `[TRACE] maps_simple:*`, `[TRACE] maps_main:*`, `[TRACE] geographic:*`, and `[TRACE] sao_paulo:*` markers across map/geographic/São Paulo modules to continue narrowing the source
 
 ---
 

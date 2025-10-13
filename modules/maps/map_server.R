@@ -300,6 +300,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
     
     # Enhanced main interactive Brazil map with performance tracking
     output$interactive_brazil_map <- renderPlotly({
+      cat("[TRACE] maps_main:interactive_brazil_map start\n", file = stderr())
       req(state_map_data())
       
       # Start performance timing
@@ -518,6 +519,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
     
     # Municipality detail map
     output$municipality_detail_map <- renderPlotly({
+      cat("[TRACE] maps_main:municipality_detail_map start\n", file = stderr())
       pool_conn <- pool()
       req(pool_conn)
       
@@ -566,6 +568,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
     
     # Temporal evolution map
     output$temporal_map_animation <- renderPlotly({
+      cat("[TRACE] maps_main:temporal_map_animation start\n", file = stderr())
       req(map_data())
       
       data <- map_data()
@@ -995,6 +998,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
     
     # Temporal trend chart
     output$temporal_trend_chart <- renderPlotly({
+      cat("[TRACE] maps_main:temporal_trend_chart start\n", file = stderr())
       data <- map_data()
       
       if ("year" %in% names(data) && nrow(data) > 0) {
@@ -1026,6 +1030,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
     
     # Seasonal pattern chart  
     output$seasonal_pattern_chart <- renderPlotly({
+      cat("[TRACE] maps_main:seasonal_pattern_chart start\n", file = stderr())
       data <- map_data()
       
       if ("date" %in% names(data) && nrow(data) > 0) {

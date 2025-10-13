@@ -430,6 +430,7 @@ geographic_server_enhanced <- function(id, pool, cache = NULL) {
     
     # Render map
     output$geographic_map <- renderPlotly({
+      cat("[TRACE] geographic:geographic_map start\n", file = stderr())
       req(values$geographic_data)
       
       use_webgl <- "webgl" %in% input$display_options
