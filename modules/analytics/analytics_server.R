@@ -34,18 +34,15 @@ analytics_server <- function(input, output, session, get_data) {
   
   # Total documents value box
   output$analytics_total_docs <- shinydashboard::renderValueBox({
-    results <- analytics_results()
-    require_rows(results, "Sem dados analíticos")
-    value_boxes <- create_analytics_value_boxes(results)
-    safe_valueBox(value_boxes$total_docs$value %||% "—", "Documentos", icon = icon("file"))
+    boxes <- create_analytics_value_boxes(analytics_results())
+    boxes$total_docs
   })
   
   # Temporal coverage value box
   output$analytics_temporal_coverage <- shinydashboard::renderValueBox({
     tryCatch({
-      results <- analytics_results()
-      value_boxes <- create_analytics_value_boxes(results)
-      value_boxes$temporal_coverage %||% safe_valueBox("—", "Cobertura", icon = icon("calendar"))
+      boxes <- create_analytics_value_boxes(analytics_results())
+      boxes$temporal_coverage
     }, error = function(e) {
       if (identical(Sys.getenv("APP_DEBUG"), "1")) diag_log_error(e, "analytics_temporal_coverage")
       safe_valueBox("—", "Cobertura", icon = icon("calendar"))
@@ -55,9 +52,8 @@ analytics_server <- function(input, output, session, get_data) {
   # Processing status value box
   output$analytics_processing_status <- shinydashboard::renderValueBox({
     tryCatch({
-      results <- analytics_results()
-      value_boxes <- create_analytics_value_boxes(results)
-      value_boxes$processing_status %||% safe_valueBox("—", "Status", icon = icon("clock"))
+      boxes <- create_analytics_value_boxes(analytics_results())
+      boxes$processing_status
     }, error = function(e) {
       if (identical(Sys.getenv("APP_DEBUG"), "1")) diag_log_error(e, "analytics_processing_status")
       safe_valueBox("—", "Status", icon = icon("clock"))
@@ -67,9 +63,8 @@ analytics_server <- function(input, output, session, get_data) {
   # Data quality value box
   output$analytics_data_quality <- shinydashboard::renderValueBox({
     tryCatch({
-      results <- analytics_results()
-      value_boxes <- create_analytics_value_boxes(results)
-      value_boxes$data_quality %||% safe_valueBox("—", "Qualidade", icon = icon("check-circle"))
+      boxes <- create_analytics_value_boxes(analytics_results())
+      boxes$data_quality
     }, error = function(e) {
       if (identical(Sys.getenv("APP_DEBUG"), "1")) diag_log_error(e, "analytics_data_quality")
       safe_valueBox("—", "Qualidade", icon = icon("check-circle"))
