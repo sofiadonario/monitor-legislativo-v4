@@ -28,6 +28,20 @@ Error: Expecting a single value: [extent=0].
 
 **Next actions queued:** Redeploy with additional guard instrumentation (log tags: `[EXEC GUARD]`, `[EXEC SUPPRESS]`) to trace execution flow during startup.
 
+### Follow-up Observation (October 13, 2025 14:02, post-instrumentation redeploy)
+
+**Railway deployment:** `monitor-legislativo-unified / 43e49a44`
+
+**Excerpt:**
+```
+Listening on http://0.0.0.0:3838
+Error: Expecting a single value: [extent=0].
+Error: Expecting a single value: [extent=0].
+```
+
+- **Instrumentation result:** No `[EXEC GUARD]` or `[EXEC SUPPRESS]` entries surfaced in startup logs, implying the defensive branches did not short-circuit before plotly executed.
+- **Conclusion:** The selective suppression remains ineffective; guard strategy updated to block plotly entirely until data ready.
+
 ---
 
 ## Problem Statement
@@ -179,9 +193,9 @@ if (is.null(analytics) || !is.list(analytics) ||
    - Added missing `monthly_trends` field to `create_fallback_analytics()`
    - Ensures consistent structure even with empty data
 
-2. **Enhanced Placeholder Plots**
-   - Added `zeroline = FALSE` to prevent axis calculation errors
-   - Consistent styling across all fallback states
+2. **Placeholder Strategy Revision (October 13, 2025 14:30)**
+   - Replaced placeholder plotly calls with `validate(need(...))` gating to avoid invoking plotly on empty data
+   - Ensures Shiny displays informative "Loading..." / "No data" messages without triggering extent calculations
 
 ---
 
@@ -197,11 +211,13 @@ if (is.null(analytics) || !is.list(analytics) ||
 - Conditional error logging (suppress "Expecting a single value")
 - Safe placeholder return on all error paths
 - 🆕 Added guard instrumentation logs (`[EXEC GUARD]`, `[EXEC DEBUG]`, `[EXEC SUPPRESS]`) to confirm placeholder paths execute before plotly renders (pending redeploy validation)
+- 🆕 October 13, 2025 14:30: Swapped placeholder plots for Shiny `validate(need())` gates to stop plotly from running on empty data
 
 **Lines 473-579:** `exec_geographic_analysis` renderPlotly
 - Mirror changes to trends chart
 - Same defensive patterns applied
 - 🆕 Added guard instrumentation logs mirroring temporal chart (pending redeploy validation)
+- 🆕 October 13, 2025 14:30: Applied identical `validate(need())` gating to geographic chart
 
 **Line 597:** `create_fallback_analytics()`
 - Added `monthly_trends = data.frame()` to temporal_analysis structure
@@ -264,7 +280,8 @@ Error: Expecting a single value: [extent=0].
 4. **Confirm UI displays** "Loading analytics data..." during initial load
 5. **Test data loads properly** once analytics complete
 6. **Instrument guard execution** to confirm suppression logic runs (🆕 instrumentation added; watch for `[EXEC GUARD]` logs)
-7. **Validate suppression handler** emits `[EXEC SUPPRESS]` when extent error is trapped (🆕 follow-up)
+7. **Validate suppression handler** emits `[EXEC SUPPRESS]` when extent error is trapped (🆕 follow-up; first redeploy showed none)
+8. **Verify `validate(need())` messages** appear instead of extent errors on next deployment (🆕 change)
 
 ### Regression Prevention
 
@@ -328,7 +345,7 @@ Solution scales well because:
 
 ### Short Term
 
-1. **Redeploy instrumentation patch** and monitor logs for `[EXEC GUARD]` / `[EXEC SUPPRESS]` signals
+1. **Redeploy validate-gate patch** and confirm startup logs show neither extent errors nor instrumentation errors
 2. **Monitor logs** for any new error patterns after redeployments
 3. **Consider adding** startup completion flag to disable placeholders once data is ready
 4. **Add telemetry** to track how often fallback plots are shown
@@ -386,7 +403,7 @@ safe_renderPlotly <- function(render_expr, loading_msg = "Loading data...") {
 
 ## Conclusion
 
-The startup error mitigation remains incomplete. The defensive code paths were deployed, but production logs from the most recent release still surface the `"Expecting a single value: [extent=0]"` messages, indicating the guards either do not execute early enough or the failing code path bypasses them. Instrumentation has now been added to both renderers so we can trace execution order in the next deployment. The incident stays open while we confirm the suppression logic is wired into both relevant renderers.
+The startup error mitigation remains incomplete. The defensive code paths were deployed, but production logs from the most recent releases still surface the `"Expecting a single value: [extent=0]"` messages, indicating the guards either do not execute early enough or the failing code path bypasses them. Instrumentation was added but produced no guard logs, so both renderers now short-circuit via `validate(need())` to prevent plotly from running on empty data. The incident stays open while we confirm the new gating eliminates the startup errors in production.
 
 **Current Outcomes:**
 - ⚠️ Startup logs still contain two extent errors (issue unresolved)
@@ -395,7 +412,7 @@ The startup error mitigation remains incomplete. The defensive code paths were d
 - 🚧 Need instrumentation to confirm guard execution sequence
 - 🚧 Pending verification of placeholder plot behavior in production
 
-**Status:** Reopened investigation; next checkpoint after guard instrumentation redeploy and log verification.
+**Status:** Reopened investigation; next checkpoint after validate-gate redeploy and log verification.
 
 ---
 

@@ -369,101 +369,81 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       if (is.null(analytics) || !is.list(analytics) ||
           is.null(analytics$temporal_analysis) ||
           !is.list(analytics$temporal_analysis)) {
-        cat("[EXEC GUARD] exec_advanced_trends temporal_analysis not ready – placeholder plot\n", file = stderr())
-        return(plot_ly() %>%
-          add_annotations(
-            text = "Loading analytics data...",
-            x = 0.5, y = 0.5,
-            showarrow = FALSE,
-            font = list(size = 14, color = "#6c757d")
-          ) %>%
-          layout(xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
-                 yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)))
+        cat("[EXEC GUARD] exec_advanced_trends temporal_analysis not ready – validating\n", file = stderr())
+        validate(need(FALSE, "Loading analytics data..."))
       }
 
       trends_data <- analytics$temporal_analysis$monthly_trends
-      if (is.null(trends_data)) {
-        cat("[EXEC GUARD] exec_advanced_trends monthly_trends NULL – placeholder plot\n", file = stderr())
+      if (is.null(trends_data) || !is.data.frame(trends_data)) {
+        cat("[EXEC GUARD] exec_advanced_trends monthly_trends missing – validating\n", file = stderr())
+        validate(need(FALSE, "Loading analytics data..."))
       }
 
-      if (!is.null(trends_data) && is.data.frame(trends_data) && nrow(trends_data) > 0) {
-        
-        cat("[EXEC DEBUG] exec_advanced_trends rendering trends chart\n", file = stderr())
-        
-        # Create base plot
-        p <- plot_ly(trends_data, x = ~year_month) %>%
+      if (nrow(trends_data) == 0) {
+        cat("[EXEC GUARD] exec_advanced_trends monthly_trends empty – validating\n", file = stderr())
+        validate(need(FALSE, "No temporal data available yet"))
+      }
+
+      cat("[EXEC DEBUG] exec_advanced_trends rendering trends chart\n", file = stderr())
+
+      # Create base plot
+      p <- plot_ly(trends_data, x = ~year_month) %>%
+        add_trace(
+          y = ~document_count,
+          type = 'scatter',
+          mode = 'lines+markers',
+          name = 'Document Count',
+          line = list(color = '#3498db', width = 2),
+          marker = list(size = 6)
+        )
+      
+      # Add moving average if available
+      if ("moving_avg_3m" %in% names(trends_data)) {
+        p <- p %>%
           add_trace(
-            y = ~document_count,
+            y = ~moving_avg_3m,
             type = 'scatter',
-            mode = 'lines+markers',
-            name = 'Document Count',
-            line = list(color = '#3498db', width = 2),
-            marker = list(size = 6)
-          )
-        
-        # Add moving average if available
-        if ("moving_avg_3m" %in% names(trends_data)) {
-          p <- p %>%
-            add_trace(
-              y = ~moving_avg_3m,
-              type = 'scatter',
-              mode = 'lines',
-              name = '3-Month Average',
-              line = list(color = '#e74c3c', width = 2, dash = 'dash')
-            )
-        }
-        
-        # Add forecast if available and enabled (safe Boolean guard)
-        forecast_data <- analytics$temporal_analysis$forecast_results$next_6_months
-        if (!is.null(forecast_data) && is.data.frame(forecast_data) && nrow(forecast_data) > 0 && isTRUE(input$exec_show_forecast)) {
-          p <- p %>%
-            add_trace(
-              data = forecast_data,
-              x = ~month,
-              y = ~predicted_count,
-              type = 'scatter',
-              mode = 'lines+markers',
-              name = 'Forecast',
-              line = list(color = '#f39c12', width = 2, dash = 'dot'),
-              marker = list(size = 5)
-            ) %>%
-            add_ribbons(
-              data = forecast_data,
-              x = ~month,
-              ymin = ~lower_bound,
-              ymax = ~upper_bound,
-              name = 'Confidence Interval',
-              fillcolor = 'rgba(243, 156, 18, 0.2)',
-              line = list(color = 'transparent')
-            )
-        }
-        
-        # Customize layout
-        p %>%
-          layout(
-            title = list(text = "Legislative Activity Trends", font = list(size = 16)),
-            xaxis = list(title = "Time Period", showgrid = TRUE),
-            yaxis = list(title = "Document Count", showgrid = TRUE),
-            hovermode = 'x unified',
-            showlegend = TRUE,
-            margin = list(t = 50, b = 50, l = 60, r = 20)
-          )
-        
-      } else {
-        cat("[EXEC GUARD] exec_advanced_trends insufficient data – placeholder plot\n", file = stderr())
-        # Fallback empty plot
-        plot_ly() %>%
-          add_annotations(
-            text = "No temporal data available",
-            x = 0.5, y = 0.5,
-            showarrow = FALSE,
-            font = list(size = 14, color = "#6c757d")
-          ) %>%
-          layout(
-            xaxis = list(visible = FALSE),
-            yaxis = list(visible = FALSE)
+            mode = 'lines',
+            name = '3-Month Average',
+            line = list(color = '#e74c3c', width = 2, dash = 'dash')
           )
       }
+      
+      # Add forecast if available and enabled (safe Boolean guard)
+      forecast_data <- analytics$temporal_analysis$forecast_results$next_6_months
+      if (!is.null(forecast_data) && is.data.frame(forecast_data) && nrow(forecast_data) > 0 && isTRUE(input$exec_show_forecast)) {
+        p <- p %>%
+          add_trace(
+            data = forecast_data,
+            x = ~month,
+            y = ~predicted_count,
+            type = 'scatter',
+            mode = 'lines+markers',
+            name = 'Forecast',
+            line = list(color = '#f39c12', width = 2, dash = 'dot'),
+            marker = list(size = 5)
+          ) %>%
+          add_ribbons(
+            data = forecast_data,
+            x = ~month,
+            ymin = ~lower_bound,
+            ymax = ~upper_bound,
+            name = 'Confidence Interval',
+            fillcolor = 'rgba(243, 156, 18, 0.2)',
+            line = list(color = 'transparent')
+          )
+      }
+      
+      # Customize layout
+      p %>%
+        layout(
+          title = list(text = "Legislative Activity Trends", font = list(size = 16)),
+          xaxis = list(title = "Time Period", showgrid = TRUE),
+          yaxis = list(title = "Document Count", showgrid = TRUE),
+          hovermode = 'x unified',
+          showlegend = TRUE,
+          margin = list(t = 50, b = 50, l = 60, r = 20)
+        )
       
     }, error = function(e) {
       # Silently handle "Expecting a single value" errors during startup
@@ -500,89 +480,68 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       })
 
       if (is.null(analytics)) {
-        cat("[EXEC GUARD] exec_geographic_analysis analytics NULL – placeholder will be returned\n", file = stderr())
+        cat("[EXEC GUARD] exec_geographic_analysis analytics NULL – validating\n", file = stderr())
+        validate(need(FALSE, "Loading geographic data..."))
       }
 
       # Validate analytics structure before accessing nested data
-      if (is.null(analytics) || !is.list(analytics) ||
-          is.null(analytics$geographic_analysis) ||
-          !is.list(analytics$geographic_analysis)) {
-        cat("[EXEC GUARD] exec_geographic_analysis geographic_analysis not ready – placeholder plot\n", file = stderr())
-        return(plot_ly() %>%
-          add_annotations(
-            text = "Loading geographic data...",
-            x = 0.5, y = 0.5,
-            showarrow = FALSE,
-            font = list(size = 14, color = "#6c757d")
-          ) %>%
-          layout(xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
-                 yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)))
+      if (!is.list(analytics$geographic_analysis)) {
+        cat("[EXEC GUARD] exec_geographic_analysis geographic_analysis not ready – validating\n", file = stderr())
+        validate(need(FALSE, "Loading geographic data..."))
       }
 
       geo_data <- analytics$geographic_analysis$state_analysis
-      if (is.null(geo_data)) {
-        cat("[EXEC GUARD] exec_geographic_analysis state_analysis NULL – placeholder plot\n", file = stderr())
+      if (is.null(geo_data) || !is.data.frame(geo_data)) {
+        cat("[EXEC GUARD] exec_geographic_analysis state_analysis missing – validating\n", file = stderr())
+        validate(need(FALSE, "Loading geographic data..."))
       }
 
-      if (!is.null(geo_data) && is.data.frame(geo_data) && nrow(geo_data) > 0) {
-        
-        cat("[EXEC DEBUG] exec_geographic_analysis rendering geographic chart\n", file = stderr())
-        
-        # Select metric based on input
-        metric_col <- switch(input$exec_geo_metric %||% "count",
-          "count" = "document_count",
-          "activity" = "recent_activity", 
-          "transport" = "transport_intensity",
-          "recent" = "recent_activity"
-        )
-        
-        metric_title <- switch(input$exec_geo_metric %||% "count",
-          "count" = "Document Count",
-          "activity" = "Activity Level",
-          "transport" = "Transport Focus %",
-          "recent" = "Recent Activity"
-        )
-        
-        # Create bar chart
-        geo_data_top <- head(geo_data[order(geo_data[[metric_col]], decreasing = TRUE), ], 15)
-        
-        plot_ly(geo_data_top, 
-                x = ~reorder(state_clean, get(metric_col)), 
-                y = ~get(metric_col),
-                type = 'bar',
-                marker = list(
-                  color = ~get(metric_col),
-                  colorscale = 'Viridis',
-                  showscale = TRUE
-                ),
-                hovertemplate = paste0(
-                  "<b>%{x}</b><br>",
-                  metric_title, ": %{y}<br>",
-                  "Region: ", geo_data_top$region, "<br>",
-                  "<extra></extra>"
-                )) %>%
-          layout(
-            title = list(text = paste("Geographic Distribution by", metric_title), font = list(size = 14)),
-            xaxis = list(title = "State", tickangle = -45),
-            yaxis = list(title = metric_title),
-            margin = list(t = 50, b = 100, l = 60, r = 20)
-        )
-        
-      } else {
-        cat("[EXEC GUARD] exec_geographic_analysis insufficient data – placeholder plot\n", file = stderr())
-        # Fallback empty plot
-        plot_ly() %>%
-          add_annotations(
-            text = "No geographic data available",
-            x = 0.5, y = 0.5,
-            showarrow = FALSE,
-            font = list(size = 14, color = "#6c757d")
-          ) %>%
-          layout(
-            xaxis = list(visible = FALSE),
-            yaxis = list(visible = FALSE)
-          )
+      if (nrow(geo_data) == 0) {
+        cat("[EXEC GUARD] exec_geographic_analysis state_analysis empty – validating\n", file = stderr())
+        validate(need(FALSE, "No geographic data available yet"))
       }
+
+      cat("[EXEC DEBUG] exec_geographic_analysis rendering geographic chart\n", file = stderr())
+      
+      # Select metric based on input
+      metric_col <- switch(input$exec_geo_metric %||% "count",
+        "count" = "document_count",
+        "activity" = "recent_activity", 
+        "transport" = "transport_intensity",
+        "recent" = "recent_activity"
+      )
+      
+      metric_title <- switch(input$exec_geo_metric %||% "count",
+        "count" = "Document Count",
+        "activity" = "Activity Level",
+        "transport" = "Transport Focus %",
+        "recent" = "Recent Activity"
+      )
+      
+      # Create bar chart
+      geo_data_top <- head(geo_data[order(geo_data[[metric_col]], decreasing = TRUE), ], 15)
+      
+      plot_ly(geo_data_top, 
+              x = ~reorder(state_clean, get(metric_col)), 
+              y = ~get(metric_col),
+              type = 'bar',
+              marker = list(
+                color = ~get(metric_col),
+                colorscale = 'Viridis',
+                showscale = TRUE
+              ),
+              hovertemplate = paste0(
+                "<b>%{x}</b><br>",
+                metric_title, ": %{y}<br>",
+                "Region: ", geo_data_top$region, "<br>",
+                "<extra></extra>"
+              )) %>%
+        layout(
+          title = list(text = paste("Geographic Distribution by", metric_title), font = list(size = 14)),
+          xaxis = list(title = "State", tickangle = -45),
+          yaxis = list(title = metric_title),
+          margin = list(t = 50, b = 100, l = 60, r = 20)
+        )
       
     }, error = function(e) {
       # Silently handle "Expecting a single value" errors during startup
