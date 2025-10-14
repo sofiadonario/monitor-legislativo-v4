@@ -723,7 +723,8 @@ tryCatch({
     source("monitoring/logger.R")
     source("monitoring/app_monitor.R")
     source("monitoring/telemetry.R")
-    source("monitoring/monitoring_ui.R")
+    # TEMPORARILY DISABLED to test extent=0 errors
+    # source("monitoring/monitoring_ui.R")
 
     # Initialize monitoring systems
     init_logger(list(
