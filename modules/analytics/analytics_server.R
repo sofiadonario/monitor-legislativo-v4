@@ -349,19 +349,23 @@ analytics_server <- function(input, output, session, get_data) {
     
     # Categorization plot
     output$categorization_plot <- renderPlotly({
-      
+
       cat("[TRACE] analytics:categorization_plot start\n", file = stderr())
-      
+
       if ("categorization_summary" %in% names(categorization_results) &&
           "legal_type_distribution" %in% names(categorization_results$categorization_summary)) {
-        
+
         cat_data <- categorization_results$categorization_summary$legal_type_distribution
-        
+        req(!is.null(cat_data))
+        req(is.data.frame(cat_data))
+        req(nrow(cat_data) > 0)
+
         if (!is.null(cat_data) && is.data.frame(cat_data) && nrow(cat_data) > 0) {
-          
+
           # Limit to top 10 categories for readability
           cat_data <- cat_data %>% head(10)
-          
+          req(nrow(cat_data) > 0)  # Ensure data remains after head()
+
           p <- ggplot(cat_data, aes(x = reorder(legal_type, n), y = n)) +
             geom_col(fill = "#F18F01", alpha = 0.8) +
             coord_flip() +
@@ -459,14 +463,17 @@ analytics_server <- function(input, output, session, get_data) {
     # Federal system plot
     output$federal_system_plot <- renderPlotly({
       cat("[TRACE] analytics:federal_system_plot start\n", file = stderr())
-      
+
       if ("federal_system_analysis" %in% names(legal_context_results) &&
           "authority_distribution" %in% names(legal_context_results$federal_system_analysis)) {
-        
+
         authority_data <- legal_context_results$federal_system_analysis$authority_distribution
-        
+        req(!is.null(authority_data))
+        req(is.data.frame(authority_data))
+        req(nrow(authority_data) > 0)
+
         if (!is.null(authority_data) && is.data.frame(authority_data) && nrow(authority_data) > 0) {
-          
+
           p <- ggplot(authority_data, aes(x = reorder(authority_level, percentage), y = percentage)) +
             geom_col(fill = c("#2E86AB", "#A23B72", "#F18F01", "#C73E1D")[1:nrow(authority_data)]) +
             coord_flip() +
