@@ -312,10 +312,11 @@ geographic_server_sprint1 <- function(id, pool, enable_webgl = TRUE, memory_limi
     output$density_analysis_plot <- renderPlotly({
       cat("[TRACE] geographic:density_analysis_plot start\n", file = stderr())
       req(geo_cache$legislative_data)
-      
+
       geo_data <- geo_cache$legislative_data
-      
-      if ("density_per_100k" %in% names(geo_data)) {
+      req(nrow(geo_data) > 0)
+
+      if ("density_per_100k" %in% names(geo_data) && nrow(geo_data) > 0) {
         # Create density analysis visualization
         p <- ggplot(geo_data, aes(x = reorder(state_code, density_per_100k), y = density_per_100k)) +
           geom_col(aes(fill = region), alpha = 0.8) +
