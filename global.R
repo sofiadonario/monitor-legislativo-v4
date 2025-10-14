@@ -204,6 +204,24 @@ tryCatch({
     lockBinding("renderText", shiny_ns)
     cat("✅ shiny::renderText override installed\n")
   }
+  if (exists("printError", envir = shiny_ns)) {
+    original_printError <- get("printError", envir = shiny_ns)
+    unlockBinding("printError", shiny_ns)
+    assign(
+      "printError",
+      function(cond, ...) {
+        msg <- conditionMessage(cond)
+        if (grepl("Expecting a single value: [extent=0]", msg, fixed = TRUE)) {
+          cat("[TRACE] shiny::printError suppressed extent=0 message\n", file = stderr())
+          return(invisible())
+        }
+        original_printError(cond, ...)
+      },
+      envir = shiny_ns
+    )
+    lockBinding("printError", shiny_ns)
+    cat("✅ shiny::printError override installed\n")
+  }
 }, error = function(e) {
   cat("⚠️  [renderText-hook] unable to override shiny::renderText:", conditionMessage(e), "\n", file = stderr())
 })
