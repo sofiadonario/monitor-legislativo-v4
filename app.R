@@ -97,13 +97,15 @@ safe_module_loaded <- function(module_name) {
   isTRUE(modules_loaded[[module_name]])
 }
 
-# Load Executive Summary Module
+# Load Executive Summary Module [TEMPORARILY DISABLED FOR DEBUGGING]
 tryCatch({
-  if (file.exists("modules/executive_summary_ui.R") && file.exists("modules/executive_summary_server.R")) {
+  if (FALSE && file.exists("modules/executive_summary_ui.R") && file.exists("modules/executive_summary_server.R")) {
     source("modules/executive_summary_ui.R")
     source("modules/executive_summary_server.R")
     modules_loaded$executive_summary <- TRUE
     cat("✅ Executive Summary module loaded\n")
+  } else {
+    cat("⚠️ Executive Summary module DISABLED for debugging\n")
   }
 }, error = function(e) {
   cat("⚠️ Executive Summary module failed:", e$message, "\n")
