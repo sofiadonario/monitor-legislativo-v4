@@ -14,7 +14,7 @@
 # 
 # Author: Data Science Consultant
 # Date: 2025-08-29
-# Version: 1.0 Production-Ready
+# Version: 1.0 Production-Ready (req() guards active)
 # ============================================================================
 
 # Source the analytics engine
