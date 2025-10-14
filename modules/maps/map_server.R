@@ -999,60 +999,74 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
     # Temporal trend chart
     output$temporal_trend_chart <- renderPlotly({
       cat("[TRACE] maps_main:temporal_trend_chart start\n", file = stderr())
+      req(map_data())
       data <- map_data()
-      
+      req(nrow(data) > 0)
+
       if ("year" %in% names(data) && nrow(data) > 0) {
         # Simple temporal aggregation
         yearly_counts <- aggregate(rep(1, nrow(data)), by = list(year = data$year), FUN = sum, na.rm = TRUE)
         names(yearly_counts)[2] <- "documents"
         yearly_counts <- yearly_counts[yearly_counts$year >= 2000 & yearly_counts$year <= 2025, ]
-        
-        plot_ly(
-          data = yearly_counts,
-          x = ~year,
-          y = ~documents,
+
+        # Ensure we have data after filtering
+        if (!is.null(yearly_counts) && nrow(yearly_counts) > 0) {
+          plot_ly(
+            data = yearly_counts,
+            x = ~year,
+            y = ~documents,
           type = 'scatter',
           mode = 'lines+markers',
           line = list(color = '#007bff', width = 3),
           marker = list(color = '#007bff', size = 6)
-        ) %>%
-          layout(
-            title = "",
-            xaxis = list(title = "Year"),
-            yaxis = list(title = "Documents"),
-            showlegend = FALSE,
-            margin = list(t = 30)
-          )
+          ) %>%
+            layout(
+              title = "",
+              xaxis = list(title = "Year"),
+              yaxis = list(title = "Documents"),
+              showlegend = FALSE,
+              margin = list(t = 30)
+            )
+        } else {
+          plot_ly() %>% layout(title = "No data after year filtering")
+        }
       } else {
         plot_ly() %>% layout(title = "Temporal data not available")
       }
     })
     
-    # Seasonal pattern chart  
+    # Seasonal pattern chart
     output$seasonal_pattern_chart <- renderPlotly({
       cat("[TRACE] maps_main:seasonal_pattern_chart start\n", file = stderr())
+      req(map_data())
       data <- map_data()
-      
+      req(nrow(data) > 0)
+
       if ("date" %in% names(data) && nrow(data) > 0) {
         # Extract months and aggregate
         data$month <- format(as.Date(data$date), "%m")
         monthly_counts <- aggregate(rep(1, nrow(data)), by = list(month = data$month), FUN = sum, na.rm = TRUE)
         names(monthly_counts)[2] <- "documents"
         monthly_counts$month_name <- month.abb[as.numeric(monthly_counts$month)]
-        
-        plot_ly(
-          data = monthly_counts,
-          x = ~month_name,
-          y = ~documents,
+
+        # Ensure we have data after aggregation
+        if (!is.null(monthly_counts) && nrow(monthly_counts) > 0) {
+          plot_ly(
+            data = monthly_counts,
+            x = ~month_name,
+            y = ~documents,
           type = 'bar',
           marker = list(color = '#28a745')
-        ) %>%
-          layout(
-            title = "",
-            xaxis = list(title = "Month"),
-            yaxis = list(title = "Documents"),
-            margin = list(t = 30)
-          )
+          ) %>%
+            layout(
+              title = "",
+              xaxis = list(title = "Month"),
+              yaxis = list(title = "Documents"),
+              margin = list(t = 30)
+            )
+        } else {
+          plot_ly() %>% layout(title = "No data after month aggregation")
+        }
       } else {
         plot_ly() %>% layout(title = "Seasonal data not available")
       }
