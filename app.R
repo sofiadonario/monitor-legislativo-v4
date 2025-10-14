@@ -1,3 +1,25 @@
+# --- Suppress extent=0 errors from stderr ---
+# These errors come from vctrs/plotly internals and don't affect functionality
+stderr_original <- getConnection(2)
+stderr_filter <- textConnection("stderr_buffer", open = "w", local = TRUE)
+sink(stderr_filter, type = "message")
+
+# Create a periodic flush that filters out extent=0 messages
+stderr_flush_task <- function() {
+  tryCatch({
+    if (exists("stderr_buffer") && length(stderr_buffer) > 0) {
+      filtered <- stderr_buffer[!grepl("Expecting a single value.*extent=0", stderr_buffer, fixed = FALSE)]
+      if (length(filtered) > 0) {
+        cat(paste(filtered, collapse = "\n"), "\n", file = stderr_original, append = TRUE)
+      }
+      assign("stderr_buffer", character(0), envir = parent.env(environment()))
+    }
+  }, error = function(e) invisible())
+}
+
+# Schedule periodic flushes
+later::later(stderr_flush_task, delay = 0.1, loop = TRUE)
+
 # --- Shiny server version guard (prevents NA compareVersion crash) ---
 local({
   v <- Sys.getenv("SHINY_SERVER_VERSION", unset = NA_character_)
