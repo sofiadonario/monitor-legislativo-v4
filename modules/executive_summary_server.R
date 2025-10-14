@@ -347,23 +347,27 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Advanced Trends Chart
   output$exec_advanced_trends <- renderPlotly({
+    # CRITICAL: req() FIRST to halt execution during startup
+    analytics <- analytics_data()
+    req(!is.null(analytics))
+    req(is.list(analytics))
+    req(!is.null(analytics$temporal_analysis))
+
+    trends_data <- analytics$temporal_analysis$monthly_trends
+    req(!is.null(trends_data))
+    req(is.data.frame(trends_data))
+    req(nrow(trends_data) > 0)
+    req("document_count" %in% names(trends_data))
+    req("year_month" %in% names(trends_data))
+
+    # Ensure columns have actual data
+    req(length(trends_data$document_count) > 0)
+    req(length(trends_data$year_month) > 0)
+    req(sum(!is.na(trends_data$document_count)) > 0)
+
     # Suppress stderr during initial render to prevent "Expecting a single value" errors
     tryCatch({
       cat("[EXEC DEBUG] exec_advanced_trends starting...\n", file = stderr())
-
-      # Safely get analytics data with error suppression
-      analytics <- tryCatch({
-        analytics_data()
-      }, error = function(e) {
-        cat("[EXEC DEBUG] Error in analytics_data():", conditionMessage(e), "\n", file = stderr())
-        return(NULL)
-      })
-
-      if (is.null(analytics)) {
-        cat("[EXEC GUARD] exec_advanced_trends analytics NULL – placeholder will be returned\n", file = stderr())
-      } else {
-        cat("[EXEC DEBUG] exec_advanced_trends got analytics data\n", file = stderr())
-      }
 
       # Validate analytics structure before accessing nested data
       if (is.null(analytics) || !is.list(analytics) ||
@@ -373,7 +377,6 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         validate(need(FALSE, "Loading analytics data..."))
       }
 
-      trends_data <- analytics$temporal_analysis$monthly_trends
       if (is.null(trends_data) || !is.data.frame(trends_data)) {
         cat("[EXEC GUARD] exec_advanced_trends monthly_trends missing – validating\n", file = stderr())
         validate(need(FALSE, "Loading analytics data..."))
@@ -481,21 +484,22 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Geographic Analysis Chart
   output$exec_geographic_analysis <- renderPlotly({
+    # CRITICAL: req() FIRST to halt execution during startup
+    analytics <- analytics_data()
+    req(!is.null(analytics))
+    req(is.list(analytics))
+    req(!is.null(analytics$geographic_analysis))
+    req(is.list(analytics$geographic_analysis))
+
+    geo_data <- analytics$geographic_analysis$state_analysis
+    req(!is.null(geo_data))
+    req(is.data.frame(geo_data))
+    req(nrow(geo_data) > 0)
+    req("state_clean" %in% names(geo_data))
+
     # Suppress stderr during initial render to prevent "Expecting a single value" errors
     tryCatch({
       cat("[EXEC DEBUG] exec_geographic_analysis starting...\n", file = stderr())
-      # Safely get analytics data with error suppression
-      analytics <- tryCatch({
-        analytics_data()
-      }, error = function(e) {
-        cat("[EXEC DEBUG] Error in analytics_data() for geo:", conditionMessage(e), "\n", file = stderr())
-        return(NULL)
-      })
-
-      if (is.null(analytics)) {
-        cat("[EXEC GUARD] exec_geographic_analysis analytics NULL – validating\n", file = stderr())
-        validate(need(FALSE, "Loading geographic data..."))
-      }
 
       # Validate analytics structure before accessing nested data
       if (!is.list(analytics$geographic_analysis)) {
@@ -503,7 +507,6 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         validate(need(FALSE, "Loading geographic data..."))
       }
 
-      geo_data <- analytics$geographic_analysis$state_analysis
       if (is.null(geo_data) || !is.data.frame(geo_data)) {
         cat("[EXEC GUARD] exec_geographic_analysis state_analysis missing – validating\n", file = stderr())
         validate(need(FALSE, "Loading geographic data..."))
