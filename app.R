@@ -717,6 +717,7 @@ server <- function(input, output, session) {
 
   # Fallback chart implementations
   output$state_chart <- renderPlotly({
+    cat("[TRACE] app:state_chart start\n", file = stderr())
     tryCatch({
       data <- get_analytics_data()
       req(!is.null(data))
@@ -747,6 +748,7 @@ server <- function(input, output, session) {
   })
 
   output$type_chart <- renderPlotly({
+    cat("[TRACE] app:type_chart start\n", file = stderr())
     tryCatch({
       data <- get_analytics_data()
       req(!is.null(data))
