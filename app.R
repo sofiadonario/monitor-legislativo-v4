@@ -719,8 +719,16 @@ server <- function(input, output, session) {
   output$state_chart <- renderPlotly({
     tryCatch({
       data <- get_analytics_data()
+      req(!is.null(data))
+      req(is.data.frame(data))
+      req(nrow(data) > 0)
+
       if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
         chart_data <- prepare_chart_data(data, "geographic")
+        req(!is.null(chart_data))
+        req(is.data.frame(chart_data))
+        req(nrow(chart_data) > 0)
+
         if (!is.null(chart_data) && is.data.frame(chart_data) && nrow(chart_data) > 0) {
           p <- ggplot(chart_data, aes(x = reorder(state, count), y = count)) +
             geom_bar(stat = "identity", fill = "#3498db") +
@@ -741,8 +749,16 @@ server <- function(input, output, session) {
   output$type_chart <- renderPlotly({
     tryCatch({
       data <- get_analytics_data()
+      req(!is.null(data))
+      req(is.data.frame(data))
+      req(nrow(data) > 0)
+
       if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
         chart_data <- prepare_chart_data(data, "category")
+        req(!is.null(chart_data))
+        req(is.data.frame(chart_data))
+        req(nrow(chart_data) > 0)
+
         if (!is.null(chart_data) && is.data.frame(chart_data) && nrow(chart_data) > 0) {
           p <- ggplot(chart_data, aes(x = reorder(category, count), y = count)) +
             geom_bar(stat = "identity", fill = "#e74c3c") +
