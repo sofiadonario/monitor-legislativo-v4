@@ -331,6 +331,52 @@ tryCatch({
 
 cat("Safety override installation complete\n\n")
 
+# Override plotly::plotly_build to capture extent errors during widget serialization
+tryCatch({
+  if (requireNamespace("plotly", quietly = TRUE)) {
+    plotly_ns <- asNamespace("plotly")
+    if (exists("plotly_build", envir = plotly_ns, inherits = FALSE)) {
+      original_plotly_build <- get("plotly_build", envir = plotly_ns)
+      unlockBinding("plotly_build", plotly_ns)
+      assign(
+        "plotly_build",
+        function(p, registerFrames = TRUE) {
+          output_info <- tryCatch(shiny::getCurrentOutputInfo(), error = function(...) NULL)
+          output_id <- if (!is.null(output_info) && !is.null(output_info$outputId)) output_info$outputId else "<unknown>"
+          tryCatch(
+            original_plotly_build(p, registerFrames = registerFrames),
+            error = function(e) {
+              msg <- conditionMessage(e)
+              extent_guard <- grepl("Expecting a single value: [extent=0]", msg, fixed = TRUE)
+              if (extent_guard) {
+                cat("[TRACE] plotly_build extent guard triggered for output:", output_id, "\n", file = stderr())
+                placeholder <- plotly::plot_ly() %>%
+                  plotly::add_annotations(
+                    text = "Data unavailable - waiting for load",
+                    x = 0.5, y = 0.5,
+                    showarrow = FALSE
+                  ) %>%
+                  plotly::layout(
+                    xaxis = list(visible = FALSE),
+                    yaxis = list(visible = FALSE)
+                  )
+                return(original_plotly_build(placeholder, registerFrames = registerFrames))
+              }
+              cat("[TRACE] plotly_build error for output", output_id, ":", msg, "\n", file = stderr())
+              stop(e)
+            }
+          )
+        },
+        envir = plotly_ns
+      )
+      lockBinding("plotly_build", plotly_ns)
+      cat("✅ plotly::plotly_build override installed\n")
+    }
+  }
+}, error = function(e) {
+  cat("⚠️  [plotly_build-hook] unable to override plotly::plotly_build:", conditionMessage(e), "\n", file = stderr())
+})
+
 # Continue loading packages
 library(shinydashboard)
 library(DT)
