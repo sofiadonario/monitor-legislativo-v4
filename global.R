@@ -341,6 +341,9 @@ tryCatch({
       assign(
         "plotly_build",
         function(p, registerFrames = TRUE) {
+          if (isTRUE(attr(p, "ml_extent_guard_placeholder"))) {
+            return(original_plotly_build(p, registerFrames = registerFrames))
+          }
           output_info <- tryCatch(shiny::getCurrentOutputInfo(), error = function(...) NULL)
           output_id <- if (!is.null(output_info) && !is.null(output_info$outputId)) output_info$outputId else "<unknown>"
           tryCatch(
@@ -360,6 +363,7 @@ tryCatch({
                     xaxis = list(visible = FALSE),
                     yaxis = list(visible = FALSE)
                   )
+                attr(placeholder, "ml_extent_guard_placeholder") <- TRUE
                 return(original_plotly_build(placeholder, registerFrames = registerFrames))
               }
               cat("[TRACE] plotly_build error for output", output_id, ":", msg, "\n", file = stderr())
