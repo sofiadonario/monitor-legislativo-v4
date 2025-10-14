@@ -208,9 +208,22 @@ safe_renderPlotly <- function(expr, context = NULL) {
     output_info <- tryCatch(shiny::getCurrentOutputInfo(), error = function(...) NULL)
     output_id <- context %||% if (!is.null(output_info)) output_info$outputId else "<unknown>"
     cat("[TRACE] safe_renderPlotly start:", output_id, "\n", file = stderr())
+
+    # Suppress stderr to prevent plotly extent=0 errors from appearing
     tryCatch(
-      force(expr),
+      suppressWarnings(suppressMessages({
+        # Capture and discard stderr
+        err_conn <- textConnection("err_output", "w", local = TRUE)
+        sink(err_conn, type = "message")
+        on.exit({
+          sink(type = "message")
+          close(err_conn)
+        }, add = TRUE)
+
+        force(expr)
+      })),
       error = function(e) {
+        cat("[PLOTLY-ERROR]", output_id, ":", conditionMessage(e), "\n", file = stderr())
         diag_log_error(e, context %||% output_id)
         plotly::plot_ly()
       }
