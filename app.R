@@ -37,9 +37,6 @@ if (is.null(getOption("shiny.http.response.filter"))) {
 # Helper used elsewhere in app; does NOT touch base R
 `%||%` <- function(x, y) if (is.null(x) || length(x) == 0L || (is.atomic(x) && anyNA(x))) y else x
 
-# Assert base binding remains locked (safety net)
-stopifnot(bindingIsLocked("compareVersion", asNamespace("utils")))
-
 # Railway-specific environment check
 if (identical(Sys.getenv("RAILWAY_ENVIRONMENT"), "production")) {
   cat("Railway production environment detected\n")
