@@ -347,13 +347,17 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Advanced Trends Chart
   output$exec_advanced_trends <- renderPlotly({
+    cat("[EXEC-CHART] exec_advanced_trends: START\n", file = stderr())
+
     # CRITICAL: req() FIRST to halt execution during startup
     analytics <- analytics_data()
+    cat(sprintf("[EXEC-CHART] exec_advanced_trends: analytics is.null=%s\n", is.null(analytics)), file = stderr())
     req(!is.null(analytics))
     req(is.list(analytics))
     req(!is.null(analytics$temporal_analysis))
 
     trends_data <- analytics$temporal_analysis$monthly_trends
+    cat(sprintf("[EXEC-CHART] exec_advanced_trends: trends_data nrow=%d\n", nrow(trends_data)), file = stderr())
     req(!is.null(trends_data))
     req(is.data.frame(trends_data))
     req(nrow(trends_data) > 0)
@@ -364,6 +368,8 @@ init_executive_summary_server <- function(input, output, session, get_document_d
     req(length(trends_data$document_count) > 0)
     req(length(trends_data$year_month) > 0)
     req(sum(!is.na(trends_data$document_count)) > 0)
+
+    cat("[EXEC-CHART] exec_advanced_trends: PASSED all req() guards, rendering chart\n", file = stderr())
 
     # Suppress stderr during initial render to prevent "Expecting a single value" errors
     tryCatch({
@@ -484,18 +490,24 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   
   # Geographic Analysis Chart
   output$exec_geographic_analysis <- renderPlotly({
+    cat("[EXEC-CHART] exec_geographic_analysis: START\n", file = stderr())
+
     # CRITICAL: req() FIRST to halt execution during startup
     analytics <- analytics_data()
+    cat(sprintf("[EXEC-CHART] exec_geographic_analysis: analytics is.null=%s\n", is.null(analytics)), file = stderr())
     req(!is.null(analytics))
     req(is.list(analytics))
     req(!is.null(analytics$geographic_analysis))
     req(is.list(analytics$geographic_analysis))
 
     geo_data <- analytics$geographic_analysis$state_analysis
+    cat(sprintf("[EXEC-CHART] exec_geographic_analysis: geo_data nrow=%d\n", nrow(geo_data)), file = stderr())
     req(!is.null(geo_data))
     req(is.data.frame(geo_data))
     req(nrow(geo_data) > 0)
     req("state_clean" %in% names(geo_data))
+
+    cat("[EXEC-CHART] exec_geographic_analysis: PASSED all req() guards, rendering chart\n", file = stderr())
 
     # Suppress stderr during initial render to prevent "Expecting a single value" errors
     tryCatch({
