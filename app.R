@@ -97,15 +97,13 @@ safe_module_loaded <- function(module_name) {
   isTRUE(modules_loaded[[module_name]])
 }
 
-# Load Executive Summary Module [TEMPORARILY DISABLED FOR DEBUGGING]
+# Load Executive Summary Module
 tryCatch({
-  if (FALSE && file.exists("modules/executive_summary_ui.R") && file.exists("modules/executive_summary_server.R")) {
+  if (file.exists("modules/executive_summary_ui.R") && file.exists("modules/executive_summary_server.R")) {
     source("modules/executive_summary_ui.R")
     source("modules/executive_summary_server.R")
     modules_loaded$executive_summary <- TRUE
     cat("✅ Executive Summary module loaded\n")
-  } else {
-    cat("⚠️ Executive Summary module DISABLED for debugging\n")
   }
 }, error = function(e) {
   cat("⚠️ Executive Summary module failed:", e$message, "\n")
@@ -717,62 +715,54 @@ server <- function(input, output, session) {
   # Fallback chart implementations
   output$state_chart <- renderPlotly({
     cat("[TRACE] app:state_chart start\n", file = stderr())
+
+    # CRITICAL: Halt execution early if data isn't ready
+    data <- tryCatch(get_analytics_data(), error = function(e) NULL)
+    req(!is.null(data), is.data.frame(data), nrow(data) > 0)
+
+    chart_data <- tryCatch(prepare_chart_data(data, "geographic"), error = function(e) NULL)
+    req(!is.null(chart_data), is.data.frame(chart_data), nrow(chart_data) > 0)
+    req("state" %in% names(chart_data), "count" %in% names(chart_data))
+
+    # CRITICAL: Verify actual count values exist and are non-zero
+    count_values <- suppressWarnings(as.numeric(chart_data$count))
+    req(length(count_values) > 0, sum(!is.na(count_values)) > 0, sum(count_values > 0, na.rm = TRUE) > 0)
+
     tryCatch({
-      data <- get_analytics_data()
-      req(!is.null(data))
-      req(is.data.frame(data))
-      req(nrow(data) > 0)
-
-      if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
-        chart_data <- prepare_chart_data(data, "geographic")
-        req(!is.null(chart_data))
-        req(is.data.frame(chart_data))
-        req(nrow(chart_data) > 0)
-
-        if (!is.null(chart_data) && is.data.frame(chart_data) && nrow(chart_data) > 0) {
-          p <- ggplot(chart_data, aes(x = reorder(state, count), y = count)) +
-            geom_bar(stat = "identity", fill = "#3498db") +
-            labs(title = "Documents by State", x = "State", y = "Document Count") +
-            coord_flip() + theme_minimal()
-          ggplotly(p)
-        } else {
-          plotly_empty() %>% layout(title = "No geographic data available")
-        }
-      } else {
-        plotly_empty() %>% layout(title = "Loading data...")
-      }
+      p <- ggplot(chart_data, aes(x = reorder(state, count), y = count)) +
+        geom_bar(stat = "identity", fill = "#3498db") +
+        labs(title = "Documents by State", x = "State", y = "Document Count") +
+        coord_flip() + theme_minimal()
+      ggplotly(p)
     }, error = function(e) {
+      cat("[ERROR] state_chart ggplotly failed:", conditionMessage(e), "\n", file = stderr())
       plotly_empty() %>% layout(title = "Chart loading...")
     })
   })
 
   output$type_chart <- renderPlotly({
     cat("[TRACE] app:type_chart start\n", file = stderr())
+
+    # CRITICAL: Halt execution early if data isn't ready
+    data <- tryCatch(get_analytics_data(), error = function(e) NULL)
+    req(!is.null(data), is.data.frame(data), nrow(data) > 0)
+
+    chart_data <- tryCatch(prepare_chart_data(data, "category"), error = function(e) NULL)
+    req(!is.null(chart_data), is.data.frame(chart_data), nrow(chart_data) > 0)
+    req("category" %in% names(chart_data), "count" %in% names(chart_data))
+
+    # CRITICAL: Verify actual count values exist and are non-zero
+    count_values <- suppressWarnings(as.numeric(chart_data$count))
+    req(length(count_values) > 0, sum(!is.na(count_values)) > 0, sum(count_values > 0, na.rm = TRUE) > 0)
+
     tryCatch({
-      data <- get_analytics_data()
-      req(!is.null(data))
-      req(is.data.frame(data))
-      req(nrow(data) > 0)
-
-      if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
-        chart_data <- prepare_chart_data(data, "category")
-        req(!is.null(chart_data))
-        req(is.data.frame(chart_data))
-        req(nrow(chart_data) > 0)
-
-        if (!is.null(chart_data) && is.data.frame(chart_data) && nrow(chart_data) > 0) {
-          p <- ggplot(chart_data, aes(x = reorder(category, count), y = count)) +
-            geom_bar(stat = "identity", fill = "#e74c3c") +
-            labs(title = "Documents by Category", x = "Category", y = "Document Count") +
-            coord_flip() + theme_minimal()
-          ggplotly(p)
-        } else {
-          plotly_empty() %>% layout(title = "No category data available")
-        }
-      } else {
-        plotly_empty() %>% layout(title = "Loading data...")
-      }
+      p <- ggplot(chart_data, aes(x = reorder(category, count), y = count)) +
+        geom_bar(stat = "identity", fill = "#e74c3c") +
+        labs(title = "Documents by Category", x = "Category", y = "Document Count") +
+        coord_flip() + theme_minimal()
+      ggplotly(p)
     }, error = function(e) {
+      cat("[ERROR] type_chart ggplotly failed:", conditionMessage(e), "\n", file = stderr())
       plotly_empty() %>% layout(title = "Chart loading...")
     })
   })
