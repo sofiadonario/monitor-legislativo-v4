@@ -1,0 +1,108 @@
+version: "3.9"
+
+services:
+  # PostgreSQL with PostGIS
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: monitor-legislativo-db
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: legis
+      POSTGRES_USER: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - monitor-net
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: monitor-legislativo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - monitor-net
+
+  # R Plumber API
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: monitor-legislativo-api
+    environment:
+      # PostgreSQL connection
+      PGHOST: db
+      PGDATABASE: legis
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGPORT: 5432
+      # Redis connection
+      REDIS_URL: redis://redis:6379
+      # API configuration
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./api:/app/api:ro
+      - ./database:/app/database:ro
+    restart: unless-stopped
+    networks:
+      - monitor-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # React Web Frontend
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: http://localhost:8000
+    container_name: monitor-legislativo-web
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - monitor-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pg_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  monitor-net:
+    driver: bridge

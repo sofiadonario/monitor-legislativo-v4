@@ -262,6 +262,27 @@ docker run -p 3838:3838 \
   monitor-legislativo
 ```
 
+**With Docker Compose (Local Development):**
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Start all services (PostgreSQL, Redis, API, Web)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+Services will be available at:
+- **API**: http://localhost:8000
+- **Web**: http://localhost:5173
+- **PostgreSQL**: localhost:5432
+- **Redis**: localhost:6379
+
 ## Testing
 
 ### Running Tests
@@ -320,12 +341,12 @@ The application is configured for automatic deployment on Railway:
 
 ### Docker Deployment
 
-**Build:**
+**Single Container Build:**
 ```bash
 docker build -t monitor-legislativo .
 ```
 
-**Run:**
+**Single Container Run:**
 ```bash
 docker run -d \
   --name monitor-legislativo \
@@ -334,6 +355,37 @@ docker run -d \
   -e ENABLE_QUERY_MONITORING=false \
   monitor-legislativo
 ```
+
+**Docker Compose (Full Stack):**
+
+The project includes a complete Docker Compose setup for local development with all services:
+
+```bash
+# Start all services
+docker-compose up -d
+
+# Services included:
+# - PostgreSQL with PostGIS (port 5432)
+# - Redis cache (port 6379)
+# - R Plumber API (port 8000)
+# - React Web Frontend (port 5173)
+
+# View logs
+docker-compose logs -f api
+docker-compose logs -f web
+
+# Stop all services
+docker-compose down
+
+# Remove volumes (clean slate)
+docker-compose down -v
+```
+
+**Services:**
+- **db**: PostgreSQL 16 with PostGIS 3.4, includes automatic migrations
+- **redis**: Redis 7 for API caching
+- **api**: R Plumber REST API with health checks
+- **web**: React + Vite frontend with nginx
 
 ## Architecture
 
