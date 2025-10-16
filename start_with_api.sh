@@ -15,6 +15,13 @@ if [ -n "$DATABASE_URL" ]; then
         echo "⚠️  Schema initialization failed, but continuing startup..."
         echo "   (This is non-fatal - schema may already exist)"
     }
+
+    echo ""
+    echo "📊 Initializing demographics and bills per 100k metric..."
+    Rscript database/migrations/init_demographics.R || {
+        echo "⚠️  Demographics initialization failed, but continuing startup..."
+        echo "   (This is non-fatal - demographics may already exist)"
+    }
 else
     echo "ℹ️  No DATABASE_URL - skipping schema initialization"
 fi
