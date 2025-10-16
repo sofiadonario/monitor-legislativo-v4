@@ -315,6 +315,10 @@ COPY plumber.R ./
 # Copy essential system files
 COPY railway_migrate.sh ./
 COPY health_check.R ./
+COPY start_with_db_init.sh ./
+
+# Copy database migration files
+COPY --chown=shinyapp:shinyapp database/ ./database/
 
 # Copy data directory with actual CSV files (CRITICAL for fallback when database unavailable)
 COPY --chown=shinyapp:shinyapp data_current/ ./data_current/
@@ -341,7 +345,8 @@ COPY --chown=shinyapp:shinyapp R/ ./R/
 # Create required directories with proper ownership
 RUN mkdir -p analytics_output logs cache tmp && \
     chown -R shinyapp:shinyapp /app && \
-    chmod -R 755 /app
+    chmod -R 755 /app && \
+    chmod +x /app/start_with_db_init.sh /app/railway_migrate.sh
 
 # Remove any potentially dangerous files that might have been copied
 RUN find /app -name "*.R" -path "*/RAILWAY_PRODUCTION_DB_FIX.R" -delete 2>/dev/null || true && \
@@ -367,5 +372,5 @@ EXPOSE 3838
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
 
-# Use standard Shiny app entry point
-CMD ["R", "-e", "shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', '3838')))"]
+# Use startup script that initializes database schema before starting app
+CMD ["/app/start_with_db_init.sh"]
