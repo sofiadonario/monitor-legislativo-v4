@@ -13,111 +13,6 @@
 # - CORS support
 # ============================================================================
 
-library(plumber)
-library(DBI)
-library(jsonlite)
-
-cat("🚀 Starting Monitor Legislativo API\n")
-
-# Load shared utilities
-source("api/lib/validators.R")
-source("api/lib/redis.R")
-source("api/lib/cache.R")
-source("api/lib/http_cache.R")
-
-# Load database connection
-if (file.exists("db/connection.R")) {
-  source("db/connection.R")
-  cat("✅ Database connection loaded\n")
-}
-
-# Initialize database connection pool
-if (!exists("con_pg")) {
-  tryCatch({
-    DATABASE_URL <- Sys.getenv("DATABASE_URL")
-    if (DATABASE_URL != "") {
-      con_pg <- dbConnect(
-        RPostgres::Postgres(),
-        dbname = DATABASE_URL
-      )
-      cat("✅ PostgreSQL connected\n")
-    } else {
-      con_pg <- NULL
-      cat("⚠️  No DATABASE_URL - API will use fallback data\n")
-    }
-  }, error = function(e) {
-    con_pg <- NULL
-    cat("⚠️  Database connection failed:", e$message, "\n")
-  })
-}
-
-# Load route handlers
-source("api/routes_search.R")
-source("api/routes_doc.R")
-source("api/routes_agg.R")
-source("api/routes_map.R")
-
-cat("✅ All route handlers loaded\n")
-
-# Global error handler
-#* @filter error-handler
-function(req, res) {
-  tryCatch(
-    {
-      plumber::forward()
-    },
-    api_error = function(e) {
-      res$status <- 400
-      list(
-        error = e$error,
-        message = e$message,
-        timestamp = Sys.time()
-      )
-    },
-    error = function(e) {
-      res$status <- 500
-      list(
-        error = "internal_error",
-        message = "An unexpected error occurred",
-        timestamp = Sys.time()
-      )
-    }
-  )
-}
-
-# CORS filter
-#* @filter cors
-function(req, res) {
-  res$setHeader("Access-Control-Allow-Origin", "*")
-  res$setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS"
-  )
-  res$setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-API-Key"
-  )
-
-  if (req$REQUEST_METHOD == "OPTIONS") {
-    res$status <- 200
-    return(list())
-  }
-
-  plumber::forward()
-}
-
-# Request logging filter
-#* @filter logger
-function(req, res) {
-  cat(sprintf(
-    "[%s] %s %s\n",
-    format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-    req$REQUEST_METHOD,
-    req$PATH_INFO
-  ))
-  plumber::forward()
-}
-
 #* @apiTitle Monitor Legislativo API
 #* @apiDescription Brazilian Legislative Monitoring System REST API
 #* @apiVersion 1.0.0
@@ -126,6 +21,59 @@ function(req, res) {
 #* @apiTag Aggregations Dashboard statistics and aggregations
 #* @apiTag Geographic Map and geographic data
 #* @apiTag System Health and system information
+
+library(plumber)
+library(DBI)
+library(RPostgres)
+
+# Load shared utilities
+source("api/lib/validators.R")
+source("api/lib/redis.R")
+source("api/lib/cache.R")
+source("api/lib/http_cache.R")
+
+# Initialize database connection
+con_pg <- dbConnect(
+  RPostgres::Postgres(),
+  dbname   = Sys.getenv("PGDATABASE", "legis"),
+  host     = Sys.getenv("PGHOST", "127.0.0.1"),
+  user     = Sys.getenv("PGUSER", "postgres"),
+  password = Sys.getenv("PGPASSWORD", ""),
+  port     = as.integer(Sys.getenv("PGPORT", "5432"))
+)
+
+cat("✅ PostgreSQL connected\n")
+
+# Create plumber API object
+pr <- pr() %>%
+  pr_set_error(function(req, res, err) {
+    status <- if (inherits(err, "api_error")) 422 else 500
+    res$status <- status
+    list(
+      error = if (status == 422) "invalid_request" else "server_error",
+      message = conditionMessage(err) %||% "Unexpected error",
+      request_id = req$HEADERS[["x-request-id"]] %||% ""
+    )
+  }) %>%
+  pr_hooks(list(
+    preroute = function(req) {
+      req$start <- Sys.time()
+    },
+    postserialize = function(req, res, val) {
+      dur <- as.numeric(difftime(Sys.time(), req$start, units = "secs"))
+      res$setHeader("X-Response-Time", sprintf("%.3fs", dur))
+    }
+  ))
+
+cat("✅ API hooks configured\n")
+
+# Register route handlers
+source("api/routes_search.R", local = TRUE)
+source("api/routes_doc.R", local = TRUE)
+source("api/routes_agg.R", local = TRUE)
+source("api/routes_map.R", local = TRUE)
+
+cat("✅ All route handlers loaded\n")
 
 #* Get API information
 #* @get /
@@ -181,17 +129,13 @@ function() {
 #* @get /health
 #* @serializer json
 function() {
-  db_status <- if (!is.null(con_pg)) {
-    tryCatch(
-      {
-        dbGetQuery(con_pg, "SELECT 1")
-        "connected"
-      },
-      error = function(e) "error"
-    )
-  } else {
-    "unavailable"
-  }
+  db_status <- tryCatch(
+    {
+      dbGetQuery(con_pg, "SELECT 1")
+      "connected"
+    },
+    error = function(e) "error"
+  )
 
   redis_status <- if (redis_is_connected()) "connected" else "unavailable"
 
@@ -199,7 +143,6 @@ function() {
     status = "healthy",
     database = db_status,
     redis = redis_status,
-    uptime_seconds = as.numeric(Sys.time() - .GlobalEnv$.start_time),
     timestamp = Sys.time()
   )
 }
@@ -214,10 +157,8 @@ cache_stats_handler
 #* @serializer json
 cache_clear_handler
 
-# Store start time
-if (!exists(".start_time", envir = .GlobalEnv)) {
-  assign(".start_time", Sys.time(), envir = .GlobalEnv)
-}
-
 cat("✅ API ready to serve requests\n")
-cat("📚 Visit /swagger for interactive documentation\n")
+cat("📚 Visit /__docs__/ for interactive documentation\n")
+
+# Run the API
+pr$run(host = "0.0.0.0", port = 8000)

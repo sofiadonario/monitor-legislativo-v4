@@ -30,19 +30,22 @@ if (length(missing_packages) > 0) {
 # Get configuration from environment
 API_HOST <- Sys.getenv("API_HOST", "0.0.0.0")
 API_PORT <- as.integer(Sys.getenv("API_PORT", Sys.getenv("PORT", "8000")))
-API_WORKERS <- as.integer(Sys.getenv("API_WORKERS", "1"))
 
 cat(sprintf("📋 Configuration:\n"))
 cat(sprintf("   Host: %s\n", API_HOST))
-cat(sprintf("   Port: %d\n", API_PORT))
-cat(sprintf("   Workers: %d\n\n", API_WORKERS))
+cat(sprintf("   Port: %d\n\n", API_PORT))
 
-# Check database connection
-DATABASE_URL <- Sys.getenv("DATABASE_URL", "")
-if (DATABASE_URL != "") {
-  cat("✅ DATABASE_URL configured\n")
+# Check database configuration
+PGDATABASE <- Sys.getenv("PGDATABASE", "")
+PGHOST <- Sys.getenv("PGHOST", "")
+
+if (PGDATABASE != "" && PGHOST != "") {
+  cat("✅ PostgreSQL environment variables configured\n")
+  cat(sprintf("   Database: %s\n", PGDATABASE))
+  cat(sprintf("   Host: %s\n", PGHOST))
 } else {
-  cat("⚠️  No DATABASE_URL - API will run with fallback data\n")
+  cat("⚠️  PostgreSQL environment variables not fully configured\n")
+  cat("   Using defaults from plumber.R\n")
 }
 
 # Check Redis
@@ -58,12 +61,7 @@ cat("\n")
 # Create and run the API
 tryCatch(
   {
-    cat("🚀 Loading API routes...\n")
-
-    # Load the main plumber file
-    pr <- plumber::plumb("api/plumber.R")
-
-    cat("✅ API routes loaded\n\n")
+    cat("🚀 Starting API server...\n\n")
 
     cat("================================================================================\n")
     cat("API SERVER STARTING\n")
@@ -72,13 +70,8 @@ tryCatch(
     cat(sprintf("   Docs: http://%s:%d/__docs__/\n", if (API_HOST == "0.0.0.0") "localhost" else API_HOST, API_PORT))
     cat("================================================================================\n\n")
 
-    # Run the API
-    pr$run(
-      host = API_HOST,
-      port = API_PORT,
-      swagger = TRUE,
-      debug = Sys.getenv("API_DEBUG", "false") == "true"
-    )
+    # Source the plumber.R file which will start the server
+    source("api/plumber.R")
   },
   error = function(e) {
     cat("❌ Failed to start API server:", e$message, "\n")
