@@ -4,8 +4,7 @@ dockerfilePath = "Dockerfile"
 dockerContext = "."
 
 [deploy]
-# Deterministic startup with health check API
-startCommand = "R -e \"library(shiny); options(shiny.host='0.0.0.0', shiny.port=as.numeric(Sys.getenv('PORT', '8080'))); runApp('app.R')\""
+# Use Dockerfile's CMD (/usr/bin/shiny-server) - no startCommand override
 # Health check endpoints with production timeout
 healthcheckPath = "/health"
 healthcheckTimeout = 45
