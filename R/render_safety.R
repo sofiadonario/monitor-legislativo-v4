@@ -36,15 +36,10 @@ if (is.null(getOption("mlv4.safe.render.installed"))) {
     }, width, height, res, ..., env = env, quoted = TRUE)
   }
 
-  # Leaflet
-  if (requireNamespace("leaflet", quietly = TRUE)) {
-    leaflet::renderLeaflet <- function(expr, env = parent.frame(), quoted = FALSE) {
-      shiny::shinyRenderWidget({
-        if (!quoted) expr <- substitute(expr)
-        safe_wrap(eval(expr, env), fallback = leaflet::leaflet() %>% leaflet::addTiles())
-      }, leaflet::leafletOutput, env, TRUE)
-    }
-  }
+  # Leaflet - skip wrapping (complex widget, rarely source of scalar errors)
+  # if (requireNamespace("leaflet", quietly = TRUE)) {
+  #   # Leaflet wrapping disabled - use validate(need()) in individual outputs
+  # }
 
   # DT
   if (requireNamespace("DT", quietly = TRUE)) {
