@@ -221,6 +221,77 @@ source("R/utils/ui_utils.R", local = TRUE)
 source("R/output_guard.R", local = TRUE)
 cat("✅ Output guard system loaded\n")
 
+# ==============================================================================
+# INSTALL RENDER GUARDS (IDEMPOTENT)
+# ==============================================================================
+if (is.null(getOption("mlv4.guard.installed"))) {
+  options(mlv4.guard.installed = TRUE)
+  message("🛡️ Installing global render guards")
+
+  # renderText
+  renderText <- function(expr, env = parent.frame(), quoted = FALSE) {
+    shiny::renderText({
+      with_output_guard({ if (!quoted) expr <- substitute(expr); eval(expr, env) },
+                        fallback = "–", label = "renderText")
+    }, env, TRUE)
+  }
+
+  # renderUI
+  renderUI <- function(expr, env = parent.frame(), quoted = FALSE) {
+    shiny::renderUI({
+      with_output_guard({ if (!quoted) expr <- substitute(expr); eval(expr, env) },
+                        fallback = div(""), label = "renderUI")
+    }, env, TRUE)
+  }
+
+  # renderPlot
+  renderPlot <- function(expr, width = "auto", height = "auto", res = 72, ..., env = parent.frame(), quoted = FALSE) {
+    shiny::renderPlot({
+      with_output_guard({ if (!quoted) expr <- substitute(expr); eval(expr, env) },
+                        fallback = NULL, label = "renderPlot")
+    }, width, height, res, ..., env = env, quoted = TRUE)
+  }
+
+  # leaflet
+  if (requireNamespace("leaflet", quietly = TRUE)) {
+    leaflet::renderLeaflet <- function(expr, env = parent.frame(), quoted = FALSE) {
+      shiny::shinyRenderWidget({
+        with_output_guard({ if (!quoted) expr <- substitute(expr); eval(expr, env) },
+                          fallback = leaflet::leaflet() %>% leaflet::addTiles(),
+                          label = "renderLeaflet")
+      }, leaflet::leafletOutput, env, TRUE)
+    }
+  }
+
+  # DT
+  if (requireNamespace("DT", quietly = TRUE)) {
+    DT::renderDataTable <- function(expr, options = NULL, server = FALSE, env = parent.frame(), quoted = FALSE) {
+      shiny::renderDataTable({
+        with_output_guard({ if (!quoted) expr <- substitute(expr); eval(expr, env) },
+                          fallback = DT::datatable(data.frame()), label = "renderDataTable")
+      }, options = options, server = server, env = env, quoted = TRUE)
+    }
+  }
+
+  # shinydashboard valueBox
+  if (requireNamespace("shinydashboard", quietly = TRUE)) {
+    shinydashboard::renderValueBox <- function(expr, env = parent.frame(), quoted = FALSE) {
+      shiny::renderUI({
+        with_output_guard({
+          if (!quoted) expr <- substitute(expr)
+          vb <- eval(expr, env)
+          if (inherits(vb, "shiny.tag")) vb else {
+            val <- scalar1(vb); shinydashboard::valueBox(fmt_int(val), "")
+          }
+        }, fallback = shinydashboard::valueBox("–", "", color = "yellow"),
+        label = "renderValueBox")
+      }, env, TRUE)
+    }
+  }
+
+  message("🛡️ Global render guards installed")
+}
+
 # ESSENTIAL PACKAGES
 # ==================
 library(shiny)
