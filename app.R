@@ -1,30 +1,19 @@
 # ============================================================================
-# PRODUCTION ERROR TRACER (Railway-friendly)
+# ERROR-ONLY TRACER (captures outputId without log spam)
 # ============================================================================
-# This runs in BOTH production and development to pinpoint exact failing outputs
 options(
   shiny.fullstacktrace = TRUE,
-  shiny.sanitize.errors = FALSE,  # Show real errors to find root cause
+  shiny.sanitize.errors = FALSE,
   shiny.error = function(e) {
-    cat("! SHINY ERROR:", conditionMessage(e), "\n", file = stderr())
+    # Output id if we're inside a render
+    out_id <- tryCatch({
+      info <- shiny::getCurrentOutputInfo()
+      if (!is.null(info)) info$outputId else NA_character_
+    }, error = function(_) NA_character_)
 
-    # Include the name of the current output if available
-    current <- tryCatch({
-      domain <- shiny::getDefaultReactiveDomain()
-      if (!is.null(domain)) domain$outputId else NULL
-    }, error = function(e) NULL)
-
-    if (!is.null(current)) {
-      cat("! OUTPUT ID:", current, "\n", file = stderr())
-    }
-
-    # Best-effort stack trace
-    if (requireNamespace("rlang", quietly = TRUE)) {
-      tryCatch(print(rlang::trace_back(bottom = e)), error = function(e) NULL)
-    } else {
-      tryCatch(traceback(2), error = function(e) NULL)
-    }
-
+    cat("! SHINY ERROR:", conditionMessage(e),
+        if (!is.na(out_id)) paste(" outputId=", out_id) else "",
+        "\n", sep = "")
     flush.console()
   }
 )
@@ -49,20 +38,10 @@ local({
   }
 })
 
-# --- Health & server options (Railway) ---
-options(shiny.host = "0.0.0.0",
-        shiny.port = as.integer(Sys.getenv("PORT", "3838")))
-
-# Tiny static health path
-local({
-  dir.create("health", showWarnings = FALSE)
-  ok <- file.path("health", "index.html")
-  if (!file.exists(ok)) writeLines("<!doctype html><title>ok</title>ok", ok, useBytes = TRUE)
-  if (!"health" %in% names(shiny::resourcePaths()))
-    shiny::addResourcePath("health", "health")
-})
-
-# Exact /health (no slash) for Railway
+# ============================================================================
+# HEALTH + SAFE BOOT
+# ============================================================================
+# Serve a simple /health endpoint that always returns 200 "ok"
 if (is.null(getOption("shiny.http.response.filter"))) {
   options(shiny.http.response.filter = function(req, res) {
     path <- req$PATH_INFO %||% "/"
@@ -72,36 +51,27 @@ if (is.null(getOption("shiny.http.response.filter"))) {
       res$body <- charToRaw("ok")
       return(res)
     }
-    NULL
+    NULL  # let Shiny handle everything else
   })
 }
 
-# Helper used elsewhere in app; does NOT touch base R
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0L || (is.atomic(x) && anyNA(x))) y else x
+`%||%` <- function(x, y) if (is.null(x) || length(x) == 0L) y else x
 
-# Railway-specific environment check
-if (identical(Sys.getenv("RAILWAY_ENVIRONMENT"), "production")) {
-  cat("Railway production environment detected\n")
-}
+# Load global.R safely (NO stop(e) !)
+tryCatch(
+  {
+    cat("[APP STARTUP] Loading global.R...\n")
+    source("global.R", local = TRUE)
+    cat("[APP STARTUP] global.R loaded successfully\n")
+  },
+  error = function(err) {
+    cat("[APP STARTUP ERROR] Failed to load global.R: ", conditionMessage(err), "\n", sep = "")
+    # still start the app; your modules may degrade gracefully
+  }
+)
 
-# Monitor Legislativo v4 - Complete Production Application
-# ========================================================
-# Brazilian Legislative Monitoring System
-# Comprehensive Analytics Dashboard with Full Feature Set
-# Railway Deployment Ready
-
-# Load global configuration and system initialization with enhanced error logging
-tryCatch({
-  cat("[APP STARTUP] Loading global.R...\n", file = stderr())
-  source("global.R")
-  cat("[APP STARTUP] global.R loaded successfully\n", file = stderr())
-}, error = function(e) {
-  msg <- sprintf("[APP STARTUP ERROR] Failed to load global.R: %s\n", conditionMessage(e))
-  cat(msg, file = stderr())
-  cat("[APP STARTUP ERROR] Stack trace:\n", file = stderr())
-  print(sys.calls(), stderr())
-  stop(e)
-})
+# Bind to Railway port
+options(shiny.host = "0.0.0.0", shiny.port = as.integer(Sys.getenv("PORT", "3838")))
 
 # Safety utilities are automatically loaded from global.R via scalar_utils.R
 # No need to source R/safety.R - all safety functions are in R/utils/scalar_utils.R
