@@ -1,19 +1,31 @@
 # ============================================================================
-# ERROR-ONLY TRACER (captures outputId without log spam)
+# ERROR-ONLY TRACER (captures outputId + stack ONLY on error)
 # ============================================================================
 options(
   shiny.fullstacktrace = TRUE,
   shiny.sanitize.errors = FALSE,
   shiny.error = function(e) {
-    # Output id if we're inside a render
+    # Best-effort output id (works on Shiny >= 1.7.4)
     out_id <- tryCatch({
       info <- shiny::getCurrentOutputInfo()
       if (!is.null(info)) info$outputId else NA_character_
-    }, error = function(err) NA_character_)
+    }, error = function(...) NA_character_)
+
+    # Fallback for older code paths
+    if (is.na(out_id)) {
+      out_id <- tryCatch({
+        dom <- shiny::getDefaultReactiveDomain()
+        if (!is.null(dom) && !is.null(dom$outputId)) dom$outputId else NA_character_
+      }, error = function(...) NA_character_)
+    }
 
     cat("! SHINY ERROR:", conditionMessage(e),
         if (!is.na(out_id)) paste(" outputId=", out_id) else "",
         "\n", sep = "")
+
+    # terse traceback with top few frames (avoid log floods)
+    tb <- utils::tail(utils::capture.output(traceback(max.lines = 2)), 8)
+    if (length(tb)) cat(paste0("! TRACE: ", paste(tb, collapse=" | ")), "\n")
     flush.console()
   }
 )
