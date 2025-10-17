@@ -214,6 +214,13 @@ ENABLE_QUERY_MONITORING <- tolower(Sys.getenv("ENABLE_QUERY_MONITORING", "false"
 # Ensure our UI helpers are available everywhere
 source("R/utils/ui_utils.R", local = TRUE)
 
+# ==============================================================================
+# SURGICAL OUTPUT GUARD SYSTEM
+# ==============================================================================
+# Source output guard BEFORE any modules/packages that define renders
+source("R/output_guard.R", local = TRUE)
+cat("✅ Output guard system loaded\n")
+
 # ESSENTIAL PACKAGES
 # ==================
 library(shiny)
@@ -525,6 +532,21 @@ cat("Optional packages processed\n")
 source("R/utils/database_utils.R", local = TRUE)
 init_db_pool()
 
+# ==============================================================================
+# DATABASE HEALTH CHECK
+# ==============================================================================
+# Verify data exists to prevent empty-data scalar crashes
+tryCatch({
+  if (exists("db_connection_pool") && !is.null(db_connection_pool)) {
+    n_docs <- DBI::dbGetQuery(db_connection_pool, "SELECT COUNT(*) AS n FROM legis_docs")$n[[1]]
+    cat(sprintf("[HEALTH] legis_docs rows: %s\n", format(n_docs, big.mark = ",")))
+  } else {
+    cat("[HEALTH] Database pool not available for health check\n")
+  }
+}, error = function(e) {
+  cat(sprintf("[HEALTH] Health check failed: %s\n", conditionMessage(e)))
+})
+
 # LOAD DATA SERVICE MODULE
 # ========================
 source("modules/data_service.R")
@@ -570,46 +592,6 @@ for (module_file in module_files) {
     })
   }
 }
-
-# ==============================================================================
-# NUCLEAR OPTION: Direct validateSingleValue override injection
-# ==============================================================================
-cat("🚨 INJECTING validateSingleValue override DIRECTLY...\n", file = stderr())
-tryCatch({
-  shiny_ns <- asNamespace("shiny")
-  vsv_exists <- exists("validateSingleValue", envir = shiny_ns, inherits = FALSE)
-  cat("[INJECT] validateSingleValue exists (inherits=FALSE):", vsv_exists, "\n", file = stderr())
-
-  if (!vsv_exists) {
-    vsv_exists <- exists("validateSingleValue", envir = shiny_ns, inherits = TRUE)
-    cat("[INJECT] validateSingleValue exists (inherits=TRUE):", vsv_exists, "\n", file = stderr())
-  }
-
-  if (vsv_exists) {
-    original_vsv <- get("validateSingleValue", envir = shiny_ns)
-    unlockBinding("validateSingleValue", shiny_ns)
-    assign("validateSingleValue", function(value, name, ...) {
-      len <- length(value)
-      if (len == 0L) {
-        cat("[VSV-INJECT] CRASH PREVENTED:", name, "was length-0\n", file = stderr())
-        cat("[VSV-INJECT] Stack:", paste(head(sys.calls(), 10), collapse = " | "), "\n", file = stderr())
-        return(NA_character_)
-      }
-      if (len > 1L) {
-        cat("[VSV-INJECT]", name, "had length", len, "- using first\n", file = stderr())
-        value <- value[1L]
-      }
-      original_vsv(value, name, ...)
-    }, envir = shiny_ns)
-    lockBinding("validateSingleValue", shiny_ns)
-    cat("✅ validateSingleValue INJECTED successfully\n", file = stderr())
-  } else {
-    cat("❌ validateSingleValue NOT FOUND - listing validate functions:\n", file = stderr())
-    cat(paste(grep("validate", ls(shiny_ns), ignore.case = TRUE, value = TRUE), collapse = ", "), "\n", file = stderr())
-  }
-}, error = function(e) {
-  cat("❌ validateSingleValue injection FAILED:", e$message, "\n", file = stderr())
-})
 
 # Global hammer: mask valueBox to prevent length-0 crashes
 if (exists("safe_valueBox") && is.function(safe_valueBox)) {
@@ -744,55 +726,6 @@ options(
     stop(e)
   }
 )
-
-# Instrument shiny's validateSingleValue to log zero-length issues and prevent crashes
-tryCatch({
-  shiny_ns <- asNamespace("shiny")
-  if (exists("validateSingleValue", envir = shiny_ns, inherits = FALSE)) {
-    original_validate <- get("validateSingleValue", envir = shiny_ns)
-    unlockBinding("validateSingleValue", shiny_ns)
-    assign("validateSingleValue", function(value, name, ...) {
-      len <- length(value)
-      if (len == 0L) {
-        cat("[validateSingleValue] CRITICAL:", name, "len=0", "class=", paste(class(value), collapse = ","), "\n", file = stderr())
-        value_str <- tryCatch(capture.output(str(value)), error = function(...) "<unable to str>")
-        cat(paste(value_str, collapse = "\n"), "\n", file = stderr())
-        
-        # Get stack trace for debugging
-        stack_trace <- tryCatch(capture.output(sys.calls()), error = function(...) "<unable to get stack>")
-        cat("Stack trace:\n", paste(stack_trace, collapse = "\n"), "\n", file = stderr())
-        
-        append_len0_summary("validateSingleValue", list(name = name, value_str = value_str, stack = stack_trace))
-
-        # Return safe fallback instead of crashing
-        fallback <- switch(typeof(value),
-          "logical" = NA,
-          "integer" = NA_integer_,
-          "double" = NA_real_,
-          "complex" = NA_complex_,
-          "character" = "—",
-          "raw" = raw(1),
-          "—"
-        )
-
-        cat("[validateSingleValue] Returning safe fallback:", fallback, "for", name, "\n", file = stderr())
-        return(fallback)
-      }
-
-      if (len > 1L) {
-        cat("[validateSingleValue]", name, "len=", len, "class=", paste(class(value), collapse = ","), "\n", file = stderr())
-        append_len0_summary("validateSingleValue_multi", list(name = name, len = len, preview = as.character(value[seq_len(min(5, len))])))
-        value <- value[1L]
-      }
-
-      original_validate(value, name, ...)
-    }, envir = shiny_ns)
-    lockBinding("validateSingleValue", shiny_ns)
-    cat("✅ validateSingleValue override installed for crash prevention\n")
-  }
-}, error = function(e) {
-  cat("[validateSingleValue-hook] unable to install tracer:", conditionMessage(e), "\n", file = stderr())
-})
 
 # LOAD SYSTEM MODULES
 # ===================
