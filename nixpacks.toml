@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["R", "glibcLocales"]
+
+[phases.install]
+cmds = ["Rscript install.R"]
+
+[start]
+cmd = "R -e \"shiny::runApp('app.R', host='0.0.0.0', port=as.integer(Sys.getenv('PORT', 3838)))\""
