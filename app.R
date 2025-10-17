@@ -1,3 +1,20 @@
+# ============================================================================
+# FORENSIC MODE - Enable for local debugging
+# ============================================================================
+# Uncomment these lines for local development debugging:
+# options(
+#   shiny.error = browser,          # Drop into debugger at exact error line
+#   shiny.fullstacktrace = TRUE,    # Full call stack on errors
+#   shiny.reactlog = TRUE           # Reactive graph (Ctrl/Cmd+F3)
+# )
+#
+# During production, keep errors sanitized for users:
+if (identical(Sys.getenv("RAILWAY_ENVIRONMENT"), "production")) {
+  options(shiny.sanitize.errors = TRUE)   # Hide internals from users
+} else {
+  options(shiny.sanitize.errors = FALSE)  # Show real errors during dev
+}
+
 # --- Shiny server version guard (prevents NA compareVersion crash) ---
 local({
   v <- Sys.getenv("SHINY_SERVER_VERSION", unset = NA_character_)
@@ -59,6 +76,21 @@ tryCatch({
   cat("[APP STARTUP ERROR] Stack trace:\n", file = stderr())
   print(sys.calls(), stderr())
   stop(e)
+})
+
+# Load safety library for defensive programming
+tryCatch({
+  cat("[APP STARTUP] Loading R/safety.R...\n", file = stderr())
+  source("R/safety.R")
+  init_safety(debug = !identical(Sys.getenv("RAILWAY_ENVIRONMENT"), "production"))
+  cat("[APP STARTUP] Safety library loaded successfully\n", file = stderr())
+}, error = function(e) {
+  cat("[APP STARTUP WARNING] Failed to load R/safety.R:", conditionMessage(e), "\n", file = stderr())
+  # Define minimal fallbacks if safety.R fails to load
+  log_debug <- function(...) cat("[DEBUG]", ..., "\n")
+  log_info <- function(...) cat("[INFO]", ..., "\n")
+  log_warn <- function(...) cat("[WARN]", ..., "\n")
+  log_error <- function(...) cat("[ERROR]", ..., "\n")
 })
 
 ## ---- Safe defaults for app_config used by app.R ----
