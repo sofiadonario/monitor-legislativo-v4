@@ -1,26 +1,30 @@
-#' Test Suite for Safety Library (R/safety.R)
+#' Test Suite for Safety Library (R/utils/scalar_utils.R + ui_utils.R)
 #'
 #' Comprehensive tests for defensive programming utilities
 #' Created: 2025-01-16
+#' Updated: 2025-01-16 - Consolidated into existing scalar_utils.R
+
+# Load the safety utilities
+source("R/utils/scalar_utils.R")
 
 context("Safety Library - Scalar Extraction")
 
-test_that("as_scalar handles NULL and empty vectors", {
-  # NULL input with allow_na=TRUE
-  expect_equal(as_scalar(NULL, "test", allow_na = TRUE), NA)
+test_that("scalar functions handle NULL and empty vectors", {
+  # NULL input
+  expect_equal(scalar(NULL, default = NA), NA)
+  expect_equal(scalar_chr(NULL), "—")
+  expect_equal(scalar_num(NULL), 0)
+  expect_equal(scalar_int(NULL), 0L)
 
-  # Empty vector with allow_na=TRUE
-  expect_equal(as_scalar(character(0), "test", allow_na = TRUE), NA)
-
-  # NULL input with allow_na=FALSE should error
-  expect_error(
-    as_scalar(NULL, "test", allow_na = FALSE),
-    "Missing required value: test"
-  )
+  # Empty vector
+  expect_equal(scalar(character(0), default = NA), NA)
+  expect_equal(scalar_chr(character(0)), "—")
+  expect_equal(scalar_num(numeric(0)), 0)
+  expect_equal(scalar_int(integer(0)), 0L)
 
   # Empty string vector
-  expect_equal(as_scalar("", "test", allow_na = TRUE), NA)
-  expect_equal(as_scalar(c("  ", "\t"), "test", allow_na = TRUE), NA)
+  expect_equal(scalar_chr(""), "—")
+  expect_equal(scalar_chr(c("  ", "\t")), "—")
 })
 
 test_that("as_scalar extracts first element from vectors", {

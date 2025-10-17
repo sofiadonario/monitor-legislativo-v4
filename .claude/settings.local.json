@@ -14,7 +14,13 @@
       "Bash(timeout 30 git commit -a -m \"fix: handle plotly startup errors with tryCatch blocks\")",
       "Bash(git add:*)",
       "Bash(GIT_OPTIONAL_LOCKS=0 git commit -a -m \"fix: handle plotly startup errors\" --no-verify)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(curl:*)",
+      "Bash(export DATABASE_URL=\"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@postgres.railway.internal:5432/railway\")",
+      "Bash(Rscript:*)",
+      "Bash(test:*)",
+      "Bash(git remote:*)"
     ],
     "deny": [],
     "ask": []
