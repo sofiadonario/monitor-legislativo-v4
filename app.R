@@ -78,20 +78,9 @@ tryCatch({
   stop(e)
 })
 
-# Load safety library for defensive programming
-tryCatch({
-  cat("[APP STARTUP] Loading R/safety.R...\n", file = stderr())
-  source("R/safety.R")
-  init_safety(debug = !identical(Sys.getenv("RAILWAY_ENVIRONMENT"), "production"))
-  cat("[APP STARTUP] Safety library loaded successfully\n", file = stderr())
-}, error = function(e) {
-  cat("[APP STARTUP WARNING] Failed to load R/safety.R:", conditionMessage(e), "\n", file = stderr())
-  # Define minimal fallbacks if safety.R fails to load
-  log_debug <- function(...) cat("[DEBUG]", ..., "\n")
-  log_info <- function(...) cat("[INFO]", ..., "\n")
-  log_warn <- function(...) cat("[WARN]", ..., "\n")
-  log_error <- function(...) cat("[ERROR]", ..., "\n")
-})
+# Safety utilities are automatically loaded from global.R via scalar_utils.R
+# No need to source R/safety.R - all safety functions are in R/utils/scalar_utils.R
+cat("[APP STARTUP] Safety utilities available from scalar_utils.R\n", file = stderr())
 
 ## ---- Safe defaults for app_config used by app.R ----
 if (!exists("app_config")) app_config <- list()

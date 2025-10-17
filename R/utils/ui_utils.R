@@ -280,3 +280,80 @@ renderPlotlySafe <- function(expr, ...) {
     })
   })
 }
+
+# ============================================================================
+# EMPTY STATE UI COMPONENTS (Added 2025-01-16)
+# ============================================================================
+
+#' Create empty state UI card
+#' @param msg Message to display
+#' @param icon Icon name (default: info-circle)
+#' @return HTML div
+empty_card <- function(msg = "Sem resultados. Ajuste os filtros.", icon = "info-circle") {
+  shiny::div(
+    class = "alert alert-info",
+    style = "margin: 20px; padding: 15px; text-align: center;",
+    shiny::icon(icon),
+    " ",
+    msg
+  )
+}
+
+#' Create error state UI card
+#' @param msg Error message to display
+#' @return HTML div
+error_card <- function(msg = "Erro ao carregar dados. Tente novamente.") {
+  shiny::div(
+    class = "alert alert-danger",
+    style = "margin: 20px; padding: 15px; text-align: center;",
+    shiny::icon("exclamation-triangle"),
+    " ",
+    msg
+  )
+}
+
+#' Create loading state UI card
+#' @param msg Loading message to display
+#' @return HTML div
+loading_card <- function(msg = "Carregando...") {
+  shiny::div(
+    class = "alert alert-secondary",
+    style = "margin: 20px; padding: 15px; text-align: center;",
+    shiny::icon("spinner", class = "fa-spin"),
+    " ",
+    msg
+  )
+}
+
+#' Safe render wrapper with error handling
+#' @param expr Expression to render
+#' @param error_msg Error message to show users
+#' @param empty_msg Message for empty results
+#' @return Render function result or error UI
+safe_render <- function(expr, error_msg = "Erro ao renderizar componente.", empty_msg = NULL) {
+  tryCatch({
+    result <- expr
+
+    # Check for NULL/empty results
+    if (is.null(result)) {
+      if (!is.null(empty_msg)) {
+        return(empty_card(empty_msg))
+      }
+      return(NULL)
+    }
+
+    # Check for empty data frames
+    if (is.data.frame(result) && nrow(result) == 0) {
+      if (!is.null(empty_msg)) {
+        return(empty_card(empty_msg))
+      }
+      return(NULL)
+    }
+
+    result
+
+  }, error = function(e) {
+    log_error(sprintf("Render error: %s", conditionMessage(e)))
+    error_card(error_msg)
+  })
+}

@@ -188,3 +188,93 @@ scalar_int_logged <- function(x, default = 0L, context = "") {
   }
   scalar_int(x, default = default)
 }
+
+# ============================================================================
+# ADDITIONAL SAFETY UTILITIES (Added 2025-01-16)
+# ============================================================================
+
+# ---- Structured Logging ----
+log_debug <- function(...) {
+  if (identical(Sys.getenv("DEBUG_SAFETY", "0"), "1")) {
+    cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "| DEBUG |", paste(..., collapse = " "), "\n")
+  }
+}
+
+log_info <- function(...) {
+  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "| INFO  |", paste(..., collapse = " "), "\n")
+}
+
+log_warn <- function(...) {
+  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "| WARN  |", paste(..., collapse = " "), "\n", file = stderr())
+}
+
+log_error <- function(...) {
+  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "| ERROR |", paste(..., collapse = " "), "\n", file = stderr())
+}
+
+# ---- Safe Conversions ----
+safe_as_numeric <- function(x, default = NA_real_) {
+  if (is.null(x) || length(x) == 0) return(default)
+  if (is.character(x) && trimws(x) == "") return(default)
+
+  result <- suppressWarnings(as.numeric(x))
+  if (is.na(result) && !is.na(x)) return(default)
+  result[1]
+}
+
+safe_as_date <- function(x, default = NA) {
+  if (is.null(x) || length(x) == 0) return(default)
+  if (is.character(x) && trimws(x) == "") return(default)
+
+  tryCatch({
+    as.Date(x)[1]
+  }, error = function(e) {
+    default
+  })
+}
+
+# ---- Shiny Validation Helpers ----
+validate_selection <- function(input_value, input_name = "selection") {
+  shiny::validate(
+    shiny::need(
+      !is.null(input_value) && length(input_value) > 0,
+      sprintf("Selecione pelo menos um %s.", input_name)
+    )
+  )
+}
+
+validate_data <- function(df, msg = "Sem dados disponíveis. Ajuste os filtros.") {
+  shiny::validate(
+    shiny::need(!is.null(df) && is.data.frame(df) && nrow(df) > 0, msg)
+  )
+}
+
+validate_range <- function(range, name = "range") {
+  shiny::validate(
+    shiny::need(
+      !is.null(range) && length(range) == 2 && !any(is.na(range)),
+      sprintf("Selecione um intervalo válido para %s.", name)
+    )
+  )
+}
+
+# ---- Database Query Safety ----
+safe_query <- function(pool, query, params = list(), query_name = "query") {
+  tryCatch({
+    log_debug(sprintf("Executing %s with %d params", query_name, length(params)))
+
+    df <- DBI::dbGetQuery(pool, query, params = params)
+
+    if (is.null(df) || nrow(df) == 0) {
+      log_debug(sprintf("%s returned 0 rows", query_name))
+      return(NULL)
+    }
+
+    log_debug(sprintf("%s returned %d rows", query_name, nrow(df)))
+    df
+
+  }, error = function(e) {
+    log_error(sprintf("%s failed: %s", query_name, conditionMessage(e)))
+    NULL
+  })
+}
