@@ -1,3 +1,27 @@
+# --- Production error tracer (logs output id + stack to stdout) ---
+options(
+  shiny.fullstacktrace = TRUE,
+  shiny.sanitize.errors = FALSE,
+  shiny.error = function(e) {
+    cat("! SHINY ERROR:", conditionMessage(e), "\n")
+    # Try to capture the current output id (works inside render contexts)
+    out <- try({
+      dom <- shiny::getDefaultReactiveDomain()
+      if (!is.null(dom) && !is.null(dom$outputId)) dom$outputId else NA_character_
+    }, silent = TRUE)
+    if (!inherits(out, "try-error") && !is.na(out)) {
+      cat("! OUTPUT ID:", out, "\n")
+    }
+    # Print a useful stack
+    if (requireNamespace("rlang", quietly = TRUE)) {
+      try(print(rlang::trace_back(bottom = e)), silent = TRUE)
+    } else {
+      try(traceback(2), silent = TRUE)
+    }
+    flush.console()
+  }
+)
+
 # Global Configuration and Initialization - Monitor Legislativo v4
 # ==================================================================
 # Clean Architecture - No Emergency Patches
