@@ -26,9 +26,9 @@ RUN install2.r --error --skipinstalled -n $(getconf _NPROCESSORS_ONLN) \
     yaml R.utils geojsonio \
     shinydashboardPlus shinyWidgets
 
-# 3) Copy your app into Shiny Server's default path
-WORKDIR /srv/shiny-server
-COPY . /srv/shiny-server/
+# 3) Copy your app into /app directory
+WORKDIR /app
+COPY . /app/
 
 # 4) Environment + port
 ENV PORT=3838
@@ -38,5 +38,5 @@ EXPOSE 3838
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
 
-# 6) Start Shiny Server
-CMD ["/usr/bin/shiny-server"]
+# 6) Start app directly with R (not through shiny-server)
+CMD ["R", "-e", "shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', '3838')))"]
