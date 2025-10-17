@@ -419,7 +419,7 @@ ui <- tryCatch({
                   div()
                 },
                 br(),
-                DTOutput("documents_table")
+                if (DT_AVAILABLE) DTOutput("documents_table") else tableOutput("documents_table")
             )
           )
           }
@@ -806,9 +806,9 @@ server <- function(input, output, session) {
     }
   })
 
-  output$documents_table <- renderDT({
+  output$documents_table <- renderSmartTable({
     if (isTRUE(input$search_btn > 0)) {
-      datatable(
+      smartTable(
         search_results(),
         options = list(
           pageLength = 25,
@@ -820,7 +820,7 @@ server <- function(input, output, session) {
         class = 'cell-border stripe'
       )
     } else {
-      datatable(
+      smartTable(
         data.frame(
           Message = "Enter search terms and click Search to find documents",
           Instructions = "Use the search box above to explore the legislative database"

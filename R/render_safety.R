@@ -41,15 +41,8 @@ if (is.null(getOption("mlv4.safe.render.installed"))) {
   #   # Leaflet wrapping disabled - use validate(need()) in individual outputs
   # }
 
-  # DT
-  if (requireNamespace("DT", quietly = TRUE)) {
-    DT::renderDataTable <- function(expr, options = NULL, server = FALSE, env = parent.frame(), quoted = FALSE) {
-      shiny::renderDataTable({
-        if (!quoted) expr <- substitute(expr)
-        safe_wrap(eval(expr, env), fallback = DT::datatable(data.frame()))
-      }, options = options, server = server, env = env, quoted = TRUE)
-    }
-  }
+  # DT - handled by table_compat.R with renderSmartTable/smartTable
+  # Skip direct wrapping to avoid "object DT not found" errors
 
   # shinydashboard valueBox (many apps build them inside renderUI)
   if (requireNamespace("shinydashboard", quietly = TRUE)) {

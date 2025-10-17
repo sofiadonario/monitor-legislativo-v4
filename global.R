@@ -215,6 +215,12 @@ ENABLE_QUERY_MONITORING <- tolower(Sys.getenv("ENABLE_QUERY_MONITORING", "false"
 source("R/utils/ui_utils.R", local = TRUE)
 
 # ==============================================================================
+# COMPATIBILITY LAYERS (load before packages)
+# ==============================================================================
+source("R/table_compat.R", local = TRUE)
+cat("✅ DT compatibility layer loaded (smart fallbacks)\n")
+
+# ==============================================================================
 # SILENT GLOBAL SAFETY NET (no log spam, prevents white-screen crashes)
 # ==============================================================================
 source("R/render_safety.R", local = TRUE)
@@ -501,7 +507,7 @@ library(stringr)
 # CRITICAL FEATURE PACKAGES
 # =========================
 # These packages power core application features and must be available
-library(jsonlite)   # JSON parsing for APIs and data export
+# NOTE: jsonlite NOT attached to avoid masking shiny::validate - use jsonlite:: prefix
 library(lubridate)  # Date/time manipulation for temporal analytics
 library(httr)       # HTTP client for external API integrations
 library(leaflet)    # Interactive maps (Geographic Analysis + Interactive Maps tabs)
