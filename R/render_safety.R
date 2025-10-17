@@ -1,0 +1,74 @@
+# R/render_safety.R — low-noise global guards
+
+# Helpers
+scalar1 <- function(x) if (is.null(x) || length(x) == 0) NA else x[[1]]
+fmt_int <- function(x) ifelse(is.na(x), "–", formatC(as.integer(x), big.mark=".", format="d"))
+
+safe_wrap <- function(expr, fallback) {
+  tryCatch(force(expr), error = function(e) fallback)
+}
+
+# Install once
+if (is.null(getOption("mlv4.safe.render.installed"))) {
+  options(mlv4.safe.render.installed = TRUE)
+
+  # renderText
+  renderText <- function(expr, env = parent.frame(), quoted = FALSE) {
+    shiny::renderText({
+      if (!quoted) expr <- substitute(expr)
+      safe_wrap(eval(expr, env), fallback = "–")
+    }, env, TRUE)
+  }
+
+  # renderUI
+  renderUI <- function(expr, env = parent.frame(), quoted = FALSE) {
+    shiny::renderUI({
+      if (!quoted) expr <- substitute(expr)
+      safe_wrap(eval(expr, env), fallback = div(""))
+    }, env, TRUE)
+  }
+
+  # renderPlot
+  renderPlot <- function(expr, width = "auto", height = "auto", res = 72, ..., env = parent.frame(), quoted = FALSE) {
+    shiny::renderPlot({
+      if (!quoted) expr <- substitute(expr)
+      safe_wrap(eval(expr, env), fallback = NULL)
+    }, width, height, res, ..., env = env, quoted = TRUE)
+  }
+
+  # Leaflet
+  if (requireNamespace("leaflet", quietly = TRUE)) {
+    leaflet::renderLeaflet <- function(expr, env = parent.frame(), quoted = FALSE) {
+      shiny::shinyRenderWidget({
+        if (!quoted) expr <- substitute(expr)
+        safe_wrap(eval(expr, env), fallback = leaflet::leaflet() %>% leaflet::addTiles())
+      }, leaflet::leafletOutput, env, TRUE)
+    }
+  }
+
+  # DT
+  if (requireNamespace("DT", quietly = TRUE)) {
+    DT::renderDataTable <- function(expr, options = NULL, server = FALSE, env = parent.frame(), quoted = FALSE) {
+      shiny::renderDataTable({
+        if (!quoted) expr <- substitute(expr)
+        safe_wrap(eval(expr, env), fallback = DT::datatable(data.frame()))
+      }, options = options, server = server, env = env, quoted = TRUE)
+    }
+  }
+
+  # shinydashboard valueBox (many apps build them inside renderUI)
+  if (requireNamespace("shinydashboard", quietly = TRUE)) {
+    shinydashboard::renderValueBox <- function(expr, env = parent.frame(), quoted = FALSE) {
+      shiny::renderUI({
+        if (!quoted) expr <- substitute(expr)
+        safe_wrap({
+          vb <- eval(expr, env)
+          if (inherits(vb, "shiny.tag")) vb else {
+            val <- scalar1(vb)
+            shinydashboard::valueBox(fmt_int(val), "")
+          }
+        }, fallback = shinydashboard::valueBox("–", "", color = "yellow"))
+      }, env, TRUE)
+    }
+  }
+}

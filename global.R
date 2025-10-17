@@ -215,11 +215,10 @@ ENABLE_QUERY_MONITORING <- tolower(Sys.getenv("ENABLE_QUERY_MONITORING", "false"
 source("R/utils/ui_utils.R", local = TRUE)
 
 # ==============================================================================
-# SURGICAL OUTPUT GUARD SYSTEM
+# SILENT GLOBAL SAFETY NET (no log spam, prevents white-screen crashes)
 # ==============================================================================
-# Output guard system available but not installed by default (reduces log spam)
-# source("R/output_guard.R", local = TRUE)
-# Uncomment above line and set ENABLE_OUTPUT_GUARDS=1 to enable verbose logging
+source("R/render_safety.R", local = TRUE)
+cat("✅ Silent render safety guards installed\n")
 
 # ESSENTIAL PACKAGES
 # ==================
