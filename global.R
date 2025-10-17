@@ -1,3 +1,8 @@
+# ==============================================================================
+# PRODUCTION ERROR TRACER + VALUEBOX GUARD (IDEMPOTENT)
+# ==============================================================================
+# Must be at TOP of global.R to catch all valueBox calls
+
 # --- Production error tracer (logs output id + stack to stdout) ---
 options(
   shiny.fullstacktrace = TRUE,
@@ -21,6 +26,58 @@ options(
     flush.console()
   }
 )
+
+# --- Global valueBox guard (idempotent, unskippable) ---
+if (is.null(getOption("mlv4.valuebox.guard"))) {
+  options(mlv4.valuebox.guard = TRUE)
+
+  # Define scalar helpers inline (before scalar_utils.R loads)
+  scalar1 <- function(x) {
+    if (is.null(x) || length(x) == 0) return(NA)
+    x[[1]]
+  }
+
+  fmt_int <- function(x) {
+    x_scalar <- scalar1(x)
+    if (is.na(x_scalar)) return("–")
+    formatC(as.integer(x_scalar), big.mark = ".", format = "d")
+  }
+
+  # Production-grade safe_valueBox
+  safe_valueBox <- function(value, subtitle = NULL, icon = NULL, color = "aqua", width = 4) {
+    val <- tryCatch(scalar1(value), error = function(e) NA)
+    val_txt <- tryCatch(fmt_int(val), error = function(e) "–")
+    sub_txt <- if (is.null(subtitle)) "" else as.character(subtitle)
+
+    tryCatch({
+      if (!requireNamespace("shinydashboard", quietly = TRUE)) {
+        return(shiny::div("ValueBox unavailable"))
+      }
+      shinydashboard::valueBox(
+        value = val_txt,
+        subtitle = sub_txt,
+        icon = icon,
+        color = color,
+        width = width
+      )
+    }, error = function(e) {
+      shinydashboard::valueBox(
+        value = "–",
+        subtitle = sub_txt,
+        icon = if (is.null(icon)) shiny::icon("triangle-exclamation") else icon,
+        color = "yellow",
+        width = width
+      )
+    })
+  }
+
+  # Export to global environment immediately
+  assign("safe_valueBox", safe_valueBox, envir = .GlobalEnv)
+  assign("scalar1", scalar1, envir = .GlobalEnv)
+  assign("fmt_int", fmt_int, envir = .GlobalEnv)
+
+  cat("✅ Global valueBox masking applied for crash prevention (idempotent)\n")
+}
 
 # Global Configuration and Initialization - Monitor Legislativo v4
 # ==================================================================
