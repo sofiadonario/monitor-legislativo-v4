@@ -357,3 +357,43 @@ safe_render <- function(expr, error_msg = "Erro ao renderizar componente.", empt
     error_card(error_msg)
   })
 }
+
+# ============================================================================
+# UNIVERSAL RENDER WRAPPER (Added 2025-01-16 for Railway production)
+# ============================================================================
+
+#' Universal safe render wrapper with notification
+#' Ensures misbehaving output never takes down the page
+#' @param expr Expression to render
+#' @param fallback Fallback value if error occurs
+#' @param notify Whether to show notification on error
+#' @param msg Notification message
+#' @return Result or fallback
+safe_render_universal <- function(expr, fallback = NULL, notify = TRUE, msg = "Falha ao renderizar. Ajuste filtros.") {
+  tryCatch(
+    force(expr),
+    error = function(e) {
+      if (notify) {
+        shiny::showNotification(msg, type = "error", duration = 6)
+      }
+      log_error("Render failed:", conditionMessage(e))
+      fallback
+    }
+  )
+}
+
+#' Safe renderText with universal wrapper
+renderTextSafe <- function(expr, fallback = "–") {
+  renderText(safe_render_universal(expr, fallback, notify = FALSE))
+}
+
+#' Safe renderValueBox with universal wrapper
+renderValueBoxSafeUniversal <- function(expr, fallback_value = "–", fallback_subtitle = "Indisponível") {
+  renderUI({
+    safe_render_universal(
+      expr,
+      fallback = safe_valueBox(fallback_value, fallback_subtitle, color = "yellow", icon = icon("exclamation-triangle")),
+      notify = TRUE
+    )
+  })
+}

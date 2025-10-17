@@ -1,19 +1,44 @@
 # ============================================================================
+# PRODUCTION ERROR TRACER (Railway-friendly)
+# ============================================================================
+# This runs in BOTH production and development to pinpoint exact failing outputs
+options(
+  shiny.fullstacktrace = TRUE,
+  shiny.sanitize.errors = FALSE,  # Show real errors to find root cause
+  shiny.error = function(e) {
+    cat("! SHINY ERROR:", conditionMessage(e), "\n", file = stderr())
+
+    # Include the name of the current output if available
+    current <- tryCatch({
+      domain <- shiny::getDefaultReactiveDomain()
+      if (!is.null(domain)) domain$outputId else NULL
+    }, error = function(e) NULL)
+
+    if (!is.null(current)) {
+      cat("! OUTPUT ID:", current, "\n", file = stderr())
+    }
+
+    # Best-effort stack trace
+    if (requireNamespace("rlang", quietly = TRUE)) {
+      tryCatch(print(rlang::trace_back(bottom = e)), error = function(e) NULL)
+    } else {
+      tryCatch(traceback(2), error = function(e) NULL)
+    }
+
+    flush.console()
+  }
+)
+
+# ============================================================================
 # FORENSIC MODE - Enable for local debugging
 # ============================================================================
-# Uncomment these lines for local development debugging:
+# Uncomment these additional lines for local development debugging:
 # options(
 #   shiny.error = browser,          # Drop into debugger at exact error line
-#   shiny.fullstacktrace = TRUE,    # Full call stack on errors
 #   shiny.reactlog = TRUE           # Reactive graph (Ctrl/Cmd+F3)
 # )
 #
-# During production, keep errors sanitized for users:
-if (identical(Sys.getenv("RAILWAY_ENVIRONMENT"), "production")) {
-  options(shiny.sanitize.errors = TRUE)   # Hide internals from users
-} else {
-  options(shiny.sanitize.errors = FALSE)  # Show real errors during dev
-}
+# Note: shiny.fullstacktrace is already enabled above for production tracing
 
 # --- Shiny server version guard (prevents NA compareVersion crash) ---
 local({

@@ -190,6 +190,92 @@ scalar_int_logged <- function(x, default = 0L, context = "") {
 }
 
 # ============================================================================
+# PRODUCTION-GRADE SCALAR EXTRACTORS (Added 2025-01-16)
+# ============================================================================
+# These are impossible-to-crash versions for production Railway deployment
+
+#' Extract scalar with strict validation
+#' @param x Vector to extract from
+#' @param allow_na Whether to return NA for empty/NULL inputs
+#' @return Scalar value or NA/error
+scalar1 <- function(x, allow_na = TRUE) {
+  if (is.null(x) || length(x) == 0) {
+    if (allow_na) return(NA)
+    stop("Missing scalar value (length 0)")
+  }
+  if (length(x) > 1) return(x[[1]])
+  x
+}
+
+#' Safe numeric scalar extraction
+#' @param x Vector to extract from
+#' @param allow_na Whether to return NA for empty/NULL inputs
+#' @return Numeric scalar or NA
+num1 <- function(x, allow_na = TRUE) {
+  x <- scalar1(x, allow_na = allow_na)
+  if (is.na(x)) return(NA_real_)
+  suppressWarnings(as.numeric(x))
+}
+
+#' Safe character scalar extraction
+#' @param x Vector to extract from
+#' @param allow_na Whether to return NA for empty/NULL inputs
+#' @return Character scalar or NA
+chr1 <- function(x, allow_na = TRUE) {
+  x <- scalar1(x, allow_na = allow_na)
+  if (is.na(x)) return(NA_character_)
+  as.character(x)
+}
+
+#' Safe integer scalar extraction
+#' @param x Vector to extract from
+#' @param allow_na Whether to return NA for empty/NULL inputs
+#' @return Integer scalar or NA
+int1 <- function(x, allow_na = TRUE) {
+  x <- scalar1(x, allow_na = allow_na)
+  if (is.na(x)) return(NA_integer_)
+  suppressWarnings(as.integer(x))
+}
+
+# ---- Safe glue that tolerates length-0 inputs ----
+safe_glue <- function(..., .na = "", .sep = "", .collapse = NULL) {
+  if (!requireNamespace("glue", quietly = TRUE)) {
+    # Fallback if glue not available
+    parts <- list(...)
+    parts <- lapply(parts, function(p) if (length(p) == 0) .na else as.character(p))
+    return(paste(unlist(parts), collapse = .sep))
+  }
+
+  parts <- list(...)
+  parts <- lapply(parts, function(p) if (length(p) == 0) .na else p)
+  do.call(glue::glue, c(parts, list(.na = .na, .sep = .sep, .collapse = .collapse)))
+}
+
+# ---- Friendly formatters that handle NA/zero-length ----
+fmt_int <- function(x) {
+  x <- num1(x, allow_na = TRUE)
+  ifelse(is.na(x), "–", formatC(as.integer(x), big.mark = ".", format = "d"))
+}
+
+fmt_pct <- function(x, digits = 1) {
+  x <- num1(x, allow_na = TRUE)
+  ifelse(is.na(x), "–", paste0(formatC(100 * x, format = "f", digits = digits), "%"))
+}
+
+fmt_num <- function(x, digits = 1) {
+  x <- num1(x, allow_na = TRUE)
+  ifelse(is.na(x), "–", formatC(x, big.mark = ".", decimal.mark = ",", digits = digits, format = "f"))
+}
+
+# ---- Safe ratio calculation ----
+safe_ratio <- function(num, den) {
+  num <- num1(num, allow_na = TRUE)
+  den <- num1(den, allow_na = TRUE)
+  if (is.na(num) || is.na(den) || den == 0) return(NA_real_)
+  num / den
+}
+
+# ============================================================================
 # ADDITIONAL SAFETY UTILITIES (Added 2025-01-16)
 # ============================================================================
 
