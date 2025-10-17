@@ -9,7 +9,7 @@ options(
     out_id <- tryCatch({
       info <- shiny::getCurrentOutputInfo()
       if (!is.null(info)) info$outputId else NA_character_
-    }, error = function(_) NA_character_)
+    }, error = function(err) NA_character_)
 
     cat("! SHINY ERROR:", conditionMessage(e),
         if (!is.na(out_id)) paste(" outputId=", out_id) else "",
