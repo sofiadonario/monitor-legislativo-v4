@@ -15,9 +15,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 2) CRITICAL: Disable renv auto-activation in production
+# 2) CRITICAL: Disable renv and .Rprofile entirely in production
 # This prevents .Rprofile from overriding our globally installed packages
 ENV RENV_CONFIG_ACTIVATE_ON_LOAD=FALSE
+ENV R_PROFILE_USER=/dev/null
 
 # 3) Install pak for better dependency management
 RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable/')"
