@@ -20,7 +20,20 @@
       "Bash(export DATABASE_URL=\"postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@postgres.railway.internal:5432/railway\")",
       "Bash(Rscript:*)",
       "Bash(test:*)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(GIT_TERMINAL_PROMPT=0 git push:*)",
+      "Bash(git config:*)",
+      "Read(//Users/sofiadonario/Library/CloudStorage/OneDrive-Personal/**)",
+      "Bash(if [ -n \"$DATABASE_URL\" ])",
+      "Bash(then )",
+      "Bash(elif [ -n \"$PGHOST\" ])",
+      "Bash(echo:*)",
+      "Bash(else )",
+      "Bash(fi)",
+      "Bash(chmod:*)",
+      "Bash(git mv:*)",
+      "Bash(if [ -f \"R/phase2_integration_loader.R\" ])",
+      "Bash(then mv \"R/phase2_integration_loader.R\" \"R/phase2_integration_loader.R.disabled\")"
     ],
     "deny": [],
     "ask": []
