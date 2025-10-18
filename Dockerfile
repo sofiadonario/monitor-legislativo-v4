@@ -1,13 +1,17 @@
 # Base with Shiny Server preinstalled
 FROM rocker/shiny:4.5.1
 
-# 1) System libs (Postgres, curl/ssl, XML; plus GIS libs for sf/leaflet)
+# 1) System libs - CRITICAL: cmake + libabsl-dev needed for s2 (dependency of sf/leaflet)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential g++ make cmake pkg-config \
+    libabsl-dev \
     libpq-dev libssl-dev libcurl4-openssl-dev libxml2-dev \
     libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    libgdal-dev libgeos-dev libproj-dev libudunits2-dev libsqlite3-dev \
+    libgdal-dev libgeos-dev libproj-dev libudunits2-dev liblwgeom-dev libsqlite3-dev \
+    protobuf-compiler libprotobuf-dev \
     postgresql-client \
     curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # 2) Install R packages in explicit order with error handling
