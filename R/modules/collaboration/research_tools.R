@@ -18,14 +18,14 @@
 cat("🤝 Loading Research Collaboration Features Module\n")
 
 # Load required libraries
-if (!require(shiny, quietly = TRUE)) install.packages("shiny")
-if (!require(shinydashboard, quietly = TRUE)) install.packages("shinydashboard")
-if (!require(DT, quietly = TRUE)) install.packages("DT")
-if (!require(dplyr, quietly = TRUE)) install.packages("dplyr")
-if (!require(lubridate, quietly = TRUE)) install.packages("lubridate")
-if (!require(jsonlite, quietly = TRUE)) install.packages("jsonlite")
-if (!require(digest, quietly = TRUE)) install.packages("digest")
-if (!require(uuid, quietly = TRUE)) install.packages("uuid")
+if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny")
+if (!requireNamespace("shinydashboard", quietly = TRUE)) install.packages("shinydashboard")
+if (!requireNamespace("DT", quietly = TRUE)) install.packages("DT")
+if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
+if (!requireNamespace("lubridate", quietly = TRUE)) install.packages("lubridate")
+if (!requireNamespace("jsonlite", quietly = TRUE)) install.packages("jsonlite")
+if (!requireNamespace("digest", quietly = TRUE)) install.packages("digest")
+if (!requireNamespace("uuid", quietly = TRUE)) install.packages("uuid")
 
 library(shiny)
 library(shinydashboard)
