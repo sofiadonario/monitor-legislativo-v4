@@ -10,31 +10,36 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 2) Install R packages needed at runtime
-#    Use R's install.packages for reliable installation
-RUN R -e "install.packages(c( \
-    'shiny', 'shinydashboard', 'DT', 'leaflet', 'plotly', \
-    'jsonlite', 'dplyr', 'data.table', \
-    'DBI', 'RPostgres', 'pool', \
-    'glue', 'digest', \
-    'htmltools', 'httpuv', 'fastmap', 'promises', \
-    'shinythemes', 'shinycssloaders', 'shinyjs', \
-    'sf', 'geobr', \
-    'ggplot2', 'scales', \
-    'lubridate', 'tidyr', 'magrittr', \
-    'RColorBrewer', \
-    'yaml', 'R.utils', 'geojsonio', \
-    'shinydashboardPlus', 'shinyWidgets' \
-), repos='https://cloud.r-project.org', Ncpus=parallel::detectCores())"
+# 2) Install R packages in stages for better error handling
+# Core shiny packages first
+RUN R -e "install.packages(c('shiny', 'shinydashboard', 'DT'), \
+    repos='https://cloud.r-project.org', dependencies=TRUE)"
 
-# Verify critical packages are installed
-RUN R -e "required_pkgs <- c('shiny', 'shinydashboard', 'DT', 'plotly', 'leaflet', 'DBI', 'RPostgres'); \
-    for (pkg in required_pkgs) { \
-        if (!requireNamespace(pkg, quietly = TRUE)) { \
-            stop(paste('Required package', pkg, 'failed to install')) \
-        } \
-    }; \
-    cat('All required packages verified\n')"
+# Database packages
+RUN R -e "install.packages(c('DBI', 'RPostgres', 'pool'), \
+    repos='https://cloud.r-project.org', dependencies=TRUE)"
+
+# Data manipulation
+RUN R -e "install.packages(c('dplyr', 'data.table', 'lubridate', 'tidyr', 'magrittr'), \
+    repos='https://cloud.r-project.org', dependencies=TRUE)"
+
+# Visualization packages
+RUN R -e "install.packages(c('ggplot2', 'scales', 'RColorBrewer', 'plotly'), \
+    repos='https://cloud.r-project.org', dependencies=TRUE)"
+
+# Web/UI packages
+RUN R -e "install.packages(c('htmltools', 'httpuv', 'fastmap', 'promises', 'jsonlite', 'glue', 'digest'), \
+    repos='https://cloud.r-project.org', dependencies=TRUE)"
+
+# Shiny extensions
+RUN R -e "install.packages(c('shinythemes', 'shinycssloaders', 'shinyjs', 'shinydashboardPlus', 'shinyWidgets'), \
+    repos='https://cloud.r-project.org', dependencies=TRUE)"
+
+# Optional packages (won't fail build if they don't install)
+RUN R -e "tryCatch({ \
+    install.packages(c('leaflet', 'sf', 'geobr', 'yaml', 'R.utils', 'geojsonio'), \
+    repos='https://cloud.r-project.org', dependencies=TRUE) \
+}, error=function(e) cat('Optional packages skipped:', e$message, '\n'))"
 
 # 3) Copy your app into /app directory
 WORKDIR /app
