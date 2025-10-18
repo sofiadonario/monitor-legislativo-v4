@@ -11,20 +11,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # 2) Install R packages needed at runtime
-#    Use littler's install2.r (comes with rocker images) for faster, parallel installs
-RUN install2.r --error --skipinstalled -n $(getconf _NPROCESSORS_ONLN) \
-    shiny shinydashboard DT leaflet plotly \
-    jsonlite dplyr data.table \
-    DBI RPostgres pool \
-    glue digest \
-    htmltools httpuv fastmap promises \
-    shinythemes shinycssloaders shinyjs \
-    sf geobr \
-    ggplot2 scales \
-    lubridate tidyr magrittr \
-    RColorBrewer \
-    yaml R.utils geojsonio \
-    shinydashboardPlus shinyWidgets
+#    Use R's install.packages for reliable installation
+RUN R -e "install.packages(c( \
+    'shiny', 'shinydashboard', 'DT', 'leaflet', 'plotly', \
+    'jsonlite', 'dplyr', 'data.table', \
+    'DBI', 'RPostgres', 'pool', \
+    'glue', 'digest', \
+    'htmltools', 'httpuv', 'fastmap', 'promises', \
+    'shinythemes', 'shinycssloaders', 'shinyjs', \
+    'sf', 'geobr', \
+    'ggplot2', 'scales', \
+    'lubridate', 'tidyr', 'magrittr', \
+    'RColorBrewer', \
+    'yaml', 'R.utils', 'geojsonio', \
+    'shinydashboardPlus', 'shinyWidgets' \
+), repos='https://cloud.r-project.org', Ncpus=parallel::detectCores())"
+
+# Verify critical packages are installed
+RUN R -e "required_pkgs <- c('shiny', 'shinydashboard', 'DT', 'plotly', 'leaflet', 'DBI', 'RPostgres'); \
+    for (pkg in required_pkgs) { \
+        if (!requireNamespace(pkg, quietly = TRUE)) { \
+            stop(paste('Required package', pkg, 'failed to install')) \
+        } \
+    }; \
+    cat('All required packages verified\n')"
 
 # 3) Copy your app into /app directory
 WORKDIR /app
