@@ -29,6 +29,23 @@ cat("🚀 MONITOR LEGISLATIVO V4\n")
 cat("   Integrated Architecture\n")
 cat("========================================\n\n")
 
+# CRITICAL: Verify required packages are available at runtime
+cat("🔍 Verifying package availability...\n")
+required_pkgs <- c('shiny', 'shinydashboard', 'DT', 'leaflet', 'DBI', 'RPostgres', 'pool', 'dplyr')
+missing_pkgs <- setdiff(required_pkgs, rownames(installed.packages()))
+
+if (length(missing_pkgs) > 0) {
+  cat("❌ FATAL ERROR: Missing required packages at runtime:\n")
+  cat("   ", paste(missing_pkgs, collapse=", "), "\n\n")
+  cat("Likely causes:\n")
+  cat("  1. renv activated (.Rprofile) but packages not in renv.lock\n")
+  cat("  2. Wrong Dockerfile built (check Railway uses main Dockerfile)\n")
+  cat("  3. Package installation failed during build\n\n")
+  cat("Solution: Set ENV RENV_CONFIG_ACTIVATE_ON_LOAD=FALSE in Dockerfile\n\n")
+  stop("Missing packages: ", paste(missing_pkgs, collapse=", "))
+}
+cat("✅ All required packages available\n\n")
+
 # Load optimized global setup (DB pool, cached functions, preloaded data)
 tryCatch({
   source("global_integrated.R", local = TRUE)

@@ -15,10 +15,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 2) Install pak for better dependency management
+# 2) CRITICAL: Disable renv auto-activation in production
+# This prevents .Rprofile from overriding our globally installed packages
+ENV RENV_CONFIG_ACTIVATE_ON_LOAD=FALSE
+
+# 3) Install pak for better dependency management
 RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable/')"
 
-# 3) Install R packages using pak (faster, better dependency resolution)
+# 4) Install R packages using pak (faster, better dependency resolution)
 # Install in explicit order to avoid dependency cascade issues
 RUN R -q -e "options(Ncpus=parallel::detectCores()); pak::pkg_install(c( \
   'shiny', 'shinydashboard', 'DT', \
@@ -30,7 +34,7 @@ RUN R -q -e "options(Ncpus=parallel::detectCores()); pak::pkg_install(c( \
   'units', 's2', 'sf', 'leaflet' \
 ), upgrade = TRUE)"
 
-# 4) Spatial data helpers (optional - geobr can be heavy)
+# 5) Spatial data helpers (optional - geobr can be heavy)
 RUN R -q -e "tryCatch({ \
   pak::pkg_install(c('geobr', 'rmapshaper', 'geojsonio')); \
   cat('Spatial helpers installed successfully\\n') \
@@ -38,11 +42,22 @@ RUN R -q -e "tryCatch({ \
   cat('WARNING: Some spatial helpers failed (non-critical):', e\$message, '\\n') \
 })"
 
-# 3) Copy your app into /app directory
+# 6) VERIFICATION: Fail build early if critical packages missing
+RUN R -q -e "stopifnot( \
+  requireNamespace('shiny', quietly=TRUE), \
+  requireNamespace('shinydashboard', quietly=TRUE), \
+  requireNamespace('DT', quietly=TRUE), \
+  requireNamespace('leaflet', quietly=TRUE), \
+  requireNamespace('DBI', quietly=TRUE), \
+  requireNamespace('RPostgres', quietly=TRUE), \
+  requireNamespace('pool', quietly=TRUE) \
+); cat('✅ All critical packages verified\\n')"
+
+# 7) Copy your app into /app directory
 WORKDIR /app
 COPY . /app/
 
-# 4) Environment + port
+# 8) Environment + port
 ENV PORT=3838
 EXPOSE 3838
 
