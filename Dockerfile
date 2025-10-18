@@ -2,85 +2,41 @@
 FROM rocker/shiny:4.5.1
 
 # 1) System libs - CRITICAL: cmake + libabsl-dev needed for s2 (dependency of sf/leaflet)
+# NOTE: liblwgeom-dev doesn't exist in Ubuntu 24.04 (noble) - removed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential g++ make cmake pkg-config \
     libabsl-dev \
     libpq-dev libssl-dev libcurl4-openssl-dev libxml2-dev \
     libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    libgdal-dev libgeos-dev libproj-dev libudunits2-dev liblwgeom-dev libsqlite3-dev \
+    libgdal-dev libgeos-dev libproj-dev libudunits2-dev libsqlite3-dev \
     protobuf-compiler libprotobuf-dev \
     postgresql-client \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 2) Install R packages in explicit order with error handling
-# CRITICAL: Core shiny packages must succeed
-RUN R -e "options(timeout = 600); \
-    pkgs <- c('shiny', 'shinydashboard', 'DT'); \
-    for (pkg in pkgs) { \
-      cat('Installing', pkg, '...\n'); \
-      install.packages(pkg, repos='https://cloud.r-project.org', dependencies=TRUE); \
-      if (!requireNamespace(pkg, quietly=TRUE)) stop(paste('FAILED:', pkg)); \
-      cat('SUCCESS:', pkg, '\n'); \
-    }"
+# 2) Install pak for better dependency management
+RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable/')"
 
-# Database packages - CRITICAL
-RUN R -e "options(timeout = 600); \
-    pkgs <- c('DBI', 'RPostgres', 'pool'); \
-    for (pkg in pkgs) { \
-      cat('Installing', pkg, '...\n'); \
-      install.packages(pkg, repos='https://cloud.r-project.org', dependencies=TRUE); \
-      if (!requireNamespace(pkg, quietly=TRUE)) stop(paste('FAILED:', pkg)); \
-      cat('SUCCESS:', pkg, '\n'); \
-    }"
+# 3) Install R packages using pak (faster, better dependency resolution)
+# Install in explicit order to avoid dependency cascade issues
+RUN R -q -e "options(Ncpus=parallel::detectCores()); pak::pkg_install(c( \
+  'shiny', 'shinydashboard', 'DT', \
+  'DBI', 'RPostgres', 'pool', \
+  'dplyr', 'data.table', 'lubridate', 'tidyr', 'magrittr', 'stringr', 'readr', \
+  'ggplot2', 'scales', 'RColorBrewer', 'plotly', \
+  'htmltools', 'httpuv', 'fastmap', 'promises', 'future', 'jsonlite', 'glue', 'digest', 'httr', 'memoise', \
+  'shinythemes', 'shinycssloaders', 'shinyjs', 'shinydashboardPlus', 'shinyWidgets', \
+  'units', 's2', 'sf', 'leaflet' \
+), upgrade = TRUE)"
 
-# Data manipulation - CRITICAL
-RUN R -e "options(timeout = 600); \
-    pkgs <- c('dplyr', 'data.table', 'lubridate', 'tidyr', 'magrittr', 'stringr', 'readr'); \
-    for (pkg in pkgs) { \
-      cat('Installing', pkg, '...\n'); \
-      install.packages(pkg, repos='https://cloud.r-project.org', dependencies=TRUE); \
-      if (!requireNamespace(pkg, quietly=TRUE)) stop(paste('FAILED:', pkg)); \
-      cat('SUCCESS:', pkg, '\n'); \
-    }"
-
-# Visualization packages - CRITICAL
-RUN R -e "options(timeout = 600); \
-    pkgs <- c('ggplot2', 'scales', 'RColorBrewer', 'plotly'); \
-    for (pkg in pkgs) { \
-      cat('Installing', pkg, '...\n'); \
-      install.packages(pkg, repos='https://cloud.r-project.org', dependencies=TRUE); \
-      if (!requireNamespace(pkg, quietly=TRUE)) stop(paste('FAILED:', pkg)); \
-      cat('SUCCESS:', pkg, '\n'); \
-    }"
-
-# Web/utility packages
-RUN R -e "options(timeout = 600); \
-    install.packages(c('htmltools', 'httpuv', 'fastmap', 'promises', 'future', 'jsonlite', 'glue', 'digest', 'httr', 'memoise'), \
-    repos='https://cloud.r-project.org', dependencies=TRUE)"
-
-# Shiny extensions
-RUN R -e "options(timeout = 600); \
-    install.packages(c('shinythemes', 'shinycssloaders', 'shinyjs', 'shinydashboardPlus', 'shinyWidgets'), \
-    repos='https://cloud.r-project.org', dependencies=TRUE)"
-
-# Spatial packages (may take longer, but required for maps)
-RUN R -e "options(timeout = 900); \
-    install.packages(c('sf', 'lwgeom', 'units'), repos='https://cloud.r-project.org', dependencies=TRUE)"
-
-RUN R -e "options(timeout = 900); \
-    install.packages('leaflet', repos='https://cloud.r-project.org', dependencies=TRUE); \
-    if (!requireNamespace('leaflet', quietly=TRUE)) stop('FAILED: leaflet is required for maps')"
-
-# Spatial data helpers (optional but useful)
-RUN R -e "options(timeout = 900); \
-    tryCatch({ \
-      install.packages(c('geobr', 'rmapshaper', 'geojsonio'), repos='https://cloud.r-project.org', dependencies=TRUE); \
-      cat('Spatial helpers installed successfully\n') \
-    }, error=function(e) { \
-      cat('WARNING: Some spatial helpers failed (non-critical):', e$message, '\n') \
-    })"
+# 4) Spatial data helpers (optional - geobr can be heavy)
+RUN R -q -e "tryCatch({ \
+  pak::pkg_install(c('geobr', 'rmapshaper', 'geojsonio')); \
+  cat('Spatial helpers installed successfully\\n') \
+}, error = function(e) { \
+  cat('WARNING: Some spatial helpers failed (non-critical):', e\$message, '\\n') \
+})"
 
 # 3) Copy your app into /app directory
 WORKDIR /app
