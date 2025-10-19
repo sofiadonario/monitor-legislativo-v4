@@ -57,7 +57,8 @@ RUN R -q -e "stopifnot( \
 ); cat('✅ All critical packages verified at build time\\n')"
 
 # 7) Copy your app into /app directory
-# Cache bust: force rebuild of application layer
+# Cache bust: use build arg to force rebuild
+ARG CACHEBUST=1
 WORKDIR /app
 COPY . /app/
 
