@@ -15,25 +15,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 2) CRITICAL: Disable renv and .Rprofile entirely in production
-# This prevents .Rprofile from overriding our globally installed packages
+# 2) CRITICAL: Disable renv and all user profiles in production
+# This prevents any auto-activation or profile hijacking of library paths
+ENV RENV_CONFIG_AUTO_ACTIVATE=FALSE
 ENV RENV_CONFIG_ACTIVATE_ON_LOAD=FALSE
 ENV R_PROFILE_USER=/dev/null
+ENV R_ENVIRON_USER=/dev/null
 
 # 3) Install pak for better dependency management
 RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable/')"
 
-# 4) Install R packages using pak (faster, better dependency resolution)
-# Install in explicit order to avoid dependency cascade issues
-RUN R -q -e "options(Ncpus=parallel::detectCores()); pak::pkg_install(c( \
-  'shiny', 'shinydashboard', 'DT', \
-  'DBI', 'RPostgres', 'pool', \
-  'dplyr', 'data.table', 'lubridate', 'tidyr', 'magrittr', 'stringr', 'readr', \
-  'ggplot2', 'scales', 'RColorBrewer', 'plotly', \
-  'htmltools', 'httpuv', 'fastmap', 'promises', 'future', 'jsonlite', 'glue', 'digest', 'httr', 'memoise', \
-  'shinythemes', 'shinycssloaders', 'shinyjs', 'shinydashboardPlus', 'shinyWidgets', \
-  'units', 's2', 'sf', 'leaflet' \
-), upgrade = TRUE)"
+# 4) Install R packages explicitly (no Suggests avalanche)
+RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
+  install.packages(c( \
+    'shinydashboard','shiny','DT', \
+    'DBI','RPostgres','pool', \
+    'dplyr','data.table','lubridate','tidyr','magrittr','stringr','readr', \
+    'ggplot2','scales','RColorBrewer','plotly', \
+    'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
+    'shinythemes','shinycssloaders','shinyjs','shinydashboardPlus','shinyWidgets', \
+    'units','s2','sf','leaflet' \
+  ), repos='https://cloud.r-project.org')"
 
 # 5) Spatial data helpers (optional - geobr can be heavy)
 RUN R -q -e "tryCatch({ \
@@ -43,16 +45,16 @@ RUN R -q -e "tryCatch({ \
   cat('WARNING: Some spatial helpers failed (non-critical):', e\$message, '\\n') \
 })"
 
-# 6) VERIFICATION: Fail build early if critical packages missing
+# 6) VERIFICATION: Fail build if must-haves aren't truly there
 RUN R -q -e "stopifnot( \
-  requireNamespace('shiny', quietly=TRUE), \
   requireNamespace('shinydashboard', quietly=TRUE), \
+  requireNamespace('shiny', quietly=TRUE), \
   requireNamespace('DT', quietly=TRUE), \
   requireNamespace('leaflet', quietly=TRUE), \
   requireNamespace('DBI', quietly=TRUE), \
   requireNamespace('RPostgres', quietly=TRUE), \
   requireNamespace('pool', quietly=TRUE) \
-); cat('✅ All critical packages verified\\n')"
+); cat('✅ All critical packages verified at build time\\n')"
 
 # 7) Copy your app into /app directory
 WORKDIR /app
