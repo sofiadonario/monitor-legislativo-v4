@@ -4,7 +4,7 @@
 # Optimized for Railway deployment and Brazilian academic context
 
 library(shiny)
-library(shinydashboard)
+# shinydashboard loaded via R/000_load_shinydashboard.R preload file
 library(plotly)
 library(DT)
 library(dplyr)

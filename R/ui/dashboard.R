@@ -1,9 +1,5 @@
 # DASHBOARD UI
-# Ensure shinydashboard is attached before building dashboard components
-if (!requireNamespace("shinydashboard", quietly = TRUE)) {
-  stop("Package 'shinydashboard' is required but not installed.")
-}
-library(shinydashboard)
+# shinydashboard loaded via R/000_load_shinydashboard.R preload file
 
 # Monitor Legislativo v4 - Main Dashboard Layout
 # ==============================================

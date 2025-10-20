@@ -17,11 +17,7 @@
 
 cat("🔬 Loading Research Collaboration Tools Module\n")
 
-# Ensure shinydashboard is available before use
-if (!requireNamespace("shinydashboard", quietly = TRUE)) {
-  stop("Package 'shinydashboard' is required but not installed.")
-}
-library(shinydashboard)
+# shinydashboard loaded via R/000_load_shinydashboard.R preload file
 
 # Load required libraries
 if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny")

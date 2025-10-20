@@ -13,7 +13,7 @@
 # =============================================================================
 
 library(shiny)
-library(shinydashboard)
+# shinydashboard loaded via R/000_load_shinydashboard.R preload file
 library(DT)
 library(jsonlite)
 library(httr)
