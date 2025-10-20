@@ -36,7 +36,7 @@ RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
     'ggplot2','scales','RColorBrewer','plotly', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
     'shinythemes','shinycssloaders','shinyjs','shinydashboardPlus','shinyWidgets', \
-    'units','s2','sf','leaflet','openxlsx' \
+    'units','s2','sf','leaflet','openxlsx','xml2' \
   ), repos='https://cloud.r-project.org')"
 
 # 5) Spatial data helpers (optional - geobr can be heavy)
