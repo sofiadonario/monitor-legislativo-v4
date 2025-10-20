@@ -62,7 +62,8 @@ RUN R -q -e "stopifnot( \
 # FORCE CACHE INVALIDATION - Railway will rebuild everything after this timestamp
 ARG CACHEBUST=$(date +%Y%m%d%H%M%S)
 WORKDIR /srv/shiny-server
-COPY . /srv/shiny-server/
+RUN mkdir -p app
+COPY . /srv/shiny-server/app/
 
 # 8) Environment + port
 ENV PORT=3838
@@ -71,3 +72,6 @@ EXPOSE 3838
 # 5) Health check for Railway
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
+
+# 9) Override default shiny-server config to point to /srv/shiny-server/app
+COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
