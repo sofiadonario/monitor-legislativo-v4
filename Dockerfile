@@ -72,6 +72,3 @@ EXPOSE 3838
 # 5) Health check for Railway
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
-
-# 9) Override default shiny-server config to point to /srv/shiny-server/app
-COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
