@@ -58,17 +58,18 @@ RUN R -q -e "stopifnot( \
   requireNamespace('pool', quietly=TRUE) \
 ); cat('✅ All critical packages verified at build time\\n')"
 
-# 7) Copy application into the directory served by shiny-server
-# FORCE CACHE INVALIDATION - Railway will rebuild everything after this timestamp
+# 7) Copy application into /app directory (simple setup)
 ARG CACHEBUST=$(date +%Y%m%d%H%M%S)
-WORKDIR /srv/shiny-server
-RUN mkdir -p app
-COPY . /srv/shiny-server/app/
+WORKDIR /app
+COPY . /app/
 
 # 8) Environment + port
 ENV PORT=3838
 EXPOSE 3838
 
-# 5) Health check for Railway
+# 9) Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
+
+# 10) Start app directly with R (bypass shiny-server)
+CMD ["R", "-e", "shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', '3838')))" ]
