@@ -5,17 +5,8 @@
 # Uses your modules + data service + optimized architecture
 # ==============================================================================
 
-# CRITICAL: Load shinydashboard FIRST before anything else
-# This prevents "Error: object 'shinydashboard' not found"
-if (!requireNamespace("shinydashboard", quietly = TRUE)) {
-  stop("Package 'shinydashboard' is required but not installed. libPaths=",
-       paste(.libPaths(), collapse=" | "))
-}
-library(shinydashboard)
-
-# One-time diagnostics (keep until deploy stabilizes)
-message("shinydashboard: ", as.character(utils::packageVersion("shinydashboard")))
-message(".libPaths(): ", paste(.libPaths(), collapse=" | "))
+# Note: shinydashboard is preloaded via R/000_load_shinydashboard.R
+# and will be loaded again by global_integrated.R below
 options(shiny.fullstacktrace = TRUE)
 
 # Health check endpoint (Railway requirement)
