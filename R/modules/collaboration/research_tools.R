@@ -15,11 +15,16 @@
 # - Real-time collaboration with conflict resolution
 # ==============================================================================
 
-cat("🤝 Loading Research Collaboration Features Module\n")
+cat("🔬 Loading Research Collaboration Tools Module\n")
+
+# Ensure shinydashboard is available before use
+if (!requireNamespace("shinydashboard", quietly = TRUE)) {
+  stop("Package 'shinydashboard' is required but not installed.")
+}
+library(shinydashboard)
 
 # Load required libraries
 if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny")
-if (!requireNamespace("shinydashboard", quietly = TRUE)) install.packages("shinydashboard")
 if (!requireNamespace("DT", quietly = TRUE)) install.packages("DT")
 if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
 if (!requireNamespace("lubridate", quietly = TRUE)) install.packages("lubridate")
@@ -28,7 +33,6 @@ if (!requireNamespace("digest", quietly = TRUE)) install.packages("digest")
 if (!requireNamespace("uuid", quietly = TRUE)) install.packages("uuid")
 
 library(shiny)
-library(shinydashboard)
 library(DT)
 library(dplyr)
 library(lubridate)

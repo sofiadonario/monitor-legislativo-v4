@@ -17,9 +17,14 @@
 
 cat("📊 Loading Usage Metrics Dashboard Module\n")
 
+# Ensure shinydashboard is attached before any references
+if (!requireNamespace("shinydashboard", quietly = TRUE)) {
+  stop("Package 'shinydashboard' is required but not installed.")
+}
+library(shinydashboard)
+
 # Load required libraries
 if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny")
-if (!requireNamespace("shinydashboard", quietly = TRUE)) install.packages("shinydashboard")
 if (!requireNamespace("DT", quietly = TRUE)) install.packages("DT")
 if (!requireNamespace("plotly", quietly = TRUE)) install.packages("plotly")
 if (!requireNamespace("leaflet", quietly = TRUE)) install.packages("leaflet")
@@ -28,7 +33,6 @@ if (!requireNamespace("lubridate", quietly = TRUE)) install.packages("lubridate"
 if (!requireNamespace("jsonlite", quietly = TRUE)) install.packages("jsonlite")
 
 library(shiny)
-library(shinydashboard)
 library(DT)
 library(plotly)
 library(leaflet)
