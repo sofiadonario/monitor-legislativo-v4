@@ -45,18 +45,21 @@ if (is.null(getOption("mlv4.safe.render.installed"))) {
   # Skip direct wrapping to avoid "object DT not found" errors
 
   # shinydashboard valueBox (many apps build them inside renderUI)
-  if (requireNamespace("shinydashboard", quietly = TRUE)) {
-    shinydashboard::renderValueBox <- function(expr, env = parent.frame(), quoted = FALSE) {
-      shiny::renderUI({
-        if (!quoted) expr <- substitute(expr)
-        safe_wrap({
-          vb <- eval(expr, env)
-          if (inherits(vb, "shiny.tag")) vb else {
-            val <- scalar1(vb)
-            shinydashboard::valueBox(fmt_int(val), "")
-          }
-        }, fallback = shinydashboard::valueBox("–", "", color = "yellow"))
-      }, env, TRUE)
-    }
-  }
+  # DISABLED: Monkey-patching shinydashboard::renderValueBox causes
+  # "object 'shinydashboard' not found" error during namespace assignment.
+  # Use shinydashboard's native renderValueBox() instead.
+  # if (requireNamespace("shinydashboard", quietly = TRUE)) {
+  #   shinydashboard::renderValueBox <- function(expr, env = parent.frame(), quoted = FALSE) {
+  #     shiny::renderUI({
+  #       if (!quoted) expr <- substitute(expr)
+  #       safe_wrap({
+  #         vb <- eval(expr, env)
+  #         if (inherits(vb, "shiny.tag")) vb else {
+  #           val <- scalar1(vb)
+  #           shinydashboard::valueBox(fmt_int(val), "")
+  #         }
+  #       }, fallback = shinydashboard::valueBox("–", "", color = "yellow"))
+  #     }, env, TRUE)
+  #   }
+  # }
 }
