@@ -336,7 +336,11 @@ cat("✅ Chart data functions created\n")
 brazil_states_sf <- NULL
 brazil_municipalities_sf <- NULL
 
-if (SF_AVAILABLE && GEOBR_AVAILABLE) {
+# Skip geography loading on Cloud Run to speed up startup
+# Geography will be loaded lazily when needed
+IS_CLOUD_RUN <- !is.na(Sys.getenv("K_SERVICE", NA))
+
+if (SF_AVAILABLE && GEOBR_AVAILABLE && !IS_CLOUD_RUN) {
   cat("📍 Loading Brazilian geography...\n")
 
   tryCatch({
@@ -366,6 +370,8 @@ if (SF_AVAILABLE && GEOBR_AVAILABLE) {
   }, error = function(e) {
     cat("❌ Geography load failed:", conditionMessage(e), "\n")
   })
+} else if (IS_CLOUD_RUN) {
+  cat("⚡ Skipping geography preload on Cloud Run (will load lazily)\n")
 }
 
 # ASYNC SETUP
