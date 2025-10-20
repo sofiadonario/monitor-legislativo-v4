@@ -50,7 +50,6 @@ ui <- function(request) {
   if (exists("auth_enabled") && auth_enabled) {
     # Authentication-enabled UI
     fluidPage(
-      add_custom_styles(),
       # Check authentication status and show appropriate UI
       uiOutput("main_content_ui")
     )
@@ -76,20 +75,19 @@ ui <- function(request) {
           menuItem("📚 Citações", tabName = "citations", icon = icon("quote-right")),
           menuItem("💾 Exportação", tabName = "export", icon = icon("download")),
           menuItem("🏙️ Análise São Paulo", tabName = "saopaulo", icon = icon("city")),
-          menuItem("🧠 Text Analytics", tabName = "nlp", icon = icon("brain")),
-          if(exists("monitoring_system_loaded") && monitoring_system_loaded) {
-            menuItem("⚙️ Monitoramento", tabName = "monitoring", icon = icon("tachometer-alt"))
-          },
-          if(exists("auth_enabled") && auth_enabled) {
-            menuItem("👥 Administração", tabName = "admin", icon = icon("users-cog"))
-          }
+          menuItem("🧠 Text Analytics", tabName = "nlp", icon = icon("brain"))
+          # Conditional menu items disabled to prevent UI errors
+          # if(exists("monitoring_system_loaded") && monitoring_system_loaded) {
+          #   menuItem("⚙️ Monitoramento", tabName = "monitoring", icon = icon("tachometer-alt"))
+          # },
+          # if(exists("auth_enabled") && auth_enabled) {
+          #   menuItem("👥 Administração", tabName = "admin", icon = icon("users-cog"))
+          # }
         )
       ),
   
       # Body
       dashboardBody(
-        # Add custom styles and JavaScript
-        add_custom_styles(),
         # Optional: shinyjs integration (graceful degradation if not installed)
         if (requireNamespace("shinyjs", quietly = TRUE)) {
           shinyjs::useShinyjs()
@@ -195,21 +193,22 @@ ui <- function(request) {
           # Text Analytics Tab
           tabItem(tabName = "nlp",
             source("R/ui/nlp_tab.R", local = TRUE)$value
-          ),
-          
-          # System Monitoring Tab
-          if(exists("monitoring_system_loaded") && monitoring_system_loaded) {
-            tabItem(tabName = "monitoring",
-              source("R/ui/monitoring_tab.R", local = TRUE)$value
-            )
-          },
-          
-          # Administration Tab
-          if(exists("auth_enabled") && auth_enabled) {
-            tabItem(tabName = "admin",
-              adminUI("admin_module")
-            )
-          }
+          )
+
+          # Conditional tab items disabled to prevent UI errors
+          # # System Monitoring Tab
+          # if(exists("monitoring_system_loaded") && monitoring_system_loaded) {
+          #   tabItem(tabName = "monitoring",
+          #     source("R/ui/monitoring_tab.R", local = TRUE)$value
+          #   )
+          # },
+          #
+          # # Administration Tab
+          # if(exists("auth_enabled") && auth_enabled) {
+          #   tabItem(tabName = "admin",
+          #     adminUI("admin_module")
+          #   )
+          # }
         )
       )
     )
