@@ -38,20 +38,20 @@ fluidRow(
 
 # Critical Metrics Dashboard - Enhanced Value Boxes - ALL NOW uiOutput
 fluidRow(
-  uiOutput("exec_total_docs", width = 3),
-  uiOutput("exec_states_coverage", width = 3),
-  uiOutput("exec_recent_additions", width = 3),
-  uiOutput("exec_data_freshness", width = 3)
+  column(3, uiOutput("exec_total_docs")),
+  column(3, uiOutput("exec_states_coverage")),
+  column(3, uiOutput("exec_recent_additions")),
+  column(3, uiOutput("exec_data_freshness"))
 ),
 
 # Key Performance Indicators - ALL NOW uiOutput
 fluidRow(
-  uiOutput("exec_federal_docs", width = 2),
-  uiOutput("exec_state_docs", width = 2),
-  uiOutput("exec_municipal_docs", width = 2),
-  uiOutput("exec_jurisprudence_docs", width = 2),
-  uiOutput("exec_doctrine_docs", width = 2),
-  uiOutput("exec_active_themes", width = 2)
+  column(2, uiOutput("exec_federal_docs")),
+  column(2, uiOutput("exec_state_docs")),
+  column(2, uiOutput("exec_municipal_docs")),
+  column(2, uiOutput("exec_jurisprudence_docs")),
+  column(2, uiOutput("exec_doctrine_docs")),
+  column(2, uiOutput("exec_active_themes"))
 ),
 
 # TEMPORARILY DISABLED - Testing crash fix
