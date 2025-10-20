@@ -481,7 +481,8 @@ geographicUI <- function(id) {
                       )
                     )
                   )
-                )
+                )  # closes wellPanel from line 436
+                )  # closes wellPanel from line 434
               )
             )
           )
