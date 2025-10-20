@@ -13,6 +13,7 @@ cat("========================================\n\n")
 # ==================
 suppressPackageStartupMessages({
   library(shiny)
+  library(jsonlite)     # Load BEFORE shinydashboard to avoid masking conflicts
   library(shinydashboard)
   library(DT)
   library(plotly)
@@ -26,7 +27,6 @@ suppressPackageStartupMessages({
   library(stringr)
   library(lubridate)
   library(httr)
-  library(jsonlite)
   library(htmltools)
   library(memoise)
   library(future)
