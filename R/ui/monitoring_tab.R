@@ -2,6 +2,7 @@
 # Monitor Legislativo v4 - System Health and Performance Monitoring
 # ==================================================================
 
+tagList(
 fluidRow(
   column(12,
     h2("⚙️ Monitoramento do Sistema"),
@@ -129,3 +130,4 @@ fluidRow(
 #     )
 #   )
 # )
+)

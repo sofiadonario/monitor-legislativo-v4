@@ -2,6 +2,7 @@
 # Monitor Legislativo v4 - Document Library Interface
 # ===================================================
 
+tagList(
 fluidRow(
   column(12,
     h2("📚 Biblioteca de Documentos Legislativos"),
@@ -155,4 +156,5 @@ fluidRow(
   column(3,
     valueBoxOutput("library_date_span", width = 12)
   )
+)
 )

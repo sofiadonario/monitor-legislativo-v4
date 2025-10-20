@@ -2,6 +2,7 @@
 # Monitor Legislativo v4 - São Paulo Specific Analysis
 # ====================================================
 
+tagList(
 fluidRow(
   column(12,
     h2("🏙️ Análise Específica de São Paulo"),
@@ -25,3 +26,4 @@ if(exists("sp_system_loaded") && sp_system_loaded) {
     )
   )
 }
+)

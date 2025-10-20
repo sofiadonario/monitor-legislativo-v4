@@ -2,6 +2,7 @@
 # Monitor Legislativo v4 - Natural Language Processing Interface
 # ==============================================================
 
+tagList(
 fluidRow(
   column(12,
     h2("🧠 Análise de Texto e Processamento de Linguagem Natural"),
@@ -127,4 +128,5 @@ fluidRow(
       )
     )
   )
+)
 )

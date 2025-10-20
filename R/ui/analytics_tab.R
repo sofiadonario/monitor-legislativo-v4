@@ -2,6 +2,7 @@
 # Monitor Legislativo v4 - Analytics Dashboard Interface
 # ======================================================
 
+tagList(
 fluidRow(
   column(12,
     h2("📈 Analytics Avançados"),
@@ -190,4 +191,5 @@ fluidRow(
       )
     )
   )
+)
 )
