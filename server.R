@@ -160,10 +160,10 @@ server <- function(input, output, session) {
       metrics <- dashboard_metrics()
       val <- scalar_chr(format(scalar_int(metrics$total_documents, 0), big.mark = ","), "0")
       cat("[exec_total_docs] Rendering with value:", val, "\n", file = stderr())
-      valueBox(val, "Documentos Legislativos", icon = icon("file-text"), color = "blue", width = NULL)
+      valueBox(val, "Documentos Legislativos", icon = icon("file-text"), color = "blue")
     }, error = function(e) {
       cat("[exec_total_docs] CRASH PREVENTED:", e$message, "\n", file = stderr())
-      valueBox("—", "Documentos Legislativos", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Documentos Legislativos", icon = icon("exclamation-triangle"), color = "red")
     })
   })
 
@@ -172,30 +172,30 @@ server <- function(input, output, session) {
       metrics <- dashboard_metrics()
       val <- scalar_chr(paste0(scalar_int(metrics$states_with_docs, 0), "/27"), "0/27")
       cat("[exec_states_coverage] Rendering with value:", val, "\n", file = stderr())
-      valueBox(val, "Estados Cobertos", icon = icon("map"), color = "green", width = NULL)
+      valueBox(val, "Estados Cobertos", icon = icon("map"), color = "green")
     }, error = function(e) {
       cat("[exec_states_coverage] CRASH PREVENTED:", e$message, "\n", file = stderr())
-      valueBox("—", "Estados Cobertos", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Estados Cobertos", icon = icon("exclamation-triangle"), color = "red")
     })
   })
   
   output$exec_recent_additions <- renderUI({
     tryCatch({
       val <- scalar_chr(as.character(sample(50:500, 1)), "—")
-      valueBox(val, "Documentos Este Mês", icon = icon("plus"), color = "yellow", width = NULL)
+      valueBox(val, "Documentos Este Mês", icon = icon("plus"), color = "yellow")
     }, error = function(e) {
       cat("[exec_recent_additions] ERROR:", e$message, "\n", file = stderr())
-      valueBox("—", "Documentos Este Mês", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Documentos Este Mês", icon = icon("exclamation-triangle"), color = "red")
     })
   })
 
   output$exec_data_freshness <- renderUI({
     tryCatch({
       val <- scalar_chr("98%", "—")
-      valueBox(val, "Qualidade dos Dados", icon = icon("check-circle"), color = "green", width = NULL)
+      valueBox(val, "Qualidade dos Dados", icon = icon("check-circle"), color = "green")
     }, error = function(e) {
       cat("[exec_data_freshness] ERROR:", e$message, "\n", file = stderr())
-      valueBox("—", "Qualidade dos Dados", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Qualidade dos Dados", icon = icon("exclamation-triangle"), color = "red")
     })
   })
 
@@ -203,60 +203,60 @@ server <- function(input, output, session) {
   output$exec_federal_docs <- renderUI({
     tryCatch({
       val <- scalar_chr(format(sample(10000:50000, 1), big.mark = ","), "—")
-      valueBox(val, "Federal", icon = icon("landmark"), color = "blue", width = NULL)
+      valueBox(val, "Federal", icon = icon("landmark"), color = "blue")
     }, error = function(e) {
       cat("[exec_federal_docs] ERROR:", e$message, "\n", file = stderr())
-      valueBox("—", "Federal", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Federal", icon = icon("exclamation-triangle"), color = "red")
     })
   })
 
   output$exec_state_docs <- renderUI({
     tryCatch({
       val <- scalar_chr(format(sample(20000:80000, 1), big.mark = ","), "—")
-      valueBox(val, "Estadual", icon = icon("building"), color = "green", width = NULL)
+      valueBox(val, "Estadual", icon = icon("building"), color = "green")
     }, error = function(e) {
       cat("[exec_state_docs] ERROR:", e$message, "\n", file = stderr())
-      valueBox("—", "Estadual", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Estadual", icon = icon("exclamation-triangle"), color = "red")
     })
   })
 
   output$exec_municipal_docs <- renderUI({
     tryCatch({
       val <- scalar_chr(format(sample(5000:30000, 1), big.mark = ","), "—")
-      valueBox(val, "Municipal", icon = icon("city"), color = "yellow", width = NULL)
+      valueBox(val, "Municipal", icon = icon("city"), color = "yellow")
     }, error = function(e) {
       cat("[exec_municipal_docs] ERROR:", e$message, "\n", file = stderr())
-      valueBox("—", "Municipal", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Municipal", icon = icon("exclamation-triangle"), color = "red")
     })
   })
 
   output$exec_jurisprudence_docs <- renderUI({
     tryCatch({
       val <- scalar_chr(format(sample(1000:10000, 1), big.mark = ","), "—")
-      valueBox(val, "Jurisprudência", icon = icon("balance-scale"), color = "red", width = NULL)
+      valueBox(val, "Jurisprudência", icon = icon("balance-scale"), color = "red")
     }, error = function(e) {
       cat("[exec_jurisprudence_docs] ERROR:", e$message, "\n", file = stderr())
-      valueBox("—", "Jurisprudência", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Jurisprudência", icon = icon("exclamation-triangle"), color = "red")
     })
   })
 
   output$exec_doctrine_docs <- renderUI({
     tryCatch({
       val <- scalar_chr(format(sample(500:5000, 1), big.mark = ","), "—")
-      valueBox(val, "Doutrina", icon = icon("graduation-cap"), color = "purple", width = NULL)
+      valueBox(val, "Doutrina", icon = icon("graduation-cap"), color = "purple")
     }, error = function(e) {
       cat("[exec_doctrine_docs] ERROR:", e$message, "\n", file = stderr())
-      valueBox("—", "Doutrina", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Doutrina", icon = icon("exclamation-triangle"), color = "red")
     })
   })
 
   output$exec_active_themes <- renderUI({
     tryCatch({
       val <- scalar_chr(as.character(sample(50:200, 1)), "—")
-      valueBox(val, "Temas Ativos", icon = icon("tags"), color = "orange", width = NULL)
+      valueBox(val, "Temas Ativos", icon = icon("tags"), color = "orange")
     }, error = function(e) {
       cat("[exec_active_themes] ERROR:", e$message, "\n", file = stderr())
-      valueBox("—", "Temas Ativos", icon = icon("exclamation-triangle"), color = "red", width = NULL)
+      valueBox("—", "Temas Ativos", icon = icon("exclamation-triangle"), color = "red")
     })
   })
   
