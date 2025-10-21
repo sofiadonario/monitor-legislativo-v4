@@ -50,20 +50,20 @@ create_executive_tab <- function() {
     
     # Critical Metrics Dashboard - Enhanced Value Boxes
     fluidRow(
-      valueBoxOutput("exec_total_docs", width = 3),
-      valueBoxOutput("exec_states_coverage", width = 3),
-      valueBoxOutput("exec_recent_additions", width = 3),
-      valueBoxOutput("exec_data_freshness", width = 3)
+      column(3, valueBoxOutput("exec_total_docs")),
+      column(3, valueBoxOutput("exec_states_coverage")),
+      column(3, valueBoxOutput("exec_recent_additions")),
+      column(3, valueBoxOutput("exec_data_freshness"))
     ),
-    
+
     # Key Performance Indicators
     fluidRow(
-      valueBoxOutput("exec_federal_docs", width = 2),
-      valueBoxOutput("exec_state_docs", width = 2), 
-      valueBoxOutput("exec_municipal_docs", width = 2),
-      valueBoxOutput("exec_jurisprudence_docs", width = 2),
-      valueBoxOutput("exec_doctrine_docs", width = 2),
-      valueBoxOutput("exec_active_themes", width = 2)
+      column(2, valueBoxOutput("exec_federal_docs")),
+      column(2, valueBoxOutput("exec_state_docs")),
+      column(2, valueBoxOutput("exec_municipal_docs")),
+      column(2, valueBoxOutput("exec_jurisprudence_docs")),
+      column(2, valueBoxOutput("exec_doctrine_docs")),
+      column(2, valueBoxOutput("exec_active_themes"))
     ),
     
     # Trend Visualizations Row

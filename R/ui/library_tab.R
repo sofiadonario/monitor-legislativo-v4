@@ -145,16 +145,16 @@ fluidRow(
 # Quick Statistics
 fluidRow(
   column(3,
-    valueBoxOutput("library_total_results", width = 12)
+    valueBoxOutput("library_total_results")
   ),
   column(3,
-    valueBoxOutput("library_states_covered", width = 12)
+    valueBoxOutput("library_states_covered")
   ),
   column(3,
-    valueBoxOutput("library_categories_found", width = 12)
+    valueBoxOutput("library_categories_found")
   ),
   column(3,
-    valueBoxOutput("library_date_span", width = 12)
+    valueBoxOutput("library_date_span")
   )
 )
 )
