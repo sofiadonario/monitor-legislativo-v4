@@ -704,7 +704,7 @@ ComplianceMonitoringDashboard <- R6::R6Class(
         )
       })
 
-      output$compliance_trends_plot <- renderPlotly({
+      output$compliance_trends_plot <- safe_renderPlotly({
         # Create sample trend data
         dates <- seq(Sys.Date() - 30, Sys.Date(), by = "day")
         trend_data <- data.frame(
