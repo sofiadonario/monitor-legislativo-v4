@@ -751,7 +751,7 @@ adminServer <- function(id, session = NULL) {
     })
     
     # Performance chart
-    output$performance_chart <- renderPlotly({
+    output$performance_chart <- safe_renderPlotly({
       # Simulate performance data
       time_points <- seq(from = Sys.time() - 3600, to = Sys.time(), by = 300)
       performance_data <- data.frame(
@@ -773,7 +773,7 @@ adminServer <- function(id, session = NULL) {
     })
     
     # Resource usage chart
-    output$resource_usage_chart <- renderPlotly({
+    output$resource_usage_chart <- safe_renderPlotly({
       # Simulate resource usage
       resources <- c("CPU", "Memória", "Disco", "Rede")
       usage <- c(35, 67, 23, 45)

@@ -625,7 +625,7 @@ create_usage_dashboard_server <- function(input, output, session) {
   })
   
   # Real-time activity plot
-  output$realtimeActivityPlot <- renderPlotly({
+  output$realtimeActivityPlot <- safe_renderPlotly({
     # Mock real-time data - would integrate with actual metrics
     hours <- 0:23
     activity <- sapply(hours, function(h) {
@@ -643,7 +643,7 @@ create_usage_dashboard_server <- function(input, output, session) {
   })
   
   # Query type distribution
-  output$queryTypeDistribution <- renderPlotly({
+  output$queryTypeDistribution <- safe_renderPlotly({
     query_types <- metrics()$queries$type_distribution
     
     if (length(query_types) == 0) {

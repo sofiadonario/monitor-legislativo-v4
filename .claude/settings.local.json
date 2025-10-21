@@ -44,7 +44,8 @@
       "Bash(docker system:*)",
       "Bash(gcloud artifacts docker images list:*)",
       "Bash(gcloud builds submit:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(pkill -f \"gcloud builds submit.*v14\")"
     ],
     "deny": [],
     "ask": []

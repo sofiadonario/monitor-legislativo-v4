@@ -219,7 +219,7 @@ webglAnalyticsServer <- function(id, reactive_data) {
     # ==============================================================================
     
     # Temporal Analysis WebGL Chart
-    output$analytics_temporal_chart_webgl <- renderPlotly({
+    output$analytics_temporal_chart_webgl <- safe_renderPlotly({
       req(temporal_data())
       
       start_time <- Sys.time()
@@ -386,7 +386,7 @@ webglAnalyticsServer <- function(id, reactive_data) {
     })
     
     # Network Analysis WebGL Chart (3D)
-    output$analytics_network_chart_webgl <- renderPlotly({
+    output$analytics_network_chart_webgl <- safe_renderPlotly({
       req(geocoded_data())
       
       tryCatch({

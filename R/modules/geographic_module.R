@@ -805,7 +805,7 @@ geographicServer <- function(id, reactive_data) {
     })
     
     # Render regional chart
-    output$regional_chart <- renderPlotly({
+    output$regional_chart <- safe_renderPlotly({
       req(values$geographic_stats)
       
       tryCatch({
@@ -846,7 +846,7 @@ geographicServer <- function(id, reactive_data) {
     })
     
     # Render state ranking
-    output$state_ranking <- renderPlotly({
+    output$state_ranking <- safe_renderPlotly({
       req(values$geographic_stats)
       
       if (input$analysis_type == "density") {
@@ -889,7 +889,7 @@ geographicServer <- function(id, reactive_data) {
     })
     
     # Render temporal chart
-    output$temporal_chart <- renderPlotly({
+    output$temporal_chart <- safe_renderPlotly({
       req(values$geographic_stats)
       
       if (input$analysis_type == "temporal") {

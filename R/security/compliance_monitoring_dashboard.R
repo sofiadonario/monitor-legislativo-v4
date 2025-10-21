@@ -664,7 +664,7 @@ ComplianceMonitoringDashboard <- R6::R6Class(
 
     # Create overview outputs
     create_overview_outputs = function(output, values) {
-      output$overall_compliance_box <- renderValueBox({
+      output$overall_compliance_box <- renderValueBoxSafeUniversal({
         compliance_score <- 88 # Would be calculated from actual data
         safe_valueBox(
           value = paste0(compliance_score, "%"),
@@ -674,7 +674,7 @@ ComplianceMonitoringDashboard <- R6::R6Class(
         )
       })
 
-      output$lgpd_compliance_box <- renderValueBox({
+      output$lgpd_compliance_box <- renderValueBoxSafeUniversal({
         lgpd_score <- 92 # Would be calculated from LGPD validator
         safe_valueBox(
           value = paste0(lgpd_score, "%"),
@@ -684,7 +684,7 @@ ComplianceMonitoringDashboard <- R6::R6Class(
         )
       })
 
-      output$security_score_box <- renderValueBox({
+      output$security_score_box <- renderValueBoxSafeUniversal({
         security_score <- 85 # Would be calculated from security auditor
         safe_valueBox(
           value = paste0(security_score, "%"),
@@ -694,7 +694,7 @@ ComplianceMonitoringDashboard <- R6::R6Class(
         )
       })
 
-      output$system_health_box <- renderValueBox({
+      output$system_health_box <- renderValueBoxSafeUniversal({
         health_score <- 95 # Would be calculated from health monitoring
         safe_valueBox(
           value = paste0(health_score, "%"),

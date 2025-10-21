@@ -304,7 +304,7 @@ monitoring_dashboard_server <- function(input, output, session) {
   })
   
   # Overall Status Value Box
-  output$overall_status <- renderValueBox({
+  output$overall_status <- renderValueBoxSafeUniversal({
     status <- values$health_status$status %||% "unknown"
     color <- switch(status,
                    "healthy" = "green",
@@ -321,7 +321,7 @@ monitoring_dashboard_server <- function(input, output, session) {
   })
   
   # Uptime Value Box
-  output$uptime <- renderValueBox({
+  output$uptime <- renderValueBoxSafeUniversal({
     start_time <- as.POSIXct(Sys.getenv("APP_START_TIME", Sys.time()))
     uptime_duration <- difftime(Sys.time(), start_time, units = "hours")
     uptime_text <- if (uptime_duration < 1) {
@@ -341,7 +341,7 @@ monitoring_dashboard_server <- function(input, output, session) {
   })
   
   # Memory Usage Value Box
-  output$memory_usage <- renderValueBox({
+  output$memory_usage <- renderValueBoxSafeUniversal({
     current_metrics <- collect_system_metrics()
     memory_percent <- current_metrics$memory$usage_percent %||% 0
     color <- if (memory_percent > 90) "red" else if (memory_percent > 75) "yellow" else "green"
@@ -369,7 +369,7 @@ monitoring_dashboard_server <- function(input, output, session) {
   }, striped = TRUE, hover = TRUE)
   
   # Resource Chart
-  output$resource_chart <- renderPlotly({
+  output$resource_chart <- safe_renderPlotly({
     current_metrics <- collect_system_metrics()
     
     resources <- data.frame(
@@ -390,7 +390,7 @@ monitoring_dashboard_server <- function(input, output, session) {
   })
   
   # Real-time Metrics
-  output$realtime_metrics <- renderPlotly({
+  output$realtime_metrics <- safe_renderPlotly({
     if (nrow(values$metrics_history) > 0) {
       p <- plot_ly(values$metrics_history, x = ~timestamp) %>%
         add_lines(y = ~memory_percent, name = "Memory %", line = list(color = '#3498db')) %>%
