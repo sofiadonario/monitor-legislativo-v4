@@ -28,9 +28,9 @@ smartTable <- function(data, ...) {
 # ============================================================================
 SD_AVAILABLE <- requireNamespace("shinydashboard", quietly = TRUE)
 
-valueBox_safe <- function(value, subtitle = "", icon = NULL, color = "aqua", width = 4) {
+valueBox_safe <- function(value, subtitle = "", icon = NULL, color = "aqua") {
   if (SD_AVAILABLE) {
-    shinydashboard::valueBox(value, subtitle, icon = icon, color = color, width = width)
+    shinydashboard::valueBox(value, subtitle, icon = icon, color = color)
   } else {
     # Graceful fallback - simple HTML box
     shiny::div(
