@@ -408,16 +408,16 @@ ComplianceMonitoringDashboard <- R6::R6Class(
           hr()
         ),
         column(3,
-          valueBoxOutput("overall_compliance_box", width = NULL)
+          valueBoxOutput("overall_compliance_box")
         ),
         column(3,
-          valueBoxOutput("lgpd_compliance_box", width = NULL)
+          valueBoxOutput("lgpd_compliance_box")
         ),
         column(3,
-          valueBoxOutput("security_score_box", width = NULL)
+          valueBoxOutput("security_score_box")
         ),
         column(3,
-          valueBoxOutput("system_health_box", width = NULL)
+          valueBoxOutput("system_health_box")
         ),
         column(12,
           br(),
@@ -454,13 +454,13 @@ ComplianceMonitoringDashboard <- R6::R6Class(
           hr()
         ),
         column(4,
-          valueBoxOutput("lgpd_score_box", width = NULL)
+          valueBoxOutput("lgpd_score_box")
         ),
         column(4,
-          valueBoxOutput("data_protection_box", width = NULL)
+          valueBoxOutput("data_protection_box")
         ),
         column(4,
-          valueBoxOutput("subject_rights_box", width = NULL)
+          valueBoxOutput("subject_rights_box")
         ),
         column(12,
           br(),
@@ -499,16 +499,16 @@ ComplianceMonitoringDashboard <- R6::R6Class(
           hr()
         ),
         column(3,
-          valueBoxOutput("security_posture_box", width = NULL)
+          valueBoxOutput("security_posture_box")
         ),
         column(3,
-          valueBoxOutput("authentication_box", width = NULL)
+          valueBoxOutput("authentication_box")
         ),
         column(3,
-          valueBoxOutput("data_encryption_box", width = NULL)
+          valueBoxOutput("data_encryption_box")
         ),
         column(3,
-          valueBoxOutput("vulnerabilities_box", width = NULL)
+          valueBoxOutput("vulnerabilities_box")
         ),
         column(12,
           br(),
@@ -543,13 +543,13 @@ ComplianceMonitoringDashboard <- R6::R6Class(
           hr()
         ),
         column(4,
-          valueBoxOutput("research_ethics_box", width = NULL)
+          valueBoxOutput("research_ethics_box")
         ),
         column(4,
-          valueBoxOutput("institutional_approval_box", width = NULL)
+          valueBoxOutput("institutional_approval_box")
         ),
         column(4,
-          valueBoxOutput("data_governance_box", width = NULL)
+          valueBoxOutput("data_governance_box")
         ),
         column(12,
           br(),
@@ -567,16 +567,16 @@ ComplianceMonitoringDashboard <- R6::R6Class(
           hr()
         ),
         column(3,
-          valueBoxOutput("railway_deployment_box", width = NULL)
+          valueBoxOutput("railway_deployment_box")
         ),
         column(3,
-          valueBoxOutput("resource_usage_box", width = NULL)
+          valueBoxOutput("resource_usage_box")
         ),
         column(3,
-          valueBoxOutput("performance_box", width = NULL)
+          valueBoxOutput("performance_box")
         ),
         column(3,
-          valueBoxOutput("cost_optimization_box", width = NULL)
+          valueBoxOutput("cost_optimization_box")
         ),
         column(12,
           br(),
@@ -644,16 +644,16 @@ ComplianceMonitoringDashboard <- R6::R6Class(
           hr()
         ),
         column(3,
-          valueBoxOutput("system_status_box", width = NULL)
+          valueBoxOutput("system_status_box")
         ),
         column(3,
-          valueBoxOutput("response_time_box", width = NULL)
+          valueBoxOutput("response_time_box")
         ),
         column(3,
-          valueBoxOutput("uptime_box", width = NULL)
+          valueBoxOutput("uptime_box")
         ),
         column(3,
-          valueBoxOutput("error_rate_box", width = NULL)
+          valueBoxOutput("error_rate_box")
         ),
         column(12,
           br(),
