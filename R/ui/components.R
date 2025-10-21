@@ -895,14 +895,13 @@ create_research_tools_tabs <- function() {
 #' @param width Box width (1-12)
 #' @return Value box output
 #' @export
-create_enhanced_value_box <- function(value, subtitle, icon, color = "blue", width = 3) {
-  
+create_enhanced_value_box <- function(value, subtitle, icon, color = "blue") {
+
   safe_valueBox(
     value = value,
     subtitle = subtitle,
     icon = icon,
-    color = color,
-    width = width
+    color = color
   )
 }
 

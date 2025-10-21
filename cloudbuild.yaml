@@ -1,0 +1,58 @@
+# Cloud Build pipeline for amd64 publish with manifest merge
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: setup-buildx
+    entrypoint: bash
+    env:
+      - DOCKER_CLI_EXPERIMENTAL=enabled
+    args:
+      - -c
+      - |
+          set -euo pipefail
+          docker buildx create --name cb-builder --driver docker-container --use
+          docker buildx inspect --bootstrap
+  - name: gcr.io/cloud-builders/docker
+    id: build-amd64
+    entrypoint: bash
+    env:
+      - DOCKER_CLI_EXPERIMENTAL=enabled
+    args:
+      - -c
+      - |
+          set -euo pipefail
+          docker buildx build \
+            --platform linux/amd64 \
+            --tag ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_TAG}-amd64 \
+            --cache-from type=registry,ref=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:cache \
+            --cache-to type=registry,ref=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:cache,mode=max \
+            --push .
+  - name: gcr.io/cloud-builders/docker
+    id: publish-manifest
+    entrypoint: bash
+    env:
+      - DOCKER_CLI_EXPERIMENTAL=enabled
+    args:
+      - -c
+      - |
+          set -euo pipefail
+          REGISTRY="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}"
+          MANIFEST_TAG="${REGISTRY}:${_TAG}"
+          AMD64_TAG="${REGISTRY}:${_TAG}-amd64"
+          ARM64_TAG="${REGISTRY}:${_TAG}-arm64"
+          if docker buildx imagetools inspect "${ARM64_TAG}" >/dev/null 2>&1; then
+            docker buildx imagetools create --tag "${MANIFEST_TAG}" "${AMD64_TAG}" "${ARM64_TAG}"
+          else
+            docker buildx imagetools create --tag "${MANIFEST_TAG}" "${AMD64_TAG}"
+          fi
+  - name: gcr.io/cloud-builders/docker
+    id: inspect-manifest
+    entrypoint: bash
+    env:
+      - DOCKER_CLI_EXPERIMENTAL=enabled
+    args:
+      - -c
+      - |
+          set -euo pipefail
+          docker buildx imagetools inspect ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_TAG}
+images:
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_TAG}

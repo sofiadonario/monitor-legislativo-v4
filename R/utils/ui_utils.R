@@ -233,9 +233,9 @@ safe_renderPlotly <- function(expr, context = NULL) {
 
 safe_valueBox <- local({
   orig <- get("valueBox", asNamespace("shinydashboard"))
-  function(value, subtitle, icon = NULL, color = "aqua", width = 4) {
+  function(value, subtitle, icon = NULL, color = "aqua") {
     value <- scalar_chr(value)  # never length-0
-    orig(value, subtitle, icon = icon, color = color, width = width)
+    orig(value, subtitle, icon = icon, color = color)
   }
 })
 

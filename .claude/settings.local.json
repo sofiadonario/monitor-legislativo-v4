@@ -33,7 +33,18 @@
       "Bash(chmod:*)",
       "Bash(git mv:*)",
       "Bash(if [ -f \"R/phase2_integration_loader.R\" ])",
-      "Bash(then mv \"R/phase2_integration_loader.R\" \"R/phase2_integration_loader.R.disabled\")"
+      "Bash(then mv \"R/phase2_integration_loader.R\" \"R/phase2_integration_loader.R.disabled\")",
+      "Bash(docker build:*)",
+      "Bash(docker pull:*)",
+      "Bash(gcloud run deploy:*)",
+      "Bash(docker tag:*)",
+      "Bash(docker push:*)",
+      "Bash(docker run:*)",
+      "Bash(gcloud logging read:*)",
+      "Bash(docker system:*)",
+      "Bash(gcloud artifacts docker images list:*)",
+      "Bash(gcloud builds submit:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
