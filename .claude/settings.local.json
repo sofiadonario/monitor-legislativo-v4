@@ -32,7 +32,10 @@
       "Bash(gcloud builds submit:*)",
       "Bash(gcloud run deploy:*)",
       "Bash(git checkout:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []
