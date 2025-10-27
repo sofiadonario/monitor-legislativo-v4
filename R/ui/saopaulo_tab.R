@@ -1,12 +1,14 @@
+# v61: Migrated from shinydashboard box() to bslib card()
 # São Paulo Analysis Tab UI
 # Monitor Legislativo v4 - São Paulo Specific Analysis
 # ====================================================
 
 tagList(
-fluidRow(
+layout_columns(
+  col_widths = 12,
   column(12,
     h2("🏙️ Análise Específica de São Paulo"),
-    p("Análise detalhada da legislação paulista com foco em políticas de transporte e desenvolvimento urbano.", 
+    p("Análise detalhada da legislação paulista com foco em políticas de transporte e desenvolvimento urbano.",
       style = "color: #7f8c8d; margin-bottom: 30px;")
   )
 ),
@@ -15,7 +17,8 @@ fluidRow(
 if(exists("sp_system_loaded") && sp_system_loaded) {
   uiOutput("saopaulo_content")
 } else {
-  fluidRow(
+  layout_columns(
+    col_widths = 12,
     column(12,
       div(
         class = "alert alert-info",

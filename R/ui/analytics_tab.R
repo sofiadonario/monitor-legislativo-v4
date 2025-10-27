@@ -1,35 +1,38 @@
+# v61: Migrated from shinydashboard box() to bslib card()
 # Advanced Analytics Tab UI
 # Monitor Legislativo v4 - Analytics Dashboard Interface
 # ======================================================
 
 tagList(
-fluidRow(
+layout_columns(
+  col_widths = 12,
   column(12,
     h2("📈 Analytics Avançados"),
-    p("Análise avançada de tendências legislativas, padrões temporais e insights estratégicos.", 
+    p("Análise avançada de tendências legislativas, padrões temporais e insights estratégicos.",
       style = "color: #7f8c8d; margin-bottom: 30px;")
   )
 ),
 
 # Analytics Control Panel
-fluidRow(
+layout_columns(
+  col_widths = c(4, 8),
   column(4,
     wellPanel(
       h4("Configurações de Análise"),
-      
+
       selectInput(
         inputId = "analytics_type",
         label = "Tipo de Análise:",
         choices = list(
           "Tendências Temporais" = "temporal",
-          "Análise de Sentimento" = "sentiment", 
+          "Análise de Sentimento" = "sentiment",
           "Temas Emergentes" = "topics",
           "Análise de Rede" = "network",
           "Comparação Regional" = "regional"
         ),
         selected = "temporal"
       ),
-      
+
       dateRangeInput(
         inputId = "analytics_date_range",
         label = "Período de Análise:",
@@ -38,7 +41,7 @@ fluidRow(
         format = "dd/mm/yyyy",
         language = "pt-BR"
       ),
-      
+
       selectInput(
         inputId = "analytics_granularity",
         label = "Granularidade:",
@@ -49,7 +52,7 @@ fluidRow(
         ),
         selected = "monthly"
       ),
-      
+
       checkboxGroupInput(
         inputId = "analytics_filters",
         label = "Filtros:",
@@ -60,7 +63,7 @@ fluidRow(
         ),
         selected = c("federal", "state")
       ),
-      
+
       actionButton(
         inputId = "analytics_run",
         label = "Executar Análise",
@@ -69,60 +72,45 @@ fluidRow(
       )
     )
   ),
-  
+
   column(8,
     # Main Analytics Display
     conditionalPanel(
       condition = "input.analytics_type == 'temporal'",
-      box(
-        title = "Análise de Tendências Temporais",
-        status = "primary",
-        solidHeader = TRUE,
-        width = 12,
+      card(
+        card_header("Análise de Tendências Temporais"),
         plotlyOutput("analytics_temporal_chart", height = "400px")
       )
     ),
-    
+
     conditionalPanel(
       condition = "input.analytics_type == 'sentiment'",
-      box(
-        title = "Análise de Sentimento Regulatório",
-        status = "info",
-        solidHeader = TRUE,
-        width = 12,
+      card(
+        card_header("Análise de Sentimento Regulatório"),
         plotlyOutput("analytics_sentiment_chart", height = "400px")
       )
     ),
-    
+
     conditionalPanel(
       condition = "input.analytics_type == 'topics'",
-      box(
-        title = "Modelagem de Tópicos",
-        status = "success",
-        solidHeader = TRUE,
-        width = 12,
+      card(
+        card_header("Modelagem de Tópicos"),
         plotlyOutput("analytics_topics_chart", height = "400px")
       )
     ),
-    
+
     conditionalPanel(
       condition = "input.analytics_type == 'network'",
-      box(
-        title = "Análise de Rede de Documentos",
-        status = "warning",
-        solidHeader = TRUE,
-        width = 12,
+      card(
+        card_header("Análise de Rede de Documentos"),
         plotlyOutput("analytics_network_chart", height = "400px")
       )
     ),
-    
+
     conditionalPanel(
       condition = "input.analytics_type == 'regional'",
-      box(
-        title = "Comparação Regional",
-        status = "danger",
-        solidHeader = TRUE,
-        width = 12,
+      card(
+        card_header("Comparação Regional"),
         plotlyOutput("analytics_regional_chart", height = "400px")
       )
     )
@@ -130,63 +118,50 @@ fluidRow(
 ),
 
 # Analytics Results Summary
-fluidRow(
-  column(12,
-    box(
-      title = "Insights da Análise",
-      status = "primary",
-      solidHeader = TRUE,
-      width = 12,
-      uiOutput("analytics_insights"),
-      footer = "Insights gerados automaticamente baseados na análise atual"
-    )
+layout_columns(
+  col_widths = 12,
+  card(
+    card_header("Insights da Análise"),
+    uiOutput("analytics_insights"),
+    card_footer("Insights gerados automaticamente baseados na análise atual")
   )
 ),
 
 # Detailed Results and Export
-fluidRow(
-  column(6,
-    box(
-      title = "Resultados Detalhados",
-      status = "info",
-      solidHeader = TRUE,
-      width = 12,
-      DT::dataTableOutput("analytics_detailed_results")
-    )
+layout_columns(
+  col_widths = c(6, 6),
+  card(
+    card_header("Resultados Detalhados"),
+    DT::dataTableOutput("analytics_detailed_results")
   ),
-  column(6,
-    box(
-      title = "Opções de Exportação",
-      status = "success",
-      solidHeader = TRUE,
-      width = 12,
-      fluidRow(
-        column(6,
-          downloadButton(
-            outputId = "analytics_download_chart",
-            label = "Baixar Gráfico",
-            icon = icon("chart-line"),
-            class = "btn-info btn-block"
-          )
-        ),
-        column(6,
-          downloadButton(
-            outputId = "analytics_download_data",
-            label = "Baixar Dados",
-            icon = icon("database"),
-            class = "btn-success btn-block"
-          )
+  card(
+    card_header("Opções de Exportação"),
+    fluidRow(
+      column(6,
+        downloadButton(
+          outputId = "analytics_download_chart",
+          label = "Baixar Gráfico",
+          icon = icon("chart-line"),
+          class = "btn-info btn-block"
         )
       ),
-      br(),
-      fluidRow(
-        column(12,
-          downloadButton(
-            outputId = "analytics_download_report",
-            label = "Gerar Relatório Completo",
-            icon = icon("file-pdf"),
-            class = "btn-primary btn-block"
-          )
+      column(6,
+        downloadButton(
+          outputId = "analytics_download_data",
+          label = "Baixar Dados",
+          icon = icon("database"),
+          class = "btn-success btn-block"
+        )
+      )
+    ),
+    br(),
+    fluidRow(
+      column(12,
+        downloadButton(
+          outputId = "analytics_download_report",
+          label = "Gerar Relatório Completo",
+          icon = icon("file-pdf"),
+          class = "btn-primary btn-block"
         )
       )
     )

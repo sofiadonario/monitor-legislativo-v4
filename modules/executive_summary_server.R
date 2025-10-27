@@ -1,20 +1,21 @@
 # ============================================================================
 # ENHANCED EXECUTIVE SUMMARY SERVER FUNCTIONS
 # ============================================================================
-# 
+#
 # Server-side functions for the Enhanced Executive Summary with advanced analytics
 # Integrates with the analytics engine to provide real-time insights
-# 
+#
 # Features:
 # - Real-time data processing with caching
 # - Interactive visualization rendering
 # - Dynamic KPI calculations
 # - Smart alert generation and monitoring
 # - Performance-optimized reactive functions
-# 
+#
 # Author: Data Science Consultant
 # Date: 2025-08-29
 # Version: 1.0 Production-Ready (req() guards active)
+# v61: Converted renderValueBox() to renderUI() with value_box() for bslib
 # ============================================================================
 
 # Source the analytics engine
@@ -100,7 +101,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   # ============================================================================
   
   # Total Documents with trend
-  output$exec_enhanced_total_docs <- shinydashboard::renderValueBox({
+  output$exec_enhanced_total_docs <- renderUI({
     cat("[RENDER] exec_enhanced_total_docs: START\n", file = stderr())
     analytics <- analytics_data()
     cat("[RENDER] exec_enhanced_total_docs: Got analytics\n", file = stderr())
@@ -126,30 +127,30 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       trend_color <- if (trend_direction == "increasing") "#28a745" else if (trend_direction == "decreasing") "#dc3545" else "#6c757d"
       trend_icon <- if (trend_direction == "increasing") "arrow-up" else if (trend_direction == "decreasing") "arrow-down" else "minus"
 
-      cat(sprintf("[RENDER] exec_enhanced_total_docs: Creating valueBox with total_docs=%s\n",
+      cat(sprintf("[RENDER] exec_enhanced_total_docs: Creating value_box with total_docs=%s\n",
                   ifelse(is.na(total_docs), "NA", as.character(total_docs))), file = stderr())
 
-      safe_valueBox(
-        value = fmt_int(total_docs),
-        subtitle = HTML(paste0("Total Documents<br><small style='color: ", trend_color,
+      value_box(
+        title = HTML(paste0("Total Documents<br><small style='color: ", trend_color,
                               ";'><i class='fa fa-", trend_icon, "'></i> ", trend_text, "</small>")),
-        icon = icon("file-text"),
-        color = if (isTRUE(is.na(total_docs)) || isTRUE(total_docs == 0)) "yellow" else "blue"
+        value = fmt_int(total_docs),
+        showcase = bsicons::bs_icon("file-earmark-text"),
+        theme = if (isTRUE(is.na(total_docs)) || isTRUE(total_docs == 0)) "warning" else "primary"
       )
 
     }, error = function(e) {
       cat("[ERROR] exec_enhanced_total_docs:", conditionMessage(e), "\n", file = stderr())
-      safe_valueBox(
+      value_box(
+        title = "Total Documents",
         value = "—",
-        subtitle = "Total Documents",
-        icon = icon("exclamation-triangle"),
-        color = "red"
+        showcase = bsicons::bs_icon("exclamation-triangle"),
+        theme = "danger"
       )
     })
   })
   
   # States Coverage with performance indicator
-  output$exec_enhanced_states_coverage <- shinydashboard::renderValueBox({
+  output$exec_enhanced_states_coverage <- renderUI({
     cat("[EXEC DEBUG] exec_enhanced_states_coverage starting...\n", file = stderr())
     analytics <- analytics_data()
     cat("[EXEC DEBUG] exec_enhanced_states_coverage got analytics data\n", file = stderr())
@@ -160,31 +161,31 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       coverage_pct <- safe_ratio(states_covered, 27) * 100
 
       # Safe comparison with scalar value
-      performance_color <- if (!isTRUE(is.na(coverage_pct)) && coverage_pct >= 90) "green"
-                          else if (!isTRUE(is.na(coverage_pct)) && coverage_pct >= 70) "yellow"
-                          else "red"
+      performance_theme <- if (!isTRUE(is.na(coverage_pct)) && coverage_pct >= 90) "success"
+                          else if (!isTRUE(is.na(coverage_pct)) && coverage_pct >= 70) "warning"
+                          else "danger"
 
-      safe_valueBox(
-        value = if (!is.na(states_covered)) paste0(fmt_int(states_covered), "/27") else "—/27",
-        subtitle = HTML(paste0("States Covered<br><small style='color: #6c757d;'>",
+      value_box(
+        title = HTML(paste0("States Covered<br><small style='color: #6c757d;'>",
                               fmt_pct(coverage_pct / 100, digits = 1), " Coverage</small>")),
-        icon = icon("map"),
-        color = performance_color
+        value = if (!is.na(states_covered)) paste0(fmt_int(states_covered), "/27") else "—/27",
+        showcase = bsicons::bs_icon("map"),
+        theme = performance_theme
       )
 
     }, error = function(e) {
       cat("[ERROR] exec_enhanced_states_coverage:", conditionMessage(e), "\n", file = stderr())
-      safe_valueBox(
+      value_box(
+        title = "States Coverage",
         value = "—",
-        subtitle = "States Coverage",
-        icon = icon("exclamation-triangle"),
-        color = "red"
+        showcase = bsicons::bs_icon("exclamation-triangle"),
+        theme = "danger"
       )
     })
   })
   
   # Monthly Activity with moving average
-  output$exec_enhanced_monthly_activity <- renderValueBox({
+  output$exec_enhanced_monthly_activity <- renderUI({
     cat("[EXEC DEBUG] exec_enhanced_monthly_activity starting...\n", file = stderr())
     analytics <- analytics_data()
     cat("[EXEC DEBUG] exec_enhanced_monthly_activity got analytics data\n", file = stderr())
@@ -199,39 +200,39 @@ init_executive_summary_server <- function(input, output, session, get_document_d
                          else if (monthly_avg > 500) "Medium"
                          else "Low"
 
-        color <- if (activity_level == "High") "green"
-                else if (activity_level == "Medium") "yellow"
-                else "orange"
+        theme <- if (activity_level == "High") "success"
+                else if (activity_level == "Medium") "warning"
+                else "info"
 
-        safe_valueBox(
-          value = fmt_int(round(monthly_avg)),
-          subtitle = HTML(paste0("Monthly Average<br><small style='color: #6c757d;'>",
+        value_box(
+          title = HTML(paste0("Monthly Average<br><small style='color: #6c757d;'>",
                                 activity_level, " Activity</small>")),
-          icon = icon("chart-line"),
-          color = color
+          value = fmt_int(round(monthly_avg)),
+          showcase = bsicons::bs_icon("graph-up"),
+          theme = theme
         )
       } else {
-        safe_valueBox(
+        value_box(
+          title = "Monthly Average",
           value = "—",
-          subtitle = "Monthly Average",
-          icon = icon("chart-line"),
-          color = "light-blue"
+          showcase = bsicons::bs_icon("graph-up"),
+          theme = "info"
         )
       }
 
     }, error = function(e) {
       cat("[ERROR] exec_enhanced_monthly_activity:", conditionMessage(e), "\n", file = stderr())
-      safe_valueBox(
+      value_box(
+        title = "Monthly Activity",
         value = "—",
-        subtitle = "Monthly Activity",
-        icon = icon("exclamation-triangle"),
-        color = "red"
+        showcase = bsicons::bs_icon("exclamation-triangle"),
+        theme = "danger"
       )
     })
   })
   
   # Data Freshness with quality score
-  output$exec_enhanced_data_freshness <- renderValueBox({
+  output$exec_enhanced_data_freshness <- renderUI({
     cat("[EXEC DEBUG] exec_enhanced_data_freshness starting...\n", file = stderr())
     analytics <- analytics_data()
     cat("[EXEC DEBUG] exec_enhanced_data_freshness got analytics data\n", file = stderr())
@@ -246,34 +247,34 @@ init_executive_summary_server <- function(input, output, session, get_document_d
                         else if (quality_score >= 80) "Fair"
                         else "Poor"
 
-        color <- if (quality_level == "Excellent") "green"
-                else if (quality_level == "Good") "blue"
-                else if (quality_level == "Fair") "yellow"
-                else "red"
+        theme <- if (quality_level == "Excellent") "success"
+                else if (quality_level == "Good") "primary"
+                else if (quality_level == "Fair") "warning"
+                else "danger"
 
-        safe_valueBox(
-          value = fmt_pct(quality_score / 100, digits = 1),
-          subtitle = HTML(paste0("Data Quality<br><small style='color: #6c757d;'>",
+        value_box(
+          title = HTML(paste0("Data Quality<br><small style='color: #6c757d;'>",
                                 quality_level, "</small>")),
-          icon = icon("check-circle"),
-          color = color
+          value = fmt_pct(quality_score / 100, digits = 1),
+          showcase = bsicons::bs_icon("check-circle"),
+          theme = theme
         )
       } else {
-        safe_valueBox(
+        value_box(
+          title = "Data Quality",
           value = "—",
-          subtitle = "Data Quality",
-          icon = icon("check-circle"),
-          color = "light-blue"
+          showcase = bsicons::bs_icon("check-circle"),
+          theme = "info"
         )
       }
 
     }, error = function(e) {
       cat("[ERROR] exec_enhanced_data_freshness:", conditionMessage(e), "\n", file = stderr())
-      safe_valueBox(
+      value_box(
+        title = "Data Quality",
         value = "—",
-        subtitle = "Data Quality",
-        icon = icon("exclamation-triangle"),
-        color = "red"
+        showcase = bsicons::bs_icon("exclamation-triangle"),
+        theme = "danger"
       )
     })
   })

@@ -1,94 +1,104 @@
 # UI Definition - Monitor Legislativo v4
 # ======================================
-# v59: Binary search - ALL modules and tabs disabled
+# v61: Migrated from shinydashboard to bslib (fixes extent=0 error)
 
-# Load required packages (since we skip global_integrated.R)
+# Load required packages
 suppressPackageStartupMessages({
   library(shiny)
-  library(shinydashboard)
+  library(bslib)
 })
 
-# DISABLED FOR v59 TESTING: Load UI utilities
-# source("R/utils/ui_utils.R", local = FALSE)
-
-# DISABLED FOR v59 TESTING: Load UI modules
-# source("R/modules/search_module.R", local = FALSE)
-# source("R/modules/geographic_module.R", local = FALSE)
-# source("R/modules/citation_module.R", local = FALSE)
-# source("R/modules/export_module.R", local = FALSE)
-# source("R/modules/admin_module.R", local = FALSE)
+# Load UI modules (re-enabled after v60 debugging)
+source("R/modules/search_module.R", local = FALSE)
+source("R/modules/geographic_module.R", local = FALSE)
+source("R/modules/citation_module.R", local = FALSE)
+source("R/modules/export_module.R", local = FALSE)
+source("R/modules/admin_module.R", local = FALSE)
 
 #' Main UI Function - Monitor Legislativo v4
 #'
-#' v59: Minimal UI with all modules/tabs disabled for binary search debugging
+#' v61: Using bslib framework instead of shinydashboard
 #'
 #' @param request Shiny HTTP request object
 #' @return Complete Shiny UI
 ui <- function(request) {
-  dashboardPage(
-    # Header
-    dashboardHeader(
-      title = "Monitor Legislativo v4 - Debug Mode",
-      titleWidth = 400
+  page_navbar(
+    title = "Monitor Legislativo v4",
+    theme = bs_theme(
+      version = 5,
+      bg = "#ffffff",
+      fg = "#2c3e50",
+      primary = "#3498db",
+      secondary = "#95a5a6",
+      success = "#27ae60",
+      info = "#3498db",
+      warning = "#f39c12",
+      danger = "#e74c3c",
+      base_font = font_google("Roboto"),
+      heading_font = font_google("Roboto Slab")
     ),
 
-    # Sidebar
-    dashboardSidebar(
-      width = 250,
-      sidebarMenu(
-        id = "main_menu",
-        menuItem("Debug Info", tabName = "debug", icon = icon("bug"))
-      )
+    # Executive Summary Tab
+    nav_panel(
+      title = "Executive Summary",
+      icon = icon("chart-line"),
+      source("R/ui/executive_tab.R", local = TRUE)$value
     ),
 
-    # Body
-    dashboardBody(
-      # Custom CSS
-      tags$head(
-        tags$style(HTML("
-          .main-header .navbar {
-            background-color: #2c3e50 !important;
-          }
-          .main-header .logo {
-            background-color: #2c3e50 !important;
-            color: white !important;
-          }
-        "))
-      ),
+    # Library Tab
+    nav_panel(
+      title = "Library",
+      icon = icon("book"),
+      source("R/ui/library_tab.R", local = TRUE)$value
+    ),
 
-      tabItems(
-        # Debug Tab - Simple content
-        tabItem(tabName = "debug",
-          fluidRow(
-            box(
-              title = "v59 Debug Mode - Binary Search Active",
-              status = "warning",
-              solidHeader = TRUE,
-              width = 12,
-              h3("All modules and tabs disabled"),
-              p("This version has ALL module loading and tab sourcing commented out."),
-              p("If this works (HTTP 200), we know the error is in one of those files."),
-              p("Current status: Testing baseline with no custom code loaded."),
-              hr(),
-              h4("What's loaded:"),
-              tags$ul(
-                tags$li("library(shiny)"),
-                tags$li("library(shinydashboard)"),
-                tags$li("Simple dashboard structure"),
-                tags$li("This static HTML content")
-              ),
-              h4("What's NOT loaded:"),
-              tags$ul(
-                tags$li("R/utils/ui_utils.R"),
-                tags$li("R/modules/*.R (all 5 modules)"),
-                tags$li("R/ui/*.R (all 5 tab files)")
-              )
-            )
-          )
-        )
-      )
+    # Analytics Tab
+    nav_panel(
+      title = "Analytics",
+      icon = icon("chart-bar"),
+      source("R/ui/analytics_tab.R", local = TRUE)$value
+    ),
+
+    # São Paulo Tab
+    nav_panel(
+      title = "São Paulo",
+      icon = icon("map-marked-alt"),
+      source("R/ui/saopaulo_tab.R", local = TRUE)$value
+    ),
+
+    # NLP Tab
+    nav_panel(
+      title = "Text Mining",
+      icon = icon("brain"),
+      source("R/ui/nlp_tab.R", local = TRUE)$value
+    ),
+
+    # Custom CSS for polish
+    tags$head(
+      tags$style(HTML("
+        .navbar-brand {
+          font-weight: 700;
+          font-size: 1.5rem;
+        }
+
+        .card-header {
+          background-color: #f8f9fa;
+          border-bottom: 2px solid #dee2e6;
+        }
+
+        .value-box {
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          transition: transform 0.2s;
+        }
+
+        .value-box:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+      "))
     )
   )
 }
 
-cat("✅ UI definition loaded successfully (v59 - debug mode)\n")
+cat("✅ UI definition loaded successfully (v61 - bslib migration)\n")

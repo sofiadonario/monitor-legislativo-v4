@@ -1,10 +1,12 @@
+# v61: Migrated from shinydashboard box() to bslib card()
 # Library Tab UI - EMERGENCY STATIC VERSION v24
 # Monitor Legislativo v4 - Document Library Interface
 # NO REACTIVE ELEMENTS - ALL STATIC HTML
 # ===================================================
 
 tagList(
-fluidRow(
+layout_columns(
+  col_widths = 12,
   column(12,
     h2("📚 Biblioteca de Documentos Legislativos"),
     p("Sistema de monitoramento legislativo brasileiro - Em manutenção.",

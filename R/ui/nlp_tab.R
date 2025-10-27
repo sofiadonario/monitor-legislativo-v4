@@ -1,22 +1,25 @@
+# v61: Migrated from shinydashboard box() to bslib card()
 # Text Analytics (NLP) Tab UI
 # Monitor Legislativo v4 - Natural Language Processing Interface
 # ==============================================================
 
 tagList(
-fluidRow(
+layout_columns(
+  col_widths = 12,
   column(12,
     h2("🧠 Análise de Texto e Processamento de Linguagem Natural"),
-    p("Ferramentas avançadas de análise textual para documentos legislativos brasileiros.", 
+    p("Ferramentas avançadas de análise textual para documentos legislativos brasileiros.",
       style = "color: #7f8c8d; margin-bottom: 30px;")
   )
 ),
 
 # NLP Analysis Controls
-fluidRow(
+layout_columns(
+  col_widths = c(4, 8),
   column(4,
     wellPanel(
       h4("Configurações de Análise"),
-      
+
       selectInput(
         inputId = "nlp_analysis_type",
         label = "Tipo de Análise:",
@@ -29,14 +32,14 @@ fluidRow(
         ),
         selected = "sentiment"
       ),
-      
+
       textAreaInput(
         inputId = "nlp_text_input",
         label = "Texto para Análise:",
         placeholder = "Cole o texto do documento ou deixe em branco para usar documentos selecionados...",
         rows = 4
       ),
-      
+
       checkboxGroupInput(
         inputId = "nlp_options",
         label = "Opções de Processamento:",
@@ -48,7 +51,7 @@ fluidRow(
         ),
         selected = c("remove_stopwords", "normalize")
       ),
-      
+
       actionButton(
         inputId = "nlp_analyze",
         label = "Analisar",
@@ -57,11 +60,11 @@ fluidRow(
       )
     )
   ),
-  
+
   column(8,
     tabsetPanel(
       type = "tabs",
-      
+
       tabPanel(
         title = "Resultados",
         br(),
@@ -88,19 +91,19 @@ fluidRow(
           uiOutput("nlp_kwic_results")
         )
       ),
-      
+
       tabPanel(
         title = "Visualizações",
         br(),
         plotlyOutput("nlp_visualization_chart", height = "500px")
       ),
-      
+
       tabPanel(
         title = "Dados Detalhados",
         br(),
         DT::dataTableOutput("nlp_detailed_results")
       ),
-      
+
       tabPanel(
         title = "Exportar",
         br(),
