@@ -33,7 +33,7 @@ if (is.null(getOption("shiny.http.response.filter"))) {
   })
 }
 
-# Bind to Railway port
+# Bind to environment-specified port (e.g., from Cloud Run)
 options(
   shiny.host = "0.0.0.0",
   shiny.port = as.integer(Sys.getenv("PORT", "3838"))
