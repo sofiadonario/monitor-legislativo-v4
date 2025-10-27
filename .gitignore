@@ -185,6 +185,9 @@ docker-compose.override.yml
 !docs/README.md
 !documentation/README.md
 !RAILWAY_DEPLOYMENT_CHECKLIST.md
+!MIGRATION_PLAN.md
+!REPOSITORY_CLEANUP.md
+!DEBUGGING_LOG.md
 
 # Reports and analysis
 *_REPORT*.md
@@ -308,6 +311,10 @@ railway.json.backup
 #################################################
 # Legacy & Cleanup
 #################################################
+
+# _legacy folder (cleaned up repository - all old files archived)
+_legacy/
+_legacy/**/*
 
 # Legacy directories to be cleaned up
 legacy/backend/

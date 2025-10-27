@@ -166,6 +166,9 @@ __tests__/
 # LARGE DIRECTORIES AND FILES
 # =============================================
 
+# Legacy cleanup directory (excluded from Docker builds)
+_legacy/
+
 # Large data directories (should be mounted or pulled at runtime)
 data_current/
 analytics_output/
