@@ -6,6 +6,9 @@
 suppressPackageStartupMessages({
   library(shiny)
   library(bslib)
+  library(plotly)
+  library(leaflet)
+  library(DT)
 })
 
 # Load UI modules (re-enabled after v60 debugging)
