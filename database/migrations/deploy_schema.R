@@ -16,18 +16,28 @@ cat("Connecting to Railway PostgreSQL...\n")
 database_url <- Sys.getenv("DATABASE_PUBLIC_URL", "")
 
 if (database_url == "") {
-  # Fallback to manual construction
+  # Fallback to manual construction from environment variables
+  host <- Sys.getenv("DATABASE_HOST", "localhost")
+  port <- as.numeric(Sys.getenv("DATABASE_PORT", "5432"))
+  dbname <- Sys.getenv("DATABASE_NAME", "railway")
+  user <- Sys.getenv("DATABASE_USER", "postgres")
+  password <- Sys.getenv("DATABASE_PASSWORD", "")
+
+  if (password == "") {
+    stop("DATABASE_PASSWORD environment variable not set")
+  }
+
   conn <- dbConnect(
     RPostgres::Postgres(),
-    host = "nozomi.proxy.rlwy.net",
-    port = 44844,
-    dbname = "railway",
-    user = "postgres",
-    password = "smNCedRjMKeNsoqpurLWXjGEUZxORwVY",
+    host = host,
+    port = port,
+    dbname = dbname,
+    user = user,
+    password = password,
     connect_timeout = 60
   )
 } else {
-  conn <- dbConnect(RPostgres::Postgres(), database_url)
+  conn <- dbConnect(RPostgres::Postgres(), dsn = database_url)
 }
 
 cat("✓ Connected successfully\n\n")

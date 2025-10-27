@@ -16,9 +16,18 @@ except ImportError:
 # Use public URL explicitly
 database_url = os.getenv("DATABASE_PUBLIC_URL")
 if not database_url:
-    database_url = "postgresql://postgres:smNCedRjMKeNsoqpurLWXjGEUZxORwVY@nozomi.proxy.rlwy.net:44844/railway"
+    db_host = os.getenv("DATABASE_HOST", "localhost")
+    db_port = os.getenv("DATABASE_PORT", "5432")
+    db_name = os.getenv("DATABASE_NAME", "railway")
+    db_user = os.getenv("DATABASE_USER", "postgres")
+    db_pass = os.getenv("DATABASE_PASSWORD")
 
-print("Connecting to:", database_url[:60] + "...")
+    if not db_pass:
+        raise ValueError("DATABASE_PASSWORD environment variable not set")
+
+    database_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+
+print("Connecting to:", database_url.split("@")[1] if "@" in database_url else database_url)
 
 # Read SQL
 with open("high_performance_search_schema.sql", "r") as f:
