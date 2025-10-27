@@ -1,6 +1,6 @@
 # Railway cache bust - $(date)
-# Last rebuild: Sat Oct 25 21:00:00 -03 2025
-# FIX v60: Binary search - Fixed server.R to also disable modules (v59 only disabled in UI)
+# Last rebuild: Sun Oct 26 21:00:00 -03 2025
+# FIX v61: Migrated to bslib framework (fixes extent=0 error definitively)
 FROM rocker/shiny:4.5.1
 
 # 1) System libs - CRITICAL: cmake + libabsl-dev needed for s2 (dependency of sf/leaflet)
@@ -30,12 +30,12 @@ RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable
 # 4) Install R packages explicitly (no Suggests avalanche)
 RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
   install.packages(c( \
-    'shinydashboard','shiny','DT', \
+    'bslib','shiny','DT', \
     'DBI','RPostgres','pool', \
     'dplyr','data.table','lubridate','tidyr','magrittr','stringr','readr', \
     'ggplot2','scales','RColorBrewer','plotly', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
-    'shinythemes','shinycssloaders','shinyjs','shinydashboardPlus','shinyWidgets', \
+    'shinythemes','shinycssloaders','shinyjs','shinyWidgets', \
     'units','s2','sf','leaflet','openxlsx','xml2' \
   ), repos='https://cloud.r-project.org')"
 
@@ -49,7 +49,7 @@ RUN R -q -e "tryCatch({ \
 
 # 6) VERIFICATION: Fail build if must-haves aren't truly there
 RUN R -q -e "stopifnot( \
-  requireNamespace('shinydashboard', quietly=TRUE), \
+  requireNamespace('bslib', quietly=TRUE), \
   requireNamespace('shiny', quietly=TRUE), \
   requireNamespace('DT', quietly=TRUE), \
   requireNamespace('leaflet', quietly=TRUE), \
