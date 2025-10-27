@@ -188,8 +188,35 @@ get_database_config <- function() {
       cat("⚠️ DATABASE_URL parsing failed, trying individual variables...\n")
     }
   }
+
+  # Method 2: Check for Google Cloud Run Unix Socket
+  # This is the preferred, secure method for connecting when deployed on Cloud Run
+  is_in_cloud_run <- !is.na(Sys.getenv("K_SERVICE", unset = NA))
+  if (is_in_cloud_run) {
+    cat("✅ Detected Google Cloud Run environment\n")
+    instance_connection_name <- "mackmonitor:southamerica-east1:mackmonitor-db"
+    socket_dir <- "/cloudsql"
+    
+    user <- Sys.getenv("PGUSER", unset = NA)
+    password <- Sys.getenv("PGPASSWORD", unset = NA)
+    dbname <- Sys.getenv("PGDATABASE", unset = NA)
+
+    if (is.na(user) || is.na(password) || is.na(dbname)) {
+      cat("❌ Missing PGUSER, PGPASSWORD, or PGDATABASE for Cloud Run connection\n")
+      return(NULL)
+    }
+
+    cat("✅ Using secure Unix socket for Cloud SQL connection\n")
+    return(list(
+      host = paste(socket_dir, instance_connection_name, sep = "/"),
+      port = 5432, # Port is ignored for socket, but good to have
+      dbname = dbname,
+      user = user,
+      password = password
+    ))
+  }
   
-  # Method 2: Try individual environment variables
+  # Method 3: Try individual environment variables (for local development)
   cat("📋 Checking individual database environment variables...\n")
   
   host <- Sys.getenv("PGHOST", unset = NA)
