@@ -74,6 +74,14 @@ cat("⚠️  SKIPPING global_integrated.R (v56 - with full UI/server)\n")
 #   stop(e)
 # })
 
+tryCatch({
+  source("db/connection.R", local = TRUE)
+  cat("✅ Global configuration loaded\n")
+}, error = function(e) {
+  cat("❌ FATAL: db/connection.R failed:", conditionMessage(e), "\n")
+  stop(e)
+})
+
 # Load your existing UI (keep your comprehensive UI as-is)
 tryCatch({
   source("ui.R", local = TRUE)
