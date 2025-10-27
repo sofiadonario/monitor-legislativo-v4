@@ -15,12 +15,6 @@
       "Source": "Repository",
       "Repository": "CRAN"
     },
-    "shinydashboard": {
-      "Package": "shinydashboard",
-      "Version": "0.7.2",
-      "Source": "Repository", 
-      "Repository": "CRAN"
-    },
     "DT": {
       "Package": "DT",
       "Version": "0.33",

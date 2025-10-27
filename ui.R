@@ -47,39 +47,54 @@ ui <- function(request) {
     ),
 
     # Executive Summary Tab
-    nav_panel(
-      title = "Executive Summary",
-      icon = icon("chart-line"),
+    do.call(nav_panel, c(
+      list(
+        title = "Executive Summary",
+        icon = icon("chart-line"),
+        value = "executive"
+      ),
       source("R/ui/executive_tab.R", local = TRUE)$value
-    ),
+    )),
 
     # Library Tab
-    nav_panel(
-      title = "Library",
-      icon = icon("book"),
+    do.call(nav_panel, c(
+      list(
+        title = "Library",
+        icon = icon("book"),
+        value = "library"
+      ),
       source("R/ui/library_tab.R", local = TRUE)$value
-    ),
+    )),
 
     # Analytics Tab
-    nav_panel(
-      title = "Analytics",
-      icon = icon("chart-bar"),
+    do.call(nav_panel, c(
+      list(
+        title = "Analytics",
+        icon = icon("chart-bar"),
+        value = "analytics"
+      ),
       source("R/ui/analytics_tab.R", local = TRUE)$value
-    ),
+    )),
 
     # São Paulo Tab
-    nav_panel(
-      title = "São Paulo",
-      icon = icon("map-marked-alt"),
+    do.call(nav_panel, c(
+      list(
+        title = "São Paulo",
+        icon = icon("map-marked-alt"),
+        value = "saopaulo"
+      ),
       source("R/ui/saopaulo_tab.R", local = TRUE)$value
-    ),
+    )),
 
     # NLP Tab
-    nav_panel(
-      title = "Text Mining",
-      icon = icon("brain"),
+    do.call(nav_panel, c(
+      list(
+        title = "Text Mining",
+        icon = icon("brain"),
+        value = "nlp"
+      ),
       source("R/ui/nlp_tab.R", local = TRUE)$value
-    ),
+    )),
 
     # Custom CSS for polish
     tags$head(
