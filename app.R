@@ -1,12 +1,12 @@
 # ==============================================================================
 # MONITOR LEGISLATIVO V4 - INTEGRATED APP
 # ==============================================================================
-# Combines your existing app.R with optimization patterns
+# v61: Migrated to bslib framework (fixes extent=0 error definitively)
 # Uses your modules + data service + optimized architecture
 # ==============================================================================
 
-# Note: shinydashboard DISABLED in v44 (R/000_load_shinydashboard.R commented out)
-# Community diagnosis: shinydashboard causes extent=0 error with minimal UI
+# Note: shinydashboard fully removed in v61 (migrated to bslib)
+# bslib provides modern Bootstrap 5 UI without extent=0 compatibility issues
 options(
   shiny.fullstacktrace = TRUE,
   shiny.trace = TRUE,
@@ -46,7 +46,7 @@ cat("========================================\n\n")
 
 # CRITICAL: Verify required packages are available at runtime
 cat("🔍 Verifying package availability...\n")
-required_pkgs <- c('shiny', 'shinydashboard', 'DT', 'leaflet', 'DBI', 'RPostgres', 'pool', 'dplyr')
+required_pkgs <- c('shiny', 'bslib', 'DT', 'leaflet', 'DBI', 'RPostgres', 'pool', 'dplyr')
 missing_pkgs <- setdiff(required_pkgs, rownames(installed.packages()))
 
 if (length(missing_pkgs) > 0) {
