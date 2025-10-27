@@ -1,6 +1,6 @@
 # UI Definition - Monitor Legislativo v4
 # ======================================
-# v62: Fixed extent=0 error by removing $value from source() calls
+# v64: Added error handling to all source() calls
 
 # Load required packages
 suppressPackageStartupMessages({
@@ -9,26 +9,56 @@ suppressPackageStartupMessages({
 })
 
 # Load UI modules (re-enabled after v60 debugging)
-source("R/modules/search_module.R", local = FALSE)
-source("R/modules/geographic_module.R", local = FALSE)
-source("R/modules/citation_module.R", local = FALSE)
-source("R/modules/export_module.R", local = FALSE)
-source("R/modules/admin_module.R", local = FALSE)
+tryCatch({
+  source("R/modules/search_module.R", local = FALSE)
+  source("R/modules/geographic_module.R", local = FALSE)
+  source("R/modules/citation_module.R", local = FALSE)
+  source("R/modules/export_module.R", local = FALSE)
+  source("R/modules/admin_module.R", local = FALSE)
+}, error = function(e) {
+  cat("Warning: Could not load all UI modules:", e$message, "\n")
+})
 
 #' Main UI Function - Monitor Legislativo v4
 #'
-#' v62: Fixed source() calls to work properly with bslib nav_panel()
+#' v64: Added error handling to source() calls for better stability
 #'
 #' @param request Shiny HTTP request object
 #' @return Complete Shiny UI
 ui <- function(request) {
 
+  # Safe source function with error handling
+  safe_source_ui <- function(file_path, tab_name) {
+    tryCatch({
+      result <- source(file_path, local = TRUE)$value
+      if (is.null(result)) {
+        cat("Warning:", file_path, "returned NULL\n")
+        return(tagList(
+          div(class = "alert alert-warning",
+            h4(paste(tab_name, "Tab")),
+            p(paste("UI content for", tab_name, "is loading..."))
+          )
+        ))
+      }
+      result
+    }, error = function(e) {
+      cat("ERROR loading", file_path, ":", e$message, "\n")
+      tagList(
+        div(class = "alert alert-danger",
+          h4(paste(tab_name, "Tab - Error")),
+          p(paste("Failed to load UI:", e$message)),
+          tags$small(paste("File:", file_path))
+        )
+      )
+    })
+  }
+
   # Load tab contents OUTSIDE of page_navbar to avoid extent=0 error
-  exec_tab <- source("R/ui/executive_tab.R", local = TRUE)$value
-  library_tab <- source("R/ui/library_tab.R", local = TRUE)$value
-  analytics_tab <- source("R/ui/analytics_tab.R", local = TRUE)$value
-  saopaulo_tab <- source("R/ui/saopaulo_tab.R", local = TRUE)$value
-  nlp_tab <- source("R/ui/nlp_tab.R", local = TRUE)$value
+  exec_tab <- safe_source_ui("R/ui/executive_tab.R", "Executive Summary")
+  library_tab <- safe_source_ui("R/ui/library_tab.R", "Library")
+  analytics_tab <- safe_source_ui("R/ui/analytics_tab.R", "Analytics")
+  saopaulo_tab <- safe_source_ui("R/ui/saopaulo_tab.R", "São Paulo")
+  nlp_tab <- safe_source_ui("R/ui/nlp_tab.R", "NLP")
 
   page_navbar(
     title = "Monitor Legislativo v4",
