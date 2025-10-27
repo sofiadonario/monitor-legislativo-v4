@@ -1,6 +1,6 @@
 # UI Definition - Monitor Legislativo v4
 # ======================================
-# v61: Migrated from shinydashboard to bslib (fixes extent=0 error)
+# v62: Fixed extent=0 error by removing $value from source() calls
 
 # Load required packages
 suppressPackageStartupMessages({
@@ -17,11 +17,19 @@ source("R/modules/admin_module.R", local = FALSE)
 
 #' Main UI Function - Monitor Legislativo v4
 #'
-#' v61: Using bslib framework instead of shinydashboard
+#' v62: Fixed source() calls to work properly with bslib nav_panel()
 #'
 #' @param request Shiny HTTP request object
 #' @return Complete Shiny UI
 ui <- function(request) {
+
+  # Load tab contents OUTSIDE of page_navbar to avoid extent=0 error
+  exec_tab <- source("R/ui/executive_tab.R", local = TRUE)$value
+  library_tab <- source("R/ui/library_tab.R", local = TRUE)$value
+  analytics_tab <- source("R/ui/analytics_tab.R", local = TRUE)$value
+  saopaulo_tab <- source("R/ui/saopaulo_tab.R", local = TRUE)$value
+  nlp_tab <- source("R/ui/nlp_tab.R", local = TRUE)$value
+
   page_navbar(
     title = "Monitor Legislativo v4",
     theme = bs_theme(
@@ -42,35 +50,35 @@ ui <- function(request) {
     nav_panel(
       title = "Executive Summary",
       icon = icon("chart-line"),
-      source("R/ui/executive_tab.R", local = TRUE)$value
+      exec_tab
     ),
 
     # Library Tab
     nav_panel(
       title = "Library",
       icon = icon("book"),
-      source("R/ui/library_tab.R", local = TRUE)$value
+      library_tab
     ),
 
     # Analytics Tab
     nav_panel(
       title = "Analytics",
       icon = icon("chart-bar"),
-      source("R/ui/analytics_tab.R", local = TRUE)$value
+      analytics_tab
     ),
 
     # São Paulo Tab
     nav_panel(
       title = "São Paulo",
       icon = icon("map-marked-alt"),
-      source("R/ui/saopaulo_tab.R", local = TRUE)$value
+      saopaulo_tab
     ),
 
     # NLP Tab
     nav_panel(
       title = "Text Mining",
       icon = icon("brain"),
-      source("R/ui/nlp_tab.R", local = TRUE)$value
+      nlp_tab
     ),
 
     # Custom CSS for polish
@@ -101,4 +109,4 @@ ui <- function(request) {
   )
 }
 
-cat("✅ UI definition loaded successfully (v61 - bslib migration)\n")
+cat("✅ UI definition loaded successfully (v62 - extent=0 fix)\n")
