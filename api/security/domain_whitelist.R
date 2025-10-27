@@ -208,7 +208,7 @@ DOMAIN_METADATA <- list(
 DomainManager <- list(
   # Validate and classify domain
   validate_domain = function(domain) {
-    if (is.null(domain) || nchar(domain) == 0) {
+    if (isTRUE(is.null(domain)) || nchar(domain) == 0) {
       return(list(valid = FALSE, error = "Empty domain"))
     }
     
@@ -334,7 +334,7 @@ DomainManager <- list(
   
   # Add custom domain to user's whitelist
   add_custom_domain = function(api_key_id, domain, justification) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database not available"))
     }
     
@@ -366,7 +366,7 @@ DomainManager <- list(
   
   # Get custom domains for API key
   get_custom_domains = function(api_key_id) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list())
     }
     
@@ -383,7 +383,7 @@ DomainManager <- list(
   
   # Approve custom domain (admin function)
   approve_custom_domain = function(api_key_id, domain, admin_user_id) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database not available"))
     }
     
@@ -411,7 +411,7 @@ DomainManager <- list(
 DomainAnalytics <- list(
   # Get domain usage statistics
   get_domain_usage_stats = function(period_days = 30) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(error = "Database not available"))
     }
     
@@ -462,7 +462,7 @@ DomainAnalytics <- list(
   
   # Get pending domain approvals (admin function)
   get_pending_approvals = function() {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(error = "Database not available"))
     }
     

@@ -35,7 +35,7 @@ create_optimized_db_pool <- function(database_url = Sys.getenv("DATABASE_URL"),
                                     pool_size = 3,  # Conservative for Railway
                                     idle_timeout = 300) {
   
-  if (database_url == "" || is.na(database_url)) {
+  if (database_url == "" || isTRUE(is.na(database_url))) {
     warning("DATABASE_URL not found, using fallback connection")
     return(NULL)
   }
@@ -668,7 +668,7 @@ query_performance_monitor <- list(
     
     # Identify high-frequency queries
     query_freq <- log_data[, .N, by = query_type][order(-N)]
-    if (nrow(query_freq) > 0 && query_freq[1]$N > 10) {
+    if (isTRUE(nrow(query_freq) > 0) && query_freq[1]$N > 10) {
       recommendations$high_frequency <- list(
         most_frequent = query_freq[1]$query_type,
         frequency = query_freq[1]$N,

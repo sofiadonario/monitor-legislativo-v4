@@ -452,7 +452,7 @@ memory_cache_cleanup <- function() {
 #' 
 is_cache_data_valid <- function(cached_result) {
   
-  if (is.null(cached_result) || !is.list(cached_result)) {
+  if (isTRUE(is.null(cached_result)) || !is.list(cached_result)) {
     return(FALSE)
   }
   

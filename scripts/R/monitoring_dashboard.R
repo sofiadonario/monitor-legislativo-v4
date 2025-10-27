@@ -496,7 +496,7 @@ create_monitoring_dashboard_server <- function(input, output, session) {
   
   # Active Alerts List
   output$active_alerts_list <- renderUI({
-    if (is.null(monitoring_data$active_alerts) || monitoring_data$active_alerts$total_active_alerts == 0) {
+    if (isTRUE(is.null(monitoring_data$active_alerts)) || monitoring_data$active_alerts$total_active_alerts == 0) {
       return(div(
         class = "alert alert-success",
         icon("check-circle"),
@@ -529,7 +529,7 @@ create_monitoring_dashboard_server <- function(input, output, session) {
     }
     
     # Recent alerts
-    if (!is.null(monitoring_data$active_alerts$recent_alerts) && 
+    if (!isTRUE(is.null(monitoring_data$active_alerts$recent_alerts)) && 
         nrow(monitoring_data$active_alerts$recent_alerts) > 0) {
       
       recent <- monitoring_data$active_alerts$recent_alerts[1:min(3, nrow(monitoring_data$active_alerts$recent_alerts)), ]
@@ -661,7 +661,7 @@ create_monitoring_dashboard_server <- function(input, output, session) {
     )
     
     # Add dynamic recommendations if available
-    if (!is.null(monitoring_data$database_analysis) && 
+    if (!isTRUE(is.null(monitoring_data$database_analysis)) && 
         exists("get_database_performance_analysis")) {
       
       tryCatch({
@@ -787,7 +787,7 @@ create_monitoring_dashboard_server <- function(input, output, session) {
 #' @param seconds Uptime in seconds
 #' @return Formatted uptime string
 format_uptime <- function(seconds) {
-  if (is.null(seconds) || is.na(seconds)) {
+  if (isTRUE(is.null(seconds)) || isTRUE(is.na(seconds))) {
     return("Unknown")
   }
   

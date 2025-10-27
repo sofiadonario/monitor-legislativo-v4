@@ -46,7 +46,7 @@ initialize_enhanced_executive_summary <- function(input, output, session, get_do
         # Try to get data from the main data sources
         if (exists("get_library_documents")) {
           docs <- get_library_documents(limit = 50000)  # Large limit for analytics
-          if (!is.null(docs) && is.data.frame(docs) && nrow(docs) > 0) {
+          if (!isTRUE(is.null(docs)) && is.data.frame(docs) && nrow(docs) > 0) {
             return(docs)
           }
         }

@@ -136,7 +136,7 @@ advanced_legal_topic_modeling <- function(texts,
   modeling_results$best_model <- select_best_topic_model(modeling_results$models, modeling_results$model_comparisons)
   
   # Topic evolution analysis (if temporal metadata available)
-  if (!is.null(metadata) && "ano" %in% names(metadata)) {
+  if (!isTRUE(is.null(metadata)) && "ano" %in% names(metadata)) {
     cat("📈 Analyzing topic evolution over time...\n")
     modeling_results$topic_evolution <- analyze_topic_evolution(
       best_model = modeling_results$best_model,
@@ -376,7 +376,7 @@ advanced_regulatory_sentiment_analysis <- function(texts,
   )
   
   # Temporal sentiment trends (if metadata available)
-  if (!is.null(metadata) && "ano" %in% names(metadata)) {
+  if (!isTRUE(is.null(metadata)) && "ano" %in% names(metadata)) {
     cat("📈 Analyzing temporal sentiment trends...\n")
     
     sentiment_results$temporal_sentiment_trends <- analyze_temporal_sentiment_trends(

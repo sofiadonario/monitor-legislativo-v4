@@ -135,7 +135,7 @@ initialize_analytics_environment <- function(db_connection = NULL,
     # Database connection
     database = list(
       connection = db_connection,
-      connected = !is.null(db_connection) && DBI::dbIsValid(db_connection)
+      connected = !isTRUE(is.null(db_connection)) && DBI::dbIsValid(db_connection)
     ),
     
     # Core modules

@@ -248,7 +248,7 @@ load_brazil_municipalities <- memoise::memoise(function(year = 2022, states = NU
     }
     
     # Apply count limit if specified
-    if (!is.null(max_count) && nrow(municipalities_raw) > max_count) {
+    if (!isTRUE(is.null(max_count)) && nrow(municipalities_raw) > max_count) {
       cat("📊 Sampling", max_count, "municipalities from", nrow(municipalities_raw), "total\n")
       municipalities_raw <- municipalities_raw[sample(nrow(municipalities_raw), max_count), ]
     }
@@ -363,7 +363,7 @@ geocode_legislative_documents <- function(documents, text_columns = c("title", "
           collapse = " "
         )
         
-        if (is.na(combined_text) || combined_text == "") next
+        if (isTRUE(is.na(combined_text)) || combined_text == "") next
         
         # Detect states
         detected_states <- detect_states_in_text(combined_text, state_patterns)

@@ -52,7 +52,7 @@ with_http_cache <- function(handler, ttl = 120, vary_headers = c("Authorization"
 
     # Check If-None-Match header (ETag validation)
     inm <- req$HEADERS[["if-none-match"]]
-    if (!is.null(inm) && identical(inm, etag)) {
+    if (!isTRUE(is.null(inm)) && identical(inm, etag)) {
       # ETag matches - return 304 Not Modified
       res$status <- 304
       res$setHeader("ETag", etag)
@@ -201,7 +201,7 @@ cache_stats_handler <- function(req, res) {
 # Cache clear endpoint
 cache_clear_handler <- function(req, res, pattern = "*") {
   # Validate pattern
-  if (is.null(pattern) || pattern == "") {
+  if (isTRUE(is.null(pattern)) || pattern == "") {
     pattern <- "*"
   }
 

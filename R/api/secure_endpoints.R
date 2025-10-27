@@ -119,25 +119,25 @@ SecureAPIManager <- R6::R6Class(
         auth_method <- "none"
         
         # Try API key authentication first
-        if (!is.null(api_key) && api_key != "") {
+        if (!isTRUE(is.null(api_key)) && api_key != "") {
           user_info <- private$authenticate_api_key(api_key)
           auth_method <- "api_key"
         }
         
         # Try JWT authentication
-        if (is.null(user_info) && !is.null(jwt_token) && jwt_token != "") {
+        if (isTRUE(is.null(user_info)) && !isTRUE(is.null(jwt_token)) && jwt_token != "") {
           user_info <- private$authenticate_jwt(jwt_token)
           auth_method <- "jwt"
         }
         
         # Try session authentication
-        if (is.null(user_info) && !is.null(session_token) && session_token != "") {
+        if (isTRUE(is.null(user_info)) && !isTRUE(is.null(session_token)) && session_token != "") {
           user_info <- private$authenticate_session(session_token)
           auth_method <- "session"
         }
         
         # Check if authentication is required
-        if (self$config$authentication$require_auth && is.null(user_info)) {
+        if (self$config$authentication$require_auth && isTRUE(is.null(user_info))) {
           private$log_api_event("authentication_failed", req, list(
             method = auth_method,
             reason = "No valid credentials"
@@ -151,7 +151,7 @@ SecureAPIManager <- R6::R6Class(
         }
         
         # Check role authorization
-        if (!is.null(user_info) && !private$check_role_authorization(user_info$role, required_role)) {
+        if (!isTRUE(is.null(user_info)) && !private$check_role_authorization(user_info$role, required_role)) {
           private$log_api_event("authorization_failed", req, list(
             user_role = user_info$role,
             required_role = required_role
@@ -673,7 +673,7 @@ SecureAPIManager <- R6::R6Class(
     
     # Get client identifier for rate limiting
     get_client_identifier = function(req, user_info) {
-      if (!is.null(user_info) && !is.null(user_info$user_id)) {
+      if (!isTRUE(is.null(user_info)) && !is.null(user_info$user_id)) {
         return(paste0("user_", user_info$user_id))
       }
       
@@ -737,25 +737,25 @@ SecureAPIManager <- R6::R6Class(
       param_index <- 1
       
       # Add filters
-      if (!is.null(params$search) && params$search != "") {
+      if (!isTRUE(is.null(params$search)) && params$search != "") {
         sql <- paste(sql, "AND (title ILIKE $", param_index, " OR content ILIKE $", param_index, ")", sep = "")
         query_params[[param_index]] <- paste0("%", params$search, "%")
         param_index <- param_index + 1
       }
       
-      if (!is.null(params$category) && params$category != "") {
+      if (!isTRUE(is.null(params$category)) && params$category != "") {
         sql <- paste(sql, "AND category = $", param_index, sep = "")
         query_params[[param_index]] <- params$category
         param_index <- param_index + 1
       }
       
-      if (!is.null(params$year) && params$year != "") {
+      if (!isTRUE(is.null(params$year)) && params$year != "") {
         sql <- paste(sql, "AND EXTRACT(YEAR FROM publication_date) = $", param_index, sep = "")
         query_params[[param_index]] <- as.numeric(params$year)
         param_index <- param_index + 1
       }
       
-      if (!is.null(params$state) && params$state != "") {
+      if (!isTRUE(is.null(params$state)) && params$state != "") {
         sql <- paste(sql, "AND state = $", param_index, sep = "")
         query_params[[param_index]] <- params$state
         param_index <- param_index + 1
@@ -818,7 +818,7 @@ SecureAPIManager <- R6::R6Class(
     
     # Parse search filters
     parse_search_filters = function(filters_json) {
-      if (is.null(filters_json) || filters_json == "") {
+      if (isTRUE(is.null(filters_json)) || filters_json == "") {
         return(list())
       }
       

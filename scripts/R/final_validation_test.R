@@ -8,7 +8,7 @@ source('comprehensive_map_data_fix.R')
 # Test 1: Data Loading
 cat("\n📊 TEST 1: Data Loading\n")
 data <- load_comprehensive_dataset()
-if (!is.null(data) && nrow(data) > 0) {
+if (!isTRUE(is.null(data)) && nrow(data) > 0) {
   cat("✅ PASS: Data loaded successfully -", nrow(data), "documents\n")
   cat("   Date range:", format(min(data$data), "%Y-%m-%d"), "to", format(max(data$data), "%Y-%m-%d"), "\n")
   cat("   States:", length(unique(data$estado)), "unique states\n")
@@ -38,7 +38,7 @@ jurisdiction_data <- get_map1_data()
 required_cols <- c("jurisdicao", "count", "estado", "lat", "lng")
 missing_cols <- setdiff(required_cols, names(jurisdiction_data))
 
-if (length(missing_cols) == 0 && nrow(jurisdiction_data) > 0) {
+if (isTRUE(length(missing_cols) == 0) && nrow(jurisdiction_data) > 0) {
   cat("✅ PASS: Jurisdiction data structure correct\n")
   cat("   Jurisdictions:", nrow(jurisdiction_data), "\n")
   cat("   Sample: São Paulo has", jurisdiction_data[jurisdiction_data$estado=="SP", "count"], "documents\n")
@@ -73,7 +73,7 @@ for (i in 1:nrow(map_data)) {
   estado <- map_data$estado[i]
   
   # Check if coordinates are within Brazil's bounds
-  if (is.na(lat) || is.na(lng) || lat < -35 || lat > 5 || lng < -75 || lng > -30) {
+  if (isTRUE(is.na(lat)) || isTRUE(is.na(lng)) || lat < -35 || lat > 5 || lng < -75 || lng > -30) {
     coords_valid <- FALSE
     coord_issues <- c(coord_issues, paste(estado, "- invalid coordinates"))
   }
@@ -93,7 +93,7 @@ cat("\n📊 TEST 6: Analytics Functions\n")
 tryCatch({
   analytics <- get_search_analytics()
   
-  if (!is.null(analytics) && analytics$total_documents > 0) {
+  if (!isTRUE(is.null(analytics)) && analytics$total_documents > 0) {
     cat("✅ PASS: Analytics functions working\n")
     cat("   Documents by year:", nrow(analytics$documents_by_year), "years\n")
     cat("   Documents by state:", nrow(analytics$documents_by_state), "states\n")
@@ -110,9 +110,9 @@ cat("\n" * 2)
 cat("🏁 FINAL VALIDATION SUMMARY\n")
 cat(paste(rep("=", 50), collapse=""), "\n")
 
-all_tests_passed <- exists("data") && !is.null(data) && nrow(data) > 0 &&
+all_tests_passed <- exists("data") && !isTRUE(is.null(data)) && isTRUE(nrow(data) > 0) &&
                    exists("map_data") && nrow(map_data) == 27 &&
-                   exists("jurisdiction_data") && nrow(jurisdiction_data) > 0 &&
+                   exists("jurisdiction_data") && isTRUE(nrow(jurisdiction_data) > 0) &&
                    exists("metrics") && metrics$total_documents > 0 &&
                    coords_valid
 

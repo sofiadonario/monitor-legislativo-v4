@@ -124,7 +124,7 @@ enhanced_geographic_server <- function(id, pool,
     
     # Initialize the enhanced system
     observe({
-      if (is.null(enhanced_system$integrated_system) && enable_enhanced_maps) {
+      if (isTRUE(is.null(enhanced_system$integrated_system)) && enable_enhanced_maps) {
         
         withProgress(message = "Initializing enhanced geographic system...", value = 0, {
           
@@ -214,7 +214,7 @@ enhanced_geographic_server <- function(id, pool,
     output$interactive_choropleth <- renderLeaflet({
       
       # Check if enhanced system is available
-      if (!is.null(enhanced_system$integrated_system) && 
+      if (!isTRUE(is.null(enhanced_system$integrated_system)) && 
           enhanced_system$initialization_status == "operational") {
         
         tryCatch({
@@ -262,7 +262,7 @@ enhanced_geographic_server <- function(id, pool,
     # Enhanced map controls UI
     output$enhanced_map_controls <- renderUI({
       
-      if (!is.null(enhanced_system$integrated_system) &&
+      if (!isTRUE(is.null(enhanced_system$integrated_system)) &&
           enhanced_system$initialization_status == "operational") {
         
         tryCatch({
@@ -283,7 +283,7 @@ enhanced_geographic_server <- function(id, pool,
     # Enhanced map legend
     output$enhanced_map_legend <- renderUI({
       
-      if (!is.null(enhanced_system$integrated_system) &&
+      if (!isTRUE(is.null(enhanced_system$integrated_system)) &&
           enhanced_system$initialization_status == "operational") {
         
         tryCatch({
@@ -347,7 +347,7 @@ enhanced_geographic_server <- function(id, pool,
     # Performance monitoring output
     output$performance_monitoring <- renderUI({
       
-      if (!is.null(enhanced_system$performance_optimizer) &&
+      if (!isTRUE(is.null(enhanced_system$performance_optimizer)) &&
           enhanced_system$enhancement_level == "advanced") {
         
         performance_report <- enhanced_system$performance_optimizer$get_optimization_report()
@@ -827,7 +827,7 @@ create_enhanced_fallback_map <- function() {
 #' @return Enhanced base leaflet map
 create_enhanced_base_map <- function(geo_data) {
   
-  if (is.null(geo_data) || nrow(geo_data) == 0) {
+  if (isTRUE(is.null(geo_data)) || nrow(geo_data) == 0) {
     return(create_enhanced_fallback_map())
   }
   

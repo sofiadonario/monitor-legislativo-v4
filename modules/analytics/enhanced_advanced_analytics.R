@@ -205,7 +205,7 @@ advanced_time_series_analysis <- function(data, date_column = "date",
     
     # Grouped analysis if requested
     grouped_analysis <- NULL
-    if (!is.null(group_by) && all(group_by %in% names(data))) {
+    if (!isTRUE(is.null(group_by)) && all(group_by %in% names(data))) {
       grouped_analysis <- data %>%
         group_by(!!!syms(group_by), year_month) %>%
         summarise(count = n(), .groups = "drop") %>%
@@ -403,7 +403,7 @@ advanced_regression_analysis <- function(data, response_var = "document_count",
     
     # Model comparison and selection
     model_selection <- tryCatch({
-      if (!is.null(linear_results$model) && length(available_predictors) > 1) {
+      if (!isTRUE(is.null(linear_results$model)) && length(available_predictors) > 1) {
         # Forward/backward selection using AIC
         null_model <- lm(as.formula(paste(response_var, "~ 1")), data = regression_data)
         full_model <- linear_results$model

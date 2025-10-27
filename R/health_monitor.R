@@ -267,7 +267,7 @@ check_environment_health <- function() {
     }
   }
 
-  if (length(missing_optional) > 0 && status == "healthy") {
+  if (isTRUE(length(missing_optional) > 0) && status == "healthy") {
     status <- "warning"
     warnings <- c(warnings, paste("Optional variables not set:", paste(missing_optional, collapse = ", ")))
   }

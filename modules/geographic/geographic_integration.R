@@ -150,7 +150,7 @@ GeographicIntegrationSystem <- if (requireNamespace("R6", quietly = TRUE)) {
               force_refresh = FALSE
             )
             
-            if (!is.null(self$ibge_system) && self$ibge_system$status %in% c("operational", "partial")) {
+            if (!isTRUE(is.null(self$ibge_system)) && self$ibge_system$status %in% c("operational", "partial")) {
               self$components_status$ibge_system <- "initialized"
               cat("✅ IBGE system initialized\n")
             } else {
@@ -398,7 +398,7 @@ GeographicIntegrationSystem <- if (requireNamespace("R6", quietly = TRUE)) {
       # Get geographic data for UI components
       get_states_data = function(include_geometry = TRUE) {
         
-        if (!self$initialized || is.null(self$data_loader)) {
+        if (!self$initialized || isTRUE(is.null(self$data_loader))) {
           return(NULL)
         }
         
@@ -416,7 +416,7 @@ GeographicIntegrationSystem <- if (requireNamespace("R6", quietly = TRUE)) {
       
       get_municipalities_data = function(state_codes = NULL) {
         
-        if (!self$initialized || is.null(self$data_loader)) {
+        if (!self$initialized || isTRUE(is.null(self$data_loader))) {
           return(NULL)
         }
         
@@ -438,7 +438,7 @@ GeographicIntegrationSystem <- if (requireNamespace("R6", quietly = TRUE)) {
       # Get aggregated data for visualizations
       get_state_aggregation = function(include_geometry = TRUE) {
         
-        if (!self$initialized || is.null(self$aggregator)) {
+        if (!self$initialized || isTRUE(is.null(self$aggregator))) {
           return(NULL)
         }
         
@@ -460,7 +460,7 @@ GeographicIntegrationSystem <- if (requireNamespace("R6", quietly = TRUE)) {
       
       get_municipality_aggregation = function(state_filter = NULL, top_n = 50) {
         
-        if (!self$initialized || is.null(self$aggregator)) {
+        if (!self$initialized || isTRUE(is.null(self$aggregator))) {
           return(NULL)
         }
         
@@ -486,7 +486,7 @@ GeographicIntegrationSystem <- if (requireNamespace("R6", quietly = TRUE)) {
         cat("🧹 Cleaning up Geographic Integration System...\n")
         
         # Cleanup components
-        if (!is.null(self$data_loader) && "cleanup" %in% names(self$data_loader)) {
+        if (!isTRUE(is.null(self$data_loader)) && "cleanup" %in% names(self$data_loader)) {
           tryCatch({
             self$data_loader$cleanup()
           }, error = function(e) {
@@ -494,7 +494,7 @@ GeographicIntegrationSystem <- if (requireNamespace("R6", quietly = TRUE)) {
           })
         }
         
-        if (!is.null(self$aggregator) && "clear_cache" %in% names(self$aggregator)) {
+        if (!isTRUE(is.null(self$aggregator)) && "clear_cache" %in% names(self$aggregator)) {
           tryCatch({
             self$aggregator$clear_cache()
           }, error = function(e) {

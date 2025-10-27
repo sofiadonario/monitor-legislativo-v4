@@ -111,7 +111,7 @@ cat("📚 Portuguese Legal NLP loaded with", length(available_packages), "NLP pa
 #' @return List with processed text and extracted information
 process_legal_text <- function(text, preserve_legal_terms = TRUE, extract_entities = TRUE) {
   
-  if (is.null(text) || is.na(text) || nchar(trimws(text)) == 0) {
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || nchar(trimws(text)) == 0) {
     return(list(
       original = text,
       normalized = "",
@@ -174,7 +174,7 @@ process_legal_text <- function(text, preserve_legal_terms = TRUE, extract_entiti
 #' @return Normalized text
 normalize_portuguese_text <- function(text) {
   
-  if (is.null(text) || is.na(text)) {
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text))) {
     return("")
   }
   
@@ -268,7 +268,7 @@ extract_legal_entities <- function(text) {
     transport_entities = character(0)
   )
   
-  if (is.null(text) || nchar(trimws(text)) == 0) {
+  if (isTRUE(is.null(text)) || nchar(trimws(text)) == 0) {
     return(entities)
   }
   
@@ -433,7 +433,7 @@ extract_transport_entities <- function(text) {
 #' @return Character vector of structured legal references
 extract_legal_references <- function(text) {
   
-  if (is.null(text) || nchar(trimws(text)) == 0) {
+  if (isTRUE(is.null(text)) || nchar(trimws(text)) == 0) {
     return(character(0))
   }
   
@@ -467,7 +467,7 @@ extract_legal_references <- function(text) {
 #' @return Transport modal classification
 classify_transport_modal <- function(text) {
   
-  if (is.null(text) || nchar(trimws(text)) == 0) {
+  if (isTRUE(is.null(text)) || nchar(trimws(text)) == 0) {
     return("unknown")
   }
   
@@ -527,7 +527,7 @@ classify_transport_modal <- function(text) {
 #' @return Numeric importance score (0-10)
 calculate_legal_importance_score <- function(text, entities, legal_references) {
   
-  if (is.null(text) || nchar(trimws(text)) == 0) {
+  if (isTRUE(is.null(text)) || nchar(trimws(text)) == 0) {
     return(0)
   }
   
@@ -594,7 +594,7 @@ calculate_legal_importance_score <- function(text, entities, legal_references) {
 #' @return Similarity score (0-1)
 calculate_legal_similarity <- function(text1, text2, method = "legal") {
   
-  if (is.null(text1) || is.null(text2) || nchar(trimws(text1)) == 0 || nchar(trimws(text2)) == 0) {
+  if (isTRUE(is.null(text1)) || isTRUE(is.null(text2)) || nchar(trimws(text1)) == 0 || nchar(trimws(text2)) == 0) {
     return(0)
   }
   
@@ -633,12 +633,12 @@ calculate_legal_similarity <- function(text1, text2, method = "legal") {
       refs2 <- extract_legal_references(text2)
       
       # Calculate reference overlap
-      ref_similarity <- if (length(refs1) > 0 || length(refs2) > 0) {
+      ref_similarity <- if (isTRUE(length(refs1) > 0) || length(refs2) > 0) {
         length(intersect(refs1, refs2)) / length(union(refs1, refs2))
       } else { 0 }
       
       # Calculate token similarity
-      token_similarity <- if (length(tokens1) > 0 || length(tokens2) > 0) {
+      token_similarity <- if (isTRUE(length(tokens1) > 0) || length(tokens2) > 0) {
         length(intersect(tokens1, tokens2)) / length(union(tokens1, tokens2))
       } else { 0 }
       
@@ -672,7 +672,7 @@ build_legal_terms_dictionary <- function(documents, min_frequency = 3) {
     if (i %% 1000 == 0) cat("   Processing document", i, "/", length(documents), "\n")
     
     doc <- documents[[i]]
-    if (is.null(doc$titulo) && is.null(doc$title)) next
+    if (isTRUE(is.null(doc$titulo)) && isTRUE(is.null(doc$title))) next
     
     text <- paste(doc$titulo %||% doc$title %||% "", 
                   doc$ementa %||% doc$summary %||% "", sep = " ")
@@ -714,7 +714,7 @@ build_legal_terms_dictionary <- function(documents, min_frequency = 3) {
 #' @return Enhanced query string
 enhance_search_query <- function(query, expand_legal_terms = TRUE) {
   
-  if (is.null(query) || nchar(trimws(query)) == 0) {
+  if (isTRUE(is.null(query)) || nchar(trimws(query)) == 0) {
     return("")
   }
   

@@ -123,7 +123,7 @@ detect_browser_capabilities <- function(session = NULL) {
 #' @param session Shiny session object
 #' @return Character browser name
 detect_browser_from_session <- function(session) {
-  if (is.null(session) || is.null(session$clientData)) {
+  if (isTRUE(is.null(session)) || isTRUE(is.null(session$clientData))) {
     return("unknown")
   }
   
@@ -236,7 +236,7 @@ monitor_and_adapt_performance <- function(render_time, fps = NULL, memory_usage 
     WEBGL_PERFORMANCE$current_quality <<- new_quality
     
     # Memory management
-    if (!is.null(memory_usage) && memory_usage > WEBGL_CONFIG$memory_limit_mb) {
+    if (!isTRUE(is.null(memory_usage)) && memory_usage > WEBGL_CONFIG$memory_limit_mb) {
       cat("🧠 High memory usage detected:", memory_usage, "MB. Triggering cleanup.\n")
       trigger_memory_cleanup()
     }
@@ -337,14 +337,14 @@ create_webgl_scatter <- function(data, x, y, color = NULL, size = NULL, renderer
     )
     
     # Add color mapping if specified
-    if (!is.null(color) && color %in% names(data)) {
+    if (!isTRUE(is.null(color)) && color %in% names(data)) {
       plot_config$color <- as.formula(paste0("~", color))
       plot_config$marker$colorscale <- "Viridis"
       plot_config$marker$showscale <- TRUE
     }
     
     # Add size mapping if specified
-    if (!is.null(size) && size %in% names(data)) {
+    if (!isTRUE(is.null(size)) && size %in% names(data)) {
       plot_config$size <- as.formula(paste0("~", size))
       plot_config$marker$sizemode <- 'diameter'
       plot_config$marker$sizeref <- 2 * max(data[[size]], na.rm = TRUE) / (40^2)
@@ -467,7 +467,7 @@ create_webgl_line_chart <- function(data, x, y, group = NULL, renderer_config = 
     )
     
     # Add grouping if specified
-    if (!is.null(group) && group %in% names(data)) {
+    if (!isTRUE(is.null(group)) && group %in% names(data)) {
       plot_config$color <- as.formula(paste0("~", group))
       plot_config$line$width <- 1.5  # Thinner lines for multiple groups
     }
@@ -596,7 +596,7 @@ create_fallback_scatter <- function(data, x, y, color = NULL, size = NULL) {
       mode = 'markers'
     )
     
-    if (!is.null(color) && color %in% names(data)) {
+    if (!isTRUE(is.null(color)) && color %in% names(data)) {
       p <- p %>% add_trace(color = as.formula(paste0("~", color)))
     }
     
@@ -634,7 +634,7 @@ create_fallback_line <- function(data, x, y, group = NULL) {
       mode = 'lines+markers'
     )
     
-    if (!is.null(group) && group %in% names(data)) {
+    if (!isTRUE(is.null(group)) && group %in% names(data)) {
       p <- p %>% add_trace(color = as.formula(paste0("~", group)))
     }
     
@@ -790,7 +790,7 @@ generate_performance_recommendations <- function() {
   avg_render_time <- mean(WEBGL_PERFORMANCE$render_times, na.rm = TRUE)
   error_rate <- WEBGL_PERFORMANCE$error_counts / max(1, length(WEBGL_PERFORMANCE$render_times))
   
-  if (!is.na(avg_render_time) && avg_render_time > WEBGL_CONFIG$max_render_time) {
+  if (!isTRUE(is.na(avg_render_time)) && avg_render_time > WEBGL_CONFIG$max_render_time) {
     recommendations <- c(recommendations, "Consider reducing data point size or implementing data sampling")
   }
   

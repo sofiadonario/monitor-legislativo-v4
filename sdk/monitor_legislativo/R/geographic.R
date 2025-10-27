@@ -88,7 +88,7 @@ ml_geographic_analysis <- function(query = NULL,
   tryCatch({
     result <- .ml_api_call("POST", "/geographic/analysis", body = request_body)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Falha na análise geográfica: ", result$message %||% "Erro desconhecido")
     }
     
@@ -234,7 +234,7 @@ ml_get_states <- function(include_stats = TRUE,
   tryCatch({
     result <- .ml_api_call("GET", endpoint)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Erro ao obter estados: ", result$message %||% "Erro desconhecido")
     }
     
@@ -389,7 +389,7 @@ ml_get_municipalities <- function(state = NULL,
   tryCatch({
     result <- .ml_api_call("GET", endpoint)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Erro ao obter municípios: ", result$message %||% "Erro desconhecido")
     }
     

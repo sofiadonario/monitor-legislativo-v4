@@ -95,7 +95,7 @@ validate_export_request <- function(export_data) {
   # Validate limit
   limit <- as.numeric(export_data$limit %||% 1000)
   format_info <- EXPORT_FORMATS[[format]]
-  if (!is.null(format_info) && limit > format_info$max_records) {
+  if (!isTRUE(is.null(format_info)) && limit > format_info$max_records) {
     validation_result$warnings <- c(validation_result$warnings,
                                    paste("Limit reduced to maximum for", format, "format:", format_info$max_records))
     limit <- format_info$max_records
@@ -124,39 +124,39 @@ validate_export_request <- function(export_data) {
 
 # Helper function to apply export filters
 apply_export_filters <- function(documents, filters) {
-  if (is.null(filters) || length(filters) == 0) {
+  if (isTRUE(is.null(filters)) || length(filters) == 0) {
     return(documents)
   }
   
   filtered_docs <- documents
   
   # Category filter
-  if (!is.null(filters$category) && filters$category != "all") {
+  if (!isTRUE(is.null(filters$category)) && filters$category != "all") {
     if ("category" %in% names(filtered_docs)) {
       filtered_docs <- filtered_docs[filtered_docs$category == filters$category, ]
     }
   }
   
   # State filter
-  if (!is.null(filters$state) && filters$state != "all") {
+  if (!isTRUE(is.null(filters$state)) && filters$state != "all") {
     if ("state" %in% names(filtered_docs)) {
       filtered_docs <- filtered_docs[filtered_docs$state == filters$state, ]
     }
   }
   
   # Date range filter
-  if (!is.null(filters$date_start) && "date" %in% names(filtered_docs)) {
+  if (!isTRUE(is.null(filters$date_start)) && "date" %in% names(filtered_docs)) {
     start_date <- as.Date(filters$date_start)
     filtered_docs <- filtered_docs[as.Date(filtered_docs$date) >= start_date, ]
   }
   
-  if (!is.null(filters$date_end) && "date" %in% names(filtered_docs)) {
+  if (!isTRUE(is.null(filters$date_end)) && "date" %in% names(filtered_docs)) {
     end_date <- as.Date(filters$date_end)
     filtered_docs <- filtered_docs[as.Date(filtered_docs$date) <= end_date, ]
   }
   
   # Search term filter
-  if (!is.null(filters$search) && nchar(filters$search) > 0) {
+  if (!isTRUE(is.null(filters$search)) && nchar(filters$search) > 0) {
     search_term <- filters$search
     if ("title" %in% names(filtered_docs)) {
       title_match <- grepl(search_term, filtered_docs$title, ignore.case = TRUE)
@@ -275,7 +275,7 @@ convert_to_bibtex <- function(documents) {
       '  type = {', bibtex_escape(doc$document_type %||% ""), '},\n'
     )
     
-    if (!is.null(doc$url) && doc$url != "") {
+    if (!isTRUE(is.null(doc$url)) && doc$url != "") {
       bibtex_content <- paste0(bibtex_content,
         '  url = {', doc$url, '},\n'
       )
@@ -301,11 +301,11 @@ convert_to_ris <- function(documents) {
       'PB  - ', get_publisher_info(doc$state %||% "", doc$municipality %||% "", doc$document_type %||% ""), '\n'
     )
     
-    if (!is.null(doc$summary) && doc$summary != "") {
+    if (!isTRUE(is.null(doc$summary)) && doc$summary != "") {
       ris_content <- paste0(ris_content, 'AB  - ', doc$summary, '\n')
     }
     
-    if (!is.null(doc$url) && doc$url != "") {
+    if (!isTRUE(is.null(doc$url)) && doc$url != "") {
       ris_content <- paste0(ris_content, 'UR  - ', doc$url, '\n')
     }
     
@@ -317,7 +317,7 @@ convert_to_ris <- function(documents) {
 
 # Helper functions for escaping
 xml_escape <- function(text) {
-  if (is.null(text) || is.na(text)) return("")
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text))) return("")
   text <- gsub("&", "&amp;", text)
   text <- gsub("<", "&lt;", text)
   text <- gsub(">", "&gt;", text)
@@ -327,7 +327,7 @@ xml_escape <- function(text) {
 }
 
 bibtex_escape <- function(text) {
-  if (is.null(text) || is.na(text)) return("")
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text))) return("")
   text <- gsub("\\{", "\\\\{", text)
   text <- gsub("\\}", "\\\\}", text)
   return(text)
@@ -335,7 +335,7 @@ bibtex_escape <- function(text) {
 
 # Helper function to get publisher info (from citations.R)
 get_publisher_info <- function(state, municipality, document_type) {
-  if (state == "DF" || state == "" || is.null(state)) {
+  if (state == "DF" || state == "" || isTRUE(is.null(state))) {
     if (grepl("(?i)(federal|união|república)", document_type)) {
       return("Presidência da República")
     } else {
@@ -535,7 +535,7 @@ function() {
 function(id) {
   API_STATE$request_count <<- API_STATE$request_count + 1
   
-  if (is.null(id) || nchar(trimws(id)) == 0) {
+  if (isTRUE(is.null(id)) || nchar(trimws(id)) == 0) {
     return(error_response("Export job ID is required", 400))
   }
   
@@ -567,7 +567,7 @@ function(id) {
 function(id, res) {
   API_STATE$request_count <<- API_STATE$request_count + 1
   
-  if (is.null(id) || nchar(trimws(id)) == 0) {
+  if (isTRUE(is.null(id)) || nchar(trimws(id)) == 0) {
     res$status <- 400
     return("Export job ID is required")
   }

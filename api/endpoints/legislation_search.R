@@ -54,7 +54,7 @@ validate_brazilian_parameters <- function(estado = NULL, ano = NULL, tipo = NULL
   # Validate year
   if (!is.null(ano)) {
     ano_num <- suppressWarnings(as.numeric(ano))
-    if (is.na(ano_num) || ano_num < 1988 || ano_num > as.numeric(format(Sys.Date(), "%Y"))) {
+    if (isTRUE(is.na(ano_num)) || ano_num < 1988 || ano_num > as.numeric(format(Sys.Date(), "%Y"))) {
       errors <- c(errors, paste("Ano deve estar entre 1988 e", format(Sys.Date(), "%Y")))
     }
   }
@@ -91,7 +91,7 @@ build_search_query <- function(q = NULL, estado = NULL, ano = NULL, tipo = NULL,
   param_count <- 1
   
   # Add text search if provided
-  if (!is.null(q) && nchar(trimws(q)) > 0) {
+  if (!isTRUE(is.null(q)) && nchar(trimws(q)) > 0) {
     search_term <- paste0("%", trimws(q), "%")
     base_query <- paste(base_query, "AND (titulo ILIKE $", param_count, " OR ementa ILIKE $", param_count, ")", sep="")
     params[[param_count]] <- search_term
@@ -127,7 +127,7 @@ build_search_query <- function(q = NULL, estado = NULL, ano = NULL, tipo = NULL,
   }
   
   # Add ordering and pagination
-  if (!is.null(q) && nchar(trimws(q)) > 0) {
+  if (!isTRUE(is.null(q)) && nchar(trimws(q)) > 0) {
     base_query <- paste(base_query, "ORDER BY relevance_score DESC, data_publicacao DESC")
   } else {
     base_query <- paste(base_query, "ORDER BY data_publicacao DESC")
@@ -143,7 +143,7 @@ build_search_query <- function(q = NULL, estado = NULL, ano = NULL, tipo = NULL,
 # Format response for different content types
 format_response <- function(data, format = "json", fields = NULL) {
   # Apply field selection if specified
-  if (!is.null(fields) && nchar(trimws(fields)) > 0) {
+  if (!isTRUE(is.null(fields)) && nchar(trimws(fields)) > 0) {
     selected_fields <- trimws(strsplit(fields, ",")[[1]])
     available_fields <- names(data)
     valid_fields <- selected_fields[selected_fields %in% available_fields]
@@ -328,7 +328,7 @@ function(req, res, q = NULL, estado = NULL, ano = NULL, tipo = NULL, municipio =
 #' @serializer unboxedJSON
 function(req, res, id) {
   
-  if (is.null(id) || nchar(trimws(id)) == 0) {
+  if (isTRUE(is.null(id)) || nchar(trimws(id)) == 0) {
     res$status <- 400
     return(list(
       error = TRUE,

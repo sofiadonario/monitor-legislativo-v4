@@ -76,7 +76,7 @@ admin_get_users <- function(req, page = 1, limit = 50, status = NULL, tier = NUL
   }
   
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(error_response("Database connection not available", 500))
     }
     
@@ -103,7 +103,7 @@ admin_get_users <- function(req, page = 1, limit = 50, status = NULL, tier = NUL
       params[[param_count]] <- academic_status
     }
     
-    if (!is.null(search) && nchar(search) > 0) {
+    if (!isTRUE(is.null(search)) && nchar(search) > 0) {
       param_count <- param_count + 1
       where_conditions <- c(where_conditions, paste0("(first_name ILIKE $", param_count, " OR last_name ILIKE $", param_count, " OR email ILIKE $", param_count, " OR institution_name ILIKE $", param_count, ")"))
       params[[param_count]] <- paste0("%", search, "%")
@@ -173,7 +173,7 @@ admin_get_user <- function(req, user_id) {
   }
   
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(error_response("Database connection not available", 500))
     }
     
@@ -264,12 +264,12 @@ admin_update_user_status <- function(req, user_id) {
   new_academic_status <- body$academic_status
   admin_notes <- body$notes %||% ""
   
-  if (is.null(new_status) && is.null(new_tier) && is.null(new_academic_status)) {
+  if (isTRUE(is.null(new_status)) && isTRUE(is.null(new_tier)) && isTRUE(is.null(new_academic_status))) {
     return(error_response("At least one of status, tier, or academic_status must be provided", 400))
   }
   
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(error_response("Database connection not available", 500))
     }
     
@@ -354,7 +354,7 @@ admin_get_api_keys <- function(req, page = 1, limit = 50, status = NULL, tier = 
   }
   
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(error_response("Database connection not available", 500))
     }
     
@@ -454,7 +454,7 @@ admin_revoke_api_key <- function(req, key_id) {
   reason <- body$reason %||% "Revoked by administrator"
   
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(error_response("Database connection not available", 500))
     }
     
@@ -507,7 +507,7 @@ admin_get_dashboard_analytics <- function(req, period = "30d") {
   }
   
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(error_response("Database connection not available", 500))
     }
     
@@ -634,7 +634,7 @@ admin_get_security_events <- function(req, page = 1, limit = 50, severity = NULL
   }
   
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(error_response("Database connection not available", 500))
     }
     
@@ -717,7 +717,7 @@ admin_get_system_config <- function(req) {
   }
   
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(error_response("Database connection not available", 500))
     }
     

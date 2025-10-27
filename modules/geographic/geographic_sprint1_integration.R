@@ -495,7 +495,7 @@ geographic_sprint1_module <- function(id) {
       )
       
       # Further optimize for Railway if needed
-      if (!is.null(boundaries) && nrow(boundaries) > 0) {
+      if (!isTRUE(is.null(boundaries)) && nrow(boundaries) > 0) {
         boundaries <- optimize_geographic_data_railway(
           boundaries,
           optimization_level = optimization_level,
@@ -543,7 +543,7 @@ geographic_sprint1_module <- function(id) {
     # Total documents display
     output$total_documents <- renderText({
       data <- legislative_geographic_data()
-      if (!is.null(data) && "doc_count" %in% names(data)) {
+      if (!isTRUE(is.null(data)) && "doc_count" %in% names(data)) {
         format(sum(data$doc_count, na.rm = TRUE), big.mark = ",")
       } else {
         "134,014"
@@ -554,7 +554,7 @@ geographic_sprint1_module <- function(id) {
     output$main_geographic_map <- renderLeaflet({
       data <- legislative_geographic_data()
       
-      if (is.null(data) || nrow(data) == 0) {
+      if (isTRUE(is.null(data)) || nrow(data) == 0) {
         # Empty map centered on Brazil
         leaflet() %>%
           addTiles() %>%
@@ -624,7 +624,7 @@ geographic_sprint1_module <- function(id) {
     output$analysis_results_panel <- renderUI({
       data <- legislative_geographic_data()
       
-      if (is.null(data) || nrow(data) == 0) {
+      if (isTRUE(is.null(data)) || nrow(data) == 0) {
         div(
           p("Geographic data is being loaded...", style = "color: #666; font-style: italic;")
         )

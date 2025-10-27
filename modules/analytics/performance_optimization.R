@@ -438,7 +438,7 @@ get_from_cache <- function(storage, metadata, key) {
     # Check if expired
     entry <- get(key, storage)
     
-    if (is.null(entry$expires) || entry$expires > Sys.time()) {
+    if (isTRUE(is.null(entry$expires)) || entry$expires > Sys.time()) {
       # Update access statistics
       metadata$hit_count <- metadata$hit_count + 1
       metadata$access_times[[key]] <- Sys.time()
@@ -799,7 +799,7 @@ calculate_optimal_batch_size <- function(total_sample, memory_limit_mb) {
   ideal_batch_sizes <- c(500, 1000, 2000, 5000, 10000)
   optimal_batch <- max(ideal_batch_sizes[ideal_batch_sizes <= max_batch_by_memory])
   
-  if (is.na(optimal_batch) || length(optimal_batch) == 0) {
+  if (isTRUE(is.na(optimal_batch)) || length(optimal_batch) == 0) {
     optimal_batch <- min(500, max_batch_by_memory)
   }
   

@@ -59,7 +59,7 @@ ml_search <- function(query,
                       verbose = FALSE) {
   
   # Validar parâmetros
-  if (is.null(query) || nchar(trimws(query)) == 0) {
+  if (isTRUE(is.null(query)) || nchar(trimws(query)) == 0) {
     stop("Parâmetro 'query' é obrigatório e não pode estar vazio")
   }
   
@@ -95,7 +95,7 @@ ml_search <- function(query,
   tryCatch({
     result <- .ml_api_call("POST", "/search", body = request_body)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Falha na busca: ", result$message %||% "Erro desconhecido")
     }
     
@@ -318,7 +318,7 @@ ml_search_advanced <- function(query,
   tryCatch({
     result <- .ml_api_call("POST", "/search", body = request_body)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Falha na busca avançada: ", result$message %||% "Erro desconhecido")
     }
     
@@ -394,7 +394,7 @@ ml_search_suggestions <- function(partial_query,
                                  limit = 10,
                                  category = NULL) {
   
-  if (is.null(partial_query) || nchar(trimws(partial_query)) == 0) {
+  if (isTRUE(is.null(partial_query)) || nchar(trimws(partial_query)) == 0) {
     return(character(0))
   }
   
@@ -423,7 +423,7 @@ ml_search_suggestions <- function(partial_query,
   tryCatch({
     result <- .ml_api_call("GET", endpoint)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       return(character(0))
     }
     
@@ -478,7 +478,7 @@ ml_search_similar <- function(document_id = NULL,
                              limit = 10,
                              similarity_threshold = 0.5) {
   
-  if (is.null(document_id) && is.null(content)) {
+  if (isTRUE(is.null(document_id)) && isTRUE(is.null(content))) {
     stop("Deve fornecer 'document_id' ou 'content'")
   }
   
@@ -502,7 +502,7 @@ ml_search_similar <- function(document_id = NULL,
   tryCatch({
     result <- .ml_api_call("POST", "/search/similar", body = request_body)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Falha na busca de similares: ", result$message %||% "Erro desconhecido")
     }
     
@@ -601,7 +601,7 @@ ml_search_trends <- function(period = "week",
   tryCatch({
     result <- .ml_api_call("GET", endpoint)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       return(tibble(
         term = character(0),
         searches = integer(0),

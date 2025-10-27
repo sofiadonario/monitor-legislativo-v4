@@ -423,7 +423,7 @@ validate_system_components <- function(system_handle) {
   )
   
   # Check data
-  if (is.null(system_handle$data) || nrow(system_handle$data) == 0) {
+  if (isTRUE(is.null(system_handle$data)) || nrow(system_handle$data) == 0) {
     validation_results$all_valid <- FALSE
     validation_results$errors <- c(validation_results$errors, "No data loaded")
   }
@@ -438,7 +438,7 @@ validate_system_components <- function(system_handle) {
   }
   
   # Check performance handle
-  if (system_handle$system_config$enable_performance && is.null(system_handle$performance_handle)) {
+  if (system_handle$system_config$enable_performance && isTRUE(is.null(system_handle$performance_handle))) {
     validation_results$warnings <- c(validation_results$warnings, "Performance optimization not initialized")
   }
   

@@ -838,11 +838,11 @@ ComplianceMonitoringDashboard <- R6::R6Class(
     generate_compliance_recommendations = function() {
       recommendations <- list()
 
-      if (!is.null(private$lgpd_data) && private$lgpd_data$compliance_summary$compliance_percentage < 95) {
+      if (!isTRUE(is.null(private$lgpd_data)) && private$lgpd_data$compliance_summary$compliance_percentage < 95) {
         recommendations <- append(recommendations, "Enhance LGPD compliance measures")
       }
 
-      if (!is.null(private$security_data) && private$security_data$security_summary$overall_score < 90) {
+      if (!isTRUE(is.null(private$security_data)) && private$security_data$security_summary$overall_score < 90) {
         recommendations <- append(recommendations, "Improve security posture")
       }
 

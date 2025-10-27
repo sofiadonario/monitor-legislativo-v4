@@ -139,7 +139,7 @@ check_consent_validity <- function(consent_record) {
   consent_current <- consent_age_days <= 730  # 2 years
   
   return(list(
-    compliant = length(missing_elements) == 0 && consent_current,
+    compliant = isTRUE(length(missing_elements) == 0) && consent_current,
     required_elements = required_elements,
     missing_elements = missing_elements,
     consent_age_days = consent_age_days,

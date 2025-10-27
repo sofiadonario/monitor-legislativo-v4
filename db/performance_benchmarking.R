@@ -816,7 +816,7 @@ RailwayPerformanceBenchmarkManager <- R6Class(
             result <- private$.connection_manager$execute_query(query)
             
             # Simulate processing operations
-            if (!is.null(result) && nrow(result) > 0) {
+            if (!isTRUE(is.null(result)) && nrow(result) > 0) {
               # Text processing simulation
               processed_count <- nrow(result)
             } else {
@@ -996,7 +996,7 @@ RailwayPerformanceBenchmarkManager <- R6Class(
           
           # Compare against baselines
           baseline_key <- self$get_baseline_key(test_name)
-          if (!is.null(baseline_key) && !is.null(private$.performance_baselines[[baseline_key]])) {
+          if (!isTRUE(is.null(baseline_key)) && !is.null(private$.performance_baselines[[baseline_key]])) {
             baseline_value <- private$.performance_baselines[[baseline_key]]
             current_value <- stats$mean
             

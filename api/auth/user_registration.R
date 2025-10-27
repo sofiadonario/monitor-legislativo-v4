@@ -331,7 +331,7 @@ register_user <- function(registration_data, client_ip = NULL) {
           academic_status = academic_status,
           verification_method = verification_method,
           email_verification_required = REGISTRATION_CONFIG$email_verification_required,
-          api_key = if (!is.null(api_key_result) && api_key_result$success) api_key_result$api_key else NULL,
+          api_key = if (!isTRUE(is.null(api_key_result)) && api_key_result$success) api_key_result$api_key else NULL,
           message = "User registered successfully"
         ))
         
@@ -406,7 +406,7 @@ verify_email <- function(email, verification_token) {
       return(list(
         success = TRUE,
         message = "Email verified successfully",
-        api_key = if (!is.null(api_key_result) && api_key_result$success) api_key_result$api_key else NULL
+        api_key = if (!isTRUE(is.null(api_key_result)) && api_key_result$success) api_key_result$api_key else NULL
       ))
       
     } else {
@@ -460,7 +460,7 @@ review_academic_verification <- function(user_id, status, reviewer_notes = "", r
         return(list(
           success = TRUE,
           status = status,
-          api_key = if (!is.null(api_key_result) && api_key_result$success) api_key_result$api_key else NULL,
+          api_key = if (!isTRUE(is.null(api_key_result)) && api_key_result$success) api_key_result$api_key else NULL,
           message = paste("Academic verification", status)
         ))
         
@@ -576,7 +576,7 @@ send_verification_email <- function(email, token, first_name) {
 send_verification_result_email <- function(email, status, first_name, api_key_result) {
   cat("📧 Sending verification result email to:", email, "\n")
   cat("   Status:", status, "\n")
-  if (!is.null(api_key_result) && api_key_result$success) {
+  if (!isTRUE(is.null(api_key_result)) && api_key_result$success) {
     cat("   API Key provided:", substr(api_key_result$api_key, 1, 10), "...\n")
   }
 }

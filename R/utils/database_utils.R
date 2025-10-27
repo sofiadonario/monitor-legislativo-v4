@@ -12,21 +12,57 @@ library(DBI)
 library(pool)
 
 ## ===== Robust Postgres pool from env (Railway) =====
+# FIX v50: Safe with isTRUE()
 urldecode1 <- function(x) {
-  if (is.null(x) || !nzchar(x)) return(x)
+  if (isTRUE(is.null(x)) || isTRUE(!nzchar(x))) return(x)
   x <- gsub("\\+", "%20", x, fixed = TRUE)
   utils::URLdecode(x)
 }
 
 parse_database_url <- function(url = Sys.getenv("DATABASE_URL", "")) {
-  # format: postgresql://user:pass@host:port/dbname?sslmode=require
+  # Supports both standard format and Cloud SQL Unix socket format
+  # Standard: postgresql://user:pass@host:port/dbname?options
+  # Cloud SQL: postgresql://user:pass@/dbname?host=/cloudsql/instance
   if (!nzchar(url)) return(NULL)
+
+  # Try standard format first
   m <- regexec("^postgres(?:ql)?://([^:]+):([^@]+)@([^:/]+)(?::(\\d+))?/([^?]+)(?:\\?(.+))?$", url, perl = TRUE)
   parts <- regmatches(url, m)[[1]]
-  if (length(parts) == 0) return(NULL)
+
+  # If standard format failed, try Cloud SQL Unix socket format
+  if (length(parts) == 0) {
+    m <- regexec("^postgres(?:ql)?://([^:]+):([^@]+)@/([^?]+)(?:\\?(.+))?$", url, perl = TRUE)
+    parts <- regmatches(url, m)[[1]]
+    if (length(parts) == 0) return(NULL)
+
+    # Parse query string to extract host parameter (Unix socket path)
+    qs <- if (length(parts) >= 5 && nzchar(parts[5])) utils::URLdecode(parts[5]) else ""
+    kv <- if (nzchar(qs)) {
+      params <- strsplit(qs, "&")[[1]]
+      keys <- sub("=.*$", "", params)
+      values <- sub("^[^=]+=", "", params)
+      as.list(setNames(values, keys))
+    } else list()
+
+    # Return Cloud SQL format with Unix socket host
+    return(list(
+      user = parts[2],
+      password = parts[3],
+      dbname = parts[4],
+      host = if (!is.null(kv$host)) kv$host else "/cloudsql/mackmonitor:southamerica-east1:mackmonitor-db",
+      port = 5432L,
+      options = kv
+    ))
+  }
+
+  # Standard format parsing
   qs <- if (length(parts) >= 7 && nzchar(parts[7])) utils::URLdecode(parts[7]) else ""
-  kv <- if (nzchar(qs)) setNames(sub("^[^=]+=", "", strsplit(qs, "&")[[1]]),
-                                 sub("=.*$", "", strsplit(qs, "&")[[1]])) else list()
+  kv <- if (nzchar(qs)) {
+    params <- strsplit(qs, "&")[[1]]
+    keys <- sub("=.*$", "", params)
+    values <- sub("^[^=]+=", "", params)
+    as.list(setNames(values, keys))
+  } else list()
   list(
     user = parts[2], password = parts[3], host = parts[4],
     port = if (length(parts) >= 5 && nzchar(parts[5])) as.integer(parts[5]) else 5432L,
@@ -34,7 +70,12 @@ parse_database_url <- function(url = Sys.getenv("DATABASE_URL", "")) {
   )
 }
 
-`%||%` <- function(x, y) if (is.null(x)) y else x
+# FIX v49: Safe %||% operator that prevents extent=0 error
+`%||%` <- function(x, y) {
+  if (isTRUE(is.null(x))) return(y)
+  if (isTRUE(length(x) == 0L)) return(y)
+  return(x)
+}
 
 create_db_pool <- function() {
   cfg <- parse_database_url()
@@ -137,7 +178,7 @@ init_database_connection <- function() {
   if (!is.null(.db_pool)) {
     tryCatch({
       test_result <- pool::dbGetQuery(.db_pool, "SELECT 1 as test")
-      if (!is.null(test_result) && is.data.frame(test_result) && nrow(test_result) > 0) {
+      if (!isTRUE(is.null(test_result)) && is.data.frame(test_result) && nrow(test_result) > 0) {
         cat("♻️ Reusing existing healthy connection pool\n")
         return(list(
           pool = .db_pool,
@@ -287,18 +328,18 @@ get_legislative_documents_optimized <- function(filters = list(), limit = 50, of
   params <- list()
 
   # Add filters dynamically
-  if (!is.null(filters$search_term) && filters$search_term != "") {
+  if (!isTRUE(is.null(filters$search_term)) && filters$search_term != "") {
     where_conditions <- c(where_conditions,
       "AND (titulo ILIKE $1 OR ementa ILIKE $1)")
     params <- c(params, paste0("%", filters$search_term, "%"))
   }
 
-  if (!is.null(filters$state) && filters$state != "all") {
+  if (!isTRUE(is.null(filters$state)) && filters$state != "all") {
     where_conditions <- c(where_conditions, "AND estado = $2")
     params <- c(params, filters$state)
   }
 
-  if (!is.null(filters$category) && filters$category != "all") {
+  if (!isTRUE(is.null(filters$category)) && filters$category != "all") {
     where_conditions <- c(where_conditions, "AND categoria = $3")
     params <- c(params, filters$category)
   }
@@ -328,18 +369,18 @@ get_document_count_optimized <- function(filters = list()) {
   params <- list()
 
   # Add same filters as document query
-  if (!is.null(filters$search_term) && filters$search_term != "") {
+  if (!isTRUE(is.null(filters$search_term)) && filters$search_term != "") {
     where_conditions <- c(where_conditions,
       "AND (titulo ILIKE $1 OR ementa ILIKE $1)")
     params <- c(params, paste0("%", filters$search_term, "%"))
   }
 
-  if (!is.null(filters$state) && filters$state != "all") {
+  if (!isTRUE(is.null(filters$state)) && filters$state != "all") {
     where_conditions <- c(where_conditions, "AND estado = $2")
     params <- c(params, filters$state)
   }
 
-  if (!is.null(filters$category) && filters$category != "all") {
+  if (!isTRUE(is.null(filters$category)) && filters$category != "all") {
     where_conditions <- c(where_conditions, "AND categoria = $3")
     params <- c(params, filters$category)
   }
@@ -348,7 +389,7 @@ get_document_count_optimized <- function(filters = list()) {
 
   result <- execute_query(final_query, params)
 
-  if (!is.null(result) && nrow(result) > 0) {
+  if (!isTRUE(is.null(result)) && nrow(result) > 0) {
     return(as.integer(result$total[1]))
   } else {
     return(0)

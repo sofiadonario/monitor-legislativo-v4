@@ -127,7 +127,7 @@ generate_api_key <- function(user_id, tier = "demo") {
 
 # API Key Validation
 validate_api_key_format <- function(api_key) {
-  if (is.null(api_key) || nchar(api_key) == 0) {
+  if (isTRUE(is.null(api_key)) || nchar(api_key) == 0) {
     return(list(valid = FALSE, error = "API key is required"))
   }
   
@@ -210,7 +210,7 @@ validate_jwt_token <- function(token) {
     return(list(valid = FALSE, error = "JWT functionality not available"))
   }
   
-  if (is.null(token) || nchar(token) == 0) {
+  if (isTRUE(is.null(token)) || nchar(token) == 0) {
     return(list(valid = FALSE, error = "JWT token is required"))
   }
   
@@ -293,7 +293,7 @@ check_rate_limit <- function(api_key, tier, endpoint = NULL) {
   }
   
   # Check endpoint permissions
-  if (!is.null(endpoint) && !endpoint %in% tier_config$allowed_endpoints) {
+  if (!isTRUE(is.null(endpoint)) && !endpoint %in% tier_config$allowed_endpoints) {
     return(list(
       allowed = FALSE,
       error = paste("Endpoint", endpoint, "not allowed for", tier, "tier")

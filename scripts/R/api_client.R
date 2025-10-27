@@ -24,7 +24,7 @@ if (!exists("config")) {
 #' @return Validated endpoint or error
 validate_endpoint <- function(endpoint, allowed_endpoints) {
   
-  if (is.null(endpoint) || !is.character(endpoint) || length(endpoint) != 1) {
+  if (isTRUE(is.null(endpoint)) || !is.character(endpoint) || length(endpoint) != 1) {
     stop("Invalid endpoint: must be a single character string")
   }
   
@@ -117,7 +117,7 @@ validate_query_params <- function(params, allowed_params = NULL) {
     # Specific validations
     if (param_name == "itens") {
       param_value <- as.numeric(param_value)
-      if (is.na(param_value) || param_value < 1 || param_value > 1000) {
+      if (isTRUE(is.na(param_value)) || param_value < 1 || param_value > 1000) {
         flog.warn("Invalid itens parameter, using default 100")
         param_value <- 100
       }
@@ -452,7 +452,7 @@ fetch_state_data <- function(state_code, endpoint = NULL, date_from = NULL) {
   result_data <- NULL
   
   # Approach 1: Direct API if available
-  if (!is.null(state_config$endpoints) && !is.null(endpoint)) {
+  if (!isTRUE(is.null(state_config$endpoints)) && !is.null(endpoint)) {
     result_data <- fetch_state_api_direct(state_code, endpoint, date_from)
   }
   
@@ -485,7 +485,7 @@ fetch_state_data <- function(state_code, endpoint = NULL, date_from = NULL) {
 fetch_state_api_direct <- function(state_code, endpoint, date_from) {
   state_config <- config$apis$states[[state_code]]
   
-  if (is.null(state_config$endpoints) || !endpoint %in% names(state_config$endpoints)) {
+  if (isTRUE(is.null(state_config$endpoints)) || !endpoint %in% names(state_config$endpoints)) {
     return(NULL)
   }
   
@@ -657,7 +657,7 @@ fetch_all_legislative_data <- function(date_from = NULL, date_to = NULL,
   }
   
   # Municipal level data
-  if (!is.null(municipalities) && !is.null(states)) {
+  if (!isTRUE(is.null(municipalities)) && !is.null(states)) {
     flog.info("Fetching municipal level data...")
     
     for (i in seq_along(municipalities)) {

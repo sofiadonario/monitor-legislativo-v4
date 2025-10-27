@@ -23,7 +23,7 @@ cat("Loading Brazilian Citation Format Templates...\n")
 #' @param language Language for citation ("pt" for Portuguese, "en" for English)
 #' @return Formatted ABNT citation string
 format_abnt_citation <- function(parsed_metadata, language = "pt") {
-  if (is.null(parsed_metadata) || is.null(parsed_metadata$citation_elements)) {
+  if (isTRUE(is.null(parsed_metadata)) || isTRUE(is.null(parsed_metadata$citation_elements))) {
     return("Erro: Metadados não disponíveis para citação ABNT")
   }
   
@@ -33,16 +33,16 @@ format_abnt_citation <- function(parsed_metadata, language = "pt") {
   citation_parts <- c()
   
   # 1. AUTHORITY (always uppercase in ABNT)
-  if (!is.null(elements$author_entry) && elements$author_entry != "") {
+  if (!isTRUE(is.null(elements$author_entry)) && elements$author_entry != "") {
     citation_parts <- c(citation_parts, toupper(elements$author_entry))
   }
   
   # 2. Document Type and Number
   doc_info <- ""
-  if (!is.null(parsed_metadata$document_type) && parsed_metadata$document_type != "") {
+  if (!isTRUE(is.null(parsed_metadata$document_type)) && parsed_metadata$document_type != "") {
     doc_info <- parsed_metadata$document_type
     
-    if (!is.null(elements$number) && elements$number != "") {
+    if (!isTRUE(is.null(elements$number)) && elements$number != "") {
       doc_info <- paste(doc_info, "nº", elements$number)
     }
   }
@@ -52,14 +52,14 @@ format_abnt_citation <- function(parsed_metadata, language = "pt") {
   }
   
   # 3. Date (Brazilian format)
-  if (!is.null(elements$date) && elements$date != "") {
+  if (!isTRUE(is.null(elements$date)) && elements$date != "") {
     citation_parts <- c(citation_parts, paste0("de ", elements$date, "."))
-  } else if (!is.null(elements$year) && elements$year != "") {
+  } else if (!isTRUE(is.null(elements$year)) && elements$year != "") {
     citation_parts <- c(citation_parts, paste0(elements$year, "."))
   }
   
   # 4. Title (if different from document type)
-  if (!is.null(parsed_metadata$original_title) && 
+  if (!isTRUE(is.null(parsed_metadata$original_title)) && 
       parsed_metadata$original_title != "" &&
       !grepl(parsed_metadata$document_type, parsed_metadata$original_title, ignore.case = TRUE)) {
     title_clean <- clean_title_for_citation(parsed_metadata$original_title)
@@ -73,13 +73,13 @@ format_abnt_citation <- function(parsed_metadata, language = "pt") {
     pub_info <- "Official Gazette"
   }
   
-  if (!is.null(parsed_metadata$diario_oficial) && parsed_metadata$diario_oficial != "") {
+  if (!isTRUE(is.null(parsed_metadata$diario_oficial)) && parsed_metadata$diario_oficial != "") {
     pub_info <- paste(pub_info, parsed_metadata$diario_oficial)
   }
   citation_parts <- c(citation_parts, paste0(pub_info, "."))
   
   # 6. URL and access date (if available)
-  if (!is.null(elements$url) && elements$url != "") {
+  if (!isTRUE(is.null(elements$url)) && elements$url != "") {
     if (language == "pt") {
       url_part <- paste0("Disponível em: ", elements$url, ". Acesso em: ", elements$access_date, ".")
     } else {
@@ -130,7 +130,7 @@ format_abnt_bibliography <- function(parsed_metadata_list, language = "pt") {
 #' @param language Language for citation
 #' @return Formatted APA citation string
 format_apa_citation <- function(parsed_metadata, language = "en") {
-  if (is.null(parsed_metadata) || is.null(parsed_metadata$citation_elements)) {
+  if (isTRUE(is.null(parsed_metadata)) || isTRUE(is.null(parsed_metadata$citation_elements))) {
     return("Error: Metadata not available for APA citation")
   }
   
@@ -140,30 +140,30 @@ format_apa_citation <- function(parsed_metadata, language = "en") {
   citation_parts <- c()
   
   # 1. Author (Government agency)
-  if (!is.null(elements$author) && elements$author != "") {
+  if (!isTRUE(is.null(elements$author)) && elements$author != "") {
     # Convert to proper case for APA
     author_apa <- stringr::str_to_title(tolower(elements$author))
     citation_parts <- c(citation_parts, paste0(author_apa, "."))
   }
   
   # 2. Year
-  if (!is.null(elements$year) && elements$year != "") {
+  if (!isTRUE(is.null(elements$year)) && elements$year != "") {
     citation_parts <- c(citation_parts, paste0(elements$year, "."))
   }
   
   # 3. Title (italicized in APA)
-  if (!is.null(elements$title) && elements$title != "") {
+  if (!isTRUE(is.null(elements$title)) && elements$title != "") {
     title_clean <- clean_title_for_citation(parsed_metadata$original_title)
     citation_parts <- c(citation_parts, paste0("*", title_clean, "*."))
   }
   
   # 4. Publisher
-  if (!is.null(elements$publisher) && elements$publisher != "") {
+  if (!isTRUE(is.null(elements$publisher)) && elements$publisher != "") {
     citation_parts <- c(citation_parts, paste0(elements$publisher, "."))
   }
   
   # 5. URL (if available)
-  if (!is.null(elements$url) && elements$url != "") {
+  if (!isTRUE(is.null(elements$url)) && elements$url != "") {
     citation_parts <- c(citation_parts, elements$url)
   }
   
@@ -178,7 +178,7 @@ format_apa_citation <- function(parsed_metadata, language = "en") {
 #' @param citation_number Citation number for numbered system
 #' @return Formatted Vancouver citation string
 format_vancouver_citation <- function(parsed_metadata, citation_number = 1) {
-  if (is.null(parsed_metadata) || is.null(parsed_metadata$citation_elements)) {
+  if (isTRUE(is.null(parsed_metadata)) || isTRUE(is.null(parsed_metadata$citation_elements))) {
     return("Error: Metadata not available for Vancouver citation")
   }
   
@@ -191,23 +191,23 @@ format_vancouver_citation <- function(parsed_metadata, citation_number = 1) {
   citation_parts <- c(citation_parts, paste0(citation_number, "."))
   
   # 2. Author
-  if (!is.null(elements$author) && elements$author != "") {
+  if (!isTRUE(is.null(elements$author)) && elements$author != "") {
     author_vancouver <- stringr::str_to_title(tolower(elements$author))
     citation_parts <- c(citation_parts, paste0(author_vancouver, "."))
   }
   
   # 3. Title
-  if (!is.null(elements$title) && elements$title != "") {
+  if (!isTRUE(is.null(elements$title)) && elements$title != "") {
     title_clean <- clean_title_for_citation(parsed_metadata$original_title)
     citation_parts <- c(citation_parts, paste0(title_clean, "."))
   }
   
   # 4. Source and Year
   source_info <- ""
-  if (!is.null(elements$source) && elements$source != "") {
+  if (!isTRUE(is.null(elements$source)) && elements$source != "") {
     source_info <- elements$source
   }
-  if (!is.null(elements$year) && elements$year != "") {
+  if (!isTRUE(is.null(elements$year)) && elements$year != "") {
     source_info <- paste(source_info, elements$year, sep = "; ")
   }
   
@@ -216,7 +216,7 @@ format_vancouver_citation <- function(parsed_metadata, citation_number = 1) {
   }
   
   # 5. URL (if available)
-  if (!is.null(elements$url) && elements$url != "") {
+  if (!isTRUE(is.null(elements$url)) && elements$url != "") {
     citation_parts <- c(citation_parts, paste0("Available from: ", elements$url))
   }
   
@@ -230,7 +230,7 @@ format_vancouver_citation <- function(parsed_metadata, citation_number = 1) {
 #' @param parsed_metadata Parsed metadata
 #' @return Formatted Bluebook citation string
 format_bluebook_citation <- function(parsed_metadata) {
-  if (is.null(parsed_metadata) || is.null(parsed_metadata$citation_elements)) {
+  if (isTRUE(is.null(parsed_metadata)) || isTRUE(is.null(parsed_metadata$citation_elements))) {
     return("Error: Metadata not available for Bluebook citation")
   }
   
@@ -240,17 +240,17 @@ format_bluebook_citation <- function(parsed_metadata) {
   citation_parts <- c()
   
   # Brazilian Legislative Documents in Bluebook format
-  if (!is.null(elements$title) && elements$title != "") {
+  if (!isTRUE(is.null(elements$title)) && elements$title != "") {
     citation_parts <- c(citation_parts, elements$title)
   }
   
-  if (!is.null(elements$jurisdiction) && elements$jurisdiction != "" &&
-      !is.null(elements$year) && elements$year != "") {
+  if (!isTRUE(is.null(elements$jurisdiction)) && elements$jurisdiction != "" &&
+      !isTRUE(is.null(elements$year)) && elements$year != "") {
     jurisdiction_year <- paste0("(", elements$jurisdiction, " ", elements$year, ")")
     citation_parts <- c(citation_parts, jurisdiction_year)
   }
   
-  if (!is.null(elements$url) && elements$url != "") {
+  if (!isTRUE(is.null(elements$url)) && elements$url != "") {
     citation_parts <- c(citation_parts, elements$url)
   }
   
@@ -310,7 +310,7 @@ format_state_law_citation <- function(state_name, law_number, year, title = NULL
   }
   citation_parts <- c(citation_parts, paste0(law_info, "."))
   
-  if (!is.null(title) && title != "") {
+  if (!isTRUE(is.null(title)) && title != "") {
     title_clean <- clean_title_for_citation(title)
     citation_parts <- c(citation_parts, paste0(title_clean, "."))
   }
@@ -344,7 +344,7 @@ format_municipal_law_citation <- function(municipality, state_abbrev, law_number
   }
   citation_parts <- c(citation_parts, paste0(law_info, "."))
   
-  if (!is.null(title) && title != "") {
+  if (!isTRUE(is.null(title)) && title != "") {
     title_clean <- clean_title_for_citation(title)
     citation_parts <- c(citation_parts, paste0(title_clean, "."))
   }
@@ -367,7 +367,7 @@ format_municipal_law_citation <- function(municipality, state_abbrev, law_number
 #' @param title Original title
 #' @return Cleaned title
 clean_title_for_citation <- function(title) {
-  if (is.null(title) || title == "") return("")
+  if (isTRUE(is.null(title)) || title == "") return("")
   
   # Remove extra whitespace
   title_clean <- stringr::str_squish(title)

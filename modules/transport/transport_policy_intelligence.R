@@ -154,7 +154,7 @@ analyze_transport_decarbonization <- function(documents, text_column = "text") {
   
   for (i in 1:nrow(documents)) {
     doc_text <- documents[[text_column]][i]
-    if (is.na(doc_text) || nchar(doc_text) == 0) next
+    if (isTRUE(is.na(doc_text)) || nchar(doc_text) == 0) next
     
     doc_upper <- stringr::str_to_upper(doc_text)
     
@@ -288,7 +288,7 @@ analyze_modal_integration <- function(documents, text_column = "text") {
   
   for (i in 1:nrow(documents)) {
     doc_text <- documents[[text_column]][i]
-    if (is.na(doc_text) || nchar(doc_text) == 0) next
+    if (isTRUE(is.na(doc_text)) || nchar(doc_text) == 0) next
     
     doc_upper <- stringr::str_to_upper(doc_text)
     
@@ -380,7 +380,7 @@ analyze_regulatory_evolution <- function(documents, text_column = "text") {
   
   for (i in 1:nrow(documents)) {
     doc_text <- documents[[text_column]][i]
-    if (is.na(doc_text) || nchar(doc_text) == 0) next
+    if (isTRUE(is.na(doc_text)) || nchar(doc_text) == 0) next
     
     doc_upper <- stringr::str_to_upper(doc_text)
     

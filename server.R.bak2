@@ -1,0 +1,575 @@
+# Server Logic - Monitor Legislativo v4
+# ======================================
+# Modular Server Logic | LGPD Compliant | Brazilian Legal Context
+
+# Load server modules
+source("R/modules/search_module.R", local = FALSE)
+source("R/modules/geographic_module.R", local = FALSE)  
+source("R/modules/citation_module.R", local = FALSE)
+source("R/modules/export_module.R", local = FALSE)
+source("R/modules/admin_module.R", local = FALSE)
+
+#' Main Server Function - Monitor Legislativo v4
+#' 
+#' Server logic for the Brazilian Legislative Monitoring System with modular architecture,
+#' authentication support, database optimization, and performance monitoring.
+#' 
+#' @param input Shiny input object
+#' @param output Shiny output object  
+#' @param session Shiny session object
+server <- function(input, output, session) {
+  
+  # INITIALIZATION AND MONITORING
+  # =============================
+  
+  # Monitoring System Integration
+  if (exists("monitoring_system_loaded") && monitoring_system_loaded) {
+    tryCatch({
+      start_session_tracking(session)
+      increment_session_count()
+      monitoring_server("monitoring_dashboard")
+    }, error = function(e) {
+      cat("⚠️ Monitoring system initialization failed:", e$message, "\n")
+    })
+  }
+  
+  # AUTHENTICATION HANDLING
+  # =======================
+  
+  # Authentication state management
+  auth_state <- reactiveValues(
+    authenticated = !exists("auth_enabled") || !auth_enabled,
+    user_info = NULL,
+    login_attempts = 0
+  )
+  
+  # Main content UI - conditional rendering based on authentication
+  output$main_content_ui <- renderUI({
+    if (exists("auth_enabled") && auth_enabled) {
+      if (auth_state$authenticated) {
+        # Show main dashboard for authenticated users
+        dashboardPage(
+          dashboardHeader(
+            title = "Monitor Legislativo v4 - Análise Legislativa Brasileira",
+            titleWidth = 400
+          ),
+          dashboardSidebar(
+            width = 250,
+            sidebarMenu(
+              id = "main_menu_auth",
+              menuItem("📊 Painel Executivo", tabName = "executive", icon = icon("chart-line")),
+              menuItem("📚 Biblioteca", tabName = "library", icon = icon("book")),
+              menuItem("🔍 Busca Avançada", tabName = "search", icon = icon("search")),
+              menuItem("📈 Analytics", tabName = "analytics", icon = icon("chart-area")),
+              menuItem("🗺️ Geografia", tabName = "geographic", icon = icon("map-marked-alt")),
+              menuItem("📚 Citações", tabName = "citations", icon = icon("quote-right")),
+              menuItem("💾 Exportação", tabName = "export", icon = icon("download")),
+              menuItem("👥 Admin", tabName = "admin", icon = icon("users-cog"))
+            )
+          ),
+          dashboardBody(
+            # Load the same tabItems as non-auth version
+            source("R/ui/authenticated_body.R", local = TRUE)$value
+          )
+        )
+      } else {
+        # Show login interface
+        source("R/ui/login_interface.R", local = TRUE)$value
+      }
+    } else {
+      # No authentication required - should not reach here
+      div(
+        class = "alert alert-warning",
+        "Authentication system configuration error."
+      )
+    }
+  })
+  
+  # REACTIVE DATA SOURCES
+  # =====================
+  
+  # Main legislative data reactive
+  legislative_data <- reactive({
+    tryCatch({
+      if (exists("get_library_documents")) {
+        data <- get_library_documents(
+          category = input$library_category %||% "all",
+          search_term = input$library_search_term %||% "",
+          state = input$library_state %||% "all",
+          limit = 10000
+        )
+        
+        # Cache data for performance
+        if (exists("cache_set") && !is.null(data)) {
+          cache_set("main_legislative_data", data, ttl = 1800)
+        }
+        
+        return(data)
+      } else {
+        return(NULL)
+      }
+    }, error = function(e) {
+      cat("❌ Error loading legislative data:", e$message, "\n")
+      return(NULL)
+    })
+  })
+  
+  # CALL MODULE SERVERS
+  # ===================
+  
+  # Search Module
+  search_results <- searchServer("search_module", legislative_data)
+  
+  # Geographic Module  
+  geographic_results <- geographicServer("geographic_module", legislative_data)
+  
+  # Citation Module
+  citation_results <- citationServer("citation_module", legislative_data)
+  
+  # Export Module
+  export_results <- exportServer("export_module", legislative_data)
+  
+  # Admin Module (if authenticated)
+  if (exists("auth_enabled") && auth_enabled) {
+    admin_results <- adminServer("admin_module", session)
+  }
+  
+  # EXECUTIVE SUMMARY OUTPUTS
+  # =========================
+  
+  # Dashboard metrics
+  dashboard_metrics <- reactive({
+    if (exists("get_lexml_dashboard_metrics")) {
+      get_lexml_dashboard_metrics()
+    } else {
+      list(
+        total_documents = 0,
+        states_with_docs = 0,
+        municipalities_with_docs = 0,
+        states_percentage = 0,
+        municipalities_percentage = 0,
+        last_updated = Sys.time(),
+        connection_status = "offline"
+      )
+    }
+  })
+  
+  # ===========================================================================
+  # EXECUTIVE TAB SERVER CODE - DISABLED FOR v26 DEBUGGING
+  # ===========================================================================
+  # All Executive tab outputs disabled to isolate extent=0 error
+  # These renderUI functions were executing on startup even though Executive
+  # tab is not in the UI menu, causing extent=0 validation errors
+
+  # # Executive value boxes - ULTRA-SAFE: use renderUI instead of renderValueBox
+  # output$exec_total_docs <- renderUI({
+#     tryCatch({
+#       metrics <- dashboard_metrics()
+#       val <- scalar_chr(format(scalar_int(metrics$total_documents, 0), big.mark = ","), "0")
+#       cat("[exec_total_docs] Rendering with value:", val, "\n", file = stderr())
+#       valueBox(val, "Documentos Legislativos", icon = icon("file-text"), color = "blue")
+#     }, error = function(e) {
+#       cat("[exec_total_docs] CRASH PREVENTED:", e$message, "\n", file = stderr())
+#       valueBox("—", "Documentos Legislativos", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+# 
+#   output$exec_states_coverage <- renderUI({
+#     tryCatch({
+#       metrics <- dashboard_metrics()
+#       val <- scalar_chr(paste0(scalar_int(metrics$states_with_docs, 0), "/27"), "0/27")
+#       cat("[exec_states_coverage] Rendering with value:", val, "\n", file = stderr())
+#       valueBox(val, "Estados Cobertos", icon = icon("map"), color = "green")
+#     }, error = function(e) {
+#       cat("[exec_states_coverage] CRASH PREVENTED:", e$message, "\n", file = stderr())
+#       valueBox("—", "Estados Cobertos", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+#   
+#   output$exec_recent_additions <- renderUI({
+#     tryCatch({
+#       val <- scalar_chr(as.character(sample(50:500, 1)), "—")
+#       valueBox(val, "Documentos Este Mês", icon = icon("plus"), color = "yellow")
+#     }, error = function(e) {
+#       cat("[exec_recent_additions] ERROR:", e$message, "\n", file = stderr())
+#       valueBox("—", "Documentos Este Mês", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+# 
+#   output$exec_data_freshness <- renderUI({
+#     tryCatch({
+#       val <- scalar_chr("98%", "—")
+#       valueBox(val, "Qualidade dos Dados", icon = icon("check-circle"), color = "green")
+#     }, error = function(e) {
+#       cat("[exec_data_freshness] ERROR:", e$message, "\n", file = stderr())
+#       valueBox("—", "Qualidade dos Dados", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+# 
+#   # KPI value boxes - ALL converted to renderUI
+#   output$exec_federal_docs <- renderUI({
+#     tryCatch({
+#       val <- scalar_chr(format(sample(10000:50000, 1), big.mark = ","), "—")
+#       valueBox(val, "Federal", icon = icon("landmark"), color = "blue")
+#     }, error = function(e) {
+#       cat("[exec_federal_docs] ERROR:", e$message, "\n", file = stderr())
+#       valueBox("—", "Federal", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+# 
+#   output$exec_state_docs <- renderUI({
+#     tryCatch({
+#       val <- scalar_chr(format(sample(20000:80000, 1), big.mark = ","), "—")
+#       valueBox(val, "Estadual", icon = icon("building"), color = "green")
+#     }, error = function(e) {
+#       cat("[exec_state_docs] ERROR:", e$message, "\n", file = stderr())
+#       valueBox("—", "Estadual", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+# 
+#   output$exec_municipal_docs <- renderUI({
+#     tryCatch({
+#       val <- scalar_chr(format(sample(5000:30000, 1), big.mark = ","), "—")
+#       valueBox(val, "Municipal", icon = icon("city"), color = "yellow")
+#     }, error = function(e) {
+#       cat("[exec_municipal_docs] ERROR:", e$message, "\n", file = stderr())
+#       valueBox("—", "Municipal", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+# 
+#   output$exec_jurisprudence_docs <- renderUI({
+#     tryCatch({
+#       val <- scalar_chr(format(sample(1000:10000, 1), big.mark = ","), "—")
+#       valueBox(val, "Jurisprudência", icon = icon("balance-scale"), color = "red")
+#     }, error = function(e) {
+#       cat("[exec_jurisprudence_docs] ERROR:", e$message, "\n", file = stderr())
+#       valueBox("—", "Jurisprudência", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+# 
+#   output$exec_doctrine_docs <- renderUI({
+#     tryCatch({
+#       val <- scalar_chr(format(sample(500:5000, 1), big.mark = ","), "—")
+#       valueBox(val, "Doutrina", icon = icon("graduation-cap"), color = "purple")
+#     }, error = function(e) {
+#       cat("[exec_doctrine_docs] ERROR:", e$message, "\n", file = stderr())
+#       valueBox("—", "Doutrina", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+# 
+#   output$exec_active_themes <- renderUI({
+#     tryCatch({
+#       val <- scalar_chr(as.character(sample(50:200, 1)), "—")
+#       valueBox(val, "Temas Ativos", icon = icon("tags"), color = "orange")
+#     }, error = function(e) {
+#       cat("[exec_active_themes] ERROR:", e$message, "\n", file = stderr())
+#       valueBox("—", "Temas Ativos", icon = icon("exclamation-triangle"), color = "red")
+#     })
+#   })
+#   
+#   # Executive insights
+#   output$exec_focus_areas <- renderUI({
+#     focus_areas <- c("Transporte Público", "Meio Ambiente", "Educação", "Saúde", "Segurança")
+#     
+#     tagList(
+#       lapply(focus_areas[1:3], function(area) {
+#         div(
+#           style = "margin-bottom: 8px;",
+#           span(class = "badge badge-primary", area),
+#           span(style = "margin-left: 10px; font-size: 12px;", paste0(sample(10:50, 1), " docs"))
+#         )
+#       })
+#     )
+#   })
+#   
+#   output$exec_activity_summary <- renderUI({
+#     tagList(
+#       div(
+#         strong("Esta Semana: "), 
+#         span(paste(sample(50:200, 1), "novos documentos")),
+#         br(),
+#         strong("Tendência: "), 
+#         span(class = "text-success", icon("arrow-up"), " +12%"),
+#         br(),
+#         strong("Pico: "), 
+#         span("Terça-feira (", sample(20:80, 1), " docs)")
+#       )
+#     )
+#   })
+#   
+#   output$exec_coverage_quality <- renderUI({
+#     tagList(
+#       div(
+#         strong("Metadados: "), 
+#         span(class = "text-success", "94% completos"),
+#         br(),
+#         strong("Validação: "), 
+#         span(class = "text-warning", "91% validados"),
+#         br(),
+#         strong("Atualização: "), 
+#         span(class = "text-info", "Tempo real")
+#       )
+#     )
+#   })
+
+  # LIBRARY TAB OUTPUTS
+  # ===================
+  
+  # Library search functionality
+  observeEvent(input$library_search_button, {
+    # Trigger reactive data update
+    legislative_data()
+  })
+
+  # LIBRARY TAB SERVER CODE - TEMPORARILY DISABLED FOR v25 DEBUGGING
+  # =================================================================
+  # All Library tab server outputs commented out to isolate extent=0 error
+  # The error occurs in server-side rendering even when UI elements are removed
+
+  # # Library results table
+  # output$library_results_table <- DT::renderDataTable({
+  #   req(legislative_data())
+  #
+  #   data <- legislative_data()
+  #
+  #   # Apply additional client-side filters if needed
+  #   if (!is.null(input$library_search_term) && input$library_search_term != "") {
+  #     search_pattern <- input$library_search_term
+  #     data <- data[safe_grepl(search_pattern, data$titulo) |
+  #                  safe_grepl(search_pattern, data$ementa), ]
+  #   }
+  #
+  #   # Prepare display data
+  #   display_data <- data %>%
+  #     select(titulo, categoria, estado, data, autoridade) %>%
+  #     mutate(
+  #       data = as.character(data),
+  #       titulo = substr(titulo, 1, 80)  # Truncate long titles
+  #     )
+  #
+  #   DT::datatable(
+  #     display_data,
+  #     options = list(
+  #       pageLength = 25,
+  #       scrollX = TRUE,
+  #       language = list(
+  #         url = "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
+  #       )
+  #     ),
+  #     colnames = c("Título", "Categoria", "Estado", "Data", "Autoridade"),
+  #     rownames = FALSE
+  #   )
+  # })
+  #
+  # # Library results summary
+  # output$library_results_summary <- renderUI({
+  #   req(legislative_data())
+  #   data <- legislative_data()
+  #
+  #   div(
+  #     class = "alert alert-info",
+  #     icon("info-circle"),
+  #     strong(paste("Encontrados", nrow(data), "documentos")),
+  #     " | Filtros aplicados: ",
+  #     paste(
+  #       if(input$library_category != "all") paste("Categoria:", input$library_category),
+  #       if(input$library_state != "all") paste("Estado:", input$library_state),
+  #       if(!is.null(input$library_search_term) && input$library_search_term != "") paste("Busca:", input$library_search_term),
+  #       sep = " | "
+  #     )
+  #   )
+  # })
+  #
+  # # Library value boxes
+  # output$library_total_results <- renderValueBox({
+  #   data <- legislative_data()
+  #   count <- if(is.null(data)) 0 else nrow(data)
+  #
+  #   safe_valueBox(
+  #     value = format(count, big.mark = ","),
+  #     subtitle = "Total de Resultados",
+  #     icon = icon("file-text"),
+  #     color = "blue"
+  #   )
+  # })
+  #
+  # output$library_states_covered <- renderValueBox({
+  #   data <- legislative_data()
+  #   states <- if(is.null(data)) 0 else length(unique(data$estado))
+  #
+  #   safe_valueBox(
+  #     value = states,
+  #     subtitle = "Estados Representados",
+  #     icon = icon("map"),
+  #     color = "green"
+  #   )
+  # })
+  #
+  # output$library_categories_found <- renderValueBox({
+  #   data <- legislative_data()
+  #   categories <- if(is.null(data)) 0 else length(unique(data$categoria))
+  #
+  #   safe_valueBox(
+  #     value = categories,
+  #     subtitle = "Categorias Encontradas",
+  #     icon = icon("tags"),
+  #     color = "yellow"
+  #   )
+  # })
+  #
+  # output$library_date_span <- renderValueBox({
+  #   data <- legislative_data()
+  #   if(is.null(data) || !"data" %in% names(data)) {
+  #     span_years <- 0
+  #   } else {
+  #     dates <- as.Date(data$data)
+  #     span_years <- round(as.numeric(difftime(max(dates, na.rm = TRUE),
+  #                                            min(dates, na.rm = TRUE),
+  #                                            units = "days")) / 365, 1)
+  #   }
+  #
+  #   safe_valueBox(
+  #     value = paste(span_years, "anos"),
+  #     subtitle = "Período Coberto",
+  #     icon = icon("calendar"),
+  #     color = "purple"
+  #   )
+  # })
+  #
+  # # DOWNLOAD HANDLERS
+  # # =================
+  #
+  # # Library CSV download
+  # output$library_download_csv <- downloadHandler(
+  #   filename = function() {
+  #     paste0("documentos_legislativos_", Sys.Date(), ".csv")
+  #   },
+  #   content = function(file) {
+  #     req(legislative_data())
+  #     write.csv(legislative_data(), file, row.names = FALSE, fileEncoding = "UTF-8")
+  #   }
+  # )
+  #
+  # # Library BibTeX download
+  # output$library_download_bibtex <- downloadHandler(
+  #   filename = function() {
+  #     paste0("citacoes_legislativas_", Sys.Date(), ".bib")
+  #   },
+  #   content = function(file) {
+  #     req(legislative_data())
+  #
+  #     data <- legislative_data()
+  #     bibtex_entries <- apply(data, 1, function(row) {
+  #       key <- make.names(paste0(gsub("\\s+", "", row[["autoridade"]]),
+  #                               format(as.Date(row[["data"]]), "%Y")))
+  #       paste0("@misc{", key, ",\n",
+  #             "  title = {", row[["titulo"]], "},\n",
+  #             "  author = {", row[["autoridade"]], "},\n",
+  #             "  year = {", format(as.Date(row[["data"]]), "%Y"), "},\n",
+  #             "  address = {", row[["estado"]], "}\n",
+  #             "}")
+  #     })
+  #
+  #     writeLines(bibtex_entries, file)
+  #   }
+  # )
+  
+  # ANALYTICS TAB OUTPUTS - SAFE PLACEHOLDERS
+  # ==========================================
+
+  # Create safe placeholder for ALL analytics plotly charts
+  analytics_placeholder <- function(title = "Analytics") {
+    plot_ly() %>%
+      add_annotations(
+        text = paste0(title, " temporarily unavailable<br>Working on data optimization"),
+        x = 0.5, y = 0.5,
+        showarrow = FALSE,
+        font = list(size = 14, color = "#6c757d"),
+        xref = "paper", yref = "paper"
+      ) %>%
+      layout(
+        xaxis = list(visible = FALSE, range = c(0, 1)),
+        yaxis = list(visible = FALSE, range = c(0, 1)),
+        margin = list(t = 50, b = 50, l = 50, r = 50)
+      )
+  }
+
+  output$analytics_temporal_chart <- renderPlotly({
+    cat("[analytics_temporal_chart] Rendering placeholder\n", file = stderr())
+    analytics_placeholder("Temporal Analysis")
+  })
+
+  output$analytics_sentiment_chart <- renderPlotly({
+    cat("[analytics_sentiment_chart] Rendering placeholder\n", file = stderr())
+    analytics_placeholder("Sentiment Analysis")
+  })
+
+  output$analytics_topics_chart <- renderPlotly({
+    cat("[analytics_topics_chart] Rendering placeholder\n", file = stderr())
+    analytics_placeholder("Topic Modeling")
+  })
+
+  output$analytics_network_chart <- renderPlotly({
+    cat("[analytics_network_chart] Rendering placeholder\n", file = stderr())
+    analytics_placeholder("Network Analysis")
+  })
+
+  output$analytics_regional_chart <- renderPlotly({
+    cat("[analytics_regional_chart] Rendering placeholder\n", file = stderr())
+    analytics_placeholder("Regional Analysis")
+  })
+
+  # Analytics insights and data tables
+  output$analytics_insights <- renderUI({
+    div(
+      style = "padding: 20px; text-align: center;",
+      p("Analytics insights will appear here after analysis is run", style = "color: #7f8c8d;")
+    )
+  })
+
+  output$analytics_detailed_results <- DT::renderDataTable({
+    DT::datatable(
+      data.frame(
+        Message = "No analysis results yet. Click 'Executar Análise' to begin."
+      ),
+      options = list(dom = 't'),
+      rownames = FALSE
+    )
+  })
+
+  # NLP TAB OUTPUT - SAFE PLACEHOLDER
+  # ==================================
+
+  output$nlp_visualization_chart <- renderPlotly({
+    cat("[nlp_visualization_chart] Rendering placeholder\n", file = stderr())
+    analytics_placeholder("NLP Visualization")
+  })
+
+  # SESSION CLEANUP
+  # ===============
+
+  # Clean up resources when session ends
+  session$onSessionEnded(function() {
+    if (exists("monitoring_system_loaded") && monitoring_system_loaded) {
+      tryCatch({
+        end_session_tracking(session)
+        decrement_session_count()
+      }, error = function(e) {
+        cat("⚠️ Session cleanup error:", e$message, "\n")
+      })
+    }
+    
+    # Clean up database connections if any
+    if (exists("close_database_connection")) {
+      tryCatch({
+        close_database_connection()
+      }, error = function(e) {
+        cat("⚠️ Database cleanup error:", e$message, "\n")
+      })
+    }
+  })
+  
+  cat("✅ Server logic initialized successfully\n")
+}
+
+cat("✅ Server definition loaded successfully\n")

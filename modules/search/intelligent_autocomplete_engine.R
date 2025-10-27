@@ -204,7 +204,7 @@ brazilian_legal_terms <- list(
 #' @param text Input text to normalize
 #' @return Normalized text
 normalize_portuguese_text <- function(text) {
-  if (is.null(text) || is.na(text) || text == "") return("")
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || text == "") return("")
   
   # Convert to lowercase
   text <- str_to_lower(text)
@@ -233,7 +233,7 @@ normalize_portuguese_text <- function(text) {
 #' @param term Legal term to match against
 #' @return Numeric score between 0 and 1 (higher = better match)
 calculate_fuzzy_score <- function(query, term) {
-  if (is.null(query) || is.null(term) || query == "" || term == "") return(0)
+  if (isTRUE(is.null(query)) || isTRUE(is.null(term)) || query == "" || term == "") return(0)
   
   # Normalize both strings
   query_norm <- normalize_portuguese_text(query)
@@ -288,7 +288,7 @@ calculate_fuzzy_score <- function(query, term) {
 #' @return List with suggestions and metadata
 generate_intelligent_suggestions <- function(partial_query, context = list(), max_suggestions = 10, min_score = 0.4) {
   
-  if (is.null(partial_query) || nchar(str_trim(partial_query)) < 2) {
+  if (isTRUE(is.null(partial_query)) || nchar(str_trim(partial_query)) < 2) {
     return(list(
       suggestions = list(),
       metadata = list(
@@ -333,7 +333,7 @@ generate_intelligent_suggestions <- function(partial_query, context = list(), ma
     terms <- term_categories[[category_name]]
     
     for (term in terms) {
-      if (!is.null(term) && !is.na(term) && term != "") {
+      if (!isTRUE(is.null(term)) && !isTRUE(is.na(term)) && term != "") {
         score <- calculate_fuzzy_score(partial_query, term)
         
         if (score >= min_score) {
@@ -355,7 +355,7 @@ generate_intelligent_suggestions <- function(partial_query, context = list(), ma
   }
   
   # Apply context-based boosting
-  if (length(all_candidates) > 0 && length(context) > 0) {
+  if (isTRUE(length(all_candidates) > 0) && length(context) > 0) {
     all_candidates <- apply_context_boosting(all_candidates, context)
   }
   
@@ -402,14 +402,14 @@ apply_context_boosting <- function(candidates, context) {
     boost_factor <- 1.0
     
     # Geographic context boosting
-    if (!is.null(context$state) && context$state != "all") {
+    if (!isTRUE(is.null(context$state)) && context$state != "all") {
       if (candidate$category == "Geographic Terms" && 
           str_detect(str_to_lower(candidate$text), str_to_lower(context$state))) {
         boost_factor <- boost_factor * 1.3
       }
     }
     
-    if (!is.null(context$region) && context$region != "all") {
+    if (!isTRUE(is.null(context$region)) && context$region != "all") {
       if (candidate$category == "Geographic Terms" && 
           str_detect(str_to_lower(candidate$text), str_to_lower(context$region))) {
         boost_factor <- boost_factor * 1.2
@@ -417,14 +417,14 @@ apply_context_boosting <- function(candidates, context) {
     }
     
     # Transport context boosting
-    if (!is.null(context$transport_category) && context$transport_category != "all") {
+    if (!isTRUE(is.null(context$transport_category)) && context$transport_category != "all") {
       if (candidate$category %in% c("Transport Terms", "Transport Legal")) {
         boost_factor <- boost_factor * 1.25
       }
     }
     
     # Document type context boosting
-    if (!is.null(context$document_type) && length(context$document_type) > 0) {
+    if (!isTRUE(is.null(context$document_type)) && length(context$document_type) > 0) {
       if (candidate$category == "Document Types") {
         boost_factor <- boost_factor * 1.2
       }
@@ -559,7 +559,7 @@ if (!exists("get_cached_autocomplete")) {
 get_autocomplete_suggestions <- function(partial_query, context = list(), max_suggestions = 10, use_cache = TRUE) {
   
   # Input validation
-  if (is.null(partial_query) || is.na(partial_query)) {
+  if (isTRUE(is.null(partial_query)) || isTRUE(is.na(partial_query))) {
     return(list(suggestions = list(), metadata = list(error = "Invalid query")))
   }
   
@@ -605,23 +605,23 @@ get_contextual_suggestions <- function(partial_query, search_filters = list(), m
   # Extract relevant context from search filters
   context <- list()
   
-  if (!is.null(search_filters$estado) && search_filters$estado != "all") {
+  if (!isTRUE(is.null(search_filters$estado)) && search_filters$estado != "all") {
     context$state <- search_filters$estado
   }
   
-  if (!is.null(search_filters$region) && search_filters$region != "all") {
+  if (!isTRUE(is.null(search_filters$region)) && search_filters$region != "all") {
     context$region <- search_filters$region
   }
   
-  if (!is.null(search_filters$transport_category) && search_filters$transport_category != "all") {
+  if (!isTRUE(is.null(search_filters$transport_category)) && search_filters$transport_category != "all") {
     context$transport_category <- search_filters$transport_category
   }
   
-  if (!is.null(search_filters$document_type) && length(search_filters$document_type) > 0) {
+  if (!isTRUE(is.null(search_filters$document_type)) && length(search_filters$document_type) > 0) {
     context$document_type <- search_filters$document_type
   }
   
-  if (!is.null(search_filters$species) && length(search_filters$species) > 0) {
+  if (!isTRUE(is.null(search_filters$species)) && length(search_filters$species) > 0) {
     context$species <- search_filters$species
   }
   

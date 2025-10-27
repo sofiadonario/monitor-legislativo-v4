@@ -385,7 +385,7 @@ track_user_interactions <- function(session) {
 #' @return Analysis results with recommendations
 analyze_user_interactions <- function(interaction_data) {
   
-  if (is.null(interaction_data) || length(interaction_data$interactions) == 0) {
+  if (isTRUE(is.null(interaction_data)) || length(interaction_data$interactions) == 0) {
     return(list(
       status = "no_data",
       message = "Dados insuficientes para análise",

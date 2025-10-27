@@ -19,7 +19,7 @@ source("R/config/secure_config.R")
 #' @return List with authentication result
 authenticate_user <- function(username, password) {
   
-  if (is.null(username) || is.null(password) || 
+  if (isTRUE(is.null(username)) || isTRUE(is.null(password)) || 
       username == "" || password == "") {
     return(list(
       success = FALSE,
@@ -182,7 +182,7 @@ handle_login <- function(input, output, session) {
   observeEvent(input$login_btn, {
     
     # Validate inputs
-    if (is.null(input$username) || is.null(input$password) ||
+    if (isTRUE(is.null(input$username)) || isTRUE(is.null(input$password)) ||
         input$username == "" || input$password == "") {
       
       output$login_message <- renderUI({

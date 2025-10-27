@@ -613,7 +613,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Template processing methods
       prepare_template_data = function(data, level, type = "hover") {
         
-        if (is.null(data) || nrow(data) == 0) {
+        if (isTRUE(is.null(data)) || nrow(data) == 0) {
           return(self$get_empty_template_data(level))
         }
         
@@ -670,14 +670,14 @@ if (requireNamespace("R6", quietly = TRUE)) {
       
       enhance_popup_data = function(template_data, detailed_data, level) {
         
-        if (is.null(detailed_data) || nrow(detailed_data) == 0) {
+        if (isTRUE(is.null(detailed_data)) || nrow(detailed_data) == 0) {
           return(template_data)
         }
         
         tryCatch({
           
           # Add recent activity data (for chart rendering)
-          if (!is.null(detailed_data$recent_documents) && !is.null(detailed_data$quarterly_documents)) {
+          if (!isTRUE(is.null(detailed_data$recent_documents)) && !is.null(detailed_data$quarterly_documents)) {
             template_data$recent_activity_data <- jsonlite::toJSON(list(
               recent = detailed_data$recent_documents[1],
               quarterly = detailed_data$quarterly_documents[1],
@@ -688,7 +688,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           }
           
           # Add top categories list
-          if (!is.null(detailed_data$top_categories) && nrow(detailed_data$top_categories) > 0) {
+          if (!isTRUE(is.null(detailed_data$top_categories)) && nrow(detailed_data$top_categories) > 0) {
             
             categories_html <- paste(
               sapply(1:nrow(detailed_data$top_categories), function(i) {
@@ -706,7 +706,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           }
           
           # Add recent documents list
-          if (!is.null(detailed_data$recent_documents_list) && 
+          if (!isTRUE(is.null(detailed_data$recent_documents_list)) && 
               nrow(detailed_data$recent_documents_list) > 0) {
             
             docs_html <- paste(
@@ -755,12 +755,12 @@ if (requireNamespace("R6", quietly = TRUE)) {
       
       # Utility methods
       format_number = function(x) {
-        if (is.na(x) || is.null(x)) return("--")
+        if (isTRUE(is.na(x)) || isTRUE(is.null(x))) return("--")
         format(as.numeric(x), big.mark = ",", scientific = FALSE)
       },
       
       classify_activity_level = function(activity_score) {
-        if (is.na(activity_score) || is.null(activity_score)) return("Unknown")
+        if (isTRUE(is.na(activity_score)) || isTRUE(is.null(activity_score))) return("Unknown")
         
         if (activity_score >= 15) return("Very High")
         if (activity_score >= 10) return("High")

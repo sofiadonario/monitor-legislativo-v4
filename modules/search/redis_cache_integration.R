@@ -332,7 +332,7 @@ get_cached_autocomplete <- function(cache_key) {
         cached_json <- NULL
       }
       
-      if (!is.null(cached_json) && cached_json != "") {
+      if (!isTRUE(is.null(cached_json)) && cached_json != "") {
         cached_data <- jsonlite::fromJSON(cached_json, simplifyVector = FALSE)
         .cache_stats$hits <<- .cache_stats$hits + 1
         .cache_stats$redis_hits <<- .cache_stats$redis_hits + 1

@@ -48,7 +48,7 @@ get_state_region <- function(estado) {
 
 # Calculate legislation density per capita
 calculate_legislation_density <- function(document_count, population) {
-  if (is.null(population) || population == 0) return(0)
+  if (isTRUE(is.null(population)) || population == 0) return(0)
   return(round((document_count / population) * 100000, 2))  # per 100k inhabitants
 }
 

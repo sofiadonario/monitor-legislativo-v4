@@ -102,7 +102,7 @@ determine_coverage_period <- function(analysis_results) {
   periods <- c()
   
   # Check temporal analysis
-  if (!is.null(analysis_results$temporal_analysis) && 
+  if (!isTRUE(is.null(analysis_results$temporal_analysis)) && 
       !is.null(analysis_results$temporal_analysis$summary_stats)) {
     periods <- c(periods, analysis_results$temporal_analysis$summary_stats$date_range)
   }
@@ -516,7 +516,7 @@ generate_statistical_validation_report <- function(analysis_results) {
   )
   
   # Regression diagnostics
-  if (!is.null(analysis_results$regression_analysis) && 
+  if (!isTRUE(is.null(analysis_results$regression_analysis)) && 
       !is.null(analysis_results$regression_analysis$linear_regression)) {
     
     regression <- analysis_results$regression_analysis$linear_regression

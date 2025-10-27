@@ -118,7 +118,7 @@ get_railway_database_config <- function() {
   
   # Priority 1: Railway DATABASE_URL
   database_url <- Sys.getenv("DATABASE_URL", unset = NA)
-  if (!is.na(database_url) && database_url != "") {
+  if (!isTRUE(is.na(database_url)) && database_url != "") {
     config <- parse_railway_database_url(database_url)
     if (!is.null(config)) {
       cat("✅ Using Railway DATABASE_URL configuration\n")
@@ -136,8 +136,8 @@ get_railway_database_config <- function() {
   )
   
   # Validate Railway configuration
-  if (is.na(railway_config$host) || railway_config$host == "" ||
-      is.na(railway_config$password) || railway_config$password == "") {
+  if (isTRUE(is.na(railway_config$host)) || railway_config$host == "" ||
+      isTRUE(is.na(railway_config$password)) || railway_config$password == "") {
     cat("❌ Railway database configuration incomplete\n")
     return(NULL)
   }
@@ -175,7 +175,7 @@ parse_railway_database_url <- function(database_url) {
     )
     
     # Validate Railway-specific constraints
-    if (is.na(config$port) || config$port <= 0 || config$port > 65535) {
+    if (isTRUE(is.na(config$port)) || config$port <= 0 || config$port > 65535) {
       cat("❌ Invalid port in Railway DATABASE_URL\n")
       return(NULL)
     }
@@ -384,7 +384,7 @@ get_optimal_pool <- function(query_type = "select", priority = "medium") {
   
   pool <- .connection_pools[[pool_name]]
   
-  if (is.null(pool) || !pool_is_healthy(pool_name)) {
+  if (isTRUE(is.null(pool)) || !pool_is_healthy(pool_name)) {
     cat("⚠️ Pool", pool_name, "unavailable, trying fallback...\n")
     pool <- get_fallback_pool(pool_name)
   }
@@ -430,7 +430,7 @@ get_fallback_pool <- function(preferred_pool_name) {
   
   for (pool_name in fallback_order) {
     pool <- .connection_pools[[pool_name]]
-    if (!is.null(pool) && pool_is_healthy(pool_name)) {
+    if (!isTRUE(is.null(pool)) && pool_is_healthy(pool_name)) {
       cat("🔄 Using fallback pool:", pool_name, "\n")
       return(pool)
     }
@@ -591,7 +591,7 @@ recover_failed_pools <- function(force_recovery = FALSE) {
     pool_health <- .pool_health[[pool_name]]
     
     needs_recovery <- force_recovery || 
-                     is.null(pool_health) || 
+                     isTRUE(is.null(pool_health)) || 
                      pool_health$status == "failed" ||
                      pool_health$failed_checks >= .railway_config$max_failed_health_checks
     
@@ -690,7 +690,7 @@ execute_monitored_query <- function(query, params = NULL, query_type = "select",
   
   tryCatch({
     # Execute query
-    if (is.null(params) || length(params) == 0) {
+    if (isTRUE(is.null(params)) || length(params) == 0) {
       result <- dbGetQuery(pool, query)
     } else {
       result <- dbGetQuery(pool, query, params = params)
@@ -876,25 +876,25 @@ init_railway_connection_pools <- function(force_reinit = FALSE) {
   success_count <- 0
   
   # Initialize primary pool (highest priority)
-  if (is.null(.connection_pools$primary) || force_reinit) {
+  if (isTRUE(is.null(.connection_pools$primary)) || force_reinit) {
     .connection_pools$primary <<- create_railway_pool("primary", config, .railway_config$primary_pool_size)
     if (!is.null(.connection_pools$primary)) success_count <- success_count + 1
   }
   
   # Initialize readonly pool
-  if (is.null(.connection_pools$readonly) || force_reinit) {
+  if (isTRUE(is.null(.connection_pools$readonly)) || force_reinit) {
     .connection_pools$readonly <<- create_railway_pool("readonly", config, .railway_config$readonly_pool_size)
     if (!is.null(.connection_pools$readonly)) success_count <- success_count + 1
   }
   
   # Initialize analytics pool  
-  if (is.null(.connection_pools$analytics) || force_reinit) {
+  if (isTRUE(is.null(.connection_pools$analytics)) || force_reinit) {
     .connection_pools$analytics <<- create_railway_pool("analytics", config, .railway_config$analytics_pool_size)
     if (!is.null(.connection_pools$analytics)) success_count <- success_count + 1
   }
   
   # Initialize maintenance pool
-  if (is.null(.connection_pools$maintenance) || force_reinit) {
+  if (isTRUE(is.null(.connection_pools$maintenance)) || force_reinit) {
     .connection_pools$maintenance <<- create_railway_pool("maintenance", config, .railway_config$maintenance_pool_size)
     if (!is.null(.connection_pools$maintenance)) success_count <- success_count + 1
   }

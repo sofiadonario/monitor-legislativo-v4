@@ -35,7 +35,7 @@ create_choropleth_map <- function(boundaries_data, data_values, join_column, val
   cat("🗺️ Creating advanced choropleth map...\n")
   
   tryCatch({
-    if (is.null(boundaries_data) || is.null(data_values)) {
+    if (isTRUE(is.null(boundaries_data)) || isTRUE(is.null(data_values))) {
       return(create_empty_brazil_map())
     }
     

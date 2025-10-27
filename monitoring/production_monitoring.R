@@ -139,7 +139,7 @@ collect_system_metrics <- function() {
       db_response_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs")) * 1000
       
       metrics$database <- list(
-        connected = !is.null(db_test) && nrow(db_test) > 0,
+        connected = !isTRUE(is.null(db_test)) && nrow(db_test) > 0,
         response_time_ms = round(db_response_time, 2),
         pool_info = if (exists("dbPool")) {
           list(
@@ -288,7 +288,7 @@ check_health_and_alert <- function() {
   alerts_triggered <- 0
   
   # Memory usage alert
-  if (!is.null(metrics$memory$usage_percent) && 
+  if (!isTRUE(is.null(metrics$memory$usage_percent)) && 
       metrics$memory$usage_percent > MONITORING_CONFIG$alert_threshold_memory) {
     send_alert(
       "high_memory_usage",
@@ -302,7 +302,7 @@ check_health_and_alert <- function() {
   }
   
   # Error rate alert
-  if (!is.null(metrics$performance$error_rate_percent) &&
+  if (!isTRUE(is.null(metrics$performance$error_rate_percent)) &&
       metrics$performance$error_rate_percent > MONITORING_CONFIG$alert_threshold_error_rate) {
     send_alert(
       "high_error_rate",
@@ -316,7 +316,7 @@ check_health_and_alert <- function() {
   }
   
   # Response time alert
-  if (!is.null(metrics$performance$avg_response_time_ms) &&
+  if (!isTRUE(is.null(metrics$performance$avg_response_time_ms)) &&
       metrics$performance$avg_response_time_ms > MONITORING_CONFIG$alert_threshold_response_time) {
     send_alert(
       "slow_response_time",
@@ -330,7 +330,7 @@ check_health_and_alert <- function() {
   }
   
   # Database connectivity alert
-  if (!is.null(metrics$database$connected) && !metrics$database$connected) {
+  if (!isTRUE(is.null(metrics$database$connected)) && !metrics$database$connected) {
     send_alert(
       "database_connectivity",
       "Database connection failed",
@@ -342,7 +342,7 @@ check_health_and_alert <- function() {
   
   # Uptime alert
   uptime_percentage <- metrics$performance$uptime_percentage
-  if (!is.null(uptime_percentage) && uptime_percentage < MONITORING_CONFIG$uptime_target) {
+  if (!isTRUE(is.null(uptime_percentage)) && uptime_percentage < MONITORING_CONFIG$uptime_target) {
     send_alert(
       "low_uptime",
       sprintf("Uptime below target: %g%% (target: %g%%)",

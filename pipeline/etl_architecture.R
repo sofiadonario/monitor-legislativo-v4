@@ -387,7 +387,7 @@ LexMLExtractor <- R6::R6Class("LexMLExtractor",
           
           if (httr::status_code(response) == 200) {
             batch_data <- self$parse_lexml_response(response)
-            if (!is.null(batch_data) && nrow(batch_data) > 0) {
+            if (!isTRUE(is.null(batch_data)) && nrow(batch_data) > 0) {
               results <- append(results, list(batch_data))
               offset <- offset + batch_size
               self$circuit_breaker$record_success()
@@ -459,7 +459,7 @@ LexMLExtractor <- R6::R6Class("LexMLExtractor",
     },
     
     clean_text = function(text) {
-      if (is.null(text) || is.na(text) || text == "") return("")
+      if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || text == "") return("")
       
       # Remove extra whitespace and normalize encoding
       text <- stringr::str_trim(stringr::str_squish(as.character(text)))
@@ -473,7 +473,7 @@ LexMLExtractor <- R6::R6Class("LexMLExtractor",
     },
     
     parse_date = function(date_string) {
-      if (is.null(date_string) || is.na(date_string) || date_string == "") {
+      if (isTRUE(is.null(date_string)) || isTRUE(is.na(date_string)) || date_string == "") {
         return(NA)
       }
       
@@ -497,7 +497,7 @@ LexMLExtractor <- R6::R6Class("LexMLExtractor",
     },
     
     extract_state = function(localidade) {
-      if (is.null(localidade) || is.na(localidade)) return("")
+      if (isTRUE(is.null(localidade)) || isTRUE(is.na(localidade))) return("")
       
       # Brazilian state patterns
       state_patterns <- c(
@@ -526,7 +526,7 @@ LexMLExtractor <- R6::R6Class("LexMLExtractor",
     },
     
     extract_municipality = function(localidade) {
-      if (is.null(localidade) || is.na(localidade)) return("")
+      if (isTRUE(is.null(localidade)) || isTRUE(is.na(localidade))) return("")
       
       # Extract municipality name (usually comes before state)
       parts <- strsplit(localidade, "[,-/]")[[1]]
@@ -538,7 +538,7 @@ LexMLExtractor <- R6::R6Class("LexMLExtractor",
     },
     
     categorize_document = function(tipo) {
-      if (is.null(tipo) || is.na(tipo)) return("Outros")
+      if (isTRUE(is.null(tipo)) || isTRUE(is.na(tipo))) return("Outros")
       
       tipo_lower <- tolower(tipo)
       
@@ -704,7 +704,7 @@ IBGEExtractor <- R6::R6Class("IBGEExtractor",
     },
     
     enrich_with_geographic_data = function(documents) {
-      if (is.null(documents) || nrow(documents) == 0) return(documents)
+      if (isTRUE(is.null(documents)) || nrow(documents) == 0) return(documents)
       
       log_etl("INFO", "Enriching documents with IBGE geographic data", "IBGE")
       
@@ -795,7 +795,7 @@ ETLOrchestrator <- R6::R6Class("ETLOrchestrator",
         log_etl("INFO", "Step 1: Extracting documents from LexML", "ORCHESTRATOR")
         raw_documents <- self$lexml_extractor$extract_documents(limit = limit)
         
-        if (is.null(raw_documents) || nrow(raw_documents) == 0) {
+        if (isTRUE(is.null(raw_documents)) || nrow(raw_documents) == 0) {
           log_etl("ERROR", "No documents extracted from LexML", "ORCHESTRATOR")
           return(FALSE)
         }
@@ -810,7 +810,7 @@ ETLOrchestrator <- R6::R6Class("ETLOrchestrator",
         log_etl("INFO", "Step 3: Running data validation and quality checks", "ORCHESTRATOR")
         validated_documents <- self$validate_and_clean_data(enriched_documents)
         
-        if (is.null(validated_documents) || nrow(validated_documents) == 0) {
+        if (isTRUE(is.null(validated_documents)) || nrow(validated_documents) == 0) {
           log_etl("ERROR", "No valid documents after quality checks", "ORCHESTRATOR")
           return(FALSE)
         }
@@ -843,7 +843,7 @@ ETLOrchestrator <- R6::R6Class("ETLOrchestrator",
     },
     
     validate_and_clean_data = function(documents) {
-      if (is.null(documents) || nrow(documents) == 0) return(NULL)
+      if (isTRUE(is.null(documents)) || nrow(documents) == 0) return(NULL)
       
       log_etl("INFO", sprintf("Starting data validation for %d documents", nrow(documents)), "VALIDATOR")
       
@@ -930,7 +930,7 @@ ETLOrchestrator <- R6::R6Class("ETLOrchestrator",
     },
     
     load_to_database = function(documents) {
-      if (is.null(self$db_pool) || is.null(documents) || nrow(documents) == 0) {
+      if (isTRUE(is.null(self$db_pool)) || isTRUE(is.null(documents)) || nrow(documents) == 0) {
         log_etl("ERROR", "Database connection or data not available", "DATABASE_LOADER")
         return(FALSE)
       }

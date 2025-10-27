@@ -224,7 +224,7 @@ integrate_search_server <- function(input, output, session, get_data_function = 
       
       # Pass current search query to library if possible
       current_query <- search_server_return$current_query()
-      if (!is.null(current_query) && current_query != "") {
+      if (!isTRUE(is.null(current_query)) && current_query != "") {
         # Set library search to current query
         updateTextInput(session, "library_search", value = current_query)
       }
@@ -238,7 +238,7 @@ integrate_search_server <- function(input, output, session, get_data_function = 
       
       # Pass current results for analysis
       current_results <- search_server_return$results()
-      if (!is.null(current_results) && nrow(current_results) > 0) {
+      if (!isTRUE(is.null(current_results)) && nrow(current_results) > 0) {
         # Store results for analytics module
         session$userData$search_results_for_analysis <- current_results
       }

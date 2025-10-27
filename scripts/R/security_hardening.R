@@ -42,7 +42,7 @@ generate_csrf_token <- function(session_id = NULL) {
 #' @param expected_token Expected token from session
 #' @return TRUE if valid, FALSE otherwise
 validate_csrf_token <- function(submitted_token, expected_token) {
-  if (is.null(submitted_token) || is.null(expected_token)) {
+  if (isTRUE(is.null(submitted_token)) || isTRUE(is.null(expected_token))) {
     return(FALSE)
   }
   
@@ -76,7 +76,7 @@ csrf_token_input <- function(csrf_token) {
 #' @param allow_html Whether to allow safe HTML tags
 #' @return Sanitized string
 sanitize_input <- function(input, allow_html = FALSE) {
-  if (is.null(input) || !is.character(input)) {
+  if (isTRUE(is.null(input)) || !is.character(input)) {
     return("")
   }
   
@@ -114,7 +114,7 @@ sanitize_input <- function(input, allow_html = FALSE) {
 #' @param email Email address to validate
 #' @return TRUE if valid format
 validate_email <- function(email) {
-  if (is.null(email) || !is.character(email) || length(email) != 1) {
+  if (isTRUE(is.null(email)) || !is.character(email) || length(email) != 1) {
     return(FALSE)
   }
   
@@ -284,7 +284,7 @@ validate_search_parameters <- function(search_params) {
   }
   
   # Validate date range
-  if (!is.null(sanitized_params$date_from) && !is.null(sanitized_params$date_to)) {
+  if (!isTRUE(is.null(sanitized_params$date_from)) && !is.null(sanitized_params$date_to)) {
     if (sanitized_params$date_from > sanitized_params$date_to) {
       errors <- c(errors, "Data inicial deve ser anterior à data final")
     }
@@ -328,7 +328,7 @@ validate_search_parameters <- function(search_params) {
   if (!is.null(search_params$limit)) {
     limit <- as.numeric(search_params$limit)
     
-    if (is.na(limit) || limit < 1) {
+    if (isTRUE(is.na(limit)) || limit < 1) {
       errors <- c(errors, "Limite deve ser um número positivo")
     } else if (limit > .security_config$max_export_records) {
       errors <- c(errors, paste("Limite muito alto (máximo", 
@@ -496,7 +496,7 @@ detect_suspicious_activity <- function(user_id = NULL, ip_address = NULL, action
 #' @param file_info File information from Shiny fileInput
 #' @return List with validation result
 validate_file_upload <- function(file_info) {
-  if (is.null(file_info) || nrow(file_info) == 0) {
+  if (isTRUE(is.null(file_info)) || nrow(file_info) == 0) {
     return(list(valid = FALSE, error = "Nenhum arquivo selecionado"))
   }
   

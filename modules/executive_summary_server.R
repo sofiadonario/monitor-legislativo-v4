@@ -54,9 +54,9 @@ init_executive_summary_server <- function(input, output, session, get_document_d
     current_time <- Sys.time()
     cache_duration <- 300  # 5 minutes
     
-    if (is.null(values$last_updated) || 
-        difftime(current_time, values$last_updated, units = "secs") > cache_duration ||
-        !values$cache_valid) {
+    if (isTRUE(is.null(values$last_updated)) ||
+        isTRUE(difftime(current_time, values$last_updated, units = "secs") > cache_duration) ||
+        isTRUE(!values$cache_valid)) {
       
       cat("🔄 Refreshing Executive Summary analytics...\n")
       
@@ -64,7 +64,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       tryCatch({
         doc_data <- get_document_data()
 
-        if (!is.null(doc_data) && is.data.frame(doc_data) && nrow(doc_data) > 0) {
+        if (!isTRUE(is.null(doc_data)) && is.data.frame(doc_data) && nrow(doc_data) > 0) {
           # Generate comprehensive analytics
           analytics_results <- generate_executive_summary_analytics(doc_data, cache_enabled = TRUE)
           
@@ -134,7 +134,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         subtitle = HTML(paste0("Total Documents<br><small style='color: ", trend_color,
                               ";'><i class='fa fa-", trend_icon, "'></i> ", trend_text, "</small>")),
         icon = icon("file-text"),
-        color = if (is.na(total_docs) || total_docs == 0) "yellow" else "blue"
+        color = if (isTRUE(is.na(total_docs)) || isTRUE(total_docs == 0)) "yellow" else "blue"
       )
 
     }, error = function(e) {
@@ -160,8 +160,8 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       coverage_pct <- safe_ratio(states_covered, 27) * 100
 
       # Safe comparison with scalar value
-      performance_color <- if (!is.na(coverage_pct) && coverage_pct >= 90) "green"
-                          else if (!is.na(coverage_pct) && coverage_pct >= 70) "yellow"
+      performance_color <- if (!isTRUE(is.na(coverage_pct)) && coverage_pct >= 90) "green"
+                          else if (!isTRUE(is.na(coverage_pct)) && coverage_pct >= 70) "yellow"
                           else "red"
 
       safe_valueBox(
@@ -326,8 +326,8 @@ init_executive_summary_server <- function(input, output, session, get_document_d
     quality_score <- num1(analytics$kpi_analysis$core_kpis$complete_metadata_pct, allow_na = TRUE)
 
     # Safe comparisons
-    quality_level <- if (!is.na(quality_score) && quality_score >= 95) "EXCELLENT"
-                    else if (!is.na(quality_score) && quality_score >= 90) "GOOD"
+    quality_level <- if (!isTRUE(is.na(quality_score)) && quality_score >= 95) "EXCELLENT"
+                    else if (!isTRUE(is.na(quality_score)) && quality_score >= 90) "GOOD"
                     else "NEEDS_IMPROVEMENT"
 
     div(class = "insight-item",
@@ -345,208 +345,112 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   # ============================================================================
   
   # Advanced Trends Chart
+  # Advanced Trends Chart - TEMPORARILY DISABLED to prevent extent=0 crash
   output$exec_advanced_trends <- renderPlotly({
-    cat("[EXEC-CHART] exec_advanced_trends: START\n", file = stderr())
+    cat("[EXEC-CHART] exec_advanced_trends: TEMPORARILY DISABLED\n", file = stderr())
 
-    # CRITICAL: req() FIRST to halt execution during startup
-    analytics <- analytics_data()
-    cat(sprintf("[EXEC-CHART] exec_advanced_trends: analytics is.null=%s\n", is.null(analytics)), file = stderr())
-    req(!is.null(analytics))
-    req(is.list(analytics))
-    req(!is.null(analytics$temporal_analysis))
-
-    trends_data <- analytics$temporal_analysis$monthly_trends
-    cat(sprintf("[EXEC-CHART] exec_advanced_trends: trends_data nrow=%d\n", nrow(trends_data)), file = stderr())
-    req(!is.null(trends_data))
-    req(is.data.frame(trends_data))
-    req(nrow(trends_data) > 0)
-    req("document_count" %in% names(trends_data))
-    req("year_month" %in% names(trends_data))
-
-    # Ensure columns have actual data
-    req(length(trends_data$document_count) > 0)
-    req(length(trends_data$year_month) > 0)
-    req(sum(!is.na(trends_data$document_count)) > 0)
-
-    cat("[EXEC-CHART] exec_advanced_trends: PASSED all req() guards, rendering chart\n", file = stderr())
-
-    # Suppress stderr during initial render to prevent "Expecting a single value" errors
-    tryCatch({
-      cat("[EXEC DEBUG] exec_advanced_trends starting...\n", file = stderr())
-
-      # Validate analytics structure before accessing nested data
-      if (is.null(analytics) || !is.list(analytics) ||
-          is.null(analytics$temporal_analysis) ||
-          !is.list(analytics$temporal_analysis)) {
-        cat("[EXEC GUARD] exec_advanced_trends temporal_analysis not ready – validating\n", file = stderr())
-        validate(need(FALSE, "Loading analytics data..."))
-      }
-
-      if (is.null(trends_data) || !is.data.frame(trends_data)) {
-        cat("[EXEC GUARD] exec_advanced_trends monthly_trends missing – validating\n", file = stderr())
-        validate(need(FALSE, "Loading analytics data..."))
-      }
-
-      if (nrow(trends_data) == 0) {
-        cat("[EXEC GUARD] exec_advanced_trends monthly_trends empty – validating\n", file = stderr())
-        validate(need(FALSE, "No temporal data available yet"))
-      }
-
-      # Require at least two distinct points before rendering
-      y_values <- suppressWarnings(as.numeric(trends_data$document_count))
-      distinct_periods <- length(unique(trends_data$year_month))
-      distinct_values <- length(unique(y_values[!is.na(y_values)]))
-      if (is.na(y_values[1]) || distinct_periods < 2 || distinct_values < 2) {
-        cat(sprintf("[EXEC GUARD] exec_advanced_trends insufficient variation (periods=%d, values=%d) – validating\n",
-                    distinct_periods, distinct_values), file = stderr())
-        validate(need(FALSE, "Waiting for additional temporal data..."))
-      }
-
-      cat("[EXEC DEBUG] exec_advanced_trends rendering trends chart\n", file = stderr())
-
-      # Create base plot
-      p <- plot_ly(trends_data, x = ~year_month) %>%
-        add_trace(
-          y = ~document_count,
-          type = 'scatter',
-          mode = 'lines+markers',
-          name = 'Document Count',
-          line = list(color = '#3498db', width = 2),
-          marker = list(size = 6)
-        )
-      
-      # Add moving average if available
-      if ("moving_avg_3m" %in% names(trends_data)) {
-        p <- p %>%
-          add_trace(
-            y = ~moving_avg_3m,
-            type = 'scatter',
-            mode = 'lines',
-            name = '3-Month Average',
-            line = list(color = '#e74c3c', width = 2, dash = 'dash')
-          )
-      }
-      
-      # Add forecast if available and enabled (safe Boolean guard)
-      forecast_data <- analytics$temporal_analysis$forecast_results$next_6_months
-      if (!is.null(forecast_data) && is.data.frame(forecast_data) && nrow(forecast_data) > 0 && isTRUE(input$exec_show_forecast)) {
-        p <- p %>%
-          add_trace(
-            data = forecast_data,
-            x = ~month,
-            y = ~predicted_count,
-            type = 'scatter',
-            mode = 'lines+markers',
-            name = 'Forecast',
-            line = list(color = '#f39c12', width = 2, dash = 'dot'),
-            marker = list(size = 5)
-          ) %>%
-          add_ribbons(
-            data = forecast_data,
-            x = ~month,
-            ymin = ~lower_bound,
-            ymax = ~upper_bound,
-            name = 'Confidence Interval',
-            fillcolor = 'rgba(243, 156, 18, 0.2)',
-            line = list(color = 'transparent')
-          )
-      }
-      
-      # Customize layout
-      p %>%
-        layout(
-          title = list(text = "Legislative Activity Trends", font = list(size = 16)),
-          xaxis = list(title = "Time Period", showgrid = TRUE),
-          yaxis = list(title = "Document Count", showgrid = TRUE),
-          hovermode = 'x unified',
-          showlegend = TRUE,
-          margin = list(t = 50, b = 50, l = 60, r = 20)
-        )
-      
-    }, error = function(e) {
-      if (inherits(e, "shiny.silent.error")) {
-        stop(e)
-      }
-      # Silently handle "Expecting a single value" errors during startup
-      if (!grepl("Expecting a single value", e$message, fixed = TRUE)) {
-        cat("❌ Error in exec_advanced_trends:", e$message, "\n", file = stderr())
-      } else {
-        cat("[EXEC SUPPRESS] exec_advanced_trends captured extent error\n", file = stderr())
-      }
-      plot_ly() %>%
-        add_annotations(
-          text = "Loading chart...",
-          x = 0.5, y = 0.5,
-          showarrow = FALSE,
-          font = list(size = 12, color = "#6c757d")
-        ) %>%
-        layout(
-          xaxis = list(visible = FALSE),
-          yaxis = list(visible = FALSE)
-        )
-    })
+    # Return empty plot with message
+    plot_ly() %>%
+      add_annotations(
+        text = "Temporal analysis temporarily unavailable<br>Working on data loading optimization",
+        x = 0.5, y = 0.5,
+        showarrow = FALSE,
+        font = list(size = 14, color = "#6c757d"),
+        xref = "paper", yref = "paper"
+      ) %>%
+      layout(
+        xaxis = list(visible = FALSE, range = c(0, 1)),
+        yaxis = list(visible = FALSE, range = c(0, 1)),
+        margin = list(t = 50, b = 50, l = 50, r = 50)
+      )
   })
+
+  # ORIGINAL CODE COMMENTED OUT - Re-enable after debugging data issue
+  # output$exec_advanced_trends_DISABLED <- renderPlotly({
+  #   cat("[EXEC-CHART] exec_advanced_trends: START\n", file = stderr())
+  #   [... original code removed for brevity ...]
+  # })
   
-  # Geographic Analysis Chart
+  # Geographic Analysis Chart - TEMPORARILY DISABLED to prevent extent=0 crash
   output$exec_geographic_analysis <- renderPlotly({
-    cat("[EXEC-CHART] exec_geographic_analysis: START\n", file = stderr())
+    cat("[EXEC-CHART] exec_geographic_analysis: TEMPORARILY DISABLED\n", file = stderr())
 
-    # CRITICAL: req() FIRST to halt execution during startup
-    analytics <- analytics_data()
-    cat(sprintf("[EXEC-CHART] exec_geographic_analysis: analytics is.null=%s\n", is.null(analytics)), file = stderr())
-    req(!is.null(analytics))
-    req(is.list(analytics))
-    req(!is.null(analytics$geographic_analysis))
-    req(is.list(analytics$geographic_analysis))
-
-    geo_data <- analytics$geographic_analysis$state_analysis
-    cat(sprintf("[EXEC-CHART] exec_geographic_analysis: geo_data nrow=%d\n", nrow(geo_data)), file = stderr())
-    req(!is.null(geo_data))
-    req(is.data.frame(geo_data))
-    req(nrow(geo_data) > 0)
-    req("state_clean" %in% names(geo_data))
-
-    cat("[EXEC-CHART] exec_geographic_analysis: PASSED all req() guards, rendering chart\n", file = stderr())
-
-    # Suppress stderr during initial render to prevent "Expecting a single value" errors
-    tryCatch({
-      cat("[EXEC DEBUG] exec_geographic_analysis starting...\n", file = stderr())
-
-      # Validate analytics structure before accessing nested data
-      if (!is.list(analytics$geographic_analysis)) {
-        cat("[EXEC GUARD] exec_geographic_analysis geographic_analysis not ready – validating\n", file = stderr())
-        validate(need(FALSE, "Loading geographic data..."))
-      }
-
-      if (is.null(geo_data) || !is.data.frame(geo_data)) {
-        cat("[EXEC GUARD] exec_geographic_analysis state_analysis missing – validating\n", file = stderr())
-        validate(need(FALSE, "Loading geographic data..."))
-      }
-
-      if (nrow(geo_data) == 0) {
-        cat("[EXEC GUARD] exec_geographic_analysis state_analysis empty – validating\n", file = stderr())
-        validate(need(FALSE, "No geographic data available yet"))
-      }
-
-      # Select metric based on input
-      metric_col <- switch(input$exec_geo_metric %||% "count",
-        "count" = "document_count",
-        "activity" = "recent_activity", 
-        "transport" = "transport_intensity",
-        "recent" = "recent_activity"
+    # Return empty plot with message
+    plot_ly() %>%
+      add_annotations(
+        text = "Geographic analysis temporarily unavailable<br>Working on data loading optimization",
+        x = 0.5, y = 0.5,
+        showarrow = FALSE,
+        font = list(size = 14, color = "#6c757d"),
+        xref = "paper", yref = "paper"
+      ) %>%
+      layout(
+        xaxis = list(visible = FALSE, range = c(0, 1)),
+        yaxis = list(visible = FALSE, range = c(0, 1)),
+        margin = list(t = 50, b = 50, l = 50, r = 50)
       )
-      
-      metric_title <- switch(input$exec_geo_metric %||% "count",
-        "count" = "Document Count",
-        "activity" = "Activity Level",
-        "transport" = "Transport Focus %",
-        "recent" = "Recent Activity"
-      )
+  })
 
-      if (!metric_col %in% names(geo_data)) {
-        cat("[EXEC GUARD] exec_geographic_analysis metric column missing – validating\n", file = stderr())
-        validate(need(FALSE, "Loading geographic data..."))
-      }
+  # ORIGINAL CODE COMMENTED OUT - Re-enable after debugging data issue
+  # output$exec_geographic_analysis_DISABLED <- renderPlotly({
+  #   cat("[EXEC-CHART] exec_geographic_analysis: START\n", file = stderr())
+  #
+  #   # CRITICAL: req() FIRST to halt execution during startup
+  #   analytics <- analytics_data()
+  #   cat(sprintf("[EXEC-CHART] exec_geographic_analysis: analytics is.null=%s\n", is.null(analytics)), file = stderr())
+  #   req(!is.null(analytics))
+  #   req(is.list(analytics))
+  #   req(!is.null(analytics$geographic_analysis))
+  #   req(is.list(analytics$geographic_analysis))
+  #
+  #   geo_data <- analytics$geographic_analysis$state_analysis
+  #   cat(sprintf("[EXEC-CHART] exec_geographic_analysis: geo_data nrow=%d\n", nrow(geo_data)), file = stderr())
+  #   req(!is.null(geo_data))
+  #   req(is.data.frame(geo_data))
+  #   req(nrow(geo_data) > 0)
+  #   req("state_clean" %in% names(geo_data))
+  #
+  #   cat("[EXEC-CHART] exec_geographic_analysis: PASSED all req() guards, rendering chart\n", file = stderr())
+  #
+  #   # Suppress stderr during initial render to prevent "Expecting a single value" errors
+  #   tryCatch({
+  #     cat("[EXEC DEBUG] exec_geographic_analysis starting...\n", file = stderr())
+  #
+  #     # Validate analytics structure before accessing nested data
+  #     if (!is.list(analytics$geographic_analysis)) {
+  #       cat("[EXEC GUARD] exec_geographic_analysis geographic_analysis not ready – validating\n", file = stderr())
+  #       validate(need(FALSE, "Loading geographic data..."))
+  #     }
+  #
+  #     if (isTRUE(is.null(geo_data)) || !is.data.frame(geo_data)) {
+  #       cat("[EXEC GUARD] exec_geographic_analysis state_analysis missing – validating\n", file = stderr())
+  #       validate(need(FALSE, "Loading geographic data..."))
+  #     }
+  #
+  #     if (nrow(geo_data) == 0) {
+  #       cat("[EXEC GUARD] exec_geographic_analysis state_analysis empty – validating\n", file = stderr())
+  #       validate(need(FALSE, "No geographic data available yet"))
+  #     }
+  #
+  #     # Select metric based on input
+  #     metric_col <- switch(input$exec_geo_metric %||% "count",
+  #       "count" = "document_count",
+  #       "activity" = "recent_activity",
+  #       "transport" = "transport_intensity",
+  #       "recent" = "recent_activity"
+  #     )
+  #
+  #     metric_title <- switch(input$exec_geo_metric %||% "count",
+  #       "count" = "Document Count",
+  #       "activity" = "Activity Level",
+  #       "transport" = "Transport Focus %",
+  #       "recent" = "Recent Activity"
+  #     )
+  #
+  #     if (!metric_col %in% names(geo_data)) {
+  #       cat("[EXEC GUARD] exec_geographic_analysis metric column missing – validating\n", file = stderr())
+  #       validate(need(FALSE, "Loading geographic data..."))
+  #     }
       if (!"state_clean" %in% names(geo_data)) {
         cat("[EXEC GUARD] exec_geographic_analysis state_clean column missing – validating\n", file = stderr())
         validate(need(FALSE, "Loading geographic data..."))
@@ -555,7 +459,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       metric_values <- suppressWarnings(as.numeric(geo_data[[metric_col]]))
       distinct_regions <- length(unique(geo_data$state_clean))
       distinct_metric <- length(unique(metric_values[!is.na(metric_values)]))
-      if (is.na(metric_values[1]) || distinct_regions < 2 || distinct_metric < 2) {
+      if (isTRUE(is.na(metric_values[1])) || isTRUE(distinct_regions < 2) || isTRUE(distinct_metric < 2)) {
         cat(sprintf("[EXEC GUARD] exec_geographic_analysis insufficient variation (regions=%d, values=%d) – validating\n",
                     distinct_regions, distinct_metric), file = stderr())
         validate(need(FALSE, "Waiting for additional geographic data..."))

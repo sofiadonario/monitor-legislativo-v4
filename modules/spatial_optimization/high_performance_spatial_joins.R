@@ -149,7 +149,7 @@ create_spatial_performance_monitor <- function(operation_name, target_duration_m
     performance_log <- append(performance_log, additional_metrics)
     
     # Log to database if pool provided
-    if (!is.null(pool) && SPATIAL_JOIN_CONFIG$enable_performance_tracking) {
+    if (!isTRUE(is.null(pool)) && SPATIAL_JOIN_CONFIG$enable_performance_tracking) {
       tryCatch({
         log_spatial_performance(pool, performance_log)
       }, error = function(e) {
@@ -219,7 +219,7 @@ perform_intelligent_spatial_join <- function(pool, document_batch, municipalitie
   
   monitor <- create_spatial_performance_monitor("intelligent_spatial_join", 2000)
   
-  if (nrow(document_batch) == 0 || nrow(municipalities) == 0) {
+  if (isTRUE(nrow(document_batch) == 0) || nrow(municipalities) == 0) {
     return(list(
       results = data.frame(),
       metrics = list(success_rate = 0, total_processed = 0)
@@ -526,7 +526,7 @@ apply_text_matching_join <- function(documents, municipalities) {
       }
       
       # Add match if confidence is above threshold
-      if (!is.null(best_match) && best_confidence >= SPATIAL_JOIN_CONFIG$min_confidence_score) {
+      if (!isTRUE(is.null(best_match)) && best_confidence >= SPATIAL_JOIN_CONFIG$min_confidence_score) {
         matched_doc <- doc
         matched_doc$municipality_code <- muni_patterns$municipality_code[best_match]
         matched_doc$municipality_name <- muni_patterns$municipality_name[best_match]

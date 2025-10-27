@@ -49,7 +49,7 @@ init_cache_system <- function(redis_host = NULL, redis_port = NULL) {
       source("R/cache/redis.R", local = FALSE)
       if (exists("init_redis_connection")) {
         redis_result <- init_redis_connection()
-        if (!is.null(redis_result) && redis_result$success) {
+        if (!isTRUE(is.null(redis_result)) && redis_result$success) {
           CACHE_CONFIG$redis_enabled <<- TRUE
           redis_available <- TRUE
           cat("✅ Redis cache initialized from existing module\n")
@@ -61,7 +61,7 @@ init_cache_system <- function(redis_host = NULL, redis_port = NULL) {
   }
   
   # Fallback Redis initialization
-  if (!redis_available && (!is.null(redis_host) || Sys.getenv("REDIS_URL") != "")) {
+  if (!redis_available && (!isTRUE(is.null(redis_host)) || Sys.getenv("REDIS_URL") != "")) {
     tryCatch({
       if (requireNamespace("redux", quietly = TRUE)) {
         redis_url <- if(!is.null(redis_host)) {

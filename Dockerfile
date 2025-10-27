@@ -1,6 +1,6 @@
 # Railway cache bust - $(date)
-# Last rebuild: Sun Oct 19 21:30:00 -03 2025
-# FORCE COMPLETE CACHE INVALIDATION
+# Last rebuild: Sat Oct 25 21:00:00 -03 2025
+# FIX v60: Binary search - Fixed server.R to also disable modules (v59 only disabled in UI)
 FROM rocker/shiny:4.5.1
 
 # 1) System libs - CRITICAL: cmake + libabsl-dev needed for s2 (dependency of sf/leaflet)
@@ -72,4 +72,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
 
 # 10) Start app directly with R (bypass shiny-server)
+# v55: Skip sourcing global_integrated.R (CONFIRMED FIX!)
 CMD ["R", "-e", "shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', '3838')))" ]

@@ -59,7 +59,7 @@ load_auth_components <- function() {
 initialize_auth_database <- function() {
   cat("🗄️ Initializing authentication database schema...\n")
   
-  if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+  if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
     cat("⚠️ Database connection not available - schema initialization skipped\n")
     return(FALSE)
   }

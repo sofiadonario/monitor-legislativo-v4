@@ -1151,7 +1151,7 @@ establish_workload_performance_benchmarks <- function() {
             limit = 30
           )
           
-          if (!is.null(docs) && nrow(docs) > 0) {
+          if (!isTRUE(is.null(docs)) && nrow(docs) > 0) {
             # Simulate analysis
             state_analysis <- docs %>%
               filter(state != "") %>%
@@ -1184,7 +1184,7 @@ establish_workload_performance_benchmarks <- function() {
               limit = 15
             )
             
-            if (!is.null(state_docs) && nrow(state_docs) > 0) {
+            if (!isTRUE(is.null(state_docs)) && nrow(state_docs) > 0) {
               # Simulate policy analysis
               state_summary <- list(
                 state = state,
@@ -1220,7 +1220,7 @@ establish_workload_performance_benchmarks <- function() {
               limit = 50
             )
             
-            if (!is.null(recent_docs) && nrow(recent_docs) > 0) {
+            if (!isTRUE(is.null(recent_docs)) && nrow(recent_docs) > 0) {
               weekly_summary <- list(
                 total_docs = nrow(recent_docs),
                 categories = table(recent_docs$category),
@@ -1289,7 +1289,7 @@ calculate_benchmark_composite_score <- function(benchmarks) {
   if (!is.null(benchmarks$railway_benchmarks$resource_compliance)) {
     compliance <- benchmarks$railway_benchmarks$resource_compliance
     if (!compliance$memory_compliance) railway_score <- railway_score - 50
-    if (!is.null(compliance$db_connection_compliance) && !compliance$db_connection_compliance) {
+    if (!isTRUE(is.null(compliance$db_connection_compliance)) && !compliance$db_connection_compliance) {
       railway_score <- railway_score - 30
     }
   }
@@ -1317,7 +1317,7 @@ cleanup_old_real_time_data <- function(metrics_data) {
   cutoff_time <- Sys.time() - (MONITORING_CONFIG$real_time_data_retention_hours * 3600)
   
   cleaned_data <- metrics_data[sapply(metrics_data, function(x) {
-    !is.null(x$timestamp) && x$timestamp >= cutoff_time
+    !isTRUE(is.null(x$timestamp)) && x$timestamp >= cutoff_time
   })]
   
   if (length(cleaned_data) < length(metrics_data)) {

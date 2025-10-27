@@ -89,7 +89,7 @@ track_user_activity <- function(user_id = NULL, session_id = NULL, action_type, 
   tryCatch({
     # Get current user info if available
     current_user <- get_current_user()
-    if (is.null(user_id) && !is.null(current_user)) {
+    if (isTRUE(is.null(user_id)) && !is.null(current_user)) {
       user_id <- current_user$user_id
       session_id <- current_user$session_id
     }
@@ -601,7 +601,7 @@ calculate_user_satisfaction_metrics <- function(window_start, window_end) {
         if (row$completed_task) score <- score + 0.7
         
         # Penalty for slow response times
-        if (!is.na(row$avg_response_time) && row$avg_response_time > 3000) {
+        if (!isTRUE(is.na(row$avg_response_time)) && row$avg_response_time > 3000) {
           score <- score - 0.5
         }
         
@@ -671,7 +671,7 @@ store_user_activity_metrics <- function(metrics) {
 #' @param search_criteria Original search terms
 #' @return Anonymized search criteria
 anonymize_search_criteria <- function(search_criteria) {
-  if (is.null(search_criteria) || nchar(search_criteria) == 0) {
+  if (isTRUE(is.null(search_criteria)) || nchar(search_criteria) == 0) {
     return(NULL)
   }
   

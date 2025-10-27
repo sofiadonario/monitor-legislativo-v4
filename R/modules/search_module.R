@@ -295,7 +295,7 @@ searchUI <- function(id) {
 #'   # Access search results in parent application
 #'   observe({
 #'     results <- search_results$results()
-#'     if (!is.null(results) && nrow(results) > 0) {
+#'     if (!isTRUE(is.null(results)) && nrow(results) > 0) {
 #'       cat("Found", nrow(results), "documents\n")
 #'     }
 #'   })
@@ -421,7 +421,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
       filters <- list()
       
       # Validate and sanitize estado filter
-      if (!is.null(input$estado) && input$estado != "") {
+      if (!isTRUE(is.null(input$estado)) && input$estado != "") {
         estado_validation <- validate_input(
           input$estado, 
           type = "character", 
@@ -436,7 +436,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
       }
       
       # Validate and sanitize tipo filter
-      if (!is.null(input$tipo) && input$tipo != "") {
+      if (!isTRUE(is.null(input$tipo)) && input$tipo != "") {
         tipo_validation <- validate_input(
           input$tipo, 
           type = "character", 
@@ -451,7 +451,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
       }
       
       # Validate ano_min filter
-      if (!is.null(input$ano_min) && !is.na(input$ano_min)) {
+      if (!isTRUE(is.null(input$ano_min)) && !is.na(input$ano_min)) {
         ano_min_validation <- validate_input(
           input$ano_min, 
           type = "numeric", 
@@ -466,7 +466,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
       }
       
       # Validate ano_max filter
-      if (!is.null(input$ano_max) && !is.na(input$ano_max)) {
+      if (!isTRUE(is.null(input$ano_max)) && !is.na(input$ano_max)) {
         ano_max_validation <- validate_input(
           input$ano_max, 
           type = "numeric", 
@@ -481,7 +481,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
       }
       
       # Validate and set search limit
-      search_limit <- if (!is.null(input$limit) && !is.na(input$limit)) {
+      search_limit <- if (!isTRUE(is.null(input$limit)) && !is.na(input$limit)) {
         limit_validation <- validate_input(
           input$limit, 
           type = "numeric", 
@@ -560,8 +560,8 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
     output$search_stats <- renderUI({
       results <- search_results()
       
-      if (is.null(results) || nrow(results) == 0) {
-        if (!is.null(input$search) && input$search > 0) {
+      if (isTRUE(is.null(results)) || nrow(results) == 0) {
+        if (!isTRUE(is.null(input$search)) && input$search > 0) {
           return(div(
             class = "alert alert-warning",
             icon("info-circle"),
@@ -591,7 +591,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
       
       results <- search_results()
       
-      if (is.null(results) || nrow(results) == 0) {
+      if (isTRUE(is.null(results)) || nrow(results) == 0) {
         return(DT::datatable(
           data.frame(Message = "No results to display"),
           options = list(
@@ -652,7 +652,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
     output$pagination_info <- renderUI({
       results <- search_results()
       
-      if (is.null(results) || nrow(results) == 0) {
+      if (isTRUE(is.null(results)) || nrow(results) == 0) {
         return(NULL)
       }
       
@@ -685,7 +685,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
           
           results <- search_results()
           
-          if (!is.null(results) && nrow(results) > 0) {
+          if (!isTRUE(is.null(results)) && nrow(results) > 0) {
             # Log export activity
             log_security_event("DATA_EXPORT", 
                              paste("CSV export requested. Rows:", nrow(results)))
@@ -743,7 +743,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
           
           results <- search_results()
           
-          if (!is.null(results) && nrow(results) > 0) {
+          if (!isTRUE(is.null(results)) && nrow(results) > 0) {
             # Log export activity
             log_security_event("BIBTEX_EXPORT", 
                              paste("BibTeX export requested. Rows:", nrow(results)))
@@ -785,10 +785,10 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
       }),
       query = reactive(input$query),
       filters_active = reactive({
-        !is.null(input$estado) && input$estado != "" ||
-        !is.null(input$tipo) && input$tipo != "" ||
-        !is.null(input$ano_min) && !is.na(input$ano_min) ||
-        !is.null(input$ano_max) && !is.na(input$ano_max)
+        !isTRUE(is.null(input$estado)) && input$estado != "" ||
+        !isTRUE(is.null(input$tipo)) && input$tipo != "" ||
+        !isTRUE(is.null(input$ano_min)) && !isTRUE(is.na(input$ano_min)) ||
+        !isTRUE(is.null(input$ano_max)) && !is.na(input$ano_max)
       })
     ))
   })
@@ -884,7 +884,7 @@ searchServer <- function(id, db_pool = reactive(NULL)) {
 #' @export
 generate_bibtex_citations <- function(documents) {
   
-  if (is.null(documents) || nrow(documents) == 0) {
+  if (isTRUE(is.null(documents)) || nrow(documents) == 0) {
     return(character(0))
   }
   

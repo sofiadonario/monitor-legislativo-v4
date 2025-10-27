@@ -134,7 +134,7 @@ create_change_detector <- function(pool) {
       hash_content <- paste(
         sapply(existing_fields, function(field) {
           value <- document_row[[field]]
-          if (is.na(value) || is.null(value)) return("NULL")
+          if (isTRUE(is.na(value)) || isTRUE(is.null(value))) return("NULL")
           as.character(value)
         }),
         collapse = "|"
@@ -801,8 +801,7 @@ check_priority_condition <- function(document_row, condition) {
       return(any(sapply(emergency_keywords, function(kw) grepl(kw, text_to_check, ignore.case = TRUE))))
     },
     "state_level" = {
-      return(!is.na(document_row$state %||% document_row$state_code) && 
-             is.na(document_row$municipality %||% document_row$municipality_mentioned))
+      return(!isTRUE(is.na(document_row$state %||% document_row$state_code)) && isTRUE(is.na(document_row$municipality %||% document_row$municipality_mentioned)))
     },
     "municipal_level" = {
       return(!is.na(document_row$municipality %||% document_row$municipality_mentioned))

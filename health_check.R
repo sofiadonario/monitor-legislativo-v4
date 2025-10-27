@@ -44,7 +44,7 @@ perform_health_check <- function(detailed = HEALTH_CONFIG$include_details) {
       # Use monitoring system health check
       monitoring_health <- get("perform_health_check", envir = .GlobalEnv)()
       
-      if (!is.null(monitoring_health) && is.list(monitoring_health)) {
+      if (!isTRUE(is.null(monitoring_health)) && is.list(monitoring_health)) {
         health_status$status <- monitoring_health$status
         health_status$checks <- monitoring_health$checks
         health_status$metrics <- monitoring_health$metrics

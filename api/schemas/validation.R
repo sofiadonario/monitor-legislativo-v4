@@ -49,7 +49,7 @@ DATE_PATTERNS <- c(
 
 # Helper function to validate Brazilian state
 validate_state <- function(state) {
-  if (is.null(state) || is.na(state) || state == "") {
+  if (isTRUE(is.null(state)) || isTRUE(is.na(state)) || state == "") {
     return(list(valid = TRUE, normalized = ""))
   }
   
@@ -69,7 +69,7 @@ validate_state <- function(state) {
 
 # Helper function to validate and normalize date
 validate_date <- function(date_input) {
-  if (is.null(date_input) || is.na(date_input) || date_input == "") {
+  if (isTRUE(is.null(date_input)) || isTRUE(is.na(date_input)) || date_input == "") {
     return(list(valid = TRUE, normalized = NULL))
   }
   
@@ -112,7 +112,7 @@ validate_date <- function(date_input) {
 
 # Helper function to validate document category
 validate_category <- function(category) {
-  if (is.null(category) || is.na(category) || category == "") {
+  if (isTRUE(is.null(category)) || isTRUE(is.na(category)) || category == "") {
     return(list(valid = TRUE, normalized = "other"))
   }
   
@@ -131,7 +131,7 @@ validate_category <- function(category) {
 
 # Helper function to validate document type
 validate_document_type <- function(doc_type) {
-  if (is.null(doc_type) || is.na(doc_type) || doc_type == "") {
+  if (isTRUE(is.null(doc_type)) || isTRUE(is.na(doc_type)) || doc_type == "") {
     return(list(valid = TRUE, normalized = ""))
   }
   
@@ -171,7 +171,7 @@ validate_document_type <- function(doc_type) {
 
 # Helper function to validate and sanitize text fields
 validate_text_field <- function(text, field_name, max_length = NULL, required = FALSE) {
-  if (is.null(text) || is.na(text)) {
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text))) {
     if (required) {
       return(list(
         valid = FALSE,
@@ -195,7 +195,7 @@ validate_text_field <- function(text, field_name, max_length = NULL, required = 
   }
   
   # Check length if specified
-  if (!is.null(max_length) && nchar(text_str) > max_length) {
+  if (!isTRUE(is.null(max_length)) && nchar(text_str) > max_length) {
     return(list(
       valid = FALSE,
       error = paste(field_name, "exceeds maximum length of", max_length, "characters"),
@@ -217,7 +217,7 @@ validate_text_field <- function(text, field_name, max_length = NULL, required = 
 
 # Helper function to validate URLs
 validate_url <- function(url) {
-  if (is.null(url) || is.na(url) || url == "") {
+  if (isTRUE(is.null(url)) || isTRUE(is.na(url)) || url == "") {
     return(list(valid = TRUE, normalized = ""))
   }
   
@@ -242,11 +242,11 @@ validate_pagination <- function(limit, offset) {
   result <- list(valid = TRUE, normalized = list())
   
   # Validate limit
-  if (is.null(limit) || is.na(limit)) {
+  if (isTRUE(is.null(limit)) || isTRUE(is.na(limit))) {
     result$normalized$limit <- 100 # Default
   } else {
     limit_num <- as.numeric(limit)
-    if (is.na(limit_num) || limit_num < 1) {
+    if (isTRUE(is.na(limit_num)) || limit_num < 1) {
       result$valid <- FALSE
       result$error <- "Limit must be a positive number"
       result$normalized$limit <- 100
@@ -259,11 +259,11 @@ validate_pagination <- function(limit, offset) {
   }
   
   # Validate offset
-  if (is.null(offset) || is.na(offset)) {
+  if (isTRUE(is.null(offset)) || isTRUE(is.na(offset))) {
     result$normalized$offset <- 0 # Default
   } else {
     offset_num <- as.numeric(offset)
-    if (is.na(offset_num) || offset_num < 0) {
+    if (isTRUE(is.na(offset_num)) || offset_num < 0) {
       result$valid <- FALSE
       result$error <- paste(result$error %||% "", "Offset must be a non-negative number")
       result$normalized$offset <- 0

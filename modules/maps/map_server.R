@@ -71,7 +71,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
       
       # Apply date filter
       date_range <- map_date_range_debounced()
-      if (!is.null(date_range) && "date" %in% names(data)) {
+      if (!isTRUE(is.null(date_range)) && "date" %in% names(data)) {
         data <- data[data$date >= date_range[1] & data$date <= date_range[2] & !is.na(data$date), ]
       }
       
@@ -100,7 +100,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         # Filter out invalid states
         valid_data <- data[!is.na(data$state) & data$state != "" & data$state %in% brazil_states$state_code, ]
         
-        if (!is.null(valid_data) && is.data.frame(valid_data) && nrow(valid_data) > 0) {
+        if (!isTRUE(is.null(valid_data)) && is.data.frame(valid_data) && nrow(valid_data) > 0) {
           # Manual aggregation
           state_list <- unique(valid_data$state)
           state_counts <- data.frame(
@@ -190,7 +190,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
 
         if (value_col %in% names(data) && nrow(data) > 0) {
           max_row <- data[which.max(data[[value_col]]), ]
-          if (!is.null(max_row) && is.data.frame(max_row) && nrow(max_row) > 0) {
+          if (!isTRUE(is.null(max_row)) && is.data.frame(max_row) && nrow(max_row) > 0) {
             scalar_chr(max_row$state_code, default = "N/A")
           } else {
             "N/A"
@@ -272,7 +272,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
     output$filter_summary <- renderUI({
       active_filters <- list()
       
-      if (!is.null(input$map_category) && input$map_category != "all") {
+      if (!isTRUE(is.null(input$map_category)) && input$map_category != "all") {
         active_filters <- append(active_filters, paste("Category:", input$map_category))
       }
       
@@ -282,7 +282,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
           paste("Date:", format(date_range[1], "%b %Y"), "-", format(date_range[2], "%b %Y")))
       }
       
-      if (!is.null(input$density_threshold) && input$density_threshold != "all") {
+      if (!isTRUE(is.null(input$density_threshold)) && input$density_threshold != "all") {
         active_filters <- append(active_filters, paste("Threshold:", input$density_threshold))
       }
       
@@ -536,7 +536,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         data.frame(municipality = character(), count = numeric())
       })
       
-      if (!is.null(municipality_data) && is.data.frame(municipality_data) && nrow(municipality_data) > 0) {
+      if (!isTRUE(is.null(municipality_data)) && is.data.frame(municipality_data) && nrow(municipality_data) > 0) {
         plot_ly(
           data = municipality_data,
           x = ~count,
@@ -579,7 +579,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         valid_data <- data[!is.na(data$state) & data$state != "" & 
                           !is.na(data$year) & data$year >= 2000 & data$year <= 2025, ]
         
-        if (!is.null(valid_data) && is.data.frame(valid_data) && nrow(valid_data) > 0) {
+        if (!isTRUE(is.null(valid_data)) && is.data.frame(valid_data) && nrow(valid_data) > 0) {
           # Manual aggregation by state and year
           state_year_combinations <- unique(valid_data[, c("state", "year")])
           temporal_data <- data.frame(
@@ -613,7 +613,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         )
       }
       
-      if (!is.null(temporal_data) && is.data.frame(temporal_data) && nrow(temporal_data) > 0) {
+      if (!isTRUE(is.null(temporal_data)) && is.data.frame(temporal_data) && nrow(temporal_data) > 0) {
         plot_ly(
           data = temporal_data,
           x = ~lng,
@@ -1010,7 +1010,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         yearly_counts <- yearly_counts[yearly_counts$year >= 2000 & yearly_counts$year <= 2025, ]
 
         # Ensure we have data after filtering
-        if (!is.null(yearly_counts) && nrow(yearly_counts) > 0) {
+        if (!isTRUE(is.null(yearly_counts)) && nrow(yearly_counts) > 0) {
           plot_ly(
             data = yearly_counts,
             x = ~year,
@@ -1050,7 +1050,7 @@ map_server_logic <- function(input, output, session, analytics_data, pool, geosp
         monthly_counts$month_name <- month.abb[as.numeric(monthly_counts$month)]
 
         # Ensure we have data after aggregation
-        if (!is.null(monthly_counts) && nrow(monthly_counts) > 0) {
+        if (!isTRUE(is.null(monthly_counts)) && nrow(monthly_counts) > 0) {
           plot_ly(
             data = monthly_counts,
             x = ~month_name,

@@ -45,7 +45,7 @@ search_municipality_patterns <- function(text_vector, field_name = "unknown") {
   cat(sprintf("  🔍 Searching %s field with %d records...\n", field_name, length(text_vector)))
   
   for (text in text_vector) {
-    if (is.na(text) || nchar(text) < 5) next
+    if (isTRUE(is.na(text)) || nchar(text) < 5) next
     
     # 1. Dash patterns: "City - SP"
     dash_match <- str_match(text, "^(.+?)\\s*-\\s*([A-Z]{2})$")
@@ -140,7 +140,7 @@ search_municipality_patterns <- function(text_vector, field_name = "unknown") {
 # ============================================================================
 
 is_valid_city_name <- function(city_name) {
-  if (is.na(city_name) || nchar(city_name) < 2) return(FALSE)
+  if (isTRUE(is.na(city_name)) || nchar(city_name) < 2) return(FALSE)
   
   # Exclude obvious non-city words
   exclude_patterns <- c("(?i)lei", "(?i)decreto", "(?i)portaria", "(?i)resolução",

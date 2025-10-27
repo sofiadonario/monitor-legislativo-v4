@@ -143,7 +143,7 @@ analyze_sentiment_railway <- function(texts) {
     negative_words <- c("proibição", "multa", "penalidade", "irregular", "problema")
     
     sentiment_scores <- sapply(texts, function(text) {
-      if (is.na(text) || nchar(text) == 0) return(0)
+      if (isTRUE(is.na(text)) || nchar(text) == 0) return(0)
       
       text_lower <- str_to_lower(text)
       pos_count <- sum(str_count(text_lower, positive_words))

@@ -302,7 +302,7 @@ SecurityHeadersManager <- list(
     
     # Check if should use report-only mode
     tier_policy <- SECURITY_HEADERS_CONFIG$tier_policies[[tier]]
-    if (!is.null(tier_policy$csp_report_only) && tier_policy$csp_report_only) {
+    if (!isTRUE(is.null(tier_policy$csp_report_only)) && tier_policy$csp_report_only) {
       res$setHeader("Content-Security-Policy-Report-Only", csp_policy)
     } else {
       res$setHeader("Content-Security-Policy", csp_policy)
@@ -500,7 +500,7 @@ SecurityHeadersManager <- list(
 SecurityHeadersAnalytics <- list(
   # Get security headers compliance report
   get_compliance_report = function(period_days = 30) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(error = "Database not available"))
     }
     
@@ -546,7 +546,7 @@ SecurityHeadersAnalytics <- list(
   
   # Log security headers events
   log_security_headers_event = function(event_type, details, req) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(FALSE)
     }
     

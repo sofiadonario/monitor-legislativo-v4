@@ -484,7 +484,7 @@ print_system_status <- function() {
     cat("  ", cap_display, ":", cap_status, "\n")
   }
   
-  if (length(status$issues$warnings) > 0 || length(status$issues$errors) > 0) {
+  if (isTRUE(length(status$issues$warnings) > 0) || length(status$issues$errors) > 0) {
     cat("\n⚠️ Issues:\n")
     
     if (length(status$issues$warnings) > 0) {

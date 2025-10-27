@@ -287,7 +287,7 @@ log_system_error <- function(error_message, error_context = NULL, stack_trace = 
 #' @return Sanitized data
 sanitize_log_data <- function(data) {
   
-  if (is.null(data) || .log_config$privacy_mode != "STRICT") {
+  if (isTRUE(is.null(data)) || .log_config$privacy_mode != "STRICT") {
     return(data)
   }
   

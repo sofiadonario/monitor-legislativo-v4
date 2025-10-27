@@ -144,7 +144,7 @@ calculate_parliamentary_efficiency <- function(documents, text_column = "text") 
   
   for (i in 1:nrow(documents)) {
     doc_text <- documents[[text_column]][i]
-    if (is.na(doc_text) || nchar(doc_text) == 0) next
+    if (isTRUE(is.na(doc_text)) || nchar(doc_text) == 0) next
     
     doc_upper <- stringr::str_to_upper(doc_text)
     
@@ -264,7 +264,7 @@ analyze_policy_lifecycle <- function(documents, text_column = "text") {
   
   for (i in 1:nrow(documents)) {
     doc_text <- documents[[text_column]][i]
-    if (is.na(doc_text) || nchar(doc_text) == 0) next
+    if (isTRUE(is.na(doc_text)) || nchar(doc_text) == 0) next
     
     doc_upper <- stringr::str_to_upper(doc_text)
     
@@ -380,7 +380,7 @@ assess_legislative_impact <- function(documents, text_column = "text") {
   
   for (i in 1:nrow(documents)) {
     doc_text <- documents[[text_column]][i]
-    if (is.na(doc_text) || nchar(doc_text) == 0) next
+    if (isTRUE(is.na(doc_text)) || nchar(doc_text) == 0) next
     
     doc_upper <- stringr::str_to_upper(doc_text)
     

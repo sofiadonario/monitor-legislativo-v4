@@ -243,7 +243,7 @@ parse_single_document <- function(doc_data, title_col, state_col, date_col, url_
     citation_elements = list()
   )
   
-  if (is.null(title) || title == "" || is.na(title)) {
+  if (isTRUE(is.null(title)) || title == "" || isTRUE(is.na(title))) {
     parsed_metadata$parsing_confidence <- 0.0
     return(parsed_metadata)
   }
@@ -257,7 +257,7 @@ parse_single_document <- function(doc_data, title_col, state_col, date_col, url_
   parsed_metadata$parsing_confidence <- doc_type_result$confidence
   
   # Parse state information
-  if (!is.null(state) && state != "" && !is.na(state)) {
+  if (!isTRUE(is.null(state)) && state != "" && !is.na(state)) {
     state_result <- parse_state_info(state)
     parsed_metadata$state_name <- state_result$name
     parsed_metadata$state_abbrev <- state_result$abbrev
@@ -277,14 +277,14 @@ parse_single_document <- function(doc_data, title_col, state_col, date_col, url_
   }
   
   # Parse publication date
-  if (!is.null(date_raw) && date_raw != "" && !is.na(date_raw)) {
+  if (!isTRUE(is.null(date_raw)) && date_raw != "" && !is.na(date_raw)) {
     date_result <- parse_publication_date(date_raw)
     parsed_metadata$publication_date <- date_result$formatted_date
     parsed_metadata$year <- date_result$year
   }
   
   # Parse URN if available
-  if (!is.null(urn) && urn != "" && !is.na(urn)) {
+  if (!isTRUE(is.null(urn)) && urn != "" && !is.na(urn)) {
     urn_result <- parse_urn(urn)
     # Override with URN information if more reliable
     if (urn_result$confidence > parsed_metadata$parsing_confidence) {
@@ -319,7 +319,7 @@ parse_document_type <- function(title) {
     confidence = 0.0
   )
   
-  if (is.null(title) || title == "") return(result)
+  if (isTRUE(is.null(title)) || title == "") return(result)
   
   # Try each document type pattern
   for (type_name in names(BRAZILIAN_DOCUMENT_TYPES)) {
@@ -358,7 +358,7 @@ parse_document_type <- function(title) {
 parse_state_info <- function(state_input) {
   result <- list(name = "", abbrev = "")
   
-  if (is.null(state_input) || state_input == "") return(result)
+  if (isTRUE(is.null(state_input)) || state_input == "") return(result)
   
   state_clean <- stringr::str_trim(toupper(state_input))
   
@@ -388,7 +388,7 @@ parse_state_info <- function(state_input) {
 parse_publication_date <- function(date_input) {
   result <- list(formatted_date = "", year = "")
   
-  if (is.null(date_input) || date_input == "") return(result)
+  if (isTRUE(is.null(date_input)) || date_input == "") return(result)
   
   tryCatch({
     # Try to parse as Date object first
@@ -407,7 +407,7 @@ parse_publication_date <- function(date_input) {
       }
       
       # If still not parsed, try with lubridate if available
-      if (is.null(parsed_date) && requireNamespace("lubridate", quietly = TRUE)) {
+      if (isTRUE(is.null(parsed_date)) && requireNamespace("lubridate", quietly = TRUE)) {
         tryCatch({
           parsed_date <- lubridate::ymd(date_input)
           if (is.na(parsed_date)) {
@@ -417,7 +417,7 @@ parse_publication_date <- function(date_input) {
       }
     }
     
-    if (!is.null(parsed_date) && !is.na(parsed_date)) {
+    if (!isTRUE(is.null(parsed_date)) && !is.na(parsed_date)) {
       # Format for Brazilian academic citations
       result$formatted_date <- format(parsed_date, "%d de %B de %Y")
       result$year <- format(parsed_date, "%Y")
@@ -441,7 +441,7 @@ parse_publication_date <- function(date_input) {
 #' @param date_obj Date object
 #' @return Formatted Portuguese date string
 portuguese_date_format <- function(date_obj) {
-  if (is.null(date_obj) || is.na(date_obj)) return("")
+  if (isTRUE(is.null(date_obj)) || isTRUE(is.na(date_obj))) return("")
   
   month_names <- c(
     "janeiro", "fevereiro", "março", "abril", "maio", "junho",
@@ -469,7 +469,7 @@ parse_urn <- function(urn_string) {
     confidence = 0.0
   )
   
-  if (is.null(urn_string) || urn_string == "") return(result)
+  if (isTRUE(is.null(urn_string)) || urn_string == "") return(result)
   
   # Brazilian LexML URN pattern: lex:br:federal:lei:1988-10-05;9394
   if (grepl("^lex:br:", urn_string)) {
@@ -506,7 +506,7 @@ parse_urn <- function(urn_string) {
 #' @param title Document title
 #' @return Municipality name or empty string
 extract_municipality_from_title <- function(title) {
-  if (is.null(title) || title == "") return("")
+  if (isTRUE(is.null(title)) || title == "") return("")
   
   # Common patterns for municipalities in Brazilian legislation
   municipality_patterns <- c(
@@ -536,7 +536,7 @@ extract_additional_metadata <- function(title) {
     diario_oficial = ""
   )
   
-  if (is.null(title) || title == "") return(result)
+  if (isTRUE(is.null(title)) || title == "") return(result)
   
   # Extract committee information
   committee_match <- stringr::str_match(title, "(?i)comissão\\s+([a-záàâãçéêíóôõúû\\s]+)")
@@ -627,7 +627,7 @@ get_column_value <- function(data, column_name) {
   return("")
 }
 
-`%||%` <- function(a, b) if (is.null(a) || is.na(a) || a == "") b else a
+`%||%` <- function(a, b) if (isTRUE(is.null(a)) || isTRUE(is.na(a)) || a == "") b else a
 
 #' Test Brazilian Legislative Parser
 #' @return Test results

@@ -6,7 +6,7 @@
 
 # Scalar validation
 as_scalar <- function(x, name, allow_empty = FALSE) {
-  if (is.null(x) || length(x) == 0 || (is.character(x) && trimws(x) == "")) {
+  if (isTRUE(is.null(x)) || isTRUE(length(x) == 0) || (is.character(x) && trimws(x) == "")) {
     if (allow_empty) return(NA_character_)
     stop(structure(
       list(
@@ -45,7 +45,7 @@ as_enum <- function(x, name, choices) {
 
 # Date validation
 safe_date <- function(x, name) {
-  if (is.null(x) || x == "") return(NA)
+  if (isTRUE(is.null(x)) || x == "") return(NA)
   d <- tryCatch(
     as.Date(x),
     error = function(e) NA
@@ -64,7 +64,7 @@ safe_date <- function(x, name) {
 
 # Integer validation
 safe_int <- function(x, name, min_val = NULL, max_val = NULL) {
-  if (is.null(x) || x == "") return(NA_integer_)
+  if (isTRUE(is.null(x)) || x == "") return(NA_integer_)
   val <- suppressWarnings(as.integer(x))
   if (is.na(val)) {
     stop(structure(
@@ -75,7 +75,7 @@ safe_int <- function(x, name, min_val = NULL, max_val = NULL) {
       class = "api_error"
     ))
   }
-  if (!is.null(min_val) && val < min_val) {
+  if (!isTRUE(is.null(min_val)) && val < min_val) {
     stop(structure(
       list(
         error = "invalid_request",
@@ -84,7 +84,7 @@ safe_int <- function(x, name, min_val = NULL, max_val = NULL) {
       class = "api_error"
     ))
   }
-  if (!is.null(max_val) && val > max_val) {
+  if (!isTRUE(is.null(max_val)) && val > max_val) {
     stop(structure(
       list(
         error = "invalid_request",
@@ -98,12 +98,12 @@ safe_int <- function(x, name, min_val = NULL, max_val = NULL) {
 
 # Coalesce operator
 `%||%` <- function(a, b) {
-  if (is.null(a) || (is.character(a) && a == "")) b else a
+  if (isTRUE(is.null(a)) || (is.character(a) && a == "")) b else a
 }
 
 # Sanitize search query
 sanitize_search <- function(query) {
-  if (is.null(query) || query == "") return("")
+  if (isTRUE(is.null(query)) || query == "") return("")
   # Remove SQL injection attempts
   query <- gsub("[';\"\\\\]", "", query)
   # Limit length
@@ -125,7 +125,7 @@ validate_pagination <- function(page, limit, max_limit = 1000) {
 
 # Validate jurisdiction
 validate_jurisdiction <- function(jurisdiction) {
-  if (is.null(jurisdiction) || jurisdiction == "") return("all")
+  if (isTRUE(is.null(jurisdiction)) || jurisdiction == "") return("all")
   as_enum(
     jurisdiction,
     "jurisdiction",
@@ -135,7 +135,7 @@ validate_jurisdiction <- function(jurisdiction) {
 
 # Validate Brazilian state code
 validate_state <- function(state) {
-  if (is.null(state) || state == "") return("all")
+  if (isTRUE(is.null(state)) || state == "") return("all")
 
   valid_states <- c(
     "all", "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
@@ -151,7 +151,7 @@ validate_date_range <- function(date_start, date_end) {
   start <- safe_date(date_start, "date_start")
   end <- safe_date(date_end, "date_end")
 
-  if (!is.na(start) && !is.na(end) && start > end) {
+  if (!isTRUE(is.na(start)) && !isTRUE(is.na(end)) && start > end) {
     stop(structure(
       list(
         error = "invalid_request",

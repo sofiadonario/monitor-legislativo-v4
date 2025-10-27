@@ -386,7 +386,7 @@ monitoring_server <- function(id) {
     # Health Status Outputs
     output$health_status <- renderText({
       health <- monitoring_data$health_check
-      if (length(health) > 0 && !is.null(health$status)) {
+      if (isTRUE(length(health) > 0) && !is.null(health$status)) {
         switch(health$status,
                "healthy" = "🟢 HEALTHY",
                "degraded" = "🟡 DEGRADED", 
@@ -401,7 +401,7 @@ monitoring_server <- function(id) {
     # Update health status card color
     observe({
       health <- monitoring_data$health_check
-      if (length(health) > 0 && !is.null(health$status)) {
+      if (isTRUE(length(health) > 0) && !is.null(health$status)) {
         class <- switch(health$status,
                        "healthy" = "status-healthy",
                        "degraded" = "status-warning",
@@ -475,7 +475,7 @@ monitoring_server <- function(id) {
     # Performance Charts
     output$performance_chart <- renderPlotly({
       metrics <- monitoring_data$metrics
-      if (length(metrics) > 0 && nrow(metrics$performance_history) > 0) {
+      if (isTRUE(length(metrics) > 0) && nrow(metrics$performance_history) > 0) {
         data <- metrics$performance_history
         
         p <- plot_ly(data, x = ~timestamp) %>%
@@ -518,7 +518,7 @@ monitoring_server <- function(id) {
       })
       
       output$top_features_table <- DT::renderDataTable({
-        if (!is.null(analytics$top_features) && is.data.frame(analytics$top_features) && nrow(analytics$top_features) > 0) {
+        if (!isTRUE(is.null(analytics$top_features)) && is.data.frame(analytics$top_features) && nrow(analytics$top_features) > 0) {
           analytics$top_features[1:min(10, nrow(analytics$top_features)),]
         } else {
           data.frame(feature = character(0), usage_count = numeric(0))

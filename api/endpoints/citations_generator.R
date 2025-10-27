@@ -65,7 +65,7 @@ DOCUMENT_TYPE_MAPPING <- list(
 
 # Helper function to clean and format text for citations
 clean_citation_text <- function(text) {
-  if (is.null(text) || is.na(text) || text == "") {
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || text == "") {
     return("")
   }
   
@@ -82,7 +82,7 @@ clean_citation_text <- function(text) {
 
 # Format date for Brazilian standards
 format_brazilian_date <- function(date_input) {
-  if (is.null(date_input) || is.na(date_input)) {
+  if (isTRUE(is.null(date_input)) || isTRUE(is.na(date_input))) {
     return(format(Sys.Date(), "%d %b. %Y"))
   }
   
@@ -176,7 +176,7 @@ generate_citation <- function(document_data, format = "abnt", access_date = Sys.
 #' @serializer unboxedJSON
 function(req, res, document_id, format = "abnt", access_date = NULL, all_formats = FALSE) {
   
-  if (is.null(document_id) || nchar(trimws(document_id)) == 0) {
+  if (isTRUE(is.null(document_id)) || nchar(trimws(document_id)) == 0) {
     return(list(
       error = TRUE,
       message = "ID do documento é obrigatório",
@@ -314,7 +314,7 @@ function(req, res) {
     return(NULL)
   })
   
-  if (is.null(body) || is.null(body$document_ids)) {
+  if (isTRUE(is.null(body)) || isTRUE(is.null(body$document_ids))) {
     return(list(
       error = TRUE,
       message = "Lista de IDs de documentos é obrigatória",
@@ -445,7 +445,7 @@ function(req, res) {
 #' @serializer unboxedJSON
 function(req, res, citation, format = "abnt") {
   
-  if (is.null(citation) || nchar(trimws(citation)) == 0) {
+  if (isTRUE(is.null(citation)) || nchar(trimws(citation)) == 0) {
     return(list(
       error = TRUE,
       message = "Texto da citação é obrigatório",

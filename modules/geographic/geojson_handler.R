@@ -20,7 +20,7 @@ load_brazil_geojson <- function() {
         geojson_data <- fromJSON(path, simplifyVector = FALSE)
         
         # Validate that it's proper GeoJSON
-        if (!is.null(geojson_data$type) && geojson_data$type == "FeatureCollection") {
+        if (!isTRUE(is.null(geojson_data$type)) && geojson_data$type == "FeatureCollection") {
           return(geojson_data)
         }
       }

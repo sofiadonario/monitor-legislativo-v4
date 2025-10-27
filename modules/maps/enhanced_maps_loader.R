@@ -121,7 +121,7 @@ enhancedMapServer <- function(id, data_source = NULL, pool = NULL) {
     
     # Reactive data management
     map_data <- reactive({
-      if (!is.null(data_source) && is.reactive(data_source)) {
+      if (!isTRUE(is.null(data_source)) && is.reactive(data_source)) {
         data_source()
       } else {
         # Load from file
@@ -349,7 +349,7 @@ simpleMapServer <- function(id, data_source) {
   moduleServer(id, function(input, output, session) {
     
     output$simple_map <- renderLeaflet({
-      data <- if (!is.null(data_source) && is.reactive(data_source)) {
+      data <- if (!isTRUE(is.null(data_source)) && is.reactive(data_source)) {
         data_source()
       } else {
         data.frame(

@@ -258,7 +258,7 @@ API_004_SecurityManager <- list(
   
   # Log initialization report to database
   log_initialization_report = function(results) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(FALSE)
     }
     
@@ -348,9 +348,9 @@ API_004_SecurityManager <- list(
           security_context <- SecurityMiddlewareController$process_security(req, res)
           
           # Check if request should be blocked
-          if (!is.null(security_context$results) && 
-              !is.null(security_context$results$cors_result) &&
-              !is.null(security_context$results$cors_result$block_request) &&
+          if (!isTRUE(is.null(security_context$results)) && 
+              !isTRUE(is.null(security_context$results$cors_result)) &&
+              !isTRUE(is.null(security_context$results$cors_result$block_request)) &&
               security_context$results$cors_result$block_request) {
             
             return(security_context$results$cors_result$response)
@@ -380,7 +380,7 @@ API_004_SecurityManager <- list(
 
 # Database schema for API-004 system
 create_api_004_database_schema <- function() {
-  if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+  if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
     return(FALSE)
   }
   

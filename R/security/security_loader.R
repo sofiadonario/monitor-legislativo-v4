@@ -376,8 +376,7 @@ security_health_check <- function() {
 }
 
 # Auto-initialize in Railway environment
-if (Sys.getenv("RAILWAY_ENVIRONMENT") != "" && 
-    is.null(.GlobalEnv$security_system)) {
+if (Sys.getenv("RAILWAY_ENVIRONMENT") != "" && isTRUE(is.null(.GlobalEnv$security_system))) {
   
   cat("🚂 Railway environment detected - auto-initializing security...\n")
   

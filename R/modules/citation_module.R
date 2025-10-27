@@ -76,7 +76,7 @@ extract_brazilian_legal_metadata <- function(document, validate_metadata = TRUE)
     
     # Content information
     ementa = clean_legal_summary(document$ementa %||% document$summary),
-    texto_integral = !is.null(document$texto) && nchar(document$texto) > 0,
+    texto_integral = !isTRUE(is.null(document$texto)) && nchar(document$texto) > 0,
     
     # Validation metadata
     data_extracao = Sys.time(),
@@ -93,7 +93,7 @@ extract_brazilian_legal_metadata <- function(document, validate_metadata = TRUE)
 
 #' Extract main title from complex Brazilian legal document titles
 extract_main_title <- function(full_title) {
-  if (is.null(full_title) || is.na(full_title)) return("Título não disponível")
+  if (isTRUE(is.null(full_title)) || isTRUE(is.na(full_title))) return("Título não disponível")
   
   # Brazilian legal documents often have complex title structures
   # Pattern: "Lei nº 1234, de 01 de janeiro de 2024. Dispõe sobre..."
@@ -122,7 +122,7 @@ extract_main_title <- function(full_title) {
 
 #' Extract subtitle (ementa) from document title
 extract_subtitle <- function(full_title) {
-  if (is.null(full_title) || is.na(full_title)) return("")
+  if (isTRUE(is.null(full_title)) || isTRUE(is.na(full_title))) return("")
   
   # Look for subtitle after first period
   parts <- strsplit(full_title, "\\.")[[1]]
@@ -139,7 +139,7 @@ extract_issuing_authority <- function(document) {
   authority_fields <- c("autoridade", "authority", "autor", "orgao_emissor")
   
   for (field in authority_fields) {
-    if (!is.null(document[[field]]) && !is.na(document[[field]]) && 
+    if (!isTRUE(is.null(document[[field]])) && !isTRUE(is.na(document[[field]])) && 
         document[[field]] != "") {
       return(standardize_authority_name(document[[field]]))
     }
@@ -164,7 +164,7 @@ extract_issuing_authority <- function(document) {
 
 #' Standardize authority names according to ABNT standards
 standardize_authority_name <- function(authority) {
-  if (is.null(authority) || is.na(authority)) return("AUTORIDADE NÃO IDENTIFICADA")
+  if (isTRUE(is.null(authority)) || isTRUE(is.na(authority))) return("AUTORIDADE NÃO IDENTIFICADA")
   
   # Convert to uppercase (ABNT requirement for legal citations)
   authority <- toupper(trimws(authority))
@@ -189,7 +189,7 @@ standardize_authority_name <- function(authority) {
 #' Extract government level (federal, estadual, municipal)
 extract_government_level <- function(document) {
   # Check state field
-  if (!is.null(document$estado) && document$estado == "DF") {
+  if (!isTRUE(is.null(document$estado)) && document$estado == "DF") {
     return("federal")
   }
   
@@ -206,12 +206,12 @@ extract_government_level <- function(document) {
   }
   
   # Check for municipal indicators
-  if (!is.null(document$municipio) && document$municipio != "") {
+  if (!isTRUE(is.null(document$municipio)) && document$municipio != "") {
     return("municipal")
   }
   
   # Check for state indicators
-  if (!is.null(document$estado) && document$estado != "" && document$estado != "DF") {
+  if (!isTRUE(is.null(document$estado)) && document$estado != "" && document$estado != "DF") {
     return("estadual")
   }
   
@@ -246,7 +246,7 @@ extract_document_number <- function(document) {
 
 #' Standardize Brazilian date formats
 standardize_brazilian_date <- function(date_input) {
-  if (is.null(date_input) || is.na(date_input)) return(Sys.Date())
+  if (isTRUE(is.null(date_input)) || isTRUE(is.na(date_input))) return(Sys.Date())
   
   # If already a Date object
   if (inherits(date_input, "Date")) return(date_input)
@@ -264,7 +264,7 @@ standardize_brazilian_date <- function(date_input) {
       as.Date(date_input, format = pattern)
     }, error = function(e) NULL)
     
-    if (!is.null(parsed_date) && !is.na(parsed_date)) {
+    if (!isTRUE(is.null(parsed_date)) && !is.na(parsed_date)) {
       return(parsed_date)
     }
   }
@@ -311,7 +311,7 @@ validate_brazilian_legal_metadata <- function(metadata) {
   required_fields <- c("titulo_completo", "autoridade_emissor", "data_publicacao")
   
   for (field in required_fields) {
-    if (is.null(metadata[[field]]) || is.na(metadata[[field]]) || 
+    if (isTRUE(is.null(metadata[[field]])) || isTRUE(is.na(metadata[[field]])) || 
         (is.character(metadata[[field]]) && metadata[[field]] == "")) {
       validation_result$errors <- c(validation_result$errors, 
                                    paste("Campo obrigatório ausente:", field))
@@ -334,7 +334,7 @@ validate_brazilian_legal_metadata <- function(metadata) {
   # Calculate completeness score
   all_fields <- names(metadata)[!names(metadata) %in% c("data_extracao", "validacao_realizada", "validacao_resultado")]
   completed_fields <- sum(!sapply(all_fields, function(f) {
-    is.null(metadata[[f]]) || is.na(metadata[[f]]) || 
+    isTRUE(is.null(metadata[[f]])) || isTRUE(is.na(metadata[[f]])) || 
     (is.character(metadata[[f]]) && metadata[[f]] == "")
   }))
   
@@ -351,7 +351,7 @@ extract_origin_organ <- function(document) {
   organ_fields <- c("orgao", "orgao_origem", "organ", "institution")
   
   for (field in organ_fields) {
-    if (!is.null(document[[field]]) && document[[field]] != "") {
+    if (!isTRUE(is.null(document[[field]])) && document[[field]] != "") {
       return(document[[field]])
     }
   }
@@ -403,13 +403,13 @@ extract_jurisdiction <- function(document) {
 
 #' Standardize state code to uppercase
 standardize_state_code <- function(state) {
-  if (is.null(state) || is.na(state)) return("")
+  if (isTRUE(is.null(state)) || isTRUE(is.na(state))) return("")
   return(toupper(trimws(state)))
 }
 
 #' Standardize municipality name
 standardize_municipality_name <- function(municipality) {
-  if (is.null(municipality) || is.na(municipality)) return("")
+  if (isTRUE(is.null(municipality)) || isTRUE(is.na(municipality))) return("")
   
   # Convert to title case and clean
   municipality <- trimws(municipality)
@@ -426,7 +426,7 @@ classify_document_type <- function(document) {
   type_fields <- c("tipo_documento", "tipo", "document_type", "type")
   
   for (field in type_fields) {
-    if (!is.null(document[[field]]) && document[[field]] != "") {
+    if (!isTRUE(is.null(document[[field]])) && document[[field]] != "") {
       return(standardize_document_type(document[[field]]))
     }
   }
@@ -456,7 +456,7 @@ classify_document_type <- function(document) {
 
 #' Standardize document type names
 standardize_document_type <- function(type) {
-  if (is.null(type) || is.na(type)) return("Documento")
+  if (isTRUE(is.null(type)) || isTRUE(is.na(type))) return("Documento")
   
   type <- trimws(tolower(type))
   
@@ -478,7 +478,7 @@ extract_legal_category <- function(document) {
   category_fields <- c("categoria", "category", "materia", "subject")
   
   for (field in category_fields) {
-    if (!is.null(document[[field]]) && document[[field]] != "") {
+    if (!isTRUE(is.null(document[[field]])) && document[[field]] != "") {
       return(document[[field]])
     }
   }
@@ -510,7 +510,7 @@ extract_official_journal_info <- function(document) {
   journal_fields <- c("diario_oficial", "official_journal", "dou", "doe")
   
   for (field in journal_fields) {
-    if (!is.null(document[[field]]) && document[[field]] != "") {
+    if (!isTRUE(is.null(document[[field]])) && document[[field]] != "") {
       return(document[[field]])
     }
   }
@@ -535,7 +535,7 @@ extract_publication_source <- function(document) {
   source_fields <- c("fonte", "source", "publisher", "editora")
   
   for (field in source_fields) {
-    if (!is.null(document[[field]]) && document[[field]] != "") {
+    if (!isTRUE(is.null(document[[field]])) && document[[field]] != "") {
       return(document[[field]])
     }
   }
@@ -561,7 +561,7 @@ extract_official_url <- function(document) {
   url_fields <- c("url", "url_oficial", "link", "uri")
   
   for (field in url_fields) {
-    if (!is.null(document[[field]]) && document[[field]] != "" && 
+    if (!isTRUE(is.null(document[[field]])) && document[[field]] != "" && 
         grepl("^https?://", document[[field]])) {
       return(document[[field]])
     }
@@ -575,7 +575,7 @@ extract_urn_lex <- function(document) {
   urn_fields <- c("urn", "urn_lex", "lex_id")
   
   for (field in urn_fields) {
-    if (!is.null(document[[field]]) && document[[field]] != "" &&
+    if (!isTRUE(is.null(document[[field]])) && document[[field]] != "" &&
         grepl("^urn:lex", document[[field]])) {
       return(document[[field]])
     }
@@ -586,7 +586,7 @@ extract_urn_lex <- function(document) {
 
 #' Clean legal summary/ementa
 clean_legal_summary <- function(summary) {
-  if (is.null(summary) || is.na(summary) || summary == "") return("")
+  if (isTRUE(is.null(summary)) || isTRUE(is.na(summary)) || summary == "") return("")
   
   # Remove extra whitespace and line breaks
   summary <- gsub("\\s+", " ", trimws(summary))
@@ -607,7 +607,7 @@ clean_legal_summary <- function(summary) {
 generate_abnt_citation_enhanced <- function(metadata, include_access_date = TRUE, short_format = FALSE) {
   
   # Validate metadata
-  if (is.null(metadata$titulo_completo) || metadata$titulo_completo == "") {
+  if (isTRUE(is.null(metadata$titulo_completo)) || metadata$titulo_completo == "") {
     return("ERRO: Título do documento não disponível")
   }
   
@@ -620,13 +620,13 @@ generate_abnt_citation_enhanced <- function(metadata, include_access_date = TRUE
   # 2. TITLE (italics simulation with **bold**, required)
   title <- metadata$titulo_principal %||% metadata$titulo_completo
   
-  if (!is.null(metadata$numero_documento) && metadata$numero_documento != "") {
+  if (!isTRUE(is.null(metadata$numero_documento)) && metadata$numero_documento != "") {
     # Include document number in title for legal docs
     title <- paste(title, "nº", metadata$numero_documento)
   }
   
   # Add date to title if available and not already included
-  if (!is.null(metadata$data_publicacao) && !grepl("\\d{4}", title)) {
+  if (!isTRUE(is.null(metadata$data_publicacao)) && !grepl("\\d{4}", title)) {
     date_formatted <- format_abnt_date(metadata$data_publicacao)
     title <- paste(title, ", de", date_formatted)
   }
@@ -634,9 +634,9 @@ generate_abnt_citation_enhanced <- function(metadata, include_access_date = TRUE
   citation_parts <- c(citation_parts, paste0("**", title, "**."))
   
   # 3. SUBTITLE/EMENTA (if available)
-  if (!is.null(metadata$subtitulo) && metadata$subtitulo != "") {
+  if (!isTRUE(is.null(metadata$subtitulo)) && metadata$subtitulo != "") {
     citation_parts <- c(citation_parts, paste0(metadata$subtitulo, "."))
-  } else if (!is.null(metadata$ementa) && metadata$ementa != "" && !short_format) {
+  } else if (!isTRUE(is.null(metadata$ementa)) && metadata$ementa != "" && !short_format) {
     ementa <- substr(metadata$ementa, 1, 100)
     if (nchar(metadata$ementa) > 100) ementa <- paste0(ementa, "...")
     citation_parts <- c(citation_parts, paste0(ementa, "."))
@@ -649,7 +649,7 @@ generate_abnt_citation_enhanced <- function(metadata, include_access_date = TRUE
   }
   
   # 5. OFFICIAL JOURNAL (if available)
-  if (!is.null(metadata$diario_oficial) && metadata$diario_oficial != "") {
+  if (!isTRUE(is.null(metadata$diario_oficial)) && metadata$diario_oficial != "") {
     journal_info <- paste(metadata$diario_oficial)
     if (!is.null(metadata$data_publicacao)) {
       journal_info <- paste(journal_info, format_abnt_date(metadata$data_publicacao), sep = ", ")
@@ -658,7 +658,7 @@ generate_abnt_citation_enhanced <- function(metadata, include_access_date = TRUE
   }
   
   # 6. ONLINE ACCESS (if URL available)
-  if (!is.null(metadata$url_oficial) && metadata$url_oficial != "") {
+  if (!isTRUE(is.null(metadata$url_oficial)) && metadata$url_oficial != "") {
     citation_parts <- c(citation_parts, paste0("Disponível em: ", metadata$url_oficial, "."))
     
     if (include_access_date) {
@@ -685,7 +685,7 @@ build_publication_info_abnt <- function(metadata) {
   if (!is.null(metadata$estado)) {
     if (metadata$estado == "DF") {
       pub_parts <- c(pub_parts, "Brasília, DF")
-    } else if (!is.null(metadata$municipio) && metadata$municipio != "") {
+    } else if (!isTRUE(is.null(metadata$municipio)) && metadata$municipio != "") {
       pub_parts <- c(pub_parts, paste(metadata$municipio, metadata$estado, sep = ", "))
     } else {
       state_name <- get_full_state_name(metadata$estado)
@@ -710,7 +710,7 @@ build_publication_info_abnt <- function(metadata) {
 
 #' Format date according to ABNT standards (day month abbreviated year)
 format_abnt_date <- function(date) {
-  if (is.null(date) || is.na(date)) return("")
+  if (isTRUE(is.null(date)) || isTRUE(is.na(date))) return("")
   
   if (!inherits(date, "Date")) {
     date <- as.Date(date)
@@ -1075,7 +1075,7 @@ citationServer <- function(id, reactive_data) {
       filtered_data <- data
       
       # Search term filter
-      if (!is.null(input$document_search) && input$document_search != "") {
+      if (!isTRUE(is.null(input$document_search)) && input$document_search != "") {
         search_pattern <- paste0(".*", input$document_search, ".*")
         filtered_data <- filtered_data[
           grepl(search_pattern, filtered_data$titulo, ignore.case = TRUE) |
@@ -1183,7 +1183,7 @@ citationServer <- function(id, reactive_data) {
       selected_docs <- values$found_documents[values$selected_rows, ]
 
       # Show progress for bulk operations
-      if (!is.null(selected_docs) && is.data.frame(selected_docs) && nrow(selected_docs) > 10) {
+      if (!isTRUE(is.null(selected_docs)) && is.data.frame(selected_docs) && nrow(selected_docs) > 10) {
         withProgress(message = 'Gerando citações...', value = 0, {
           citations <- lapply(1:nrow(selected_docs), function(i) {
             incProgress(1/nrow(selected_docs), detail = paste("Documento", i, "de", nrow(selected_docs)))
@@ -1208,7 +1208,7 @@ citationServer <- function(id, reactive_data) {
             citation <- citations[[i]]
             
             # Add validation indicator
-            validation_icon <- if (!is.null(citation$validation) && citation$validation$valid) {
+            validation_icon <- if (!isTRUE(is.null(citation$validation)) && citation$validation$valid) {
               icon("check-circle", style = "color: green;")
             } else if (!is.null(citation$validation)) {
               icon("exclamation-triangle", style = "color: orange;")
@@ -1224,7 +1224,7 @@ citationServer <- function(id, reactive_data) {
                 span(paste("Citação", i), style = "margin-left: 5px; font-weight: bold;")
               ),
               p(citation$citation %||% citation, style = "margin: 5px 0;"),
-              if (!is.null(citation$validation) && length(citation$validation$warnings) > 0) {
+              if (!isTRUE(is.null(citation$validation)) && length(citation$validation$warnings) > 0) {
                 div(
                   style = "font-size: 0.8em; color: orange; margin-top: 5px;",
                   "⚠️ ", paste(citation$validation$warnings, collapse = ", ")
@@ -1324,18 +1324,18 @@ citationServer <- function(id, reactive_data) {
       
       # Title (italics)
       title <- paste0("*", metadata$titulo_principal %||% metadata$titulo_completo, "*")
-      if (!is.null(metadata$numero_documento) && metadata$numero_documento != "") {
+      if (!isTRUE(is.null(metadata$numero_documento)) && metadata$numero_documento != "") {
         title <- paste(title, "nº", metadata$numero_documento)
       }
       citation_parts <- c(citation_parts, paste0(title, "."))
       
       # Publisher and location
-      if (!is.null(metadata$fonte_publicacao) && metadata$fonte_publicacao != "") {
+      if (!isTRUE(is.null(metadata$fonte_publicacao)) && metadata$fonte_publicacao != "") {
         citation_parts <- c(citation_parts, paste0(metadata$fonte_publicacao, "."))
       }
       
       # URL if available
-      if ("include_url" %in% options && !is.null(metadata$url_oficial) && metadata$url_oficial != "") {
+      if ("include_url" %in% options && !isTRUE(is.null(metadata$url_oficial)) && metadata$url_oficial != "") {
         citation_parts <- c(citation_parts, paste0("Disponível em: ", metadata$url_oficial))
       }
       
@@ -1358,12 +1358,12 @@ citationServer <- function(id, reactive_data) {
       citation_parts <- c(citation_parts, paste0(title, "."))
       
       # Publisher
-      if (!is.null(metadata$fonte_publicacao) && metadata$fonte_publicacao != "") {
+      if (!isTRUE(is.null(metadata$fonte_publicacao)) && metadata$fonte_publicacao != "") {
         citation_parts <- c(citation_parts, paste0(metadata$fonte_publicacao, "."))
       }
       
       # URL if available
-      if ("include_url" %in% options && !is.null(metadata$url_oficial) && metadata$url_oficial != "") {
+      if ("include_url" %in% options && !isTRUE(is.null(metadata$url_oficial)) && metadata$url_oficial != "") {
         citation_parts <- c(citation_parts, paste0("Retrieved from ", metadata$url_oficial))
       }
       
@@ -1384,7 +1384,7 @@ citationServer <- function(id, reactive_data) {
       
       # Publication info
       pub_info <- c()
-      if (!is.null(metadata$fonte_publicacao) && metadata$fonte_publicacao != "") {
+      if (!isTRUE(is.null(metadata$fonte_publicacao)) && metadata$fonte_publicacao != "") {
         pub_info <- c(pub_info, metadata$fonte_publicacao)
       }
       if (!is.null(metadata$data_publicacao)) {
@@ -1396,7 +1396,7 @@ citationServer <- function(id, reactive_data) {
       }
       
       # URL if available
-      if ("include_url" %in% options && !is.null(metadata$url_oficial) && metadata$url_oficial != "") {
+      if ("include_url" %in% options && !isTRUE(is.null(metadata$url_oficial)) && metadata$url_oficial != "") {
         citation_parts <- c(citation_parts, metadata$url_oficial)
       }
       
@@ -1417,7 +1417,7 @@ citationServer <- function(id, reactive_data) {
       
       # Publisher and year
       pub_info <- c()
-      if (!is.null(metadata$fonte_publicacao) && metadata$fonte_publicacao != "") {
+      if (!isTRUE(is.null(metadata$fonte_publicacao)) && metadata$fonte_publicacao != "") {
         pub_info <- c(pub_info, metadata$fonte_publicacao)
       }
       if (!is.null(metadata$data_publicacao)) {
@@ -1446,11 +1446,11 @@ citationServer <- function(id, reactive_data) {
         paste0("  institution = {", metadata$fonte_publicacao %||% "", "},")
       )
       
-      if (!is.null(metadata$url_oficial) && metadata$url_oficial != "") {
+      if (!isTRUE(is.null(metadata$url_oficial)) && metadata$url_oficial != "") {
         bibtex_parts <- c(bibtex_parts, paste0("  url = {", metadata$url_oficial, "},"))
       }
       
-      if (!is.null(metadata$ementa) && metadata$ementa != "") {
+      if (!isTRUE(is.null(metadata$ementa)) && metadata$ementa != "") {
         bibtex_parts <- c(bibtex_parts, paste0("  note = {", substr(metadata$ementa, 1, 100), "},"))
       }
       
@@ -1462,7 +1462,7 @@ citationServer <- function(id, reactive_data) {
     #' Generate Custom Citation
     #' Allows users to create institutional-specific citation formats
     generate_custom_citation <- function(metadata, template, options) {
-      if (is.null(template) || template == "") {
+      if (isTRUE(is.null(template)) || template == "") {
         return("Template de formato personalizado não definido")
       }
       

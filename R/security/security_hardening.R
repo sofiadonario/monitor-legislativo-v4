@@ -164,7 +164,7 @@ SecurityHardening <- R6::R6Class(
     
     # Validate and sanitize text input
     validate_text_input = function(input_text, field_name = "input", max_length = NULL) {
-      if (is.null(input_text) || is.na(input_text)) {
+      if (isTRUE(is.null(input_text)) || isTRUE(is.na(input_text))) {
         return(list(valid = TRUE, sanitized = "", warnings = character()))
       }
       
@@ -215,7 +215,7 @@ SecurityHardening <- R6::R6Class(
     
     # Validate search parameters
     validate_search_params = function(search_params) {
-      if (is.null(search_params) || length(search_params) == 0) {
+      if (isTRUE(is.null(search_params)) || length(search_params) == 0) {
         return(list(valid = TRUE, sanitized = list()))
       }
       
@@ -252,7 +252,7 @@ SecurityHardening <- R6::R6Class(
     
     # Validate file upload
     validate_file_upload = function(file_info) {
-      if (is.null(file_info) || !is.list(file_info)) {
+      if (isTRUE(is.null(file_info)) || !is.list(file_info)) {
         return(list(valid = FALSE, error = "Invalid file information"))
       }
       
@@ -320,7 +320,7 @@ SecurityHardening <- R6::R6Class(
         return(TRUE)
       }
       
-      if (is.null(token) || token == "") {
+      if (isTRUE(is.null(token)) || token == "") {
         private$log_security_violation("missing_csrf_token", "csrf_validation", session$token, "No token provided")
         return(FALSE)
       }
@@ -397,7 +397,7 @@ SecurityHardening <- R6::R6Class(
       }
       
       # Check if in lockout period
-      if (!is.null(rate_data$lockout_until) && current_time < rate_data$lockout_until) {
+      if (!isTRUE(is.null(rate_data$lockout_until)) && current_time < rate_data$lockout_until) {
         private$log_security_violation("rate_limit_lockout", "rate_limiting", ip_address, 
                                      paste("Locked until", rate_data$lockout_until))
         return(list(
@@ -596,7 +596,7 @@ SecurityHardening <- R6::R6Class(
       
       for (token in ls(self$csrf_tokens)) {
         token_info <- self$csrf_tokens[[token]]
-        if (!is.null(token_info) && current_time > token_info$expires) {
+        if (!isTRUE(is.null(token_info)) && current_time > token_info$expires) {
           expired_tokens <- c(expired_tokens, token)
         }
       }

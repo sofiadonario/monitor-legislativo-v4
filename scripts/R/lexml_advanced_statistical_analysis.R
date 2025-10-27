@@ -394,7 +394,7 @@ perform_lexml_ngram_analysis <- function(db_pool = NULL, n_size = 2, min_freq = 
       
       category_terms <- list()
       for (cat in unique(text_data$categoria)) {
-        if (!is.na(cat) && cat != "") {
+        if (!isTRUE(is.na(cat)) && cat != "") {
           cat_texts <- text_data[text_data$categoria == cat, "titulo"]
           if (length(cat_texts) > 5) {
             cat_corpus <- VCorpus(VectorSource(cat_texts)) %>%

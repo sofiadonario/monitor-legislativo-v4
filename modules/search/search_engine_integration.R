@@ -267,19 +267,19 @@ get_search_capabilities <- function() {
 optimize_search_parameters <- function(query_params) {
   
   # Limit result set size for performance
-  if (is.null(query_params$limit) || query_params$limit > 1000) {
+  if (isTRUE(is.null(query_params$limit)) || query_params$limit > 1000) {
     query_params$limit <- 1000
   }
   
   # Optimize for empty queries
-  if (is.null(query_params$query) || nchar(trimws(query_params$query)) == 0) {
+  if (isTRUE(is.null(query_params$query)) || nchar(trimws(query_params$query)) == 0) {
     # For browse-all queries, use simpler sorting
     query_params$sort_by <- "date_desc"
     query_params$enable_ranking <- FALSE
   }
   
   # Geographic optimization
-  if (!is.null(query_params$filters$estado) && query_params$filters$estado != "all") {
+  if (!isTRUE(is.null(query_params$filters$estado)) && query_params$filters$estado != "all") {
     # State-specific searches can use more focused indexes
     query_params$optimization_hint <- "geographic"
   }

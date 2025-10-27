@@ -233,7 +233,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             state_data <- self$get_fallback_state_data()
           }
           
-          if (is.null(state_data) || nrow(state_data) == 0) {
+          if (isTRUE(is.null(state_data)) || nrow(state_data) == 0) {
             cat("❌ No state data available for choropleth\n")
             return(NULL)
           }
@@ -315,7 +315,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             municipality_data <- self$get_fallback_municipality_data(state_filter, top_n)
           }
           
-          if (is.null(municipality_data) || nrow(municipality_data) == 0) {
+          if (isTRUE(is.null(municipality_data)) || nrow(municipality_data) == 0) {
             cat("⚠️ No municipality data available, falling back to states\n")
             return(self$create_state_choropleth(mode, color_scheme, bins))
           }
@@ -357,7 +357,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Data preparation methods
       prepare_visualization_data = function(aggregated_data, mode, level = "state") {
         
-        if (is.null(aggregated_data) || nrow(aggregated_data) == 0) {
+        if (isTRUE(is.null(aggregated_data)) || nrow(aggregated_data) == 0) {
           return(NULL)
         }
         
@@ -467,7 +467,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
         
         tryCatch({
           
-          if (is.null(viz_data) || nrow(viz_data) == 0) {
+          if (isTRUE(is.null(viz_data)) || nrow(viz_data) == 0) {
             return(self$create_error_map("No visualization data available"))
           }
           
@@ -611,7 +611,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
         
         tryCatch({
 
-          if (is.null(data) || !is.data.frame(data) || nrow(data) < 3) {
+          if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) < 3) {
             return(data)  # Not enough data for statistics
           }
           
@@ -698,13 +698,13 @@ if (requireNamespace("R6", quietly = TRUE)) {
       get_color_palette = function(mode, color_scheme = NULL, values = NULL) {
         
         # Determine which color scheme to use
-        if (!is.null(color_scheme) && color_scheme %in% names(DENSITY_VIZ_CONFIG$color_schemes)) {
+        if (!isTRUE(is.null(color_scheme)) && color_scheme %in% names(DENSITY_VIZ_CONFIG$color_schemes)) {
           return(DENSITY_VIZ_CONFIG$color_schemes[[color_scheme]])
         }
         
         # Use mode-specific default color scheme
         mode_config <- DENSITY_VIZ_CONFIG$modes[[mode]]
-        if (!is.null(mode_config) && !is.null(mode_config$color_scheme)) {
+        if (!isTRUE(is.null(mode_config)) && !is.null(mode_config$color_scheme)) {
           
           if (mode_config$color_scheme %in% names(DENSITY_VIZ_CONFIG$color_schemes)) {
             return(DENSITY_VIZ_CONFIG$color_schemes[[mode_config$color_scheme]])
@@ -904,7 +904,7 @@ create_functional_density_visualizer <- function(db_pool, geographic_aggregator 
           ")
         })
 
-        if (is.null(state_data) || !is.data.frame(state_data) || nrow(state_data) == 0) {
+        if (isTRUE(is.null(state_data)) || !is.data.frame(state_data) || nrow(state_data) == 0) {
           return(leaflet() %>% addTiles() %>%
                  setView(-47.9218, -15.8267, 4) %>%
                  addMarkers(-47.9218, -15.8267, popup = "No data available"))
@@ -1016,7 +1016,7 @@ get_density_summary = function(db_pool) {
 #' @return Validation results
 validate_visualization_data = function(data, level = "state") {
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     return(list(valid = FALSE, error = "No data provided"))
   }
   

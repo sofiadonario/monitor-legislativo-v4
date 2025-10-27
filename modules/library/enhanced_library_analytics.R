@@ -166,14 +166,14 @@ calculate_document_relevance <- function(documents_df, query, user_context = NUL
       ),
       # Category relevance based on user behavior
       category_score = case_when(
-        !is.null(user_context) && categoria %in% user_context$preferred_categories ~ 2,
+        !isTRUE(is.null(user_context)) && categoria %in% user_context$preferred_categories ~ 2,
         categoria == "Jurisprudência" ~ 1.5,  # Jurisprudence is highly relevant
         categoria == "Legislação" ~ 1.3,      # Legislation is also important
         TRUE ~ 1
       ),
       # Geographic relevance
       geographic_score = case_when(
-        !is.null(user_context) && estado %in% user_context$preferred_states ~ 2,
+        !isTRUE(is.null(user_context)) && estado %in% user_context$preferred_states ~ 2,
         estado %in% c("SP", "MG", "RJ", "DF") ~ 1.2,  # Major states
         TRUE ~ 1
       )
@@ -272,7 +272,7 @@ create_faceted_filters <- function(documents_df, current_filters = list()) {
 
 # Predictive filtering based on user patterns
 suggest_relevant_filters <- function(user_search_history, documents_df) {
-  if (length(user_search_history) == 0 || nrow(documents_df) == 0) {
+  if (isTRUE(length(user_search_history) == 0) || nrow(documents_df) == 0) {
     return(list(
       suggested_categories = character(),
       suggested_states = character(), 
@@ -387,13 +387,13 @@ find_similar_documents <- function(target_doc_id, documents_df, similarity_thres
 
 # Text similarity calculation (simplified)
 calculate_text_similarity <- function(text1, text2) {
-  if (is.na(text1) || is.na(text2) || nchar(text1) < 3 || nchar(text2) < 3) return(0)
+  if (isTRUE(is.na(text1)) || isTRUE(is.na(text2)) || nchar(text1) < 3 || nchar(text2) < 3) return(0)
   
   # Extract words and calculate Jaccard similarity
   words1 <- unique(str_extract_all(tolower(text1), "\\b[A-Za-zÀ-ÿ]{3,}\\b")[[1]])
   words2 <- unique(str_extract_all(tolower(text2), "\\b[A-Za-zÀ-ÿ]{3,}\\b")[[1]])
   
-  if (length(words1) == 0 || length(words2) == 0) return(0)
+  if (isTRUE(length(words1) == 0) || length(words2) == 0) return(0)
   
   intersection <- length(intersect(words1, words2))
   union <- length(union(words1, words2))
@@ -462,7 +462,7 @@ identify_trending_documents <- function(documents_df, access_log = NULL, time_wi
     arrange(desc(as.Date(data_documento)))
   
   # If access log is available, use real usage data
-  if (!is.null(access_log) && nrow(access_log) > 0) {
+  if (!isTRUE(is.null(access_log)) && nrow(access_log) > 0) {
     trending_by_usage <- access_log %>%
       filter(access_date >= recent_cutoff) %>%
       count(document_id, name = "access_count") %>%
@@ -625,17 +625,17 @@ optimize_database_query <- function(filters = list(), search_term = "", sort_by 
   conditions <- c()
   
   # Use indexed columns for filtering
-  if (!is.null(filters$categories) && length(filters$categories) > 0) {
+  if (!isTRUE(is.null(filters$categories)) && length(filters$categories) > 0) {
     category_list <- paste0("'", filters$categories, "'", collapse = ",")
     conditions <- c(conditions, sprintf("categoria IN (%s)", category_list))
   }
   
-  if (!is.null(filters$states) && length(filters$states) > 0) {
+  if (!isTRUE(is.null(filters$states)) && length(filters$states) > 0) {
     state_list <- paste0("'", filters$states, "'", collapse = ",")
     conditions <- c(conditions, sprintf("estado IN (%s)", state_list))
   }
   
-  if (!is.null(filters$date_range) && length(filters$date_range) == 2) {
+  if (!isTRUE(is.null(filters$date_range)) && length(filters$date_range) == 2) {
     conditions <- c(conditions, 
                    sprintf("data_documento BETWEEN '%s' AND '%s'", 
                           filters$date_range[1], filters$date_range[2]))

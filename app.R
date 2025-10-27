@@ -5,9 +5,20 @@
 # Uses your modules + data service + optimized architecture
 # ==============================================================================
 
-# Note: shinydashboard is preloaded via R/000_load_shinydashboard.R
-# and will be loaded again by global_integrated.R below
-options(shiny.fullstacktrace = TRUE)
+# Note: shinydashboard DISABLED in v44 (R/000_load_shinydashboard.R commented out)
+# Community diagnosis: shinydashboard causes extent=0 error with minimal UI
+options(
+  shiny.fullstacktrace = TRUE,
+  shiny.trace = TRUE,
+  error = quote({
+    cat("\n========================================\n")
+    cat("🚨 ERROR IN R SESSION:\n")
+    print(geterrmessage())
+    cat("Traceback:\n")
+    traceback(max.lines = 50)
+    cat("========================================\n")
+  })
+)
 
 # Health check endpoint (Railway requirement)
 if (is.null(getOption("shiny.http.response.filter"))) {
@@ -51,13 +62,17 @@ if (length(missing_pkgs) > 0) {
 cat("✅ All required packages available\n\n")
 
 # Load optimized global setup (DB pool, cached functions, preloaded data)
-tryCatch({
-  source("global_integrated.R", local = TRUE)
-  cat("✅ Global configuration loaded\n")
-}, error = function(e) {
-  cat("❌ FATAL: global_integrated.R failed:", conditionMessage(e), "\n")
-  stop(e)
-})
+# FIX v56: SKIP sourcing global_integrated.R + use FULL ui.R/server.R from git
+# Define minimal variables needed by app
+DB_AVAILABLE <- FALSE
+cat("⚠️  SKIPPING global_integrated.R (v56 - with full UI/server)\n")
+# tryCatch({
+#   source("global_integrated.R", local = TRUE)
+#   cat("✅ Global configuration loaded\n")
+# }, error = function(e) {
+#   cat("❌ FATAL: global_integrated.R failed:", conditionMessage(e), "\n")
+#   stop(e)
+# })
 
 # Load your existing UI (keep your comprehensive UI as-is)
 tryCatch({
@@ -82,7 +97,7 @@ cat("\n========================================\n")
 cat("✅ APPLICATION READY\n")
 cat("   Port: ", getOption("shiny.port"), "\n")
 cat("   Health: /health\n")
-cat("   Database: ", if (DB_AVAILABLE) "Connected" else "Fallback", "\n")
+cat("   Database: ", if (isTRUE(DB_AVAILABLE)) "Connected" else "Fallback", "\n")
 cat("========================================\n\n")
 
 shinyApp(ui = ui, server = server)

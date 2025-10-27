@@ -86,7 +86,7 @@ extract_legislative_features <- function(documents, text_column = "text") {
   
   for (i in 1:nrow(documents)) {
     doc_text <- documents[[text_column]][i]
-    if (is.na(doc_text) || nchar(doc_text) == 0) {
+    if (isTRUE(is.na(doc_text)) || nchar(doc_text) == 0) {
       # Create zero vector for missing documents
       feature_vector <- rep(0, length(unlist(transport_keywords)) + 
                           length(unlist(legal_instruments)) + 
@@ -159,7 +159,7 @@ extract_legislative_features <- function(documents, text_column = "text") {
 #' @param documents Original documents with metadata
 #' @return Document classification results
 classify_documents_simple <- function(features, documents) {
-  if (nrow(features) == 0 || ncol(features) == 0) {
+  if (isTRUE(nrow(features) == 0) || ncol(features) == 0) {
     warning("No features available for classification")
     return(data.frame(
       document_id = 1:nrow(documents),

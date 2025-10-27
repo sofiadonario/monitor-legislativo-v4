@@ -430,7 +430,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           # Check dependencies
           if (!is.null(config$depends_on)) {
             deps_ready <- all(sapply(config$depends_on, function(dep) {
-              !is.null(self$component_status[[dep]]) && 
+              !isTRUE(is.null(self$component_status[[dep]])) && 
               self$component_status[[dep]]$status == "operational"
             }))
             
@@ -495,7 +495,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
                 force_refresh = config$initialization_params$force_refresh
               )
               
-              if (!is.null(ibge_system) && ibge_system$status == "operational") {
+              if (!isTRUE(is.null(ibge_system)) && ibge_system$status == "operational") {
                 self$ibge_system <- ibge_system
                 list(status = "operational", component = ibge_system)
               } else {
@@ -610,21 +610,21 @@ if (requireNamespace("R6", quietly = TRUE)) {
           total_connections <- 0
           
           # Connect density visualizer to IBGE system
-          if (!is.null(self$density_visualizer) && !is.null(self$ibge_system)) {
+          if (!isTRUE(is.null(self$density_visualizer)) && !is.null(self$ibge_system)) {
             # Connection logic would go here
             connections_established <- connections_established + 1
           }
           total_connections <- total_connections + 1
           
           # Connect leaflet manager to density visualizer
-          if (!is.null(self$leaflet_manager) && !is.null(self$density_visualizer)) {
+          if (!isTRUE(is.null(self$leaflet_manager)) && !is.null(self$density_visualizer)) {
             # Connection logic would go here
             connections_established <- connections_established + 1
           }
           total_connections <- total_connections + 1
           
           # Connect controls to leaflet manager
-          if (!is.null(self$controls_manager) && !is.null(self$leaflet_manager)) {
+          if (!isTRUE(is.null(self$controls_manager)) && !is.null(self$leaflet_manager)) {
             # Connection logic would go here
             connections_established <- connections_established + 1
           }
@@ -659,7 +659,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           # This would set up Shiny reactive coordination between components
           # For now, we'll just indicate that coordination is being setup
           
-          if (!is.null(self$session) && !is.null(self$interactivity_manager)) {
+          if (!isTRUE(is.null(self$session)) && !is.null(self$interactivity_manager)) {
             
             # Setup enhanced map observers
             observers <- setup_enhanced_map_observers(
@@ -928,7 +928,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           for (component_name in failed_components) {
             config <- LEAFLET_INTEGRATION_CONFIG$components[[component_name]]
             
-            if (!is.null(config) && config$fallback_available) {
+            if (!isTRUE(is.null(config)) && config$fallback_available) {
               cat("    🔧 Attempting recovery for", component_name, "\n")
               
               recovery_result <- self$initialize_single_component(component_name, config)
@@ -1026,17 +1026,17 @@ if (requireNamespace("R6", quietly = TRUE)) {
         cat("🧹 Cleaning up system resources...\n")
         
         # Clear component caches
-        if (!is.null(self$density_visualizer) && 
+        if (!isTRUE(is.null(self$density_visualizer)) && 
             "clear_cache" %in% names(self$density_visualizer)) {
           self$density_visualizer$clear_cache()
         }
         
-        if (!is.null(self$controls_manager) && 
+        if (!isTRUE(is.null(self$controls_manager)) && 
             "clear_cache" %in% names(self$controls_manager)) {
           self$controls_manager$clear_cache()
         }
         
-        if (!is.null(self$interactivity_manager) && 
+        if (!isTRUE(is.null(self$interactivity_manager)) && 
             "clear_interaction_cache" %in% names(self$interactivity_manager)) {
           self$interactivity_manager$clear_interaction_cache()
         }

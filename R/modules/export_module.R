@@ -55,7 +55,7 @@ monitor_memory_usage <- function() {
 
 #' Estimate memory requirement for dataset
 estimate_memory_requirement <- function(data, format) {
-  if (is.null(data) || nrow(data) == 0) return(0)
+  if (isTRUE(is.null(data)) || nrow(data) == 0) return(0)
   
   # Base memory requirement
   base_size_mb <- as.numeric(object.size(data)) / 1024^2
@@ -102,7 +102,7 @@ check_export_feasibility <- function(data, format) {
 
 #' Split large dataset into chunks for memory-efficient processing
 chunk_dataset <- function(data, chunk_size = 5000) {
-  if (is.null(data) || !is.data.frame(data) || nrow(data) <= chunk_size) {
+  if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) <= chunk_size) {
     return(list(data))
   }
   
@@ -344,7 +344,7 @@ convert_to_endnote_xml <- function(data, options = NULL) {
 #' Enhanced CSV conversion with memory optimization
 convert_to_csv_enhanced <- function(data, options = NULL) {
   # Use data.table for memory efficiency with large datasets
-  if (!is.null(data) && is.data.frame(data) && nrow(data) > 50000) {
+  if (!isTRUE(is.null(data)) && is.data.frame(data) && nrow(data) > 50000) {
     temp_file <- tempfile(fileext = ".csv")
     
     # Write in chunks to avoid memory issues
@@ -377,7 +377,7 @@ convert_to_csv_enhanced <- function(data, options = NULL) {
 
 #' Enhanced Excel conversion with memory optimization
 convert_to_xlsx_enhanced <- function(data, options = NULL) {
-  if (!is.null(data) && is.data.frame(data) && nrow(data) > 100000) {
+  if (!isTRUE(is.null(data)) && is.data.frame(data) && nrow(data) > 100000) {
     # For very large datasets, recommend chunked export
     return("Dataset muito grande para Excel. Use exportação em lote ou formato CSV.")
   }
@@ -881,7 +881,7 @@ exportServer <- function(id, reactive_data) {
       }
 
       # Apply maximum records limit
-      if (!is.null(export_data) && is.data.frame(export_data) && nrow(export_data) > input$max_records) {
+      if (!isTRUE(is.null(export_data)) && is.data.frame(export_data) && nrow(export_data) > input$max_records) {
         export_data <- export_data[1:input$max_records, ]
       }
       
@@ -896,7 +896,7 @@ exportServer <- function(id, reactive_data) {
       }
       
       # Select only requested columns
-      if (!is.null(input$export_columns) && length(input$export_columns) > 0) {
+      if (!isTRUE(is.null(input$export_columns)) && length(input$export_columns) > 0) {
         available_columns <- intersect(input$export_columns, names(export_data))
         if (length(available_columns) > 0) {
           export_data <- export_data[, available_columns, drop = FALSE]
@@ -904,7 +904,7 @@ exportServer <- function(id, reactive_data) {
       }
       
       values$export_data <- export_data
-      values$export_ready <- !is.null(export_data) && nrow(export_data) > 0
+      values$export_ready <- !isTRUE(is.null(export_data)) && nrow(export_data) > 0
     })
     
     # Data preview

@@ -602,7 +602,7 @@ geographicServer <- function(id, reactive_data) {
       }
       
       # State filter
-      if (!is.null(input$state_filter) && !"all" %in% input$state_filter) {
+      if (!isTRUE(is.null(input$state_filter)) && !"all" %in% input$state_filter) {
         filtered_data <- filtered_data[filtered_data$estado %in% input$state_filter, ]
       }
       
@@ -642,7 +642,7 @@ geographicServer <- function(id, reactive_data) {
     
     # Calculate geographic statistics
     calculate_geographic_stats <- function(data, analysis_type) {
-      if (is.null(data) || nrow(data) == 0) return(NULL)
+      if (isTRUE(is.null(data)) || nrow(data) == 0) return(NULL)
       
       tryCatch({
         stats <- switch(analysis_type,
@@ -713,13 +713,13 @@ geographicServer <- function(id, reactive_data) {
         addScaleBar(position = "bottomleft")
       
       # Add state boundaries if available
-      if (!is.null(values$state_boundaries) && nrow(values$state_boundaries) > 0) {
+      if (!isTRUE(is.null(values$state_boundaries)) && nrow(values$state_boundaries) > 0) {
         
         # Create choropleth data if analysis type is appropriate
         if (input$analysis_type %in% c("density", "category", "comparison")) {
           
           # Join geographic stats with boundaries
-          if (!is.null(values$geographic_stats) && is.data.frame(values$geographic_stats)) {
+          if (!isTRUE(is.null(values$geographic_stats)) && is.data.frame(values$geographic_stats)) {
             
             # Create color palette based on analysis type
             if (input$analysis_type == "density") {
@@ -778,7 +778,7 @@ geographicServer <- function(id, reactive_data) {
       }
       
       # Add sample markers for document locations if no boundaries
-      if (is.null(values$state_boundaries) && !is.null(values$enhanced_documents)) {
+      if (isTRUE(is.null(values$state_boundaries)) && !is.null(values$enhanced_documents)) {
         # Create sample markers based on enhanced documents
         sample_coords <- data.frame(
           lat = runif(min(20, nrow(values$enhanced_documents)), -30, 5),

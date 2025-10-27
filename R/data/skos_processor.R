@@ -579,7 +579,7 @@ parse_rdf_vocabulary <- function(data) {
 
 #' Normalize legal terms to standard format
 normalize_legal_term <- function(term) {
-  if (is.null(term) || is.na(term)) return(NA_character_)
+  if (isTRUE(is.null(term)) || isTRUE(is.na(term))) return(NA_character_)
   
   # Clean and normalize
   term <- str_trim(term)
@@ -591,7 +591,7 @@ normalize_legal_term <- function(term) {
 
 #' Normalize alternative labels
 normalize_alt_labels <- function(labels) {
-  if (is.null(labels) || length(labels) == 0) return(character())
+  if (isTRUE(is.null(labels)) || length(labels) == 0) return(character())
   
   if (is.character(labels)) {
     return(sapply(labels, normalize_legal_term, USE.NAMES = FALSE))
@@ -628,7 +628,7 @@ calculate_concept_weight <- function(concept_raw, vocab_type) {
 
 #' Generate unique concept ID
 generate_concept_id <- function(label, uri) {
-  if (!is.na(label) && nchar(label) > 0) {
+  if (!isTRUE(is.na(label)) && nchar(label) > 0) {
     # Use normalized label as base
     base <- str_replace_all(tolower(label), "[^a-z0-9]", "_")
     base <- str_replace_all(base, "_+", "_")
@@ -643,7 +643,7 @@ generate_concept_id <- function(label, uri) {
 
 #' Safe date parsing
 parse_date_safe <- function(date_string) {
-  if (is.null(date_string) || is.na(date_string)) return(NA)
+  if (isTRUE(is.null(date_string)) || isTRUE(is.na(date_string))) return(NA)
   
   tryCatch({
     as.Date(date_string)
@@ -671,7 +671,7 @@ calculate_average_depth <- function(concepts) {
     current_broader <- concept$broader
     visited <- character()
     
-    while (length(current_broader) > 0 && !current_broader[1] %in% visited) {
+    while (isTRUE(length(current_broader) > 0) && !current_broader[1] %in% visited) {
       depth <- depth + 1
       visited <- c(visited, current_broader[1])
       # Find parent concept
@@ -705,7 +705,7 @@ calculate_relationship_density <- function(relationships) {
 }
 
 # Null coalescing operator
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || is.na(x)) y else x
+`%||%` <- function(x, y) if (isTRUE(is.null(x)) || isTRUE(length(x) == 0) || isTRUE(is.na(x))) y else x
 
 cat("✅ SKOS Vocabulary Processor loaded - Phase 2 Week 3 Implementation\n")
 cat("   Semantic processing for Brazilian legal terminology\n")

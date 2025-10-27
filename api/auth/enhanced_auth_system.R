@@ -178,7 +178,7 @@ ENHANCED_AUTH_CONFIG <- list(
 
 # Brazilian Academic Domain Validator
 is_academic_domain <- function(email) {
-  if (is.null(email) || !grepl(\"@\", email)) {
+  if (isTRUE(is.null(email)) || !grepl(\"@\", email)) {
     return(FALSE)
   }
   
@@ -215,7 +215,7 @@ generate_secure_api_key <- function(user_id, tier = \"demo\") {
 # API Key Validation System
 validate_api_key <- function(api_key, endpoint = NULL) {
   
-  if (is.null(api_key) || nchar(api_key) == 0) {
+  if (isTRUE(is.null(api_key)) || nchar(api_key) == 0) {
     return(list(
       valid = FALSE,
       error = \"API key is required\",
@@ -261,7 +261,7 @@ validate_api_key <- function(api_key, endpoint = NULL) {
       key_info <- result[1, ]
       
       # Check expiration
-      if (!is.na(key_info$expires_at) && as.POSIXct(key_info$expires_at) < Sys.time()) {
+      if (!isTRUE(is.na(key_info$expires_at)) && as.POSIXct(key_info$expires_at) < Sys.time()) {
         return(list(
           valid = FALSE,
           error = \"API key has expired\",
@@ -282,7 +282,7 @@ validate_api_key <- function(api_key, endpoint = NULL) {
       # Check endpoint access
       if (!is.null(endpoint)) {
         tier_config <- ENHANCED_AUTH_CONFIG$tiers[[key_info$tier]]
-        if (!is.null(tier_config) && tier_config$allowed_endpoints != \"all\") {
+        if (!isTRUE(is.null(tier_config)) && tier_config$allowed_endpoints != \"all\") {
           if (!(endpoint %in% tier_config$allowed_endpoints)) {
             return(list(
               valid = FALSE,

@@ -727,7 +727,7 @@ analyze_regional_patterns <- function(documents, analysis_type = "volume") {
         for (i in 1:(ncol(correlation_matrix) - 1)) {
           for (j in (i + 1):ncol(correlation_matrix)) {
             corr_val <- correlation_matrix[i, j]
-            if (!is.na(corr_val) && abs(corr_val) >= threshold) {
+            if (!isTRUE(is.na(corr_val)) && abs(corr_val) >= threshold) {
               high_correlations <- rbind(high_correlations, 
                 data.frame(
                   state1 = colnames(correlation_matrix)[i],
@@ -887,7 +887,7 @@ create_trend_visualization <- function(ts_data, predictions = NULL) {
     )
     
     # Add predictions if available
-    if (!is.null(predictions) && "metadata" %in% names(predictions)) {
+    if (!isTRUE(is.null(predictions)) && "metadata" %in% names(predictions)) {
       future_dates <- as.character(predictions$metadata$forecast_dates)
       
       # Add each prediction method

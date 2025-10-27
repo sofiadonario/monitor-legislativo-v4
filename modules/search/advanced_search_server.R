@@ -94,7 +94,7 @@ advanced_search_server <- function(id, get_data_function = NULL) {
     
     # Get base dataset
     base_data <- reactive({
-      if (!is.null(get_data_function) && is.function(get_data_function)) {
+      if (!isTRUE(is.null(get_data_function)) && is.function(get_data_function)) {
         return(get_data_function())
       } else if (exists("advanced_search_documents", envir = .GlobalEnv)) {
         # Use existing search function with empty query to get all documents
@@ -109,24 +109,24 @@ advanced_search_server <- function(id, get_data_function = NULL) {
     current_filters <- reactive({
       list(
         # Geographic filters
-        estado = if (!is.null(input$state_filter) && length(input$state_filter) > 0) {
+        estado = if (!isTRUE(is.null(input$state_filter)) && length(input$state_filter) > 0) {
           input$state_filter
-        } else if (!is.null(input$region_filter) && input$region_filter != "all") {
+        } else if (!isTRUE(is.null(input$region_filter)) && input$region_filter != "all") {
           get_states_for_region(input$region_filter)
         } else {
           NULL
         },
-        region = if (!is.null(input$region_filter) && input$region_filter != "all") {
+        region = if (!isTRUE(is.null(input$region_filter)) && input$region_filter != "all") {
           input$region_filter
         } else {
           NULL
         },
-        municipality = if (!is.null(input$municipality_filter) && length(input$municipality_filter) > 0) {
+        municipality = if (!isTRUE(is.null(input$municipality_filter)) && length(input$municipality_filter) > 0) {
           input$municipality_filter
         } else {
           NULL
         },
-        metropolitan_area = if (!is.null(input$metro_area_filter) && input$metro_area_filter != "all") {
+        metropolitan_area = if (!isTRUE(is.null(input$metro_area_filter)) && input$metro_area_filter != "all") {
           input$metro_area_filter
         } else {
           NULL
@@ -137,7 +137,7 @@ advanced_search_server <- function(id, get_data_function = NULL) {
         date_end = input$date_end,
         year_start = input$year_start,
         year_end = input$year_end,
-        legislative_period = if (!is.null(input$legislative_period) && input$legislative_period != "all") {
+        legislative_period = if (!isTRUE(is.null(input$legislative_period)) && input$legislative_period != "all") {
           input$legislative_period
         } else {
           NULL
@@ -146,7 +146,7 @@ advanced_search_server <- function(id, get_data_function = NULL) {
         # Document type filters
         species = input$species_filter,
         document_type = input$document_type_filter,
-        transport_category = if (!is.null(input$transport_category) && input$transport_category != "all") {
+        transport_category = if (!isTRUE(is.null(input$transport_category)) && input$transport_category != "all") {
           input$transport_category
         } else {
           NULL
@@ -229,7 +229,7 @@ advanced_search_server <- function(id, get_data_function = NULL) {
     
     # Debounced instant search (reactive)
     instant_search_results <- reactive({
-      if (!is.null(input$search_query) && nchar(str_trim(input$search_query)) >= 2) {
+      if (!isTRUE(is.null(input$search_query)) && nchar(str_trim(input$search_query)) >= 2) {
         # Add debouncing delay
         invalidateLater(.search_server_config$instant_search_delay, session)
         
@@ -351,7 +351,7 @@ advanced_search_server <- function(id, get_data_function = NULL) {
     
     # Update municipality choices based on state selection
     observeEvent(input$state_filter, {
-      if (!is.null(input$state_filter) && length(input$state_filter) > 0) {
+      if (!isTRUE(is.null(input$state_filter)) && length(input$state_filter) > 0) {
         municipalities <- get_municipalities_for_states(input$state_filter)
         
         updateSelectizeInput(session, "municipality_filter",
@@ -420,7 +420,7 @@ advanced_search_server <- function(id, get_data_function = NULL) {
     output$results_summary <- renderUI({
       results <- search_results()
       
-      if (!is.null(results) && nrow(results) > 0) {
+      if (!isTRUE(is.null(results)) && nrow(results) > 0) {
         div(class = "results-summary-content",
             icon("info-circle"),
             span(paste(
@@ -441,7 +441,7 @@ advanced_search_server <- function(id, get_data_function = NULL) {
       results <- search_results()
       view_mode <- input$view_mode %||% "list"
       
-      if (is.null(results) || nrow(results) == 0) {
+      if (isTRUE(is.null(results)) || nrow(results) == 0) {
         return(div(class = "no-results",
                   icon("search", class = "fa-3x"),
                   h4("Nenhum resultado encontrado"),
@@ -467,7 +467,7 @@ advanced_search_server <- function(id, get_data_function = NULL) {
       },
       content = function(file) {
         results <- search_results()
-        if (!is.null(results) && nrow(results) > 0) {
+        if (!isTRUE(is.null(results)) && nrow(results) > 0) {
           # Prepare export data
           export_data <- results %>%
             select(titulo, ementa, tipo, estado, data_publicacao, url) %>%
@@ -560,14 +560,14 @@ generate_basic_autocomplete_fallback <- function(query) {
 #' @return Filtered search results
 perform_fallback_search <- function(query, filters, data) {
 
-  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) == 0) {
     return(data.frame())
   }
   
   filtered_data <- data
   
   # Apply text search
-  if (!is.null(query) && nchar(str_trim(query)) > 0) {
+  if (!isTRUE(is.null(query)) && nchar(str_trim(query)) > 0) {
     query_pattern <- str_to_lower(query)
     
     if ("titulo" %in% names(filtered_data)) {
@@ -596,20 +596,20 @@ perform_fallback_search <- function(query, filters, data) {
   }
   
   # Apply document type filters
-  if (!is.null(filters$species) && length(filters$species) > 0) {
+  if (!isTRUE(is.null(filters$species)) && length(filters$species) > 0) {
     if ("species" %in% names(filtered_data)) {
       filtered_data <- filtered_data[filtered_data$species %in% filters$species, ]
     }
   }
   
-  if (!is.null(filters$document_type) && length(filters$document_type) > 0) {
+  if (!isTRUE(is.null(filters$document_type)) && length(filters$document_type) > 0) {
     if ("tipo" %in% names(filtered_data)) {
       filtered_data <- filtered_data[filtered_data$tipo %in% filters$document_type, ]
     }
   }
   
   # Apply content quality filter
-  if (!is.null(filters$content_quality_min) && "content_quality_score" %in% names(filtered_data)) {
+  if (!isTRUE(is.null(filters$content_quality_min)) && "content_quality_score" %in% names(filtered_data)) {
     filtered_data <- filtered_data[filtered_data$content_quality_score >= filters$content_quality_min, ]
   }
   
@@ -690,7 +690,7 @@ get_municipalities_for_states <- function(states) {
 #' @param results Search results data frame
 #' @return HTML div with formatted results
 render_results_list <- function(results) {
-  if (is.null(results) || !is.data.frame(results) || nrow(results) == 0) return(div())
+  if (isTRUE(is.null(results)) || !is.data.frame(results) || nrow(results) == 0) return(div())
   
   result_items <- apply(results, 1, function(row) {
     div(class = "result-item list-item",
@@ -704,7 +704,7 @@ render_results_list <- function(results) {
         ),
         div(class = "result-content",
             p(class = "result-ementa", substr(row[["ementa"]], 1, 300)),
-            if (!is.null(row[["url"]]) && row[["url"]] != "") {
+            if (!isTRUE(is.null(row[["url"]])) && row[["url"]] != "") {
               a(href = row[["url"]], target = "_blank", 
                 "Ver documento completo", icon("external-link-alt"))
             }
@@ -719,7 +719,7 @@ render_results_list <- function(results) {
 #' @param results Search results data frame
 #' @return HTML div with card-formatted results
 render_results_cards <- function(results) {
-  if (is.null(results) || !is.data.frame(results) || nrow(results) == 0) return(div())
+  if (isTRUE(is.null(results)) || !is.data.frame(results) || nrow(results) == 0) return(div())
   
   # Group results into rows of 2 cards
   n_results <- nrow(results)
@@ -744,7 +744,7 @@ render_results_cards <- function(results) {
                           div(class = "card-footer-actions",
                               small(class = "text-muted", 
                                     format(as.Date(row[["data_publicacao"]]), "%d/%m/%Y")),
-                              if (!is.null(row[["url"]]) && row[["url"]] != "") {
+                              if (!isTRUE(is.null(row[["url"]])) && row[["url"]] != "") {
                                 a(href = row[["url"]], target = "_blank", 
                                   class = "btn btn-sm btn-outline-primary ml-2",
                                   "Ver", icon("external-link-alt"))
@@ -766,7 +766,7 @@ render_results_cards <- function(results) {
 #' @param results Search results data frame
 #' @return Formatted data frame for DT
 format_results_table <- function(results) {
-  if (is.null(results) || !is.data.frame(results) || nrow(results) == 0) return(data.frame())
+  if (isTRUE(is.null(results)) || !is.data.frame(results) || nrow(results) == 0) return(data.frame())
   
   # Select and format columns for table display
   table_data <- results %>%

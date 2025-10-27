@@ -142,7 +142,7 @@ analyze_sp_transport_modals <- function(data, focus_area = "all") {
         municipality %in% RMSP_MUNICIPALITIES
       )
 
-    if (is.null(sp_data) || !is.data.frame(sp_data) || nrow(sp_data) == 0) {
+    if (isTRUE(is.null(sp_data)) || !is.data.frame(sp_data) || nrow(sp_data) == 0) {
       # Fallback with synthetic data for demonstration
       sp_data <- data.frame(
         id = 1:50,
@@ -318,7 +318,7 @@ analyze_rmsp_governance <- function(data) {
       corridor_munis <- rmsp_analysis %>%
         filter(municipality %in% corridor$municipalities)
 
-      if (!is.null(corridor_munis) && is.data.frame(corridor_munis) && nrow(corridor_munis) > 0) {
+      if (!isTRUE(is.null(corridor_munis)) && is.data.frame(corridor_munis) && nrow(corridor_munis) > 0) {
         corridor_summary <- data.frame(
           corridor = corridor$name,
           municipalities_analyzed = nrow(corridor_munis),

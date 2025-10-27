@@ -268,7 +268,7 @@ if (frameworks_loaded$load_testing) {
     load_test_results[[scenario$name]] <- scenario_result
     
     # Analyze scenario results
-    if (!is.null(scenario_result$performance_summary) && !is.null(scenario_result$performance_summary$performance_grade)) {
+    if (!isTRUE(is.null(scenario_result$performance_summary)) && !is.null(scenario_result$performance_summary$performance_grade)) {
       cat("📊 Scenario Result - Grade:", scenario_result$performance_summary$performance_grade, 
           "| Total Ops:", scenario_result$performance_summary$total_operations,
           "| Error Rate:", scenario_result$performance_summary$error_rate, "%\n")
@@ -546,30 +546,30 @@ if (final_assessment$overall_score >= 90) {
 final_assessment$sprint6a_objectives_met <- list(
   perf_001_sql_optimization = list(
     objective = "Optimize database queries for Brazilian legislative data",
-    met = !is.null(VALIDATION_RESULTS$bottleneck_analysis_results$database_bottlenecks) && 
+    met = !isTRUE(is.null(VALIDATION_RESULTS$bottleneck_analysis_results$database_bottlenecks)) && 
           (VALIDATION_RESULTS$bottleneck_analysis_results$database_bottlenecks$slow_queries_detected %||% 0) <= 2,
     evidence = "Database bottleneck analysis completed with minimal slow queries detected"
   ),
   
   perf_002_redis_caching = list(
     objective = "Implement advanced Redis caching with intelligent TTL",
-    met = !is.null(VALIDATION_RESULTS$baseline_performance$cache_benchmarks) &&
-          !is.null(VALIDATION_RESULTS$baseline_performance$cache_benchmarks$cache_efficiency$hit_rate_pct) &&
+    met = !isTRUE(is.null(VALIDATION_RESULTS$baseline_performance$cache_benchmarks)) &&
+          !isTRUE(is.null(VALIDATION_RESULTS$baseline_performance$cache_benchmarks$cache_efficiency$hit_rate_pct)) &&
           VALIDATION_RESULTS$baseline_performance$cache_benchmarks$cache_efficiency$hit_rate_pct >= 70,
     evidence = "Cache performance benchmarks show acceptable hit rates"
   ),
   
   perf_003_load_testing = list(
     objective = "Validate system performance under concurrent user loads (10-50+ users)",
-    met = !is.null(VALIDATION_RESULTS$load_testing_results$heavy_load) &&
-          !is.null(VALIDATION_RESULTS$load_testing_results$heavy_load$performance_summary$performance_grade) &&
+    met = !isTRUE(is.null(VALIDATION_RESULTS$load_testing_results$heavy_load)) &&
+          !isTRUE(is.null(VALIDATION_RESULTS$load_testing_results$heavy_load$performance_summary$performance_grade)) &&
           VALIDATION_RESULTS$load_testing_results$heavy_load$performance_summary$performance_grade %in% c("A", "B", "C"),
     evidence = "50-user concurrent load test completed with acceptable performance grade"
   ),
   
   railway_compliance = list(
     objective = "Maintain Railway infrastructure compliance (2GB memory, 100 DB connections)",
-    met = !is.null(VALIDATION_RESULTS$railway_compliance_results$overall_railway_compliance) &&
+    met = !isTRUE(is.null(VALIDATION_RESULTS$railway_compliance_results$overall_railway_compliance)) &&
           VALIDATION_RESULTS$railway_compliance_results$overall_railway_compliance$overall_status %in% c("EXCELLENT", "GOOD", "ACCEPTABLE"),
     evidence = "Railway infrastructure compliance validation passed"
   )
@@ -582,12 +582,12 @@ if (final_assessment$overall_score < 80) {
   recommendations <- c(recommendations, "Performance optimization needed before production deployment")
 }
 
-if (!is.null(VALIDATION_RESULTS$load_testing_results$heavy_load$performance_summary$error_rate) &&
+if (!isTRUE(is.null(VALIDATION_RESULTS$load_testing_results$heavy_load$performance_summary$error_rate)) &&
     VALIDATION_RESULTS$load_testing_results$heavy_load$performance_summary$error_rate > 5) {
   recommendations <- c(recommendations, "Address high error rate under load")
 }
 
-if (!is.null(VALIDATION_RESULTS$railway_compliance_results$overall_railway_compliance$critical_issues) &&
+if (!isTRUE(is.null(VALIDATION_RESULTS$railway_compliance_results$overall_railway_compliance$critical_issues)) &&
     length(VALIDATION_RESULTS$railway_compliance_results$overall_railway_compliance$critical_issues) > 0) {
   recommendations <- c(recommendations, "Fix critical Railway compliance issues")
 }

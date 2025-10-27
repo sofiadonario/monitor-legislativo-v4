@@ -15,7 +15,7 @@ library(futile.logger)
 #' @return File path of exported file
 export_to_csv <- function(data, filename = NULL, include_metadata = TRUE) {
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     flog.error("No data to export")
     return(NULL)
   }
@@ -75,7 +75,7 @@ export_to_csv <- function(data, filename = NULL, include_metadata = TRUE) {
 #' @return File path of exported file
 export_to_excel <- function(data, filename = NULL, include_summary = TRUE) {
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     flog.error("No data to export")
     return(NULL)
   }
@@ -154,7 +154,7 @@ export_to_excel <- function(data, filename = NULL, include_summary = TRUE) {
 #' @return File path of exported file
 export_to_xml <- function(data, filename = NULL, include_metadata = TRUE) {
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     flog.error("No data to export")
     return(NULL)
   }
@@ -238,7 +238,7 @@ export_to_xml <- function(data, filename = NULL, include_metadata = TRUE) {
 #' @return File path of exported file
 export_to_html <- function(data, filename = NULL, include_maps = FALSE) {
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     flog.error("No data to export")
     return(NULL)
   }

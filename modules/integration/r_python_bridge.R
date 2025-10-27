@@ -223,7 +223,7 @@ process_with_fallback <- function(endpoint, data) {
       }
     },
     "classify_document" = {
-      if (!is.null(data$title) && !is.null(data$content)) {
+      if (!isTRUE(is.null(data$title)) && !is.null(data$content)) {
         document_classification_fallback(data$title, data$content)
       } else {
         list(type = "outros", confidence = 0.5)

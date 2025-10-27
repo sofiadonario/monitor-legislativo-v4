@@ -97,7 +97,7 @@ get_state_name <- function(state_code) {
 
 # Helper function to get publisher information
 get_publisher_info <- function(state, municipality, document_type) {
-  if (state == "DF" || state == "" || is.null(state)) {
+  if (state == "DF" || state == "" || isTRUE(is.null(state))) {
     if (grepl("(?i)(federal|união|república)", document_type)) {
       return("Presidência da República")
     } else {
@@ -115,7 +115,7 @@ get_publisher_info <- function(state, municipality, document_type) {
 
 # Helper function to format date for different citation styles
 format_citation_date <- function(date, format_style) {
-  if (is.null(date) || is.na(date)) {
+  if (isTRUE(is.null(date)) || isTRUE(is.na(date))) {
     date <- Sys.Date()
   }
   
@@ -257,7 +257,7 @@ generate_vancouver_citation <- function(pub_info) {
 function(id, format = "abnt") {
   API_STATE$request_count <<- API_STATE$request_count + 1
   
-  if (is.null(id) || nchar(trimws(id)) == 0) {
+  if (isTRUE(is.null(id)) || nchar(trimws(id)) == 0) {
     return(error_response("Document ID is required", 400))
   }
   

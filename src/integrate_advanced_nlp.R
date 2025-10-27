@@ -68,7 +68,7 @@ get_documents_with_nlp <- function(category = "all", search_term = "", state = "
   }
   
   # Add NLP analysis if requested and we have documents
-  if (include_nlp && nrow(docs) > 0 && exists("analyze_regulatory_sentiment")) {
+  if (include_nlp && isTRUE(nrow(docs) > 0) && exists("analyze_regulatory_sentiment")) {
     cat("🔍 Running NLP analysis on", nrow(docs), "documents...\n")
     
     tryCatch({

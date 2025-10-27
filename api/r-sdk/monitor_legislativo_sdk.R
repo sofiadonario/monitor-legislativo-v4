@@ -301,11 +301,11 @@ create_legislation_fallback <- function(data, params) {
   # Apply basic filtering
   filtered_data <- data
   
-  if (!is.null(params$state) && "estado" %in% names(data)) {
+  if (!isTRUE(is.null(params$state)) && "estado" %in% names(data)) {
     filtered_data <- filtered_data[filtered_data$estado == params$state, ]
   }
   
-  if (!is.null(params$year) && "ano" %in% names(data)) {
+  if (!isTRUE(is.null(params$year)) && "ano" %in% names(data)) {
     filtered_data <- filtered_data[filtered_data$ano == as.numeric(params$year), ]
   }
   
@@ -332,7 +332,7 @@ create_legislation_fallback <- function(data, params) {
 }
 
 create_geography_fallback <- function(data, params) {
-  if (is.null(data) || !"estado" %in% names(data)) {
+  if (isTRUE(is.null(data)) || !"estado" %in% names(data)) {
     return(list(message = "Geographic data not available in fallback"))
   }
   

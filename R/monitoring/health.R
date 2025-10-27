@@ -211,7 +211,7 @@ check_database_health <- function(detailed = FALSE) {
       # Initialize or reuse existing connection
       db_result <- init_database_connection()
       
-      if (!is.null(db_result$pool) && db_result$connection_loaded) {
+      if (!isTRUE(is.null(db_result$pool)) && db_result$connection_loaded) {
         # Test database responsiveness
         test_start <- Sys.time()
         test_query <- pool::dbGetQuery(db_result$pool, 
@@ -289,7 +289,7 @@ check_redis_health <- function(detailed = FALSE) {
       # Initialize or check existing Redis connection
       redis_result <- init_redis_connection()
       
-      if (!is.null(redis_result$connection) && redis_result$caching_enabled) {
+      if (!isTRUE(is.null(redis_result$connection)) && redis_result$caching_enabled) {
         # Test Redis responsiveness
         start_time <- Sys.time()
         ping_result <- redis_result$connection$PING()
@@ -356,7 +356,7 @@ check_data_integrity <- function(detailed = FALSE) {
     # Try database count
     if (exists("get_connection_status")) {
       db_status <- get_connection_status()
-      if (!is.null(db_status) && !is.null(db_status$document_count)) {
+      if (!isTRUE(is.null(db_status)) && !is.null(db_status$document_count)) {
         document_counts$database <- db_status$document_count
       }
     }
@@ -723,7 +723,7 @@ simple_health_check <- function() {
     db_ok <- tryCatch({
       if (exists("init_database_connection")) {
         db_result <- init_database_connection()
-        !is.null(db_result$pool) || db_result$status == "packages_missing"
+        !isTRUE(is.null(db_result$pool)) || db_result$status == "packages_missing"
       } else {
         TRUE  # Assume OK if module not loaded yet
       }

@@ -124,23 +124,23 @@ query_legislative_documents <- function(dataset,
         filter(year <= filters$year_max)
     }
     
-    if (!is.null(filters$state) && filters$state != "all") {
+    if (!isTRUE(is.null(filters$state)) && filters$state != "all") {
       query <- query %>% 
         filter(state == filters$state)
     }
     
-    if (!is.null(filters$document_type) && filters$document_type != "all") {
+    if (!isTRUE(is.null(filters$document_type)) && filters$document_type != "all") {
       query <- query %>% 
         filter(document_type_full == filters$document_type)
     }
     
-    if (!is.null(filters$municipality) && filters$municipality != "all") {
+    if (!isTRUE(is.null(filters$municipality)) && filters$municipality != "all") {
       query <- query %>% 
         filter(municipality == filters$municipality)
     }
     
     # Text search optimization
-    if (!is.null(filters$search_term) && filters$search_term != "") {
+    if (!isTRUE(is.null(filters$search_term)) && filters$search_term != "") {
       search_pattern <- paste0(".*", str_to_lower(filters$search_term), ".*")
       query <- query %>%
         filter(
@@ -296,7 +296,7 @@ aggregate_legislative_data <- function(dataset,
 #' @export
 get_arrow_filter_values <- function(dataset, column) {
   
-  if (is.null(dataset) || !(column %in% names(dataset$schema))) {
+  if (isTRUE(is.null(dataset)) || !(column %in% names(dataset$schema))) {
     return(character(0))
   }
   
@@ -338,7 +338,7 @@ search_legislative_arrow <- function(dataset,
   
   start_time <- Sys.time()
   
-  if (is.null(dataset) || is.null(search_term) || search_term == "") {
+  if (isTRUE(is.null(dataset)) || isTRUE(is.null(search_term)) || search_term == "") {
     return(tibble::tibble())
   }
   

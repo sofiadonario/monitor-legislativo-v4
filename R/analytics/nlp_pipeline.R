@@ -685,7 +685,7 @@ analyze_regulatory_sentiment_advanced <- function(documents,
       if (i %% 1000 == 0) cat("Processing document", i, "of", n_docs, "\r")
       
       doc <- tolower(doc_text[i])
-      if (is.na(doc) || doc == "") {
+      if (isTRUE(is.na(doc)) || doc == "") {
         detailed_analysis$sentiment_category[i] <- "Unknown"
         next
       }

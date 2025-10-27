@@ -467,7 +467,7 @@ function(workspace_config) {
     privacy_level <- workspace_config$privacy_level %||% "private"
     
     # Validate required fields
-    if (is.null(workspace_name) || is.null(created_by)) {
+    if (isTRUE(is.null(workspace_name)) || isTRUE(is.null(created_by))) {
       return(error_response(
         message = "Missing required fields: name and created_by",
         code = 400
@@ -609,8 +609,8 @@ function(annotation_data) {
     tags <- annotation_data$tags
     
     # Validate required fields
-    if (is.null(document_id) || is.null(workspace_id) || is.null(user_id) || 
-        is.null(annotation_type) || is.null(content)) {
+    if (isTRUE(is.null(document_id)) || isTRUE(is.null(workspace_id)) || isTRUE(is.null(user_id)) || 
+        isTRUE(is.null(annotation_type)) || isTRUE(is.null(content))) {
       return(error_response(
         message = "Missing required fields for annotation",
         code = 400

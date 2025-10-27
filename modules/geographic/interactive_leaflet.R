@@ -562,7 +562,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             states_data <- self$load_fallback_states()
           }
           
-          if (is.null(states_data) || nrow(states_data) == 0) {
+          if (isTRUE(is.null(states_data)) || nrow(states_data) == 0) {
             cat("⚠️ No state boundary data available\n")
             return(map)
           }
@@ -625,7 +625,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             municipalities_data <- NULL
           }
           
-          if (!is.null(municipalities_data) && nrow(municipalities_data) > 0) {
+          if (!isTRUE(is.null(municipalities_data)) && nrow(municipalities_data) > 0) {
             
             map <- map %>%
               addPolygons(
@@ -682,7 +682,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           # Get aggregated state data from database
           state_data <- self$get_state_aggregation_data()
           
-          if (is.null(state_data) || nrow(state_data) == 0) {
+          if (isTRUE(is.null(state_data)) || nrow(state_data) == 0) {
             return(map)
           }
           
@@ -702,7 +702,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             left_join(state_data, by = c("state_code" = "estado")) %>%
             filter(!is.na(document_count))
 
-          if (is.null(choropleth_data) || !is.data.frame(choropleth_data) || nrow(choropleth_data) == 0) {
+          if (isTRUE(is.null(choropleth_data)) || !is.data.frame(choropleth_data) || nrow(choropleth_data) == 0) {
             return(map)
           }
           
@@ -777,7 +777,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           # Get document location data (sample)
           location_data <- self$get_document_locations(limit = 1000)
           
-          if (is.null(location_data) || nrow(location_data) == 0) {
+          if (isTRUE(is.null(location_data)) || nrow(location_data) == 0) {
             return(map)
           }
           
@@ -1114,7 +1114,7 @@ create_functional_leaflet_manager <- function(db_pool, ibge_system = NULL, densi
             ")
           })
 
-          if (!is.null(state_data) && is.data.frame(state_data) && nrow(state_data) > 0) {
+          if (!isTRUE(is.null(state_data)) && is.data.frame(state_data) && nrow(state_data) > 0) {
 
             # Add state information as markers (simplified)
             for (i in 1:min(10, nrow(state_data))) {
@@ -1225,11 +1225,11 @@ validate_map_config <- function(config) {
     errors <- c(errors, "base_map is required")
   }
   
-  if (is.null(config$center) || length(config$center) != 2) {
+  if (isTRUE(is.null(config$center)) || length(config$center) != 2) {
     warnings <- c(warnings, "center coordinates not properly specified")
   }
   
-  if (is.null(config$zoom) || !is.numeric(config$zoom) || config$zoom < 1 || config$zoom > 18) {
+  if (isTRUE(is.null(config$zoom)) || !is.numeric(config$zoom) || config$zoom < 1 || config$zoom > 18) {
     warnings <- c(warnings, "zoom level should be between 1 and 18")
   }
   

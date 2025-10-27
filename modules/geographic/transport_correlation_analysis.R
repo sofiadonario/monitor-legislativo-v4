@@ -225,7 +225,7 @@ analyze_transport_legislative_correlation <- function(legislative_data,
   tryCatch({
     
     # Validate inputs
-    if (is.null(legislative_data) || is.null(transport_data)) {
+    if (isTRUE(is.null(legislative_data)) || isTRUE(is.null(transport_data))) {
       stop("Both legislative and transport data are required")
     }
     
@@ -286,7 +286,7 @@ analyze_transport_legislative_correlation <- function(legislative_data,
     transport_vars <- names(correlation_data)[sapply(correlation_data, is.numeric) & 
                                              (grepl("highway|railway|transport|port|waterway|airport|cargo|passenger|regulation|policy|institutional", names(correlation_data)))]
     
-    if (length(legislative_vars) == 0 || length(transport_vars) == 0) {
+    if (isTRUE(length(legislative_vars) == 0) || length(transport_vars) == 0) {
       warning("No suitable variables found for correlation analysis")
       return(NULL)
     }
@@ -426,7 +426,7 @@ analyze_transport_legislative_correlation <- function(legislative_data,
 #' @return ggplot or plotly object with correlation visualization
 create_transport_correlation_viz <- function(correlation_results, viz_type = "heatmap", top_n = 10) {
   
-  if (is.null(correlation_results) || !"correlation_matrix" %in% names(correlation_results)) {
+  if (isTRUE(is.null(correlation_results)) || !"correlation_matrix" %in% names(correlation_results)) {
     return(ggplot() + geom_text(aes(x = 0.5, y = 0.5, label = "Correlation analysis not available"), size = 5) + theme_void())
   }
   

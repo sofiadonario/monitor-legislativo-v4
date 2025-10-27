@@ -273,7 +273,7 @@ track_shiny_request <- function(request_type = "general", user_context = NULL) {
 #' Complete Request Tracking
 #' This function should be called at the end of Shiny reactive expressions
 complete_shiny_request <- function(tracking_context, results_count = NULL, error_occurred = FALSE) {
-  if (is.null(tracking_context) || !.monitoring_integration$monitoring_enabled) {
+  if (isTRUE(is.null(tracking_context)) || !.monitoring_integration$monitoring_enabled) {
     return(NULL)
   }
   
@@ -381,8 +381,8 @@ create_health_check_endpoint <- function() {
         overall_health <- "unhealthy"
       } else if (!status$initialization_complete) {
         overall_health <- "degraded"
-      } else if (!is.null(status$components_status$alerts) && 
-                 !is.null(status$components_status$alerts$critical_alerts) &&
+      } else if (!isTRUE(is.null(status$components_status$alerts)) && 
+                 !isTRUE(is.null(status$components_status$alerts$critical_alerts)) &&
                  status$components_status$alerts$critical_alerts > 0) {
         overall_health <- "degraded"
       }
@@ -502,7 +502,7 @@ integrate_monitoring_system <- function(wait_for_db = TRUE) {
   if (wait_for_db) {
     cat("⏳ Waiting for database connection...\n")
     wait_count <- 0
-    while (is.null(.db_pool) && wait_count < 30) {
+    while (isTRUE(is.null(.db_pool)) && wait_count < 30) {
       Sys.sleep(1)
       wait_count <- wait_count + 1
     }

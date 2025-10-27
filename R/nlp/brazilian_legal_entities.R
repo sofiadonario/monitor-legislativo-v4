@@ -308,7 +308,7 @@ extract_brazilian_legal_entities <- function(text,
                                            enable_caching = TRUE,
                                            parallel_processing = TRUE) {
   
-  if (is.null(text) || length(text) == 0) {
+  if (isTRUE(is.null(text)) || length(text) == 0) {
     return(data.frame(
       text_id = integer(0),
       entity = character(0),
@@ -481,7 +481,7 @@ extract_entities_from_single_document <- function(text,
                                                  include_confidence,
                                                  normalize_entities) {
   
-  if (is.null(text) || is.na(text) || nchar(trimws(text)) == 0) {
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || nchar(trimws(text)) == 0) {
     return(create_empty_entity_results())
   }
   
@@ -756,7 +756,7 @@ standardize_legal_terminology <- function(text,
                                         standardize_references = TRUE,
                                         standardize_numbers = TRUE) {
   
-  if (is.null(text) || length(text) == 0) {
+  if (isTRUE(is.null(text)) || length(text) == 0) {
     return(character(0))
   }
   

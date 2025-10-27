@@ -155,7 +155,7 @@ DatabaseIntegrationManager <- R6::R6Class("DatabaseIntegrationManager",
     
     initialize = function(existing_db_pool = NULL) {
       # Connect to existing database pool
-      if (is.null(existing_db_pool) && exists("secure_db_pool") && !is.null(secure_db_pool)) {
+      if (isTRUE(is.null(existing_db_pool)) && exists("secure_db_pool") && !is.null(secure_db_pool)) {
         self$existing_pool <- secure_db_pool
       } else {
         self$existing_pool <- existing_db_pool
@@ -221,7 +221,7 @@ DatabaseIntegrationManager <- R6::R6Class("DatabaseIntegrationManager",
     },
     
     sync_pipeline_data = function(pipeline_data, target_table = "brazilian_legislative_complete", pipeline_run_id = NULL) {
-      if (is.null(self$existing_pool) || is.null(pipeline_data) || nrow(pipeline_data) == 0) {
+      if (isTRUE(is.null(self$existing_pool)) || isTRUE(is.null(pipeline_data)) || nrow(pipeline_data) == 0) {
         log_etl("WARN", "Cannot sync pipeline data - missing connection or data", "DB_INTEGRATION")
         return(FALSE)
       }
@@ -463,7 +463,7 @@ DatabaseIntegrationManager <- R6::R6Class("DatabaseIntegrationManager",
           row_data <- as.list(batch_data[i, columns])
           
           # Handle NULL values
-          row_data <- lapply(row_data, function(x) if (is.na(x) || x == "") NA else x)
+          row_data <- lapply(row_data, function(x) if (isTRUE(is.na(x)) || x == "") NA else x)
           
           result <- dbExecute(self$existing_pool, upsert_sql, row_data)
           affected_count <- affected_count + result
@@ -659,7 +659,7 @@ SearchIntegrationManager <- R6::R6Class("SearchIntegrationManager",
     },
     
     apply_full_text_search = function(results, search_args) {
-      if (is.null(results) || nrow(results) == 0) return(results)
+      if (isTRUE(is.null(results)) || nrow(results) == 0) return(results)
       
       # Check if search term exists
       search_term <- search_args$search_term %||% search_args[[2]] %||% ""
@@ -698,7 +698,7 @@ SearchIntegrationManager <- R6::R6Class("SearchIntegrationManager",
     },
     
     apply_faceted_search = function(results, search_args) {
-      if (is.null(results) || nrow(results) == 0) return(results)
+      if (isTRUE(is.null(results)) || nrow(results) == 0) return(results)
       
       # Add faceted search metadata
       facets <- list(
@@ -722,7 +722,7 @@ SearchIntegrationManager <- R6::R6Class("SearchIntegrationManager",
     
     apply_semantic_search = function(results, search_args) {
       # Simplified semantic search based on document similarity
-      if (is.null(results) || nrow(results) == 0) return(results)
+      if (isTRUE(is.null(results)) || nrow(results) == 0) return(results)
       
       search_term <- search_args$search_term %||% ""
       
@@ -1004,7 +1004,7 @@ SystemIntegrationOrchestrator <- R6::R6Class("SystemIntegrationOrchestrator",
     },
     
     sync_pipeline_data_to_production = function(pipeline_data, pipeline_run_id = NULL) {
-      if (is.null(pipeline_data) || nrow(pipeline_data) == 0) {
+      if (isTRUE(is.null(pipeline_data)) || nrow(pipeline_data) == 0) {
         log_etl("WARN", "No pipeline data to sync", "SYSTEM_INTEGRATION")
         return(FALSE)
       }

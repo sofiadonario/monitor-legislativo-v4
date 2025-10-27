@@ -101,7 +101,7 @@ create_advanced_choropleth_unified <- function(data, metric_column, map_type = "
     webgl <- options$webgl %||% TRUE
     
     # Validate inputs
-    if (is.null(data) || nrow(data) == 0) {
+    if (isTRUE(is.null(data)) || nrow(data) == 0) {
       stop("No data provided for choropleth")
     }
     

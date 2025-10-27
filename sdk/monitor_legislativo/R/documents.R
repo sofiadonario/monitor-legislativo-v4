@@ -42,7 +42,7 @@ ml_get_document <- function(document_id,
                            include_metadata = TRUE,
                            format = "tibble") {
   
-  if (is.null(document_id) || nchar(trimws(document_id)) == 0) {
+  if (isTRUE(is.null(document_id)) || nchar(trimws(document_id)) == 0) {
     stop("document_id é obrigatório")
   }
   
@@ -69,7 +69,7 @@ ml_get_document <- function(document_id,
   tryCatch({
     result <- .ml_api_call("GET", endpoint)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Documento não encontrado ou erro na API: ", result$message %||% "Erro desconhecido")
     }
     
@@ -222,7 +222,7 @@ ml_get_documents <- function(document_ids,
       # Tentar requisição em lote primeiro
       result <- .ml_api_call("POST", "/documents/batch", body = request_body)
       
-      if (!is.null(result) && result$success && !is.null(result$data)) {
+      if (!isTRUE(is.null(result)) && result$success && !is.null(result$data)) {
         # Processar resposta em lote
         batch_docs <- map_dfr(result$data, function(doc_data) {
           tibble(
@@ -392,7 +392,7 @@ ml_filter_documents <- function(documents,
   }
   
   # Filtro por intervalo de datas
-  if (!is.null(date_range) && length(date_range) == 2) {
+  if (!isTRUE(is.null(date_range)) && length(date_range) == 2) {
     if ("date" %in% names(filtered)) {
       tryCatch({
         # Tentar converter datas
@@ -569,7 +569,7 @@ ml_get_document_metadata <- function(document_ids,
   tryCatch({
     result <- .ml_api_call("POST", "/documents/metadata", body = request_body)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Erro ao obter metadados: ", result$message %||% "Erro desconhecido")
     }
     
@@ -651,7 +651,7 @@ ml_validate_documents <- function(document_ids, return_missing = FALSE) {
   tryCatch({
     result <- .ml_api_call("POST", "/documents/validate", body = request_body)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Erro na validação: ", result$message %||% "Erro desconhecido")
     }
     

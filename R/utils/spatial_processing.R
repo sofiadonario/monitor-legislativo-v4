@@ -55,7 +55,7 @@ simplify_geometries_railway <- function(sf_data, tolerance = 0.01, preserve_topo
   cat("🔧 Simplifying geometries for Railway deployment...\n")
   
   tryCatch({
-    if (is.null(sf_data) || nrow(sf_data) == 0) {
+    if (isTRUE(is.null(sf_data)) || nrow(sf_data) == 0) {
       warning("No data to simplify")
       return(sf_data)
     }
@@ -160,7 +160,7 @@ spatial_join_documents <- function(documents_data, boundaries_data, location_col
   cat("🔗 Performing spatial join with legislative documents...\n")
   
   tryCatch({
-    if (is.null(documents_data) || is.null(boundaries_data)) {
+    if (isTRUE(is.null(documents_data)) || isTRUE(is.null(boundaries_data))) {
       warning("Missing data for spatial join")
       return(documents_data)
     }

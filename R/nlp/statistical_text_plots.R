@@ -447,7 +447,7 @@ create_fallback_correlation <- function(data, x, y, colors) {
     r_val <- cor_result$estimate
     p_val <- cor_result$p.value
     
-    if (!is.na(r_val) && !is.na(p_val)) {
+    if (!isTRUE(is.na(r_val)) && !is.na(p_val)) {
       sig_label <- if (p_val < 0.001) "p < 0.001" else paste("p =", round(p_val, 3))
       plot <- plot +
         labs(subtitle = paste("Pearson r =", round(r_val, 3), ",", sig_label))
@@ -764,7 +764,7 @@ create_nlp_dashboard <- function(sentiment_data,
   
   plots_list <- list(p1)
   
-  if (!is.null(group_vars) && length(group_vars) > 0) {
+  if (!isTRUE(is.null(group_vars)) && length(group_vars) > 0) {
     for (i in seq_along(group_vars)) {
       if (group_vars[i] %in% names(sentiment_data)) {
         pi <- create_sentiment_summary_plot(

@@ -26,7 +26,7 @@ load_auth_config <- function() {
     )
     
     # Check Google OAuth
-    if (!is.null(config$oauth$google) && 
+    if (!isTRUE(is.null(config$oauth$google)) && 
         nchar(config$oauth$google$client_id) > 0 && 
         nchar(config$oauth$google$client_secret) > 0) {
       auth_config$google_enabled <- TRUE
@@ -34,7 +34,7 @@ load_auth_config <- function() {
     }
     
     # Check Microsoft OAuth
-    if (!is.null(config$oauth$microsoft) && 
+    if (!isTRUE(is.null(config$oauth$microsoft)) && 
         nchar(config$oauth$microsoft$client_id) > 0 && 
         nchar(config$oauth$microsoft$client_secret) > 0) {
       auth_config$microsoft_enabled <- TRUE
@@ -109,7 +109,7 @@ is_authenticated <- function(session, redirect_to_login = FALSE) {
   }
   
   # Check session authentication
-  authenticated <- !is.null(session$userData$authenticated) && 
+  authenticated <- !isTRUE(is.null(session$userData$authenticated)) && 
                    session$userData$authenticated == TRUE
   
   if (authenticated && exists("oauth_middleware")) {
@@ -121,7 +121,7 @@ is_authenticated <- function(session, redirect_to_login = FALSE) {
   if (!authenticated && redirect_to_login) {
     # Store current URL for post-auth redirect
     current_url <- session$clientData$url_search
-    if (!is.null(current_url) && current_url != "") {
+    if (!isTRUE(is.null(current_url)) && current_url != "") {
       session$userData$post_auth_redirect <- current_url
     }
     
@@ -184,7 +184,7 @@ require_auth <- function(session, server_function, required_role = NULL) {
   }
   
   # Check role if required
-  if (!is.null(required_role) && !has_role(session, required_role)) {
+  if (!isTRUE(is.null(required_role)) && !has_role(session, required_role)) {
     showNotification(
       "Acesso negado: privilégios insuficientes.",
       type = "error",

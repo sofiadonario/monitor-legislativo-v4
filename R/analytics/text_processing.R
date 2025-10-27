@@ -94,7 +94,7 @@ preprocess_legal_text <- function(text_vector,
                                   preserve_legal_terms = TRUE,
                                   min_word_length = 3) {
   
-  if (is.null(text_vector) || length(text_vector) == 0) {
+  if (isTRUE(is.null(text_vector)) || length(text_vector) == 0) {
     return(character(0))
   }
   
@@ -284,7 +284,7 @@ preprocess_legal_text <- function(text_vector,
 #' @export
 analyze_regulatory_sentiment <- function(text) {
   
-  if (is.null(text) || length(text) == 0) {
+  if (isTRUE(is.null(text)) || length(text) == 0) {
     return(character(0))
   }
   
@@ -444,7 +444,7 @@ analyze_regulatory_sentiment <- function(text) {
 #' @export
 extract_legal_entities <- function(text) {
   
-  if (is.null(text) || length(text) == 0) {
+  if (isTRUE(is.null(text)) || length(text) == 0) {
     return(list())
   }
   
@@ -483,7 +483,7 @@ extract_legal_entities <- function(text) {
   # Process each text
   all_results <- lapply(text, function(single_text) {
     
-    if (is.null(single_text) || is.na(single_text) || single_text == "") {
+    if (isTRUE(is.null(single_text)) || isTRUE(is.na(single_text)) || single_text == "") {
       return(list())
     }
     
@@ -525,7 +525,7 @@ extract_legal_entities <- function(text) {
 #' @export
 extract_key_legal_terms <- function(text, min_frequency = 2) {
   
-  if (is.null(text) || length(text) == 0) {
+  if (isTRUE(is.null(text)) || length(text) == 0) {
     return(data.frame(term = character(0), frequency = integer(0)))
   }
   
@@ -561,7 +561,7 @@ extract_key_legal_terms <- function(text, min_frequency = 2) {
 #' @export
 calculate_text_complexity <- function(text) {
   
-  if (is.null(text) || length(text) == 0) {
+  if (isTRUE(is.null(text)) || length(text) == 0) {
     return(data.frame(
       text_id = integer(0),
       word_count = integer(0),
@@ -584,7 +584,7 @@ calculate_text_complexity <- function(text) {
   
   for (i in seq_along(text)) {
     
-    if (is.na(text[i]) || text[i] == "") {
+    if (isTRUE(is.na(text[i])) || text[i] == "") {
       results$complexity_score[i] <- "Unknown"
       next
     }

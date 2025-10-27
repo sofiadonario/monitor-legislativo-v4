@@ -239,7 +239,7 @@ create_indexes <- function(con) {
 #' @return Number of records saved
 save_legislative_data <- function(data, overwrite = FALSE) {
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     flog.warn("No data to save")
     return(0)
   }
@@ -355,13 +355,13 @@ load_legislative_data <- function(filters = list(), limit = NULL) {
     params <- list()
     
     # Apply filters using parameterized queries
-    if (!is.null(filters$estado) && length(filters$estado) > 0) {
+    if (!isTRUE(is.null(filters$estado)) && length(filters$estado) > 0) {
       placeholders_estado <- paste(rep("?", length(filters$estado)), collapse = ",")
       query <- paste(query, "AND estado IN (", placeholders_estado, ")")
       params <- append(params, as.list(filters$estado))
     }
     
-    if (!is.null(filters$tipo) && length(filters$tipo) > 0) {
+    if (!isTRUE(is.null(filters$tipo)) && length(filters$tipo) > 0) {
       placeholders_tipo <- paste(rep("?", length(filters$tipo)), collapse = ",")
       query <- paste(query, "AND tipo IN (", placeholders_tipo, ")")
       params <- append(params, as.list(filters$tipo))
@@ -546,7 +546,7 @@ create_cache_key <- function(endpoint, params) {
 #' Update source tracking information
 update_source_tracking <- function(data) {
   
-  if (is.null(.db_connection$con) || is.null(data)) {
+  if (isTRUE(is.null(.db_connection$con)) || isTRUE(is.null(data))) {
     return(FALSE)
   }
   

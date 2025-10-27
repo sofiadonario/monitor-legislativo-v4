@@ -1,7 +1,7 @@
 # R/render_safety.R — low-noise global guards
 
 # Helpers
-scalar1 <- function(x) if (is.null(x) || length(x) == 0) NA else x[[1]]
+scalar1 <- function(x) if (isTRUE(is.null(x)) || length(x) == 0) NA else x[[1]]
 fmt_int <- function(x) ifelse(is.na(x), "–", formatC(as.integer(x), big.mark=".", format="d"))
 
 safe_wrap <- function(expr, fallback) {

@@ -206,7 +206,7 @@ perform_cdn_health_check <- function() {
 test_cdn_connectivity <- function() {
   base_url <- CDN_INTEGRATION_CONFIG$primary_cdn$base_url
   
-  if (base_url == "" || is.null(base_url)) {
+  if (base_url == "" || isTRUE(is.null(base_url))) {
     return(list(success = FALSE, reason = "CDN URL not configured"))
   }
   
@@ -253,11 +253,11 @@ setup_asset_url_resolver <- function() {
     }
     
     # Check if asset exists in manifest
-    if (!is.null(CDN_STATE$asset_manifest) && asset_path %in% names(CDN_STATE$asset_manifest)) {
+    if (!isTRUE(is.null(CDN_STATE$asset_manifest)) && asset_path %in% names(CDN_STATE$asset_manifest)) {
       asset_info <- CDN_STATE$asset_manifest[[asset_path]]
       
       # Return CDN URL if available and optimized
-      if (!is.null(asset_info$cdn_url) && asset_info$optimization_status == "optimized") {
+      if (!isTRUE(is.null(asset_info$cdn_url)) && asset_info$optimization_status == "optimized") {
         return(asset_info$cdn_url)
       }
     }

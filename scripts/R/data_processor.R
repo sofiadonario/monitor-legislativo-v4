@@ -13,7 +13,7 @@ library(futile.logger)
 #' @return Standardized data frame
 standardize_legislative_data <- function(data, source_name = NULL) {
   
-  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) == 0) {
     return(NULL)
   }
   
@@ -193,7 +193,7 @@ standardize_date_column <- function(...) {
   date_cols <- list(...)
   
   for (col in date_cols) {
-    if (!is.null(col) && any(!is.na(col))) {
+    if (!isTRUE(is.null(col)) && any(!is.na(col))) {
       return(parse_flexible_date(col))
     }
   }
@@ -310,7 +310,7 @@ create_unique_id <- function(title, number, date, source) {
 
 #' Create academic citation
 create_academic_citation <- function(title, type, number, date, author, source) {
-  if (is.na(title) || is.na(date)) return(NA_character_)
+  if (isTRUE(is.na(title)) || isTRUE(is.na(date))) return(NA_character_)
   
   year <- year(as.Date(date))
   
@@ -360,7 +360,7 @@ extract_keywords <- function(title, summary) {
 
 #' Validate legislative data quality
 validate_legislative_data <- function(data) {
-  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) == 0) {
     return(data)
   }
   
@@ -389,7 +389,7 @@ validate_legislative_data <- function(data) {
 
 #' Remove duplicate records
 remove_duplicates <- function(data) {
-  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) == 0) {
     return(data)
   }
   
@@ -416,7 +416,7 @@ remove_duplicates <- function(data) {
 
 #' Add geographic enrichment
 enrich_geographic_data <- function(data, geographic_data = NULL) {
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     return(data)
   }
   

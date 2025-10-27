@@ -170,7 +170,7 @@ BrazilianDomainValidator <- list(
 CORSOriginValidator <- list(
   # Validate origin format and security
   validate_origin_format = function(origin) {
-    if (is.null(origin) || nchar(origin) == 0) {
+    if (isTRUE(is.null(origin)) || nchar(origin) == 0) {
       return(list(valid = FALSE, error = "Empty origin"))
     }
     
@@ -403,7 +403,7 @@ CORSHeaderManager <- list(
     }
     
     # Brazilian-specific compliance
-    if (!is.null(origin_validation$details) && 
+    if (!isTRUE(is.null(origin_validation$details)) && 
         origin_validation$details$type == "brazilian_general") {
       res$setHeader("X-BR-LGPD-Compliant", "true")
       res$setHeader("X-BR-Data-Protection-Officer", "available")
@@ -444,7 +444,7 @@ CORSHeaderManager <- list(
 CORSAnalytics <- list(
   # Get CORS usage statistics
   get_cors_statistics = function(period_days = 30) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(error = "Database not available"))
     }
     
@@ -507,7 +507,7 @@ CORSAnalytics <- list(
   
   # Log CORS events
   log_cors_event = function(event_type, details, req) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(FALSE)
     }
     

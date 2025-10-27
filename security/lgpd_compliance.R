@@ -598,7 +598,7 @@ setup_data_encryption <- function() {
       key <- get_encryption_key()
     }
     
-    if (is.null(data) || length(data) == 0) {
+    if (isTRUE(is.null(data)) || length(data) == 0) {
       return(NULL)
     }
     

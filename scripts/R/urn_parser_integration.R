@@ -29,7 +29,7 @@ load_parsed_urn_data <- function(data_source = "./data_current/processed/lexml_p
     }
     
     # Apply limit if specified
-    if (!is.null(limit) && limit > 0) {
+    if (!isTRUE(is.null(limit)) && limit > 0) {
       data <- head(data, limit)
       flog.info("Limited to %d records", nrow(data))
     }
@@ -236,7 +236,7 @@ plot_urn_type_distribution <- function(data) {
 #' @return ggplot object
 plot_temporal_distribution <- function(data) {
   
-  if (nrow(data) == 0 || all(is.na(data$year))) {
+  if (isTRUE(nrow(data) == 0) || all(is.na(data$year))) {
     return(ggplot() + 
            geom_text(aes(x = 1, y = 1, label = "Nenhum dado temporal disponível")) +
            theme_void())

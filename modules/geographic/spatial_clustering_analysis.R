@@ -385,7 +385,7 @@ create_spatial_clustering_map <- function(moran_results = NULL, gi_results = NUL
         panel.background = element_rect(fill = "white", color = NA)
       )
     
-  } else if (map_type == "combined" && !is.null(moran_results) && !is.null(gi_results)) {
+  } else if (map_type == "combined" && !isTRUE(is.null(moran_results)) && !is.null(gi_results)) {
     
     # Combined visualization (side-by-side)
     lisa_map <- create_spatial_clustering_map(moran_results, NULL, "moran")

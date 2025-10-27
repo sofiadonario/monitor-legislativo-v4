@@ -49,7 +49,7 @@ validate_search_input <- function(search_term = "", filters = list()) {
   )
   
   # Validate search term
-  if (!is.null(search_term) && search_term != "") {
+  if (!isTRUE(is.null(search_term)) && search_term != "") {
     # Length check
     if (nchar(search_term) > VALIDATION_CONFIG$max_search_length) {
       validation_result$errors <- c(validation_result$errors, 
@@ -71,7 +71,7 @@ validate_search_input <- function(search_term = "", filters = list()) {
   }
   
   # Validate state filter
-  if (!is.null(filters$state) && filters$state != "all") {
+  if (!isTRUE(is.null(filters$state)) && filters$state != "all") {
     if (!toupper(filters$state) %in% BRAZILIAN_STATES) {
       validation_result$errors <- c(validation_result$errors, 
         paste("Invalid state code:", filters$state))
@@ -94,7 +94,7 @@ validate_search_input <- function(search_term = "", filters = list()) {
   }
   
   # Validate date range
-  if (!is.null(filters$date_start) || !is.null(filters$date_end)) {
+  if (!isTRUE(is.null(filters$date_start)) || !is.null(filters$date_end)) {
     date_validation <- validate_date_range(filters$date_start, filters$date_end)
     if (!date_validation$valid) {
       validation_result$errors <- c(validation_result$errors, date_validation$errors)
@@ -148,7 +148,7 @@ validate_date_range <- function(date_start = NULL, date_end = NULL) {
   )
   
   # Validate start date
-  if (!is.null(date_start) && date_start != "") {
+  if (!isTRUE(is.null(date_start)) && date_start != "") {
     tryCatch({
       parsed_start <- as.Date(date_start)
       
@@ -169,7 +169,7 @@ validate_date_range <- function(date_start = NULL, date_end = NULL) {
   }
   
   # Validate end date
-  if (!is.null(date_end) && date_end != "") {
+  if (!isTRUE(is.null(date_end)) && date_end != "") {
     tryCatch({
       parsed_end <- as.Date(date_end)
       
@@ -190,7 +190,7 @@ validate_date_range <- function(date_start = NULL, date_end = NULL) {
   }
   
   # Validate date range logic
-  if (!is.null(validation_result$date_start) && !is.null(validation_result$date_end)) {
+  if (!isTRUE(is.null(validation_result$date_start)) && !is.null(validation_result$date_end)) {
     if (validation_result$date_start > validation_result$date_end) {
       validation_result$errors <- c(validation_result$errors, 
         "Start date must be before end date")
@@ -220,7 +220,7 @@ validate_pagination_limit <- function(limit) {
     limit = 50
   )
   
-  if (is.null(limit) || is.na(limit)) {
+  if (isTRUE(is.null(limit)) || isTRUE(is.na(limit))) {
     validation_result$limit <- 50
     return(validation_result)
   }
@@ -264,7 +264,7 @@ validate_pagination_offset <- function(offset) {
     offset = 0
   )
   
-  if (is.null(offset) || is.na(offset)) {
+  if (isTRUE(is.null(offset)) || isTRUE(is.na(offset))) {
     validation_result$offset <- 0
     return(validation_result)
   }
@@ -308,7 +308,7 @@ validate_legal_urn <- function(urn) {
     components = list()
   )
   
-  if (is.null(urn) || is.na(urn) || urn == "") {
+  if (isTRUE(is.null(urn)) || isTRUE(is.na(urn)) || urn == "") {
     validation_result$errors <- c(validation_result$errors, "URN cannot be empty")
     return(validation_result)
   }
@@ -351,7 +351,7 @@ validate_file_upload <- function(file_info) {
     warnings = c()
   )
   
-  if (is.null(file_info) || is.null(file_info$datapath)) {
+  if (isTRUE(is.null(file_info)) || isTRUE(is.null(file_info$datapath))) {
     validation_result$errors <- c(validation_result$errors, "No file selected")
     validation_result$valid <- FALSE
     return(validation_result)
@@ -451,7 +451,7 @@ validate_lgpd_compliance <- function(data_type, processing_purpose, user_consent
 #' @return Sanitized input string
 #' @export
 sanitize_user_input <- function(input) {
-  if (is.null(input) || is.na(input)) {
+  if (isTRUE(is.null(input)) || isTRUE(is.na(input))) {
     return("")
   }
   

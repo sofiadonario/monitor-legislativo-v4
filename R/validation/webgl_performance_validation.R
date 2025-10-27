@@ -327,7 +327,7 @@ validate_geographic_integration <- function() {
     states_data <- load_brazil_states(simplified = TRUE)
     
     geographic_results$states_test <- list(
-      success = !is.null(states_data) && nrow(states_data) > 0,
+      success = !isTRUE(is.null(states_data)) && nrow(states_data) > 0,
       states_loaded = if (!is.null(states_data)) nrow(states_data) else 0,
       expected_states = VALIDATION_CONFIG$geographic_tests$states,
       has_geometry = if (!is.null(states_data)) "geom" %in% names(states_data) else FALSE,
@@ -364,7 +364,7 @@ validate_geographic_integration <- function() {
     )
     
     geographic_results$geocoding_test <- list(
-      success = !is.null(geocoded_docs) && nrow(geocoded_docs) > 0,
+      success = !isTRUE(is.null(geocoded_docs)) && nrow(geocoded_docs) > 0,
       documents_processed = nrow(geocoded_docs),
       documents_with_states = sum(!is.na(geocoded_docs$primary_state)),
       geocoding_rate = round(sum(!is.na(geocoded_docs$primary_state)) / nrow(geocoded_docs) * 100, 1),
@@ -377,7 +377,7 @@ validate_geographic_integration <- function() {
     
     # Test 3: WebGL choropleth creation
     cat("  Testing WebGL choropleth maps...\n")
-    if (!is.null(states_data) && nrow(states_data) > 0) {
+    if (!isTRUE(is.null(states_data)) && nrow(states_data) > 0) {
       # Add sample data for choropleth
       states_with_data <- states_data %>%
         mutate(document_count = sample(1:100, nrow(states_data), replace = TRUE))
@@ -390,7 +390,7 @@ validate_geographic_integration <- function() {
       )
       
       geographic_results$choropleth_test <- list(
-        success = !is.null(choropleth_map) && inherits(choropleth_map, "leaflet"),
+        success = !isTRUE(is.null(choropleth_map)) && inherits(choropleth_map, "leaflet"),
         map_created = TRUE,
         webgl_enabled = nrow(states_with_data) >= BRAZIL_GEO_CONFIG$webgl_choropleth_threshold
       )

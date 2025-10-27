@@ -106,7 +106,7 @@ progressive_load_geographic_data <- function(pool, chunk_size = 5000, callback =
 
 # Stratified sampling for large datasets
 stratified_sample_documents <- function(data, target_size = 5000, strata_var = "estado") {
-  if (is.null(data) || !is.data.frame(data) || nrow(data) <= target_size) {
+  if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) <= target_size) {
     return(data)
   }
   
@@ -146,7 +146,7 @@ stratified_sample_documents <- function(data, target_size = 5000, strata_var = "
 
 # Create optimized WebGL choropleth map
 create_webgl_choropleth <- function(state_data, use_webgl = TRUE, show_sampling_note = FALSE) {
-  if (is.null(state_data) || !is.data.frame(state_data) || nrow(state_data) == 0) {
+  if (isTRUE(is.null(state_data)) || !is.data.frame(state_data) || nrow(state_data) == 0) {
     return(plot_ly() %>%
              add_text(x = 0.5, y = 0.5, text = "No data available") %>%
              layout(xaxis = list(visible = FALSE), yaxis = list(visible = FALSE)))
@@ -164,7 +164,7 @@ create_webgl_choropleth <- function(state_data, use_webgl = TRUE, show_sampling_
     )
   
   # Determine plot type based on data size and WebGL setting
-  plot_type <- if (use_webgl && !is.null(state_data) && is.data.frame(state_data) && nrow(state_data) > 100) "scattergeo" else "scatter"
+  plot_type <- if (use_webgl && !isTRUE(is.null(state_data)) && is.data.frame(state_data) && nrow(state_data) > 100) "scattergeo" else "scatter"
   
   if (plot_type == "scattergeo") {
     # WebGL-accelerated geographic plot
@@ -350,7 +350,7 @@ aggregate_geographic_data <- function(pool, filters = list()) {
                 filters$date_range[1], filters$date_range[2]))
     }
     
-    if (!is.null(filters$categories) && length(filters$categories) > 0) {
+    if (!isTRUE(is.null(filters$categories)) && length(filters$categories) > 0) {
       categories_str <- paste0("'", filters$categories, "'", collapse = ",")
       where_clauses <- c(where_clauses, 
         sprintf("categoria_original IN (%s)", categories_str))

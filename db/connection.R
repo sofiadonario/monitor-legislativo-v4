@@ -86,7 +86,7 @@ connection_status <- list(
 #' @param database_url String in format: postgresql://user:pass@host:port/dbname
 #' @return List with connection parameters or NULL if invalid
 parse_database_url <- function(database_url) {
-  if (is.null(database_url) || database_url == "" || is.na(database_url)) {
+  if (isTRUE(is.null(database_url)) || database_url == "" || isTRUE(is.na(database_url))) {
     return(NULL)
   }
   
@@ -148,7 +148,7 @@ parse_database_url <- function(database_url) {
       port <- 5432L
     }
     
-    if (is.na(port) || port <= 0 || port > 65535) {
+    if (isTRUE(is.na(port)) || port <= 0 || port > 65535) {
       cat("⚠️ Invalid port number in DATABASE_URL\n")
       return(NULL)
     }
@@ -177,7 +177,7 @@ get_database_config <- function() {
   
   # Method 1: Try DATABASE_URL (Railway format)
   database_url <- Sys.getenv("DATABASE_URL", unset = NA)
-  if (!is.na(database_url) && database_url != "") {
+  if (!isTRUE(is.na(database_url)) && database_url != "") {
     cat("📋 Found DATABASE_URL environment variable\n")
     
     config <- parse_database_url(database_url)
@@ -200,10 +200,10 @@ get_database_config <- function() {
   
   # Validate required variables
   missing_vars <- c()
-  if (is.na(host) || host == "") missing_vars <- c(missing_vars, "PGHOST")
-  if (is.na(dbname) || dbname == "") missing_vars <- c(missing_vars, "PGDATABASE")
-  if (is.na(user) || user == "") missing_vars <- c(missing_vars, "PGUSER")
-  if (is.na(password) || password == "") missing_vars <- c(missing_vars, "PGPASSWORD")
+  if (isTRUE(is.na(host)) || host == "") missing_vars <- c(missing_vars, "PGHOST")
+  if (isTRUE(is.na(dbname)) || dbname == "") missing_vars <- c(missing_vars, "PGDATABASE")
+  if (isTRUE(is.na(user)) || user == "") missing_vars <- c(missing_vars, "PGUSER")
+  if (isTRUE(is.na(password)) || password == "") missing_vars <- c(missing_vars, "PGPASSWORD")
   
   if (length(missing_vars) > 0) {
     cat("❌ Missing required environment variables:", paste(missing_vars, collapse = ", "), "\n")
@@ -213,7 +213,7 @@ get_database_config <- function() {
   
   # Validate port
   port_num <- as.integer(port)
-  if (is.na(port_num) || port_num <= 0 || port_num > 65535) {
+  if (isTRUE(is.na(port_num)) || port_num <= 0 || port_num > 65535) {
     cat("❌ Invalid PGPORT value:", port, "\n")
     return(NULL)
   }
@@ -486,7 +486,7 @@ get_secure_document_count <- function() {
     for (query in table_queries) {
       tryCatch({
         result <- dbGetQuery(secure_db_pool, query)
-        if (nrow(result) > 0 && !is.na(scalar(result$count))) {
+        if (isTRUE(nrow(result) > 0) && !is.na(scalar(result$count))) {
           count <- as.numeric(scalar(result$count, 0))
           log_secure_db("INFO", sprintf("Document count retrieved: %s", format(count, big.mark = ",")))
           return(count)
@@ -563,7 +563,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
                                  date_start = NULL, date_end = NULL, sort_by = "date_desc", 
                                  limit = 999999, offset = 0) {
   
-  if (is.null(secure_db_pool) || connection_status$status != "connected") {
+  if (isTRUE(is.null(secure_db_pool)) || connection_status$status != "connected") {
     log_secure_db("WARNING", "Secure database not connected, using fallback data")
     return(get_fallback_documents(category, search_term, state, limit))
   }
@@ -582,7 +582,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
         count_query <- sprintf("SELECT COUNT(*) as count FROM %s WHERE titulo IS NOT NULL AND titulo != ''", table_name)
         result <- dbGetQuery(secure_db_pool, count_query)
         
-        if(nrow(result) > 0 && result$count > max_count) {
+        if(isTRUE(nrow(result) > 0) && result$count > max_count) {
           max_count <- result$count  
           main_table <- table_name
           log_secure_db("INFO", sprintf("Found table %s with %s documents", table_name, format(result$count, big.mark = ",")))
@@ -624,7 +624,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     param_count <- 0
     
     # Add filters with parameterized queries (SQL injection prevention)
-    if (search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
+    if (search_term != "" && !isTRUE(is.null(search_term)) && nchar(trimws(search_term)) > 0) {
       param_count <- param_count + 1
       where_conditions <- c(where_conditions, sprintf("(d.titulo ILIKE $%d OR COALESCE(d.ementa, '') ILIKE $%d OR COALESCE(d.termo_busca, '') ILIKE $%d OR COALESCE(d.autor, '') ILIKE $%d OR COALESCE(d.assuntos, '') ILIKE $%d)", param_count, param_count, param_count, param_count, param_count))
       params[[param_count]] <- paste0("%", search_term, "%")
@@ -787,7 +787,7 @@ get_fallback_documents <- function(category = "all", search_term = "", state = "
         }
         
         # Search term filtering
-        if(search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
+        if(search_term != "" && !isTRUE(is.null(search_term)) && nchar(trimws(search_term)) > 0) {
           search_pattern <- paste0(".*", search_term, ".*")
           if("title" %in% names(filtered_docs)) {
             title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
@@ -878,7 +878,7 @@ get_fallback_documents <- function(category = "all", search_term = "", state = "
     filtered_docs <- filtered_docs[filtered_docs$state == state, ]
   }
   
-  if(search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
+  if(search_term != "" && !isTRUE(is.null(search_term)) && nchar(trimws(search_term)) > 0) {
     search_pattern <- paste0(".*", search_term, ".*")
     title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
     summary_match <- grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE)

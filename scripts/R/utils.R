@@ -51,7 +51,7 @@ require_package <- function(package_name, quiet = TRUE) {
 #' @param data Data frame to standardize
 #' @return Standardized data frame
 standardize_columns <- function(data) {
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     return(NULL)
   }
   
@@ -110,7 +110,7 @@ standardize_columns <- function(data) {
 #' @param data Data frame to validate
 #' @return Data frame with quality_score column
 validate_data_quality <- function(data) {
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     return(data)
   }
   

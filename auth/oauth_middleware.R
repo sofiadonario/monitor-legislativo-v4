@@ -171,7 +171,7 @@ store_user_session <- function(session_token, session_data) {
 #' @param session_token Session token
 #' @return Session data or NULL if not found/expired
 get_user_session <- function(session_token) {
-  if (is.null(session_token) || session_token == "") {
+  if (isTRUE(is.null(session_token)) || session_token == "") {
     return(NULL)
   }
   

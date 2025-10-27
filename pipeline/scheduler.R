@@ -334,7 +334,7 @@ DataVersionManager <- R6::R6Class("DataVersionManager",
           # Delete backup files
           for (i in 1:nrow(old_versions)) {
             backup_path <- old_versions$backup_file_path[i]
-            if (!is.na(backup_path) && file.exists(backup_path)) {
+            if (!isTRUE(is.na(backup_path)) && file.exists(backup_path)) {
               file.remove(backup_path)
             }
           }
@@ -693,7 +693,7 @@ RefreshJobManager <- R6::R6Class("RefreshJobManager",
     get_last_update_timestamp = function() {
       # Get timestamp of last successful refresh
       version_info <- self$version_manager$get_current_version_info()
-      if (!is.null(version_info) && !is.na(version_info$created_at)) {
+      if (!isTRUE(is.null(version_info)) && !is.na(version_info$created_at)) {
         return(as.POSIXct(version_info$created_at))
       }
       
@@ -726,7 +726,7 @@ RefreshJobManager <- R6::R6Class("RefreshJobManager",
     send_notification = function(job_type, status, details = list()) {
       webhook_url <- SCHEDULER_CONFIG$railway$notification_webhook
       
-      if (webhook_url == "" || is.na(webhook_url)) {
+      if (webhook_url == "" || isTRUE(is.na(webhook_url))) {
         log_etl("DEBUG", sprintf("No webhook configured for %s notification", job_type), "REFRESH_MANAGER")
         return()
       }

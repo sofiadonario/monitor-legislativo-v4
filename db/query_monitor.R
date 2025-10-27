@@ -322,7 +322,7 @@ monitor_query_execution <- function(query, params = NULL, pool = NULL,
   is_error <- FALSE
   
   tryCatch({
-    if (is.null(params) || length(params) == 0) {
+    if (isTRUE(is.null(params)) || length(params) == 0) {
       result <- dbGetQuery(pool, query)
     } else {
       result <- dbGetQuery(pool, query, params = params)
@@ -411,7 +411,7 @@ execute_query_direct <- function(query, params = NULL, pool = NULL) {
   }
   
   tryCatch({
-    if (is.null(params) || length(params) == 0) {
+    if (isTRUE(is.null(params)) || length(params) == 0) {
       result <- dbGetQuery(pool, query)
     } else {
       result <- dbGetQuery(pool, query, params = params)

@@ -98,7 +98,7 @@ analytics_server <- function(input, output, session, get_data) {
       # Get current data
       current_data <- get_data()
       
-      if (is.null(current_data) || nrow(current_data) == 0) {
+      if (isTRUE(is.null(current_data)) || nrow(current_data) == 0) {
         removeModal()
         showNotification(
           "❌ Nenhum dado disponível para análise. Verifique a conexão com o banco de dados.",
@@ -360,7 +360,7 @@ analytics_server <- function(input, output, session, get_data) {
         req(is.data.frame(cat_data))
         req(nrow(cat_data) > 0)
 
-        if (!is.null(cat_data) && is.data.frame(cat_data) && nrow(cat_data) > 0) {
+        if (!isTRUE(is.null(cat_data)) && is.data.frame(cat_data) && nrow(cat_data) > 0) {
 
           # Limit to top 10 categories for readability
           cat_data <- cat_data %>% head(10)
@@ -434,7 +434,7 @@ analytics_server <- function(input, output, session, get_data) {
         
         citations <- categorization_results$cross_references$citation_network
         
-        if (!is.null(citations) && is.data.frame(citations) && nrow(citations) > 0) {
+        if (!isTRUE(is.null(citations)) && is.data.frame(citations) && nrow(citations) > 0) {
           display_data <- citations %>%
             select(citations, frequency) %>%
             arrange(desc(frequency)) %>%
@@ -472,7 +472,7 @@ analytics_server <- function(input, output, session, get_data) {
         req(is.data.frame(authority_data))
         req(nrow(authority_data) > 0)
 
-        if (!is.null(authority_data) && is.data.frame(authority_data) && nrow(authority_data) > 0) {
+        if (!isTRUE(is.null(authority_data)) && is.data.frame(authority_data) && nrow(authority_data) > 0) {
 
           p <- ggplot(authority_data, aes(x = reorder(authority_level, percentage), y = percentage)) +
             geom_col(fill = c("#2E86AB", "#A23B72", "#F18F01", "#C73E1D")[1:nrow(authority_data)]) +
@@ -573,7 +573,7 @@ analytics_server <- function(input, output, session, get_data) {
         
         prod_data <- productivity_results$productivity_summary
         
-        if (!is.null(prod_data) && is.data.frame(prod_data) && nrow(prod_data) > 0) {
+        if (!isTRUE(is.null(prod_data)) && is.data.frame(prod_data) && nrow(prod_data) > 0) {
           
           # Handle different time period formats
           if ("year" %in% names(prod_data)) {
@@ -599,7 +599,7 @@ analytics_server <- function(input, output, session, get_data) {
             scale_y_continuous(labels = scales::comma_format())
           
           # Rotate x-axis labels if needed
-          if (!is.null(prod_data) && is.data.frame(prod_data) && nrow(prod_data) > 10) {
+          if (!isTRUE(is.null(prod_data)) && is.data.frame(prod_data) && nrow(prod_data) > 10) {
             p <- p + theme(axis.text.x = element_text(angle = 45, hjust = 1))
           }
           
@@ -771,7 +771,7 @@ analytics_server <- function(input, output, session, get_data) {
         
         high_impact <- impact_results$comprehensive_synthesis$high_impact_documents
         
-        if (!is.null(high_impact) && is.data.frame(high_impact) && nrow(high_impact) > 0) {
+        if (!isTRUE(is.null(high_impact)) && is.data.frame(high_impact) && nrow(high_impact) > 0) {
           
           display_data <- high_impact %>%
             select(title, total_impact_score, year, state) %>%

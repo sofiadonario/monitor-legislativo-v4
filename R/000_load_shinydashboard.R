@@ -8,7 +8,8 @@ if (!requireNamespace("jsonlite", quietly = TRUE)) {
 }
 library(jsonlite)
 
-if (!requireNamespace("shinydashboard", quietly = TRUE)) {
-  stop("Package 'shinydashboard' is required but not installed in the runtime image.")
-}
-library(shinydashboard)
+# DISABLED v44: Community diagnosis confirmed shinydashboard causes extent=0 error
+# if (!requireNamespace("shinydashboard", quietly = TRUE)) {
+#   stop("Package 'shinydashboard' is required but not installed in the runtime image.")
+# }
+# library(shinydashboard)

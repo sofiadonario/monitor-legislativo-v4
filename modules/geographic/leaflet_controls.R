@@ -979,7 +979,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             ")
           })
 
-          if (!is.null(categories) && is.data.frame(categories) && nrow(categories) > 0) {
+          if (!isTRUE(is.null(categories)) && is.data.frame(categories) && nrow(categories) > 0) {
             # Create named vector for selectInput
             category_choices <- setNames(
               categories$category,
@@ -1016,7 +1016,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             ")
           })
 
-          if (!is.null(states) && is.data.frame(states) && nrow(states) > 0) {
+          if (!isTRUE(is.null(states)) && is.data.frame(states) && nrow(states) > 0) {
             # Create named vector
             state_choices <- setNames(
               states$estado,
@@ -1055,7 +1055,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             ")
           })
 
-          if (!is.null(range_data) && is.data.frame(range_data) && nrow(range_data) > 0) {
+          if (!isTRUE(is.null(range_data)) && is.data.frame(range_data) && nrow(range_data) > 0) {
             return(c(
               min = max(1, range_data$min_count[1]),
               max = range_data$max_count[1]
@@ -1129,7 +1129,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Filter application
       apply_current_filters = function(data) {
         
-        if (is.null(data) || length(self$current_filters) == 0) {
+        if (isTRUE(is.null(data)) || length(self$current_filters) == 0) {
           return(data)
         }
         
@@ -1139,7 +1139,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
         for (filter_name in names(self$current_filters)) {
           filter_value <- self$current_filters[[filter_name]]
           
-          if (!is.null(filter_value) && length(filter_value) > 0) {
+          if (!isTRUE(is.null(filter_value)) && length(filter_value) > 0) {
             filtered_data <- switch(filter_name,
               "categories" = filtered_data %>% filter(categoria_original %in% filter_value),
               "states" = filtered_data %>% filter(estado %in% filter_value),
@@ -1194,7 +1194,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
         for (filter_name in names(self$current_filters)) {
           filter_value <- self$current_filters[[filter_name]]
           
-          if (!is.null(filter_value) && length(filter_value) > 0) {
+          if (!isTRUE(is.null(filter_value)) && length(filter_value) > 0) {
             description <- switch(filter_name,
               "categories" = paste0("Categories: ", length(filter_value), " selected"),
               "states" = paste0("States: ", length(filter_value), " selected"),

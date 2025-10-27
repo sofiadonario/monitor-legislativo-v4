@@ -96,7 +96,7 @@ get_brazil_boundaries <- function(cache_dir = "cache/boundaries", force_refresh 
 #' @param cache_dir Directory for GeoJSON cache
 #' @return GeoJSON object for plotly or NULL if failed
 sf_to_plotly_geojson <- function(boundaries, cache_dir = "cache/boundaries") {
-  if (is.null(boundaries) || !inherits(boundaries, "sf")) {
+  if (isTRUE(is.null(boundaries)) || !inherits(boundaries, "sf")) {
     return(NULL)
   }
   
@@ -257,7 +257,7 @@ initialize_geospatial_system <- function() {
   # Convert to GeoJSON for plotly
   geojson <- sf_to_plotly_geojson(boundaries, cache_dir)
   
-  success <- !is.null(boundaries) && !is.null(geojson)
+  success <- !isTRUE(is.null(boundaries)) && !is.null(geojson)
   
   if (success) {
     cat("✅ Geospatial system initialized successfully\n")

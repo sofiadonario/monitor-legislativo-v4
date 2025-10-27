@@ -411,7 +411,7 @@ MetricsCollector <- R6::R6Class("MetricsCollector",
         metric <- self$metrics_store[[metric_id]]
         
         if (metric$timestamp >= cutoff_time) {
-          if (is.null(metric_type) || metric$type == metric_type) {
+          if (isTRUE(is.null(metric_type)) || metric$type == metric_type) {
             recent_metrics[[metric_id]] <- metric
           }
         }
@@ -542,7 +542,7 @@ AnomalyDetector <- R6::R6Class("AnomalyDetector",
       baseline_mean <- mean(baseline_values, na.rm = TRUE)
       baseline_sd <- sd(baseline_values, na.rm = TRUE)
       
-      if (is.na(baseline_sd) || baseline_sd == 0) {
+      if (isTRUE(is.na(baseline_sd)) || baseline_sd == 0) {
         return(anomalies)
       }
       
@@ -600,7 +600,7 @@ AnomalyDetector <- R6::R6Class("AnomalyDetector",
         slope <- coef(model)[2]
         
         # Detect significant trends
-        if (!is.na(slope) && abs(slope) > sd(values, na.rm = TRUE) * 0.1) {
+        if (!isTRUE(is.na(slope)) && abs(slope) > sd(values, na.rm = TRUE) * 0.1) {
           trend_type <- if (slope > 0) "increasing" else "decreasing"
           
           return(list(list(
@@ -642,7 +642,7 @@ AlertManager <- R6::R6Class("AlertManager",
       
       # Check pipeline performance thresholds
       pipeline_duration <- metrics_collector$get_metric_summary("pipeline_duration_minutes", 1)
-      if (!is.null(pipeline_duration) && !is.na(pipeline_duration$last_value)) {
+      if (!isTRUE(is.null(pipeline_duration)) && !is.na(pipeline_duration$last_value)) {
         if (pipeline_duration$last_value > MONITORING_CONFIG$thresholds$etl_duration_critical_minutes) {
           alerts <- append(alerts, list(self$create_alert(
             type = "performance",
@@ -670,7 +670,7 @@ AlertManager <- R6::R6Class("AlertManager",
       
       # Check validation rate thresholds
       validation_rate <- metrics_collector$get_metric_summary("validation_rate", 1)
-      if (!is.null(validation_rate) && !is.na(validation_rate$last_value)) {
+      if (!isTRUE(is.null(validation_rate)) && !is.na(validation_rate$last_value)) {
         if (validation_rate$last_value < MONITORING_CONFIG$thresholds$validation_rate_critical) {
           alerts <- append(alerts, list(self$create_alert(
             type = "data_quality",
@@ -698,7 +698,7 @@ AlertManager <- R6::R6Class("AlertManager",
       
       # Check memory usage thresholds
       memory_usage <- metrics_collector$get_metric_summary("memory_used_gb", 1)
-      if (!is.null(memory_usage) && !is.na(memory_usage$last_value)) {
+      if (!isTRUE(is.null(memory_usage)) && !is.na(memory_usage$last_value)) {
         if (memory_usage$last_value > MONITORING_CONFIG$thresholds$memory_critical_gb) {
           alerts <- append(alerts, list(self$create_alert(
             type = "system",
@@ -726,7 +726,7 @@ AlertManager <- R6::R6Class("AlertManager",
       
       # Check data quality thresholds
       duplicate_rate <- metrics_collector$get_metric_summary("duplicate_rate", 6)
-      if (!is.null(duplicate_rate) && !is.na(duplicate_rate$last_value)) {
+      if (!isTRUE(is.null(duplicate_rate)) && !is.na(duplicate_rate$last_value)) {
         if (duplicate_rate$last_value > MONITORING_CONFIG$thresholds$duplicate_rate_critical) {
           alerts <- append(alerts, list(self$create_alert(
             type = "data_quality",

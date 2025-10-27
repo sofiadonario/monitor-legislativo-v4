@@ -19,7 +19,7 @@ source("RAILWAY_PRODUCTION_DB_FIX.R")
 
 # Function to run diagnostic queries
 run_category_diagnostics <- function() {
-  if (is.null(railway_db_pool) || connection_status$status != "connected") {
+  if (isTRUE(is.null(railway_db_pool)) || connection_status$status != "connected") {
     cat("❌ Database not connected. Cannot run diagnostics.\n")
     return(FALSE)
   }
@@ -37,7 +37,7 @@ run_category_diagnostics <- function() {
       count_query <- sprintf("SELECT COUNT(*) as count FROM %s WHERE titulo IS NOT NULL AND titulo != ''", table_name)
       result <- dbGetQuery(railway_db_pool, count_query)
       
-      if(nrow(result) > 0 && result$count > max_count) {
+      if(isTRUE(nrow(result) > 0) && result$count > max_count) {
         max_count <- result$count  
         main_table <- table_name
         cat(sprintf("✅ Found table: %s with %s documents\n", table_name, format(result$count, big.mark = ",")))

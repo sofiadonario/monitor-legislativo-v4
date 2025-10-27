@@ -193,7 +193,7 @@ preprocess_legal_text <- function(texts, remove_stopwords = TRUE,
   # Step 3: Portuguese stemming if requested
   if (stem_words) {
     cleaned_texts <- map_chr(cleaned_texts, function(text) {
-      if (is.na(text) || nchar(text) == 0) return(text)
+      if (isTRUE(is.na(text)) || nchar(text) == 0) return(text)
       words <- str_split(text, "\\s+")[[1]]
       stemmed_words <- wordStem(words, language = "portuguese")
       paste(stemmed_words[stemmed_words != ""], collapse = " ")

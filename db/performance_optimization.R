@@ -128,7 +128,7 @@ get_cached_table_info <- function() {
           for (query in count_queries) {
             tryCatch({
               result <- dbGetQuery(pool, query)
-              if (nrow(result) > 0 && !is.na(scalar(result$count))) {
+              if (isTRUE(nrow(result) > 0) && !is.na(scalar(result$count))) {
                 count <- scalar_num(result$count, 0)
                 break
               }
@@ -258,7 +258,7 @@ execute_optimized_query <- function(query, params = NULL, cache_key = NULL, cach
   
   tryCatch({
     # Execute query with parameters
-    if (is.null(params) || length(params) == 0) {
+    if (isTRUE(is.null(params)) || length(params) == 0) {
       result <- dbGetQuery(pool, query)
     } else {
       result <- dbGetQuery(pool, query, params = params)
@@ -285,7 +285,7 @@ execute_optimized_query <- function(query, params = NULL, cache_key = NULL, cach
     cat("⚡ Query executed in", round(query_time, 3), "seconds, returned", nrow(result), "rows\n")
     
     # Cache result if cache_key provided
-    if (!is.null(cache_key) && nrow(result) > 0) {
+    if (!isTRUE(is.null(cache_key)) && nrow(result) > 0) {
       set_query_cache(cache_key, result, cache_ttl)
     }
     
@@ -378,7 +378,7 @@ get_library_documents_optimized <- function(category = "all", search_term = "", 
   param_count <- 0
   
   # Add title/content filter (uses text search indexes)
-  if (search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
+  if (search_term != "" && !isTRUE(is.null(search_term)) && nchar(trimws(search_term)) > 0) {
     param_count <- param_count + 1
     # Use PostgreSQL text search for better performance
     where_conditions <- c(where_conditions, sprintf("
@@ -475,7 +475,7 @@ get_library_documents_optimized <- function(category = "all", search_term = "", 
   # Execute with caching (5 minute TTL for search results)
   result <- execute_optimized_query(base_query, params, cache_key, 300)
   
-  if (!is.null(result) && nrow(result) > 0) {
+  if (!isTRUE(is.null(result)) && nrow(result) > 0) {
     cat("✅ Optimized query returned", nrow(result), "documents\n")
     
     # Clean and standardize the result
@@ -491,7 +491,7 @@ get_library_documents_optimized <- function(category = "all", search_term = "", 
 #' @param data Raw query result data frame
 #' @return Standardized data frame
 standardize_document_columns <- function(data) {
-  if (is.null(data) || nrow(data) == 0) return(data)
+  if (isTRUE(is.null(data)) || nrow(data) == 0) return(data)
   
   # Ensure required columns exist
   required_cols <- c("id", "title", "category", "state", "date", "url", "summary", 
@@ -605,7 +605,7 @@ get_fallback_documents_optimized <- function(category = "all", search_term = "",
   }
   
   # Search term filter
-  if (search_term != "" && !is.null(search_term) && nchar(trimws(search_term)) > 0) {
+  if (search_term != "" && !isTRUE(is.null(search_term)) && nchar(trimws(search_term)) > 0) {
     search_pattern <- paste0(".*", search_term, ".*")
     title_match <- grepl(search_pattern, filtered_docs$title, ignore.case = TRUE)
     summary_match <- grepl(search_pattern, filtered_docs$summary, ignore.case = TRUE)
@@ -655,22 +655,22 @@ get_dashboard_metrics_optimized <- function() {
     tryCatch({
       # Execute optimized count queries
       total_result <- execute_optimized_query(metrics_queries$total_docs)
-      if (!is.null(total_result) && nrow(total_result) > 0) {
+      if (!isTRUE(is.null(total_result)) && nrow(total_result) > 0) {
         total_docs <- scalar_num(total_result$count, 0)
       }
       
       states_result <- execute_optimized_query(metrics_queries$unique_states)
-      if (!is.null(states_result) && nrow(states_result) > 0) {
+      if (!isTRUE(is.null(states_result)) && nrow(states_result) > 0) {
         unique_states <- scalar_num(states_result$count, 0)
       }
       
       munic_result <- execute_optimized_query(metrics_queries$unique_municipalities)
-      if (!is.null(munic_result) && nrow(munic_result) > 0) {
+      if (!isTRUE(is.null(munic_result)) && nrow(munic_result) > 0) {
         unique_municipalities <- scalar_num(munic_result$count, 0)
       }
       
       date_result <- execute_optimized_query(metrics_queries$date_range)
-      if (!is.null(date_result) && nrow(date_result) > 0 && !is.na(scalar(date_result$min_date)) && !is.na(scalar(date_result$max_date))) {
+      if (!isTRUE(is.null(date_result)) && isTRUE(nrow(date_result) > 0) && !is.na(scalar(date_result$min_date)) && !is.na(scalar(date_result$max_date))) {
         min_date <- as.Date(scalar(date_result$min_date))
         max_date <- as.Date(scalar(date_result$max_date))
         date_range_years <- as.numeric(difftime(max_date, min_date, units = "days")) / 365.25

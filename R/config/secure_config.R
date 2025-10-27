@@ -16,8 +16,8 @@ library(digest)
 get_config <- function(key, default = NULL, required = FALSE, mask = FALSE) {
   value <- Sys.getenv(key, unset = NA)
 
-  if (is.na(value) || value == "") {
-    if (required && is.null(default)) {
+  if (isTRUE(is.na(value)) || value == "") {
+    if (required && isTRUE(is.null(default))) {
       stop(sprintf("Required configuration '%s' not found in environment", key))
     }
     value <- default
@@ -53,7 +53,7 @@ get_auth_credentials <- function() {
   # Check for custom auth configuration file
   auth_config_file <- get_config("AUTH_CONFIG_FILE")
 
-  if (!is.null(auth_config_file) && file.exists(auth_config_file)) {
+  if (!isTRUE(is.null(auth_config_file)) && file.exists(auth_config_file)) {
     # Load from external file (JSON or R source)
     if (endsWith(auth_config_file, ".json")) {
       return(jsonlite::fromJSON(auth_config_file))
@@ -106,7 +106,7 @@ get_api_keys <- function() {
   # Check for external API key configuration
   api_keys_file <- get_config("API_KEYS_FILE")
 
-  if (!is.null(api_keys_file) && file.exists(api_keys_file)) {
+  if (!isTRUE(is.null(api_keys_file)) && file.exists(api_keys_file)) {
     # Load from external file
     if (endsWith(api_keys_file, ".json")) {
       return(jsonlite::fromJSON(api_keys_file))
@@ -201,7 +201,7 @@ validate_config <- function() {
 
   # Check authentication configuration
   auth_config <- tryCatch(get_auth_credentials(), error = function(e) NULL)
-  if (is.null(auth_config) || length(auth_config) == 0) {
+  if (isTRUE(is.null(auth_config)) || length(auth_config) == 0) {
     errors <- c(errors, "Authentication configuration incomplete")
   }
 

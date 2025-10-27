@@ -56,7 +56,7 @@ server <- function(input, output, session) {
     # Perform search
     results <- tryCatch({
       filters <- list(search = search_term)
-      if (!is.null(input$filter_state) && input$filter_state != "all") {
+      if (!isTRUE(is.null(input$filter_state)) && input$filter_state != "all") {
         filters$state <- input$filter_state
       }
       get_documents(filters = filters, limit = 500)

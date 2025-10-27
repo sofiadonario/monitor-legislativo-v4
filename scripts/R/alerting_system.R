@@ -181,7 +181,7 @@ schedule_next_evaluation <- function() {
 
 #' Evaluate All Active Alert Rules
 evaluate_all_alerts <- function() {
-  if (!.alerting_state$enabled || is.null(.db_pool)) {
+  if (!.alerting_state$enabled || isTRUE(is.null(.db_pool))) {
     return(FALSE)
   }
   
@@ -197,7 +197,7 @@ evaluate_all_alerts <- function() {
     # Evaluate each active rule
     alerts_triggered <- 0
     
-    if (!is.null(.alerting_state$active_rules) && nrow(.alerting_state$active_rules) > 0) {
+    if (!isTRUE(is.null(.alerting_state$active_rules)) && nrow(.alerting_state$active_rules) > 0) {
       for (i in 1:nrow(.alerting_state$active_rules)) {
         rule <- .alerting_state$active_rules[i, ]
         
@@ -206,7 +206,7 @@ evaluate_all_alerts <- function() {
           # Evaluate rule against latest metrics
           alert_result <- evaluate_single_alert_rule(rule, latest_metrics)
           
-          if (!is.null(alert_result) && alert_result$triggered) {
+          if (!isTRUE(is.null(alert_result)) && alert_result$triggered) {
             # Create alert and send notifications
             created_alert <- create_alert_record(rule, alert_result)
             
@@ -261,7 +261,7 @@ collect_latest_metrics_for_alerting <- function() {
     # Database performance metrics
     if (exists("get_database_performance_analysis")) {
       db_analysis <- get_database_performance_analysis()
-      if (!is.null(db_analysis) && is.null(db_analysis$error)) {
+      if (!isTRUE(is.null(db_analysis)) && isTRUE(is.null(db_analysis$error))) {
         metrics$database <- list(
           pool_active_connections = db_analysis$connection_pool$active_connections,
           slow_queries_count = db_analysis$query_performance$slow_queries_count,
@@ -279,7 +279,7 @@ collect_latest_metrics_for_alerting <- function() {
     # User activity metrics
     if (exists("get_user_activity_summary")) {
       user_summary <- get_user_activity_summary()
-      if (!is.null(user_summary) && is.null(user_summary$error)) {
+      if (!isTRUE(is.null(user_summary)) && isTRUE(is.null(user_summary$error))) {
         metrics$user_activity <- list(
           user_satisfaction_score = user_summary$user_satisfaction,
           bounce_rate_percent = user_summary$bounce_rate
@@ -304,7 +304,7 @@ evaluate_single_alert_rule <- function(rule, metrics) {
     # Get the metric value based on rule type and name
     metric_value <- extract_metric_value(rule$metric_type, rule$metric_name, metrics)
     
-    if (is.null(metric_value) || is.na(metric_value)) {
+    if (isTRUE(is.null(metric_value)) || isTRUE(is.na(metric_value))) {
       return(NULL)
     }
     
@@ -321,7 +321,7 @@ evaluate_single_alert_rule <- function(rule, metrics) {
     }
     
     # Check warning threshold if no critical alert
-    if (is.null(alert_level) && !is.na(rule$warning_threshold)) {
+    if (isTRUE(is.null(alert_level)) && !is.na(rule$warning_threshold)) {
       if (evaluate_threshold(metric_value, rule$warning_threshold, rule$comparison_operator)) {
         alert_level <- "warning"
         threshold_value <- rule$warning_threshold
@@ -930,7 +930,7 @@ create_custom_alert_rule <- function(rule_name, rule_description, metric_type, m
       stop("Invalid comparison_operator. Must be one of: ", paste(valid_operators, collapse = ", "))
     }
     
-    if (is.null(warning_threshold) && is.null(critical_threshold)) {
+    if (isTRUE(is.null(warning_threshold)) && isTRUE(is.null(critical_threshold))) {
       stop("At least one threshold (warning or critical) must be specified")
     }
     
@@ -969,7 +969,7 @@ test_alert_system <- function(rule_name = NULL) {
     test_results <- list(
       timestamp = Sys.time(),
       database_connection = !is.null(.db_pool),
-      rules_loaded = !is.null(.alerting_state$active_rules) && nrow(.alerting_state$active_rules) > 0,
+      rules_loaded = !isTRUE(is.null(.alerting_state$active_rules)) && nrow(.alerting_state$active_rules) > 0,
       notification_channels = list()
     )
     
@@ -985,7 +985,7 @@ test_alert_system <- function(rule_name = NULL) {
     }, error = function(e) FALSE)
     
     # Test alert evaluation (dry run)
-    if (!is.null(rule_name) && test_results$rules_loaded) {
+    if (!isTRUE(is.null(rule_name)) && test_results$rules_loaded) {
       test_rule <- .alerting_state$active_rules[.alerting_state$active_rules$rule_name == rule_name, ]
       if (nrow(test_rule) > 0) {
         test_metrics <- collect_latest_metrics_for_alerting()

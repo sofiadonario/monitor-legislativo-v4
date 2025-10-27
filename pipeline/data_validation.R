@@ -131,7 +131,7 @@ DocumentValidator <- R6::R6Class("DocumentValidator",
     },
     
     validate_document_batch = function(documents, strict_mode = FALSE) {
-      if (is.null(documents) || nrow(documents) == 0) {
+      if (isTRUE(is.null(documents)) || nrow(documents) == 0) {
         return(list(valid_documents = data.frame(), validation_report = self$create_empty_report()))
       }
       
@@ -338,7 +338,7 @@ DocumentValidator <- R6::R6Class("DocumentValidator",
       
       # Fuzzy match document types
       for (i in 1:nrow(documents)) {
-        if (is.na(documents$tipo[i]) || documents$tipo[i] == "") next
+        if (isTRUE(is.na(documents$tipo[i])) || documents$tipo[i] == "") next
         
         # Check exact match first
         if (documents$tipo[i] %in% valid_types) next
@@ -370,7 +370,7 @@ DocumentValidator <- R6::R6Class("DocumentValidator",
       authority_patterns <- self$validation_rules$document_categories$authority_patterns
       
       for (i in 1:nrow(documents)) {
-        if (is.na(documents$autoridade[i]) || documents$autoridade[i] == "") next
+        if (isTRUE(is.na(documents$autoridade[i])) || documents$autoridade[i] == "") next
         
         authority <- tolower(documents$autoridade[i])
         recognized <- FALSE
@@ -478,7 +478,7 @@ DocumentValidator <- R6::R6Class("DocumentValidator",
       )
       
       for (i in seq_along(date_strings)) {
-        if (is.na(date_strings[i]) || date_strings[i] == "") next
+        if (isTRUE(is.na(date_strings[i])) || date_strings[i] == "") next
         
         for (fmt in date_formats) {
           tryCatch({
@@ -538,7 +538,7 @@ DocumentValidator <- R6::R6Class("DocumentValidator",
     },
     
     analyze_error_patterns = function(error_text) {
-      if (is.na(error_text) || error_text == "") {
+      if (isTRUE(is.na(error_text)) || error_text == "") {
         return(list())
       }
       
@@ -599,7 +599,7 @@ DuplicateDetector <- R6::R6Class("DuplicateDetector",
     },
     
     detect_and_remove_duplicates = function(documents) {
-      if (is.null(documents) || nrow(documents) == 0) return(documents)
+      if (isTRUE(is.null(documents)) || nrow(documents) == 0) return(documents)
       
       log_etl("INFO", sprintf("Starting duplicate detection for %d documents", nrow(documents)), "DEDUPLICATOR")
       start_time <- Sys.time()
@@ -709,7 +709,7 @@ DuplicateDetector <- R6::R6Class("DuplicateDetector",
     },
     
     normalize_text = function(text) {
-      if (is.null(text) || is.na(text) || text == "") return("")
+      if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || text == "") return("")
       
       # Convert to lowercase and remove extra whitespace
       normalized <- tolower(stringr::str_trim(stringr::str_squish(as.character(text))))
@@ -881,7 +881,7 @@ ValidationOrchestrator <- R6::R6Class("ValidationOrchestrator",
     },
     
     run_full_validation = function(documents, strict_mode = FALSE) {
-      if (is.null(documents) || nrow(documents) == 0) {
+      if (isTRUE(is.null(documents)) || nrow(documents) == 0) {
         return(list(
           valid_documents = data.frame(),
           validation_report = self$document_validator$create_empty_report()

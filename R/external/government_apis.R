@@ -251,11 +251,11 @@ get_antt_transport_data <- function(dataset = "frota", year = NULL, state = NULL
         }
         
         # Filter by parameters
-        if (!is.null(year) && "ano" %in% names(data)) {
+        if (!isTRUE(is.null(year)) && "ano" %in% names(data)) {
           data <- data[data$ano == year, ]
         }
         
-        if (!is.null(state) && "uf" %in% names(data)) {
+        if (!isTRUE(is.null(state)) && "uf" %in% names(data)) {
           data <- data[data$uf == state, ]
         }
         

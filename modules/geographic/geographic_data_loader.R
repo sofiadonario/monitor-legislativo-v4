@@ -254,7 +254,7 @@ GeographicDataLoader <- R6::R6Class("GeographicDataLoader",
             municipality_limit <- GEODATA_CONFIG$priority$municipality_limits[[state_code]] %||%
                                  GEODATA_CONFIG$priority$municipality_limits$default
 
-            if (!is.null(state_municipalities) && is.data.frame(state_municipalities) && nrow(state_municipalities) > municipality_limit) {
+            if (!isTRUE(is.null(state_municipalities)) && is.data.frame(state_municipalities) && nrow(state_municipalities) > municipality_limit) {
               # Prioritize by area (keep larger municipalities)
               state_municipalities <- state_municipalities %>%
                 arrange(desc(area_km2)) %>%
@@ -331,7 +331,7 @@ GeographicDataLoader <- R6::R6Class("GeographicDataLoader",
     # Helper methods
     apply_quality_filters = function(spatial_data, level = "unknown") {
       
-      if (is.null(spatial_data) || nrow(spatial_data) == 0) {
+      if (isTRUE(is.null(spatial_data)) || nrow(spatial_data) == 0) {
         return(spatial_data)
       }
       
@@ -353,7 +353,7 @@ GeographicDataLoader <- R6::R6Class("GeographicDataLoader",
       }
 
       # Coordinate precision
-      if (!is.null(filtered_data) && is.data.frame(filtered_data) && nrow(filtered_data) > 0) {
+      if (!isTRUE(is.null(filtered_data)) && is.data.frame(filtered_data) && nrow(filtered_data) > 0) {
         # Round coordinates to specified precision
         precision <- GEODATA_CONFIG$quality$coordinate_precision
         filtered_data <- filtered_data %>%

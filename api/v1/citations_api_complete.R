@@ -96,7 +96,7 @@ BRAZILIAN_LEGAL_CITATION_RULES <- list(
 
 # Citation utility functions
 format_authors <- function(authors, format_style) {
-  if (is.null(authors) || nchar(authors) == 0) {
+  if (isTRUE(is.null(authors)) || nchar(authors) == 0) {
     return("")
   }
   
@@ -133,7 +133,7 @@ format_authors <- function(authors, format_style) {
 }
 
 format_date <- function(date, format_style) {
-  if (is.null(date) || is.na(date)) {
+  if (isTRUE(is.null(date)) || isTRUE(is.na(date))) {
     return("")
   }
   
@@ -173,7 +173,7 @@ generate_citation <- function(document, format_style, document_type = "legal_doc
   # Extract document information
   author <- format_authors(document$author %||% document$autor %||% "BRASIL", format_style)
   title <- document$title %||% document$titulo %||% ""
-  year <- if (!is.null(document$publication_date) || !is.null(document$data_publicacao)) {
+  year <- if (!isTRUE(is.null(document$publication_date)) || !is.null(document$data_publicacao)) {
     format(as.Date(document$publication_date %||% document$data_publicacao), "%Y")
   } else {
     format(Sys.Date(), "%Y")
@@ -243,7 +243,7 @@ function(document_id, format = "abnt", include_metadata = FALSE, language = "pt"
   API_STATE$request_count <<- API_STATE$request_count + 1
   start_time <- Sys.time()
   
-  if (is.null(document_id) || nchar(trimws(document_id)) == 0) {
+  if (isTRUE(is.null(document_id)) || nchar(trimws(document_id)) == 0) {
     return(error_response("Document ID is required for citation generation", 400))
   }
   
@@ -289,7 +289,7 @@ function(document_id, format = "abnt", include_metadata = FALSE, language = "pt"
     }
     
     # Fallback document data
-    if (is.null(document_data) || nrow(document_data) == 0) {
+    if (isTRUE(is.null(document_data)) || nrow(document_data) == 0) {
       document_data <- list(
         id = document_id,
         title = paste("Documento", document_id),
@@ -562,7 +562,7 @@ function(document_id, depth = 2, include_visualization = TRUE, analysis_type = "
   API_STATE$request_count <<- API_STATE$request_count + 1
   start_time <- Sys.time()
   
-  if (is.null(document_id) || nchar(trimws(document_id)) == 0) {
+  if (isTRUE(is.null(document_id)) || nchar(trimws(document_id)) == 0) {
     return(error_response("Document ID is required for network analysis", 400))
   }
   

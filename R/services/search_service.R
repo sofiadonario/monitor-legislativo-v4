@@ -89,7 +89,7 @@ SearchService <- R6::R6Class("SearchService",
       }
 
       # Handle empty results
-      if (is.null(results) || nrow(results) == 0) {
+      if (isTRUE(is.null(results)) || nrow(results) == 0) {
         results <- data.frame()
       }
 
@@ -144,7 +144,7 @@ SearchService <- R6::R6Class("SearchService",
 
     #' Sanitize search term to prevent injection
     sanitize_search_term = function(search_term) {
-      if (is.null(search_term) || search_term == "") {
+      if (isTRUE(is.null(search_term)) || search_term == "") {
         return("")
       }
       # Remove potentially dangerous characters

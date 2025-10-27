@@ -125,7 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_usage_log_timestamp ON api_key_usage_log(timestam
 # Create API Key in Database
 create_api_key <- function(user_id, tier = "demo", purpose = NULL, expiry_days = NULL, permissions = NULL) {
   # Validate inputs
-  if (is.null(user_id) || !is.numeric(user_id)) {
+  if (isTRUE(is.null(user_id)) || !is.numeric(user_id)) {
     return(list(success = FALSE, error = "Valid user_id is required"))
   }
   
@@ -272,12 +272,12 @@ validate_api_key_from_db <- function(api_key) {
       }
       
       # Check expiration
-      if (!is.na(key_info$expires_at) && key_info$expires_at < Sys.time()) {
+      if (!isTRUE(is.na(key_info$expires_at)) && key_info$expires_at < Sys.time()) {
         return(list(valid = FALSE, error = "API key has expired"))
       }
       
       # Check if key is locked due to failed attempts
-      if (!is.na(key_info$locked_until) && key_info$locked_until > Sys.time()) {
+      if (!isTRUE(is.na(key_info$locked_until)) && key_info$locked_until > Sys.time()) {
         return(list(valid = FALSE, error = "API key is temporarily locked"))
       }
       
@@ -302,7 +302,7 @@ validate_api_key_from_db <- function(api_key) {
         for (key_data in API_KEYS_STORAGE) {
           if (key_data$api_key_hash == api_key_hash) {
             if (key_data$status == "active" && 
-                (is.null(key_data$expires_at) || key_data$expires_at > Sys.time())) {
+                (isTRUE(is.null(key_data$expires_at)) || key_data$expires_at > Sys.time())) {
               return(list(valid = TRUE, key_info = key_data))
             } else {
               return(list(valid = FALSE, error = "API key is inactive or expired"))

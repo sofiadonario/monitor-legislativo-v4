@@ -98,15 +98,15 @@ update_database_queries <- function() {
       WHERE 1=1
     "
     
-    if (!is.null(search_term) && search_term != "") {
+    if (!isTRUE(is.null(search_term)) && search_term != "") {
       query <- paste(query, "AND (title ILIKE '%", search_term, "%' OR document_summary ILIKE '%", search_term, "%')")
     }
     
-    if (!is.null(doc_type) && doc_type != "") {
+    if (!isTRUE(is.null(doc_type)) && doc_type != "") {
       query <- paste(query, "AND urn_type =", paste0("'", doc_type, "'"))
     }
     
-    if (!is.null(state) && state != "") {
+    if (!isTRUE(is.null(state)) && state != "") {
       query <- paste(query, "AND state =", paste0("'", state, "'"))
     }
     

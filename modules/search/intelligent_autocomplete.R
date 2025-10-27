@@ -128,7 +128,7 @@ generate_autocomplete_suggestions <- function(partial_query,
   
   tryCatch({
     # Input validation
-    if (is.null(partial_query) || nchar(trimws(partial_query)) < .autocomplete_config$min_query_length) {
+    if (isTRUE(is.null(partial_query)) || nchar(trimws(partial_query)) < .autocomplete_config$min_query_length) {
       return(create_empty_suggestions_response(partial_query))
     }
     
@@ -310,7 +310,7 @@ get_transport_suggestions <- function(query, context) {
   # Prioritize based on current transport context
   modal_priority <- names(.autocomplete_config$transport_modals)
   
-  if (!is.null(context$transport_category) && context$transport_category != "Geral") {
+  if (!isTRUE(is.null(context$transport_category)) && context$transport_category != "Geral") {
     # Move current modal to front
     current_modal <- switch(tolower(context$transport_category),
                            "aéreo" = "aereo",
@@ -321,7 +321,7 @@ get_transport_suggestions <- function(query, context) {
                            "urbano" = "urbano",
                            NULL)
     
-    if (!is.null(current_modal) && current_modal %in% modal_priority) {
+    if (!isTRUE(is.null(current_modal)) && current_modal %in% modal_priority) {
       modal_priority <- c(current_modal, setdiff(modal_priority, current_modal))
     }
   }
@@ -592,7 +592,7 @@ calculate_suggestion_score <- function(term, query, base_weight, context) {
   }
   
   # Context relevance bonus
-  if (!is.null(context$transport_category) && context$transport_category != "Geral") {
+  if (!isTRUE(is.null(context$transport_category)) && context$transport_category != "Geral") {
     transport_terms <- unlist(.autocomplete_config$transport_modals)
     if (any(sapply(transport_terms, function(t) grepl(tolower(t), term_lower)))) {
       score <- score + 3
@@ -600,7 +600,7 @@ calculate_suggestion_score <- function(term, query, base_weight, context) {
   }
   
   # Geographic context bonus
-  if (!is.null(context$estado) && context$estado != "all") {
+  if (!isTRUE(is.null(context$estado)) && context$estado != "all") {
     if (grepl(context$estado, term, ignore.case = TRUE)) {
       score <- score + 3
     }

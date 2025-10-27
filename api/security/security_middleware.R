@@ -156,7 +156,7 @@ SecurityMiddlewareController <- list(
         }
         
         # Check if component failed and should block request
-        if (!is.null(component_result$block_request) && component_result$block_request) {
+        if (!isTRUE(is.null(component_result$block_request)) && component_result$block_request) {
           return(component_result)
         }
       }
@@ -292,7 +292,7 @@ SecurityMiddlewareController <- list(
     
     # Basic CORS for localhost (development)
     origin <- req$HTTP_ORIGIN
-    if (!is.null(origin) && (grepl("localhost", origin) || grepl("127.0.0.1", origin))) {
+    if (!isTRUE(is.null(origin)) && (grepl("localhost", origin) || grepl("127.0.0.1", origin))) {
       res$setHeader("Access-Control-Allow-Origin", origin)
       res$setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
       res$setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key")
@@ -349,7 +349,7 @@ SecurityMiddlewareController <- list(
     
     # Re-apply CORS headers if origin validation was successful
     origin <- req$HTTP_ORIGIN
-    if (!is.null(origin) && !is.null(cached_result$cors_result) && cached_result$cors_result$success) {
+    if (!isTRUE(is.null(origin)) && !isTRUE(is.null(cached_result$cors_result)) && cached_result$cors_result$success) {
       # Note: This is simplified - in production, you might want to re-validate CORS
       res$setHeader("Access-Control-Allow-Origin", origin)
     }
@@ -402,7 +402,7 @@ SecurityMiddlewareController <- list(
   
   # Log security processing
   log_security_processing = function(req, results) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(FALSE)
     }
     
@@ -454,9 +454,9 @@ function(req, res) {
   security_context <- SecurityMiddlewareController$process_security(req, res)
   
   # Check if request should be blocked
-  if (!is.null(security_context$results) && 
-      !is.null(security_context$results$cors_result) &&
-      !is.null(security_context$results$cors_result$block_request) &&
+  if (!isTRUE(is.null(security_context$results)) && 
+      !isTRUE(is.null(security_context$results$cors_result)) &&
+      !isTRUE(is.null(security_context$results$cors_result$block_request)) &&
       security_context$results$cors_result$block_request) {
     
     # Return the blocking response
@@ -478,7 +478,7 @@ function(req, res) {
 SecurityMiddlewareStats <- list(
   # Get security middleware performance statistics
   get_performance_stats = function(period_days = 7) {
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(error = "Database not available"))
     }
     

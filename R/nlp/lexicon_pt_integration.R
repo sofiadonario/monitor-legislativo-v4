@@ -191,7 +191,7 @@ analyze_portuguese_sentiment <- function(text,
                                        enable_caching = TRUE,
                                        parallel_processing = TRUE) {
   
-  if (is.null(text) || length(text) == 0) {
+  if (isTRUE(is.null(text)) || length(text) == 0) {
     return(data.frame(
       text_id = integer(0),
       sentiment_score = numeric(0),
@@ -292,7 +292,7 @@ analyze_single_document_sentiment <- function(text,
                                             preserve_legal_terms = TRUE) {
   
   # Handle empty or NA text
-  if (is.null(text) || is.na(text) || nchar(trimws(text)) == 0) {
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || nchar(trimws(text)) == 0) {
     return(list(
       sentiment_score = 0,
       sentiment_category = "Neutral",
@@ -529,7 +529,7 @@ calculate_fallback_portuguese_sentiment <- function(processed_text) {
 #' @return Preprocessed text
 preprocess_portuguese_text <- function(text, preserve_legal_terms = TRUE) {
   
-  if (is.null(text) || is.na(text)) {
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text))) {
     return("")
   }
   

@@ -296,7 +296,7 @@ update_interaction_matrix <- function(user_id, document_id, interaction_type, ra
     }
     
     # Initialize matrix if empty
-    if (nrow(user_interactions$matrix) == 0 || ncol(user_interactions$matrix) == 0) {
+    if (isTRUE(nrow(user_interactions$matrix) == 0) || ncol(user_interactions$matrix) == 0) {
       user_interactions$matrix <- Matrix(0, 
                                        nrow = length(user_interactions$users), 
                                        ncol = length(user_interactions$items), 
@@ -307,7 +307,7 @@ update_interaction_matrix <- function(user_id, document_id, interaction_type, ra
     user_idx <- which(user_interactions$users == user_id)
     item_idx <- which(user_interactions$items == document_id)
     
-    if (length(user_idx) > 0 && length(item_idx) > 0) {
+    if (isTRUE(length(user_idx) > 0) && length(item_idx) > 0) {
       # Combine with existing rating if any
       existing_rating <- user_interactions$matrix[user_idx, item_idx]
       combined_rating <- max(existing_rating, numeric_rating)
@@ -350,7 +350,7 @@ generate_collaborative_recommendations <- function(user_id, n_recommendations = 
     cat("🤝 Generating collaborative filtering recommendations for user:", user_id, "\n")
     
     # Check if we have enough data
-    if (is.null(user_interactions$matrix) || nrow(user_interactions$matrix) < 2) {
+    if (isTRUE(is.null(user_interactions$matrix)) || nrow(user_interactions$matrix) < 2) {
       return(list(error = "Insufficient interaction data for collaborative filtering"))
     }
     

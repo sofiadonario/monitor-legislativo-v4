@@ -522,7 +522,7 @@ add_enhanced_geographic_server_logic <- function(input, output, session, db_pool
     # Initialize density visualization system
     observe({
       
-      if (INTEGRATION_CONFIG$features$enable_density_visualization && is.null(density_viz_system)) {
+      if (INTEGRATION_CONFIG$features$enable_density_visualization && isTRUE(is.null(density_viz_system))) {
         
         cat("🔄 Initializing density visualization system...\n")
         
@@ -787,7 +787,7 @@ add_enhanced_geographic_server_logic <- function(input, output, session, db_pool
     return(list(
       system_status = system_init_status,
       components_ready = reactive({
-        !is.null(density_viz_system) && integration_status$initialized
+        !isTRUE(is.null(density_viz_system)) && integration_status$initialized
       })
     ))
     

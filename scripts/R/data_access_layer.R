@@ -172,7 +172,7 @@ get_search_analytics <- function() {
   # Execute with fallback
   summary_result <- execute_with_fallback(database_query, fallback_function = fallback_function)
   
-  if (!is.null(summary_result) && is.data.frame(summary_result) && nrow(summary_result) > 0) {
+  if (!isTRUE(is.null(summary_result)) && is.data.frame(summary_result) && nrow(summary_result) > 0) {
     cat("✅ Using database for analytics\n")
     
     # Get detailed breakdowns
@@ -295,7 +295,7 @@ get_database_stats <- function() {
   
   result <- execute_with_fallback(query, fallback_function = fallback_function)
   
-  if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
+  if (!isTRUE(is.null(result)) && is.data.frame(result) && nrow(result) > 0) {
     return(list(
       total_documents = result$total_documents[1],
       unique_states = result$unique_states[1],

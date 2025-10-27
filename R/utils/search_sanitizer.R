@@ -13,7 +13,7 @@ library(stringi)
 #' @param escape_regex Whether to escape regex metacharacters
 #' @return Sanitized query string
 sanitize_search_query <- function(query, preserve_accents = TRUE, escape_regex = TRUE) {
-  if (is.null(query) || query == "") {
+  if (isTRUE(is.null(query)) || query == "") {
     return("")
   }
 
@@ -48,7 +48,7 @@ sanitize_search_query <- function(query, preserve_accents = TRUE, escape_regex =
 #' @param text Text to escape
 #' @return Text with escaped metacharacters
 escape_regex_chars <- function(text) {
-  if (is.null(text) || length(text) == 0) {
+  if (isTRUE(is.null(text)) || length(text) == 0) {
     return(text)
   }
 
@@ -74,7 +74,7 @@ escape_regex_chars <- function(text) {
 #' @param query Search query
 #' @return Regex pattern that matches accented variations
 create_accent_insensitive_pattern <- function(query) {
-  if (is.null(query) || query == "") {
+  if (isTRUE(is.null(query)) || query == "") {
     return("")
   }
 
@@ -94,7 +94,7 @@ create_accent_insensitive_pattern <- function(query) {
     base <- stringi::stri_trans_general(ch, "Latin-ASCII")
     base_lower <- tolower(base)
 
-    if (!is.na(base_lower) && nzchar(base_lower) && base_lower %in% names(accent_map)) {
+    if (!isTRUE(is.na(base_lower)) && nzchar(base_lower) && base_lower %in% names(accent_map)) {
       variants <- accent_map[[base_lower]]
       variants <- unique(c(variants, toupper(variants)))
       escaped_variants <- vapply(variants, escape_regex_chars, character(1), USE.NAMES = FALSE)
@@ -113,7 +113,7 @@ create_accent_insensitive_pattern <- function(query) {
 #' @param max_length Maximum length for each suggestion
 #' @return Cleaned suggestions
 clean_suggestions <- function(suggestions, max_length = 100) {
-  if (is.null(suggestions) || length(suggestions) == 0) {
+  if (isTRUE(is.null(suggestions)) || length(suggestions) == 0) {
     return(character(0))
   }
 
@@ -213,7 +213,7 @@ normalize_portuguese_text <- function(text, remove_stopwords = TRUE) {
 #' @return Text with highlighted terms
 highlight_search_terms <- function(text, search_terms,
                                  before = "<mark>", after = "</mark>") {
-  if (is.null(text) || is.null(search_terms) || length(search_terms) == 0) {
+  if (isTRUE(is.null(text)) || isTRUE(is.null(search_terms)) || length(search_terms) == 0) {
     return(text)
   }
 

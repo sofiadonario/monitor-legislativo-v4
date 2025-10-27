@@ -199,7 +199,7 @@ portuguese_stopwords <- c(
 
 # Preprocess Portuguese text
 preprocess_portuguese_text <- function(text) {
-  if (is.null(text) || is.na(text) || nchar(text) == 0) return("")
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || nchar(text) == 0) return("")
   
   # Convert to lowercase
   text <- tolower(text)
@@ -308,7 +308,7 @@ try_huggingface_summarization <- function(text, max_length, language) {
     
     if (status_code(response) == 200) {
       result <- content(response, "parsed")
-      if (length(result) > 0 && "summary_text" %in% names(result[[1]])) {
+      if (isTRUE(length(result) > 0) && "summary_text" %in% names(result[[1]])) {
         return(result[[1]]$summary_text)
       }
     }

@@ -86,7 +86,7 @@ test_oauth_config <- function() {
     # Test Google configuration
     google_config <- get_oauth_config("google")
     
-    if (is.null(google_config$client_id) || nchar(google_config$client_id) == 0) {
+    if (isTRUE(is.null(google_config$client_id)) || nchar(google_config$client_id) == 0) {
       cat("⚠️ Google OAuth not configured (missing client_id)\n")
     } else {
       cat("✅ Google OAuth configuration found\n")
@@ -95,7 +95,7 @@ test_oauth_config <- function() {
     # Test Microsoft configuration  
     microsoft_config <- get_oauth_config("microsoft")
     
-    if (is.null(microsoft_config$client_id) || nchar(microsoft_config$client_id) == 0) {
+    if (isTRUE(is.null(microsoft_config$client_id)) || nchar(microsoft_config$client_id) == 0) {
       cat("⚠️ Microsoft OAuth not configured (missing client_id)\n")
     } else {
       cat("✅ Microsoft OAuth configuration found\n")
@@ -148,7 +148,7 @@ test_user_management <- function() {
     # Create test user
     user_record <- create_or_update_user(test_user_info, TEST_CONFIG$test_provider)
     
-    if (is.null(user_record) || nrow(user_record) == 0) {
+    if (isTRUE(is.null(user_record)) || nrow(user_record) == 0) {
       cat("❌ User creation failed\n")
       return(FALSE)
     }
@@ -168,7 +168,7 @@ test_user_management <- function() {
     # Test user update
     updated_user <- create_or_update_user(test_user_info, TEST_CONFIG$test_provider)
     
-    if (!is.null(updated_user) && updated_user$id[1] == user_record$id[1]) {
+    if (!isTRUE(is.null(updated_user)) && updated_user$id[1] == user_record$id[1]) {
       cat("✅ User update working\n")
     } else {
       cat("❌ User update failed\n")
@@ -190,7 +190,7 @@ test_user_management <- function() {
 test_session_management <- function() {
   cat("🔒 Testing Session Management...\n")
   
-  if (is.null(.db_pool) || is.null(TEST_CONFIG$test_user_id)) {
+  if (isTRUE(is.null(.db_pool)) || isTRUE(is.null(TEST_CONFIG$test_user_id))) {
     cat("❌ Prerequisites not met - skipping session tests\n")
     return(FALSE)
   }
@@ -218,7 +218,7 @@ test_session_management <- function() {
     # Test session creation
     session_info <- create_user_session(mock_user, mock_token, mock_request)
     
-    if (is.null(session_info) || is.null(session_info$session_id)) {
+    if (isTRUE(is.null(session_info)) || isTRUE(is.null(session_info$session_id))) {
       cat("❌ Session creation failed\n")
       return(FALSE)
     }
@@ -275,7 +275,7 @@ test_session_management <- function() {
 test_lgpd_compliance <- function() {
   cat("🇧🇷 Testing LGPD Compliance...\n")
   
-  if (is.null(.db_pool) || is.null(TEST_CONFIG$test_user_id)) {
+  if (isTRUE(is.null(.db_pool)) || isTRUE(is.null(TEST_CONFIG$test_user_id))) {
     cat("❌ Prerequisites not met - skipping LGPD tests\n")
     return(FALSE)
   }
@@ -338,7 +338,7 @@ test_lgpd_compliance <- function() {
     # Test data export functionality
     export_path <- export_user_data(TEST_CONFIG$test_user_id)
     
-    if (is.null(export_path) || !file.exists(export_path)) {
+    if (isTRUE(is.null(export_path)) || !file.exists(export_path)) {
       cat("❌ User data export failed\n")
       return(FALSE)
     } else {

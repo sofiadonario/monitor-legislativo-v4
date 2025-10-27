@@ -409,7 +409,7 @@ polygon_system_health_check <- function(pool = NULL) {
       use_cache = TRUE
     )
     health$checks$functionality <- list(
-      can_load_municipalities = !is.null(test_municipalities) && nrow(test_municipalities) > 0,
+      can_load_municipalities = !isTRUE(is.null(test_municipalities)) && nrow(test_municipalities) > 0,
       test_municipality_count = if (!is.null(test_municipalities)) nrow(test_municipalities) else 0
     )
   }, error = function(e) {

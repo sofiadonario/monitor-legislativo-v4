@@ -882,6 +882,6 @@ assess_regulatory_impact <- function(data, assessment_type = "comprehensive", ra
 }
 
 # Helper function for null coalescing
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || is.na(x)) y else x
+`%||%` <- function(x, y) if (isTRUE(is.null(x)) || isTRUE(length(x) == 0) || isTRUE(is.na(x))) y else x
 
 cat("✅ Performance & Impact Analytics Module fully loaded\n")

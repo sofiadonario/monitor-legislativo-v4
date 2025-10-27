@@ -55,7 +55,7 @@ authenticate_api_key <- function(req, res) {
   # Extract API key from header
   api_key <- req$HTTP_X_API_KEY
   
-  if (is.null(api_key) || api_key == "") {
+  if (isTRUE(is.null(api_key)) || api_key == "") {
     res$status <- 401
     return(list(
       status = "error",
@@ -347,7 +347,7 @@ handle_geographic_distribution <- function(req, res) {
         level = level,
         category = category,
         transport_modal = transport_modal,
-        date_range = if (!is.null(date_start) && !is.null(date_end)) {
+        date_range = if (!isTRUE(is.null(date_start)) && !is.null(date_end)) {
           list(start = date_start, end = date_end)
         } else NULL
       ),
@@ -387,7 +387,7 @@ handle_citation_generation <- function(req, res) {
     sort_order <- body$sort_order %||% "alphabetical"
     
     # Validate document IDs
-    if (is.null(document_ids) || length(document_ids) == 0) {
+    if (isTRUE(is.null(document_ids)) || length(document_ids) == 0) {
       res$status <- 400
       return(list(
         status = "error",

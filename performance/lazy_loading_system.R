@@ -235,7 +235,7 @@ LazyDataset <- R6Class("LazyDataset",
         return(NULL)
       })
       
-      if (is.null(chunk_data) || nrow(chunk_data) == 0) {
+      if (isTRUE(is.null(chunk_data)) || nrow(chunk_data) == 0) {
         cat(sprintf("⚠️ Empty chunk %d\n", chunk_id))
         return(data.frame())
       }
@@ -464,7 +464,7 @@ LazyDataset <- R6Class("LazyDataset",
         }
         
         # Extract subset and add to combined data
-        if (nrow(chunk_data) > 0 && local_end <= nrow(chunk_data)) {
+        if (isTRUE(nrow(chunk_data) > 0) && local_end <= nrow(chunk_data)) {
           subset_data <- chunk_data[local_start:local_end, ]
           combined_data <- append(combined_data, list(subset_data))
         }
@@ -512,7 +512,7 @@ LazyDataset <- R6Class("LazyDataset",
         local_indices <- chunk_rows - chunk_start_row + 1
         
         # Extract sampled rows from chunk
-        if (nrow(chunk_data) > 0 && all(local_indices <= nrow(chunk_data))) {
+        if (isTRUE(nrow(chunk_data) > 0) && all(local_indices <= nrow(chunk_data))) {
           chunk_sample <- chunk_data[local_indices, ]
           sampled_data <- append(sampled_data, list(chunk_sample))
         }

@@ -103,7 +103,7 @@ perform_temporal_analysis <- function(data) {
       ) %>%
       filter(!is.na(parsed_date), year >= 1980, year <= 2025)
     
-    if (is.null(temporal_data) || !is.data.frame(temporal_data) || nrow(temporal_data) == 0) {
+    if (isTRUE(is.null(temporal_data)) || !is.data.frame(temporal_data) || nrow(temporal_data) == 0) {
       return(list(error = "No valid temporal data available"))
     }
     
@@ -149,7 +149,7 @@ perform_temporal_analysis <- function(data) {
     
     # Change point detection for significant trend changes
     trend_changes <- list()
-    if (!is.null(yearly_trends) && is.data.frame(yearly_trends) && nrow(yearly_trends) > 10 && requireNamespace("changepoint", quietly = TRUE)) {
+    if (!isTRUE(is.null(yearly_trends)) && is.data.frame(yearly_trends) && nrow(yearly_trends) > 10 && requireNamespace("changepoint", quietly = TRUE)) {
       tryCatch({
         cpt_analysis <- changepoint::cpt.mean(yearly_trends$document_count, method = "PELT")
         change_years <- yearly_trends$year[changepoint::cpts(cpt_analysis)]
@@ -187,7 +187,7 @@ perform_temporal_analysis <- function(data) {
     
     # Forecasting for next 6 months (if sufficient data)
     forecast_results <- list()
-    if (!is.null(monthly_trends) && is.data.frame(monthly_trends) && nrow(monthly_trends) >= 12) {
+    if (!isTRUE(is.null(monthly_trends)) && is.data.frame(monthly_trends) && nrow(monthly_trends) >= 12) {
       tryCatch({
         ts_data <- ts(monthly_trends$document_count, frequency = 12)
         forecast_model <- forecast::auto.arima(ts_data)
@@ -201,7 +201,7 @@ perform_temporal_analysis <- function(data) {
           upper_bound = as.numeric(forecast_6m$upper[, 2])
         )
         
-        forecast_results$trend_direction <- if (length(forecast_results$next_6_months$predicted_count) > 0 && nrow(monthly_trends) >= 3) {
+        forecast_results$trend_direction <- if (isTRUE(length(forecast_results$next_6_months$predicted_count) > 0) && nrow(monthly_trends) >= 3) {
           if (mean(forecast_results$next_6_months$predicted_count) > mean(tail(monthly_trends$document_count, 3))) {
             "increasing"
           } else {
@@ -228,7 +228,7 @@ perform_temporal_analysis <- function(data) {
         total_documents_analyzed = nrow(temporal_data),
         date_range = paste(min(temporal_data$year), "-", max(temporal_data$year)),
         recent_monthly_avg = round(mean(tail(monthly_trends$document_count, 3)), 0),
-        trend_status = if (!is.null(trend_changes$change_years) && length(trend_changes$change_years) > 0) "Dynamic" else "Stable"
+        trend_status = if (!isTRUE(is.null(trend_changes$change_years)) && length(trend_changes$change_years) > 0) "Dynamic" else "Stable"
       )
     ))
     
@@ -489,7 +489,7 @@ analyze_document_patterns <- function(data) {
       count(year_month) %>%
       arrange(year_month)
 
-    if (!is.null(monthly_counts) && is.data.frame(monthly_counts) && nrow(monthly_counts) > 6) {
+    if (!isTRUE(is.null(monthly_counts)) && is.data.frame(monthly_counts) && nrow(monthly_counts) > 6) {
       mean_monthly <- mean(monthly_counts$n)
       sd_monthly <- sd(monthly_counts$n)
       threshold <- mean_monthly + 2 * sd_monthly
@@ -652,7 +652,7 @@ generate_executive_kpis <- function(data, temporal_analysis, geographic_analysis
     }
     
     # Coverage gap alert
-    if (!is.null(geographic_analysis$coverage_gaps) && nrow(geographic_analysis$coverage_gaps) > 5) {
+    if (!isTRUE(is.null(geographic_analysis$coverage_gaps)) && nrow(geographic_analysis$coverage_gaps) > 5) {
       alert_system$coverage_gaps <- list(
         level = "INFO",
         message = sprintf("%d states have low or no document coverage", nrow(geographic_analysis$coverage_gaps))
@@ -680,7 +680,7 @@ generate_executive_kpis <- function(data, temporal_analysis, geographic_analysis
           "Implement metadata validation to improve data quality"
         } else NULL,
         
-        monitor_trends = if (!is.null(trend_indicators$year_over_year_growth) && 
+        monitor_trends = if (!isTRUE(is.null(trend_indicators$year_over_year_growth)) && 
                             abs(trend_indicators$year_over_year_growth) > 20) {
           sprintf("Investigate %.1f%% year-over-year change in document volume", 
                  trend_indicators$year_over_year_growth)
@@ -773,7 +773,7 @@ generate_executive_summary_analytics <- function(data, cache_enabled = TRUE) {
   
   tryCatch({
     # Validate input data
-    if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+    if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) == 0) {
       stop("No data provided for analysis")
     }
     

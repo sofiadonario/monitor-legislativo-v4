@@ -50,7 +50,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
     cache_key <- digest::digest(list(query, input$search_mode, input$sort_results_by))
     cached_result <- get_from_cache(cache_key, "search_results")
     
-    if (!is.null(cached_result) && input$enable_caching) {
+    if (!isTRUE(is.null(cached_result)) && input$enable_caching) {
       showNotification("🚀 Results loaded from cache", type = "message", duration = 2)
       return(cached_result)
     }
@@ -107,7 +107,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   # Auto-complete suggestions
   observe({
     query <- input$enhanced_search_query
-    if (!is.null(query) && nchar(query) >= 2) {
+    if (!isTRUE(is.null(query)) && nchar(query) >= 2) {
       suggestions <- generate_search_suggestions(query, documents_data(), limit = 8)
       
       output$search_suggestions <- renderUI({
@@ -195,7 +195,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   output$temporal_facets <- renderUI({
     facets <- facet_data()$years
 
-    if (!is.null(facets) && is.data.frame(facets) && nrow(facets) > 0) {
+    if (!isTRUE(is.null(facets)) && is.data.frame(facets) && nrow(facets) > 0) {
       # Create year range slider instead of checkboxes - safe extraction
       year_vals <- facets$name[!is.na(facets$name)]
 
@@ -292,10 +292,10 @@ enhanced_library_server <- function(input, output, session, documents_data) {
     
     # Safe nrow() calls
     total_count <- if (!is.null(documents_data()) && is.data.frame(documents_data())) nrow(documents_data()) else 0
-    filtered_count <- if (!is.null(filtered_data) && is.data.frame(filtered_data)) nrow(filtered_data) else 0
+    filtered_count <- if (!isTRUE(is.null(filtered_data)) && is.data.frame(filtered_data)) nrow(filtered_data) else 0
     
     # Safe string length check
-    has_search_query <- !is.null(values$search_query) && is.character(values$search_query) && length(values$search_query) > 0 && nchar(values$search_query) > 0
+    has_search_query <- !isTRUE(is.null(values$search_query)) && is.character(values$search_query) && isTRUE(length(values$search_query) > 0) && nchar(values$search_query) > 0
     
     summary_text <- if (has_search_query) {
       sprintf("Found %s results for '%s' (from %s total documents)", 
@@ -314,7 +314,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
     
     # Safe performance time check
     search_time <- tryCatch(values$performance_metrics$last_search_time, error = function(e) 0)
-    show_perf <- !is.null(search_time) && length(search_time) > 0 && is.numeric(search_time) && search_time > 0
+    show_perf <- !isTRUE(is.null(search_time)) && isTRUE(length(search_time) > 0) && is.numeric(search_time) && search_time > 0
     
     div(
       h5(summary_text, style = "color: #2c3e50; margin-bottom: 5px;"),
@@ -361,7 +361,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   output$enhanced_documents_table <- DT::renderDataTable({
     filtered_data <- filtered_documents()
     
-    if (is.null(filtered_data) || !is.data.frame(filtered_data) || nrow(filtered_data) == 0) {
+    if (isTRUE(is.null(filtered_data)) || !is.data.frame(filtered_data) || nrow(filtered_data) == 0) {
       return(DT::datatable(
         data.frame(Message = "No documents found matching your criteria"),
         options = list(dom = 't', searching = FALSE, paging = FALSE, info = FALSE)
@@ -410,7 +410,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   output$enhanced_documents_cards <- renderUI({
     filtered_data <- filtered_documents()
     
-    if (is.null(filtered_data) || !is.data.frame(filtered_data) || nrow(filtered_data) == 0) {
+    if (isTRUE(is.null(filtered_data)) || !is.data.frame(filtered_data) || nrow(filtered_data) == 0) {
       return(div(
         style = "text-align: center; padding: 50px; color: #999;",
         h4("No documents found"),
@@ -453,7 +453,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   # Handle document view requests
   observeEvent(input$view_document, {
-    if (!is.null(input$view_document) && input$view_document != "") {
+    if (!isTRUE(is.null(input$view_document)) && input$view_document != "") {
       values$selected_document <- input$view_document
       values$user_session_data$accessed_documents <- c(
         values$user_session_data$accessed_documents,
@@ -478,7 +478,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   # Handle find similar requests
   observeEvent(input$find_similar, {
-    if (!is.null(input$find_similar) && input$find_similar != "") {
+    if (!isTRUE(is.null(input$find_similar)) && input$find_similar != "") {
       similar_docs <- find_similar_documents(
         input$find_similar, 
         documents_data(),
@@ -492,7 +492,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   # Render similar documents
   output$similar_documents_ui <- renderUI({
-    if (is.null(values$similar_documents) || nrow(values$similar_documents) == 0) {
+    if (isTRUE(is.null(values$similar_documents)) || nrow(values$similar_documents) == 0) {
       return(div(
         style = "text-align: center; color: #999;",
         p("No similar documents found")
@@ -518,7 +518,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
       time_window_days = 30
     )
     
-    if (is.null(trending_docs) || !is.data.frame(trending_docs) || nrow(trending_docs) == 0) {
+    if (isTRUE(is.null(trending_docs)) || !is.data.frame(trending_docs) || nrow(trending_docs) == 0) {
       return(p("No trending documents available"))
     }
     
@@ -541,7 +541,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
           span(class = "trending-badge", "TRENDING")
         ),
         
-        if (!is.null(doc$ementa) && length(doc$ementa) > 0 && !is.na(doc$ementa[1]) && nchar(doc$ementa[1]) > 0) {
+        if (!isTRUE(is.null(doc$ementa)) && isTRUE(length(doc$ementa) > 0) && !isTRUE(is.na(doc$ementa[1])) && nchar(doc$ementa[1]) > 0) {
           div(
             style = "margin-top: 8px; color: #555; font-size: 13px;",
             substr(doc$ementa, 1, 150),
@@ -632,7 +632,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   # Get selected items from facet UI
   get_selected_facet_items <- function(base_id, facet_data) {
-    if (is.null(facet_data) || !is.data.frame(facet_data) || nrow(facet_data) == 0) return(character(0))
+    if (isTRUE(is.null(facet_data)) || !is.data.frame(facet_data) || nrow(facet_data) == 0) return(character(0))
     
     selected_items <- character(0)
     for (i in 1:min(nrow(facet_data), 20)) {  # Check up to 20 items
@@ -647,7 +647,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   # Apply facet filters to data
   apply_facet_filters <- function(data, filters) {
-    if ((is.null(data) || !is.data.frame(data) || nrow(data) == 0) || (is.null(filters) || length(filters) == 0)) return(data)
+    if ((isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) == 0) || (isTRUE(is.null(filters)) || length(filters) == 0)) return(data)
     
     filtered_data <- data
     
@@ -663,7 +663,7 @@ enhanced_library_server <- function(input, output, session, documents_data) {
     
     # Apply year filter - safe vector handling
     if ("years" %in% names(filters) && length(filters$years) > 0) {
-      if (!is.null(filtered_data) && is.data.frame(filtered_data) && nrow(filtered_data) > 0 && "data_documento" %in% names(filtered_data)) {
+      if (!isTRUE(is.null(filtered_data)) && is.data.frame(filtered_data) && isTRUE(nrow(filtered_data) > 0) && "data_documento" %in% names(filtered_data)) {
         valid_rows <- !is.na(filtered_data$data_documento) &
                       year(as.Date(filtered_data$data_documento)) %in% filters$years
         # Ensure valid_rows is a logical vector with no NAs

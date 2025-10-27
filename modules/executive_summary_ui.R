@@ -70,7 +70,7 @@ create_enhanced_value_box <- function(value, subtitle, icon_name, color, trend =
   
   # Create trend indicator HTML
   trend_html <- ""
-  if (!is.null(trend) && !is.null(trend_direction)) {
+  if (!isTRUE(is.null(trend)) && !is.null(trend_direction)) {
     trend_color <- dplyr::case_when(
       trend_direction == "increasing" ~ "#28a745",  # Green
       trend_direction == "decreasing" ~ "#dc3545",  # Red

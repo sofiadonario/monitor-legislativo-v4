@@ -86,7 +86,7 @@ extract_legislative_citations <- function(documents, text_column = "text", id_co
     doc_id <- documents[[id_column]][i]
     doc_text <- documents[[text_column]][i]
     
-    if (is.na(doc_text) || nchar(doc_text) == 0) next
+    if (isTRUE(is.na(doc_text)) || nchar(doc_text) == 0) next
     
     # Extract citations using all patterns
     for (pattern_name in names(BRAZILIAN_CITATION_PATTERNS)) {
@@ -227,7 +227,7 @@ calculate_legal_authority <- function(citation_network) {
   }
   
   # Normalize authority scores
-  if (nrow(authority_scores) > 0 && max(authority_scores$authority_score) > 0) {
+  if (isTRUE(nrow(authority_scores) > 0) && max(authority_scores$authority_score) > 0) {
     authority_scores$normalized_authority <- authority_scores$authority_score / 
                                            max(authority_scores$authority_score)
   } else {

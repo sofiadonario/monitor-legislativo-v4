@@ -109,7 +109,7 @@ output$dateRange <- renderValueBox({
       conn <- poolCheckout(db_pool)
       on.exit(poolReturn(conn))
       date_range <- dbGetQuery(conn, "SELECT MIN(data_publicacao) as min_date, MAX(data_publicacao) as max_date FROM documents WHERE data_publicacao IS NOT NULL")
-      if (!is.null(date_range) && !is.na(date_range$min_date)) {
+      if (!isTRUE(is.null(date_range)) && !is.na(date_range$min_date)) {
         min_year <- format(as.Date(date_range$min_date), "%Y")
         max_year <- format(as.Date(date_range$max_date), "%Y")
         display_text <- if (min_year == max_year) min_year else paste(min_year, "-", max_year)
@@ -140,7 +140,7 @@ output$dateRange <- renderValueBox({
 
 # Updated map rendering for legislative documents
 output$legislativeMap <- renderLeaflet({
-  if (!is.null(values$legislation_layers) && !is.null(values$geographic_data)) {
+  if (!isTRUE(is.null(values$legislation_layers)) && !is.null(values$geographic_data)) {
     
     # Create base map
     map <- leaflet() %>%
@@ -234,7 +234,7 @@ output$legislativeMap <- renderLeaflet({
 
 # Updated map rendering for jurisprudence documents
 output$jurisprudenceMap <- renderLeaflet({
-  if (!is.null(values$jurisprudence_layers) && !is.null(values$geographic_data)) {
+  if (!isTRUE(is.null(values$jurisprudence_layers)) && !is.null(values$geographic_data)) {
     
     # Create base map
     map <- leaflet() %>%

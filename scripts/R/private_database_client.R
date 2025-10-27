@@ -142,7 +142,7 @@ search_private_database <- function(query, filters = list(), limit = 50, offset 
     params <- list()
     
     # Add full-text search condition
-    if (!is.null(query) && query != "") {
+    if (!isTRUE(is.null(query)) && query != "") {
       where_conditions <- c(where_conditions, 
                            "search_vector @@ plainto_tsquery('portuguese', $1)")
       params <- c(params, query)
@@ -151,28 +151,28 @@ search_private_database <- function(query, filters = list(), limit = 50, offset 
     # Add filters
     param_index <- length(params) + 1
     
-    if (!is.null(filters$document_type) && filters$document_type != "") {
+    if (!isTRUE(is.null(filters$document_type)) && filters$document_type != "") {
       where_conditions <- c(where_conditions, 
                            paste0("document_type ILIKE $", param_index))
       params <- c(params, paste0("%", filters$document_type, "%"))
       param_index <- param_index + 1
     }
     
-    if (!is.null(filters$state) && filters$state != "") {
+    if (!isTRUE(is.null(filters$state)) && filters$state != "") {
       where_conditions <- c(where_conditions, 
                            paste0("(state_code = $", param_index, " OR state_name ILIKE $", param_index + 1, ")"))
       params <- c(params, toupper(filters$state), paste0("%", filters$state, "%"))
       param_index <- param_index + 2
     }
     
-    if (!is.null(filters$authority) && filters$authority != "") {
+    if (!isTRUE(is.null(filters$authority)) && filters$authority != "") {
       where_conditions <- c(where_conditions, 
                            paste0("authority ILIKE $", param_index))
       params <- c(params, paste0("%", filters$authority, "%"))
       param_index <- param_index + 1
     }
     
-    if (!is.null(filters$geographic_level) && filters$geographic_level != "") {
+    if (!isTRUE(is.null(filters$geographic_level)) && filters$geographic_level != "") {
       where_conditions <- c(where_conditions, 
                            paste0("geographic_level = $", param_index))
       params <- c(params, filters$geographic_level)

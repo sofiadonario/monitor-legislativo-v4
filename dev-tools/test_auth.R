@@ -18,7 +18,7 @@ test_credentials <- list(
 
 # Simple authentication function
 test_authenticate <- function(username, password) {
-  if (is.null(username) || is.null(password) || username == "" || password == "") {
+  if (isTRUE(is.null(username)) || isTRUE(is.null(password)) || username == "" || password == "") {
     return(list(success = FALSE, message = "Username and password required"))
   }
   
@@ -112,7 +112,7 @@ server <- function(input, output, session) {
   observeEvent(input$login_btn, {
     cat("\n=== LOGIN ATTEMPT ===\n")
     cat("Username:", input$username, "\n")
-    cat("Password provided:", !is.null(input$password) && input$password != "", "\n")
+    cat("Password provided:", !isTRUE(is.null(input$password)) && input$password != "", "\n")
     
     auth_result <- test_authenticate(input$username, input$password)
     

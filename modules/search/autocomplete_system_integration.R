@@ -194,7 +194,7 @@ perform_system_health_check <- function() {
     recommendations <- c(recommendations, "Install 'stringdist' package for better fuzzy matching")
   }
   
-  if (!is.null(health_results$performance$response_time_ms) && 
+  if (!isTRUE(is.null(health_results$performance$response_time_ms)) && 
       health_results$performance$response_time_ms > 100) {
     recommendations <- c(recommendations, "Optimize autocomplete performance for sub-100ms responses")
   }
@@ -383,7 +383,7 @@ display_system_status <- function(detailed = TRUE) {
   }
   
   # Cache Statistics
-  if (!is.null(status$cache_statistics) && !is.null(status$cache_statistics$performance)) {
+  if (!isTRUE(is.null(status$cache_statistics)) && !is.null(status$cache_statistics$performance)) {
     cat("\n💾 CACHE PERFORMANCE:\n")
     perf <- status$cache_statistics$performance
     cat(sprintf("   Hit Rate: %.1f%%\n", perf$hit_rate_percent))

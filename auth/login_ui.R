@@ -17,8 +17,8 @@ login_ui <- function(id, oauth_config = NULL) {
   ns <- NS(id)
   
   # Check if OAuth providers are configured
-  google_enabled <- !is.null(oauth_config) && oauth_config$google$enabled
-  microsoft_enabled <- !is.null(oauth_config) && oauth_config$microsoft$enabled
+  google_enabled <- !isTRUE(is.null(oauth_config)) && oauth_config$google$enabled
+  microsoft_enabled <- !isTRUE(is.null(oauth_config)) && oauth_config$microsoft$enabled
   
   # Professional login page
   div(
@@ -530,7 +530,7 @@ auth_server <- function(id, oauth_config) {
 handle_oauth_callback <- function(session, provider, code, state, oauth_config) {
   
   # Validate CSRF state
-  if (is.null(session$userData$oauth_state) || session$userData$oauth_state != state) {
+  if (isTRUE(is.null(session$userData$oauth_state)) || session$userData$oauth_state != state) {
     return(list(success = FALSE, error = "CSRF validation failed"))
   }
   

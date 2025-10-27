@@ -100,7 +100,7 @@ cat("🗺️ Geographic and Temporal Filters loaded with", length(available_filt
 #' @return Filtered data frame
 apply_geographic_filter <- function(data, filters = list(), include_federal = TRUE) {
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     return(data)
   }
   
@@ -110,7 +110,7 @@ apply_geographic_filter <- function(data, filters = list(), include_federal = TR
     filtered_data <- data
     
     # Apply state filter
-    if (!is.null(filters$estado) && filters$estado != "all") {
+    if (!isTRUE(is.null(filters$estado)) && filters$estado != "all") {
       if (filters$estado == "BR" || filters$estado == "Federal") {
         # Include only federal documents
         filtered_data <- filtered_data[filtered_data$estado == "BR" | 
@@ -127,7 +127,7 @@ apply_geographic_filter <- function(data, filters = list(), include_federal = TR
     }
     
     # Apply region filter
-    if (!is.null(filters$region) && filters$region != "all") {
+    if (!isTRUE(is.null(filters$region)) && filters$region != "all") {
       region_states <- get_states_in_region(filters$region)
       if (length(region_states) > 0) {
         if (include_federal) {
@@ -139,7 +139,7 @@ apply_geographic_filter <- function(data, filters = list(), include_federal = TR
     }
     
     # Apply municipality filter
-    if (!is.null(filters$municipality) && filters$municipality != "all") {
+    if (!isTRUE(is.null(filters$municipality)) && filters$municipality != "all") {
       municipality_pattern <- normalize_municipality_name(filters$municipality)
       
       # Check if we have municipality data
@@ -158,7 +158,7 @@ apply_geographic_filter <- function(data, filters = list(), include_federal = TR
     }
     
     # Apply metropolitan area filter
-    if (!is.null(filters$metropolitan_area) && filters$metropolitan_area != "all") {
+    if (!isTRUE(is.null(filters$metropolitan_area)) && filters$metropolitan_area != "all") {
       metro_municipalities <- get_metropolitan_municipalities(filters$metropolitan_area)
       if (length(metro_municipalities) > 0) {
         metro_matches <- sapply(filtered_data$municipality, function(mun) {
@@ -221,7 +221,7 @@ get_metropolitan_municipalities <- function(metro_area_name) {
 #' @return Normalized name
 normalize_municipality_name <- function(municipality_name) {
   
-  if (is.null(municipality_name) || is.na(municipality_name) || municipality_name == "") {
+  if (isTRUE(is.null(municipality_name)) || isTRUE(is.na(municipality_name)) || municipality_name == "") {
     return("")
   }
   
@@ -265,7 +265,7 @@ filter_by_jurisdiction_level <- function(data, jurisdiction_level) {
 #' @return Filtered data frame with temporal metadata
 apply_temporal_filter <- function(data, filters = list()) {
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     return(data)
   }
   
@@ -278,12 +278,12 @@ apply_temporal_filter <- function(data, filters = list()) {
     filtered_data <- normalize_date_fields(filtered_data)
     
     # Apply date range filter
-    if (!is.null(filters$date_start) || !is.null(filters$date_end)) {
+    if (!isTRUE(is.null(filters$date_start)) || !is.null(filters$date_end)) {
       filtered_data <- filter_by_date_range(filtered_data, filters$date_start, filters$date_end)
     }
     
     # Apply year range filter
-    if (!is.null(filters$year_start) || !is.null(filters$year_end)) {
+    if (!isTRUE(is.null(filters$year_start)) || !is.null(filters$year_end)) {
       filtered_data <- filter_by_year_range(filtered_data, filters$year_start, filters$year_end)
     }
     
@@ -409,7 +409,7 @@ filter_by_year_range <- function(data, year_start = NULL, year_end = NULL) {
 #' @return Filtered data
 filter_by_decade <- function(data, decade) {
   
-  if (is.null(decade) || decade == "all") {
+  if (isTRUE(is.null(decade)) || decade == "all") {
     return(data)
   }
   
@@ -435,7 +435,7 @@ filter_by_decade <- function(data, decade) {
 #' @return Filtered data
 filter_by_legislative_period <- function(data, period_name) {
   
-  if (is.null(period_name) || period_name == "all" || 
+  if (isTRUE(is.null(period_name)) || period_name == "all" || 
       !period_name %in% names(.geo_temporal_config$legislative_periods)) {
     return(data)
   }
@@ -488,7 +488,7 @@ filter_by_temporal_pattern <- function(data, pattern) {
 #' @return Data with additional temporal metadata
 add_temporal_metadata <- function(data) {
 
-  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) == 0) {
     return(data)
   }
   
@@ -548,7 +548,7 @@ classify_legislative_period <- function(date) {
 #' @return Data frame with geographic-temporal statistics
 analyze_geographic_temporal_trends <- function(data, time_unit = "year") {
 
-  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) == 0) {
     return(data.frame())
   }
   
@@ -646,7 +646,7 @@ calculate_spatial_correlation <- function(data, metric = "document_count") {
 #' @return List of filter suggestions with statistics
 get_filter_suggestions <- function(data) {
 
-  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || !is.data.frame(data) || nrow(data) == 0) {
     return(list())
   }
   

@@ -197,7 +197,7 @@ extract_law_entities <- function(text) {
   for (type in names(law_patterns)) {
     pattern <- law_patterns[[type]]
     matches <- str_extract_all(text, pattern, simplify = FALSE)[[1]]
-    if (length(matches) > 0 && !all(is.na(matches))) {
+    if (isTRUE(length(matches) > 0) && !all(is.na(matches))) {
       laws <- c(laws, paste(type, matches))
     }
   }
@@ -313,7 +313,7 @@ extract_temporal_entities <- function(text) {
   for (type in names(date_patterns)) {
     pattern <- date_patterns[[type]]
     matches <- str_extract_all(text, pattern, simplify = FALSE)[[1]]
-    if (length(matches) > 0 && !all(is.na(matches))) {
+    if (isTRUE(length(matches) > 0) && !all(is.na(matches))) {
       dates <- c(dates, matches)
     }
   }
@@ -376,7 +376,7 @@ extract_person_entities <- function(text) {
   people <- c()
   for (pattern in title_patterns) {
     matches <- str_extract_all(text, pattern, simplify = FALSE)[[1]]
-    if (length(matches) > 0 && !all(is.na(matches))) {
+    if (isTRUE(length(matches) > 0) && !all(is.na(matches))) {
       people <- c(people, matches)
     }
   }
@@ -548,7 +548,7 @@ process_document_for_graph <- function(document) {
       entity_list <- entities[[entity_type]]
       
       for (entity_value in entity_list) {
-        if (!is.null(entity_value) && !is.na(entity_value) && nchar(entity_value) > 0) {
+        if (!isTRUE(is.null(entity_value)) && !isTRUE(is.na(entity_value)) && nchar(entity_value) > 0) {
           entity_id <- paste0(entity_type, "_", digest(entity_value))
           
           # Map entity type to graph type
@@ -818,7 +818,7 @@ generate_graph_visualization <- function(query_result = NULL, layout = "force_di
     cat("🎨 Generating graph visualization...\n")
     
     # Use query result or full graph
-    if (!is.null(query_result) && "nodes" %in% names(query_result)) {
+    if (!isTRUE(is.null(query_result)) && "nodes" %in% names(query_result)) {
       nodes_data <- query_result$nodes
       edges_data <- query_result$edges
     } else {

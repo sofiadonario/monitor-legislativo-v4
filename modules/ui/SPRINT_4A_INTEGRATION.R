@@ -170,7 +170,7 @@ create_enhanced_server <- function(existing_server = NULL, enable_monitoring = T
     }
     
     # Initialize UX validation if requested
-    if (!is.null(input$enable_ux_testing) && input$enable_ux_testing) {
+    if (!isTRUE(is.null(input$enable_ux_testing)) && input$enable_ux_testing) {
       ux_validation_server(input, output, session)
       cat("🔍 UX validation system enabled\n")
     }
@@ -186,7 +186,7 @@ create_enhanced_server <- function(existing_server = NULL, enable_monitoring = T
       cat("  First Paint Time:", metrics$firstPaint, "ms\n")
       
       # Alert on performance issues
-      if (!is.null(metrics$pageLoad) && metrics$pageLoad > 3000) {
+      if (!isTRUE(is.null(metrics$pageLoad)) && metrics$pageLoad > 3000) {
         showNotification(
           "⚠️ Tempo de carregamento alto detectado. Considere otimizações.",
           type = "warning",

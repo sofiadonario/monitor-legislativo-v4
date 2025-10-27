@@ -373,13 +373,13 @@ validate_db_config <- function(config) {
   }
   
   # Validate each field
-  if (any(sapply(config[required_fields], function(x) is.null(x) || x == ""))) {
+  if (any(sapply(config[required_fields], function(x) isTRUE(is.null(x)) || x == ""))) {
     return(FALSE)
   }
   
   # Validate port is numeric
   port_num <- suppressWarnings(as.numeric(config$port))
-  if (is.na(port_num) || port_num < 1 || port_num > 65535) {
+  if (isTRUE(is.na(port_num)) || port_num < 1 || port_num > 65535) {
     return(FALSE)
   }
   

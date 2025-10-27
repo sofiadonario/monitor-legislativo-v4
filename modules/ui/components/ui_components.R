@@ -409,7 +409,7 @@ error_message <- function(message,
     p(message),
     
     # Action buttons
-    if (!is.null(retry_btn) || !is.null(dismiss_btn)) {
+    if (!isTRUE(is.null(retry_btn)) || !is.null(dismiss_btn)) {
       div(
         class = "alert-actions mt-3",
         retry_btn,
@@ -671,7 +671,7 @@ accessible_breadcrumb <- function(items, separator = "/") {
       class = paste("breadcrumb-item", if (is_last) "active"),
       `aria-current` = if (is_last) "page" else NULL,
       
-      if (is_last || is.null(item$href)) {
+      if (is_last || isTRUE(is.null(item$href))) {
         span(item$text)
       } else {
         tags$a(href = item$href, item$text)

@@ -193,7 +193,7 @@ process_legal_document <- function(document_input, input_type, pipeline_config, 
     
     # Stage 1: Document Ingestion
     raw_content <- ingest_document(document_input, input_type, pipeline_config)
-    if (is.null(raw_content) || nchar(raw_content$text) < QUALITY_THRESHOLDS$min_content_length) {
+    if (isTRUE(is.null(raw_content)) || nchar(raw_content$text) < QUALITY_THRESHOLDS$min_content_length) {
       stop("Document ingestion failed or content too short")
     }
     
@@ -446,7 +446,7 @@ ingest_document <- function(document_input, input_type, pipeline_config) {
     )
     
     # Validate extracted content
-    if (is.null(content) || is.null(content$text) || nchar(paste(content$text, collapse = " ")) == 0) {
+    if (isTRUE(is.null(content)) || isTRUE(is.null(content$text)) || nchar(paste(content$text, collapse = " ")) == 0) {
       return(NULL)
     }
     
@@ -527,7 +527,7 @@ analyze_legal_content <- function(extracted_content, pipeline_config) {
 }
 
 # Null coalescing operator
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || is.na(x)) y else x
+`%||%` <- function(x, y) if (isTRUE(is.null(x)) || isTRUE(length(x) == 0) || isTRUE(is.na(x))) y else x
 
 # Helper function stubs (would be fully implemented in production)
 generate_document_id <- function(input, type) {

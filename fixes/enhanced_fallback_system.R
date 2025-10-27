@@ -70,7 +70,7 @@ load_fallback_data <- function(min_rows = 1000, max_attempts = 5) {
         # Generate embedded fallback data
         data <- generate_comprehensive_fallback_data()
         cat("✅ Generated embedded fallback:", nrow(data), "documents\n")
-      } else if (!is.null(source_info$file) && file.exists(source_info$file)) {
+      } else if (!isTRUE(is.null(source_info$file)) && file.exists(source_info$file)) {
         # Try to load from file
         data <- read.csv(source_info$file, stringsAsFactors = FALSE, nrows = 100000)
         
@@ -318,7 +318,7 @@ get_fallback_db_data <- function(query, fallback_data = NULL) {
   cat("🗄️ Attempting database query with fallback...\n")
   
   # Try database first
-  if (exists("secure_db_pool") && !is.null(secure_db_pool) && inherits(secure_db_pool, "Pool")) {
+  if (exists("secure_db_pool") && !isTRUE(is.null(secure_db_pool)) && inherits(secure_db_pool, "Pool")) {
     tryCatch({
       result <- dbGetQuery(secure_db_pool, query)
       if (nrow(result) > 0) {

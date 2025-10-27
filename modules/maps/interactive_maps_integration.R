@@ -337,7 +337,7 @@ interactiveMapsServer <- function(id, data_source = NULL) {
     # Load and prepare data
     observe({
       # Try multiple data sources
-      if (!is.null(data_source) && is.reactive(data_source)) {
+      if (!isTRUE(is.null(data_source)) && is.reactive(data_source)) {
         values$map_data <- data_source()
       } else {
         # Fallback to CSV/Parquet loading
@@ -553,7 +553,7 @@ interactiveMapsServer <- function(id, data_source = NULL) {
     output$states_covered <- renderValueBox({
       data <- values$filtered_data %||% values$map_data
       states <- safe_n_distinct(
-        if (!is.null(data) && "state" %in% names(data)) data$state else NULL,
+        if (!isTRUE(is.null(data)) && "state" %in% names(data)) data$state else NULL,
         default = 0L
       )
 
@@ -568,7 +568,7 @@ interactiveMapsServer <- function(id, data_source = NULL) {
     output$top_state <- renderValueBox({
       data <- values$filtered_data %||% values$map_data
       top <- tryCatch({
-        if (!is.null(data) && "state" %in% names(data) && nrow(data) > 0) {
+        if (!isTRUE(is.null(data)) && "state" %in% names(data) && nrow(data) > 0) {
           tbl <- table(data$state)
           scalar_chr(if (length(tbl) > 0) names(tbl)[which.max(tbl)] else NULL, default = "N/A")
         } else {

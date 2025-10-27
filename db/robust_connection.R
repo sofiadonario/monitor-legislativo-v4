@@ -385,7 +385,7 @@ setup_database_schema <- function(pool) {
 
 # Get document count from database
 get_db_document_count <- function() {
-  if (CONNECTION_STATE$status != "connected" || is.null(CONNECTION_STATE$connection_pool)) {
+  if (CONNECTION_STATE$status != "connected" || isTRUE(is.null(CONNECTION_STATE$connection_pool))) {
     return(0)
   }
   
@@ -401,7 +401,7 @@ get_db_document_count <- function() {
 
 # Get documents from database
 get_documents_from_db <- function(filters = list(), limit = 1000, offset = 0) {
-  if (CONNECTION_STATE$status != "connected" || is.null(CONNECTION_STATE$connection_pool)) {
+  if (CONNECTION_STATE$status != "connected" || isTRUE(is.null(CONNECTION_STATE$connection_pool))) {
     return(NULL)
   }
   
@@ -413,18 +413,18 @@ get_documents_from_db <- function(filters = list(), limit = 1000, offset = 0) {
     where_conditions <- c()
     params <- list()
     
-    if (!is.null(filters$search_term) && filters$search_term != "") {
+    if (!isTRUE(is.null(filters$search_term)) && filters$search_term != "") {
       where_conditions <- c(where_conditions, "titulo ILIKE $1 OR ementa ILIKE $1")
       params <- list(paste0("%", filters$search_term, "%"))
     }
     
-    if (!is.null(filters$state) && filters$state != "all") {
+    if (!isTRUE(is.null(filters$state)) && filters$state != "all") {
       param_num <- length(params) + 1
       where_conditions <- c(where_conditions, paste0("estado = $", param_num))
       params[[param_num]] <- filters$state
     }
     
-    if (!is.null(filters$category) && filters$category != "all") {
+    if (!isTRUE(is.null(filters$category)) && filters$category != "all") {
       param_num <- length(params) + 1
       where_conditions <- c(where_conditions, paste0("categoria = $", param_num))
       params[[param_num]] <- filters$category
@@ -517,7 +517,7 @@ get_documents <- function(filters = list(), limit = 1000, offset = 0) {
   # Try database first
   if (CONNECTION_STATE$status == "connected") {
     db_result <- get_documents_from_db(filters, limit, offset)
-    if (!is.null(db_result) && nrow(db_result) > 0) {
+    if (!isTRUE(is.null(db_result)) && nrow(db_result) > 0) {
       return(db_result)
     }
   }
@@ -526,7 +526,7 @@ get_documents <- function(filters = list(), limit = 1000, offset = 0) {
   csv_data <- load_csv_fallback()
   
   # Apply basic filtering to CSV data
-  if (!is.null(filters$search_term) && filters$search_term != "") {
+  if (!isTRUE(is.null(filters$search_term)) && filters$search_term != "") {
     search_pattern <- paste0(".*", filters$search_term, ".*")
     title_match <- grepl(search_pattern, csv_data$titulo, ignore.case = TRUE)
     if ("ementa" %in% names(csv_data)) {
@@ -537,11 +537,11 @@ get_documents <- function(filters = list(), limit = 1000, offset = 0) {
     }
   }
   
-  if (!is.null(filters$state) && filters$state != "all" && "estado" %in% names(csv_data)) {
+  if (!isTRUE(is.null(filters$state)) && filters$state != "all" && "estado" %in% names(csv_data)) {
     csv_data <- csv_data[csv_data$estado == filters$state, ]
   }
   
-  if (!is.null(filters$category) && filters$category != "all" && "categoria" %in% names(csv_data)) {
+  if (!isTRUE(is.null(filters$category)) && filters$category != "all" && "categoria" %in% names(csv_data)) {
     csv_data <- csv_data[csv_data$categoria == filters$category, ]
   }
   

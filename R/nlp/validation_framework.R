@@ -199,7 +199,7 @@ validate_portuguese_nlp_system <- function(validation_data,
                                          save_results = TRUE,
                                          output_dir = "validation_output") {
   
-  if (is.null(validation_data) || nrow(validation_data) == 0) {
+  if (isTRUE(is.null(validation_data)) || nrow(validation_data) == 0) {
     stop("Validation data is required")
   }
   
@@ -1025,7 +1025,7 @@ conduct_power_analysis <- function(sentiment_results) {
   n <- sentiment_results$correlation$sample_size
   r <- sentiment_results$correlation$correlation
   
-  if (is.na(n) || is.na(r)) {
+  if (isTRUE(is.na(n)) || isTRUE(is.na(r))) {
     return(list(power = NA, adequate_power = FALSE))
   }
   

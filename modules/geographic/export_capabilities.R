@@ -350,7 +350,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           
           # Get current visualization data
           viz_data <- self$get_current_visualization_data(level, include_geometry)
-          if (is.null(viz_data) || nrow(viz_data) == 0) {
+          if (isTRUE(is.null(viz_data)) || nrow(viz_data) == 0) {
             stop("No visualization data available for export")
           }
           
@@ -629,7 +629,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Supporting methods
       get_current_map_data = function() {
         
-        if (!is.null(self$density_visualizer) && !is.null(self$density_visualizer$current_data)) {
+        if (!isTRUE(is.null(self$density_visualizer)) && !is.null(self$density_visualizer$current_data)) {
           return(self$density_visualizer$current_data)
         }
         
@@ -687,7 +687,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       
       create_export_summary = function(viz_data, level) {
         
-        if (is.null(viz_data) || nrow(viz_data) == 0) {
+        if (isTRUE(is.null(viz_data)) || nrow(viz_data) == 0) {
           return(data.frame(Metric = "No data available", Value = NA))
         }
         
@@ -1114,7 +1114,7 @@ validate_export_request <- function(format, data = NULL, options = NULL) {
   
   # Check data availability for data exports
   if (!is.null(data)) {
-    if (is.null(data) || (is.data.frame(data) && nrow(data) == 0)) {
+    if (isTRUE(is.null(data)) || (is.data.frame(data) && nrow(data) == 0)) {
       validation_result$valid <- FALSE
       validation_result$errors <- c(validation_result$errors, "No data available for export")
     }

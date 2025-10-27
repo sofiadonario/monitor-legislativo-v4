@@ -233,7 +233,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
     },
     
     classify_document = function(document) {
-      if (is.null(document) || !is.list(document)) {
+      if (isTRUE(is.null(document)) || !is.list(document)) {
         log_etl("ERROR", "Invalid document for classification", "BR_CLASSIFIER")
         return(NULL)
       }
@@ -260,7 +260,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
     },
     
     classify_document_type = function(document) {
-      if (is.null(document$tipo) || document$tipo == "") {
+      if (isTRUE(is.null(document$tipo)) || document$tipo == "") {
         return(list(
           type = "unknown",
           confidence = 0,
@@ -359,7 +359,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
         confidence = 0
       )
       
-      if (is.null(document$autoridade) || document$autoridade == "") {
+      if (isTRUE(is.null(document$autoridade)) || document$autoridade == "") {
         return(authority_info)
       }
       
@@ -428,7 +428,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
       )
       
       # Extract from state field
-      if (!is.null(document$estado) && document$estado != "") {
+      if (!isTRUE(is.null(document$estado)) && document$estado != "") {
         state_code <- toupper(stringr::str_trim(document$estado))
         
         # Find matching state in IBGE standards
@@ -447,7 +447,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
       }
       
       # Extract municipality information
-      if (!is.null(document$municipio) && document$municipio != "") {
+      if (!isTRUE(is.null(document$municipio)) && document$municipio != "") {
         geographic_info$municipality <- stringr::str_trim(document$municipio)
         if (geographic_info$scope == "state") {
           geographic_info$scope <- "municipal"
@@ -510,7 +510,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
       missing_fields <- c()
       
       for (field in required_fields) {
-        if (is.null(document[[field]]) || document[[field]] == "") {
+        if (isTRUE(is.null(document[[field]])) || document[[field]] == "") {
           missing_fields <- c(missing_fields, field)
         }
       }
@@ -524,7 +524,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
       }
       
       # Check URN format compliance
-      if (!is.null(document$urn) && document$urn != "") {
+      if (!isTRUE(is.null(document$urn)) && document$urn != "") {
         urn_pattern <- self$standards$lexml_br$urn_pattern
         if (grepl(urn_pattern, document$urn)) {
           compliance_info$lexml_compliant <- TRUE
@@ -535,7 +535,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
       }
       
       # Check geographic compliance (IBGE)
-      if (!is.null(document$estado) && document$estado != "") {
+      if (!isTRUE(is.null(document$estado)) && document$estado != "") {
         ibge_states <- self$standards$ibge_standards$states
         state_valid <- any(sapply(ibge_states, function(x) x$uf == document$estado))
         
@@ -548,7 +548,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
       }
       
       # Check date format
-      if (!is.null(document$data) && document$data != "") {
+      if (!isTRUE(is.null(document$data)) && document$data != "") {
         date_valid <- self$validate_brazilian_date(document$data)
         if (date_valid) {
           compliance_info$compliance_score <- compliance_info$compliance_score + 15
@@ -609,7 +609,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
       }
       
       # Generate standardized URN if missing
-      if (is.null(document$urn) || document$urn == "") {
+      if (isTRUE(is.null(document$urn)) || document$urn == "") {
         standardized$urn <- self$generate_standard_urn(document)
       }
       
@@ -617,7 +617,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
     },
     
     standardize_brazilian_text = function(text) {
-      if (is.null(text) || text == "") return("")
+      if (isTRUE(is.null(text)) || text == "") return("")
       
       # Ensure UTF-8 encoding
       text <- iconv(text, to = "UTF-8")
@@ -634,7 +634,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
     },
     
     standardize_brazilian_date = function(date_str) {
-      if (is.null(date_str) || date_str == "") return(NA)
+      if (isTRUE(is.null(date_str)) || date_str == "") return(NA)
       
       # Try Brazilian date formats
       date_formats <- self$standards$text_standards$date_formats
@@ -658,7 +658,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
     },
     
     standardize_authority_name = function(authority) {
-      if (is.null(authority) || authority == "") return("")
+      if (isTRUE(is.null(authority)) || authority == "") return("")
       
       authority_clean <- stringr::str_trim(authority)
       
@@ -685,7 +685,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
     },
     
     standardize_state_code = function(state) {
-      if (is.null(state) || state == "") return("")
+      if (isTRUE(is.null(state)) || state == "") return("")
       
       state_clean <- toupper(stringr::str_trim(state))
       
@@ -709,7 +709,7 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
     },
     
     standardize_municipality_name = function(municipality) {
-      if (is.null(municipality) || municipality == "") return("")
+      if (isTRUE(is.null(municipality)) || municipality == "") return("")
       
       # Basic cleanup
       municipality_clean <- stringr::str_trim(municipality)
@@ -723,8 +723,8 @@ BrazilianLegislativeClassifier <- R6::R6Class("BrazilianLegislativeClassifier",
       
       # Determine level
       level <- "federal"
-      if (!is.null(document$estado) && document$estado != "") {
-        level <- if (!is.null(document$municipio) && document$municipio != "") "municipal" else "estadual"
+      if (!isTRUE(is.null(document$estado)) && document$estado != "") {
+        level <- if (!isTRUE(is.null(document$municipio)) && document$municipio != "") "municipal" else "estadual"
       }
       
       # Determine document type
@@ -824,7 +824,7 @@ BrazilianDataProcessor <- R6::R6Class("BrazilianDataProcessor",
     },
     
     process_legislative_batch = function(documents) {
-      if (is.null(documents) || length(documents) == 0) {
+      if (isTRUE(is.null(documents)) || length(documents) == 0) {
         log_etl("WARN", "No documents to process", "BR_PROCESSOR")
         return(list())
       }
@@ -913,7 +913,7 @@ BrazilianDataProcessor <- R6::R6Class("BrazilianDataProcessor",
       
       complete_fields <- 0
       for (field in required_fields) {
-        if (!is.null(original_doc[[field]]) && original_doc[[field]] != "") {
+        if (!isTRUE(is.null(original_doc[[field]])) && original_doc[[field]] != "") {
           complete_fields <- complete_fields + 1
         }
       }
@@ -969,7 +969,7 @@ BrazilianDataProcessor <- R6::R6Class("BrazilianDataProcessor",
     },
     
     generate_compliance_report = function(processed_results) {
-      if (is.null(processed_results) || length(processed_results$processed_documents) == 0) {
+      if (isTRUE(is.null(processed_results)) || length(processed_results$processed_documents) == 0) {
         return(list(
           overall_compliance = "No data to analyze"
         ))

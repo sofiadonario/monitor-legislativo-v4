@@ -159,7 +159,7 @@ if (density_count > 0) {
     error = function(e) NULL
   )
 
-  if (!is.null(sample_data) && nrow(sample_data) > 0) {
+  if (!isTRUE(is.null(sample_data)) && nrow(sample_data) > 0) {
     print(sample_data)
   }
 }

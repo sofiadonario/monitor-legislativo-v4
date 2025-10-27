@@ -107,7 +107,7 @@ conduct_statistical_analysis <- function(data,
   }
   
   # Multiple comparison corrections
-  if (!is.null(results$inferential) && length(results$inferential$p_values) > 1) {
+  if (!isTRUE(is.null(results$inferential)) && length(results$inferential$p_values) > 1) {
     cat("🔄 Applying multiple comparison corrections...\n")
     results$multiple_comparisons <- apply_multiple_comparisons(results$inferential$p_values, alpha)
   }
@@ -413,7 +413,7 @@ test_statistical_assumptions <- function(data, formula, test_type = "auto") {
   }
   
   # Homogeneity of variance (for group comparisons)
-  if (length(predictor_vars) > 0 && any(sapply(data[predictor_vars], function(x) is.factor(x) || is.character(x)))) {
+  if (isTRUE(length(predictor_vars) > 0) && any(sapply(data[predictor_vars], function(x) is.factor(x) || is.character(x)))) {
     
     homogeneity_tests <- list()
     
@@ -509,7 +509,7 @@ summarize_assumption_tests <- function(assumption_results) {
   # Normality summary
   if (!is.null(assumption_results$normality)) {
     normality_p_values <- sapply(assumption_results$normality, function(test) {
-      if (!is.null(test) && "p.value" %in% names(test)) test$p.value else NA
+      if (!isTRUE(is.null(test)) && "p.value" %in% names(test)) test$p.value else NA
     })
     
     summary$normality <- list(
@@ -522,7 +522,7 @@ summarize_assumption_tests <- function(assumption_results) {
   # Homogeneity summary
   if (!is.null(assumption_results$homogeneity)) {
     homogeneity_p_values <- sapply(assumption_results$homogeneity, function(test) {
-      if (!is.null(test) && "p.value" %in% names(test)) test$p.value else NA
+      if (!isTRUE(is.null(test)) && "p.value" %in% names(test)) test$p.value else NA
     })
     
     summary$homogeneity <- list(

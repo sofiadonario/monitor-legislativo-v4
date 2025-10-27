@@ -418,7 +418,7 @@ generate_performance_recommendations <- function(pool = NULL) {
         ORDER BY n_distinct DESC
       ")
       
-      if (!is.null(index_check) && nrow(index_check) > 0) {
+      if (!isTRUE(is.null(index_check)) && nrow(index_check) > 0) {
         high_cardinality_cols <- index_check$attname[index_check$n_distinct > 1000]
         
         if (length(high_cardinality_cols) > 0) {

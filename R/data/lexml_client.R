@@ -486,7 +486,7 @@ normalize_lexml_document <- function(doc) {
 #' @param date_string Character string with date
 #' @return Date object or NA
 parse_lexml_date <- function(date_string) {
-  if (is.null(date_string) || is.na(date_string) || date_string == "") {
+  if (isTRUE(is.null(date_string)) || isTRUE(is.na(date_string)) || date_string == "") {
     return(NA)
   }
   
@@ -574,7 +574,7 @@ batch_download_lexml <- function(urns, batch_size = 100, delay_seconds = 1, prog
 }
 
 # Helper function for null coalescing
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || is.na(x)) y else x
+`%||%` <- function(x, y) if (isTRUE(is.null(x)) || isTRUE(length(x) == 0) || isTRUE(is.na(x))) y else x
 
 cat("✅ LexML HTTP Client loaded - Phase 2 Week 3 Implementation\n")
 cat("   Real API integration with Brazilian legal document repository\n")

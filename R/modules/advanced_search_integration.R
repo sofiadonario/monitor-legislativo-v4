@@ -108,7 +108,7 @@ init_advanced_search_system <- function(enable_caching = TRUE, enable_monitoring
     tryCatch({
       filters_result <- execute_query(pool, "SELECT COUNT(*) as count FROM search_filters_cache")
       
-      if (!is.null(filters_result) && filters_result$count > 0) {
+      if (!isTRUE(is.null(filters_result)) && filters_result$count > 0) {
         cat("   ✅ Search filters cache populated\n")
         init_results$filters_cache <- TRUE
       } else {
@@ -282,7 +282,7 @@ create_advanced_search_module <- function(id, db_pool = reactive(NULL), enable_a
             response_time = metadata$search_time,
             result_count = metadata$total_count,
             filters_applied = metadata$filters,
-            cache_hit = !is.null(metadata$from_cache) && metadata$from_cache,
+            cache_hit = !isTRUE(is.null(metadata$from_cache)) && metadata$from_cache,
             user_session = session$token
           )
         }

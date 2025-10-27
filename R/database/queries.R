@@ -28,12 +28,12 @@ get_documents <- function(pool = NULL, limit = 1000, offset = 0, filters = list(
       params <- list()
       
       # Add filters dynamically
-      if (!is.null(filters$estado) && filters$estado != "") {
+      if (!isTRUE(is.null(filters$estado)) && filters$estado != "") {
         where_conditions <- c(where_conditions, paste("estado = $", length(params) + 1))
         params <- append(params, filters$estado)
       }
       
-      if (!is.null(filters$tipo) && filters$tipo != "") {
+      if (!isTRUE(is.null(filters$tipo)) && filters$tipo != "") {
         where_conditions <- c(where_conditions, paste("tipo = $", length(params) + 1))
         params <- append(params, filters$tipo)
       }
@@ -99,19 +99,19 @@ get_documents_from_csv <- function(limit = 1000, offset = 0, filters = list()) {
         data <- read.csv(csv_file, stringsAsFactors = FALSE, nrows = limit * 2)  # Read extra for filtering
         
         # Apply filters
-        if (!is.null(filters$estado) && filters$estado != "" && "estado" %in% names(data)) {
+        if (!isTRUE(is.null(filters$estado)) && filters$estado != "" && "estado" %in% names(data)) {
           data <- data[data$estado == filters$estado, ]
         }
         
-        if (!is.null(filters$tipo) && filters$tipo != "" && "tipo" %in% names(data)) {
+        if (!isTRUE(is.null(filters$tipo)) && filters$tipo != "" && "tipo" %in% names(data)) {
           data <- data[data$tipo == filters$tipo, ]
         }
         
-        if (!is.null(filters$ano_min) && "ano" %in% names(data)) {
+        if (!isTRUE(is.null(filters$ano_min)) && "ano" %in% names(data)) {
           data <- data[data$ano >= filters$ano_min, ]
         }
         
-        if (!is.null(filters$ano_max) && "ano" %in% names(data)) {
+        if (!isTRUE(is.null(filters$ano_max)) && "ano" %in% names(data)) {
           data <- data[data$ano <= filters$ano_max, ]
         }
         
@@ -157,7 +157,7 @@ get_documents_from_csv <- function(limit = 1000, offset = 0, filters = list()) {
 #' @export
 search_documents <- function(pool = NULL, query = "", filters = list(), limit = 100) {
   
-  if (query == "" || is.null(query)) {
+  if (query == "" || isTRUE(is.null(query))) {
     return(get_documents(pool, limit = limit, filters = filters))
   }
   
@@ -183,12 +183,12 @@ search_documents <- function(pool = NULL, query = "", filters = list(), limit = 
         params <- append(params, filters$ano_min)
       }
       
-      if (!is.null(filters$estado) && filters$estado != "") {
+      if (!isTRUE(is.null(filters$estado)) && filters$estado != "") {
         sql_base <- paste(sql_base, "AND d.estado = $", length(params) + 1)
         params <- append(params, filters$estado)
       }
       
-      if (!is.null(filters$tipo) && filters$tipo != "") {
+      if (!isTRUE(is.null(filters$tipo)) && filters$tipo != "") {
         sql_base <- paste(sql_base, "AND d.tipo = $", length(params) + 1)
         params <- append(params, filters$tipo)
       }
@@ -223,7 +223,7 @@ search_documents_csv <- function(query = "", filters = list(), limit = 100) {
   # Get documents from CSV
   all_docs <- get_documents_from_csv(limit = 5000, filters = filters)  # Get larger set for searching
   
-  if (nrow(all_docs) == 0 || query == "") {
+  if (isTRUE(nrow(all_docs) == 0) || query == "") {
     return(all_docs[1:min(limit, nrow(all_docs)), ])
   }
   
@@ -247,7 +247,7 @@ search_documents_csv <- function(query = "", filters = list(), limit = 100) {
   matching_docs <- all_docs[title_matches | content_matches, ]
   
   # Simple relevance scoring (title matches get higher score)
-  if (nrow(matching_docs) > 0 && "titulo" %in% names(matching_docs)) {
+  if (isTRUE(nrow(matching_docs) > 0) && "titulo" %in% names(matching_docs)) {
     matching_docs$relevance <- ifelse(
       grepl(query_lower, tolower(matching_docs$titulo), fixed = TRUE), 
       2, 1

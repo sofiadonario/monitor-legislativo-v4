@@ -190,7 +190,7 @@ invite_users_to_workspace <- function(workspace_id, user_emails, role = "editor"
     
     # Check if inviter has permission
     inviter_member <- find_member_in_workspace(workspace, invited_by)
-    if (is.null(inviter_member) || !inviter_member$permissions$can_invite) {
+    if (isTRUE(is.null(inviter_member)) || !inviter_member$permissions$can_invite) {
       return(list(success = FALSE, error = "Insufficient permissions to invite users"))
     }
     
@@ -290,7 +290,7 @@ manage_workspace_member_role <- function(workspace_id, user_id, new_role, modifi
     
     # Check modifier permissions
     modifier <- find_member_in_workspace(workspace, modified_by)
-    if (is.null(modifier) || !modifier$permissions$can_manage_roles) {
+    if (isTRUE(is.null(modifier)) || !modifier$permissions$can_manage_roles) {
       return(list(success = FALSE, error = "Insufficient permissions to manage roles"))
     }
     
@@ -382,7 +382,7 @@ create_document_annotation <- function(document_id, workspace_id, user_id, annot
     
     # Check user permissions
     member <- find_member_in_workspace(workspace, user_id)
-    if (is.null(member) || !member$permissions$can_edit) {
+    if (isTRUE(is.null(member)) || !member$permissions$can_edit) {
       return(list(success = FALSE, error = "Insufficient permissions to annotate"))
     }
     
@@ -559,7 +559,7 @@ create_research_milestone <- function(workspace_id, milestone_name, description,
     
     # Check creator permissions
     creator <- find_member_in_workspace(workspace, created_by)
-    if (is.null(creator) || !creator$permissions$can_edit) {
+    if (isTRUE(is.null(creator)) || !creator$permissions$can_edit) {
       return(list(success = FALSE, error = "Insufficient permissions to create milestones"))
     }
     
@@ -661,7 +661,7 @@ update_milestone_progress <- function(milestone_id, workspace_id, user_id,
     
     # Get workspace and milestone
     workspace <- COLLAB_STATE$active_workspaces[[workspace_id]]
-    if (is.null(workspace) || !milestone_id %in% names(workspace$milestones)) {
+    if (isTRUE(is.null(workspace)) || !milestone_id %in% names(workspace$milestones)) {
       return(list(success = FALSE, error = "Milestone not found"))
     }
     
@@ -669,7 +669,7 @@ update_milestone_progress <- function(milestone_id, workspace_id, user_id,
     
     # Check if user can update (assignee or has edit permissions)
     member <- find_member_in_workspace(workspace, user_id)
-    can_update <- !is.null(member) && (
+    can_update <- !isTRUE(is.null(member)) && (
       user_id %in% milestone$assigned_to || 
       member$permissions$can_edit
     )
@@ -700,7 +700,7 @@ update_milestone_progress <- function(milestone_id, workspace_id, user_id,
     }
     
     # Mark as completed if 100%
-    if (progress_percentage == 100 && is.null(milestone$completion_date)) {
+    if (progress_percentage == 100 && isTRUE(is.null(milestone$completion_date))) {
       milestone$completion_date <- Sys.time()
     }
     

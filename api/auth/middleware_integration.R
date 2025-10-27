@@ -370,7 +370,7 @@ extract_client_ip <- function(req) {
   
   for (header in ip_headers) {
     ip <- req[[header]]
-    if (!is.null(ip) && ip != "") {
+    if (!isTRUE(is.null(ip)) && ip != "") {
       # Handle comma-separated IPs (X-Forwarded-For can have multiple)
       return(trimws(strsplit(ip, ",")[[1]][1]))
     }
@@ -382,7 +382,7 @@ extract_client_ip <- function(req) {
 extract_api_key_from_request <- function(req) {
   # Bearer token in Authorization header
   auth_header <- req$HTTP_AUTHORIZATION
-  if (!is.null(auth_header) && startsWith(auth_header, "Bearer ")) {
+  if (!isTRUE(is.null(auth_header)) && startsWith(auth_header, "Bearer ")) {
     return(substr(auth_header, 8, nchar(auth_header)))
   }
   
@@ -404,7 +404,7 @@ extract_api_key_from_request <- function(req) {
 extract_jwt_token_from_request <- function(req) {
   # JWT in Authorization header (different from Bearer API key)
   auth_header <- req$HTTP_AUTHORIZATION
-  if (!is.null(auth_header) && startsWith(auth_header, "JWT ")) {
+  if (!isTRUE(is.null(auth_header)) && startsWith(auth_header, "JWT ")) {
     return(substr(auth_header, 5, nchar(auth_header)))
   }
   

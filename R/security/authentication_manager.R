@@ -430,7 +430,7 @@ AuthenticationManager <- R6::R6Class(
       user_id <- session$userData$user_id
       user_role <- session$userData$user_role
       
-      if (is.null(user_id) || is.null(user_role)) {
+      if (isTRUE(is.null(user_id)) || isTRUE(is.null(user_role))) {
         return(list(allowed = FALSE, reason = "Missing user information"))
       }
       
@@ -557,7 +557,7 @@ AuthenticationManager <- R6::R6Class(
     # Validate CSRF token
     validate_csrf_token = function(token, session) {
       stored_token <- session$userData$oauth_state
-      return(!is.null(stored_token) && stored_token == token)
+      return(!isTRUE(is.null(stored_token)) && stored_token == token)
     },
     
     # Initialize CSRF protection
@@ -624,7 +624,7 @@ AuthenticationManager <- R6::R6Class(
     
     # Determine user role based on email domain
     determine_user_role = function(email) {
-      if (is.null(email) || email == "") {
+      if (isTRUE(is.null(email)) || email == "") {
         return("guest")
       }
       

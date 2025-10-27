@@ -147,7 +147,7 @@ get_system_resources <- function() {
         total_line <- grep("MemTotal", meminfo, value = TRUE)
         available_line <- grep("MemAvailable", meminfo, value = TRUE)
         
-        if (length(total_line) > 0 && length(available_line) > 0) {
+        if (isTRUE(length(total_line) > 0) && length(available_line) > 0) {
           total_kb <- as.numeric(gsub(".*?([0-9]+).*", "\\1", total_line))
           available_kb <- as.numeric(gsub(".*?([0-9]+).*", "\\1", available_line))
           used_mb <- (total_kb - available_kb) / 1024

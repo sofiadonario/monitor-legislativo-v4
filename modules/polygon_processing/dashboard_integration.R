@@ -217,7 +217,7 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
       }
       
       # Filter by specific state if selected
-      if (!is.null(input$state_filter) && input$state_filter != "all") {
+      if (!isTRUE(is.null(input$state_filter)) && input$state_filter != "all") {
         state_codes <- input$state_filter
       }
       
@@ -240,7 +240,7 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
       }
       
       # Create spatial index for fast queries
-      if (!is.null(municipalities) && nrow(municipalities) > 0) {
+      if (!isTRUE(is.null(municipalities)) && nrow(municipalities) > 0) {
         values$spatial_index <- create_spatial_index(municipalities)
         values$municipalities_count <- nrow(municipalities)
       }
@@ -265,11 +265,11 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
     documents <- document_data()
     municipalities <- municipalities_data()
     
-    if (is.null(documents) || nrow(documents) == 0) {
+    if (isTRUE(is.null(documents)) || nrow(documents) == 0) {
       return(documents)
     }
     
-    if (is.null(municipalities) || !input$enable_municipalities) {
+    if (isTRUE(is.null(municipalities)) || !input$enable_municipalities) {
       # Return documents with state-level information only
       return(documents %>%
         mutate(
@@ -405,7 +405,7 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
     documents <- enhanced_document_data()
     municipalities <- municipalities_data()
     
-    if (is.null(documents) || nrow(documents) == 0) {
+    if (isTRUE(is.null(documents)) || nrow(documents) == 0) {
       return(plot_ly() %>%
         add_text(x = 0.5, y = 0.5, text = "Nenhum documento encontrado") %>%
         layout(xaxis = list(visible = FALSE), yaxis = list(visible = FALSE)))
@@ -457,7 +457,7 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
     documents <- enhanced_document_data()
     municipalities <- municipalities_data()
     
-    if (is.null(documents) || nrow(documents) == 0) {
+    if (isTRUE(is.null(documents)) || nrow(documents) == 0) {
       return(leaflet() %>%
         addTiles() %>%
         setView(lng = -55, lat = -15, zoom = 4))
@@ -517,7 +517,7 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
   output$municipality_stats <- DT::renderDataTable({
     documents <- enhanced_document_data()
     
-    if (is.null(documents) || nrow(documents) == 0 || !input$enable_municipalities) {
+    if (isTRUE(is.null(documents)) || isTRUE(nrow(documents) == 0) || !input$enable_municipalities) {
       return(data.frame(
         Mensagem = "Habilite 'Mostrar Municípios' para ver estatísticas detalhadas"
       ))
@@ -549,7 +549,7 @@ enhanced_geographic_server <- function(input, output, session, pool, document_da
   output$municipality_distribution <- renderPlotly({
     documents <- enhanced_document_data()
     
-    if (is.null(documents) || nrow(documents) == 0 || !input$enable_municipalities) {
+    if (isTRUE(is.null(documents)) || isTRUE(nrow(documents) == 0) || !input$enable_municipalities) {
       return(plot_ly() %>%
         add_text(x = 0.5, y = 0.5, text = "Habilite municípios para ver distribuição") %>%
         layout(xaxis = list(visible = FALSE), yaxis = list(visible = FALSE)))

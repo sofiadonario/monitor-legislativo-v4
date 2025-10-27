@@ -53,7 +53,7 @@ init_arrow_database_system <- function(parquet_path = NULL,
   .arrow_integration$enabled <- enable_arrow
   
   # Try to initialize Arrow dataset if path provided
-  if (!is.null(parquet_path) && enable_arrow) {
+  if (!isTRUE(is.null(parquet_path)) && enable_arrow) {
     tryCatch({
       .arrow_integration$dataset <- init_arrow_dataset(parquet_path, cache_key = "main_dataset")
       .arrow_integration$parquet_path <- parquet_path
@@ -186,7 +186,7 @@ get_documents_arrow_enhanced <- function(pool = NULL, limit = 1000, offset = 0, 
 #' @export
 search_documents_arrow_enhanced <- function(pool = NULL, query = "", filters = list(), limit = 100) {
   
-  if (query == "" || is.null(query)) {
+  if (query == "" || isTRUE(is.null(query))) {
     return(get_documents_arrow_enhanced(pool, limit = limit, filters = filters))
   }
   
@@ -280,11 +280,11 @@ convert_filters_for_arrow <- function(filters) {
   arrow_filters <- list()
   
   # Map common filter parameters
-  if (!is.null(filters$estado) && filters$estado != "") {
+  if (!isTRUE(is.null(filters$estado)) && filters$estado != "") {
     arrow_filters$state <- filters$estado
   }
   
-  if (!is.null(filters$tipo) && filters$tipo != "") {
+  if (!isTRUE(is.null(filters$tipo)) && filters$tipo != "") {
     arrow_filters$document_type <- filters$tipo
   }
   
@@ -296,7 +296,7 @@ convert_filters_for_arrow <- function(filters) {
     arrow_filters$year_max <- as.numeric(filters$ano_max)
   }
   
-  if (!is.null(filters$municipio) && filters$municipio != "") {
+  if (!isTRUE(is.null(filters$municipio)) && filters$municipio != "") {
     arrow_filters$municipality <- filters$municipio
   }
   
@@ -385,16 +385,16 @@ apply_post_search_filters <- function(data, filters) {
   if (nrow(data) == 0) return(data)
   
   # Apply year filters
-  if (!is.null(filters$ano_min) && "year" %in% names(data)) {
+  if (!isTRUE(is.null(filters$ano_min)) && "year" %in% names(data)) {
     data <- data[data$year >= filters$ano_min, ]
   }
   
-  if (!is.null(filters$ano_max) && "year" %in% names(data)) {
+  if (!isTRUE(is.null(filters$ano_max)) && "year" %in% names(data)) {
     data <- data[data$year <= filters$ano_max, ]
   }
   
   # Apply state filter
-  if (!is.null(filters$estado) && filters$estado != "" && "state" %in% names(data)) {
+  if (!isTRUE(is.null(filters$estado)) && filters$estado != "" && "state" %in% names(data)) {
     data <- data[data$state == filters$estado, ]
   }
   

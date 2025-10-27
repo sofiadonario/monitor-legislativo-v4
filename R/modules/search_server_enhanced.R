@@ -47,7 +47,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
           estados_data <- execute_query(pool, 
             "SELECT filter_value, document_count FROM search_filters_cache WHERE filter_type = 'estado' ORDER BY document_count DESC")
           
-          if (!is.null(estados_data) && nrow(estados_data) > 0) {
+          if (!isTRUE(is.null(estados_data)) && nrow(estados_data) > 0) {
             estado_choices <- setNames(
               estados_data$filter_value,
               paste0(estados_data$filter_value, " (", format(estados_data$document_count, big.mark = ","), ")")
@@ -81,7 +81,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
           tipos_data <- execute_query(pool, 
             "SELECT filter_value, document_count FROM search_filters_cache WHERE filter_type = 'tipo' ORDER BY document_count DESC")
           
-          if (!is.null(tipos_data) && nrow(tipos_data) > 0) {
+          if (!isTRUE(is.null(tipos_data)) && nrow(tipos_data) > 0) {
             tipo_choices <- setNames(
               tipos_data$filter_value,
               paste0(str_to_title(tipos_data$filter_value), " (", format(tipos_data$document_count, big.mark = ","), ")")
@@ -115,7 +115,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
           categorias_data <- execute_query(pool, 
             "SELECT filter_value, document_count FROM search_filters_cache WHERE filter_type = 'categoria' ORDER BY document_count DESC")
           
-          if (!is.null(categorias_data) && nrow(categorias_data) > 0) {
+          if (!isTRUE(is.null(categorias_data)) && nrow(categorias_data) > 0) {
             categoria_choices <- setNames(
               categorias_data$filter_value,
               paste0(str_to_title(categorias_data$filter_value), " (", format(categorias_data$document_count, big.mark = ","), ")")
@@ -137,7 +137,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
       req(input$estado)
       pool <- db_pool()
       
-      if (!is.null(pool) && input$estado != "") {
+      if (!isTRUE(is.null(pool)) && input$estado != "") {
         tryCatch({
           municipios <- execute_query(pool,
             "SELECT DISTINCT municipio, COUNT(*) as doc_count 
@@ -147,7 +147,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
              ORDER BY doc_count DESC, municipio",
             params = list(input$estado))
           
-          if (!is.null(municipios) && nrow(municipios) > 0) {
+          if (!isTRUE(is.null(municipios)) && nrow(municipios) > 0) {
             municipio_choices <- setNames(
               municipios$municipio,
               paste0(municipios$municipio, " (", municipios$doc_count, ")")
@@ -201,7 +201,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
     output$suggestions <- renderUI({
       suggestions <- suggestions_data()
       
-      if (is.null(suggestions) || nrow(suggestions) == 0) {
+      if (isTRUE(is.null(suggestions)) || nrow(suggestions) == 0) {
         return(NULL)
       }
       
@@ -222,7 +222,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
     observe({
       suggestions <- suggestions_data()
       
-      if (!is.null(suggestions) && nrow(suggestions) > 0) {
+      if (!isTRUE(is.null(suggestions)) && nrow(suggestions) > 0) {
         if (exists("runjs")) {
           runjs(paste0("$('#", session$ns("autocomplete_dropdown"), "').show();"))
         }
@@ -299,14 +299,14 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
       filters <- list()
       
       # Validate geographic filters
-      if (!is.null(input$estado) && input$estado != "") {
+      if (!isTRUE(is.null(input$estado)) && input$estado != "") {
         estado_validation <- validate_input(input$estado, type = "character", max_length = 10, allow_html = FALSE)
         if (estado_validation$valid) {
           filters$filter_estado <- estado_validation$value
         }
       }
       
-      if (!is.null(input$municipio) && input$municipio != "") {
+      if (!isTRUE(is.null(input$municipio)) && input$municipio != "") {
         municipio_validation <- validate_input(input$municipio, type = "character", max_length = 100, allow_html = FALSE)
         if (municipio_validation$valid) {
           filters$filter_municipio <- municipio_validation$value
@@ -314,14 +314,14 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
       }
       
       # Validate document type filters
-      if (!is.null(input$tipo) && input$tipo != "") {
+      if (!isTRUE(is.null(input$tipo)) && input$tipo != "") {
         tipo_validation <- validate_input(input$tipo, type = "character", max_length = 50, allow_html = FALSE)
         if (tipo_validation$valid) {
           filters$filter_tipo <- tipo_validation$value
         }
       }
       
-      if (!is.null(input$categoria) && input$categoria != "") {
+      if (!isTRUE(is.null(input$categoria)) && input$categoria != "") {
         categoria_validation <- validate_input(input$categoria, type = "character", max_length = 100, allow_html = FALSE)
         if (categoria_validation$valid) {
           filters$filter_categoria <- categoria_validation$value
@@ -329,14 +329,14 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
       }
       
       # Validate temporal filters
-      if (!is.null(input$ano_min) && !is.na(input$ano_min)) {
+      if (!isTRUE(is.null(input$ano_min)) && !is.na(input$ano_min)) {
         ano_min_validation <- validate_input(input$ano_min, type = "numeric", min_value = 1900, max_value = 2030)
         if (ano_min_validation$valid) {
           filters$filter_ano_min <- as.integer(ano_min_validation$value)
         }
       }
       
-      if (!is.null(input$ano_max) && !is.na(input$ano_max)) {
+      if (!isTRUE(is.null(input$ano_max)) && !is.na(input$ano_max)) {
         ano_max_validation <- validate_input(input$ano_max, type = "numeric", min_value = 1900, max_value = 2030)
         if (ano_max_validation$valid) {
           filters$filter_ano_max <- as.integer(ano_max_validation$value)
@@ -361,7 +361,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
       }
       
       # Validate search parameters
-      search_limit <- if (!is.null(input$limit) && !is.na(input$limit)) {
+      search_limit <- if (!isTRUE(is.null(input$limit)) && !is.na(input$limit)) {
         limit_validation <- validate_input(input$limit, type = "numeric", min_value = 10, max_value = 1000)
         if (limit_validation$valid) {
           as.integer(limit_validation$value)
@@ -373,7 +373,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
       }
       
       # Sort parameter validation
-      sort_by <- if (!is.null(input$sort_by) && input$sort_by %in% c("relevance", "date_desc", "date_asc", "title")) {
+      sort_by <- if (!isTRUE(is.null(input$sort_by)) && input$sort_by %in% c("relevance", "date_desc", "date_asc", "title")) {
         input$sort_by
       } else {
         "relevance"
@@ -426,7 +426,7 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
         incProgress(0.7, detail = "Processing results")
         
         # Clean and format results with security controls
-        if (!is.null(results) && nrow(results) > 0) {
+        if (!isTRUE(is.null(results)) && nrow(results) > 0) {
           # Sanitize all text content to prevent XSS
           text_columns <- c("titulo", "content", "ementa", "tipo", "categoria", "orgao_emissor", "municipio", "estado")
           for (col in text_columns) {
@@ -493,8 +493,8 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
     output$search_stats <- renderUI({
       search_result_obj <- search_results()
       
-      if (is.null(search_result_obj) || is.null(search_result_obj$results) || nrow(search_result_obj$results) == 0) {
-        if (!is.null(input$search) && input$search > 0) {
+      if (isTRUE(is.null(search_result_obj)) || isTRUE(is.null(search_result_obj$results)) || nrow(search_result_obj$results) == 0) {
+        if (!isTRUE(is.null(input$search)) && input$search > 0) {
           return(div(
             class = "alert alert-warning",
             icon("info-circle"),
@@ -580,12 +580,12 @@ searchAdvancedServer <- function(id, db_pool = reactive(NULL)) {
       }),
       query = reactive(input$query),
       filters_active = reactive({
-        (!is.null(input$estado) && input$estado != "") ||
-        (!is.null(input$municipio) && input$municipio != "") ||
-        (!is.null(input$tipo) && input$tipo != "") ||
-        (!is.null(input$categoria) && input$categoria != "") ||
-        (!is.null(input$ano_min) && !is.na(input$ano_min)) ||
-        (!is.null(input$ano_max) && !is.na(input$ano_max)) ||
+        (!isTRUE(is.null(input$estado)) && input$estado != "") ||
+        (!isTRUE(is.null(input$municipio)) && input$municipio != "") ||
+        (!isTRUE(is.null(input$tipo)) && input$tipo != "") ||
+        (!isTRUE(is.null(input$categoria)) && input$categoria != "") ||
+        (!isTRUE(is.null(input$ano_min)) && !is.na(input$ano_min)) ||
+        (!isTRUE(is.null(input$ano_max)) && !is.na(input$ano_max)) ||
         (!is.null(input$data_inicio)) ||
         (!is.null(input$data_fim))
       }),

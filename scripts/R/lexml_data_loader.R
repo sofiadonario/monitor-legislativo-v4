@@ -26,7 +26,7 @@ load_lexml_data <- function(use_csv = FALSE) {
       # Get documents from database
       lexml_data <- get_documents()
       
-      if (!is.null(lexml_data) && nrow(lexml_data) > 0) {
+      if (!isTRUE(is.null(lexml_data)) && nrow(lexml_data) > 0) {
         cat("✅ Enhanced LexML data loaded from database:", nrow(lexml_data), "documents\n")
         cat("📊 Document types:", paste(unique(lexml_data$tipo), collapse = ", "), "\n")
         
@@ -57,7 +57,7 @@ load_lexml_data <- function(use_csv = FALSE) {
     }
     
     # Fallback to CSV if database unavailable
-    if (use_csv || !exists("db_pool") || is.null(db_pool)) {
+    if (use_csv || !exists("db_pool") || isTRUE(is.null(db_pool))) {
       cat("🔄 Loading LexML data from CSV fallback...\n")
       cat("DEBUG: Current working directory:", getwd(), "\n")
       
@@ -685,7 +685,7 @@ get_combined_documents <- function(include_lexml = TRUE, limit = NULL) {
   }
   
   # Combine results
-  if (!is.null(db_docs) && !is.null(lexml_docs)) {
+  if (!isTRUE(is.null(db_docs)) && !is.null(lexml_docs)) {
     # Select common columns
     common_cols <- c("id", "titulo", "tipo", "estado", "data_publicacao", "url", "urn")
     

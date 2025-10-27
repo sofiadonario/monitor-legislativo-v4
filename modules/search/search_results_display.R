@@ -276,7 +276,7 @@ render_results_list_view <- function(results, highlight_terms = NULL) {
                     create_document_type_badge(row[["tipo"]]),
                     create_species_badge(row[["species"]]),
                     create_jurisdiction_badge(row[["estado"]]),
-                    if (!is.null(row[["transport_category"]]) && row[["transport_category"]] != "Geral") {
+                    if (!isTRUE(is.null(row[["transport_category"]])) && row[["transport_category"]] != "Geral") {
                       create_transport_badge(row[["transport_category"]])
                     }
                 )
@@ -295,7 +295,7 @@ render_results_list_view <- function(results, highlight_terms = NULL) {
                         icon("calendar-alt"),
                         span("Publicado em:", pub_date)),
                     
-                    if (!is.null(row[["autor"]]) && row[["autor"]] != "") {
+                    if (!isTRUE(is.null(row[["autor"]])) && row[["autor"]] != "") {
                       div(class = "result-detail-item",
                           icon("user"),
                           span("Autor:", row[["autor"]]))
@@ -313,7 +313,7 @@ render_results_list_view <- function(results, highlight_terms = NULL) {
             div(class = "result-actions",
                 
                 # Primary action - View document
-                if (!is.null(row[["url"]]) && row[["url"]] != "") {
+                if (!isTRUE(is.null(row[["url"]])) && row[["url"]] != "") {
                   a(href = row[["url"]], 
                     target = "_blank",
                     class = "btn btn-primary btn-sm action-view",
@@ -430,7 +430,7 @@ render_results_cards_view <- function(results, highlight_terms = NULL) {
                           div(class = "card-actions",
                               
                               # View button
-                              if (!is.null(row[["url"]]) && row[["url"]] != "") {
+                              if (!isTRUE(is.null(row[["url"]])) && row[["url"]] != "") {
                                 a(href = row[["url"]],
                                   target = "_blank", 
                                   class = "btn btn-primary btn-sm",
@@ -492,7 +492,7 @@ render_results_table_view <- function(results) {
       
       # Add view link
       Ações = sapply(seq_len(nrow(results)), function(i) {
-        if (!is.null(results$url[i]) && results$url[i] != "") {
+        if (!isTRUE(is.null(results$url[i])) && results$url[i] != "") {
           sprintf('<a href="%s" target="_blank" class="btn btn-sm btn-primary">Ver</a>',
                  results$url[i])
         } else {
@@ -716,7 +716,7 @@ create_document_type_badge <- function(type, size = "normal") {
 #' @param species Document species
 #' @return HTML badge
 create_species_badge <- function(species) {
-  if (is.null(species) || species == "") return(NULL)
+  if (isTRUE(is.null(species)) || species == "") return(NULL)
   
   species_classes <- list(
     "Legislação" = "badge-outline-primary",
@@ -735,7 +735,7 @@ create_species_badge <- function(species) {
 #' @param estado State code
 #' @return HTML badge
 create_jurisdiction_badge <- function(estado) {
-  if (is.null(estado) || estado == "") return(NULL)
+  if (isTRUE(is.null(estado)) || estado == "") return(NULL)
   
   jurisdiction_class <- if (estado == "BR") "badge-dark" else "badge-outline-dark"
   state_name <- get_state_name(estado)
@@ -749,7 +749,7 @@ create_jurisdiction_badge <- function(estado) {
 #' @param category Transport category
 #' @return HTML badge
 create_transport_badge <- function(category) {
-  if (is.null(category) || category == "" || category == "Geral") return(NULL)
+  if (isTRUE(is.null(category)) || category == "" || category == "Geral") return(NULL)
   
   span(class = "badge badge-outline-warning",
        `aria-label` = paste("Categoria de transporte:", category),
@@ -778,7 +778,7 @@ get_state_name <- function(estado) {
 #' @param date Date object or string
 #' @return Formatted date string
 format_publication_date <- function(date) {
-  if (is.null(date) || is.na(date)) return("Data não disponível")
+  if (isTRUE(is.null(date)) || isTRUE(is.na(date))) return("Data não disponível")
   
   date_obj <- as.Date(date)
   if (is.na(date_obj)) return("Data inválida")
@@ -790,7 +790,7 @@ format_publication_date <- function(date) {
 #' @param score Numeric quality score
 #' @return Formatted score string
 format_quality_score <- function(score) {
-  if (is.null(score) || is.na(score)) return("N/A")
+  if (isTRUE(is.null(score)) || isTRUE(is.na(score))) return("N/A")
   
   paste(round(as.numeric(score), 1), "/10")
 }
@@ -800,7 +800,7 @@ format_quality_score <- function(score) {
 #' @param max_chars Maximum characters
 #' @return Truncated text
 truncate_text <- function(text, max_chars) {
-  if (is.null(text) || is.na(text)) return("")
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text))) return("")
   
   if (nchar(text) <= max_chars) {
     return(text)
@@ -814,7 +814,7 @@ truncate_text <- function(text, max_chars) {
 #' @param terms Terms to highlight
 #' @return HTML with highlighted terms
 highlight_search_terms <- function(text, terms) {
-  if (is.null(text) || is.null(terms) || length(terms) == 0) {
+  if (isTRUE(is.null(text)) || isTRUE(is.null(terms)) || length(terms) == 0) {
     return(htmlEscape(text))
   }
   
@@ -884,7 +884,7 @@ create_recent_documents_table <- function(results) {
       td(get_state_name(row[["estado"]])),
       td(format(as.Date(row[["data_publicacao"]]), "%d/%m/%Y")),
       td(
-        if (!is.null(row[["url"]]) && row[["url"]] != "") {
+        if (!isTRUE(is.null(row[["url"]])) && row[["url"]] != "") {
           a(href = row[["url"]], target = "_blank", 
             class = "btn btn-sm btn-outline-primary",
             "Ver")

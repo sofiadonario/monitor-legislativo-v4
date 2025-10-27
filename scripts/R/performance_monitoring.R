@@ -115,7 +115,7 @@ collect_system_health_metrics <- function() {
     )
     
     # Store in database
-    if (!is.null(.db_pool) && .monitoring_state$enabled) {
+    if (!isTRUE(is.null(.db_pool)) && .monitoring_state$enabled) {
       store_system_health_metrics(metrics)
     }
     
@@ -255,7 +255,7 @@ collect_application_performance_metrics <- function() {
     )
     
     # Store in database
-    if (!is.null(.db_pool) && .monitoring_state$enabled) {
+    if (!isTRUE(is.null(.db_pool)) && .monitoring_state$enabled) {
       store_application_performance_metrics(metrics)
     }
     

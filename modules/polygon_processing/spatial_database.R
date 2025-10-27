@@ -336,7 +336,7 @@ get_municipalities <- function(pool, state_codes = NULL, region_name = NULL) {
     params <- list()
     param_count <- 0
     
-    if (!is.null(state_codes) && length(state_codes) > 0) {
+    if (!isTRUE(is.null(state_codes)) && length(state_codes) > 0) {
       if (inherits(conn, "SQLiteConnection")) {
         placeholders <- paste(rep("?", length(state_codes)), collapse = ",")
         base_query <- paste(base_query, "AND state_code IN (", placeholders, ")")
@@ -460,14 +460,14 @@ get_documents_with_municipalities <- function(pool, document_ids = NULL, municip
     
     params <- list()
     
-    if (!is.null(document_ids) && length(document_ids) > 0) {
+    if (!isTRUE(is.null(document_ids)) && length(document_ids) > 0) {
       placeholders <- paste(rep(if (inherits(conn, "SQLiteConnection")) "?" else paste0("$", 1:length(document_ids)), 
                                length(document_ids)), collapse = ",")
       base_query <- paste(base_query, "AND dm.document_id IN (", placeholders, ")")
       params <- c(params, as.list(document_ids))
     }
     
-    if (!is.null(municipality_codes) && length(municipality_codes) > 0) {
+    if (!isTRUE(is.null(municipality_codes)) && length(municipality_codes) > 0) {
       start_param <- length(params) + 1
       if (inherits(conn, "SQLiteConnection")) {
         placeholders <- paste(rep("?", length(municipality_codes)), collapse = ",")

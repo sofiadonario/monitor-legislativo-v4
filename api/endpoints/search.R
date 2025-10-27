@@ -40,7 +40,7 @@ prepare_search_query <- function(query, boost_legal_terms = TRUE) {
   # Load search sanitizer
   source("R/utils/search_sanitizer.R")
 
-  if (is.null(query) || nchar(trimws(query)) == 0) {
+  if (isTRUE(is.null(query)) || nchar(trimws(query)) == 0) {
     return("")
   }
 
@@ -383,7 +383,7 @@ function(req) {
   content <- body$content %||% NULL
   limit <- min(max(as.numeric(body$limit %||% 10), 1), 100)
   
-  if (is.null(document_id) && is.null(content)) {
+  if (isTRUE(is.null(document_id)) && isTRUE(is.null(content))) {
     return(error_response("Either document_id or content is required", 400))
   }
   

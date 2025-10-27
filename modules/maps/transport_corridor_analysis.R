@@ -465,7 +465,7 @@ transportCorridorServer <- function(id, legislative_data = NULL) {
         }
         
         # Spatial filter if geometry exists
-        if (!is.null(corridor$geometry) && "lat" %in% names(docs) && "lng" %in% names(docs)) {
+        if (!isTRUE(is.null(corridor$geometry)) && "lat" %in% names(docs) && "lng" %in% names(docs)) {
           doc_points <- sf::st_as_sf(docs, coords = c("lng", "lat"), crs = 4326)
           intersects <- sf::st_intersects(doc_points, corridor$geometry, sparse = FALSE)
           docs <- docs[intersects[,1], ]
@@ -517,7 +517,7 @@ transportCorridorServer <- function(id, legislative_data = NULL) {
         }
         
         # Add affected documents
-        if (!is.null(corridor_values$affected_documents) && 
+        if (!isTRUE(is.null(corridor_values$affected_documents)) && 
             nrow(corridor_values$affected_documents) > 0) {
           docs <- corridor_values$affected_documents
           
@@ -607,7 +607,7 @@ transportCorridorServer <- function(id, legislative_data = NULL) {
     output$activity_index <- renderText({
       result <- tryCatch({
         n_docs <- safe_nrow(corridor_values$affected_documents, default = 0L)
-        if (n_docs > 0 && !is.null(input$corridor_dates) && length(input$corridor_dates) == 2) {
+        if (n_docs > 0 && !isTRUE(is.null(input$corridor_dates)) && length(input$corridor_dates) == 2) {
           # Calculate activity index (documents per month)
           days <- scalar_num(as.numeric(diff(input$corridor_dates)), default = 0)
           if (days > 0) {
@@ -628,7 +628,7 @@ transportCorridorServer <- function(id, legislative_data = NULL) {
     output$corridor_timeline <- renderPlotly({
       req(corridor_values$affected_documents)
       
-      if (nrow(corridor_values$affected_documents) > 0 && "date" %in% names(corridor_values$affected_documents)) {
+      if (isTRUE(nrow(corridor_values$affected_documents) > 0) && "date" %in% names(corridor_values$affected_documents)) {
         docs <- corridor_values$affected_documents
         
         # Aggregate by month
@@ -678,7 +678,7 @@ transportCorridorServer <- function(id, legislative_data = NULL) {
     output$state_breakdown <- renderPlotly({
       req(corridor_values$affected_documents)
       
-      if (nrow(corridor_values$affected_documents) > 0 && "state" %in% names(corridor_values$affected_documents)) {
+      if (isTRUE(nrow(corridor_values$affected_documents) > 0) && "state" %in% names(corridor_values$affected_documents)) {
         state_counts <- table(corridor_values$affected_documents$state)
         
         plot_ly(

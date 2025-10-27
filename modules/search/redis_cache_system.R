@@ -382,7 +382,7 @@ get_cached_geographic_data <- function(data_type) {
   cache_key <- paste0(.redis_config$key_prefixes$geographic, data_type)
   cached_data <- get_cache_data(cache_key)
   
-  if (!is.null(cached_data) && is.list(cached_data) && "data" %in% names(cached_data)) {
+  if (!isTRUE(is.null(cached_data)) && is.list(cached_data) && "data" %in% names(cached_data)) {
     return(cached_data$data)
   }
   
@@ -576,7 +576,7 @@ get_cached_prefix_suggestions <- function(query) {
     
     cached_data <- get_cache_data(prefix_key)
     
-    if (!is.null(cached_data) && "suggestions" %in% names(cached_data)) {
+    if (!isTRUE(is.null(cached_data)) && "suggestions" %in% names(cached_data)) {
       # Filter suggestions for the full query
       filtered_suggestions <- cached_data$suggestions[
         grepl(paste0("^", query), cached_data$suggestions, ignore.case = TRUE)

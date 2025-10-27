@@ -386,7 +386,7 @@ dashboard_server <- function(input, output, session) {
   
   # Value Boxes - Overview
   output$system_status <- renderValueBox({
-    status_color <- if (!is.null(values$health_status) && 
+    status_color <- if (!isTRUE(is.null(values$health_status)) && 
                        values$health_status$status == "healthy") "green" else "red"
     status_text <- if (!is.null(values$health_status)) 
                      values$health_status$status else "Unknown"
@@ -412,7 +412,7 @@ dashboard_server <- function(input, output, session) {
   })
   
   output$uptime <- renderValueBox({
-    uptime <- if (!is.null(values$system_metrics) && !is.null(values$system_metrics$uptime_seconds)) {
+    uptime <- if (!isTRUE(is.null(values$system_metrics)) && !is.null(values$system_metrics$uptime_seconds)) {
       hours <- round(values$system_metrics$uptime_seconds / 3600, 1)
       paste(hours, "h")
     } else "N/A"

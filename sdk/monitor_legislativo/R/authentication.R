@@ -47,7 +47,7 @@ ml_set_api_key <- function(api_key = NULL,
                            store_securely = FALSE, 
                            service_name = "monitor_legislativo_api") {
   
-  if (store_securely && is.null(api_key)) {
+  if (store_securely && isTRUE(is.null(api_key))) {
     # Tentar carregar chave do keyring
     tryCatch({
       api_key <- key_get(service_name, username = Sys.info()["user"])
@@ -59,7 +59,7 @@ ml_set_api_key <- function(api_key = NULL,
     })
   }
   
-  if (is.null(api_key) || nchar(trimws(api_key)) == 0) {
+  if (isTRUE(is.null(api_key)) || nchar(trimws(api_key)) == 0) {
     cli_alert_error("Chave de API não pode estar vazia")
     return(invisible(FALSE))
   }
@@ -131,7 +131,7 @@ ml_authenticate <- function(api_key = NULL, check_usage = TRUE) {
     # Validar chave de API
     auth_result <- .ml_api_call("GET", "/auth/validate")
     
-    if (is.null(auth_result) || !auth_result$success) {
+    if (isTRUE(is.null(auth_result)) || !auth_result$success) {
       cli_alert_error("Falha na autenticação")
       return(NULL)
     }
@@ -147,7 +147,7 @@ ml_authenticate <- function(api_key = NULL, check_usage = TRUE) {
     # Recuperar estatísticas de uso se solicitado
     if (check_usage) {
       usage_result <- .ml_api_call("GET", "/auth/usage")
-      if (!is.null(usage_result) && usage_result$success) {
+      if (!isTRUE(is.null(usage_result)) && usage_result$success) {
         auth_info$usage_stats <- usage_result$data
       }
     }
@@ -188,7 +188,7 @@ ml_validate_api_key <- function() {
   
   tryCatch({
     result <- .ml_api_call("GET", "/auth/validate", timeout = 10)
-    return(!is.null(result) && result$success)
+    return(!isTRUE(is.null(result)) && result$success)
   }, error = function(e) {
     return(FALSE)
   })
@@ -414,7 +414,7 @@ ml_clear_config <- function(remove_stored_key = FALSE) {
         e$response %>% resp_body_json()
       }, error = function(e2) NULL)
       
-      if (!is.null(error_body) && !is.null(error_body$message)) {
+      if (!isTRUE(is.null(error_body)) && !is.null(error_body$message)) {
         stop(glue("API Error: {error_body$message}"))
       }
     }

@@ -84,7 +84,7 @@ autocomplete_server <- function(id, search_filters_reactive = NULL) {
     
     # Current search context (filters)
     search_context <- reactive({
-      if (!is.null(search_filters_reactive) && is.function(search_filters_reactive)) {
+      if (!isTRUE(is.null(search_filters_reactive)) && is.function(search_filters_reactive)) {
         return(search_filters_reactive())
       } else {
         # Fallback context extraction from inputs
@@ -197,7 +197,7 @@ autocomplete_server <- function(id, search_filters_reactive = NULL) {
     observe({
       suggestions_data <- autocomplete_suggestions()
       
-      if (!is.null(suggestions_data) && length(suggestions_data$suggestions) > 0) {
+      if (!isTRUE(is.null(suggestions_data)) && length(suggestions_data$suggestions) > 0) {
         # Format for JavaScript consumption
         js_suggestions <- lapply(suggestions_data$suggestions, function(sugg) {
           list(
@@ -219,7 +219,7 @@ autocomplete_server <- function(id, search_filters_reactive = NULL) {
           cache_hit = suggestions_data$metadata$cache_hit %||% FALSE
         ))
         
-      } else if (!is.null(suggestions_data) && nchar(suggestions_data$metadata$query %||% "") >= .autocomplete_server_config$min_query_length) {
+      } else if (!isTRUE(is.null(suggestions_data)) && nchar(suggestions_data$metadata$query %||% "") >= .autocomplete_server_config$min_query_length) {
         # Send empty results message
         session$sendCustomMessage("updateAutocomplete", list(
           suggestions = list(),

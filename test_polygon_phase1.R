@@ -60,7 +60,7 @@ tryCatch({
   
   memory_report <- memory_monitor()
   
-  if (!is.null(memory_report) && is.list(memory_report)) {
+  if (!isTRUE(is.null(memory_report)) && is.list(memory_report)) {
     cat("✅ Memory monitoring: PASS\n")
     cat("   Memory delta:", round(memory_report$memory_delta_mb, 2), "MB\n")
     cat("   Duration:", round(memory_report$duration_seconds, 3), "seconds\n")
@@ -89,7 +89,7 @@ tryCatch({
     use_cache = TRUE
   )
   
-  if (!is.null(sp_municipalities) && nrow(sp_municipalities) > 0) {
+  if (!isTRUE(is.null(sp_municipalities)) && nrow(sp_municipalities) > 0) {
     cat("✅ SP municipalities loading: PASS (", nrow(sp_municipalities), "municipalities)\n")
   } else {
     cat("⚠️ SP municipalities loading: Using fallback\n")
@@ -159,7 +159,7 @@ tryCatch({
   
   join_time <- as.numeric(Sys.time() - start_time, units = "secs") * 1000  # milliseconds
   
-  if (!is.null(joined_documents) && nrow(joined_documents) == 100) {
+  if (!isTRUE(is.null(joined_documents)) && nrow(joined_documents) == 100) {
     success_rate <- sum(!is.na(joined_documents$municipality_code)) / nrow(joined_documents) * 100
     cat("✅ Spatial join: PASS\n")
     cat("   Success rate:", round(success_rate, 1), "%\n")
@@ -189,7 +189,7 @@ tryCatch({
     fallback_to_state = TRUE
   )
   
-  if (!is.null(fallback_result) && nrow(fallback_result) == 100) {
+  if (!isTRUE(is.null(fallback_result)) && nrow(fallback_result) == 100) {
     state_fallbacks <- sum(fallback_result$administrative_level == "state", na.rm = TRUE)
     cat("✅ Hierarchical fallback: PASS (", state_fallbacks, "state-level assignments)\n")
   } else {
@@ -219,7 +219,7 @@ tryCatch({
     polygon_cache$set(test_key, test_data)
     cached_data <- polygon_cache$get(test_key)
     
-    if (!is.null(cached_data) && identical(cached_data$municipalities, 10)) {
+    if (!isTRUE(is.null(cached_data)) && identical(cached_data$municipalities, 10)) {
       cat("✅ Cache operations: PASS\n")
       
       # Test cache stats
@@ -269,7 +269,7 @@ tryCatch({
   # Create spatial index
   spatial_index <- create_spatial_index(test_municipalities_sf, grid_size = 5)
   
-  if (!is.null(spatial_index$grid) && length(spatial_index$grid) > 0) {
+  if (!isTRUE(is.null(spatial_index$grid)) && length(spatial_index$grid) > 0) {
     cat("✅ Spatial indexing: PASS (", length(spatial_index$grid), "grid cells)\n")
     
     # Test index queries
@@ -309,7 +309,7 @@ tryCatch({
     memory_limit_mb = 50
   )
   
-  if (!is.null(progressive_result) && nrow(progressive_result) == total_items) {
+  if (!isTRUE(is.null(progressive_result)) && nrow(progressive_result) == total_items) {
     cat("✅ Progressive loading: PASS (", nrow(progressive_result), "items loaded)\n")
   } else {
     cat("❌ Progressive loading: FAIL\n")

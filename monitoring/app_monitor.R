@@ -344,7 +344,7 @@ perform_health_check <- function() {
     MONITOR_STATE$performance_metrics <- rbind(MONITOR_STATE$performance_metrics, new_metric)
     
     # Keep only last 1440 records (24 hours at 1-minute intervals)
-    if (!is.null(MONITOR_STATE$performance_metrics) && is.data.frame(MONITOR_STATE$performance_metrics) && nrow(MONITOR_STATE$performance_metrics) > 1440) {
+    if (!isTRUE(is.null(MONITOR_STATE$performance_metrics)) && is.data.frame(MONITOR_STATE$performance_metrics) && nrow(MONITOR_STATE$performance_metrics) > 1440) {
       MONITOR_STATE$performance_metrics <- tail(MONITOR_STATE$performance_metrics, 1440)
     }
     

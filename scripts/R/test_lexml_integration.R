@@ -96,7 +96,7 @@ cat("Metadata available:", !is.null(lexml_meta), "\n")
 cat("Analytics available:", !is.null(analytics), "\n")
 cat("Quality metrics available:", !is.null(quality_metrics), "\n")
 
-if (!is.null(lexml_data) && !is.null(lexml_meta) && !is.null(analytics) && !is.null(quality_metrics)) {
+if (!isTRUE(is.null(lexml_data)) && !isTRUE(is.null(lexml_meta)) && !isTRUE(is.null(analytics)) && !is.null(quality_metrics)) {
   cat("✅ All LexML integration tests passed!\n")
 } else {
   cat("⚠️ Some LexML integration tests failed\n")

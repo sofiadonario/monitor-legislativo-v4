@@ -236,7 +236,7 @@ RateLimitEngine <- list(
 
 # Database Storage Implementation
 initialize_database_storage <- function() {
-  if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+  if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
     cat("⚠️ Database connection not available for rate limiting\n")
     return(FALSE)
   }
@@ -278,7 +278,7 @@ initialize_database_storage <- function() {
 }
 
 get_usage_from_database <- function(key, window) {
-  if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+  if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
     return(0)
   }
   
@@ -307,7 +307,7 @@ get_usage_from_database <- function(key, window) {
 }
 
 increment_usage_in_database <- function(key, window, amount = 1) {
-  if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+  if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
     return(FALSE)
   }
   
@@ -372,7 +372,7 @@ increment_usage_in_memory <- function(key, window, amount = 1) {
   memory_key <- paste(key, window, sep = "_")
   
   usage_data <- RATE_LIMIT_MEMORY[[memory_key]]
-  if (is.null(usage_data) || usage_data$reset_at < current_time) {
+  if (isTRUE(is.null(usage_data)) || usage_data$reset_at < current_time) {
     # Create new counter
     RATE_LIMIT_MEMORY[[memory_key]] <<- list(
       count = amount,
@@ -388,7 +388,7 @@ increment_usage_in_memory <- function(key, window, amount = 1) {
 
 # Usage Analytics and Statistics
 get_usage_statistics_from_database <- function(api_key_id, period_days = 30) {
-  if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+  if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
     return(list(error = "Database not available"))
   }
   
@@ -463,7 +463,7 @@ get_usage_statistics_from_database <- function(api_key_id, period_days = 30) {
 }
 
 record_usage_event <- function(api_key_id, endpoint, request_size_bytes, response_size_bytes = 0, response_time_ms = 0, response_code = 200) {
-  if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+  if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
     return(FALSE)
   }
   
@@ -514,7 +514,7 @@ calculate_effective_limits <- function(tier_config, endpoint_multiplier, geograp
 
 get_geographic_multiplier <- function(client_ip) {
   # Simplified geographic detection (in production, use proper IP geolocation)
-  if (is.null(client_ip) || client_ip == "unknown") {
+  if (isTRUE(is.null(client_ip)) || client_ip == "unknown") {
     return(RATE_LIMITING_CONFIG$geographic_limits$global)
   }
   

@@ -24,7 +24,7 @@ with_output_guard <- function(expr, fallback = NULL, label = NULL) {
     # Best-effort output id (older shiny)
     out_id <- tryCatch({
       dom <- shiny::getDefaultReactiveDomain()
-      if (!is.null(dom) && !is.null(dom$outputId)) dom$outputId else NA_character_
+      if (!isTRUE(is.null(dom)) && !is.null(dom$outputId)) dom$outputId else NA_character_
     }, error = function(e) NA_character_)
     cat("! OUTPUT CRASH:", conditionMessage(e), " outputId=", out_id,
         if (!is.null(label)) paste0(" label=", label) else "", "\n")
@@ -34,5 +34,5 @@ with_output_guard <- function(expr, fallback = NULL, label = NULL) {
 }
 
 # Minimal scalar+format helpers for fallbacks
-scalar1 <- function(x) if (is.null(x) || length(x) == 0) NA else x[[1]]
+scalar1 <- function(x) if (isTRUE(is.null(x)) || length(x) == 0) NA else x[[1]]
 fmt_int <- function(x) ifelse(is.na(x), "–", formatC(as.integer(x), big.mark=".", format="d"))

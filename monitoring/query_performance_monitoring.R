@@ -236,7 +236,7 @@ estimate_cpu_impact <- function(execution_time_ms, query_type) {
 #' @param query_text Raw SQL query
 #' @return Sanitized query text
 sanitize_query_for_logging <- function(query_text) {
-  if (is.null(query_text) || query_text == "") return("EMPTY_QUERY")
+  if (isTRUE(is.null(query_text)) || query_text == "") return("EMPTY_QUERY")
   
   # Remove potential sensitive data patterns
   sanitized <- query_text
@@ -562,12 +562,12 @@ calculate_system_health_score <- function(db_metrics, pool_metrics, query_metric
   }
   
   # Query performance impact
-  if (!is.null(query_metrics$p95_execution_time_ms) && 
+  if (!isTRUE(is.null(query_metrics$p95_execution_time_ms)) && 
       query_metrics$p95_execution_time_ms > .monitoring_config$target_95th_percentile_ms) {
     score <- score - 20
   }
   
-  if (!is.null(query_metrics$avg_execution_time_ms) && 
+  if (!isTRUE(is.null(query_metrics$avg_execution_time_ms)) && 
       query_metrics$avg_execution_time_ms > .monitoring_config$target_avg_response_time_ms) {
     score <- score - 15
   }
@@ -582,7 +582,7 @@ calculate_system_health_score <- function(db_metrics, pool_metrics, query_metric
   }
   
   # Connection pool health impact
-  if (!is.null(pool_metrics$overall$connection_errors) && 
+  if (!isTRUE(is.null(pool_metrics$overall$connection_errors)) && 
       pool_metrics$overall$connection_errors > 0) {
     score <- score - 10
   }

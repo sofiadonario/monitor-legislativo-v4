@@ -171,7 +171,7 @@ process_texts_high_performance <- function(text,
                                          target_memory_mb = NULL,
                                          enable_profiling = FALSE) {
   
-  if (is.null(text) || length(text) == 0) {
+  if (isTRUE(is.null(text)) || length(text) == 0) {
     return(list(results = list(), performance_metrics = list()))
   }
   

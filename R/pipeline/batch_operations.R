@@ -141,7 +141,7 @@ update_job_progress <- function(job_id, progress, status = NULL, metadata = NULL
     
     if (!is.null(status)) {
       job$status <- status
-      if (status == "running" && is.null(job$started_at)) {
+      if (status == "running" && isTRUE(is.null(job$started_at))) {
         job$started_at <- Sys.time()
       } else if (status %in% c("completed", "failed")) {
         job$completed_at <- Sys.time()
@@ -407,7 +407,7 @@ batch_process_documents <- function(job_id, document_ids, operations = c("extrac
     update_job_progress(job_id, 90, metadata = list(phase = "finalization"))
     
     # Aggregate results
-    success_count <- sum(sapply(processed_results, function(x) !is.null(x$success) && x$success))
+    success_count <- sum(sapply(processed_results, function(x) !isTRUE(is.null(x$success)) && x$success))
     error_count <- length(processed_results) - success_count
     
     # Save results
@@ -635,7 +635,7 @@ run_complete_pipeline <- function(sources = c("government", "lexml"), processing
         name = job$name,
         status = job$status,
         progress = job$progress,
-        execution_time = if (!is.null(job$completed_at) && !is.null(job$started_at)) {
+        execution_time = if (!isTRUE(is.null(job$completed_at)) && !is.null(job$started_at)) {
           difftime(job$completed_at, job$started_at, units = "mins")
         } else {
           NA

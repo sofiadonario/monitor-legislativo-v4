@@ -66,7 +66,7 @@ advanced_document_filters <- function(filters, base_query) {
   param_count <- 0
   
   # Content-based filters with Brazilian legal terms
-  if (!is.null(filters$legal_terms) && length(filters$legal_terms) > 0) {
+  if (!isTRUE(is.null(filters$legal_terms)) && length(filters$legal_terms) > 0) {
     legal_conditions <- c()
     for (term in filters$legal_terms) {
       if (term %in% names(BRAZILIAN_LEGAL_TERMS)) {
@@ -106,12 +106,12 @@ advanced_document_filters <- function(filters, base_query) {
   
   # Geographic filters with regional aggregation
   if (!is.null(filters$geographic)) {
-    if (!is.null(filters$geographic$states) && length(filters$geographic$states) > 0) {
+    if (!isTRUE(is.null(filters$geographic$states)) && length(filters$geographic$states) > 0) {
       param_count <- param_count + 1
       params[[paste0("states", param_count)]] <- filters$geographic$states
       enhanced_query <- paste(enhanced_query, sprintf("AND d.estado = ANY($%d)", param_count))
     }
-    if (!is.null(filters$geographic$regions) && length(filters$geographic$regions) > 0) {
+    if (!isTRUE(is.null(filters$geographic$regions)) && length(filters$geographic$regions) > 0) {
       # Map regions to states
       region_states <- c()
       for (region in filters$geographic$regions) {
@@ -428,7 +428,7 @@ function(req) {
               } else NA,
               document_type = as.character(doc$tipo %||% ""),
               state = as.character(doc$estado %||% ""),
-              has_url = !is.null(doc$url) && nchar(doc$url) > 0
+              has_url = !isTRUE(is.null(doc$url)) && nchar(doc$url) > 0
             )
           }
           

@@ -404,7 +404,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             
             tryCatch({
               
-              if (is.null(click_data) || is.null(click_data$id)) {
+              if (isTRUE(is.null(click_data)) || isTRUE(is.null(click_data$id))) {
                 return(NULL)
               }
               
@@ -454,7 +454,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             
             tryCatch({
               
-              if (is.null(hover_data) || is.null(hover_data$id)) {
+              if (isTRUE(is.null(hover_data)) || isTRUE(is.null(hover_data$id))) {
                 return(NULL)
               }
               
@@ -574,7 +574,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Data fetching methods
       fetch_state_details = function(state_code) {
         
-        if (is.null(self$db_pool) || is.null(state_code)) {
+        if (isTRUE(is.null(self$db_pool)) || isTRUE(is.null(state_code))) {
           return(NULL)
         }
         
@@ -655,7 +655,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       
       fetch_state_hover_data = function(state_code) {
         
-        if (is.null(self$db_pool) || is.null(state_code)) {
+        if (isTRUE(is.null(self$db_pool)) || isTRUE(is.null(state_code))) {
           return(NULL)
         }
         
@@ -700,7 +700,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Content generation methods
       generate_state_popup = function(state_data) {
         
-        if (is.null(state_data) || nrow(state_data) == 0) {
+        if (isTRUE(is.null(state_data)) || nrow(state_data) == 0) {
           return(self$create_error_popup("State data unavailable"))
         }
         
@@ -747,7 +747,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           
           # Recent activity section
           activity_html <- ""
-          if (!is.null(state_data$recent_documents) && nrow(state_data$recent_documents) > 0) {
+          if (!isTRUE(is.null(state_data$recent_documents)) && nrow(state_data$recent_documents) > 0) {
             
             recent_docs <- state_data$recent_documents
             
@@ -815,7 +815,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       
       generate_state_tooltip = function(hover_data) {
         
-        if (is.null(hover_data) || nrow(hover_data) == 0) {
+        if (isTRUE(is.null(hover_data)) || nrow(hover_data) == 0) {
           return(NULL)
         }
         
@@ -902,7 +902,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           filtered_data <- self$get_filtered_geographic_data(filter_conditions)
           
           # Update map with filtered data
-          if (!is.null(filtered_data) && !is.null(self$session)) {
+          if (!isTRUE(is.null(filtered_data)) && !is.null(self$session)) {
             self$update_map_with_filtered_data(filtered_data)
           }
           
@@ -923,7 +923,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
         for (filter_name in names(self$active_filters)) {
           filter_value <- self$active_filters[[filter_name]]
           
-          if (!is.null(filter_value) && length(filter_value) > 0) {
+          if (!isTRUE(is.null(filter_value)) && length(filter_value) > 0) {
             
             condition <- switch(filter_name,
               "states" = paste0("estado IN ('", paste(filter_value, collapse = "', '"), "')"),
@@ -1033,7 +1033,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
         for (filter_name in names(self$active_filters)) {
           filter_value <- self$active_filters[[filter_name]]
           
-          if (!is.null(filter_value) && length(filter_value) > 0) {
+          if (!isTRUE(is.null(filter_value)) && length(filter_value) > 0) {
             summary <- switch(filter_name,
               "states" = paste0("States: ", length(filter_value), " selected"),
               "categories" = paste0("Categories: ", length(filter_value), " selected"),
@@ -1052,7 +1052,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Export functionality
       generate_state_export_data = function(state_code) {
         
-        if (is.null(self$db_pool) || is.null(state_code)) {
+        if (isTRUE(is.null(self$db_pool)) || isTRUE(is.null(state_code))) {
           return(NULL)
         }
         
@@ -1157,7 +1157,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Utility methods
       classify_activity_level = function(activity_score) {
         
-        if (is.na(activity_score) || is.null(activity_score)) return("Unknown")
+        if (isTRUE(is.na(activity_score)) || isTRUE(is.null(activity_score))) return("Unknown")
         
         if (activity_score >= 15) return("Very High")
         if (activity_score >= 10) return("High")
@@ -1253,7 +1253,7 @@ create_functional_enhanced_interactivity <- function(db_pool, leaflet_manager = 
     
     handle_state_click = function(click_data) {
       
-      if (is.null(click_data) || is.null(click_data$id)) {
+      if (isTRUE(is.null(click_data)) || isTRUE(is.null(click_data$id))) {
         return(NULL)
       }
       
@@ -1445,7 +1445,7 @@ setup_enhanced_map_observers <- function(input, output, session, interactivity_m
     
     click_data <- input[[paste0(map_id, "_shape_click")]]
     
-    if (!is.null(click_data) && !is.null(interactivity_manager)) {
+    if (!isTRUE(is.null(click_data)) && !is.null(interactivity_manager)) {
       interactivity_manager$event_handlers$handle_state_click(click_data)
     }
   })
@@ -1453,7 +1453,7 @@ setup_enhanced_map_observers <- function(input, output, session, interactivity_m
   # Document viewing observer
   observers$view_documents <- observeEvent(input$map_view_documents, {
     
-    if (!is.null(input$map_view_documents) && !is.null(interactivity_manager)) {
+    if (!isTRUE(is.null(input$map_view_documents)) && !is.null(interactivity_manager)) {
       nav_data <- input$map_view_documents
       interactivity_manager$event_handlers$handle_document_navigation(
         nav_data$entity_id,
@@ -1465,7 +1465,7 @@ setup_enhanced_map_observers <- function(input, output, session, interactivity_m
   # Export request observer
   observers$export_request <- observeEvent(input$map_export_request, {
     
-    if (!is.null(input$map_export_request) && !is.null(interactivity_manager)) {
+    if (!isTRUE(is.null(input$map_export_request)) && !is.null(interactivity_manager)) {
       export_data <- input$map_export_request
       
       result <- interactivity_manager$event_handlers$handle_export_request(
@@ -1494,7 +1494,7 @@ setup_enhanced_map_observers <- function(input, output, session, interactivity_m
   # Filter change observer
   observers$filters <- observeEvent(input$map_filters_changed, {
     
-    if (!is.null(input$map_filters_changed) && !is.null(interactivity_manager)) {
+    if (!isTRUE(is.null(input$map_filters_changed)) && !is.null(interactivity_manager)) {
       filter_data <- input$map_filters_changed$filters
       
       for (filter_name in names(filter_data)) {

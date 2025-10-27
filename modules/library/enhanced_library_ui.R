@@ -813,7 +813,7 @@ create_document_card_ui <- function(document_row, show_similarity = FALSE) {
       if (!is.na(document_row$tipo_documento)) span(paste("📄", document_row$tipo_documento))
     ),
     
-    if (!is.na(document_row$ementa) && nchar(document_row$ementa) > 0) {
+    if (!isTRUE(is.na(document_row$ementa)) && nchar(document_row$ementa) > 0) {
       div(
         style = "margin-top: 10px; color: #34495e; font-size: 14px;",
         substr(document_row$ementa, 1, 200),
@@ -832,7 +832,7 @@ create_document_card_ui <- function(document_row, show_similarity = FALSE) {
           )
         },
         
-        if (!is.na(document_row$trending_score) && document_row$trending_score > 5) {
+        if (!isTRUE(is.na(document_row$trending_score)) && document_row$trending_score > 5) {
           span(class = "trending-badge", "TRENDING")
         }
       ),

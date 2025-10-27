@@ -382,7 +382,7 @@ geographic_server_enhanced <- function(id, pool, cache = NULL) {
           start_time <- Sys.time()
           geo_data <- aggregate_geographic_data(pool, filters)
 
-          if (!is.null(geo_data) && is.data.frame(geo_data) && nrow(geo_data) > input$sample_size) {
+          if (!isTRUE(is.null(geo_data)) && is.data.frame(geo_data) && nrow(geo_data) > input$sample_size) {
             incProgress(0.7, detail = "Applying stratified sampling...")
             geo_data <- stratified_sample_documents(geo_data, input$sample_size)
           }
@@ -468,7 +468,7 @@ geographic_server_enhanced <- function(id, pool, cache = NULL) {
     })
     
     output$most_active_state_box <- renderValueBox({
-      most_active <- if (!is.null(values$geographic_data) && nrow(values$geographic_data) > 0) {
+      most_active <- if (!isTRUE(is.null(values$geographic_data)) && nrow(values$geographic_data) > 0) {
         top_state <- values$geographic_data %>%
           arrange(desc(doc_count)) %>%
           slice(1)
@@ -484,7 +484,7 @@ geographic_server_enhanced <- function(id, pool, cache = NULL) {
     })
     
     output$data_freshness_box <- renderValueBox({
-      freshness <- if (!is.null(values$geographic_data) && nrow(values$geographic_data) > 0) {
+      freshness <- if (!isTRUE(is.null(values$geographic_data)) && nrow(values$geographic_data) > 0) {
         latest <- max(values$geographic_data$latest_date, na.rm = TRUE)
         days_ago <- as.numeric(Sys.Date() - as.Date(latest))
         if (days_ago == 0) "Today"

@@ -270,7 +270,7 @@ create_advanced_choropleth <- function(geo_system, data, metric_column,
     cat("🎯 Creating advanced choropleth:", map_type, "resolution:", resolution, "\n")
     
     # Validate inputs
-    if (!geo_system$available || is.null(data) || nrow(data) == 0) {
+    if (!geo_system$available || isTRUE(is.null(data)) || nrow(data) == 0) {
       return(create_fallback_visualization(data, metric_column))
     }
     

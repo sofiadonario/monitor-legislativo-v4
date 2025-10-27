@@ -38,7 +38,7 @@ get_documents <- function(filters = list(), limit = NULL, offset = NULL) {
     NULL
   })
 
-  if (!is.null(db_result) && nrow(db_result) > 0) {
+  if (!isTRUE(is.null(db_result)) && nrow(db_result) > 0) {
     log_message(sprintf("Retrieved %d documents from database", nrow(db_result)), "INFO")
     return(db_result)
   }
@@ -51,7 +51,7 @@ get_documents <- function(filters = list(), limit = NULL, offset = NULL) {
     NULL
   })
 
-  if (!is.null(csv_result) && nrow(csv_result) > 0) {
+  if (!isTRUE(is.null(csv_result)) && nrow(csv_result) > 0) {
     log_message(sprintf("Retrieved %d documents from CSV fallback", nrow(csv_result)), "INFO")
     return(csv_result)
   }
@@ -174,7 +174,7 @@ apply_filters <- function(data, filters) {
   }
 
   # Search text filter
-  if (!is.null(filters$search) && nchar(filters$search) > 0) {
+  if (!isTRUE(is.null(filters$search)) && nchar(filters$search) > 0) {
     search_pattern <- str_to_lower(filters$search)
     data <- data %>%
       filter(
@@ -184,23 +184,23 @@ apply_filters <- function(data, filters) {
   }
 
   # Category filter
-  if (!is.null(filters$category) && filters$category != "All") {
+  if (!isTRUE(is.null(filters$category)) && filters$category != "All") {
     data <- data %>% filter(category == filters$category)
   }
 
   # State filter
-  if (!is.null(filters$state) && filters$state != "All") {
+  if (!isTRUE(is.null(filters$state)) && filters$state != "All") {
     data <- data %>% filter(state == filters$state)
   }
 
   # Date range filter
-  if (!is.null(filters$start_date) && !is.null(filters$end_date)) {
+  if (!isTRUE(is.null(filters$start_date)) && !is.null(filters$end_date)) {
     data <- data %>%
       filter(date >= filters$start_date & date <= filters$end_date)
   }
 
   # Document type filter
-  if (!is.null(filters$document_type) && filters$document_type != "All") {
+  if (!isTRUE(is.null(filters$document_type)) && filters$document_type != "All") {
     data <- data %>% filter(document_type == filters$document_type)
   }
 
@@ -209,26 +209,26 @@ apply_filters <- function(data, filters) {
 
 # Build safe parameterized query
 build_safe_query <- function(filters, limit = NULL, offset = NULL) {
-  base_query <- "SELECT * FROM legislative_documents WHERE 1=1"
+  base_query <- "SELECT * FROM documents WHERE 1=1"
   params <- list()
   param_counter <- 1
 
-  # Add filter conditions
-  if (!is.null(filters$search) && nchar(filters$search) > 0) {
-    base_query <- paste0(base_query, " AND (title ILIKE $", param_counter,
-                        " OR summary ILIKE $", param_counter, ")")
+  # Add filter conditions (using Portuguese column names from database)
+  if (!isTRUE(is.null(filters$search)) && nchar(filters$search) > 0) {
+    base_query <- paste0(base_query, " AND (titulo ILIKE $", param_counter,
+                        " OR ementa ILIKE $", param_counter, ")")
     params[[param_counter]] <- paste0("%", filters$search, "%")
     param_counter <- param_counter + 1
   }
 
-  if (!is.null(filters$category) && filters$category != "All") {
-    base_query <- paste0(base_query, " AND category = $", param_counter)
+  if (!isTRUE(is.null(filters$category)) && filters$category != "All") {
+    base_query <- paste0(base_query, " AND categoria = $", param_counter)
     params[[param_counter]] <- filters$category
     param_counter <- param_counter + 1
   }
 
-  if (!is.null(filters$state) && filters$state != "All") {
-    base_query <- paste0(base_query, " AND state = $", param_counter)
+  if (!isTRUE(is.null(filters$state)) && filters$state != "All") {
+    base_query <- paste0(base_query, " AND estado = $", param_counter)
     params[[param_counter]] <- filters$state
     param_counter <- param_counter + 1
   }
@@ -272,15 +272,47 @@ get_db_config <- function() {
 # Create database connection pool with only supported arguments
 db_connection_pool <- NULL
 
-# Null coalescing operator
-`%||%` <- function(x, y) if (is.null(x)) y else x
+# FIX v49: Safe %||% operator that prevents extent=0 error
+`%||%` <- function(x, y) {
+  if (isTRUE(is.null(x))) return(y)
+  if (isTRUE(length(x) == 0L)) return(y)
+  return(x)
+}
 
 # Parse DATABASE_URL into individual parameters (RPostgres doesn't support url= parameter)
+# Supports both standard format and Cloud SQL Unix socket format
 parse_database_url <- function(url = Sys.getenv("DATABASE_URL", "")) {
   if (!nzchar(url)) return(NULL)
+
+  # Try standard format: postgresql://user:pass@host:port/dbname?options
   m <- regexec("^postgres(?:ql)?://([^:]+):([^@]+)@([^:/]+)(?::(\\d+))?/([^?]+)(?:\\?(.+))?$", url, perl = TRUE)
   parts <- regmatches(url, m)[[1]]
-  if (length(parts) == 0) return(NULL)
+
+  # If standard format failed, try Cloud SQL Unix socket format: postgresql://user:pass@/dbname?host=...
+  if (length(parts) == 0) {
+    m <- regexec("^postgres(?:ql)?://([^:]+):([^@]+)@/([^?]+)(?:\\?(.+))?$", url, perl = TRUE)
+    parts <- regmatches(url, m)[[1]]
+    if (length(parts) == 0) return(NULL)
+
+    # Parse query string to get host parameter
+    qs <- if (length(parts) >= 5 && nzchar(parts[5])) utils::URLdecode(parts[5]) else ""
+    kv <- if (nzchar(qs)) {
+      params <- strsplit(qs, "&")[[1]]
+      setNames(sub("^[^=]+=", "", params), sub("=.*$", "", params))
+    } else list()
+
+    # Return Cloud SQL format with Unix socket host
+    return(list(
+      user = parts[2],
+      password = parts[3],
+      dbname = parts[4],
+      host = kv$host %||% "/cloudsql/mackmonitor:southamerica-east1:mackmonitor-db",
+      port = 5432L,
+      options = kv
+    ))
+  }
+
+  # Standard format parsing
   qs <- if (length(parts) >= 7 && nzchar(parts[7])) utils::URLdecode(parts[7]) else ""
   kv <- if (nzchar(qs)) setNames(sub("^[^=]+=", "", strsplit(qs, "&")[[1]]),
                                  sub("=.*$", "", strsplit(qs, "&")[[1]])) else list()
@@ -332,8 +364,9 @@ create_db_pool <- function() {
     init_session_config(pool)
 
     # Test the pool with startup probe
+    # FIX v50: Safe with isTRUE()
     test_result <- pool::dbGetQuery(pool, "SELECT 1 as test")
-    if (is.null(test_result) || nrow(test_result) == 0) {
+    if (isTRUE(is.null(test_result)) || isTRUE(nrow(test_result) == 0)) {
       stop("Database startup probe failed")
     }
 
@@ -353,7 +386,7 @@ create_db_pool <- function() {
         pool::dbGetQuery(pool, query)
       }, error = function(e) NULL)
 
-      if (!is.null(count_result) && nrow(count_result) > 0) {
+      if (!isTRUE(is.null(count_result)) && nrow(count_result) > 0) {
         doc_count <- suppressWarnings(as.numeric(count_result$count[1]))
         if (!is.na(doc_count)) {
           doc_count_verified <- TRUE
@@ -438,8 +471,9 @@ create_demo_dataset <- function(n = 100) {
 }
 
 # Chart data preparation (moved from CRITICAL_CHART_FIXES.R)
+# FIX v50: Safe with isTRUE()
 prepare_chart_data <- function(data, chart_type = "bar") {
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || isTRUE(nrow(data) == 0)) {
     return(create_empty_chart_data(chart_type))
   }
 
@@ -498,11 +532,12 @@ create_empty_chart_data <- function(chart_type) {
 }
 
 # Analytics data function (replacing analytics_data_fixed_csv)
+# FIX v50: Safe with isTRUE()
 get_analytics_data <- function() {
   # Get all documents for analytics
   data <- get_documents(limit = DATA_SERVICE_CONFIG$max_results)
 
-  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || isTRUE(!is.data.frame(data)) || isTRUE(nrow(data) == 0)) {
     log_message("No data available for analytics", "WARN")
     return(create_empty_dataset())
   }

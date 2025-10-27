@@ -487,7 +487,7 @@ function(req) {
 function(job_id) {
   API_STATE$request_count <<- API_STATE$request_count + 1
   
-  if (is.null(job_id) || nchar(trimws(job_id)) == 0) {
+  if (isTRUE(is.null(job_id)) || nchar(trimws(job_id)) == 0) {
     return(error_response("Job ID is required", 400))
   }
   

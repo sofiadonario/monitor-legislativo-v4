@@ -253,7 +253,7 @@ EnhancedRedisCacheManager <- R6Class(
             redis_data <- private$.redis_conn$get(cache_key)
           }
           
-          if (!is.null(redis_data) && redis_data != "") {
+          if (!isTRUE(is.null(redis_data)) && redis_data != "") {
             # Deserialize data
             data <- self$deserialize_data(redis_data)
             
@@ -816,7 +816,7 @@ cached_query_execute = function(query_func, query_type, parameters, force_refres
   execution_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
   
   # Cache result if successful and took significant time
-  if (!is.null(result) && execution_time > 0.1) {
+  if (!isTRUE(is.null(result)) && execution_time > 0.1) {
     cache_set(query_type, parameters, result)
     cat("💾 Query result cached (", round(execution_time, 3), "s execution time)\n")
   }

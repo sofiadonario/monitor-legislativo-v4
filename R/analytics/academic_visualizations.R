@@ -213,7 +213,7 @@ create_legislative_timeline <- function(temporal_data,
   }
   
   # Add event highlights
-  if (!is.null(highlight_events) && "date" %in% names(highlight_events)) {
+  if (!isTRUE(is.null(highlight_events)) && "date" %in% names(highlight_events)) {
     p <- p +
       geom_vline(data = highlight_events, aes(xintercept = as.numeric(date)),
                  color = academic_colors("default")[4], linetype = "dashed", alpha = 0.7) +
@@ -491,7 +491,7 @@ create_academic_scatterplot <- function(data,
   p <- ggplot(data, aes(x = .data[[x_var]], y = .data[[y_var]]))
   
   # Add points with optional aesthetics
-  if (!is.null(color_var) && !is.null(size_var)) {
+  if (!isTRUE(is.null(color_var)) && !is.null(size_var)) {
     p <- p + geom_point(aes(color = .data[[color_var]], size = .data[[size_var]]), alpha = 0.7)
   } else if (!is.null(color_var)) {
     p <- p + geom_point(aes(color = .data[[color_var]]), size = 2, alpha = 0.7)

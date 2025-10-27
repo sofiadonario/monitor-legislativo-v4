@@ -246,7 +246,7 @@ optimize_all_assets <- function(force_reoptimization = FALSE) {
   cat("🇧🇷 Brazilian Compliance: LGPD + Government Accessibility Standards\n\n")
   
   # Initialize system if needed
-  if (!exists("asset_registry") || is.null(asset_registry)) {
+  if (!exists("asset_registry") || isTRUE(is.null(asset_registry))) {
     system_init <- initialize_cdn_system()
     asset_registry <- system_init$asset_registry
   }

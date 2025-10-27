@@ -138,7 +138,7 @@ ml_export_data <- function(data,
 .export_csv <- function(data, file_path, metadata, compression, encoding, chunk_size) {
   
   # Determinar se usar chunks
-  if (!is.null(chunk_size) && nrow(data) > chunk_size) {
+  if (!isTRUE(is.null(chunk_size)) && nrow(data) > chunk_size) {
     # Exportação em chunks
     cli_alert_info(glue("Exportando em chunks de {chunk_size} registros"))
     
@@ -280,7 +280,7 @@ ml_export_data <- function(data,
 .export_tsv <- function(data, file_path, metadata, compression, encoding, chunk_size) {
   
   # Similar ao CSV, mas com tabs
-  if (!is.null(chunk_size) && nrow(data) > chunk_size) {
+  if (!isTRUE(is.null(chunk_size)) && nrow(data) > chunk_size) {
     cli_alert_info(glue("Exportando TSV em chunks de {chunk_size} registros"))
     
     n_chunks <- ceiling(nrow(data) / chunk_size)
@@ -600,7 +600,7 @@ ml_bulk_download <- function(document_ids,
   files_created <- c(files_created, main_file)
   
   # Conteúdo completo se solicitado
-  if (include_content && !is.na(doc$content) && nchar(doc$content) > 0) {
+  if (include_content && !isTRUE(is.na(doc$content)) && nchar(doc$content) > 0) {
     content_file <- file.path(dest_dir, paste0(base_name, "_content.txt"))
     writeLines(doc$content, content_file, useBytes = TRUE)
     files_created <- c(files_created, content_file)
@@ -610,7 +610,7 @@ ml_bulk_download <- function(document_ids,
   if (include_citations) {
     tryCatch({
       citation <- ml_generate_citations(doc, citation_style = "abnt")
-      if (length(citation) > 0 && nchar(citation[1]) > 0) {
+      if (isTRUE(length(citation) > 0) && nchar(citation[1]) > 0) {
         citation_file <- file.path(dest_dir, paste0(base_name, "_citation.txt"))
         writeLines(citation[1], citation_file, useBytes = TRUE)
         files_created <- c(files_created, citation_file)

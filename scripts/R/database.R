@@ -280,7 +280,7 @@ load_legislative_data <- function(filters = list(), limit = 200000) {
     where_clauses <- c()
     
     # Add filters
-    if (!is.null(filters$search_text) && filters$search_text != "") {
+    if (!isTRUE(is.null(filters$search_text)) && filters$search_text != "") {
       where_clauses <- c(where_clauses, 
         "(titulo ILIKE ? OR ementa ILIKE ?)")
       search_pattern <- paste0("%", filters$search_text, "%")
@@ -297,13 +297,13 @@ load_legislative_data <- function(filters = list(), limit = 200000) {
       params <- c(params, filters$date_to)
     }
     
-    if (!is.null(filters$tipo) && length(filters$tipo) > 0) {
+    if (!isTRUE(is.null(filters$tipo)) && length(filters$tipo) > 0) {
       placeholders <- paste(rep("?", length(filters$tipo)), collapse = ",")
       where_clauses <- c(where_clauses, paste0("tipo IN (", placeholders, ")"))
       params <- c(params, filters$tipo)
     }
     
-    if (!is.null(filters$estado) && length(filters$estado) > 0) {
+    if (!isTRUE(is.null(filters$estado)) && length(filters$estado) > 0) {
       placeholders <- paste(rep("?", length(filters$estado)), collapse = ",")
       where_clauses <- c(where_clauses, paste0("estado IN (", placeholders, ")"))
       params <- c(params, filters$estado)
@@ -358,7 +358,7 @@ load_legislative_data <- function(filters = list(), limit = 200000) {
 #' @return TRUE if successful, FALSE otherwise
 save_legislative_data <- function(data, table_name = "documents") {
   
-  if (is.null(.db_pool) || is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(.db_pool)) || isTRUE(is.null(data)) || nrow(data) == 0) {
     return(FALSE)
   }
   

@@ -298,7 +298,7 @@ monitor_performance <- function() {
   cpu_threshold <- as.numeric(Sys.getenv("ALERT_CPU_THRESHOLD", "75"))
   critical_cpu_threshold <- as.numeric(Sys.getenv("CRITICAL_CPU_THRESHOLD", "90"))
   
-  if (!is.null(metrics$cpu_usage_percent) && metrics$cpu_usage_percent > 0) {
+  if (!isTRUE(is.null(metrics$cpu_usage_percent)) && metrics$cpu_usage_percent > 0) {
     if (metrics$cpu_usage_percent > critical_cpu_threshold) {
       send_alert(
         paste("CRITICAL: CPU usage at", metrics$cpu_usage_percent, "%"),

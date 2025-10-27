@@ -157,7 +157,7 @@ SECURITY_CONFIG <- list(
 # Data Subject Access Request (SAR)
 process_data_access_request <- function(user_id, request_details) {
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database connection not available"))
     }
     
@@ -192,7 +192,7 @@ process_data_access_request <- function(user_id, request_details) {
 # Data Rectification Request
 process_data_rectification_request <- function(user_id, corrections) {
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database connection not available"))
     }
     
@@ -249,7 +249,7 @@ process_data_rectification_request <- function(user_id, corrections) {
 # Data Deletion Request (Right to be Forgotten)
 process_data_deletion_request <- function(user_id, deletion_type = "complete") {
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database connection not available"))
     }
     
@@ -316,7 +316,7 @@ process_data_portability_request <- function(user_id, format = "JSON") {
 # Update User Consent
 update_user_consent <- function(user_id, consent_type, granted, client_ip = NULL) {
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database connection not available"))
     }
     
@@ -360,7 +360,7 @@ update_user_consent <- function(user_id, consent_type, granted, client_ip = NULL
 # Get User Consent Status
 get_user_consent_status <- function(user_id) {
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database connection not available"))
     }
     
@@ -403,7 +403,7 @@ get_user_consent_status <- function(user_id) {
 # Anonymize User Data
 perform_data_anonymization <- function(user_id) {
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database connection not available"))
     }
     
@@ -455,7 +455,7 @@ perform_data_anonymization <- function(user_id) {
 # Complete Data Deletion
 perform_complete_data_deletion <- function(user_id) {
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database connection not available"))
     }
     
@@ -503,7 +503,7 @@ report_security_incident <- function(incident_type, severity, description, affec
   incident_id <- generate_incident_id()
   
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       # Log to file/console if database unavailable
       incident_log <- list(
         incident_id = incident_id,
@@ -566,7 +566,7 @@ report_security_incident <- function(incident_type, severity, description, affec
 # Generate LGPD Compliance Report
 generate_lgpd_compliance_report <- function(period_start, period_end) {
   tryCatch({
-    if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+    if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
       return(list(success = FALSE, error = "Database connection not available"))
     }
     
@@ -609,7 +609,7 @@ generate_lgpd_compliance_report <- function(period_start, period_end) {
 
 # Compile User Personal Data
 compile_user_personal_data <- function(user_id) {
-  if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+  if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
     return(list())
   }
   

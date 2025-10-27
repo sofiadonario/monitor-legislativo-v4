@@ -214,7 +214,7 @@ load_ibge_states <- function(force_refresh = FALSE, simplify_geometry = TRUE) {
       # Load with progress monitoring
       states_raw <- geobr::read_state(year = 2020, showProgress = FALSE)
       
-      if (is.null(states_raw) || nrow(states_raw) == 0) {
+      if (isTRUE(is.null(states_raw)) || nrow(states_raw) == 0) {
         stop("Failed to load state boundaries from geobr")
       }
       
@@ -340,7 +340,7 @@ load_ibge_municipalities <- function(state_code = c("SP", "MG", "RJ", "RS", "PR"
           showProgress = FALSE
         )
         
-        if (!is.null(state_municipalities) && nrow(state_municipalities) > 0) {
+        if (!isTRUE(is.null(state_municipalities)) && nrow(state_municipalities) > 0) {
           
           # Process municipalities
           processed_munic <- state_municipalities %>%
@@ -444,7 +444,7 @@ link_documents_to_geography <- function(db_pool, states_data = NULL, municipalit
       DBI::dbGetQuery(conn, query)
     })
 
-    if (is.null(documents_sample) || !is.data.frame(documents_sample) || nrow(documents_sample) == 0) {
+    if (isTRUE(is.null(documents_sample)) || !is.data.frame(documents_sample) || nrow(documents_sample) == 0) {
       cat("⚠️ No documents with geographic information found\n")
       return(linking_results)
     }
@@ -671,7 +671,7 @@ validate_spatial_data <- function(spatial_data, level = "unknown", expected_coun
   
   tryCatch({
     
-    if (is.null(spatial_data) || nrow(spatial_data) == 0) {
+    if (isTRUE(is.null(spatial_data)) || nrow(spatial_data) == 0) {
       return(NULL)
     }
     
@@ -682,13 +682,13 @@ validate_spatial_data <- function(spatial_data, level = "unknown", expected_coun
     # Filter out invalid geometries
     clean_data <- spatial_data[valid_geometries & !empty_geometries, ]
 
-    if (is.null(clean_data) || !is.data.frame(clean_data) || nrow(clean_data) == 0) {
+    if (isTRUE(is.null(clean_data)) || !is.data.frame(clean_data) || nrow(clean_data) == 0) {
       return(NULL)
     }
 
     # Check expected count
     if (!is.null(expected_count)) {
-      if (!is.null(clean_data) && is.data.frame(clean_data) && nrow(clean_data) < expected_count * 0.8) {  # Allow 20% tolerance
+      if (!isTRUE(is.null(clean_data)) && is.data.frame(clean_data) && nrow(clean_data) < expected_count * 0.8) {  # Allow 20% tolerance
         warning(paste("Expected", expected_count, "features, found", nrow(clean_data)))
       }
     }

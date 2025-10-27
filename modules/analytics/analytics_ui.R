@@ -375,7 +375,7 @@ create_analytics_tab <- function() {
 create_analytics_value_boxes <- function(analytics_results = NULL) {
   
   # Default values when no analytics results
-  if (is.null(analytics_results) || "error" %in% names(analytics_results)) {
+  if (isTRUE(is.null(analytics_results)) || "error" %in% names(analytics_results)) {
     return(list(
       total_docs = safe_valueBox(
         value = "134K+",
@@ -470,7 +470,7 @@ create_analytics_value_boxes <- function(analytics_results = NULL) {
 #' @return HTML formatted text
 format_analytics_for_ui <- function(analytics_results, section = "summary") {
   
-  if (is.null(analytics_results) || "error" %in% names(analytics_results)) {
+  if (isTRUE(is.null(analytics_results)) || "error" %in% names(analytics_results)) {
     return(tags$div(
       tags$p("⚠️ Análise não disponível ou falhou."),
       tags$p("Clique em 'Executar Análise Completa' para gerar resultados.")
@@ -539,7 +539,7 @@ format_analytics_for_ui <- function(analytics_results, section = "summary") {
 #' @return DT datatable
 create_analytics_table <- function(data, caption = "Resultados da Análise") {
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     return(DT::datatable(
       data.frame(Mensagem = "Nenhum dado disponível"),
       caption = caption,

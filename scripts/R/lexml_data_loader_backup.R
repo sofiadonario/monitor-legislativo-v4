@@ -465,7 +465,7 @@ get_lexml_subject_categories <- function() {
     load_lexml_metadata()
   }
   
-  if (!is.null(lexml_statistics) && !is.null(lexml_statistics$content_analysis) && 
+  if (!isTRUE(is.null(lexml_statistics)) && !isTRUE(is.null(lexml_statistics$content_analysis)) && 
       !is.null(lexml_statistics$content_analysis$subject_categories)) {
     
     categories <- lexml_statistics$content_analysis$subject_categories
@@ -491,7 +491,7 @@ get_lexml_regulatory_agencies <- function() {
     load_lexml_metadata()
   }
   
-  if (!is.null(lexml_statistics) && !is.null(lexml_statistics$content_analysis) && 
+  if (!isTRUE(is.null(lexml_statistics)) && !isTRUE(is.null(lexml_statistics$content_analysis)) && 
       !is.null(lexml_statistics$content_analysis$regulatory_agencies)) {
     return(lexml_statistics$content_analysis$regulatory_agencies)
   }
@@ -586,7 +586,7 @@ get_combined_documents <- function(include_lexml = TRUE, limit = NULL) {
   }
   
   # Combine results
-  if (!is.null(db_docs) && !is.null(lexml_docs)) {
+  if (!isTRUE(is.null(db_docs)) && !is.null(lexml_docs)) {
     # Select common columns
     common_cols <- c("id", "titulo", "tipo", "estado", "data_publicacao", "url", "urn")
     

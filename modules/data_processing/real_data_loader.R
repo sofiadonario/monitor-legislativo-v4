@@ -44,7 +44,7 @@ load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
       }
       
       # Apply limit if specified
-      if(!is.null(limit) && limit < nrow(data)) {
+      if(!isTRUE(is.null(limit)) && limit < nrow(data)) {
         data <- data[sample(nrow(data), limit), ]
         cat("🎯 Limited to", nrow(data), "documents\n")
       }
@@ -61,7 +61,7 @@ load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
       cat("✅ Loaded", nrow(data), "documents from enhanced simple dataset\n")
       
       # Apply limit if specified
-      if(!is.null(limit) && limit < nrow(data)) {
+      if(!isTRUE(is.null(limit)) && limit < nrow(data)) {
         data <- data[sample(nrow(data), limit), ]
         cat("🎯 Limited to", nrow(data), "documents\n")
       }
@@ -78,7 +78,7 @@ load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
       cat("✅ Loaded", nrow(data), "documents from Railway 50k dataset\n")
       
       # Apply limit if specified
-      if(!is.null(limit) && limit < nrow(data)) {
+      if(!isTRUE(is.null(limit)) && limit < nrow(data)) {
         data <- data[sample(nrow(data), limit), ]
         cat("🎯 Limited to", nrow(data), "documents\n")
       }
@@ -95,7 +95,7 @@ load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
       cat("✅ Loaded", nrow(data), "documents from Railway medium dataset\n")
       
       # Apply limit if specified
-      if(!is.null(limit) && limit < nrow(data)) {
+      if(!isTRUE(is.null(limit)) && limit < nrow(data)) {
         data <- data[sample(nrow(data), limit), ]
         cat("🎯 Limited to", nrow(data), "documents\n")
       }
@@ -112,7 +112,7 @@ load_real_legislative_data <- function(limit = NULL, use_cache = TRUE) {
       cat("✅ Loaded", nrow(data), "documents from Railway 10k dataset\n")
       
       # Apply limit if specified
-      if(!is.null(limit) && limit < nrow(data)) {
+      if(!isTRUE(is.null(limit)) && limit < nrow(data)) {
         data <- data[sample(nrow(data), limit), ]
         cat("🎯 Limited to", nrow(data), "documents\n")
       }
@@ -205,7 +205,7 @@ get_real_dashboard_metrics <- function() {
 
 # Calculate real data freshness (replaces fake percentages)
 calculate_data_freshness <- function(data) {
-  if(is.null(data) || nrow(data) == 0) return("95%")
+  if(isTRUE(is.null(data)) || nrow(data) == 0) return("95%")
   
   # Parse dates
   dates <- as.Date(data$data, format = "%Y-%m-%d")
@@ -338,7 +338,7 @@ validate_no_mock_data <- function() {
 
 # Add real content analysis (replaces mock sentiment/topic assignment)
 add_real_analysis <- function(data) {
-  if(is.null(data) || nrow(data) == 0) return(data)
+  if(isTRUE(is.null(data)) || nrow(data) == 0) return(data)
   
   tryCatch({
     # Real sentiment based on document attributes

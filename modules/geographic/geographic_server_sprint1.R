@@ -162,7 +162,7 @@ geographic_server_sprint1 <- function(id, pool, enable_webgl = TRUE, memory_limi
         incProgress(0.4, detail = "Processing geographic metadata...")
         
         # Enhance with Brazilian administrative data
-        if (!is.null(state_data) && !is.null(brasil_boundaries$states)) {
+        if (!isTRUE(is.null(state_data)) && !is.null(brasil_boundaries$states)) {
           # Join with state boundaries for complete geographic analysis
           geographic_data <- brasil_boundaries$states %>%
             left_join(state_data, by = c("state_code" = "estado_clean")) %>%
@@ -193,7 +193,7 @@ geographic_server_sprint1 <- function(id, pool, enable_webgl = TRUE, memory_limi
           incProgress(0.6, detail = "Calculating spatial statistics...")
 
           # Add spatial autocorrelation if enough data points
-          if (!is.null(geographic_data) && is.data.frame(geographic_data) && nrow(geographic_data) >= 10) {
+          if (!isTRUE(is.null(geographic_data)) && is.data.frame(geographic_data) && nrow(geographic_data) >= 10) {
             tryCatch({
               # Create spatial weights matrix
               coords <- sf::st_centroid(geographic_data) %>% sf::st_coordinates()

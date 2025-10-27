@@ -217,7 +217,7 @@ safe_renderPlotly <- function(expr, context = NULL) {
       }, type = "message")
 
       # Return last expression result (the plot)
-      if (length(result) > 0 && inherits(result[[length(result)]], "plotly")) {
+      if (isTRUE(length(result) > 0) && inherits(result[[length(result)]], "plotly")) {
         result[[length(result)]]
       } else {
         # If capture.output consumed the plot, re-evaluate

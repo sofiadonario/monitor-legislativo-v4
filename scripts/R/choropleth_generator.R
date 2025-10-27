@@ -28,7 +28,7 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
     cat("🗺️ Creating professional choropleth map\n")
     
     # Enhanced input validation with type checking
-    if (is.null(boundaries) || is.null(geojson) || is.null(state_data)) {
+    if (isTRUE(is.null(boundaries)) || isTRUE(is.null(geojson)) || isTRUE(is.null(state_data))) {
       stop("Missing required data for choropleth creation")
     }
     
@@ -100,7 +100,7 @@ create_professional_choropleth <- function(state_data, boundaries, geojson,
         })
         
         # Check for FeatureCollection type
-        if (is.null(geojson_type) || geojson_type != "FeatureCollection") {
+        if (isTRUE(is.null(geojson_type)) || geojson_type != "FeatureCollection") {
           cat("⚠️ GeoJSON is not a FeatureCollection\n")
           return(FALSE)
         }
@@ -409,7 +409,7 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
   cat("🎯 Generating choropleth map - metric:", map_metric, "type:", map_type, "\n")
   
   # Validate inputs
-  if (is.null(state_data) || nrow(state_data) == 0) {
+  if (isTRUE(is.null(state_data)) || nrow(state_data) == 0) {
     cat("❌ No state data available for mapping\n")
     return(NULL)
   }
@@ -450,7 +450,7 @@ generate_choropleth_map <- function(state_data, geospatial_system, metric_column
       NULL
     })
     
-    if (!is.null(geojson_safe) && !is.null(boundaries_safe)) {
+    if (!isTRUE(is.null(geojson_safe)) && !is.null(boundaries_safe)) {
       choropleth_map <- create_professional_choropleth(
         state_data = state_data,
         boundaries = boundaries_safe,
@@ -583,9 +583,9 @@ generate_enhanced_choropleth_map <- function(state_data, geospatial_system, metr
   # Check if advanced system is available and options are requested
   use_advanced <- advanced_maps_available && 
                  exists("ADVANCED_MAPS_SYSTEM") && 
-                 (length(advanced_options) > 0 || 
-                  !is.null(advanced_options$clustering) ||
-                  !is.null(advanced_options$animation) ||
+                 (isTRUE(length(advanced_options) > 0) || 
+                  !isTRUE(is.null(advanced_options$clustering)) ||
+                  !isTRUE(is.null(advanced_options$animation)) ||
                   !is.null(advanced_options$optimization))
   
   if (use_advanced) {

@@ -191,7 +191,7 @@ function(period = "24h", metrics = NULL, include_predictions = FALSE, format = "
     dashboard_data <- generate_dashboard_metrics(period, include_predictions)
     
     # Filter metrics if specific ones requested
-    if (!is.null(metrics) && length(metrics) > 0) {
+    if (!isTRUE(is.null(metrics)) && length(metrics) > 0) {
       filtered_data <- list(
         timestamp = dashboard_data$timestamp,
         period = dashboard_data$period,

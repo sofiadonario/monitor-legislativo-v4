@@ -56,7 +56,7 @@ get_library_documents <- function(category = "all",
   }
 
   # Handle legacy unlimited limit (999999)
-  if (!is.null(limit) && limit > 1000) {
+  if (!isTRUE(is.null(limit)) && limit > 1000) {
     warning(paste("Large limit requested:", limit, "- using paginated approach"))
 
     # For very large requests, use pagination
@@ -79,7 +79,7 @@ get_library_documents <- function(category = "all",
         use_semantic_search = use_semantic_search
       )
 
-      if (is.null(page) || nrow(page) == 0) {
+      if (isTRUE(is.null(page)) || nrow(page) == 0) {
         break
       }
 

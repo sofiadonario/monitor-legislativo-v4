@@ -299,7 +299,7 @@ advanced_kwic_analysis <- function(texts,
   )
   
   # Temporal analysis if metadata available
-  if (!is.null(metadata) && "ano" %in% names(metadata)) {
+  if (!isTRUE(is.null(metadata)) && "ano" %in% names(metadata)) {
     cat("📈 Analyzing temporal keyword patterns...\n")
     kwic_results$temporal_patterns <- analyze_temporal_keyword_patterns(
       kwic_results = kwic_results,

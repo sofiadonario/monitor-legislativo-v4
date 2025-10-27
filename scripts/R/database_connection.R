@@ -56,7 +56,7 @@ populate_database_with_csv_data <- function() {
   cat("🔄 Populating PostgreSQL database with CSV data from data_current/processed/\n")
   
   tryCatch({
-    if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
+    if (isTRUE(is.null(db_pool)) || !inherits(db_pool, "Pool")) {
       cat("❌ Database pool is NULL\n")
       return(FALSE)
     }
@@ -310,7 +310,7 @@ parse_database_url <- function(url) {
 #' Test database connection and verify tables
 #' @return TRUE if successful, FALSE otherwise
 test_database_connection <- function() {
-  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
+  if (isTRUE(is.null(db_pool)) || !inherits(db_pool, "Pool")) {
     cat("ERROR: Database pool is NULL\n")
     return(FALSE)
   }
@@ -402,7 +402,7 @@ test_database_connection <- function() {
 #' @param limit Maximum number of documents to return (default: NULL for all)
 #' @return Data frame with documents or NULL if error
 get_documents <- function(limit = NULL) {
-  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
+  if (isTRUE(is.null(db_pool)) || !inherits(db_pool, "Pool")) {
     warning("Database not initialized")
     return(NULL)
   }
@@ -642,7 +642,7 @@ get_documents <- function(limit = NULL) {
 #' @return Data frame with search results
 search_documents <- function(search_text = "", document_types = NULL, states = NULL, 
                             date_from = NULL, date_to = NULL, limit = 100) {
-  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
+  if (isTRUE(is.null(db_pool)) || !inherits(db_pool, "Pool")) {
     warning("Database not initialized")
     return(NULL)
   }
@@ -705,14 +705,14 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
     }
     
     # Add document type filter
-    if (!is.null(document_types) && length(document_types) > 0) {
+    if (!isTRUE(is.null(document_types)) && length(document_types) > 0) {
       # Use simple string formatting for IN clauses (safer approach)
       quoted_types <- paste0("'", gsub("'", "''", document_types), "'", collapse = ", ")
       base_query <- paste(base_query, "AND d.tipo IN (", quoted_types, ")")
     }
     
     # Add state filter
-    if (!is.null(states) && length(states) > 0) {
+    if (!isTRUE(is.null(states)) && length(states) > 0) {
       # Use simple string formatting for IN clauses
       quoted_states <- paste0("'", gsub("'", "''", states), "'", collapse = ", ")
       base_query <- paste(base_query, "AND d.estado IN (", quoted_states, ")")
@@ -775,7 +775,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
         "text:", ifelse(nchar(search_text) > 0, search_text, "any"),
         "types:", ifelse(is.null(document_types), "any", paste(document_types, collapse=",")),
         "states:", ifelse(is.null(states), "any", paste(states, collapse=",")),
-        "dates:", ifelse(is.null(date_from) && is.null(date_to), "any", 
+        "dates:", ifelse(isTRUE(is.null(date_from)) && isTRUE(is.null(date_to)), "any", 
                         paste(date_from, "to", date_to))
       )
       
@@ -793,7 +793,7 @@ search_documents <- function(search_text = "", document_types = NULL, states = N
 #' Get available document types for filter
 #' @return Vector of document types
 get_document_types <- function() {
-  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
+  if (isTRUE(is.null(db_pool)) || !inherits(db_pool, "Pool")) {
     return(c("lei", "decreto", "portaria"))
   }
   
@@ -822,7 +822,7 @@ get_document_types <- function() {
 #' Get available states for filter
 #' @return Vector of states
 get_states <- function() {
-  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
+  if (isTRUE(is.null(db_pool)) || !inherits(db_pool, "Pool")) {
     return(c("SP", "RJ", "MG", "RS"))
   }
   
@@ -851,7 +851,7 @@ get_states <- function() {
 #' Get document statistics
 #' @return List with various statistics
 get_document_stats <- function() {
-  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
+  if (isTRUE(is.null(db_pool)) || !inherits(db_pool, "Pool")) {
     return(list(
       total_documents = 0,
       document_types = data.frame(),
@@ -905,7 +905,7 @@ get_document_stats <- function() {
 #' Get search analytics and statistics
 #' @return List with search-related statistics
 get_search_analytics <- function() {
-  if (is.null(db_pool) || !inherits(db_pool, "Pool")) {
+  if (isTRUE(is.null(db_pool)) || !inherits(db_pool, "Pool")) {
     return(list(
       total_documents = 0,
       documents_by_year = data.frame(),
@@ -1215,7 +1215,7 @@ get_search_analytics <- function() {
 #' @param search_terms Vector of terms to highlight
 #' @return HTML string with highlighted terms
 highlight_search_terms <- function(text, search_terms) {
-  if (is.null(search_terms) || length(search_terms) == 0 || is.null(text) || nchar(text) == 0) {
+  if (isTRUE(is.null(search_terms)) || isTRUE(length(search_terms) == 0) || isTRUE(is.null(text)) || nchar(text) == 0) {
     return(text)
   }
   

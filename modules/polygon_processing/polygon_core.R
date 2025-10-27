@@ -343,7 +343,7 @@ spatial_join_documents_municipalities <- function(documents, municipalities, joi
   memory_monitor <- create_memory_monitor("spatial_join")
   on.exit(memory_monitor(), add = TRUE)
   
-  if (nrow(documents) == 0 || nrow(municipalities) == 0) {
+  if (isTRUE(nrow(documents) == 0) || nrow(municipalities) == 0) {
     return(documents)
   }
   

@@ -81,7 +81,7 @@ generate_correlation_id <- function() {
 get_session_context <- function(session = NULL) {
   context <- list()
   
-  if (!is.null(session) && LOGGER_CONFIG$include_session) {
+  if (!isTRUE(is.null(session)) && LOGGER_CONFIG$include_session) {
     context$session_id <- session$token
     context$user_agent <- "session_logged"
     
@@ -107,7 +107,7 @@ write_log <- function(level, message, context = list(), session = NULL,
   
   # Check log level threshold
   level_info <- LOG_LEVELS[[toupper(level)]]
-  if (is.null(level_info) || level_info$numeric < get_log_level_threshold()) {
+  if (isTRUE(is.null(level_info)) || level_info$numeric < get_log_level_threshold()) {
     return(invisible(NULL))
   }
   

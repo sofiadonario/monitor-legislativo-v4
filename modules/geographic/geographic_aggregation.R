@@ -159,7 +159,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           # Get base aggregation data
           base_aggregation <- self$get_state_aggregation_data(filters)
           
-          if (is.null(base_aggregation) || nrow(base_aggregation) == 0) {
+          if (isTRUE(is.null(base_aggregation)) || nrow(base_aggregation) == 0) {
             cat("⚠️ No data found for state aggregation\n")
             return(NULL)
           }
@@ -243,7 +243,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
           # Get municipality aggregation data
           municipality_aggregation <- self$get_municipality_aggregation_data(filters, top_n)
           
-          if (is.null(municipality_aggregation) || nrow(municipality_aggregation) == 0) {
+          if (isTRUE(is.null(municipality_aggregation)) || nrow(municipality_aggregation) == 0) {
             cat("⚠️ No municipality data found\n")
             return(NULL)
           }
@@ -340,7 +340,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             DBI::dbGetQuery(conn, query)
           })
           
-          if (!is.null(temporal_geo_data) && nrow(temporal_geo_data) > 0) {
+          if (!isTRUE(is.null(temporal_geo_data)) && nrow(temporal_geo_data) > 0) {
             
             # Process temporal data
             temporal_geo_processed <- temporal_geo_data %>%
@@ -408,7 +408,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             }
             
             # Add filters if provided
-            if (!is.null(filters) && length(filters) > 0) {
+            if (!isTRUE(is.null(filters)) && length(filters) > 0) {
               filter_conditions <- paste(
                 names(filters), filters, 
                 collapse = " AND "
@@ -425,7 +425,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             result <- DBI::dbGetQuery(conn, base_query)
 
             # Data validation
-            if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
+            if (!isTRUE(is.null(result)) && is.data.frame(result) && nrow(result) > 0) {
               result <- result %>%
                 filter(document_count >= AGGREGATION_CONFIG$levels$state$min_documents) %>%
                 mutate(
@@ -467,7 +467,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
             "
             
             # Add filters
-            if (!is.null(filters) && length(filters) > 0) {
+            if (!isTRUE(is.null(filters)) && length(filters) > 0) {
               filter_conditions <- paste(
                 names(filters), filters,
                 collapse = " AND "
@@ -483,13 +483,13 @@ if (requireNamespace("R6", quietly = TRUE)) {
             ")
             
             # Add LIMIT if specified
-            if (!is.null(top_n) && is.numeric(top_n)) {
+            if (!isTRUE(is.null(top_n)) && is.numeric(top_n)) {
               base_query <- paste(base_query, "LIMIT", top_n)
             }
 
             result <- DBI::dbGetQuery(conn, base_query)
 
-            if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
+            if (!isTRUE(is.null(result)) && is.data.frame(result) && nrow(result) > 0) {
               result <- result %>%
                 mutate(
                   avg_content_length = round(as.numeric(avg_content_length), 2),
@@ -510,7 +510,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Statistical analysis methods
       calculate_advanced_statistics = function(aggregation_data, level = "state") {
         
-        if (is.null(aggregation_data) || nrow(aggregation_data) == 0) {
+        if (isTRUE(is.null(aggregation_data)) || nrow(aggregation_data) == 0) {
           return(aggregation_data)
         }
         
@@ -568,7 +568,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
       # Export methods
       export_for_choropleth = function(aggregation_data, level = "state") {
         
-        if (is.null(aggregation_data) || nrow(aggregation_data) == 0) {
+        if (isTRUE(is.null(aggregation_data)) || nrow(aggregation_data) == 0) {
           return(NULL)
         }
         
@@ -649,7 +649,7 @@ if (requireNamespace("R6", quietly = TRUE)) {
         # Test basic aggregation
         tryCatch({
           test_states <- self$aggregate_by_state(use_cache = FALSE, include_geometry = FALSE)
-          summary$states_available <- !is.null(test_states) && nrow(test_states) > 0
+          summary$states_available <- !isTRUE(is.null(test_states)) && nrow(test_states) > 0
           summary$states_count <- ifelse(summary$states_available, nrow(test_states), 0)
         }, error = function(e) {
           summary$states_available <- FALSE
@@ -824,7 +824,7 @@ get_quick_state_summary <- function(db_pool) {
 #' @return JSON string or file export status
 export_aggregation_json <- function(aggregation_data, file_path = NULL) {
   
-  if (is.null(aggregation_data) || nrow(aggregation_data) == 0) {
+  if (isTRUE(is.null(aggregation_data)) || nrow(aggregation_data) == 0) {
     return(NULL)
   }
   

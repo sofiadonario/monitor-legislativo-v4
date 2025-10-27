@@ -24,7 +24,7 @@ cat("\n2. TESTING GEOSPATIAL SYSTEM:\n")
 source("scripts/R/geospatial_utils.R")
 geo_system <- initialize_geospatial_system()
 
-if (!is.null(geo_system) && geo_system$available) {
+if (!isTRUE(is.null(geo_system)) && geo_system$available) {
   cat("  ✓ Geospatial system initialized successfully\n")
   cat("  - States loaded:", geo_system$state_count, "\n")
   cat("  - Cache directory:", geo_system$cache_dir, "\n")
@@ -92,7 +92,7 @@ if (!is.null(geo_system$geojson)) {
     }
     
     # Check if we have proper geometry
-    if (!is.null(geojson_obj$features) && geojson_obj$features != "simplified") {
+    if (!isTRUE(is.null(geojson_obj$features)) && geojson_obj$features != "simplified") {
       cat("  Creating choropleth with proper GeoJSON...\n")
       
       # Create choropleth

@@ -36,7 +36,7 @@ for (key_id in names(API_KEYS)) {
 extract_api_key <- function(req) {
   # Check Authorization header (Bearer token)
   auth_header <- req$HTTP_AUTHORIZATION
-  if (!is.null(auth_header) && startsWith(auth_header, "Bearer ")) {
+  if (!isTRUE(is.null(auth_header)) && startsWith(auth_header, "Bearer ")) {
     return(substr(auth_header, 8, nchar(auth_header)))
   }
   
@@ -57,7 +57,7 @@ extract_api_key <- function(req) {
 
 # Helper function to validate API key
 validate_api_key <- function(api_key) {
-  if (is.null(api_key) || api_key == "") {
+  if (isTRUE(is.null(api_key)) || api_key == "") {
     return(list(valid = FALSE, error = "API key is required"))
   }
   

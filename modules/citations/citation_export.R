@@ -88,43 +88,43 @@ generate_bibtex_entry <- function(metadata, index) {
   )
   
   # Add required fields
-  if (!is.null(metadata$original_title) && metadata$original_title != "") {
+  if (!isTRUE(is.null(metadata$original_title)) && metadata$original_title != "") {
     title_clean <- escape_bibtex_special_chars(metadata$original_title)
     entry_lines <- c(entry_lines, paste0("  title = {", title_clean, "},"))
   }
   
-  if (!is.null(metadata$authority) && metadata$authority != "") {
+  if (!isTRUE(is.null(metadata$authority)) && metadata$authority != "") {
     author_clean <- escape_bibtex_special_chars(metadata$authority)
     entry_lines <- c(entry_lines, paste0("  author = {", author_clean, "},"))
   }
   
-  if (!is.null(metadata$year) && metadata$year != "") {
+  if (!isTRUE(is.null(metadata$year)) && metadata$year != "") {
     entry_lines <- c(entry_lines, paste0("  year = {", metadata$year, "},"))
   }
   
   # Add document type
-  if (!is.null(metadata$document_type) && metadata$document_type != "") {
+  if (!isTRUE(is.null(metadata$document_type)) && metadata$document_type != "") {
     type_clean <- escape_bibtex_special_chars(metadata$document_type)
     entry_lines <- c(entry_lines, paste0("  type = {", type_clean, "},"))
   }
   
   # Add document number
-  if (!is.null(metadata$document_number) && metadata$document_number != "") {
+  if (!isTRUE(is.null(metadata$document_number)) && metadata$document_number != "") {
     entry_lines <- c(entry_lines, paste0("  number = {", metadata$document_number, "},"))
   }
   
   # Add jurisdiction
-  if (!is.null(metadata$jurisdiction) && metadata$jurisdiction != "") {
+  if (!isTRUE(is.null(metadata$jurisdiction)) && metadata$jurisdiction != "") {
     entry_lines <- c(entry_lines, paste0("  address = {", metadata$jurisdiction, "},"))
   }
   
   # Add URL
-  if (!is.null(metadata$url) && metadata$url != "") {
+  if (!isTRUE(is.null(metadata$url)) && metadata$url != "") {
     entry_lines <- c(entry_lines, paste0("  url = {", metadata$url, "},"))
   }
   
   # Add URN
-  if (!is.null(metadata$urn) && metadata$urn != "") {
+  if (!isTRUE(is.null(metadata$urn)) && metadata$urn != "") {
     entry_lines <- c(entry_lines, paste0("  note = {URN: ", metadata$urn, "},"))
   }
   
@@ -149,7 +149,7 @@ generate_bibtex_key <- function(metadata, index) {
   key_parts <- c()
   
   # Use authority abbreviation
-  if (!is.null(metadata$authority) && metadata$authority != "") {
+  if (!isTRUE(is.null(metadata$authority)) && metadata$authority != "") {
     if (grepl("BRASIL", metadata$authority)) {
       key_parts <- c(key_parts, "brasil")
     } else if (grepl("ESTADO", metadata$authority)) {
@@ -164,12 +164,12 @@ generate_bibtex_key <- function(metadata, index) {
   }
   
   # Add year
-  if (!is.null(metadata$year) && metadata$year != "") {
+  if (!isTRUE(is.null(metadata$year)) && metadata$year != "") {
     key_parts <- c(key_parts, metadata$year)
   }
   
   # Add document number if available
-  if (!is.null(metadata$document_number) && metadata$document_number != "") {
+  if (!isTRUE(is.null(metadata$document_number)) && metadata$document_number != "") {
     # Clean number for use in key
     number_clean <- stringr::str_remove_all(metadata$document_number, "[^\\d]")
     if (number_clean != "" && nchar(number_clean) <= 6) {
@@ -207,7 +207,7 @@ determine_bibtex_entry_type <- function(metadata) {
 #' @param text Text to escape
 #' @return Escaped text
 escape_bibtex_special_chars <- function(text) {
-  if (is.null(text) || text == "") return("")
+  if (isTRUE(is.null(text)) || text == "") return("")
   
   # Escape BibTeX special characters
   text <- gsub("\\\\", "\\\\textbackslash{}", text)  # Backslash first
@@ -269,47 +269,47 @@ generate_ris_entry <- function(metadata) {
   )
   
   # Add title
-  if (!is.null(metadata$original_title) && metadata$original_title != "") {
+  if (!isTRUE(is.null(metadata$original_title)) && metadata$original_title != "") {
     ris_lines <- c(ris_lines, paste0("TI  - ", metadata$original_title))
   }
   
   # Add author/authority
-  if (!is.null(metadata$authority) && metadata$authority != "") {
+  if (!isTRUE(is.null(metadata$authority)) && metadata$authority != "") {
     ris_lines <- c(ris_lines, paste0("AU  - ", metadata$authority))
   }
   
   # Add publication year
-  if (!is.null(metadata$year) && metadata$year != "") {
+  if (!isTRUE(is.null(metadata$year)) && metadata$year != "") {
     ris_lines <- c(ris_lines, paste0("PY  - ", metadata$year))
   }
   
   # Add publication date
-  if (!is.null(metadata$publication_date) && metadata$publication_date != "") {
+  if (!isTRUE(is.null(metadata$publication_date)) && metadata$publication_date != "") {
     ris_lines <- c(ris_lines, paste0("DA  - ", metadata$publication_date))
   }
   
   # Add document type as note
-  if (!is.null(metadata$document_type) && metadata$document_type != "") {
+  if (!isTRUE(is.null(metadata$document_type)) && metadata$document_type != "") {
     ris_lines <- c(ris_lines, paste0("N1  - ", metadata$document_type))
   }
   
   # Add document number
-  if (!is.null(metadata$document_number) && metadata$document_number != "") {
+  if (!isTRUE(is.null(metadata$document_number)) && metadata$document_number != "") {
     ris_lines <- c(ris_lines, paste0("VL  - ", metadata$document_number))
   }
   
   # Add jurisdiction as publisher
-  if (!is.null(metadata$jurisdiction) && metadata$jurisdiction != "") {
+  if (!isTRUE(is.null(metadata$jurisdiction)) && metadata$jurisdiction != "") {
     ris_lines <- c(ris_lines, paste0("PB  - ", metadata$jurisdiction))
   }
   
   # Add URL
-  if (!is.null(metadata$url) && metadata$url != "") {
+  if (!isTRUE(is.null(metadata$url)) && metadata$url != "") {
     ris_lines <- c(ris_lines, paste0("UR  - ", metadata$url))
   }
   
   # Add URN as note
-  if (!is.null(metadata$urn) && metadata$urn != "") {
+  if (!isTRUE(is.null(metadata$urn)) && metadata$urn != "") {
     ris_lines <- c(ris_lines, paste0("N1  - URN: ", metadata$urn))
   }
   
@@ -401,7 +401,7 @@ generate_endnote_record <- function(parent_node, metadata, index) {
   contributors_node <- xml2::xml_add_child(record_node, "contributors")
   authors_node <- xml2::xml_add_child(contributors_node, "authors")
   
-  if (!is.null(metadata$authority) && metadata$authority != "") {
+  if (!isTRUE(is.null(metadata$authority)) && metadata$authority != "") {
     author_node <- xml2::xml_add_child(authors_node, "author")
     xml2::xml_add_child(author_node, "style", face = "normal", font = "default", size = "100%", 
                        metadata$authority)
@@ -410,7 +410,7 @@ generate_endnote_record <- function(parent_node, metadata, index) {
   # Add titles
   titles_node <- xml2::xml_add_child(record_node, "titles")
   
-  if (!is.null(metadata$original_title) && metadata$original_title != "") {
+  if (!isTRUE(is.null(metadata$original_title)) && metadata$original_title != "") {
     title_node <- xml2::xml_add_child(titles_node, "title")
     xml2::xml_add_child(title_node, "style", face = "normal", font = "default", size = "100%",
                        metadata$original_title)
@@ -418,7 +418,7 @@ generate_endnote_record <- function(parent_node, metadata, index) {
   
   # Add dates
   dates_node <- xml2::xml_add_child(record_node, "dates")
-  if (!is.null(metadata$year) && metadata$year != "") {
+  if (!isTRUE(is.null(metadata$year)) && metadata$year != "") {
     year_node <- xml2::xml_add_child(dates_node, "year")
     xml2::xml_add_child(year_node, "style", face = "normal", font = "default", size = "100%",
                        metadata$year)
@@ -426,14 +426,14 @@ generate_endnote_record <- function(parent_node, metadata, index) {
   
   # Add publisher (jurisdiction)
   publisher_node <- xml2::xml_add_child(record_node, "publisher")
-  if (!is.null(metadata$jurisdiction) && metadata$jurisdiction != "") {
+  if (!isTRUE(is.null(metadata$jurisdiction)) && metadata$jurisdiction != "") {
     xml2::xml_add_child(publisher_node, "style", face = "normal", font = "default", size = "100%",
                        metadata$jurisdiction)
   }
   
   # Add URLs
   urls_node <- xml2::xml_add_child(record_node, "urls")
-  if (!is.null(metadata$url) && metadata$url != "") {
+  if (!isTRUE(is.null(metadata$url)) && metadata$url != "") {
     related_urls_node <- xml2::xml_add_child(urls_node, "related-urls")
     url_node <- xml2::xml_add_child(related_urls_node, "url")
     xml2::xml_add_child(url_node, "style", face = "normal", font = "default", size = "100%",
@@ -442,7 +442,7 @@ generate_endnote_record <- function(parent_node, metadata, index) {
   
   # Add custom fields
   custom_node <- xml2::xml_add_child(record_node, "custom7")  # Document type
-  if (!is.null(metadata$document_type) && metadata$document_type != "") {
+  if (!isTRUE(is.null(metadata$document_type)) && metadata$document_type != "") {
     xml2::xml_add_child(custom_node, "style", face = "normal", font = "default", size = "100%",
                        metadata$document_type)
   }

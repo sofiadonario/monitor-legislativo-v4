@@ -117,7 +117,7 @@ initialize_geographic_system <- function(db_pool = NULL, session = NULL) {
       # Set up automatic cleanup on session end
       if (!is.null(session)) {
         session$onSessionEnded(function() {
-          if (!is.null(geographic_system) && "cleanup" %in% names(geographic_system)) {
+          if (!isTRUE(is.null(geographic_system)) && "cleanup" %in% names(geographic_system)) {
             geographic_system$cleanup()
           }
         })

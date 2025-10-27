@@ -173,7 +173,7 @@ format_xml_data <- function(data) {
     xml_body <- paste0(xml_body, '  <documento id="', row$id, '">\n')
     
     for (col in names(row)) {
-      if (!is.na(row[[col]]) && row[[col]] != "") {
+      if (!isTRUE(is.na(row[[col]])) && row[[col]] != "") {
         value <- as.character(row[[col]])
         # Escape XML special characters
         value <- gsub("&", "&amp;", value)
@@ -199,7 +199,7 @@ execute_export <- function(query_params, format, fields = NULL, job_id = NULL) {
   base_query <- "SELECT"
   
   # Select fields
-  if (!is.null(fields) && length(fields) > 0) {
+  if (!isTRUE(is.null(fields)) && length(fields) > 0) {
     selected_fields <- intersect(fields, names(ACADEMIC_FIELD_MAPPINGS$detailed))
     if (length(selected_fields) > 0) {
       base_query <- paste(base_query, paste(selected_fields, collapse = ", "))

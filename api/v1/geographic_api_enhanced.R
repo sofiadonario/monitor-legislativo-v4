@@ -275,7 +275,7 @@ function(analysis_type = "comprehensive", correlation_factors = NULL,
         }
         
         # Correlation analysis
-        if (!is.null(correlation_factors) && length(correlation_factors) > 0) {
+        if (!isTRUE(is.null(correlation_factors)) && length(correlation_factors) > 0) {
           correlations <- list()
           
           for (factor in correlation_factors) {
@@ -849,7 +849,7 @@ function(transport_type = "roads", correlation_method = "pearson", include_predi
     
     # Predictive analysis
     predictions <- NULL
-    if (include_predictions && !is.na(overall_correlation) && abs(overall_correlation) > 0.3) {
+    if (include_predictions && !isTRUE(is.na(overall_correlation)) && abs(overall_correlation) > 0.3) {
       predictions <- list(
         model_type = "linear_regression",
         correlation_strength = if (abs(overall_correlation) > 0.7) "strong" 
@@ -872,7 +872,7 @@ function(transport_type = "roads", correlation_method = "pearson", include_predi
           correlation_method = correlation_method,
           overall_correlation = overall_correlation,
           states_analyzed = length(correlation_results),
-          significance_level = if (!is.na(overall_correlation) && abs(overall_correlation) > 0.5) "significant" else "not_significant"
+          significance_level = if (!isTRUE(is.na(overall_correlation)) && abs(overall_correlation) > 0.5) "significant" else "not_significant"
         ),
         predictions = predictions
       ),

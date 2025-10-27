@@ -11,7 +11,7 @@ output$interactive_brazil_map <- renderPlotly({
     
     # Get data
     data <- analytics_data()
-    if (is.null(data) || nrow(data) == 0) {
+    if (isTRUE(is.null(data)) || nrow(data) == 0) {
       return(plot_ly() %>% layout(title = "No data available"))
     }
     
@@ -21,7 +21,7 @@ output$interactive_brazil_map <- renderPlotly({
     }
     
     # Apply filters
-    if (exists("input") && !is.null(input$map_category) && input$map_category != "all") {
+    if (exists("input") && !isTRUE(is.null(input$map_category)) && input$map_category != "all") {
       if ("category" %in% names(data)) {
         data <- data[data$category == input$map_category | is.na(data$category), ]
       }
@@ -31,7 +31,7 @@ output$interactive_brazil_map <- renderPlotly({
     if ("state" %in% names(data)) {
       valid_data <- data[!is.na(data$state) & data$state != "" & data$state %in% brazil_states$state_code, ]
       
-      if (!is.null(valid_data) && is.data.frame(valid_data) && nrow(valid_data) > 0) {
+      if (!isTRUE(is.null(valid_data)) && is.data.frame(valid_data) && nrow(valid_data) > 0) {
         state_list <- unique(valid_data$state)
         state_counts <- data.frame(
           state = state_list,
@@ -126,7 +126,7 @@ output$temporal_map_animation <- renderPlotly({
     
     if ("year" %in% names(data) && "state" %in% names(data)) {
       yearly_data <- data[!is.na(data$year) & data$year >= 2020 & data$year <= 2025, ]
-      if (!is.null(yearly_data) && is.data.frame(yearly_data) && nrow(yearly_data) > 0) {
+      if (!isTRUE(is.null(yearly_data)) && is.data.frame(yearly_data) && nrow(yearly_data) > 0) {
         plot_ly(
           data = yearly_data,
           x = ~year,

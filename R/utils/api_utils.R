@@ -140,7 +140,7 @@ make_api_request <- function(url, method = "GET", headers = list(), body = NULL,
 #' @return List with validation results
 #' @export
 validate_legal_document_urn <- function(urn) {
-  if (is.null(urn) || is.na(urn) || urn == "") {
+  if (isTRUE(is.null(urn)) || isTRUE(is.na(urn)) || urn == "") {
     return(list(valid = FALSE, error = "Empty URN"))
   }
   
@@ -183,7 +183,7 @@ enrich_document_metadata <- function(document) {
   
   tryCatch({
     # Add geographic information if state is available
-    if (!is.null(document$estado) && document$estado != "") {
+    if (!isTRUE(is.null(document$estado)) && document$estado != "") {
       geo_info <- get_state_information(document$estado)
       if (geo_info$success) {
         enhanced_doc$estado_nome_completo <- geo_info$data$nome_completo
@@ -275,7 +275,7 @@ get_state_information <- function(state_code) {
 #' @return List with classification information
 #' @export
 classify_document_type <- function(document_type) {
-  if (is.null(document_type) || is.na(document_type)) {
+  if (isTRUE(is.null(document_type)) || isTRUE(is.na(document_type))) {
     return(list(categoria = "Desconhecido", nivel = 0))
   }
   
@@ -311,7 +311,7 @@ classify_document_type <- function(document_type) {
 #' @return List with temporal analysis
 #' @export
 analyze_document_temporal_context <- function(document_date) {
-  if (is.null(document_date) || is.na(document_date)) {
+  if (isTRUE(is.null(document_date)) || isTRUE(is.na(document_date))) {
     return(list(periodo = "Desconhecido", contexto = "Data não disponível"))
   }
   

@@ -227,7 +227,7 @@ classify_documents_by_taxonomy <- function(text_data, taxonomy, level_name) {
   results[[paste0(level_name, "_keywords_found")]] <- NA_character_
   
   for (i in seq_along(text_data)) {
-    if (is.na(text_data[i]) || nchar(text_data[i]) == 0) next
+    if (isTRUE(is.na(text_data[i])) || nchar(text_data[i]) == 0) next
     
     text_upper <- toupper(text_data[i])
     best_category <- NA_character_
@@ -276,7 +276,7 @@ extract_advanced_text_features <- function(text_data) {
   for (i in seq_along(text_data)) {
     text <- text_data[i]
     
-    if (is.na(text) || nchar(text) == 0) {
+    if (isTRUE(is.na(text)) || nchar(text) == 0) {
       # Fill with zeros for missing text
       features$text_length[i] <- 0
       features$word_count[i] <- 0
@@ -442,7 +442,7 @@ comprehensive_sentiment_topic_analysis <- function(documents, text_column = "tit
     topic_results <- enhanced_topic_modeling(text_data, n_topics)
     
     # Sentiment-topic correlation analysis
-    if (nrow(sentiment_results) > 0 && nrow(topic_results$assignments) > 0) {
+    if (isTRUE(nrow(sentiment_results) > 0) && nrow(topic_results$assignments) > 0) {
       sentiment_topic_correlation <- analyze_sentiment_topic_correlation(
         sentiment_results, topic_results$assignments
       )
@@ -527,7 +527,7 @@ advanced_regulatory_sentiment <- function(text_data, depth = "deep") {
   for (i in seq_along(text_data)) {
     text <- text_data[i]
     
-    if (is.na(text) || nchar(text) == 0) {
+    if (isTRUE(is.na(text)) || nchar(text) == 0) {
       results$sentiment_score[i] <- 0
       results$sentiment_class[i] <- "neutral"
       results$policy_tone[i] <- "unknown"
@@ -680,7 +680,7 @@ enhanced_topic_modeling <- function(text_data, n_topics = 15) {
   for (i in seq_along(text_data)) {
     text <- text_data[i]
     
-    if (is.na(text) || nchar(text) == 0) {
+    if (isTRUE(is.na(text)) || nchar(text) == 0) {
       topic_assignments$primary_topic[i] <- "unknown"
       topic_assignments$secondary_topic[i] <- "none"
       topic_assignments$topic_confidence[i] <- 0

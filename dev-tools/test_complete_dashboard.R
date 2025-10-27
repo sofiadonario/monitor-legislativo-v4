@@ -66,7 +66,7 @@ cat(paste(rep("=", 70), collapse=""), "\n")
 
 success <- total_docs > 0 && 
            lexml_metrics$total_documents > 0 && 
-           nrow(by_state) > 0 && 
+           isTRUE(nrow(by_state) > 0) && 
            nrow(by_type) > 0
 
 if (success) {

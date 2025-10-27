@@ -284,7 +284,7 @@ build_citation_graph <- function(citations, citation_freq, documents) {
 #' Analyze network centrality measures
 analyze_citation_centrality <- function(network) {
   
-  if (is.null(network) || is.null(network$igraph)) {
+  if (isTRUE(is.null(network)) || isTRUE(is.null(network$igraph))) {
     return(list(error = "No network available for centrality analysis"))
   }
   
@@ -458,7 +458,7 @@ analyze_temporal_citation_patterns <- function(citations, documents) {
 #' Identify citation clusters and communities
 identify_citation_clusters <- function(network, citation_freq) {
   
-  if (is.null(network) || is.null(network$igraph)) {
+  if (isTRUE(is.null(network)) || isTRUE(is.null(network$igraph))) {
     return(list(error = "No network available for clustering"))
   }
   
@@ -687,7 +687,7 @@ build_policy_diffusion_graph <- function(policy_adoption, jurisdiction_counts) {
     for (i in 1:(nrow(similarity_matrix)-1)) {
       for (j in (i+1):nrow(similarity_matrix)) {
         similarity <- similarity_matrix[i, j]
-        if (!is.na(similarity) && similarity > similarity_threshold) {
+        if (!isTRUE(is.na(similarity)) && similarity > similarity_threshold) {
           edges <- rbind(edges, data.frame(
             from = rownames(similarity_matrix)[i],
             to = rownames(similarity_matrix)[j],

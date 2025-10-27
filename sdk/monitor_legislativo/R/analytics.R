@@ -52,7 +52,7 @@ ml_get_metrics <- function(time_period = "all",
     stop("time_period deve ser um de: 'day', 'week', 'month', 'year', 'all'")
   }
   
-  if (!is.null(breakdown_by) && !breakdown_by %in% c("category", "state", "document_type")) {
+  if (!isTRUE(is.null(breakdown_by)) && !breakdown_by %in% c("category", "state", "document_type")) {
     stop("breakdown_by deve ser um de: 'category', 'state', 'document_type'")
   }
   
@@ -84,7 +84,7 @@ ml_get_metrics <- function(time_period = "all",
   tryCatch({
     result <- .ml_api_call("GET", endpoint)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Erro ao obter métricas: ", result$message %||% "Erro desconhecido")
     }
     
@@ -235,7 +235,7 @@ ml_analyze_trends <- function(query = NULL,
   tryCatch({
     result <- .ml_api_call("POST", "/analytics/trends", body = request_body)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Erro na análise de tendências: ", result$message %||% "Erro desconhecido")
     }
     
@@ -500,7 +500,7 @@ ml_dashboard_data <- function(dashboard_type = "overview",
   tryCatch({
     result <- .ml_api_call("GET", endpoint)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Erro ao obter dados do dashboard: ", result$message %||% "Erro desconhecido")
     }
     
@@ -693,7 +693,7 @@ ml_comparative_analysis <- function(period1,
   tryCatch({
     result <- .ml_api_call("POST", "/analytics/comparative", body = request_body)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       stop("Erro na análise comparativa: ", result$message %||% "Erro desconhecido")
     }
     

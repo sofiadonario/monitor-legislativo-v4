@@ -65,7 +65,7 @@ extract_legal_entities <- function(text, entity_type = "all") {
   results <- data.frame()
   
   for (i in seq_along(text)) {
-    if (is.na(text[i]) || nchar(text[i]) == 0) next
+    if (isTRUE(is.na(text[i])) || nchar(text[i]) == 0) next
     
     for (entity in entities_to_extract) {
       # Case-insensitive search with word boundaries
@@ -132,7 +132,7 @@ regulatory_sentiment_analysis <- function(text) {
   results <- data.frame()
   
   for (i in seq_along(text)) {
-    if (is.na(text[i]) || nchar(text[i]) == 0) {
+    if (isTRUE(is.na(text[i])) || nchar(text[i]) == 0) {
       results <- rbind(results, data.frame(
         document_id = i, sentiment_score = 0, sentiment_class = "neutral",
         regulatory_tone = "unknown", stringsAsFactors = FALSE
@@ -222,7 +222,7 @@ legislative_topic_modeling <- function(documents, n_topics = 10) {
     topic_assignments <- data.frame()
     
     for (i in seq_along(documents)) {
-      if (is.na(documents[i]) || nchar(documents[i]) == 0) {
+      if (isTRUE(is.na(documents[i])) || nchar(documents[i]) == 0) {
         topic_assignments <- rbind(topic_assignments, data.frame(
           document_id = i, primary_topic = "unknown", 
           secondary_topic = "unknown", topic_score = 0,
@@ -302,7 +302,7 @@ extract_legal_citations <- function(text) {
   results <- data.frame()
   
   for (i in seq_along(text)) {
-    if (is.na(text[i]) || nchar(text[i]) == 0) next
+    if (isTRUE(is.na(text[i])) || nchar(text[i]) == 0) next
     
     for (citation_type in names(citation_patterns)) {
       pattern <- citation_patterns[[citation_type]]

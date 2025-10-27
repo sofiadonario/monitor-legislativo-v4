@@ -126,7 +126,7 @@ download_state_municipalities <- function(state_code, cache_dir) {
       return(NULL)
     })
     
-    if (is.null(municipalities) || nrow(municipalities) == 0) {
+    if (isTRUE(is.null(municipalities)) || nrow(municipalities) == 0) {
       return(NULL)
     }
     
@@ -170,7 +170,7 @@ get_municipality_summary_data <- function(cache_dir) {
     tryCatch({
       summary_data <- readRDS(summary_file)
       # Validate cache (not older than 30 days)
-      if (!is.null(summary_data$cached_at) && 
+      if (!isTRUE(is.null(summary_data$cached_at)) && 
           difftime(Sys.time(), summary_data$cached_at, units = "days") < 30) {
         cat("📊 Using cached municipality summary\n")
         return(summary_data$data)
@@ -267,7 +267,7 @@ create_municipality_choropleth_map <- function(cache_dir, data, metric_column, s
       }
     }
     
-    if (is.null(all_boundaries) || nrow(all_boundaries) == 0) {
+    if (isTRUE(is.null(all_boundaries)) || nrow(all_boundaries) == 0) {
       return(create_municipality_fallback_map(data, metric_column))
     }
     
@@ -355,7 +355,7 @@ safe_municipality_geojson <- function(municipalities) {
 validate_municipality_cache <- function(cached_data) {
   required_fields <- c("state_code", "boundaries", "municipality_count", "cached_at")
   return(all(required_fields %in% names(cached_data)) && 
-         !is.null(cached_data$boundaries) &&
+         !isTRUE(is.null(cached_data$boundaries)) &&
          nrow(cached_data$boundaries) > 0)
 }
 

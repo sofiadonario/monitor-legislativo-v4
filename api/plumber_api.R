@@ -381,15 +381,15 @@ function(state = NULL, year = NULL, type = NULL, limit = 100, offset = 0) {
       # Apply filters
       filtered_data <- fallback_data
       
-      if (!is.null(state) && "estado" %in% names(filtered_data)) {
+      if (!isTRUE(is.null(state)) && "estado" %in% names(filtered_data)) {
         filtered_data <- filtered_data[filtered_data$estado == state, ]
       }
       
-      if (!is.null(year) && "ano" %in% names(filtered_data)) {
+      if (!isTRUE(is.null(year)) && "ano" %in% names(filtered_data)) {
         filtered_data <- filtered_data[filtered_data$ano == as.numeric(year), ]
       }
       
-      if (!is.null(type) && "species" %in% names(filtered_data)) {
+      if (!isTRUE(is.null(type)) && "species" %in% names(filtered_data)) {
         filtered_data <- filtered_data[grepl(type, filtered_data$species, ignore.case = TRUE), ]
       }
       

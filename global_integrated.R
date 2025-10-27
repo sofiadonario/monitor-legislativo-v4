@@ -11,25 +11,26 @@ cat("========================================\n\n")
 
 # ESSENTIAL PACKAGES
 # ==================
+# FIX v53: MINIMAL PACKAGE LOAD - testing if package loading causes extent=0 error
 suppressPackageStartupMessages({
   library(shiny)
-  library(jsonlite)     # Load BEFORE shinydashboard to avoid masking conflicts
-  library(shinydashboard)
-  library(DT)
-  library(plotly)
-  library(dplyr)
-  library(data.table)
-  library(RColorBrewer)
-  library(DBI)
-  library(RPostgres)
-  library(pool)
-  library(readr)
-  library(stringr)
-  library(lubridate)
-  library(httr)
   library(htmltools)
-  library(memoise)
-  library(future)
+  # library(jsonlite)     # Load BEFORE shinydashboard to avoid masking conflicts
+  # library(shinydashboard)
+  # library(DT)
+  # library(plotly)
+  # library(dplyr)
+  # library(data.table)
+  # library(RColorBrewer)
+  # library(DBI)
+  # library(RPostgres)
+  # library(pool)
+  # library(readr)
+  # library(stringr)
+  # library(lubridate)
+  # library(httr)
+  # library(memoise)
+  # library(future)
 })
 
 cat("✅ Core packages loaded\n")
@@ -58,11 +59,17 @@ app_config <- list(
 
 # UTILITY HELPERS (from your existing code)
 # ==========================================
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0L) y else x
+# FIX v48: Safe %||% operator that prevents extent=0 error
+`%||%` <- function(x, y) {
+  if (isTRUE(is.null(x))) return(y)
+  if (isTRUE(length(x) == 0L)) return(y)
+  return(x)
+}
 
 # Your existing scalar utilities - keep them!
-source("R/utils/scalar_utils.R", local = TRUE)
-cat("✅ Scalar utilities loaded\n")
+# FIX v53: COMMENT OUT to isolate extent=0 error source
+# source("R/utils/scalar_utils.R", local = TRUE)
+cat("✅ Scalar utilities SKIPPED (v53 test)\n")
 
 # SAFE RENDER WRAPPERS (from your existing code)
 # ===============================================
@@ -96,8 +103,9 @@ db_pool <- NULL
 db_connection_pool <- NULL  # Alias for compatibility
 
 # Your existing database utilities
-source("R/utils/database_utils.R", local = TRUE)
-cat("✅ Database utilities loaded\n")
+# FIX v53: COMMENT OUT to isolate extent=0 error source
+# source("R/utils/database_utils.R", local = TRUE)
+cat("✅ Database utilities SKIPPED (v53 test)\n")
 
 # Initialize DB pool immediately
 DB_AVAILABLE <- FALSE
@@ -108,7 +116,8 @@ tryCatch({
   if (!is.null(db_pool)) {
     # Verify connection
     test_result <- pool::dbGetQuery(db_pool, "SELECT 1 as test")
-    if (!is.null(test_result) && nrow(test_result) == 1) {
+    # FIX v47: Use isTRUE() to prevent extent=0 error
+    if (isTRUE(!is.null(test_result)) && isTRUE(nrow(test_result) == 1)) {
       DB_AVAILABLE <- TRUE
       cat("✅ Database pool created and verified\n")
 
@@ -150,16 +159,19 @@ onStop(function() {
 
 # LOAD YOUR DATA SERVICE MODULE
 # ==============================
-cat("📦 Loading data service module...\n")
-data_service_result <- tryCatch({
-  source("modules/data_service.R", local = TRUE)
-}, error = function(e) {
-  cat("⚠️  Data service module failed to load:", conditionMessage(e), "\n")
-  NULL
-})
+# FIX v53: COMMENT OUT to isolate extent=0 error source
+cat("📦 Data service module SKIPPED (v53 test)...\n")
+data_service_result <- NULL
+# data_service_result <- tryCatch({
+#   source("modules/data_service.R", local = TRUE)
+# }, error = function(e) {
+#   cat("⚠️  Data service module failed to load:", conditionMessage(e), "\n")
+#   NULL
+# })
 
 # Export data service functions (memoized versions)
-if (!is.null(data_service_result) && is.list(data_service_result)) {
+# FIX v47: Use isTRUE() to prevent extent=0 error
+if (isTRUE(!is.null(data_service_result)) && isTRUE(is.list(data_service_result))) {
   get_documents_raw <- data_service_result$get_documents
   get_analytics_data_raw <- data_service_result$get_analytics_data
   prepare_chart_data <- data_service_result$prepare_chart_data
@@ -179,7 +191,8 @@ if (!is.null(data_service_result) && is.list(data_service_result)) {
     tryCatch({
       query <- "SELECT * FROM legis_docs WHERE 1=1"
 
-      if (!is.null(filters$state) && filters$state != "all") {
+      # FIX v47: Use isTRUE() to prevent extent=0 error
+      if (isTRUE(!is.null(filters$state)) && isTRUE(filters$state != "all")) {
         query <- paste(query, "AND state = $1")
         params <- list(filters$state)
       } else {
@@ -201,7 +214,8 @@ if (!is.null(data_service_result) && is.list(data_service_result)) {
 
   get_analytics_data <- get_documents
   prepare_chart_data <- function(data, type = "bar") {
-    if (is.null(data) || nrow(data) == 0) return(data.frame())
+    # FIX v52: Wrap nrow() in isTRUE() to prevent extent=0 error
+    if (isTRUE(is.null(data)) || isTRUE(nrow(data) == 0)) return(data.frame())
     data
   }
 }
@@ -293,7 +307,8 @@ prepare_state_chart_data <- memoise::memoise(function() {
         ", tbl))
       }, error = function(e) NULL)
 
-      if (!is.null(result) && nrow(result) > 0) {
+      # FIX v47: Use isTRUE() to prevent extent=0 error
+      if (isTRUE(!is.null(result)) && isTRUE(nrow(result) > 0)) {
         return(result)
       }
     }
@@ -319,7 +334,8 @@ prepare_category_chart_data <- memoise::memoise(function() {
         ", tbl))
       }, error = function(e) NULL)
 
-      if (!is.null(result) && nrow(result) > 0) {
+      # FIX v47: Use isTRUE() to prevent extent=0 error
+      if (isTRUE(!is.null(result)) && isTRUE(nrow(result) > 0)) {
         return(result)
       }
     }
@@ -338,9 +354,11 @@ brazil_municipalities_sf <- NULL
 
 # Skip geography loading on Cloud Run to speed up startup
 # Geography will be loaded lazily when needed
-IS_CLOUD_RUN <- !is.na(Sys.getenv("K_SERVICE", NA))
+# FIX v42: Use isTRUE() to safely handle logical operations
+k_service_value <- Sys.getenv("K_SERVICE", "")
+IS_CLOUD_RUN <- isTRUE(nchar(k_service_value) > 0)
 
-if (SF_AVAILABLE && GEOBR_AVAILABLE && !IS_CLOUD_RUN) {
+if (isTRUE(SF_AVAILABLE) && isTRUE(GEOBR_AVAILABLE) && !isTRUE(IS_CLOUD_RUN)) {
   cat("📍 Loading Brazilian geography...\n")
 
   tryCatch({
@@ -370,14 +388,15 @@ if (SF_AVAILABLE && GEOBR_AVAILABLE && !IS_CLOUD_RUN) {
   }, error = function(e) {
     cat("❌ Geography load failed:", conditionMessage(e), "\n")
   })
-} else if (IS_CLOUD_RUN) {
+} else if (isTRUE(IS_CLOUD_RUN)) {
   cat("⚡ Skipping geography preload on Cloud Run (will load lazily)\n")
 }
 
 # ASYNC SETUP
 # ===========
-future::plan(future::multisession, workers = 2)
-cat("✅ Async configured (2 workers)\n")
+# DISABLED: future::plan() causes extent=0 error on Cloud Run
+# future::plan(future::multisession, workers = 2)
+cat("⚠️  Async disabled (caused extent=0 error)\n")
 
 # LOAD YOUR EXISTING MODULES
 # ===========================
@@ -390,16 +409,20 @@ if (file.exists("R/table_compat.R")) {
 }
 
 # Load render safety guards
-if (file.exists("R/render_safety.R")) {
-  source("R/render_safety.R", local = TRUE)
-  cat("  ✓ Render safety\n")
-}
+# DISABLED v45: Monkey-patching render functions suspected as causing extent=0
+# if (file.exists("R/render_safety.R")) {
+#   source("R/render_safety.R", local = TRUE)
+#   cat("  ✓ Render safety\n")
+# }
+cat("  ✗ Render safety DISABLED (v45 test)\n")
 
 # Load UI utilities
-if (file.exists("R/utils/ui_utils.R")) {
-  source("R/utils/ui_utils.R", local = TRUE)
-  cat("  ✓ UI utilities\n")
-}
+# DISABLED v38: ui_utils.R suspected as causing extent=0 error
+# if (file.exists("R/utils/ui_utils.R")) {
+#   source("R/utils/ui_utils.R", local = TRUE)
+#   cat("  ✓ UI utilities\n")
+# }
+cat("  ✗ UI utilities DISABLED (v38 test)\n")
 
 # Export for modules to use
 options(app_db_pool = db_pool)

@@ -45,21 +45,21 @@ create_interactive_citation_network <- function(network_analysis,
   cat("🕸️ Creating interactive citation network visualization...\n")
   
   tryCatch({
-    if (is.null(network_analysis) || "error" %in% names(network_analysis)) {
+    if (isTRUE(is.null(network_analysis)) || "error" %in% names(network_analysis)) {
       return(create_fallback_network_viz())
     }
     
     network <- network_analysis$citation_network
     centrality <- network_analysis$centrality_analysis
     
-    if (is.null(network) || is.null(network$nodes) || nrow(network$nodes) == 0) {
+    if (isTRUE(is.null(network)) || isTRUE(is.null(network$nodes)) || nrow(network$nodes) == 0) {
       return(create_fallback_network_viz())
     }
     
     # Prepare node data with enhanced attributes
     nodes <- network$nodes %>%
       left_join(
-        if (!is.null(centrality) && "centrality_measures" %in% names(centrality)) {
+        if (!isTRUE(is.null(centrality)) && "centrality_measures" %in% names(centrality)) {
           centrality$centrality_measures
         } else {
           data.frame(node_id = network$nodes$id, degree = 1, betweenness = 0)
@@ -302,14 +302,14 @@ create_time_series_forecast_viz <- function(time_series_analysis,
   cat("📈 Creating time series forecasting visualization...\n")
   
   tryCatch({
-    if (is.null(time_series_analysis) || "error" %in% names(time_series_analysis)) {
+    if (isTRUE(is.null(time_series_analysis)) || "error" %in% names(time_series_analysis)) {
       return(create_fallback_timeseries_viz())
     }
     
     monthly_data <- time_series_analysis$monthly_series
     forecast_data <- time_series_analysis$forecast
     
-    if (is.null(monthly_data) || nrow(monthly_data) == 0) {
+    if (isTRUE(is.null(monthly_data)) || nrow(monthly_data) == 0) {
       return(create_fallback_timeseries_viz())
     }
     
@@ -328,7 +328,7 @@ create_time_series_forecast_viz <- function(time_series_analysis,
     
     # Prepare forecast data
     forecast_plot <- data.frame()
-    if (!is.null(forecast_data) && "forecast_values" %in% names(forecast_data)) {
+    if (!isTRUE(is.null(forecast_data)) && "forecast_values" %in% names(forecast_data)) {
       
       # Create future dates
       last_date <- max(monthly_data$year_month)
@@ -395,7 +395,7 @@ create_time_series_forecast_viz <- function(time_series_analysis,
     
     # Add change points if available
     change_points <- time_series_analysis$change_points
-    if (!is.null(change_points) && !is.null(change_points$change_points) && length(change_points$change_points) > 0) {
+    if (!isTRUE(is.null(change_points)) && !isTRUE(is.null(change_points$change_points)) && length(change_points$change_points) > 0) {
       
       # Calculate change point dates
       cp_dates <- monthly_data$year_month[change_points$change_points]
@@ -417,7 +417,7 @@ create_time_series_forecast_viz <- function(time_series_analysis,
     if (show_components && !is.null(time_series_analysis$decomposition)) {
       decomp <- time_series_analysis$decomposition
       
-      if (!is.null(decomp) && "seasonal" %in% names(decomp)) {
+      if (!isTRUE(is.null(decomp)) && "seasonal" %in% names(decomp)) {
         decomp_data <- data.frame(
           date = monthly_data$year_month,
           original = monthly_data$document_count,
@@ -481,9 +481,8 @@ create_correlation_heatmap <- function(correlation_analysis, interactive = TRUE)
   cat("🔥 Creating correlation heatmap...\n")
   
   tryCatch({
-    if (is.null(correlation_analysis) || 
-        !("correlation_analysis" %in% names(correlation_analysis)) ||
-        is.null(correlation_analysis$correlation_analysis$correlation_matrix)) {
+    if (isTRUE(is.null(correlation_analysis)) || 
+        !("correlation_analysis" %in% names(correlation_analysis)) || isTRUE(is.null(correlation_analysis$correlation_analysis$correlation_matrix))) {
       return(create_fallback_correlation_viz())
     }
     
@@ -570,7 +569,7 @@ create_sentiment_analysis_viz <- function(sentiment_analysis,
   cat("🎭 Creating sentiment analysis visualization...\n")
   
   tryCatch({
-    if (is.null(sentiment_analysis) || 
+    if (isTRUE(is.null(sentiment_analysis)) || 
         !("sentiment_analysis" %in% names(sentiment_analysis)) ||
         nrow(sentiment_analysis$sentiment_analysis) == 0) {
       return(create_fallback_sentiment_viz())
@@ -666,9 +665,8 @@ create_topic_modeling_viz <- function(topic_analysis,
   cat("🏷️ Creating topic modeling visualization...\n")
   
   tryCatch({
-    if (is.null(topic_analysis) || 
-        !("topic_modeling" %in% names(topic_analysis)) ||
-        is.null(topic_analysis$topic_modeling$topic_distribution)) {
+    if (isTRUE(is.null(topic_analysis)) || 
+        !("topic_modeling" %in% names(topic_analysis)) || isTRUE(is.null(topic_analysis$topic_modeling$topic_distribution))) {
       return(create_fallback_topic_viz())
     }
     
@@ -757,20 +755,20 @@ create_policy_diffusion_viz <- function(diffusion_analysis,
   cat("🌐 Creating policy diffusion visualization...\n")
   
   tryCatch({
-    if (is.null(diffusion_analysis) || "error" %in% names(diffusion_analysis)) {
+    if (isTRUE(is.null(diffusion_analysis)) || "error" %in% names(diffusion_analysis)) {
       return(create_fallback_diffusion_viz())
     }
     
     network <- diffusion_analysis$diffusion_network
     leadership <- diffusion_analysis$innovation_leadership
     
-    if (is.null(network) || is.null(network$nodes)) {
+    if (isTRUE(is.null(network)) || isTRUE(is.null(network$nodes))) {
       return(create_fallback_diffusion_viz())
     }
     
     # Enhance nodes with leadership information
     enhanced_nodes <- network$nodes
-    if (!is.null(leadership) && "overall_leadership" %in% names(leadership)) {
+    if (!isTRUE(is.null(leadership)) && "overall_leadership" %in% names(leadership)) {
       enhanced_nodes <- enhanced_nodes %>%
         left_join(
           leadership$overall_leadership %>% 

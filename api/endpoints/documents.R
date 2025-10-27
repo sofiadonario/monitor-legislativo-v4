@@ -21,7 +21,7 @@ validate_document_filters <- function(filters) {
   valid_filters <- list()
   
   # Category validation
-  if (!is.null(filters$category) && filters$category != "all") {
+  if (!isTRUE(is.null(filters$category)) && filters$category != "all") {
     valid_categories <- c("legislation", "jurisprudence", "doctrine", "other")
     if (filters$category %in% valid_categories) {
       valid_filters$category <- filters$category
@@ -29,7 +29,7 @@ validate_document_filters <- function(filters) {
   }
   
   # State validation (Brazilian states)
-  if (!is.null(filters$state) && filters$state != "all") {
+  if (!isTRUE(is.null(filters$state)) && filters$state != "all") {
     valid_states <- c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", 
                      "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", 
                      "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO")
@@ -56,7 +56,7 @@ validate_document_filters <- function(filters) {
   }
   
   # Search term validation
-  if (!is.null(filters$search_term) && nchar(trimws(filters$search_term)) > 0) {
+  if (!isTRUE(is.null(filters$search_term)) && nchar(trimws(filters$search_term)) > 0) {
     # Sanitize search term to prevent SQL injection
     valid_filters$search_term <- gsub("[^\\w\\s\\-\\.]", "", filters$search_term, perl = TRUE)
     valid_filters$search_term <- substr(valid_filters$search_term, 1, 200) # Limit length
@@ -75,7 +75,7 @@ validate_document_filters <- function(filters) {
 
 # Helper function to format document response
 format_document_response <- function(documents, total_count = NULL, filters = list()) {
-  if (is.null(documents) || nrow(documents) == 0) {
+  if (isTRUE(is.null(documents)) || nrow(documents) == 0) {
     return(success_response(
       data = list(),
       meta = list(
@@ -195,15 +195,15 @@ function(category = "all", state = "all", municipality = NULL, search = "",
     query_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
     
     # Apply additional filters if needed
-    if (!is.null(filters$municipality) && "municipality" %in% names(result)) {
+    if (!isTRUE(is.null(filters$municipality)) && "municipality" %in% names(result)) {
       result <- result[grepl(filters$municipality, result$municipality, ignore.case = TRUE), ]
     }
     
-    if (!is.null(filters$author) && "author" %in% names(result)) {
+    if (!isTRUE(is.null(filters$author)) && "author" %in% names(result)) {
       result <- result[grepl(filters$author, result$author, ignore.case = TRUE), ]
     }
     
-    if (!is.null(filters$document_type) && "document_type" %in% names(result)) {
+    if (!isTRUE(is.null(filters$document_type)) && "document_type" %in% names(result)) {
       result <- result[grepl(filters$document_type, result$document_type, ignore.case = TRUE), ]
     }
     
@@ -235,7 +235,7 @@ function(category = "all", state = "all", municipality = NULL, search = "",
 function(id) {
   API_STATE$request_count <<- API_STATE$request_count + 1
   
-  if (is.null(id) || nchar(trimws(id)) == 0) {
+  if (isTRUE(is.null(id)) || nchar(trimws(id)) == 0) {
     return(error_response("Document ID is required", 400))
   }
   

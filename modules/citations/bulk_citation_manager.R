@@ -28,7 +28,7 @@ active_collection <- NULL
 #' @param language Default language
 #' @return Collection ID
 create_citation_collection <- function(collection_name, description = "", format = "abnt", language = "pt") {
-  if (is.null(collection_name) || collection_name == "") {
+  if (isTRUE(is.null(collection_name)) || collection_name == "") {
     stop("Collection name cannot be empty")
   }
   
@@ -366,7 +366,7 @@ search_collection_documents <- function(collection_id, search_term, search_field
   collection <- citation_collections[[collection_id]]
   matching_docs <- c()
   
-  if (search_term == "" || is.null(search_term)) {
+  if (search_term == "" || isTRUE(is.null(search_term))) {
     return(names(collection$documents))
   }
   

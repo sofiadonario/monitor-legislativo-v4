@@ -66,7 +66,7 @@ generate_live_activity_feed <- function(limit = 50, since = NULL) {
     event_time <- current_time - as.difftime(sample(1:3600, 1), units = "secs") # Last hour
     
     # Filter by 'since' parameter if provided
-    if (!is.null(since) && event_time < as.POSIXct(since)) {
+    if (!isTRUE(is.null(since)) && event_time < as.POSIXct(since)) {
       return(NULL)
     }
     
@@ -226,7 +226,7 @@ function(limit = 50, since = NULL, activity_types = NULL, severity = NULL, forma
     activities <- generate_live_activity_feed(limit * 2, since) # Get more to allow for filtering
     
     # Apply filters
-    if (!is.null(activity_types) && length(activity_types) > 0) {
+    if (!isTRUE(is.null(activity_types)) && length(activity_types) > 0) {
       activities <- activities[sapply(activities, function(a) a$type %in% activity_types)]
     }
     

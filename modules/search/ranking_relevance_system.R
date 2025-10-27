@@ -146,7 +146,7 @@ calculate_relevance_scores <- function(documents,
   
   start_time <- Sys.time()
   
-  if (is.null(documents) || nrow(documents) == 0) {
+  if (isTRUE(is.null(documents)) || nrow(documents) == 0) {
     return(documents)
   }
   
@@ -160,7 +160,7 @@ calculate_relevance_scores <- function(documents,
       cache_key <- generate_scoring_cache_key(query, search_filters, nrow(documents))
       cached_scores <- get_cached_scores(cache_key)
       
-      if (!is.null(cached_scores) && nrow(cached_scores) == nrow(documents)) {
+      if (!isTRUE(is.null(cached_scores)) && nrow(cached_scores) == nrow(documents)) {
         .ranking_metrics$cache_hits <<- .ranking_metrics$cache_hits + 1
         return(merge_cached_scores(documents, cached_scores))
       }
@@ -240,7 +240,7 @@ calculate_relevance_scores <- function(documents,
 #' @return Documents with content_score added
 calculate_content_relevance <- function(documents, query) {
   
-  if (is.null(query) || nchar(trimws(query)) == 0) {
+  if (isTRUE(is.null(query)) || nchar(trimws(query)) == 0) {
     documents$content_score <- 5.0  # Neutral score for no query
     return(documents)
   }
@@ -325,7 +325,7 @@ calculate_legal_authority_score <- function(documents) {
       authority_weight <- .ranking_config$authority_weights[["BR"]]
     } else if (estado != "" && nchar(estado) == 2) {
       authority_weight <- .ranking_config$authority_weights[["state"]]
-    } else if (!is.null(doc$municipality) && doc$municipality != "") {
+    } else if (!isTRUE(is.null(doc$municipality)) && doc$municipality != "") {
       authority_weight <- .ranking_config$authority_weights[["municipal"]]
     } else {
       authority_weight <- .ranking_config$authority_weights[["state"]]
@@ -353,7 +353,7 @@ calculate_temporal_relevance <- function(documents, search_filters) {
     # Get document date
     doc_date <- doc$data_publicacao %||% doc$date %||% doc$data
     
-    if (is.null(doc_date) || is.na(doc_date)) {
+    if (isTRUE(is.null(doc_date)) || isTRUE(is.na(doc_date))) {
       documents$temporal_score[i] <- 3.0  # Low score for unknown date
       next
     }
@@ -383,8 +383,8 @@ calculate_temporal_relevance <- function(documents, search_filters) {
     temporal_score <- 10.0 * decay_factor
     
     # Boost score if specific date filters are applied (user wants specific period)
-    if (!is.null(search_filters$date_start) || !is.null(search_filters$date_end) ||
-        !is.null(search_filters$year_start) || !is.null(search_filters$year_end)) {
+    if (!isTRUE(is.null(search_filters$date_start)) || !isTRUE(is.null(search_filters$date_end)) ||
+        !isTRUE(is.null(search_filters$year_start)) || !is.null(search_filters$year_end)) {
       temporal_score <- temporal_score * 1.2  # Boost for temporal-filtered searches
     }
     
@@ -413,7 +413,7 @@ calculate_geographic_relevance <- function(documents, search_filters, user_conte
     doc_state <- doc$estado %||% doc$state %||% ""
     
     # Exact state match
-    if (!is.null(target_state) && target_state != "all" && doc_state == target_state) {
+    if (!isTRUE(is.null(target_state)) && target_state != "all" && doc_state == target_state) {
       score <- 10.0
     }
     # Federal documents are relevant to all locations
@@ -421,16 +421,16 @@ calculate_geographic_relevance <- function(documents, search_filters, user_conte
       score <- 8.0
     }
     # Regional match
-    else if (!is.null(target_region) && target_region != "all") {
+    else if (!isTRUE(is.null(target_region)) && target_region != "all") {
       # Check if document state is in target region
       region_states <- get_states_in_region(target_region)
-      if (!is.null(region_states) && doc_state %in% region_states) {
+      if (!isTRUE(is.null(region_states)) && doc_state %in% region_states) {
         score <- 7.0
       }
     }
     # Municipality-level relevance
-    else if (!is.null(search_filters$municipality) && 
-             !is.null(doc$municipality) && doc$municipality != "") {
+    else if (!isTRUE(is.null(search_filters$municipality)) && 
+             !isTRUE(is.null(doc$municipality)) && doc$municipality != "") {
       if (grepl(search_filters$municipality, doc$municipality, ignore.case = TRUE)) {
         score <- 9.0
       }
@@ -457,7 +457,7 @@ calculate_transport_relevance <- function(documents, search_filters) {
     score <- 5.0  # Base score
     
     # Exact modal match
-    if (!is.null(target_modal) && target_modal != "all" && doc_modal == target_modal) {
+    if (!isTRUE(is.null(target_modal)) && target_modal != "all" && doc_modal == target_modal) {
       # Apply modal-specific boost
       modal_boost <- .ranking_config$transport_modal_boost[[doc_modal]] %||% 1.0
       score <- 10.0 * modal_boost
@@ -467,7 +467,7 @@ calculate_transport_relevance <- function(documents, search_filters) {
       score <- 6.0
     }
     # Other modals get slight penalty if user searched for specific modal
-    else if (!is.null(target_modal) && target_modal != "all") {
+    else if (!isTRUE(is.null(target_modal)) && target_modal != "all") {
       score <- 3.0
     }
     
@@ -493,7 +493,7 @@ calculate_engagement_score <- function(documents, query, user_context) {
     score <- 5.0  # Base score
     
     # Documents with URLs tend to be more engaging
-    if (!is.null(doc$url) && doc$url != "") {
+    if (!isTRUE(is.null(doc$url)) && doc$url != "") {
       score <- score + 1.0
     }
     
@@ -549,19 +549,19 @@ apply_quality_boosters <- function(documents) {
     boost_factor <- 1.0
     
     # Apply quality indicator boosts
-    if (!is.null(doc$ementa) && doc$ementa != "") {
+    if (!isTRUE(is.null(doc$ementa)) && doc$ementa != "") {
       boost_factor <- boost_factor * .ranking_config$quality_indicators$has_ementa
     }
     
-    if (!is.null(doc$url) && doc$url != "") {
+    if (!isTRUE(is.null(doc$url)) && doc$url != "") {
       boost_factor <- boost_factor * .ranking_config$quality_indicators$has_url
     }
     
-    if (!is.null(doc$urn) && doc$urn != "") {
+    if (!isTRUE(is.null(doc$urn)) && doc$urn != "") {
       boost_factor <- boost_factor * .ranking_config$quality_indicators$has_urn
     }
     
-    if (!is.null(doc$autor) && doc$autor != "") {
+    if (!isTRUE(is.null(doc$autor)) && doc$autor != "") {
       boost_factor <- boost_factor * .ranking_config$quality_indicators$has_author
     }
     
@@ -571,7 +571,7 @@ apply_quality_boosters <- function(documents) {
       boost_factor <- boost_factor * .ranking_config$quality_indicators$long_title
     }
     
-    if (!is.null(doc$assuntos) && doc$assuntos != "") {
+    if (!isTRUE(is.null(doc$assuntos)) && doc$assuntos != "") {
       boost_factor <- boost_factor * .ranking_config$quality_indicators$has_subjects
     }
     
@@ -589,7 +589,7 @@ normalize_relevance_scores <- function(documents) {
   
   scores <- documents$final_relevance_score
   
-  if (length(scores) > 0 && max(scores, na.rm = TRUE) > 0) {
+  if (isTRUE(length(scores) > 0) && max(scores, na.rm = TRUE) > 0) {
     # Normalize to 0-100 scale
     min_score <- min(scores, na.rm = TRUE)
     max_score <- max(scores, na.rm = TRUE)

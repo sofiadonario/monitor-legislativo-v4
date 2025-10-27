@@ -432,7 +432,7 @@ RailwayDatabaseMonitor <- R6Class(
         test_query <- "SELECT 1 as connectivity_test, current_timestamp as check_time"
         result <- private$.connection_manager$execute_query(test_query)
         
-        if (!is.null(result) && nrow(result) == 1) {
+        if (!isTRUE(is.null(result)) && nrow(result) == 1) {
           return(list(
             status = "passed",
             message = "Database connectivity confirmed",
@@ -815,7 +815,7 @@ RailwayDatabaseMonitor <- R6Class(
         count_query <- "SELECT COUNT(*) as total_documents FROM documents WHERE titulo IS NOT NULL AND titulo != ''"
         count_result <- private$.connection_manager$execute_query(count_query)
         
-        if (!is.null(count_result) && nrow(count_result) > 0) {
+        if (!isTRUE(is.null(count_result)) && nrow(count_result) > 0) {
           current_count <- count_result$total_documents[1]
           expected_count <- private$.performance_baselines$expected_document_count
           
@@ -836,7 +836,7 @@ RailwayDatabaseMonitor <- R6Class(
         duplicates_query <- "SELECT COUNT(*) as duplicates FROM (SELECT titulo, COUNT(*) as cnt FROM documents GROUP BY titulo HAVING COUNT(*) > 1) AS dups"
         duplicates_result <- private$.connection_manager$execute_query(duplicates_query)
         
-        if (!is.null(duplicates_result) && nrow(duplicates_result) > 0) {
+        if (!isTRUE(is.null(duplicates_result)) && nrow(duplicates_result) > 0) {
           integrity_checks$duplicates <- duplicates_result$duplicates[1]
         }
         
@@ -850,7 +850,7 @@ RailwayDatabaseMonitor <- R6Class(
         
         quality_result <- private$.connection_manager$execute_query(quality_query)
         
-        if (!is.null(quality_result) && nrow(quality_result) > 0) {
+        if (!isTRUE(is.null(quality_result)) && nrow(quality_result) > 0) {
           integrity_checks$data_quality <- as.list(quality_result)
         }
         
@@ -858,12 +858,12 @@ RailwayDatabaseMonitor <- R6Class(
         warnings <- c()
         issues <- c()
         
-        if (!is.null(integrity_checks$document_count) && integrity_checks$document_count$anomaly) {
+        if (!isTRUE(is.null(integrity_checks$document_count)) && integrity_checks$document_count$anomaly) {
           warnings <- c(warnings, paste("Document count anomaly detected:", 
                                        round(integrity_checks$document_count$change_percent * 100, 1), "% change"))
         }
         
-        if (!is.null(integrity_checks$duplicates) && integrity_checks$duplicates > 0) {
+        if (!isTRUE(is.null(integrity_checks$duplicates)) && integrity_checks$duplicates > 0) {
           warnings <- c(warnings, paste("Duplicate documents detected:", integrity_checks$duplicates))
         }
         

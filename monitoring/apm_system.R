@@ -601,7 +601,7 @@ check_alert_conditions <- function(current_metrics) {
     # Extract metric value
     metric_value <- extract_metric_value(current_metrics, rule$metric)
     
-    if (!is.null(metric_value) && !is.na(metric_value)) {
+    if (!isTRUE(is.null(metric_value)) && !is.na(metric_value)) {
       
       # Check if threshold is exceeded
       if (metric_value > rule$threshold) {

@@ -113,7 +113,7 @@ get_search_analytics <- function() {
   
   data <- load_robust_dataset()
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     cat("❌ No data available\n")
     return(list(
       total_documents = 0,
@@ -202,7 +202,7 @@ get_database_stats <- function() {
   
   data <- load_robust_dataset()
   
-  if (is.null(data) || nrow(data) == 0) {
+  if (isTRUE(is.null(data)) || nrow(data) == 0) {
     return(list(total_documents = 0, unique_states = 0, unique_types = 0))
   }
   

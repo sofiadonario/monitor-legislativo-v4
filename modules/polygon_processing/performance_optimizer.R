@@ -89,7 +89,7 @@ create_spatial_index <- function(polygons, grid_size = 10) {
 #' @param search_radius_cells Number of adjacent cells to search
 #' @return Vector of polygon indices that might contain the point
 query_spatial_index <- function(spatial_index, point_lng, point_lat, search_radius_cells = 1) {
-  if (is.null(spatial_index$grid) || spatial_index$grid_size == 0) {
+  if (isTRUE(is.null(spatial_index$grid)) || spatial_index$grid_size == 0) {
     return(integer(0))
   }
   
@@ -335,7 +335,7 @@ progressive_loader <- function(total_size, chunk_function, chunk_size = 1000, me
     
     tryCatch({
       chunk_result <- chunk_function(offset, limit)
-      if (!is.null(chunk_result) && nrow(chunk_result) > 0) {
+      if (!isTRUE(is.null(chunk_result)) && nrow(chunk_result) > 0) {
         all_results[[i]] <- chunk_result
       }
       
@@ -383,7 +383,7 @@ optimize_spatial_query <- function(query_function, cache_key = NULL, timeout_ms 
   start_time <- Sys.time()
   
   # Check cache first if key provided
-  if (!is.null(cache_key) && exists("polygon_cache", envir = .GlobalEnv)) {
+  if (!isTRUE(is.null(cache_key)) && exists("polygon_cache", envir = .GlobalEnv)) {
     polygon_cache <- get("polygon_cache", envir = .GlobalEnv)
     cached_result <- polygon_cache$get(cache_key)
     if (!is.null(cached_result)) {
@@ -407,7 +407,7 @@ optimize_spatial_query <- function(query_function, cache_key = NULL, timeout_ms 
     }
     
     # Cache the result if key provided
-    if (!is.null(cache_key) && exists("polygon_cache", envir = .GlobalEnv)) {
+    if (!isTRUE(is.null(cache_key)) && exists("polygon_cache", envir = .GlobalEnv)) {
       polygon_cache <- get("polygon_cache", envir = .GlobalEnv)
       polygon_cache$set(cache_key, query_result, list(
         execution_time_ms = execution_time,

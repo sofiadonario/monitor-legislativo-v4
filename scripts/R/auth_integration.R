@@ -256,7 +256,7 @@ check_auth_access <- function(required_permission = NULL) {
 handle_oauth_callback <- function(provider, auth_code, state) {
   tryCatch({
     # Verify state parameter for CSRF protection
-    if (is.null(state) || nchar(state) < 10) {
+    if (isTRUE(is.null(state)) || nchar(state) < 10) {
       log_event("Invalid OAuth state parameter", "WARN")
       return(list(success = FALSE, message = "Parâmetro de segurança inválido"))
     }
@@ -494,7 +494,7 @@ log_security_event <- function(user_id, event_type, details = NULL, ip_address =
 
 #' Session timeout check
 check_session_timeout <- function(session_id) {
-  if (is.null(.db_pool) || is.null(session_id)) {
+  if (isTRUE(is.null(.db_pool)) || isTRUE(is.null(session_id))) {
     return(TRUE)  # Assume expired if can't check
   }
   

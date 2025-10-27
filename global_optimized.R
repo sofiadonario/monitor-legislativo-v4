@@ -68,20 +68,20 @@ app_config <- list(
 
 # UTILITY HELPERS
 # ===============
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0L) y else x
+`%||%` <- function(x, y) if (isTRUE(is.null(x)) || length(x) == 0L) y else x
 
 scalar_int <- function(x, default = 0L) {
-  if (is.null(x) || length(x) == 0L || all(is.na(x))) return(default)
+  if (isTRUE(is.null(x)) || length(x) == 0L || all(is.na(x))) return(default)
   as.integer(x[[1L]])
 }
 
 scalar_chr <- function(x, default = "") {
-  if (is.null(x) || length(x) == 0L || all(is.na(x))) return(default)
+  if (isTRUE(is.null(x)) || length(x) == 0L || all(is.na(x))) return(default)
   as.character(x[[1L]])
 }
 
 scalar_num <- function(x, default = 0) {
-  if (is.null(x) || length(x) == 0L || all(is.na(x))) return(default)
+  if (isTRUE(is.null(x)) || length(x) == 0L || all(is.na(x))) return(default)
   as.numeric(x[[1L]])
 }
 
@@ -132,7 +132,7 @@ init_db_pool <- function() {
 
     # Verify connection
     test_query <- dbGetQuery(db_pool, "SELECT 1 as test")
-    if (!is.null(test_query) && nrow(test_query) == 1) {
+    if (!isTRUE(is.null(test_query)) && nrow(test_query) == 1) {
       cat("✅ Database pool created and verified\n")
       return(TRUE)
     } else {
@@ -226,7 +226,7 @@ brazil_municipalities_sf <- brazil_geo$municipalities
     query <- "SELECT * FROM legis_docs WHERE 1=1"
     params <- list()
 
-    if (!is.null(filters$state) && filters$state != "all") {
+    if (!isTRUE(is.null(filters$state)) && filters$state != "all") {
       query <- paste(query, "AND state = $1")
       params <- c(params, filters$state)
     }

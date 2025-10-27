@@ -239,7 +239,7 @@ APICircuitBreaker <- R6::R6Class("APICircuitBreaker",
       }
       
       if (self$state == "OPEN") {
-        if (is.null(self$last_failure_time) || 
+        if (isTRUE(is.null(self$last_failure_time)) || 
             difftime(current_time, self$last_failure_time, units = "secs") >= self$timeout_duration) {
           self$state <- "HALF_OPEN"
           log_etl("INFO", "Circuit breaker transitioning to HALF_OPEN", "CIRCUIT_BREAKER")
@@ -398,7 +398,7 @@ LexMLAPIClient <- R6::R6Class("LexMLAPIClient",
         self$circuit_breaker$record_success()
         
         # Cache results
-        if (!is.null(self$cache) && !is.null(results)) {
+        if (!isTRUE(is.null(self$cache)) && !is.null(results)) {
           self$cache$set(cache_key, results, ttl = API_CONFIG$general$cache_duration)
         }
         
@@ -481,7 +481,7 @@ LexMLAPIClient <- R6::R6Class("LexMLAPIClient",
         docs_data <- parsed_data
       }
       
-      if (is.null(docs_data) || nrow(docs_data) == 0) {
+      if (isTRUE(is.null(docs_data)) || nrow(docs_data) == 0) {
         return(data.frame())
       }
       
@@ -514,7 +514,7 @@ LexMLAPIClient <- R6::R6Class("LexMLAPIClient",
       for (field in field_names) {
         if (field %in% names(data)) {
           values <- data[[field]]
-          if (!is.null(values) && length(values) > 0) {
+          if (!isTRUE(is.null(values)) && length(values) > 0) {
             return(as.character(values))
           }
         }
@@ -524,7 +524,7 @@ LexMLAPIClient <- R6::R6Class("LexMLAPIClient",
     },
     
     parse_dates = function(date_strings) {
-      if (is.null(date_strings) || length(date_strings) == 0) {
+      if (isTRUE(is.null(date_strings)) || length(date_strings) == 0) {
         return(rep(NA, 0))
       }
       
@@ -539,7 +539,7 @@ LexMLAPIClient <- R6::R6Class("LexMLAPIClient",
       )
       
       for (i in seq_along(date_strings)) {
-        if (is.na(date_strings[i]) || date_strings[i] == "") next
+        if (isTRUE(is.na(date_strings[i])) || date_strings[i] == "") next
         
         for (fmt in date_formats) {
           tryCatch({
@@ -592,7 +592,7 @@ LexMLAPIClient <- R6::R6Class("LexMLAPIClient",
       )
       
       for (i in seq_along(localities)) {
-        if (is.na(localities[i]) || localities[i] == "") {
+        if (isTRUE(is.na(localities[i])) || localities[i] == "") {
           states[i] <- ""
           next
         }
@@ -620,7 +620,7 @@ LexMLAPIClient <- R6::R6Class("LexMLAPIClient",
       municipalities <- character(length(localities))
       
       for (i in seq_along(localities)) {
-        if (is.na(localities[i]) || localities[i] == "") {
+        if (isTRUE(is.na(localities[i])) || localities[i] == "") {
           municipalities[i] <- ""
           next
         }
@@ -668,7 +668,7 @@ LexMLAPIClient <- R6::R6Class("LexMLAPIClient",
       categories <- character(length(tipos))
       
       for (i in seq_along(tipos)) {
-        if (is.na(tipos[i]) || tipos[i] == "") {
+        if (isTRUE(is.na(tipos[i])) || tipos[i] == "") {
           categories[i] <- "Outros"
           next
         }
@@ -715,7 +715,7 @@ LexMLAPIClient <- R6::R6Class("LexMLAPIClient",
         
         self$circuit_breaker$record_success()
         
-        if (!is.null(self$cache) && !is.null(result)) {
+        if (!isTRUE(is.null(self$cache)) && !is.null(result)) {
           self$cache$set(cache_key, result, ttl = API_CONFIG$general$cache_duration)
         }
         
@@ -836,7 +836,7 @@ IBGEAPIClient <- R6::R6Class("IBGEAPIClient",
         
         self$circuit_breaker$record_success()
         
-        if (!is.null(self$cache) && !is.null(result)) {
+        if (!isTRUE(is.null(self$cache)) && !is.null(result)) {
           self$cache$set(cache_key, result, ttl = API_CONFIG$general$cache_duration * 24)  # Cache states for 24 hours
         }
         
@@ -916,7 +916,7 @@ IBGEAPIClient <- R6::R6Class("IBGEAPIClient",
         
         self$circuit_breaker$record_success()
         
-        if (!is.null(self$cache) && !is.null(result)) {
+        if (!isTRUE(is.null(self$cache)) && !is.null(result)) {
           self$cache$set(cache_key, result, ttl = API_CONFIG$general$cache_duration * 12)  # Cache municipalities for 12 hours
         }
         
@@ -1030,7 +1030,7 @@ APIOrchestrator <- R6::R6Class("APIOrchestrator",
       # Fetch documents from LexML
       documents <- self$lexml_client$search_documents(query_params, max_results)
       
-      if (is.null(documents) || nrow(documents) == 0) {
+      if (isTRUE(is.null(documents)) || nrow(documents) == 0) {
         log_etl("WARN", "No documents retrieved from LexML", "API_ORCHESTRATOR")
         return(NULL)
       }
@@ -1045,7 +1045,7 @@ APIOrchestrator <- R6::R6Class("APIOrchestrator",
     },
     
     enrich_documents_with_geography = function(documents) {
-      if (is.null(documents) || nrow(documents) == 0) return(documents)
+      if (isTRUE(is.null(documents)) || nrow(documents) == 0) return(documents)
       
       log_etl("INFO", "Enriching documents with geographic data", "API_ORCHESTRATOR")
       
@@ -1066,7 +1066,7 @@ APIOrchestrator <- R6::R6Class("APIOrchestrator",
         unique_states <- unique(documents_with_municipalities$estado)
         
         for (state in unique_states) {
-          if (is.na(state) || state == "") next
+          if (isTRUE(is.na(state)) || state == "") next
           
           state_municipalities <- self$ibge_client$get_municipalities(state)
           

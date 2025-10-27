@@ -108,12 +108,12 @@ tryCatch({
     # Load test data
     real_data <- load_real_legislative_data()
     
-    if(!is.null(real_data) && nrow(real_data) > 0) {
+    if(!isTRUE(is.null(real_data)) && nrow(real_data) > 0) {
       filtered_data <- real_data
       original_count <- nrow(filtered_data)
       
       # Apply category filter with zero-result prevention
-      if(category != "all" && !is.null(category) && category != "") {
+      if(category != "all" && !isTRUE(is.null(category)) && category != "") {
         temp_filtered <- filtered_data[grepl(category, filtered_data$categoria, ignore.case = TRUE), ]
         if(nrow(temp_filtered) > 0) {
           filtered_data <- temp_filtered
@@ -137,7 +137,7 @@ tryCatch({
       }
       
       # Apply state filter with zero-result prevention
-      if(state != "all" && !is.null(state) && state != "") {
+      if(state != "all" && !isTRUE(is.null(state)) && state != "") {
         temp_filtered <- filtered_data[grepl(state, filtered_data$estado, ignore.case = TRUE), ]
         if(nrow(temp_filtered) > 0) {
           filtered_data <- temp_filtered

@@ -166,7 +166,7 @@ for (chunk_i in 1:min(n_chunks, 15)) {  # Limit to first 15 chunks for safety
     }
     
     # Ensure ID column
-    if (is.na(chunk_data$id) || all(chunk_data$id == "")) {
+    if (isTRUE(is.na(chunk_data$id)) || all(chunk_data$id == "")) {
       chunk_data$id <- paste0("DOC_", seq_len(nrow(chunk_data)) + skip_lines)
     }
     

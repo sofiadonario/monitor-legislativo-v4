@@ -110,7 +110,7 @@ PORTUGUESE_LEGAL_STOPWORDS <- c(
 
 # Advanced query processing and optimization
 process_search_query <- function(query, enable_nlp = TRUE, include_synonyms = TRUE) {
-  if (is.null(query) || nchar(trimws(query)) == 0) {
+  if (isTRUE(is.null(query)) || nchar(trimws(query)) == 0) {
     return(list(
       original = "",
       processed = "",
@@ -241,7 +241,7 @@ calculate_relevance_score <- function(document, query_analysis, base_score = 1.0
   score <- score * legal_boost
   
   # Document type relevance
-  if (!is.null(document$document_type) || !is.null(document$tipo)) {
+  if (!isTRUE(is.null(document$document_type)) || !is.null(document$tipo)) {
     doc_type <- tolower(document$document_type %||% document$tipo %||% "")
     
     # Boost score based on document type relevance to legal terms
@@ -257,7 +257,7 @@ calculate_relevance_score <- function(document, query_analysis, base_score = 1.0
   }
   
   # Recency boost
-  if (!is.null(document$publication_date) || !is.null(document$data_publicacao)) {
+  if (!isTRUE(is.null(document$publication_date)) || !is.null(document$data_publicacao)) {
     pub_date <- as.Date(document$publication_date %||% document$data_publicacao)
     if (!is.na(pub_date)) {
       days_old <- as.numeric(Sys.Date() - pub_date)
@@ -343,13 +343,13 @@ function(req) {
       params <- list(query_analysis$processed)
       param_count <- 1
       
-      if (!is.null(filters$states) && length(filters$states) > 0) {
+      if (!isTRUE(is.null(filters$states)) && length(filters$states) > 0) {
         param_count <- param_count + 1
         params[[param_count]] <- filters$states
         filter_conditions <- c(filter_conditions, sprintf("d.estado = ANY($%d)", param_count))
       }
       
-      if (!is.null(filters$document_types) && length(filters$document_types) > 0) {
+      if (!isTRUE(is.null(filters$document_types)) && length(filters$document_types) > 0) {
         param_count <- param_count + 1
         params[[param_count]] <- filters$document_types
         filter_conditions <- c(filter_conditions, sprintf("d.tipo = ANY($%d)", param_count))
@@ -655,7 +655,7 @@ function(q = "", limit = 10, include_legal_terms = TRUE, context = "legal") {
     }
     
     # Document-based suggestions from database
-    if (exists("secure_db_pool") && !is.null(secure_db_pool) && length(suggestions) < limit) {
+    if (exists("secure_db_pool") && !isTRUE(is.null(secure_db_pool)) && length(suggestions) < limit) {
       main_table <- if (exists("get_main_table")) get_main_table() else "documents"
       
       # Find document titles that match query prefix
@@ -825,7 +825,7 @@ function(req) {
     # Execute semantic search on documents
     search_results <- list()
     
-    if (exists("secure_db_pool") && !is.null(secure_db_pool) && nchar(semantic_query) > 0) {
+    if (exists("secure_db_pool") && !isTRUE(is.null(secure_db_pool)) && nchar(semantic_query) > 0) {
       main_table <- if (exists("get_main_table")) get_main_table() else "documents"
       
       # Semantic search query with concept boosting

@@ -134,7 +134,7 @@ advanced_search_documents <- function(query = "",
     result_with_metadata <- add_search_metadata(result, query, filters, query_time_ms)
     
     # Cache the result
-    if (use_cache && !is.null(cache_key) && nrow(result) > 0) {
+    if (use_cache && !isTRUE(is.null(cache_key)) && nrow(result) > 0) {
       cache_search_result(cache_key, result_with_metadata)
     }
     
@@ -215,7 +215,7 @@ execute_advanced_search_query <- function(pool, query, filters, sort_by, limit, 
 #' @param query Raw search query
 #' @return Normalized query string
 normalize_search_query <- function(query) {
-  if (is.null(query) || query == "" || nchar(trimws(query)) < .search_engine_config$min_query_length) {
+  if (isTRUE(is.null(query)) || query == "" || nchar(trimws(query)) < .search_engine_config$min_query_length) {
     return("")
   }
   
@@ -250,7 +250,7 @@ get_search_autocomplete <- function(partial_query,
                                    include_legal_terms = TRUE,
                                    filters = list()) {
   
-  if (is.null(partial_query) || nchar(trimws(partial_query)) < 2) {
+  if (isTRUE(is.null(partial_query)) || nchar(trimws(partial_query)) < 2) {
     return(list(suggestions = character(0), metadata = list()))
   }
   
@@ -342,7 +342,7 @@ get_legal_term_suggestions <- function(pool, partial_query, limit) {
 
   result <- dbGetQuery(pool, sql_query, params = params)
 
-  if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
+  if (!isTRUE(is.null(result)) && is.data.frame(result) && nrow(result) > 0) {
     return(setNames(result$term, paste0(result$category, " (", result$frequency, ")")))
   }
   
@@ -375,7 +375,7 @@ get_popular_search_suggestions <- function(pool, partial_query, limit) {
 
   result <- dbGetQuery(pool, sql_query, params = params)
 
-  if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
+  if (!isTRUE(is.null(result)) && is.data.frame(result) && nrow(result) > 0) {
     return(setNames(result$search_term_normalized,
                    paste0("Popular (", result$search_frequency, " searches)")))
   }
@@ -423,7 +423,7 @@ get_document_title_suggestions <- function(pool, partial_query, filters, limit) 
 
   result <- dbGetQuery(pool, sql_query, params = params)
 
-  if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
+  if (!isTRUE(is.null(result)) && is.data.frame(result) && nrow(result) > 0) {
     return(setNames(result$titulo,
                    paste0(result$tipo, " (", format(result$data_publicacao, "%Y"), ")")))
   }

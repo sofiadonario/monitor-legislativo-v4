@@ -417,7 +417,7 @@ BrazilianLegislativeIndexManager <- R6Class(
       sql <- paste("CREATE INDEX CONCURRENTLY IF NOT EXISTS", index_def$name, "ON", index_def$table)
       
       # Add index type if specified
-      if (!is.null(index_def$type) && index_def$type != "btree") {
+      if (!isTRUE(is.null(index_def$type)) && index_def$type != "btree") {
         sql <- paste(sql, "USING", toupper(index_def$type))
       }
       
@@ -437,7 +437,7 @@ BrazilianLegislativeIndexManager <- R6Class(
       tryCatch({
         sql <- "SELECT 1 FROM pg_indexes WHERE indexname = $1 AND tablename = $2"
         result <- private$.connection_manager$execute_query(sql, list(index_name, table_name))
-        return(!is.null(result) && nrow(result) > 0)
+        return(!isTRUE(is.null(result)) && nrow(result) > 0)
       }, error = function(e) {
         return(FALSE)
       })
@@ -467,7 +467,7 @@ BrazilianLegislativeIndexManager <- R6Class(
         
         usage_stats <- private$.connection_manager$execute_query(usage_sql)
         
-        if (!is.null(usage_stats) && nrow(usage_stats) > 0) {
+        if (!isTRUE(is.null(usage_stats)) && nrow(usage_stats) > 0) {
           cat("📊 Index Usage Analysis:\n")
           
           # Summarize by usage category
@@ -507,7 +507,7 @@ BrazilianLegislativeIndexManager <- R6Class(
         
         size_stats <- private$.connection_manager$execute_query(size_sql)
         
-        if (!is.null(size_stats) && nrow(size_stats) > 0) {
+        if (!isTRUE(is.null(size_stats)) && nrow(size_stats) > 0) {
           cat("💾 Largest indexes:\n")
           top_sizes <- head(size_stats, 5)
           for (i in 1:nrow(top_sizes)) {
@@ -577,7 +577,7 @@ BrazilianLegislativeIndexManager <- R6Class(
         
         bloat_stats <- private$.connection_manager$execute_query(bloat_sql)
         
-        if (!is.null(bloat_stats) && nrow(bloat_stats) > 0) {
+        if (!isTRUE(is.null(bloat_stats)) && nrow(bloat_stats) > 0) {
           large_indexes <- bloat_stats[bloat_stats$size_category == "LARGE", ]
           if (nrow(large_indexes) > 0) {
             cat("⚠️ Large indexes detected (>100MB):\n")
@@ -612,7 +612,7 @@ BrazilianLegislativeIndexManager <- R6Class(
         
         unused_indexes <- private$.connection_manager$execute_query(unused_sql)
         
-        if (!is.null(unused_indexes) && nrow(unused_indexes) > 0) {
+        if (!isTRUE(is.null(unused_indexes)) && nrow(unused_indexes) > 0) {
           dropped_count <- 0
           
           for (i in 1:nrow(unused_indexes)) {
@@ -659,7 +659,7 @@ BrazilianLegislativeIndexManager <- R6Class(
         
         usage_summary <- private$.connection_manager$execute_query(usage_sql)
         
-        if (!is.null(usage_summary) && nrow(usage_summary) > 0) {
+        if (!isTRUE(is.null(usage_summary)) && nrow(usage_summary) > 0) {
           report$usage_summary <- usage_summary
           
           # Add recommendations

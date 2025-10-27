@@ -367,7 +367,7 @@ track_performance_event <- function(event_type, duration_ms, session = NULL, met
   }
   
   # Keep only recent events
-  if (!is.null(TELEMETRY_STATE$performance_events) && is.data.frame(TELEMETRY_STATE$performance_events) && nrow(TELEMETRY_STATE$performance_events) > 10000) {
+  if (!isTRUE(is.null(TELEMETRY_STATE$performance_events)) && is.data.frame(TELEMETRY_STATE$performance_events) && nrow(TELEMETRY_STATE$performance_events) > 10000) {
     TELEMETRY_STATE$performance_events <- tail(TELEMETRY_STATE$performance_events, 5000)
   }
 }
@@ -397,14 +397,14 @@ track_error_event <- function(error_type, error_message, session = NULL, context
   TELEMETRY_STATE$error_events <- rbind(TELEMETRY_STATE$error_events, new_error)
   
   # Keep only recent errors
-  if (!is.null(TELEMETRY_STATE$error_events) && is.data.frame(TELEMETRY_STATE$error_events) && nrow(TELEMETRY_STATE$error_events) > 5000) {
+  if (!isTRUE(is.null(TELEMETRY_STATE$error_events)) && is.data.frame(TELEMETRY_STATE$error_events) && nrow(TELEMETRY_STATE$error_events) > 5000) {
     TELEMETRY_STATE$error_events <- tail(TELEMETRY_STATE$error_events, 2000)
   }
 }
 
 # Analytics and insights
 get_feature_usage_analytics <- function(days = 7) {
-  if (is.null(TELEMETRY_STATE$feature_usage) || !is.data.frame(TELEMETRY_STATE$feature_usage) || nrow(TELEMETRY_STATE$feature_usage) == 0) {
+  if (isTRUE(is.null(TELEMETRY_STATE$feature_usage)) || !is.data.frame(TELEMETRY_STATE$feature_usage) || nrow(TELEMETRY_STATE$feature_usage) == 0) {
     return(list(
       total_interactions = 0,
       unique_features = 0,
@@ -419,7 +419,7 @@ get_feature_usage_analytics <- function(days = 7) {
     as.POSIXct(TELEMETRY_STATE$feature_usage$timestamp) >= cutoff_time,
   ]
   
-  if (is.null(recent_usage) || !is.data.frame(recent_usage) || nrow(recent_usage) == 0) {
+  if (isTRUE(is.null(recent_usage)) || !is.data.frame(recent_usage) || nrow(recent_usage) == 0) {
     return(list(
       total_interactions = 0,
       unique_features = 0,
@@ -457,7 +457,7 @@ get_feature_usage_analytics <- function(days = 7) {
 }
 
 get_performance_analytics <- function(days = 7) {
-  if (is.null(TELEMETRY_STATE$performance_events) || !is.data.frame(TELEMETRY_STATE$performance_events) || nrow(TELEMETRY_STATE$performance_events) == 0) {
+  if (isTRUE(is.null(TELEMETRY_STATE$performance_events)) || !is.data.frame(TELEMETRY_STATE$performance_events) || nrow(TELEMETRY_STATE$performance_events) == 0) {
     return(list(
       total_events = 0,
       avg_duration_ms = 0,
@@ -486,10 +486,10 @@ get_performance_analytics <- function(days = 7) {
 is_telemetry_enabled <- function(session = NULL) {
   if (!TELEMETRY_CONFIG$enabled) return(FALSE)
   
-  if (!is.null(session) && TELEMETRY_CONFIG$consent_required) {
+  if (!isTRUE(is.null(session)) && TELEMETRY_CONFIG$consent_required) {
     session_id <- session$token
     consent <- TELEMETRY_STATE$user_consent[[session_id]]
-    return(!is.null(consent) && consent$granted)
+    return(!isTRUE(is.null(consent)) && consent$granted)
   }
   
   return(TRUE)

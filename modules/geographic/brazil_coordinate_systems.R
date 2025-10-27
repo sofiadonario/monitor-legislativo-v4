@@ -380,7 +380,7 @@ load_brazil_boundaries_optimized <- function(level = "state",
 #' @return Validated SF object with quality indicators
 validate_brazil_boundaries <- function(boundaries, level) {
   
-  if (is.null(boundaries) || nrow(boundaries) == 0) {
+  if (isTRUE(is.null(boundaries)) || nrow(boundaries) == 0) {
     return(boundaries)
   }
   
@@ -400,7 +400,7 @@ validate_brazil_boundaries <- function(boundaries, level) {
   # Validate administrative completeness
   if (level == "state") {
     expected_states <- 27  # 26 states + 1 federal district
-    if (!is.null(boundaries) && is.data.frame(boundaries) && nrow(boundaries) != expected_states) {
+    if (!isTRUE(is.null(boundaries)) && is.data.frame(boundaries) && nrow(boundaries) != expected_states) {
       warning(paste("Expected 27 Brazilian states, found", nrow(boundaries)))
     }
   }
@@ -436,7 +436,7 @@ transform_brazil_coordinates <- function(spatial_data,
   
   tryCatch({
     
-    if (is.null(spatial_data) || nrow(spatial_data) == 0) {
+    if (isTRUE(is.null(spatial_data)) || nrow(spatial_data) == 0) {
       return(spatial_data)
     }
     
@@ -459,7 +459,7 @@ transform_brazil_coordinates <- function(spatial_data,
     transformed_data <- sf::st_transform(spatial_data, crs = target_crs)
     
     # Precision validation
-    if (validate_precision && !is.null(transformed_data) && is.data.frame(transformed_data) && nrow(transformed_data) > 0) {
+    if (validate_precision && !isTRUE(is.null(transformed_data)) && is.data.frame(transformed_data) && nrow(transformed_data) > 0) {
       transformed_centroids <- sf::st_coordinates(sf::st_centroid(transformed_data))
       
       # Calculate transformation quality metrics
@@ -502,7 +502,7 @@ get_optimal_utm_zone_brazil <- function(spatial_data, return_epsg = TRUE) {
   
   tryCatch({
     
-    if (is.null(spatial_data) || nrow(spatial_data) == 0) {
+    if (isTRUE(is.null(spatial_data)) || nrow(spatial_data) == 0) {
       return(if (return_epsg) 31983 else 23)  # Default to UTM 23S
     }
     

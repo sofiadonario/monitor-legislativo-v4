@@ -362,7 +362,7 @@ legislative_analytics_server <- function(input, output, session, connection = NU
   # Value boxes for key metrics
   output$nlp_entities_box <- renderValueBox({
     results <- analysis_results()
-    entities_count <- if (!is.null(results) && !is.null(results$analyses$nlp)) {
+    entities_count <- if (!isTRUE(is.null(results)) && !is.null(results$analyses$nlp)) {
       scalar_num(results$analyses$nlp$summary$entities_found, default = 0)
     } else 0
 
@@ -376,7 +376,7 @@ legislative_analytics_server <- function(input, output, session, connection = NU
   
   output$citations_network_box <- renderValueBox({
     results <- analysis_results()
-    citations_count <- if (!is.null(results) && !is.null(results$analyses$citations)) {
+    citations_count <- if (!isTRUE(is.null(results)) && !is.null(results$analyses$citations)) {
       scalar_num(results$analyses$citations$total_citations_found, default = 0)
     } else 0
 
@@ -390,7 +390,7 @@ legislative_analytics_server <- function(input, output, session, connection = NU
   
   output$transport_policies_box <- renderValueBox({
     results <- analysis_results()
-    transport_docs <- if (!is.null(results) && !is.null(results$analyses$transport)) {
+    transport_docs <- if (!isTRUE(is.null(results)) && !is.null(results$analyses$transport)) {
       scalar_num(results$analyses$transport$summary$decarbonization_docs, default = 0)
     } else 0
 
@@ -404,7 +404,7 @@ legislative_analytics_server <- function(input, output, session, connection = NU
   
   output$constitutional_compliance_box <- renderValueBox({
     results <- analysis_results()
-    constitutional_docs <- if (!is.null(results) && !is.null(results$analyses$constitutional)) {
+    constitutional_docs <- if (!isTRUE(is.null(results)) && !is.null(results$analyses$constitutional)) {
       scalar_num(results$analyses$constitutional$summary$constitutional_documents, default = 0)
     } else 0
 
@@ -594,7 +594,7 @@ update_ui_error_state <- function(session, error_message) {
 # Specific display update functions for each module
 update_nlp_displays <- function(session, nlp_results) {
   # NLP entities display
-  entities_content <- if (!is.null(nlp_results$sample_entities) && nrow(nlp_results$sample_entities) > 0) {
+  entities_content <- if (!isTRUE(is.null(nlp_results$sample_entities)) && nrow(nlp_results$sample_entities) > 0) {
     entity_list <- paste(nlp_results$sample_entities$entity[1:min(5, nrow(nlp_results$sample_entities))], collapse = ", ")
     paste0("<p><strong>Top Entities:</strong> ", entity_list, "</p>")
   } else {

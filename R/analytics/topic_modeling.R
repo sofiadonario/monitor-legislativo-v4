@@ -210,7 +210,7 @@ create_topic_visualization_dashboard <- function(topic_results,
       NULL
     })
     
-    if (!is.null(topic_corr) && !is.null(topic_corr$cor)) {
+    if (!isTRUE(is.null(topic_corr)) && !is.null(topic_corr$cor)) {
       
       # Create network data
       correlation_matrix <- topic_corr$cor
@@ -232,7 +232,7 @@ create_topic_visualization_dashboard <- function(topic_results,
       for (i in 1:(k_topics-1)) {
         for (j in (i+1):k_topics) {
           correlation <- correlation_matrix[i, j]
-          if (!is.na(correlation) && abs(correlation) > correlation_threshold) {
+          if (!isTRUE(is.na(correlation)) && abs(correlation) > correlation_threshold) {
             edges <- rbind(edges, data.frame(
               from = i,
               to = j,
@@ -259,7 +259,7 @@ create_topic_visualization_dashboard <- function(topic_results,
   }
   
   # 4. Topic Evolution Over Time (if temporal data available)
-  if (!is.null(corpus) && "date" %in% names(quanteda::docvars(corpus))) {
+  if (!isTRUE(is.null(corpus)) && "date" %in% names(quanteda::docvars(corpus))) {
     cat("📅 Creating temporal topic evolution...\n")
     
     # Get document dates and topic assignments

@@ -10,7 +10,7 @@ get_lexml_dashboard_metrics <<- function() {
   cat("📊 get_lexml_dashboard_metrics - PRODUCTION VERSION\n")
   
   # Try real database first
-  if (exists("secure_db_pool") && !is.null(secure_db_pool) && inherits(secure_db_pool, "Pool")) {
+  if (exists("secure_db_pool") && !isTRUE(is.null(secure_db_pool)) && inherits(secure_db_pool, "Pool")) {
     tryCatch({
       total_result <- dbGetQuery(secure_db_pool, "SELECT COUNT(*) as count FROM documents")
       total_documents <- if(nrow(total_result) > 0) total_result$count[1] else 0
@@ -91,7 +91,7 @@ install_missing_packages <- function() {
 # FIX 3: Database Pool Fix
 # ========================
 create_fallback_db_pool <- function() {
-  if (!exists("secure_db_pool") || is.null(secure_db_pool)) {
+  if (!exists("secure_db_pool") || isTRUE(is.null(secure_db_pool))) {
     # Try to create a simple database connection
     if (requireNamespace("DBI", quietly = TRUE) && requireNamespace("RPostgres", quietly = TRUE)) {
       tryCatch({

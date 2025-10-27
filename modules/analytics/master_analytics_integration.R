@@ -483,7 +483,7 @@ generate_comprehensive_visualizations <- function(analytics_system, results, par
     visualizations <- list()
     
     # Time series visualization
-    if (!is.null(results$temporal_analysis) && exists("create_time_series_forecast_viz")) {
+    if (!isTRUE(is.null(results$temporal_analysis)) && exists("create_time_series_forecast_viz")) {
       visualizations$temporal <- create_time_series_forecast_viz(
         results$temporal_analysis,
         show_components = parameters$show_components %||% TRUE
@@ -491,7 +491,7 @@ generate_comprehensive_visualizations <- function(analytics_system, results, par
     }
     
     # Network visualization
-    if (!is.null(results$network_analysis) && exists("create_interactive_citation_network")) {
+    if (!isTRUE(is.null(results$network_analysis)) && exists("create_interactive_citation_network")) {
       visualizations$network <- create_interactive_citation_network(
         results$network_analysis,
         layout_type = parameters$network_layout %||% "force_directed"
@@ -499,7 +499,7 @@ generate_comprehensive_visualizations <- function(analytics_system, results, par
     }
     
     # Correlation heatmap
-    if (!is.null(results$regression_analysis) && exists("create_correlation_heatmap")) {
+    if (!isTRUE(is.null(results$regression_analysis)) && exists("create_correlation_heatmap")) {
       visualizations$correlation <- create_correlation_heatmap(
         results$regression_analysis,
         interactive = parameters$interactive %||% TRUE
@@ -507,7 +507,7 @@ generate_comprehensive_visualizations <- function(analytics_system, results, par
     }
     
     # Sentiment analysis visualization
-    if (!is.null(results$nlp_analysis) && exists("create_sentiment_analysis_viz")) {
+    if (!isTRUE(is.null(results$nlp_analysis)) && exists("create_sentiment_analysis_viz")) {
       visualizations$sentiment <- create_sentiment_analysis_viz(
         results$nlp_analysis,
         visualization_type = parameters$sentiment_viz_type %||% "distribution"
@@ -515,7 +515,7 @@ generate_comprehensive_visualizations <- function(analytics_system, results, par
     }
     
     # Topic modeling visualization
-    if (!is.null(results$nlp_analysis) && exists("create_topic_modeling_viz")) {
+    if (!isTRUE(is.null(results$nlp_analysis)) && exists("create_topic_modeling_viz")) {
       visualizations$topics <- create_topic_modeling_viz(
         results$nlp_analysis,
         visualization_type = parameters$topic_viz_type %||% "treemap"

@@ -159,7 +159,7 @@ test_database_connection <- function() {
     }
     
     # Test a sample query if we have a main table
-    if (!is.null(main_table) && document_count > 0) {
+    if (!isTRUE(is.null(main_table)) && document_count > 0) {
       tryCatch({
         sample_query <- paste("SELECT titulo, tipo, estado FROM", main_table, "LIMIT 3")
         sample_data <- dbGetQuery(.connection_pool, sample_query)
@@ -214,7 +214,7 @@ execute_query_with_retry <- function(query, params = NULL, max_retries = 3) {
     }
     
     # Check connection health before query
-    if (!.connection_health$is_healthy || is.null(.connection_pool)) {
+    if (!.connection_health$is_healthy || isTRUE(is.null(.connection_pool))) {
       cat("⚠️ Connection unhealthy, attempting to reconnect...\n")
       if (!init_robust_database_pool()) {
         if (attempt == max_retries) {
@@ -349,7 +349,7 @@ perform_health_check <- function() {
 
 # Export the connection pool for use by other modules
 get_database_pool <- function() {
-  if (is.null(.connection_pool) || !.connection_health$is_healthy) {
+  if (isTRUE(is.null(.connection_pool)) || !.connection_health$is_healthy) {
     cat("⚠️ Database pool not available, attempting to initialize...\n")
     if (init_robust_database_pool()) {
       return(.connection_pool)

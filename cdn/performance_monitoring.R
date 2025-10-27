@@ -204,7 +204,7 @@ test_cdn_response_time <- function() {
     "https://cdn.monitor-legislativo.railway.app"
   }
   
-  if (base_url == "" || is.null(base_url)) {
+  if (base_url == "" || isTRUE(is.null(base_url))) {
     return(list(success = FALSE, response_time_ms = Inf, reason = "CDN URL not configured"))
   }
   

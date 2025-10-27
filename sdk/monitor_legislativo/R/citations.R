@@ -106,7 +106,7 @@ ml_generate_citations <- function(documents,
   tryCatch({
     result <- .ml_api_call("POST", "/citations/generate", body = request_body)
     
-    if (is.null(result) || !result$success) {
+    if (isTRUE(is.null(result)) || !result$success) {
       # Fallback: gerar citações localmente
       cli_alert_info("Gerando citações localmente...")
       return(.generate_citations_local(doc_data, citation_style, format, include_urls, include_access_date, language))

@@ -94,7 +94,7 @@ webglAnalyticsServer <- function(id, reactive_data) {
       data <- filtered_data()
       
       # Only geocode if we have enough data and text columns
-      if (nrow(data) > 0 && any(c("title", "content", "summary", "titulo", "conteudo") %in% names(data))) {
+      if (isTRUE(nrow(data) > 0) && any(c("title", "content", "summary", "titulo", "conteudo") %in% names(data))) {
         
         # Determine text columns for geocoding
         text_columns <- intersect(
@@ -396,7 +396,7 @@ webglAnalyticsServer <- function(id, reactive_data) {
         # In real implementation, would use network analysis algorithms
         network_data <- create_document_network_data(data)
         
-        if (is.null(network_data) || nrow(network_data) == 0) {
+        if (isTRUE(is.null(network_data)) || nrow(network_data) == 0) {
           return(plotly_empty() %>% 
                  layout(title = "Dados insuficientes para análise de rede"))
         }
@@ -579,7 +579,7 @@ webglAnalyticsServer <- function(id, reactive_data) {
       }
       
       # Temporal trend insight
-      if (!is.null(temporal_data) && nrow(temporal_data) > 2) {
+      if (!isTRUE(is.null(temporal_data)) && nrow(temporal_data) > 2) {
         recent_docs <- tail(temporal_data$document_count, 3)
         trend <- if (all(diff(recent_docs) > 0)) "crescente" 
                 else if (all(diff(recent_docs) < 0)) "decrescente" 

@@ -5,7 +5,7 @@ cat("🔧 APPLYING DASHBOARD NULL FIX...\n")
 
 # Fix for NULL display in valueBoxes
 safe_format_number <- function(value) {
-  if (is.null(value) || is.na(value) || !is.numeric(value)) {
+  if (isTRUE(is.null(value)) || isTRUE(is.na(value)) || !is.numeric(value)) {
     return("0")
   }
   return(format(round(value), big.mark = ","))
@@ -27,7 +27,7 @@ if (exists("renderValueBox", mode = "function")) {
       
       # Fix NULL values in valueBox
       if (!is.null(result$value)) {
-        if (is.null(result$value) || result$value == "NULL" || is.na(result$value)) {
+        if (isTRUE(is.null(result$value)) || result$value == "NULL" || isTRUE(is.na(result$value))) {
           result$value <- "0"
         }
       }
@@ -58,7 +58,7 @@ if (exists("renderValueBox", mode = "function")) {
             }
           }
         }
-      } else if (is.numeric(result) && is.na(result)) {
+      } else if (is.numeric(result) && isTRUE(is.na(result))) {
         result <- 0
       }
       

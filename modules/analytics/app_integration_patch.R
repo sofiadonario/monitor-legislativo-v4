@@ -100,7 +100,7 @@ analytics_integration_patch_3 <- '
           limit = 50000  # Large limit for comprehensive analytics
         )
         
-        if (is.null(current_data) || nrow(current_data) == 0) {
+        if (isTRUE(is.null(current_data)) || nrow(current_data) == 0) {
           cat("⚠️ No data available for analytics\n")
           return(data.frame())
         }

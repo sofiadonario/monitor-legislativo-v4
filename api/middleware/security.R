@@ -96,7 +96,7 @@ validate_request_size <- function(req) {
   }
   
   # Check number of query parameters
-  if (!is.null(req$args) && length(req$args) > SECURITY_CONFIG$max_query_params) {
+  if (!isTRUE(is.null(req$args)) && length(req$args) > SECURITY_CONFIG$max_query_params) {
     return(list(
       valid = FALSE,
       error = paste("Too many query parameters. Maximum:", SECURITY_CONFIG$max_query_params)
@@ -108,7 +108,7 @@ validate_request_size <- function(req) {
 
 # Helper function to validate input for suspicious patterns
 validate_input_security <- function(input_text) {
-  if (!SECURITY_CONFIG$validate_inputs || is.null(input_text) || nchar(input_text) == 0) {
+  if (!SECURITY_CONFIG$validate_inputs || isTRUE(is.null(input_text)) || nchar(input_text) == 0) {
     return(list(valid = TRUE))
   }
   
@@ -311,7 +311,7 @@ function(req, res) {
   }
   
   # Validate query parameters for suspicious content
-  if (!is.null(req$args) && length(req$args) > 0) {
+  if (!isTRUE(is.null(req$args)) && length(req$args) > 0) {
     for (param_name in names(req$args)) {
       param_value <- req$args[[param_name]]
       
@@ -421,7 +421,7 @@ function(req, res) {
 
 # Function to validate JSON input
 validate_json_input <- function(json_string) {
-  if (is.null(json_string) || nchar(json_string) == 0) {
+  if (isTRUE(is.null(json_string)) || nchar(json_string) == 0) {
     return(list(valid = TRUE, data = list()))
   }
   

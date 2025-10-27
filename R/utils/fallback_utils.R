@@ -392,14 +392,14 @@ if (!exists("database_connection_loaded") || !database_connection_loaded) {
       })
       
       # Only process if we actually got data
-      if(!is.null(real_data) && nrow(real_data) > 0) {
+      if(!isTRUE(is.null(real_data)) && nrow(real_data) > 0) {
         cat("✅ Real Data System loaded:", nrow(real_data), "documents\n")
         
         # Apply filters using real data system with ZERO-RESULT PREVENTION
         filtered_data <- real_data
         
         # Apply category filter with ZERO-RESULT PREVENTION
-        if(category != "all" && !is.null(category) && category != "") {
+        if(category != "all" && !isTRUE(is.null(category)) && category != "") {
           if(requireNamespace("dplyr", quietly = TRUE)) {
             temp_filtered <- filtered_data %>% 
               filter(grepl(category, categoria, ignore.case = TRUE))
@@ -488,7 +488,7 @@ if (!exists("database_connection_loaded") || !database_connection_loaded) {
         exists <- file.exists(path)
         size_mb <- if(exists) round(file.size(path) / (1024 * 1024), 1) else 0
         cat(sprintf("  - %s: %s", path, if(exists) paste0("✅ EXISTS (", size_mb, " MB)") else "❌ NOT FOUND"), "\n")
-        if(exists && is.null(csv_path)) {
+        if(exists && isTRUE(is.null(csv_path))) {
           csv_path <- path
           cat("    ⬆️ SELECTED FOR LOADING\n")
         }

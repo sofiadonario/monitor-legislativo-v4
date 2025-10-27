@@ -261,7 +261,7 @@ map_legislation_geography <- function(documents_data, states_data = NULL, munici
   cat("🔗 Mapping legislation to IBGE geographic data...\n")
   
   tryCatch({
-    if (is.null(documents_data) || nrow(documents_data) == 0) {
+    if (isTRUE(is.null(documents_data)) || nrow(documents_data) == 0) {
       warning("No documents data provided")
       return(data.frame())
     }
@@ -335,7 +335,7 @@ calculate_geographic_statistics <- function(documents_data, analysis_type = "den
   cat("📊 Calculating geographic statistics...\n")
   
   tryCatch({
-    if (is.null(documents_data) || nrow(documents_data) == 0) {
+    if (isTRUE(is.null(documents_data)) || nrow(documents_data) == 0) {
       return(list(error = "No data available"))
     }
     

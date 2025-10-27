@@ -182,7 +182,7 @@ execute_comprehensive_search <- function(query, search_config, filters = list(),
   
   tryCatch({
     # Validate inputs
-    if (is.null(search_config) || nchar(str_trim(query)) == 0) {
+    if (isTRUE(is.null(search_config)) || nchar(str_trim(query)) == 0) {
       return(create_empty_search_result("Invalid query or configuration"))
     }
     
@@ -191,7 +191,7 @@ execute_comprehensive_search <- function(query, search_config, filters = list(),
     
     # Check cache first
     cached_result <- check_search_cache(search_id, search_config$search_cache)
-    if (!is.null(cached_result) && options$use_cache) {
+    if (!isTRUE(is.null(cached_result)) && options$use_cache) {
       cat("🚀 Returning cached search results for query:", substr(query, 1, 50), "\n")
       return(cached_result)
     }
@@ -327,7 +327,7 @@ execute_local_database_search <- function(query, filters, options, search_config
 execute_lexml_api_search <- function(query, filters, options, search_config) {
   
   tryCatch({
-    if (!search_config$lexml_enabled || is.null(search_config$lexml_client)) {
+    if (!search_config$lexml_enabled || isTRUE(is.null(search_config$lexml_client))) {
       return(list())
     }
     

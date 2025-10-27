@@ -246,7 +246,7 @@ create_metrics_collector <- function(pool) {
           if (category_name %in% c("timestamp", "collection_id")) next
           
           category_data <- metrics[[category_name]]
-          if (is.null(category_data) || length(category_data) == 0) next
+          if (isTRUE(is.null(category_data)) || length(category_data) == 0) next
           
           for (metric_name in names(category_data)) {
             metric_value <- category_data[[metric_name]]
@@ -672,7 +672,7 @@ create_benchmark_system <- function(pool, spatial_processor = NULL) {
     
     # Analyze performance regression compared to baseline
     analyze_performance_regression = function(current_benchmark) {
-      if (is.null(benchmark_state$baseline_metrics) || length(benchmark_state$baseline_metrics) == 0) {
+      if (isTRUE(is.null(benchmark_state$baseline_metrics)) || length(benchmark_state$baseline_metrics) == 0) {
         # Set current as baseline if no baseline exists
         benchmark_state$baseline_metrics <<- current_benchmark
         

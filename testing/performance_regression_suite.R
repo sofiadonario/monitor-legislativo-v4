@@ -285,7 +285,7 @@ establish_database_benchmarks <- function() {
       main_table <- get_main_table()
     }
     
-    if (!is.null(main_table) && exists("secure_db_pool") && !is.null(secure_db_pool)) {
+    if (!isTRUE(is.null(main_table)) && exists("secure_db_pool") && !is.null(secure_db_pool)) {
       
       # Simple query benchmark
       simple_query <- sprintf("SELECT COUNT(*) FROM %s LIMIT 1", main_table)
@@ -415,7 +415,7 @@ establish_geographic_benchmarks <- function() {
       {
         if (exists("get_library_documents_optimized")) {
           docs <- get_library_documents_optimized(limit = 1000)
-          if (!is.null(docs) && nrow(docs) > 0) {
+          if (!isTRUE(is.null(docs)) && nrow(docs) > 0) {
             state_summary <- docs %>%
               group_by(state) %>%
               summarise(count = n(), .groups = 'drop') %>%
@@ -712,7 +712,7 @@ establish_workload_benchmarks <- function(test_duration_minutes = 30) {
             limit = 25
           )
           
-          if (!is.null(docs) && nrow(docs) > 0) {
+          if (!isTRUE(is.null(docs)) && nrow(docs) > 0) {
             # Simulate analysis
             summary_stats <- list(
               total_docs = nrow(docs),
@@ -751,7 +751,7 @@ establish_workload_benchmarks <- function(test_duration_minutes = 30) {
               limit = 15
             )
             
-            if (!is.null(docs) && nrow(docs) > 0) {
+            if (!isTRUE(is.null(docs)) && nrow(docs) > 0) {
               # Simulate policy comparison analysis
               state_analysis <- list(
                 state = state,
@@ -787,7 +787,7 @@ establish_workload_benchmarks <- function(test_duration_minutes = 30) {
               limit = 100
             )
             
-            if (!is.null(recent_docs) && nrow(recent_docs) > 0) {
+            if (!isTRUE(is.null(recent_docs)) && nrow(recent_docs) > 0) {
               trend_analysis <- list(
                 recent_activity = nrow(recent_docs),
                 category_distribution = table(recent_docs$category),
@@ -901,7 +901,7 @@ analyze_performance_regression <- function(baseline, current) {
   tryCatch({
     
     # Compare database benchmarks
-    if (!is.null(baseline$database_benchmarks) && !is.null(current$database_benchmarks)) {
+    if (!isTRUE(is.null(baseline$database_benchmarks)) && !is.null(current$database_benchmarks)) {
       db_comparison <- compare_benchmark_categories(
         baseline$database_benchmarks, 
         current$database_benchmarks, 
@@ -911,7 +911,7 @@ analyze_performance_regression <- function(baseline, current) {
     }
     
     # Compare search benchmarks
-    if (!is.null(baseline$search_benchmarks) && !is.null(current$search_benchmarks)) {
+    if (!isTRUE(is.null(baseline$search_benchmarks)) && !is.null(current$search_benchmarks)) {
       search_comparison <- compare_benchmark_categories(
         baseline$search_benchmarks,
         current$search_benchmarks,
@@ -921,7 +921,7 @@ analyze_performance_regression <- function(baseline, current) {
     }
     
     # Compare memory benchmarks
-    if (!is.null(baseline$memory_benchmarks) && !is.null(current$memory_benchmarks)) {
+    if (!isTRUE(is.null(baseline$memory_benchmarks)) && !is.null(current$memory_benchmarks)) {
       memory_comparison <- compare_memory_benchmarks(
         baseline$memory_benchmarks,
         current$memory_benchmarks
@@ -930,7 +930,7 @@ analyze_performance_regression <- function(baseline, current) {
     }
     
     # Compare cache benchmarks
-    if (!is.null(baseline$cache_benchmarks) && !is.null(current$cache_benchmarks)) {
+    if (!isTRUE(is.null(baseline$cache_benchmarks)) && !is.null(current$cache_benchmarks)) {
       cache_comparison <- compare_benchmark_categories(
         baseline$cache_benchmarks,
         current$cache_benchmarks,
@@ -982,7 +982,7 @@ compare_benchmark_categories <- function(baseline_benchmarks, current_benchmarks
       baseline_median <- extract_median_metric(baseline_bench)
       current_median <- extract_median_metric(current_bench)
       
-      if (!is.null(baseline_median) && !is.null(current_median) && baseline_median > 0) {
+      if (!isTRUE(is.null(baseline_median)) && !isTRUE(is.null(current_median)) && baseline_median > 0) {
         
         performance_change_pct <- ((current_median - baseline_median) / baseline_median) * 100
         
@@ -1046,7 +1046,7 @@ compare_memory_benchmarks <- function(baseline_memory, current_memory) {
   memory_comparison$is_memory_regression <- memory_comparison$memory_increase_mb > REGRESSION_CONFIG$memory_increase_threshold_mb
   
   # Compare Railway compliance
-  if (!is.null(baseline_memory$railway_compliance) && !is.null(current_memory$railway_compliance)) {
+  if (!isTRUE(is.null(baseline_memory$railway_compliance)) && !is.null(current_memory$railway_compliance)) {
     memory_comparison$railway_compliance_change <- list(
       baseline_utilization_pct = baseline_memory$railway_compliance$utilization_pct,
       current_utilization_pct = current_memory$railway_compliance$utilization_pct,
@@ -1113,12 +1113,12 @@ assess_overall_regression <- function(detailed_comparisons) {
     }
     
     # Check for critical issues
-    if (!is.null(comparison$overall_regression) && comparison$overall_regression) {
+    if (!isTRUE(is.null(comparison$overall_regression)) && comparison$overall_regression) {
       assessment$critical_issues[[category_name]] <- comparison
     }
     
     # Check for improvements
-    if (!is.null(comparison$performance_delta_pct) && comparison$performance_delta_pct < -5) {
+    if (!isTRUE(is.null(comparison$performance_delta_pct)) && comparison$performance_delta_pct < -5) {
       assessment$improvements[[category_name]] <- comparison
     }
   }

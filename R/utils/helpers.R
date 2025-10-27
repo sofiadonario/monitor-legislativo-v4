@@ -12,7 +12,7 @@
 #' @return Formatted character string
 #' @export
 format_number <- function(x, big_mark = ".", decimal_mark = ",") {
-  if (is.null(x) || is.na(x)) return("N/A")
+  if (isTRUE(is.null(x)) || isTRUE(is.na(x))) return("N/A")
   
   if (is.numeric(x)) {
     # Handle large numbers with appropriate units
@@ -92,7 +92,7 @@ format_number <- function(x, big_mark = ".", decimal_mark = ",") {
 #' 
 #' @export
 safe_html <- function(content, max_length = 500, allow_basic_formatting = TRUE) {
-  if (is.null(content) || is.na(content)) return("")
+  if (isTRUE(is.null(content)) || isTRUE(is.na(content))) return("")
   
   # Input validation
   if (!is.character(content)) {
@@ -282,14 +282,14 @@ validate_input <- function(value, type = "character", min_value = NULL, max_valu
   result <- list(valid = TRUE, error = NULL, value = value, sanitized = TRUE)
   
   # Check if required
-  if (required && (is.null(value) || is.na(value) || value == "")) {
+  if (required && (isTRUE(is.null(value)) || isTRUE(is.na(value)) || value == "")) {
     result$valid <- FALSE
     result$error <- "This field is required"
     return(result)
   }
   
   # Skip further validation if empty and not required
-  if (is.null(value) || is.na(value) || value == "") {
+  if (isTRUE(is.null(value)) || isTRUE(is.na(value)) || value == "") {
     return(result)
   }
   
@@ -335,13 +335,13 @@ validate_input <- function(value, type = "character", min_value = NULL, max_valu
     }
     
     # Range validation
-    if (!is.null(min_value) && value < min_value) {
+    if (!isTRUE(is.null(min_value)) && value < min_value) {
       result$valid <- FALSE
       result$error <- paste("Must be at least", min_value)
       return(result)
     }
     
-    if (!is.null(max_value) && value > max_value) {
+    if (!isTRUE(is.null(max_value)) && value > max_value) {
       result$valid <- FALSE
       result$error <- paste("Must be at most", max_value)
       return(result)
@@ -475,7 +475,7 @@ generate_id <- function(prefix = "element") {
 #' @export
 safe_date_parse <- function(date_string, formats = c("%Y-%m-%d", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y")) {
   
-  if (is.null(date_string) || is.na(date_string) || date_string == "") {
+  if (isTRUE(is.null(date_string)) || isTRUE(is.na(date_string)) || date_string == "") {
     return(as.Date(NA))
   }
   
@@ -545,7 +545,7 @@ create_progress_bar <- function(value, label = NULL, color = "primary", striped 
 #' @export
 truncate_text <- function(text, max_length = 100, suffix = "...") {
   
-  if (is.null(text) || is.na(text)) return("")
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text))) return("")
   
   sapply(text, function(x) {
     if (nchar(x) <= max_length) {
@@ -649,7 +649,7 @@ check_packages <- function(packages, install_missing = FALSE) {
 #' @export
 check_rate_limit <- function(key, max_requests = 100, time_window = 3600) {
   
-  if (is.null(key) || key == "") {
+  if (isTRUE(is.null(key)) || key == "") {
     key <- "unknown"
   }
   
@@ -698,7 +698,7 @@ check_rate_limit <- function(key, max_requests = 100, time_window = 3600) {
 #' @export
 sanitize_filename <- function(filename, max_length = 255) {
   
-  if (is.null(filename) || filename == "") {
+  if (isTRUE(is.null(filename)) || filename == "") {
     return("untitled")
   }
   
@@ -734,7 +734,7 @@ sanitize_filename <- function(filename, max_length = 255) {
   }
   
   # Ensure we have a valid filename
-  if (clean_name == "" || is.null(clean_name)) {
+  if (clean_name == "" || isTRUE(is.null(clean_name))) {
     clean_name <- "untitled"
   }
   
@@ -771,7 +771,7 @@ generate_security_token <- function(length = 32) {
 #' @export
 validate_security_token <- function(token1, token2) {
   
-  if (is.null(token1) || is.null(token2) || token1 == "" || token2 == "") {
+  if (isTRUE(is.null(token1)) || isTRUE(is.null(token2)) || token1 == "" || token2 == "") {
     return(FALSE)
   }
   

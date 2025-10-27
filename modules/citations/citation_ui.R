@@ -553,7 +553,7 @@ citation_server <- function(input, output, session, get_documents = NULL) {
     }
     
     # Filter documents based on search
-    if (!is.null(search_term) && nchar(trimws(search_term)) > 0) {
+    if (!isTRUE(is.null(search_term)) && nchar(trimws(search_term)) > 0) {
       search_pattern <- paste0(".*", search_term, ".*")
       title_match <- grepl(search_pattern, docs$title, ignore.case = TRUE)
       docs <- docs[title_match, ]
@@ -598,7 +598,7 @@ citation_server <- function(input, output, session, get_documents = NULL) {
     search_term <- input$citation_search
     
     # Apply same filtering as in UI
-    if (!is.null(search_term) && nchar(trimws(search_term)) > 0) {
+    if (!isTRUE(is.null(search_term)) && nchar(trimws(search_term)) > 0) {
       search_pattern <- paste0(".*", search_term, ".*")
       title_match <- grepl(search_pattern, docs$title, ignore.case = TRUE)
       docs <- docs[title_match, ]
@@ -637,7 +637,7 @@ citation_server <- function(input, output, session, get_documents = NULL) {
     
     collection <- get_collection_info(values$active_collection_id)
     
-    if (is.null(collection) || collection$document_count == 0) {
+    if (isTRUE(is.null(collection)) || collection$document_count == 0) {
       return(p("Nenhum documento na coleção", style = "color: #666;"))
     }
     

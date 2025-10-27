@@ -459,7 +459,7 @@ SecurityIntegrationManager <- R6::R6Class(
     
     # Create database connection
     create_database_connection = function() {
-      if (is.null(self$config$railway$database_url) || self$config$railway$database_url == "") {
+      if (isTRUE(is.null(self$config$railway$database_url)) || self$config$railway$database_url == "") {
         message("⚠️ No database URL configured - running in fallback mode")
         return(NULL)
       }

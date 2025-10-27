@@ -482,7 +482,7 @@ generate_abnt_citation <- function(doc) {
   date <- doc$data_publicacao
   
   # Format according to ABNT standards
-  if (!is.null(number) && !is.null(year)) {
+  if (!isTRUE(is.null(number)) && !is.null(year)) {
     citation <- sprintf("%s. %s nº %s, de %s. %s, %s.",
                        toupper(jurisdiction),
                        stringr::str_to_title(type),

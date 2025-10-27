@@ -326,7 +326,7 @@ create_user_session <- function(user_record, token_data, request_info = list()) 
 #' @param csrf_token CSRF token for validation
 #' @return User information or NULL if invalid
 validate_session <- function(session_id, csrf_token = NULL) {
-  if (is.null(.db_pool) || is.null(session_id)) {
+  if (isTRUE(is.null(.db_pool)) || isTRUE(is.null(session_id))) {
     return(NULL)
   }
   
@@ -360,7 +360,7 @@ validate_session <- function(session_id, csrf_token = NULL) {
     session_record <- session_data[1, ]
     
     # Validate CSRF token if provided
-    if (!is.null(csrf_token) && session_record$csrf_token != csrf_token) {
+    if (!isTRUE(is.null(csrf_token)) && session_record$csrf_token != csrf_token) {
       log_event("CSRF token validation failed", "WARN")
       return(NULL)
     }
@@ -379,7 +379,7 @@ validate_session <- function(session_id, csrf_token = NULL) {
     )
     
     # Parse permissions
-    if (!is.na(session_record$permissions_json) && session_record$permissions_json != "") {
+    if (!isTRUE(is.na(session_record$permissions_json)) && session_record$permissions_json != "") {
       permissions_list <- strsplit(session_record$permissions_json, "\\|\\|\\|")[[1]]
       session_record$permissions <- lapply(permissions_list, function(p) {
         tryCatch(fromJSON(p), error = function(e) list())
@@ -434,7 +434,7 @@ log_data_access <- function(user_id, session_id, action_type, resource_type,
 #' @param session_id Session to revoke
 #' @param reason Reason for revocation
 revoke_session <- function(session_id, reason = "user_logout") {
-  if (is.null(.db_pool) || is.null(session_id)) {
+  if (isTRUE(is.null(.db_pool)) || isTRUE(is.null(session_id))) {
     return(FALSE)
   }
   
@@ -460,7 +460,7 @@ revoke_session <- function(session_id, reason = "user_logout") {
 #' @param permission Permission to check
 #' @return TRUE if user has permission
 has_permission <- function(user_session, permission) {
-  if (is.null(user_session) || is.null(user_session$permissions)) {
+  if (isTRUE(is.null(user_session)) || isTRUE(is.null(user_session$permissions))) {
     return(FALSE)
   }
   

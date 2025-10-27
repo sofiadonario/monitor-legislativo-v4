@@ -121,7 +121,7 @@ legal_entities <- list(
 
 # Simple text preprocessing function
 simple_preprocess_text <- function(text) {
-  if (is.null(text) || is.na(text) || text == "") return("")
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || text == "") return("")
   
   # Basic cleaning
   text <- tolower(text)
@@ -139,7 +139,7 @@ simple_preprocess_text <- function(text) {
 
 # Simple sentiment analysis
 analyze_regulatory_sentiment <- function(text) {
-  if (is.null(text) || is.na(text) || text == "") return("Balanced")
+  if (isTRUE(is.null(text)) || isTRUE(is.na(text)) || text == "") return("Balanced")
   
   text_lower <- tolower(text)
   
@@ -174,7 +174,7 @@ app_config <- create_modular_app(
 )
 
 # Check if application was created successfully
-if (is.null(app_config) || is.null(app_config$ui) || is.null(app_config$server)) {
+if (isTRUE(is.null(app_config)) || isTRUE(is.null(app_config$ui)) || isTRUE(is.null(app_config$server))) {
   stop("Failed to create modular application. Check module loading status.")
 }
 

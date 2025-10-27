@@ -42,7 +42,7 @@ LOG_STATE <- list(
 
 # Helper function to anonymize IP address (LGPD compliance)
 anonymize_ip <- function(ip_address) {
-  if (is.null(ip_address) || ip_address == "unknown") {
+  if (isTRUE(is.null(ip_address)) || ip_address == "unknown") {
     return("unknown")
   }
   
@@ -65,7 +65,7 @@ anonymize_ip <- function(ip_address) {
 
 # Helper function to sanitize headers (remove sensitive information)
 sanitize_headers <- function(headers) {
-  if (is.null(headers) || length(headers) == 0) {
+  if (isTRUE(is.null(headers)) || length(headers) == 0) {
     return(list())
   }
   
@@ -180,7 +180,7 @@ function(req, res) {
     )
     
     # Add request body if available and not too large
-    if (!is.null(req$postBody) && LOG_CONFIG$log_level == "DEBUG") {
+    if (!isTRUE(is.null(req$postBody)) && LOG_CONFIG$log_level == "DEBUG") {
       request_context$body = truncate_body(req$postBody)
     }
     
@@ -204,7 +204,7 @@ function(req, res) {
 
 # Response logging hook (called after request processing)
 log_response <- function(req, res, value) {
-  if (!LOG_CONFIG$log_responses || is.null(req$log_metadata)) {
+  if (!LOG_CONFIG$log_responses || isTRUE(is.null(req$log_metadata))) {
     return(value)
   }
   
@@ -372,7 +372,7 @@ rotate_logs <- function() {
 
 # Function to clean up old log files
 cleanup_old_logs <- function() {
-  if (is.null(LOG_CONFIG$log_file_path) || LOG_CONFIG$retention_days <= 0) {
+  if (isTRUE(is.null(LOG_CONFIG$log_file_path)) || LOG_CONFIG$retention_days <= 0) {
     return()
   }
   

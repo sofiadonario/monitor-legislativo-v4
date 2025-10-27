@@ -219,7 +219,7 @@ retrieve_search_results <- function(cache_key) {
     }
     
     # Fallback to memory cache
-    if (is.null(cache_object) && .cache_config$fallback_memory) {
+    if (isTRUE(is.null(cache_object)) && .cache_config$fallback_memory) {
       if (exists(cache_key, envir = .memory_cache)) {
         cache_object <- get(cache_key, envir = .memory_cache)
         
@@ -330,7 +330,7 @@ cached_search_documents <- function(pool, query, filters = list(), sort_by = "re
 #' @param popular_queries List of popular search queries
 #' @return Number of queries cached
 warm_search_cache <- function(pool, popular_queries = NULL) {
-  if (!.cache_config$enabled || is.null(pool)) {
+  if (!.cache_config$enabled || isTRUE(is.null(pool))) {
     return(0)
   }
   

@@ -361,7 +361,7 @@ AuditLogger <- R6::R6Class(
     
     # Validate session
     validate_session = function(session_id) {
-      if (is.null(session_id) || session_id == "") {
+      if (isTRUE(is.null(session_id)) || session_id == "") {
         return(FALSE)
       }
       
