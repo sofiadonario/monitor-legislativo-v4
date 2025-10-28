@@ -28,9 +28,7 @@ ui <- function(request) {
       success = "#27ae60",
       info = "#3498db",
       warning = "#f39c12",
-      danger = "#e74c3c",
-      base_font = font_google("Roboto"),
-      heading_font = font_google("Roboto Slab")
+      danger = "#e74c3c"
     ),
 
     # Executive Summary Tab - Placeholder
