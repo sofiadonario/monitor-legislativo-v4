@@ -35,7 +35,10 @@
       "Bash(cat:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "WebSearch",
+      "Bash(git pull:*)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": []
