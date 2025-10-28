@@ -1,6 +1,7 @@
 # UI Definition - Monitor Legislativo v4
 # ======================================
-# v82: RADICAL SIMPLIFICATION to guarantee app runs for presentation
+# v85: BYPASS bslib page_navbar() - use base Shiny navbarPage() to avoid extent=0 error
+# This replaces bslib::page_navbar() with shiny::navbarPage() which doesn't use C++ callbacks
 
 # Load required packages
 suppressPackageStartupMessages({
@@ -17,7 +18,7 @@ suppressPackageStartupMessages({
 #' @return Complete Shiny UI
 ui <- function(request) {
 
-  page_navbar(
+  navbarPage(
     title = "Monitor Legislativo v4",
     theme = bs_theme(
       version = 5,
@@ -32,7 +33,7 @@ ui <- function(request) {
     ),
 
     # Executive Summary Tab - Placeholder
-    nav_panel(
+    tabPanel(
       title = "Executive Summary",
       icon = icon("chart-line"),
       value = "executive",
@@ -41,7 +42,7 @@ ui <- function(request) {
     ),
 
     # Library Tab - Placeholder
-    nav_panel(
+    tabPanel(
       title = "Library",
       icon = icon("book"),
       value = "library",
@@ -50,7 +51,7 @@ ui <- function(request) {
     ),
 
     # Analytics Tab - Placeholder
-    nav_panel(
+    tabPanel(
       title = "Analytics",
       icon = icon("chart-bar"),
       value = "analytics",
@@ -59,7 +60,7 @@ ui <- function(request) {
     ),
 
     # São Paulo Tab - Placeholder
-    nav_panel(
+    tabPanel(
       title = "São Paulo",
       icon = icon("map-marked-alt"),
       value = "saopaulo",
@@ -68,7 +69,7 @@ ui <- function(request) {
     ),
 
     # NLP Tab - Placeholder
-    nav_panel(
+    tabPanel(
       title = "Text Mining",
       icon = icon("brain"),
       value = "nlp",
@@ -78,4 +79,4 @@ ui <- function(request) {
   )
 }
 
-cat("✅ UI definition loaded successfully (v82 - simplified)\n")
+cat("✅ UI definition loaded successfully (v85 - shiny::navbarPage fix)\n")
