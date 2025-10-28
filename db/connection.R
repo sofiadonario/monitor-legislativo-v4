@@ -174,22 +174,8 @@ parse_database_url <- function(database_url) {
 #' @return List with connection parameters or NULL if validation fails
 get_database_config <- function() {
   cat("🔍 Validating database configuration from environment variables...\n")
-  
-  # Method 1: Try DATABASE_URL (Railway format)
-  database_url <- Sys.getenv("DATABASE_URL", unset = NA)
-  if (!isTRUE(is.na(database_url)) && database_url != "") {
-    cat("📋 Found DATABASE_URL environment variable\n")
-    
-    config <- parse_database_url(database_url)
-    if (!is.null(config)) {
-      cat("✅ Using DATABASE_URL for connection configuration\n")
-      return(config)
-    } else {
-      cat("⚠️ DATABASE_URL parsing failed, trying individual variables...\n")
-    }
-  }
 
-  # Method 2: Check for Google Cloud Run Unix Socket
+  # Method 1: PRIORITIZE Google Cloud Run Unix Socket
   # This is the preferred, secure method for connecting when deployed on Cloud Run
   is_in_cloud_run <- !is.na(Sys.getenv("K_SERVICE", unset = NA))
   if (is_in_cloud_run) {
@@ -214,6 +200,20 @@ get_database_config <- function() {
       user = user,
       password = password
     ))
+  }
+  
+  # Method 2: Try DATABASE_URL (Railway format)
+  database_url <- Sys.getenv("DATABASE_URL", unset = NA)
+  if (!is.TRUE(is.na(database_url)) && database_url != "") {
+    cat("📋 Found DATABASE_URL environment variable\n")
+    
+    config <- parse_database_url(database_url)
+    if (!is.null(config)) {
+      cat("✅ Using DATABASE_URL for connection configuration\n")
+      return(config)
+    } else {
+      cat("⚠️ DATABASE_URL parsing failed, trying individual variables...\n")
+    }
   }
   
   # Method 3: Try individual environment variables (for local development)
