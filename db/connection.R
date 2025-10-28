@@ -342,7 +342,7 @@ test_secure_connectivity <- function(config) {
 #' @param config Database configuration list
 #' @return Connection pool or NULL if failed
 create_secure_connection_pool <- function(config) {
-  log_secure_db("INFO", "Creating secure connection pool with SSL enforcement")
+  log_secure_db("INFO", "Creating secure database connection (bypassing pool for stability)")
   
   max_retries <- 3
   base_delay <- 2  # seconds
@@ -351,35 +351,25 @@ create_secure_connection_pool <- function(config) {
     tryCatch({
       log_secure_db("INFO", sprintf("Secure connection attempt %d/%d", attempt, max_retries))
       
-      # Create connection pool with SSL enforcement
-      pool <- dbPool(
-        drv = RPostgres::Postgres(),
+      # Create a single, direct connection instead of a pool
+      conn <- dbConnect(
+        RPostgres::Postgres(),
         host = config$host,
         port = config$port, 
         dbname = config$dbname,
         user = config$user,
         password = config$password,
         
-        # Pool configuration
-        minSize = 1,
-        maxSize = 5,  # Conservative limit for security
-        idleTimeout = 1800000,  # 30 minutes
-        
         # Security settings (Railway compatible)
         sslmode = "prefer",   # Prefer SSL but allow fallback
         connect_timeout = 30,
-        application_name = "secure_r_shiny_app",
-        
-        # Additional security options
-        options = "-c log_statement=none"  # Disable statement logging for security
+        application_name = "secure_r_shiny_app"
       )
       
-      # Test the pool immediately
-      test_conn <- poolCheckout(pool)
-      test_result <- dbGetQuery(test_conn, "SELECT current_database() as db_name, current_setting('ssl') as ssl_status")
-      poolReturn(test_conn)
+      # Test the connection immediately
+      test_result <- dbGetQuery(conn, "SELECT current_database() as db_name, current_setting('ssl') as ssl_status")
       
-      log_secure_db("SUCCESS", sprintf("Secure connection pool created successfully on attempt %d", attempt))
+      log_secure_db("SUCCESS", sprintf("Secure connection established successfully on attempt %d", attempt))
       log_secure_db("INFO", sprintf("Connected to database: %s", test_result$db_name))
       log_secure_db("INFO", sprintf("SSL Status: %s", test_result$ssl_status))
       
@@ -387,7 +377,7 @@ create_secure_connection_pool <- function(config) {
       connection_status$ssl_enabled <<- (test_result$ssl_status == "on")
       connection_status$is_secure <<- TRUE
       
-      return(pool)
+      return(conn) # Return the single connection object
       
     }, error = function(e) {
       log_secure_db("ERROR", sprintf("Secure connection attempt %d failed", attempt), e$message)
@@ -411,7 +401,7 @@ create_secure_connection_pool <- function(config) {
     })
   }
   
-  log_secure_db("ERROR", sprintf("Failed to create secure connection pool after %d attempts", max_retries))
+  log_secure_db("ERROR", sprintf("Failed to create secure connection after %d attempts", max_retries))
   return(NULL)
 }
 
@@ -512,7 +502,7 @@ get_secure_document_count <- function() {
     
     for (query in table_queries) {
       tryCatch({
-        result <- dbGetQuery(secure_db_pool, query)
+        result <- dbGetQuery(secure_db_pool, query) # Use the connection directly
         if (isTRUE(nrow(result) > 0) && !is.na(scalar(result$count))) {
           count <- as.numeric(scalar(result$count, 0))
           log_secure_db("INFO", sprintf("Document count retrieved: %s", format(count, big.mark = ",")))
@@ -607,7 +597,7 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     for(table_name in table_candidates) {
       tryCatch({
         count_query <- sprintf("SELECT COUNT(*) as count FROM %s WHERE titulo IS NOT NULL AND titulo != ''", table_name)
-        result <- dbGetQuery(secure_db_pool, count_query)
+        result <- dbGetQuery(secure_db_pool, count_query) # Use the connection directly
         
         if(isTRUE(nrow(result) > 0) && result$count > max_count) {
           max_count <- result$count  
@@ -705,9 +695,9 @@ get_library_documents <- function(category = "all", search_term = "", state = "a
     
     # Execute secure parameterized query
     if(length(params) > 0) {
-      result <- dbGetQuery(secure_db_pool, base_query, params = params)
+      result <- dbGetQuery(secure_db_pool, base_query, params = params) # Use the connection directly
     } else {
-      result <- dbGetQuery(secure_db_pool, base_query)
+      result <- dbGetQuery(secure_db_pool, base_query) # Use the connection directly
     }
     
     log_secure_db("SUCCESS", sprintf("Retrieved %d documents from secure database", nrow(result)))
@@ -950,7 +940,7 @@ get_lexml_dashboard_metrics <- function() {
 close_secure_database <- function() {
   if (!is.null(secure_db_pool)) {
     tryCatch({
-      poolClose(secure_db_pool)
+      dbDisconnect(secure_db_pool) # Use dbDisconnect for a single connection
       secure_db_pool <<- NULL
       connection_status$status <<- "disconnected"
       connection_status$connection_method <<- "none"
