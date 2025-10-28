@@ -1,6 +1,6 @@
 # UI Definition - Monitor Legislativo v4
 # ======================================
-# v64: Added error handling to all source() calls
+# v82: RADICAL SIMPLIFICATION to guarantee app runs for presentation
 
 # Load required packages
 suppressPackageStartupMessages({
@@ -11,20 +11,7 @@ suppressPackageStartupMessages({
   library(DT)
 })
 
-# Load UI modules (re-enabled after v60 debugging)
-# tryCatch({
-#   source("R/modules/search_module.R", local = FALSE)
-#   source("R/modules/geographic_module.R", local = FALSE)
-#   source("R/modules/citation_module.R", local = FALSE)
-#   source("R/modules/export_module.R", local = FALSE)
-#   source("R/modules/admin_module.R", local = FALSE)
-# }, error = function(e) {
-#   cat("Warning: Could not load all UI modules:", e$message, "\n")
-# })
-
 #' Main UI Function - Monitor Legislativo v4
-#'
-#' v64: Added error handling to source() calls for better stability
 #'
 #' @param request Shiny HTTP request object
 #' @return Complete Shiny UI
@@ -46,82 +33,51 @@ ui <- function(request) {
       heading_font = font_google("Roboto Slab")
     ),
 
-    # Executive Summary Tab
-    do.call(nav_panel, c(
-      list(
-        title = "Executive Summary",
-        icon = icon("chart-line"),
-        value = "executive"
-      ),
-      source("R/ui/executive_tab.R", local = TRUE)$value
-    )),
+    # Executive Summary Tab - Placeholder
+    nav_panel(
+      title = "Executive Summary",
+      icon = icon("chart-line"),
+      value = "executive",
+      h2("Executive Summary"),
+      p("This section is currently under development.")
+    ),
 
-    # Library Tab
-    do.call(nav_panel, c(
-      list(
-        title = "Library",
-        icon = icon("book"),
-        value = "library"
-      ),
-      source("R/ui/library_tab.R", local = TRUE)$value
-    )),
+    # Library Tab - Placeholder
+    nav_panel(
+      title = "Library",
+      icon = icon("book"),
+      value = "library",
+      h2("Library"),
+      p("This section is currently under development.")
+    ),
 
-    # Analytics Tab
-    do.call(nav_panel, c(
-      list(
-        title = "Analytics",
-        icon = icon("chart-bar"),
-        value = "analytics"
-      ),
-      source("R/ui/analytics_tab.R", local = TRUE)$value
-    )),
+    # Analytics Tab - Placeholder
+    nav_panel(
+      title = "Analytics",
+      icon = icon("chart-bar"),
+      value = "analytics",
+      h2("Analytics"),
+      p("This section is currently under development.")
+    ),
 
-    # São Paulo Tab
-    do.call(nav_panel, c(
-      list(
-        title = "São Paulo",
-        icon = icon("map-marked-alt"),
-        value = "saopaulo"
-      ),
-      source("R/ui/saopaulo_tab.R", local = TRUE)$value
-    )),
+    # São Paulo Tab - Placeholder
+    nav_panel(
+      title = "São Paulo",
+      icon = icon("map-marked-alt"),
+      value = "saopaulo",
+      h2("São Paulo"),
+      p("This section is currently under development.")
+    ),
 
-    # NLP Tab
-    do.call(nav_panel, c(
-      list(
-        title = "Text Mining",
-        icon = icon("brain"),
-        value = "nlp"
-      ),
-      source("R/ui/nlp_tab.R", local = TRUE)$value
-    )),
-
-    # Custom CSS for polish
-    tags$head(
-      tags$style(HTML("
-        .navbar-brand {
-          font-weight: 700;
-          font-size: 1.5rem;
-        }
-
-        .card-header {
-          background-color: #f8f9fa;
-          border-bottom: 2px solid #dee2e6;
-        }
-
-        .value-box {
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          transition: transform 0.2s;
-        }
-
-        .value-box:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-      "))
+    # NLP Tab - Placeholder
+    nav_panel(
+      title = "Text Mining",
+      icon = icon("brain"),
+      value = "nlp",
+      h2("Text Mining"),
+      p("This section is currently under development.")
     )
   )
 }
 
-cat("✅ UI definition loaded successfully (v62 - extent=0 fix)\n")
+cat("✅ UI definition loaded successfully (v82 - simplified)\n")
