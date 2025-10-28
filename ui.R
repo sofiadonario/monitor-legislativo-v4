@@ -32,51 +32,15 @@ ui <- function(request) {
       danger = "#e74c3c"
     ),
 
-    # Executive Summary Tab - Placeholder
+    # A single, minimal tab panel to ensure rendering
     tabPanel(
-      title = "Executive Summary",
-      icon = icon("chart-line"),
-      value = "executive",
-      h2("Executive Summary"),
-      p("This section is currently under development.")
-    ),
-
-    # Library Tab - Placeholder
-    tabPanel(
-      title = "Library",
-      icon = icon("book"),
-      value = "library",
-      h2("Library"),
-      p("This section is currently under development.")
-    ),
-
-    # Analytics Tab - Placeholder
-    tabPanel(
-      title = "Analytics",
-      icon = icon("chart-bar"),
-      value = "analytics",
-      h2("Analytics"),
-      p("This section is currently under development.")
-    ),
-
-    # São Paulo Tab - Placeholder
-    tabPanel(
-      title = "São Paulo",
-      icon = icon("map-marked-alt"),
-      value = "saopaulo",
-      h2("São Paulo"),
-      p("This section is currently under development.")
-    ),
-
-    # NLP Tab - Placeholder
-    tabPanel(
-      title = "Text Mining",
-      icon = icon("brain"),
-      value = "nlp",
-      h2("Text Mining"),
-      p("This section is currently under development.")
+      title = "Início",
+      icon = icon("home"),
+      h2("Monitor Legislativo"),
+      p("A aplicação está online e conectada ao banco de dados."),
+      p("Os painéis de análise estão sendo restaurados.")
     )
   )
 }
 
-cat("✅ UI definition loaded successfully (v85 - shiny::navbarPage fix)\n")
+cat("✅ UI definition loaded successfully (v86 - final simplification)\n")
