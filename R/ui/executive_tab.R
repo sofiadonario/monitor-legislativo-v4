@@ -3,8 +3,8 @@
 # ======================================================
 # v61: Migrated from shinydashboard box() to bslib card()
 
-# Wrap all UI elements in tagList for proper sourcing
-tagList(
+# Wrap all UI elements in a single div() for bslib::nav_panel compatibility
+div(
   # Strategic Insights Panel - Top Priority Information
   layout_columns(
     col_widths = 12,
