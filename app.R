@@ -64,7 +64,7 @@ cat("✅ All required packages available\n\n")
 # Load optimized global setup (DB pool, cached functions, preloaded data)
 # FIX v56: SKIP sourcing global_integrated.R + use FULL ui.R/server.R from git
 # Define minimal variables needed by app
-DB_AVAILABLE <- FALSE
+# DB_AVAILABLE <- FALSE # REMOVED - This is now set dynamically after connection attempt
 cat("⚠️  SKIPPING global_integrated.R (v56 - with full UI/server)\n")
 # tryCatch({
 #   source("global_integrated.R", local = TRUE)
@@ -73,12 +73,14 @@ cat("⚠️  SKIPPING global_integrated.R (v56 - with full UI/server)\n")
 #   cat("❌ FATAL: global_integrated.R failed:", conditionMessage(e), "\n")
 #   stop(e)
 # })
-
 tryCatch({
   source("db/connection.R", local = TRUE)
-  cat("✅ Global configuration loaded\n")
+  status <- get_connection_status()
+  DB_AVAILABLE <<- status$status == "connected" # Set global DB_AVAILABLE status
+  cat("✅ Global configuration loaded. DB Available:", DB_AVAILABLE, "\n")
 }, error = function(e) {
   cat("❌ FATAL: db/connection.R failed:", conditionMessage(e), "\n")
+  DB_AVAILABLE <<- FALSE
   stop(e)
 })
 
