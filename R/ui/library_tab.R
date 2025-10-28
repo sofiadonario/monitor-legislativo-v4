@@ -8,7 +8,7 @@ div(
   # Search and Filter Panel
   layout_columns(
     col_widths = 12,
-    column(12,
+    div(
       h2("📚 Biblioteca de Documentos Legislativos"),
       p("Sistema de monitoramento legislativo brasileiro - Em manutenção.",
         style = "color: #7f8c8d; margin-bottom: 30px;"),

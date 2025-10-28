@@ -6,7 +6,7 @@
 div(
   layout_columns(
     col_widths = 12,
-    column(12,
+    div(
       h2("📈 Analytics Avançados"),
       p("Análise avançada de tendências legislativas, padrões temporais e insights estratégicos.",
         style = "color: #7f8c8d; margin-bottom: 30px;")
@@ -16,64 +16,62 @@ div(
   # Analytics Control Panel
   layout_columns(
     col_widths = c(4, 8),
-    column(4,
-      wellPanel(
-        h4("Configurações de Análise"),
+    wellPanel(
+      h4("Configurações de Análise"),
 
-        selectInput(
-          inputId = "analytics_type",
-          label = "Tipo de Análise:",
-          choices = list(
-            "Tendências Temporais" = "temporal",
-            "Análise de Sentimento" = "sentiment",
-            "Temas Emergentes" = "topics",
-            "Análise de Rede" = "network",
-            "Comparação Regional" = "regional"
-          ),
-          selected = "temporal"
+      selectInput(
+        inputId = "analytics_type",
+        label = "Tipo de Análise:",
+        choices = list(
+          "Tendências Temporais" = "temporal",
+          "Análise de Sentimento" = "sentiment",
+          "Temas Emergentes" = "topics",
+          "Análise de Rede" = "network",
+          "Comparação Regional" = "regional"
         ),
+        selected = "temporal"
+      ),
 
-        dateRangeInput(
-          inputId = "analytics_date_range",
-          label = "Período de Análise:",
-          start = Sys.Date() - 365,
-          end = Sys.Date(),
-          format = "dd/mm/yyyy",
-          language = "pt-BR"
+      dateRangeInput(
+        inputId = "analytics_date_range",
+        label = "Período de Análise:",
+        start = Sys.Date() - 365,
+        end = Sys.Date(),
+        format = "dd/mm/yyyy",
+        language = "pt-BR"
+      ),
+
+      selectInput(
+        inputId = "analytics_granularity",
+        label = "Granularidade:",
+        choices = list(
+          "Mensal" = "monthly",
+          "Trimestral" = "quarterly",
+          "Anual" = "yearly"
         ),
+        selected = "monthly"
+      ),
 
-        selectInput(
-          inputId = "analytics_granularity",
-          label = "Granularidade:",
-          choices = list(
-            "Mensal" = "monthly",
-            "Trimestral" = "quarterly",
-            "Anual" = "yearly"
-          ),
-          selected = "monthly"
+      checkboxGroupInput(
+        inputId = "analytics_filters",
+        label = "Filtros:",
+        choices = list(
+          "Federal" = "federal",
+          "Estadual" = "state",
+          "Municipal" = "municipal"
         ),
+        selected = c("federal", "state")
+      ),
 
-        checkboxGroupInput(
-          inputId = "analytics_filters",
-          label = "Filtros:",
-          choices = list(
-            "Federal" = "federal",
-            "Estadual" = "state",
-            "Municipal" = "municipal"
-          ),
-          selected = c("federal", "state")
-        ),
-
-        actionButton(
-          inputId = "analytics_run",
-          label = "Executar Análise",
-          icon = icon("play"),
-          class = "btn-primary btn-block"
-        )
+      actionButton(
+        inputId = "analytics_run",
+        label = "Executar Análise",
+        icon = icon("play"),
+        class = "btn-primary btn-block"
       )
     ),
 
-    column(8,
+    div(
       # Main Analytics Display
       conditionalPanel(
         condition = "input.analytics_type == 'temporal'",
