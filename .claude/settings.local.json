@@ -39,7 +39,18 @@
       "WebSearch",
       "Bash(git pull:*)",
       "Bash(sed:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(git push)",
+      "Bash(pkill:*)",
+      "Bash(gcloud sql instances patch:*)",
+      "Bash(gsutil ls:*)",
+      "Bash(gsutil mb:*)",
+      "Bash(gsutil cp:*)",
+      "Bash(chmod:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(nc -zv:*)",
+      "Bash(gcloud projects add-iam-policy-binding:*)"
     ],
     "deny": [],
     "ask": []

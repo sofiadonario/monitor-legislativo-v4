@@ -84,6 +84,15 @@ ui <- navbarPage(
   title = "Monitor Legislativo v4 (Phoenix)",
   theme = shinytheme("cerulean"), # A simple, safe theme
 
+  # Custom CSS to fix blur/opacity issues
+  tags$head(
+    tags$style(HTML("
+      .shiny-busy-panel { display: none !important; }
+      body { opacity: 1 !important; }
+      #shiny-notification-panel { z-index: 10000; }
+    "))
+  ),
+
   # -- LIBRARY TAB --
   tabPanel(
     "Library",
