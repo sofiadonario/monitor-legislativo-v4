@@ -56,7 +56,7 @@ if (length(missing_packages) > 0) {
 suppressPackageStartupMessages({
   library(DBI)
   library(RPostgres) 
-  library(pool)
+  # library(pool) # REMOVED - Bypassing pool for stability
 })
 
 cat("✅ Database packages loaded successfully\n")
@@ -529,7 +529,7 @@ get_connection_status <- function() {
 }
 
 #' Get total documents (interface function)
-#' @param filters Optional filters list
+#' @param filters I've pusheal filters list
 #' @return Integer document count
 get_total_documents <- function(filters = list()) {
   if (connection_status$status == "connected") {
