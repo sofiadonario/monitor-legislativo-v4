@@ -54,8 +54,7 @@ RUN R -q -e "stopifnot( \
   requireNamespace('DT', quietly=TRUE), \
   requireNamespace('leaflet', quietly=TRUE), \
   requireNamespace('DBI', quietly=TRUE), \
-  requireNamespace('RPostgres', quietly=TRUE), \
-  requireNamespace('pool', quietly=TRUE) \
+  requireNamespace('RPostgres', quietly=TRUE) \
 ); cat('✅ All critical packages verified at build time\\n')"
 
 # 7) Copy application into /app directory (simple setup)
