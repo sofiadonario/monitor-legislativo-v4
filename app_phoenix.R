@@ -14,6 +14,7 @@ suppressPackageStartupMessages({
   library(RPostgres)
   library(DT)
   library(leaflet)
+  library(shinythemes)
 })
 
 # ==============================================================================
