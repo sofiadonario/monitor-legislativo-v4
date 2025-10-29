@@ -1,7 +1,7 @@
 # Railway cache bust - $(date)
 # Last rebuild: Sun Oct 26 21:00:00 -03 2025
-# FIX v61: Migrated to bslib framework (fixes extent=0 error definitively)
-FROM rocker/shiny:4.5.1
+# FIX v89: Revert to Rocker 4.3.1 to bypass C++ rendering bugs
+FROM rocker/shiny:4.3.1
 
 # 1) System libs - CRITICAL: cmake + libabsl-dev needed for s2 (dependency of sf/leaflet)
 # NOTE: liblwgeom-dev doesn't exist in Ubuntu 24.04 (noble) - removed
@@ -31,7 +31,7 @@ RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable
 RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
   install.packages(c( \
     'bslib','shiny','DT', \
-    'DBI','RPostgres','pool', \
+    'DBI','RPostgres', \
     'dplyr','data.table','lubridate','tidyr','magrittr','stringr','readr', \
     'ggplot2','scales','RColorBrewer','plotly', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
