@@ -1,9 +1,9 @@
 # Railway cache bust - $(date)
 # Last rebuild: Sun Oct 26 21:00:00 -03 2025
-# FIX v89: Revert to Rocker 4.3.1 to bypass C++ rendering bugs
-FROM rocker/shiny:4.3.1
+# FIX v92: Return to Rocker 4.5.1 and remove interactive packages to isolate crash
+FROM rocker/shiny:4.5.1
 
-# 1) System libs - CRITICAL: Add libgdal-dev for older Rocker image
+# 1) System libs - Re-add libgdal-dev for 4.5.1 compatibility
 # NOTE: liblwgeom-dev doesn't exist in Ubuntu 24.04 (noble) - removed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal-dev \
@@ -28,16 +28,16 @@ ENV R_ENVIRON_USER=/dev/null
 # 3) Install pak for better dependency management
 RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable/')"
 
-# 4) Install R packages explicitly (no Suggests avalanche)
+# 4) Install R packages explicitly - REMOVED PLOTLY, LEAFLET, DT
 RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
   install.packages(c( \
-    'bslib','shiny','DT', \
+    'bslib','shiny', \
     'DBI','RPostgres', \
     'dplyr','data.table','lubridate','tidyr','magrittr','stringr','readr', \
-    'ggplot2','scales','RColorBrewer','plotly', \
+    'ggplot2','scales','RColorBrewer', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
     'shinythemes','shinycssloaders','shinyjs','shinyWidgets', \
-    'units','s2','sf','leaflet','openxlsx','xml2' \
+    'units','s2','sf','openxlsx','xml2' \
   ), repos='https://cloud.r-project.org')"
 
 # 5) Spatial data helpers (optional - geobr can be heavy)
@@ -52,8 +52,6 @@ RUN R -q -e "tryCatch({ \
 RUN R -q -e "stopifnot( \
   requireNamespace('bslib', quietly=TRUE), \
   requireNamespace('shiny', quietly=TRUE), \
-  requireNamespace('DT', quietly=TRUE), \
-  requireNamespace('leaflet', quietly=TRUE), \
   requireNamespace('DBI', quietly=TRUE), \
   requireNamespace('RPostgres', quietly=TRUE) \
 ); cat('✅ All critical packages verified at build time\\n')"
