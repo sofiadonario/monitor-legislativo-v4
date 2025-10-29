@@ -89,10 +89,37 @@ ui <- navbarPage(
     "Library",
     icon = icon("book"),
     fluidPage(
-      h1("Document Library"),
-      p("A live view of the documents in the database."),
-      hr(),
-      DT::dataTableOutput("library_table")
+      h2(HTML("&#128218; Biblioteca de Documentos Legislativos")),
+      p("Pesquise, filtre e explore a coleção completa de documentos legislativos brasileiros.",
+        style = "color: #7f8c8d; margin-bottom: 30px;"),
+
+      # Search and Filter Panel
+      wellPanel(
+        h4("Filtros de Pesquisa"),
+        fluidRow(
+          column(6, textInput("library_search", "Termo de Pesquisa:",
+                              placeholder = "Ex: 'tributário' ou 'lei 14.133'")),
+          column(3, selectInput("library_tipo", "Tipo de Documento:",
+                               choices = c("Todos" = "", "Lei", "Decreto", "Portaria"))),
+          column(3, selectInput("library_limit", "Mostrar:",
+                               choices = c("50" = "50", "100" = "100", "250" = "250", "500" = "500"),
+                               selected = "100"))
+        ),
+        fluidRow(
+          column(12,
+                 actionButton("library_apply", "Aplicar Filtros",
+                             class = "btn-primary", icon = icon("search")),
+                 actionButton("library_reset", "Limpar",
+                             class = "btn-default", icon = icon("eraser"),
+                             style = "margin-left: 10px;"))
+        )
+      ),
+
+      # Results Display Panel
+      wellPanel(
+        h4("Resultados da Pesquisa"),
+        DT::dataTableOutput("library_table")
+      )
     )
   ),
 
@@ -119,17 +146,81 @@ ui <- navbarPage(
 server <- function(input, output, session) {
 
   # -- LIBRARY SERVER LOGIC --
-  output$library_table <- DT::renderDataTable({
-    req(DB_AVAILABLE) # Require a database connection
-    
+
+  # Reset filters
+  observeEvent(input$library_reset, {
+    updateTextInput(session, "library_search", value = "")
+    updateSelectInput(session, "library_tipo", selected = "")
+    updateSelectInput(session, "library_limit", selected = "100")
+  })
+
+  # Reactive value to trigger data reload
+  library_trigger <- reactiveVal(0)
+
+  # Trigger reload when apply button is clicked
+  observeEvent(input$library_apply, {
+    library_trigger(library_trigger() + 1)
+  })
+
+  # Load on startup
+  observe({
+    library_trigger(1)
+  })
+
+  # Reactive data fetching
+  library_data <- eventReactive(library_trigger(), {
+    req(DB_AVAILABLE)
+
     tryCatch({
-      # A simple, safe query to show the app is working
-      dbGetQuery(secure_db_connection, "SELECT id, titulo, tipo, data FROM legis_docs LIMIT 100")
+      # Build SQL query with filters
+      query <- "SELECT id, titulo, tipo, data, origem FROM legis_docs WHERE 1=1"
+
+      # Add search filter if provided
+      if (!is.null(input$library_search) && nzchar(input$library_search)) {
+        search_term <- gsub("'", "''", input$library_search) # Escape single quotes
+        query <- paste0(query, " AND titulo ILIKE '%", search_term, "%'")
+      }
+
+      # Add type filter if provided
+      if (!is.null(input$library_tipo) && nzchar(input$library_tipo)) {
+        tipo_term <- gsub("'", "''", input$library_tipo)
+        query <- paste0(query, " AND tipo = '", tipo_term, "'")
+      }
+
+      # Add ordering and limit
+      limit_val <- if (!is.null(input$library_limit)) input$library_limit else "100"
+      query <- paste0(query, " ORDER BY data DESC LIMIT ", limit_val)
+
+      cat("Executing query:", query, "\n")
+      dbGetQuery(secure_db_connection, query)
+
     }, error = function(e) {
-      # Show a clean error in the table if the query fails
-      data.frame(Error = e$message)
+      cat("Query error:", e$message, "\n")
+      data.frame(Erro = e$message)
     })
-  }, options = list(pageLength = 10, scrollX = TRUE))
+  })
+
+  # Render the data table
+  output$library_table <- DT::renderDataTable({
+    library_data()
+  }, options = list(
+    pageLength = 25,
+    scrollX = TRUE,
+    dom = 'Bfrtip',
+    language = list(
+      search = "Buscar:",
+      lengthMenu = "Mostrar _MENU_ registros por página",
+      info = "Mostrando _START_ a _END_ de _TOTAL_ documentos",
+      infoEmpty = "Nenhum documento encontrado",
+      infoFiltered = "(filtrado de _MAX_ documentos no total)",
+      paginate = list(
+        first = "Primeiro",
+        last = "Último",
+        `next` = "Próximo",
+        previous = "Anterior"
+      )
+    )
+  ))
 
   # -- GEOGRAPHIC SERVER LOGIC --
   output$geo_map <- leaflet::renderLeaflet({
