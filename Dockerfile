@@ -31,7 +31,7 @@ RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable
 # 4) Install R packages explicitly
 RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
   install.packages(c( \
-    'shiny', 'DT', 'leaflet', 'DBI', 'RPostgres', 'dplyr', 'bslib', \
+    'shiny', 'DT', 'leaflet', 'DBI', 'RPostgres', 'dplyr', 'bslib', 'shinythemes', \
     'data.table','lubridate','tidyr','magrittr','stringr','readr', \
     'ggplot2','scales','RColorBrewer','plotly', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
@@ -73,4 +73,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # 10) Start app directly with R (bypass shiny-server)
 # v55: Skip sourcing global_integrated.R (CONFIRMED FIX!)
-CMD ["R", "-e", "shiny::runApp('app.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', '3838')))" ]
+CMD ["R", "-e", "shiny::runApp('app_phoenix.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', '3838')))" ]
