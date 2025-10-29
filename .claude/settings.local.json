@@ -38,7 +38,8 @@
       "Read(//tmp/**)",
       "WebSearch",
       "Bash(git pull:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []

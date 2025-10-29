@@ -1,6 +1,6 @@
 # Railway cache bust - $(date)
 # Last rebuild: Sun Oct 26 21:00:00 -03 2025
-# FIX v92: Return to Rocker 4.5.1 and remove interactive packages to isolate crash
+# FIX v92: Return to Rocker 4.5.1 and REMOVE interactive packages to isolate crash
 FROM rocker/shiny:4.5.1
 
 # 1) System libs - Re-add libgdal-dev for 4.5.1 compatibility
@@ -28,16 +28,16 @@ ENV R_ENVIRON_USER=/dev/null
 # 3) Install pak for better dependency management
 RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable/')"
 
-# 4) Install R packages explicitly - REMOVED PLOTLY, LEAFLET, DT
+# 4) Install R packages explicitly - PLOTLY, LEAFLET, DT RE-ENABLED
 RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
   install.packages(c( \
-    'bslib','shiny', \
+    'bslib','shiny','DT', \
     'DBI','RPostgres', \
     'dplyr','data.table','lubridate','tidyr','magrittr','stringr','readr', \
-    'ggplot2','scales','RColorBrewer', \
+    'ggplot2','scales','RColorBrewer','plotly', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
     'shinythemes','shinycssloaders','shinyjs','shinyWidgets', \
-    'units','s2','sf','openxlsx','xml2' \
+    'units','s2','sf','leaflet','openxlsx','xml2' \
   ), repos='https://cloud.r-project.org')"
 
 # 5) Spatial data helpers (optional - geobr can be heavy)
@@ -52,6 +52,8 @@ RUN R -q -e "tryCatch({ \
 RUN R -q -e "stopifnot( \
   requireNamespace('bslib', quietly=TRUE), \
   requireNamespace('shiny', quietly=TRUE), \
+  requireNamespace('DT', quietly=TRUE), \
+  requireNamespace('leaflet', quietly=TRUE), \
   requireNamespace('DBI', quietly=TRUE), \
   requireNamespace('RPostgres', quietly=TRUE) \
 ); cat('✅ All critical packages verified at build time\\n')"
