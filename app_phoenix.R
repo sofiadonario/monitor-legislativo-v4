@@ -173,7 +173,7 @@ server <- function(input, output, session) {
 
     tryCatch({
       # Build SQL query with filters
-      query <- "SELECT id, titulo, tipo, data, origem FROM legis_docs WHERE 1=1"
+      query <- "SELECT id, titulo, tipo, data, origem FROM documents WHERE 1=1"
 
       # Add search filter if provided
       if (!is.null(input$library_search) && nzchar(input$library_search)) {
