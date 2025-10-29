@@ -3,14 +3,15 @@
 # FIX v89: Revert to Rocker 4.3.1 to bypass C++ rendering bugs
 FROM rocker/shiny:4.3.1
 
-# 1) System libs - CRITICAL: cmake + libabsl-dev needed for s2 (dependency of sf/leaflet)
+# 1) System libs - CRITICAL: Add libgdal-dev for older Rocker image
 # NOTE: liblwgeom-dev doesn't exist in Ubuntu 24.04 (noble) - removed
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgdal-dev \
     build-essential g++ make cmake pkg-config \
     libabsl-dev \
     libpq-dev libssl-dev libcurl4-openssl-dev libxml2-dev \
     libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    libgdal-dev libgeos-dev libproj-dev libudunits2-dev libsqlite3-dev \
+    libgeos-dev libproj-dev libudunits2-dev libsqlite3-dev \
     protobuf-compiler libprotobuf-dev \
     postgresql-client \
     curl \
