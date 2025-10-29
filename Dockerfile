@@ -28,16 +28,15 @@ ENV R_ENVIRON_USER=/dev/null
 # 3) Install pak for better dependency management
 RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable/')"
 
-# 4) Install R packages explicitly - PLOTLY, LEAFLET, DT RE-ENABLED
+# 4) Install R packages explicitly
 RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
   install.packages(c( \
-    'bslib','shiny','DT', \
-    'DBI','RPostgres', \
-    'dplyr','data.table','lubridate','tidyr','magrittr','stringr','readr', \
+    'shiny', 'DT', 'leaflet', 'DBI', 'RPostgres', 'dplyr', 'bslib', \
+    'data.table','lubridate','tidyr','magrittr','stringr','readr', \
     'ggplot2','scales','RColorBrewer','plotly', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
     'shinythemes','shinycssloaders','shinyjs','shinyWidgets', \
-    'units','s2','sf','leaflet','openxlsx','xml2' \
+    'units','s2','sf','openxlsx','xml2' \
   ), repos='https://cloud.r-project.org')"
 
 # 5) Spatial data helpers (optional - geobr can be heavy)
@@ -50,12 +49,13 @@ RUN R -q -e "tryCatch({ \
 
 # 6) VERIFICATION: Fail build if must-haves aren't truly there
 RUN R -q -e "stopifnot( \
-  requireNamespace('bslib', quietly=TRUE), \
   requireNamespace('shiny', quietly=TRUE), \
   requireNamespace('DT', quietly=TRUE), \
   requireNamespace('leaflet', quietly=TRUE), \
   requireNamespace('DBI', quietly=TRUE), \
-  requireNamespace('RPostgres', quietly=TRUE) \
+  requireNamespace('RPostgres', quietly=TRUE), \
+  requireNamespace('dplyr', quietly=TRUE), \
+  requireNamespace('bslib', quietly=TRUE) \
 ); cat('✅ All critical packages verified at build time\\n')"
 
 # 7) Copy application into /app directory (simple setup)

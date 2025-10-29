@@ -46,7 +46,7 @@ cat("========================================\n\n")
 
 # CRITICAL: Verify required packages are available at runtime
 cat("🔍 Verifying package availability...\n")
-required_pkgs <- c('shiny', 'bslib', 'DT', 'leaflet', 'DBI', 'RPostgres', 'dplyr')
+required_pkgs <- c('shiny', 'DT', 'leaflet', 'DBI', 'RPostgres', 'dplyr', 'bslib')
 missing_pkgs <- setdiff(required_pkgs, rownames(installed.packages()))
 
 if (length(missing_pkgs) > 0) {
