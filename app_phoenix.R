@@ -147,8 +147,8 @@ server <- function(input, output, session) {
   library_data <- eventReactive(input$library_apply, {
     req(DB_AVAILABLE)
     
-    # Start with the base query
-    query <- "SELECT id, titulo, tipo, data, origem FROM documents"
+    # Start with the base query against the correct table
+    query <- "SELECT id, title, document_type, date, source FROM legis_docs"
     
     # Build WHERE clauses based on inputs
     conditions <- list()
@@ -156,13 +156,13 @@ server <- function(input, output, session) {
     # Search Term Filter
     if (input$library_search != "") {
       search_term <- gsub("'", "''", input$library_search) # Escape single quotes
-      conditions <- c(conditions, paste0("titulo ILIKE '%", search_term, "%'"))
+      conditions <- c(conditions, paste0("title ILIKE '%", search_term, "%'"))
     }
     
     # Document Type Filter
     if (input$library_tipo != "Todos") {
       tipo_term <- gsub("'", "''", input$library_tipo)
-      conditions <- c(conditions, paste0("tipo = '", tipo_term, "'"))
+      conditions <- c(conditions, paste0("document_type = '", tipo_term, "'"))
     }
     
     # Append WHERE clauses to the query
