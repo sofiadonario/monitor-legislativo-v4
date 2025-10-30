@@ -1,8 +1,8 @@
 # ==============================================================================
-# MONITOR LEGISLATIVO V4 - PHOENIX REBUILD
+# MONITOR LEGISLATIVO V4 - PHOENIX REBUILD (v2)
 # ==============================================================================
 # A rock-solid, monolithic app built for stability.
-# This file contains the entire application.
+# This version includes working search functionality and a fix for the UI blur.
 # ==============================================================================
 
 # ==============================================================================
@@ -10,11 +10,11 @@
 # ==============================================================================
 suppressPackageStartupMessages({
   library(shiny)
+  library(shinythemes)
   library(DBI)
   library(RPostgres)
   library(DT)
   library(leaflet)
-  library(shinythemes)
 })
 
 # ==============================================================================
@@ -82,14 +82,15 @@ DB_AVAILABLE <- !is.null(secure_db_connection)
 # ==============================================================================
 ui <- navbarPage(
   title = "Monitor Legislativo v4 (Phoenix)",
-  # theme = shinytheme("cerulean"), # REMOVED to fix rendering/blur bug
+  theme = shinytheme("cerulean"), # Re-enabled theme
 
-  # Custom CSS to fix blur/opacity issues
-  tags$head(
+  # -- Custom CSS to fix blur/rendering bug --
+  header = tags$head(
     tags$style(HTML("
-      .shiny-busy-panel { display: none !important; }
-      body { opacity: 1 !important; }
-      #shiny-notification-panel { z-index: 10000; }
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
     "))
   ),
 
@@ -98,37 +99,22 @@ ui <- navbarPage(
     "Library",
     icon = icon("book"),
     fluidPage(
-      h2(HTML("&#128218; Biblioteca de Documentos Legislativos")),
-      p("Pesquise, filtre e explore a coleção completa de documentos legislativos brasileiros.",
-        style = "color: #7f8c8d; margin-bottom: 30px;"),
-
-      # Search and Filter Panel
+      h2("Biblioteca de Documentos Legislativos"),
+      p("Pesquise, filtre e explore a coleção completa de documentos legislativos brasileiros."),
+      hr(),
       wellPanel(
         h4("Filtros de Pesquisa"),
         fluidRow(
-          column(6, textInput("library_search", "Termo de Pesquisa:",
-                              placeholder = "Ex: 'tributário' ou 'lei 14.133'")),
-          column(3, selectInput("library_tipo", "Tipo de Documento:",
-                               choices = c("Todos" = "", "Lei", "Decreto", "Portaria"))),
-          column(3, selectInput("library_limit", "Mostrar:",
-                               choices = c("50" = "50", "100" = "100", "250" = "250", "500" = "500"),
-                               selected = "100"))
+          column(6, textInput("library_search", "Termo de Pesquisa:", placeholder = "Ex: 'tributário' ou 'lei 14.133'")),
+          column(3, selectInput("library_tipo", "Tipo de Documento:", choices = c("Todos", "Lei", "Decreto", "Projeto de Lei"))),
+          column(3, selectInput("library_mostrar", "Mostrar:", choices = c(100, 500, 1000), selected = 100))
         ),
-        fluidRow(
-          column(12,
-                 actionButton("library_apply", "Aplicar Filtros",
-                             class = "btn-primary", icon = icon("search")),
-                 actionButton("library_reset", "Limpar",
-                             class = "btn-default", icon = icon("eraser"),
-                             style = "margin-left: 10px;"))
-        )
+        actionButton("library_apply", "Aplicar Filtros", icon = icon("search")),
+        actionButton("library_clear", "Limpar", icon = icon("times"))
       ),
-
-      # Results Display Panel
-      wellPanel(
-        h4("Resultados da Pesquisa"),
-        DT::dataTableOutput("library_table")
-      )
+      hr(),
+      h4("Resultados da Pesquisa"),
+      DT::dataTableOutput("library_table")
     )
   ),
 
@@ -155,77 +141,67 @@ ui <- navbarPage(
 server <- function(input, output, session) {
 
   # -- LIBRARY SERVER LOGIC --
-
-  # Reset filters
-  observeEvent(input$library_reset, {
-    updateTextInput(session, "library_search", value = "")
-    updateSelectInput(session, "library_tipo", selected = "")
-    updateSelectInput(session, "library_limit", selected = "100")
-  })
-
-  # Reactive data fetching - fires whenever button is clicked
-  library_data <- reactive({
-    # This makes it depend on the apply button click
-    input$library_apply
-
-    cat("Fetching library data...\n")
+  
+  # This is the core reactive expression for the library data.
+  # It will ONLY re-execute when the "Apply Filters" button is clicked.
+  library_data <- eventReactive(input$library_apply, {
     req(DB_AVAILABLE)
-
+    
+    # Start with the base query
+    query <- "SELECT id, titulo, tipo, data FROM legis_docs"
+    
+    # Build WHERE clauses based on inputs
+    conditions <- list()
+    
+    # Search Term Filter
+    if (input$library_search != "") {
+      search_term <- gsub("'", "''", input$library_search) # Escape single quotes
+      conditions <- c(conditions, paste0("titulo ILIKE '%", search_term, "%'"))
+    }
+    
+    # Document Type Filter
+    if (input$library_tipo != "Todos") {
+      tipo_term <- gsub("'", "''", input$library_tipo)
+      conditions <- c(conditions, paste0("tipo = '", tipo_term, "'"))
+    }
+    
+    # Append WHERE clauses to the query
+    if (length(conditions) > 0) {
+      query <- paste(query, "WHERE", paste(conditions, collapse = " AND "))
+    }
+    
+    # Add LIMIT clause
+    query <- paste(query, "LIMIT", as.integer(input$library_mostrar))
+    
+    cat("Executing query:", query, "\n")
+    
     tryCatch({
-      # Build SQL query with filters
-      query <- "SELECT id, titulo, tipo, data, origem FROM documents WHERE 1=1"
-
-      # Add search filter if provided
-      if (!is.null(input$library_search) && nzchar(input$library_search)) {
-        search_term <- gsub("'", "''", input$library_search) # Escape single quotes
-        query <- paste0(query, " AND titulo ILIKE '%", search_term, "%'")
-        cat("Search term:", search_term, "\n")
-      }
-
-      # Add type filter if provided
-      if (!is.null(input$library_tipo) && nzchar(input$library_tipo)) {
-        tipo_term <- gsub("'", "''", input$library_tipo)
-        query <- paste0(query, " AND tipo = '", tipo_term, "'")
-        cat("Type filter:", tipo_term, "\n")
-      }
-
-      # Add ordering and limit
-      limit_val <- if (!is.null(input$library_limit)) input$library_limit else "100"
-      query <- paste0(query, " ORDER BY data DESC LIMIT ", limit_val)
-
-      cat("Executing query:", query, "\n")
       result <- dbGetQuery(secure_db_connection, query)
       cat("Query returned", nrow(result), "rows\n")
+      if (nrow(result) == 0) {
+        # Return a data frame with a message if no results
+        return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
+      }
       result
-
     }, error = function(e) {
-      cat("Query error:", e$message, "\n")
-      data.frame(Erro = e$message)
+      data.frame(Error = e$message)
     })
-  })
+  }, ignoreNULL = FALSE) # ignoreNULL = FALSE ensures it runs on startup
 
-  # Render the data table
+  # Render the table with the data from our reactive expression
   output$library_table <- DT::renderDataTable({
     library_data()
-  }, options = list(
-    pageLength = 25,
-    scrollX = TRUE,
-    dom = 'Bfrtip',
-    language = list(
-      search = "Buscar:",
-      lengthMenu = "Mostrar _MENU_ registros por página",
-      info = "Mostrando _START_ a _END_ de _TOTAL_ documentos",
-      infoEmpty = "Nenhum documento encontrado",
-      infoFiltered = "(filtrado de _MAX_ documentos no total)",
-      paginate = list(
-        first = "Primeiro",
-        last = "Último",
-        `next` = "Próximo",
-        previous = "Anterior"
-      )
-    )
-  ))
-
+  }, options = list(pageLength = 10, scrollX = TRUE))
+  
+  # Logic for the "Clear" button
+  observeEvent(input$library_clear, {
+    updateTextInput(session, "library_search", value = "")
+    updateSelectInput(session, "library_tipo", selected = "Todos")
+    updateSelectInput(session, "library_mostrar", selected = 100)
+    # Programmatically click the "Apply" button to re-run the search with empty filters
+    shinyjs::click("library_apply")
+  })
+  
   # -- GEOGRAPHIC SERVER LOGIC --
   output$geo_map <- leaflet::renderLeaflet({
     leaflet() %>%
