@@ -143,10 +143,18 @@ server <- function(input, output, session) {
   # -- LIBRARY SERVER LOGIC --
   
   # This is the core reactive expression for the library data.
-  # It will ONLY re-execute when the "Apply Filters" button is clicked.
-  library_data <- eventReactive(input$library_apply, {
+  # It will re-execute when EITHER the "Apply" or "Clear" button is clicked.
+  library_data <- eventReactive(list(input$library_apply, input$library_clear), {
     req(DB_AVAILABLE)
     
+    # If the clear button was clicked, don't apply filters
+    if (input$library_clear > 0) {
+      cat("Clear button clicked. Showing all results.\n")
+      # We still need to run a query, but without WHERE clauses
+      query <- paste("SELECT id, titulo, tipo, data FROM documents LIMIT", as.integer(input$library_mostrar))
+      return(dbGetQuery(secure_db_connection, query))
+    }
+
     # Start with the base query against the currently deployed 'documents' table
     query <- "SELECT id, titulo, tipo, data FROM documents"
     
@@ -193,13 +201,11 @@ server <- function(input, output, session) {
     library_data()
   }, options = list(pageLength = 10, scrollX = TRUE))
   
-  # Logic for the "Clear" button
+  # Logic for the "Clear" button - now just updates the inputs
   observeEvent(input$library_clear, {
     updateTextInput(session, "library_search", value = "")
     updateSelectInput(session, "library_tipo", selected = "Todos")
     updateSelectInput(session, "library_mostrar", selected = 100)
-    # Programmatically click the "Apply" button to re-run the search with empty filters
-    shinyjs::click("library_apply")
   })
   
   # -- GEOGRAPHIC SERVER LOGIC --
