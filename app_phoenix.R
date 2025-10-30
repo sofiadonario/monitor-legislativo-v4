@@ -107,7 +107,7 @@ ui <- navbarPage(
         fluidRow(
           column(6, textInput("library_search", "Termo de Pesquisa:", placeholder = "Ex: 'tributário' ou 'lei 14.133'")),
           column(3, selectInput("library_tipo", "Tipo de Documento:", choices = c("Todos", "Lei", "Decreto", "Projeto de Lei"))),
-          column(3, selectInput("library_mostrar", "Mostrar:", choices = c(100, 500, 1000, 5000, 10000, 999999), selected = 1000))
+          column(3, selectInput("library_mostrar", "Mostrar:", choices = c(100, 500, 1000, 5000, 10000, 999999), selected = 100))
         ),
         actionButton("library_apply", "Aplicar Filtros", icon = icon("search")),
         actionButton("library_clear", "Limpar", icon = icon("times"))
