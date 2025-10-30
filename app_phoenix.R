@@ -163,23 +163,12 @@ server <- function(input, output, session) {
     updateSelectInput(session, "library_limit", selected = "100")
   })
 
-  # Reactive value to trigger data reload
-  library_trigger <- reactiveVal(0)
+  # Reactive data fetching - fires whenever button is clicked
+  library_data <- reactive({
+    # This makes it depend on the apply button click
+    input$library_apply
 
-  # Trigger reload when apply button is clicked
-  observeEvent(input$library_apply, {
-    cat("Search button clicked!\n")
-    library_trigger(library_trigger() + 1)
-  })
-
-  # Load on startup (delayed to ensure UI is ready)
-  observeEvent(session$clientData$url_search, {
-    library_trigger(1)
-  }, once = TRUE, ignoreNULL = FALSE)
-
-  # Reactive data fetching
-  library_data <- eventReactive(library_trigger(), {
-    cat("library_trigger changed to:", library_trigger(), "\n")
+    cat("Fetching library data...\n")
     req(DB_AVAILABLE)
 
     tryCatch({
@@ -190,12 +179,14 @@ server <- function(input, output, session) {
       if (!is.null(input$library_search) && nzchar(input$library_search)) {
         search_term <- gsub("'", "''", input$library_search) # Escape single quotes
         query <- paste0(query, " AND titulo ILIKE '%", search_term, "%'")
+        cat("Search term:", search_term, "\n")
       }
 
       # Add type filter if provided
       if (!is.null(input$library_tipo) && nzchar(input$library_tipo)) {
         tipo_term <- gsub("'", "''", input$library_tipo)
         query <- paste0(query, " AND tipo = '", tipo_term, "'")
+        cat("Type filter:", tipo_term, "\n")
       }
 
       # Add ordering and limit
@@ -203,7 +194,9 @@ server <- function(input, output, session) {
       query <- paste0(query, " ORDER BY data DESC LIMIT ", limit_val)
 
       cat("Executing query:", query, "\n")
-      dbGetQuery(secure_db_connection, query)
+      result <- dbGetQuery(secure_db_connection, query)
+      cat("Query returned", nrow(result), "rows\n")
+      result
 
     }, error = function(e) {
       cat("Query error:", e$message, "\n")
