@@ -148,7 +148,7 @@ server <- function(input, output, session) {
     req(DB_AVAILABLE)
     
     # Start with the base query
-    query <- "SELECT id, titulo, tipo, data FROM legis_docs"
+    query <- "SELECT id, titulo, tipo, data, origem FROM documents"
     
     # Build WHERE clauses based on inputs
     conditions <- list()
