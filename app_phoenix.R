@@ -168,16 +168,18 @@ server <- function(input, output, session) {
 
   # Trigger reload when apply button is clicked
   observeEvent(input$library_apply, {
+    cat("Search button clicked!\n")
     library_trigger(library_trigger() + 1)
   })
 
-  # Load on startup
-  observe({
+  # Load on startup (delayed to ensure UI is ready)
+  observeEvent(session$clientData$url_search, {
     library_trigger(1)
-  })
+  }, once = TRUE, ignoreNULL = FALSE)
 
   # Reactive data fetching
   library_data <- eventReactive(library_trigger(), {
+    cat("library_trigger changed to:", library_trigger(), "\n")
     req(DB_AVAILABLE)
 
     tryCatch({
