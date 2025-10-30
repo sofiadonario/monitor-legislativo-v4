@@ -50,7 +50,9 @@
       "Bash(python3:*)",
       "Bash(pip3 install:*)",
       "Bash(nc -zv:*)",
-      "Bash(gcloud projects add-iam-policy-binding:*)"
+      "Bash(gcloud projects add-iam-policy-binding:*)",
+      "Bash(PGPASSWORD=\"Sdonario1\" psql \"host=/cloudsql/mackmonitor:southamerica-east1:mackmonitor-db dbname=monitor_legislativo user=monitor_user\" -c \"ALTER TABLE documents ADD COLUMN id SERIAL PRIMARY KEY;\")",
+      "Bash(PGPASSWORD=\"Sdonario1\" /opt/homebrew/opt/postgresql@14/bin/psql:*)"
     ],
     "deny": [],
     "ask": []
