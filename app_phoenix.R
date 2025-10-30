@@ -82,7 +82,7 @@ DB_AVAILABLE <- !is.null(secure_db_connection)
 # ==============================================================================
 ui <- navbarPage(
   title = "Monitor Legislativo v4 (Phoenix)",
-  theme = shinytheme("cerulean"), # A simple, safe theme
+  # theme = shinytheme("cerulean"), # REMOVED to fix rendering/blur bug
 
   # Custom CSS to fix blur/opacity issues
   tags$head(
