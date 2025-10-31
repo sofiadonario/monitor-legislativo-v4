@@ -94,6 +94,67 @@ ui <- navbarPage(
     "))
   ),
 
+  # -- HOME TAB (EXECUTIVE SUMMARY) --
+  tabPanel(
+    "Home",
+    icon = icon("home"),
+    fluidPage(
+      h2("Monitor Legislativo - Executive Summary"),
+      p("Visão geral da coleção de documentos legislativos brasileiros"),
+      hr(),
+
+      # Key Statistics Row
+      fluidRow(
+        column(3,
+          wellPanel(
+            style = "background-color: #f0f8ff; text-align: center;",
+            h4(icon("file-alt"), " Total Documents"),
+            h2(textOutput("home_total_docs", inline = TRUE))
+          )
+        ),
+        column(3,
+          wellPanel(
+            style = "background-color: #f0fff0; text-align: center;",
+            h4(icon("calendar"), " Document Types"),
+            h2(textOutput("home_doc_types_count", inline = TRUE))
+          )
+        ),
+        column(3,
+          wellPanel(
+            style = "background-color: #fff5f0; text-align: center;",
+            h4(icon("clock"), " Latest Document"),
+            h3(textOutput("home_latest_date", inline = TRUE))
+          )
+        ),
+        column(3,
+          wellPanel(
+            style = "background-color: #f5f0ff; text-align: center;",
+            h4(icon("chart-line"), " Oldest Document"),
+            h3(textOutput("home_oldest_date", inline = TRUE))
+          )
+        )
+      ),
+
+      hr(),
+
+      # Document Type Breakdown
+      fluidRow(
+        column(6,
+          wellPanel(
+            h4(icon("list"), " Documents by Type"),
+            DT::dataTableOutput("home_type_breakdown")
+          )
+        ),
+        column(6,
+          wellPanel(
+            h4(icon("calendar-alt"), " Recent Activity (Last 10)"),
+            DT::dataTableOutput("home_recent_activity")
+          )
+        )
+      )
+    )
+  ),
+
   # -- LIBRARY TAB --
   tabPanel(
     "Library",
@@ -238,7 +299,111 @@ server <- function(input, output, session) {
   output$library_table <- DT::renderDataTable({
     library_data()
   }, options = list(pageLength = 10, scrollX = TRUE))
-  
+
+  # -- HOME TAB SERVER LOGIC (EXECUTIVE SUMMARY) --
+
+  # Total documents count
+  output$home_total_docs <- renderText({
+    if (!DB_AVAILABLE) return("N/A")
+
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection, "SELECT COUNT(*) as total FROM documents")
+      format(result$total, big.mark = ",")
+    }, error = function(e) {
+      "Error"
+    })
+  })
+
+  # Number of distinct document types
+  output$home_doc_types_count <- renderText({
+    if (!DB_AVAILABLE) return("N/A")
+
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection, "SELECT COUNT(DISTINCT tipo) as count FROM documents")
+      as.character(result$count)
+    }, error = function(e) {
+      "Error"
+    })
+  })
+
+  # Latest document date
+  output$home_latest_date <- renderText({
+    if (!DB_AVAILABLE) return("N/A")
+
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection, "SELECT MAX(data) as latest FROM documents")
+      if (is.null(result$latest) || is.na(result$latest)) {
+        "N/A"
+      } else {
+        format(as.Date(result$latest), "%d/%m/%Y")
+      }
+    }, error = function(e) {
+      "Error"
+    })
+  })
+
+  # Oldest document date
+  output$home_oldest_date <- renderText({
+    if (!DB_AVAILABLE) return("N/A")
+
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection, "SELECT MIN(data) as oldest FROM documents")
+      if (is.null(result$oldest) || is.na(result$oldest)) {
+        "N/A"
+      } else {
+        format(as.Date(result$oldest), "%d/%m/%Y")
+      }
+    }, error = function(e) {
+      "Error"
+    })
+  })
+
+  # Document type breakdown table
+  output$home_type_breakdown <- DT::renderDataTable({
+    if (!DB_AVAILABLE) {
+      return(data.frame(Message = "Database not available"))
+    }
+
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection,
+        "SELECT tipo AS \"Document Type\",
+                COUNT(*) as \"Count\",
+                ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM documents), 2) as \"Percentage\"
+         FROM documents
+         GROUP BY tipo
+         ORDER BY COUNT(*) DESC")
+      result
+    }, error = function(e) {
+      data.frame(Error = e$message)
+    })
+  }, options = list(pageLength = 10, scrollX = TRUE, dom = 't'))
+
+  # Recent activity table
+  output$home_recent_activity <- DT::renderDataTable({
+    if (!DB_AVAILABLE) {
+      return(data.frame(Message = "Database not available"))
+    }
+
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection,
+        "SELECT tipo AS \"Type\",
+                data AS \"Date\",
+                LEFT(titulo, 50) || '...' AS \"Title\"
+         FROM documents
+         ORDER BY data DESC
+         LIMIT 10")
+
+      # Format the date column
+      if (nrow(result) > 0 && "Date" %in% names(result)) {
+        result$Date <- format(as.Date(result$Date), "%d/%m/%Y")
+      }
+
+      result
+    }, error = function(e) {
+      data.frame(Error = e$message)
+    })
+  }, options = list(pageLength = 10, scrollX = TRUE, dom = 't'))
+
   # -- GEOGRAPHIC SERVER LOGIC --
   output$geo_map <- leaflet::renderLeaflet({
     leaflet() %>%
