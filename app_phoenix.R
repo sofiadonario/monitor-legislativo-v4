@@ -136,40 +136,57 @@ ui <- navbarPage(
 )
 
 # ==============================================================================
-# 4. SERVER LOGIC (STABLE & MONOLITHIC)
+# 4. SERVER LOGIC (STABLE & MONOLITHIC - v3 with State Machine)
 # ==============================================================================
 server <- function(input, output, session) {
 
   # -- LIBRARY SERVER LOGIC --
   
+  # Use reactiveValues to store the state of the filters
+  filters <- reactiveValues(
+    search = "",
+    tipo = "Todos",
+    mostrar = 100
+  )
+  
+  # When "Apply" is clicked, update the reactiveValues
+  observeEvent(input$library_apply, {
+    filters$search <- input$library_search
+    filters$tipo <- input$library_tipo
+    filters$mostrar <- input$library_mostrar
+  })
+  
+  # When "Clear" is clicked, reset the inputs and the reactiveValues
+  observeEvent(input$library_clear, {
+    updateTextInput(session, "library_search", value = "")
+    updateSelectInput(session, "library_tipo", selected = "Todos")
+    updateSelectInput(session, "library_mostrar", selected = 100)
+    
+    filters$search <- ""
+    filters$tipo <- "Todos"
+    filters$mostrar <- 100
+  })
+
   # This is the core reactive expression for the library data.
-  # It will re-execute when EITHER the "Apply" or "Clear" button is clicked.
-  library_data <- eventReactive(list(input$library_apply, input$library_clear), {
+  # It automatically re-executes whenever the 'filters' object changes.
+  library_data <- reactive({
     req(DB_AVAILABLE)
     
-    # If the clear button was clicked, don't apply filters
-    if (input$library_clear > 0) {
-      cat("Clear button clicked. Showing all results.\n")
-      # We still need to run a query, but without WHERE clauses
-      query <- paste("SELECT id, titulo, tipo, data FROM documents LIMIT", as.integer(input$library_mostrar))
-      return(dbGetQuery(secure_db_connection, query))
-    }
-
-    # Start with the base query against the currently deployed 'documents' table
+    # Start with the base query
     query <- "SELECT id, titulo, tipo, data FROM documents"
     
-    # Build WHERE clauses based on inputs
+    # Build WHERE clauses based on the reactive 'filters' object
     conditions <- list()
     
     # Search Term Filter
-    if (input$library_search != "") {
-      search_term <- gsub("'", "''", input$library_search) # Escape single quotes
+    if (filters$search != "") {
+      search_term <- gsub("'", "''", filters$search)
       conditions <- c(conditions, paste0("titulo ILIKE '%", search_term, "%'"))
     }
     
     # Document Type Filter
-    if (input$library_tipo != "Todos") {
-      tipo_term <- gsub("'", "''", input$library_tipo)
+    if (filters$tipo != "Todos") {
+      tipo_term <- gsub("'", "''", filters$tipo)
       conditions <- c(conditions, paste0("tipo = '", tipo_term, "'"))
     }
     
@@ -178,8 +195,8 @@ server <- function(input, output, session) {
       query <- paste(query, "WHERE", paste(conditions, collapse = " AND "))
     }
     
-    # Add LIMIT clause
-    query <- paste(query, "LIMIT", as.integer(input$library_mostrar))
+    # Add ORDER BY and LIMIT clauses
+    query <- paste(query, "ORDER BY data DESC LIMIT", as.integer(filters$mostrar))
     
     cat("Executing query:", query, "\n")
     
@@ -187,26 +204,18 @@ server <- function(input, output, session) {
       result <- dbGetQuery(secure_db_connection, query)
       cat("Query returned", nrow(result), "rows\n")
       if (nrow(result) == 0) {
-        # Return a data frame with a message if no results
         return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
       }
       result
     }, error = function(e) {
       data.frame(Error = e$message)
     })
-  }, ignoreNULL = FALSE) # ignoreNULL = FALSE ensures it runs on startup
+  })
 
   # Render the table with the data from our reactive expression
   output$library_table <- DT::renderDataTable({
     library_data()
   }, options = list(pageLength = 10, scrollX = TRUE))
-  
-  # Logic for the "Clear" button - now just updates the inputs
-  observeEvent(input$library_clear, {
-    updateTextInput(session, "library_search", value = "")
-    updateSelectInput(session, "library_tipo", selected = "Todos")
-    updateSelectInput(session, "library_mostrar", selected = 100)
-  })
   
   # -- GEOGRAPHIC SERVER LOGIC --
   output$geo_map <- leaflet::renderLeaflet({
