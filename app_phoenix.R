@@ -140,23 +140,56 @@ ui <- navbarPage(
 # ==============================================================================
 server <- function(input, output, session) {
 
-  # -- LIBRARY SERVER LOGIC --
-  
-  # Reactive value to store the library data
-  library_data_rv <- reactiveVal(data.frame(Message = "Carregando..."))
+  # -- LIBRARY SERVER LOGIC (REFACTORED TO BE MORE ROBUST) --
 
-  # When "Apply" is clicked (or on startup), run the query
+  # 1. A reactiveValues object to hold the current filter state.
+  # This is the "single source of truth" for the query.
+  filters <- reactiveValues(
+    search = "",
+    tipo = "Todos",
+    mostrar = 100,
+    trigger = 0  # Used to force initial load
+  )
+
+  # Initialize: Force query to run on startup by incrementing trigger
+  observe({
+    filters$trigger <- filters$trigger + 1
+  })
+
+  # 2. Observer for the 'Apply' button.
+  # This updates the reactiveValues, which in turn triggers the data query.
   observeEvent(input$library_apply, {
-    # Check if database is available, otherwise show error
+    filters$search <- input$library_search
+    filters$tipo <- input$library_tipo
+    filters$mostrar <- as.numeric(input$library_mostrar)
+  })
+
+  # 3. Observer for the 'Clear' button.
+  # This resets both the UI inputs and the reactive filter values.
+  observeEvent(input$library_clear, {
+    # Reset UI
+    updateTextInput(session, "library_search", value = "")
+    updateSelectInput(session, "library_tipo", selected = "Todos")
+    updateSelectInput(session, "library_mostrar", selected = 100)
+    
+    # Reset filters to trigger a refresh to the full list
+    filters$search <- ""
+    filters$tipo <- "Todos"
+    filters$mostrar <- 100
+  })
+
+  # 4. A reactive expression to fetch data from the database.
+  # This automatically re-runs whenever 'filters' changes.
+  library_data <- reactive({
+    # Use the user's added check for DB availability
     if (!DB_AVAILABLE) {
-      library_data_rv(data.frame(Error = "Database connection not available"))
-      return()
+      return(data.frame(Error = "Database connection not available"))
     }
 
-    # Get current input values
-    current_search <- input$library_search
-    current_tipo <- input$library_tipo
-    current_mostrar <- as.numeric(input$library_mostrar)
+    # Get current filter values from our reactiveValues
+    current_search <- filters$search
+    current_tipo <- filters$tipo
+    current_mostrar <- as.numeric(filters$mostrar)
 
     # Start with the base query
     query <- "SELECT id, titulo, tipo, data FROM documents"
@@ -186,35 +219,22 @@ server <- function(input, output, session) {
     
     cat("Executing query:", query, "\n")
     
-    # Execute query and update reactive value
+    # Execute query and return result
     tryCatch({
       result <- dbGetQuery(secure_db_connection, query)
       cat("Query returned", nrow(result), "rows\n")
       if (nrow(result) == 0) {
-        library_data_rv(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
-      } else {
-        library_data_rv(result)
+        return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
       }
+      result
     }, error = function(e) {
-      library_data_rv(data.frame(Error = e$message))
+      data.frame(Error = e$message)
     })
-  }, ignoreNULL = FALSE) # ignoreNULL = FALSE makes it run on startup
-
-  # When "Clear" is clicked, reset the inputs
-  observeEvent(input$library_clear, {
-    updateTextInput(session, "library_search", value = "")
-    updateSelectInput(session, "library_tipo", selected = "Todos")
-    updateSelectInput(session, "library_mostrar", selected = 100)
-    # After clearing, we should probably re-run the initial search
-    # to show the full list again. We can do this by invalidating the apply button.
-    # A simple way is to just re-run the query logic.
-    # For now, let's just clear. If user wants to refresh, they hit "Apply".
   })
 
-  # Render the table with the data from our reactive value
+  # 5. Render the table with the data from our reactive expression.
   output$library_table <- DT::renderDataTable({
-    req(library_data_rv()) # Ensure it doesn't render when NULL
-    library_data_rv()
+    library_data()
   }, options = list(pageLength = 10, scrollX = TRUE))
   
   # -- GEOGRAPHIC SERVER LOGIC --
