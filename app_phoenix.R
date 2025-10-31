@@ -148,10 +148,10 @@ server <- function(input, output, session) {
     search = "",
     tipo = "Todos",
     mostrar = 100,
-    trigger = 0  # Used to force initial load
+    trigger = 0  # Force reactive to execute on any change
   )
 
-  # Initialize: Force query to run on startup by incrementing trigger
+  # Force initial execution by changing trigger after session starts
   observe({
     filters$trigger <- filters$trigger + 1
   })
@@ -187,6 +187,8 @@ server <- function(input, output, session) {
     }
 
     # Get current filter values from our reactiveValues
+    # Read trigger to establish reactive dependency
+    filters$trigger
     current_search <- filters$search
     current_tipo <- filters$tipo
     current_mostrar <- as.numeric(filters$mostrar)
