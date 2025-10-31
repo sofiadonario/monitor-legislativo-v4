@@ -146,9 +146,18 @@ server <- function(input, output, session) {
   filters <- reactiveValues(
     search = "",
     tipo = "Todos",
-    mostrar = 100
+    mostrar = 100,
+    trigger = 0  # Add a trigger to force initial load
   )
-  
+
+  # Force initial data load on startup
+  observe({
+    req(DB_AVAILABLE)
+    isolate({
+      filters$trigger <- filters$trigger + 1
+    })
+  })
+
   # When "Apply" is clicked, update the reactiveValues
   observeEvent(input$library_apply, {
     filters$search <- input$library_search
@@ -171,6 +180,9 @@ server <- function(input, output, session) {
   # It automatically re-executes whenever the 'filters' object changes.
   library_data <- reactive({
     req(DB_AVAILABLE)
+
+    # Depend on trigger to ensure initial load
+    filters$trigger
 
     # Explicitly depend on all filter values to ensure reactivity
     current_search <- filters$search
