@@ -142,15 +142,11 @@ server <- function(input, output, session) {
 
   # -- LIBRARY SERVER LOGIC --
   
-  # When "Clear" is clicked, reset the inputs
-  observeEvent(input$library_clear, {
-    updateTextInput(session, "library_search", value = "")
-    updateSelectInput(session, "library_tipo", selected = "Todos")
-    updateSelectInput(session, "library_mostrar", selected = 100)
-  })
+  # Reactive value to store the library data
+  library_data_rv <- reactiveVal()
 
-  # Use eventReactive that triggers on Apply button OR on startup
-  library_data <- eventReactive(input$library_apply, {
+  # When "Apply" is clicked (or on startup), run the query
+  observeEvent(input$library_apply, {
     req(DB_AVAILABLE)
 
     # Get current input values
@@ -186,21 +182,31 @@ server <- function(input, output, session) {
     
     cat("Executing query:", query, "\n")
     
+    # Execute query and update reactive value
     tryCatch({
       result <- dbGetQuery(secure_db_connection, query)
       cat("Query returned", nrow(result), "rows\n")
       if (nrow(result) == 0) {
-        return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
+        library_data_rv(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
+      } else {
+        library_data_rv(result)
       }
-      result
     }, error = function(e) {
-      data.frame(Error = e$message)
+      library_data_rv(data.frame(Error = e$message))
     })
-  }, ignoreNULL = FALSE)
+  }, ignoreNULL = FALSE) # ignoreNULL = FALSE makes it run on startup
 
-  # Render the table with the data from our reactive expression
+  # When "Clear" is clicked, reset the inputs
+  observeEvent(input$library_clear, {
+    updateTextInput(session, "library_search", value = "")
+    updateSelectInput(session, "library_tipo", selected = "Todos")
+    updateSelectInput(session, "library_mostrar", selected = 100)
+  })
+
+  # Render the table with the data from our reactive value
   output$library_table <- DT::renderDataTable({
-    library_data()
+    req(library_data_rv()) # Ensure it doesn't render when NULL
+    library_data_rv()
   }, options = list(pageLength = 10, scrollX = TRUE))
   
   # -- GEOGRAPHIC SERVER LOGIC --
