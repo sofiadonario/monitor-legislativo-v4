@@ -153,9 +153,7 @@ server <- function(input, output, session) {
   # Force initial data load on startup
   observe({
     req(DB_AVAILABLE)
-    isolate({
-      filters$trigger <- filters$trigger + 1
-    })
+    filters$trigger <- filters$trigger + 1
   })
 
   # When "Apply" is clicked, update the reactiveValues
