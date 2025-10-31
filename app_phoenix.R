@@ -142,50 +142,25 @@ server <- function(input, output, session) {
 
   # -- LIBRARY SERVER LOGIC --
   
-  # Use reactiveValues to store the state of the filters
-  filters <- reactiveValues(
-    search = "",
-    tipo = "Todos",
-    mostrar = 100,
-    trigger = 0  # Add a trigger to force initial load
-  )
-
-  # Force initial data load on startup
-  observe({
-    req(DB_AVAILABLE)
-    filters$trigger <- filters$trigger + 1
-  })
-
-  # When "Apply" is clicked, update the reactiveValues
-  observeEvent(input$library_apply, {
-    filters$search <- input$library_search
-    filters$tipo <- input$library_tipo
-    filters$mostrar <- as.numeric(input$library_mostrar)
-  })
-
-  # When "Clear" is clicked, reset the inputs and the reactiveValues
+  # When "Clear" is clicked, reset the inputs
   observeEvent(input$library_clear, {
     updateTextInput(session, "library_search", value = "")
     updateSelectInput(session, "library_tipo", selected = "Todos")
     updateSelectInput(session, "library_mostrar", selected = 100)
-
-    filters$search <- ""
-    filters$tipo <- "Todos"
-    filters$mostrar <- 100
   })
 
-  # This is the core reactive expression for the library data.
-  # It automatically re-executes whenever the 'filters' object changes.
-  library_data <- reactive({
+  # Use eventReactive that triggers on Apply button OR on startup
+  library_data <- eventReactive({
+    input$library_apply  # Trigger on Apply button
+    # Also trigger once on session start (this expression evaluates immediately)
+    session$clientData$url_search
+  }, {
     req(DB_AVAILABLE)
 
-    # Depend on trigger to ensure initial load
-    filters$trigger
-
-    # Explicitly depend on all filter values to ensure reactivity
-    current_search <- filters$search
-    current_tipo <- filters$tipo
-    current_mostrar <- filters$mostrar
+    # Get current input values
+    current_search <- input$library_search
+    current_tipo <- input$library_tipo
+    current_mostrar <- as.numeric(input$library_mostrar)
 
     # Start with the base query
     query <- "SELECT id, titulo, tipo, data FROM documents"
