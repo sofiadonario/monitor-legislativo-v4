@@ -153,15 +153,15 @@ server <- function(input, output, session) {
   observeEvent(input$library_apply, {
     filters$search <- input$library_search
     filters$tipo <- input$library_tipo
-    filters$mostrar <- input$library_mostrar
+    filters$mostrar <- as.numeric(input$library_mostrar)
   })
-  
+
   # When "Clear" is clicked, reset the inputs and the reactiveValues
   observeEvent(input$library_clear, {
     updateTextInput(session, "library_search", value = "")
     updateSelectInput(session, "library_tipo", selected = "Todos")
     updateSelectInput(session, "library_mostrar", selected = 100)
-    
+
     filters$search <- ""
     filters$tipo <- "Todos"
     filters$mostrar <- 100
@@ -171,32 +171,37 @@ server <- function(input, output, session) {
   # It automatically re-executes whenever the 'filters' object changes.
   library_data <- reactive({
     req(DB_AVAILABLE)
-    
+
+    # Explicitly depend on all filter values to ensure reactivity
+    current_search <- filters$search
+    current_tipo <- filters$tipo
+    current_mostrar <- filters$mostrar
+
     # Start with the base query
     query <- "SELECT id, titulo, tipo, data FROM documents"
-    
-    # Build WHERE clauses based on the reactive 'filters' object
+
+    # Build WHERE clauses based on current filter values
     conditions <- list()
-    
+
     # Search Term Filter
-    if (filters$search != "") {
-      search_term <- gsub("'", "''", filters$search)
+    if (current_search != "") {
+      search_term <- gsub("'", "''", current_search)
       conditions <- c(conditions, paste0("titulo ILIKE '%", search_term, "%'"))
     }
-    
+
     # Document Type Filter
-    if (filters$tipo != "Todos") {
-      tipo_term <- gsub("'", "''", filters$tipo)
+    if (current_tipo != "Todos") {
+      tipo_term <- gsub("'", "''", current_tipo)
       conditions <- c(conditions, paste0("tipo = '", tipo_term, "'"))
     }
-    
+
     # Append WHERE clauses to the query
     if (length(conditions) > 0) {
       query <- paste(query, "WHERE", paste(conditions, collapse = " AND "))
     }
-    
+
     # Add ORDER BY and LIMIT clauses
-    query <- paste(query, "ORDER BY data DESC LIMIT", as.integer(filters$mostrar))
+    query <- paste(query, "ORDER BY data DESC LIMIT", as.integer(current_mostrar))
     
     cat("Executing query:", query, "\n")
     
