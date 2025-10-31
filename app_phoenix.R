@@ -147,7 +147,11 @@ server <- function(input, output, session) {
 
   # When "Apply" is clicked (or on startup), run the query
   observeEvent(input$library_apply, {
-    req(DB_AVAILABLE)
+    # Check if database is available, otherwise show error
+    if (!DB_AVAILABLE) {
+      library_data_rv(data.frame(Error = "Database connection not available"))
+      return()
+    }
 
     # Get current input values
     current_search <- input$library_search
