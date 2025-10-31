@@ -150,11 +150,7 @@ server <- function(input, output, session) {
   })
 
   # Use eventReactive that triggers on Apply button OR on startup
-  library_data <- eventReactive({
-    input$library_apply  # Trigger on Apply button
-    # Also trigger once on session start (this expression evaluates immediately)
-    session$clientData$url_search
-  }, {
+  library_data <- eventReactive(input$library_apply, {
     req(DB_AVAILABLE)
 
     # Get current input values
@@ -200,7 +196,7 @@ server <- function(input, output, session) {
     }, error = function(e) {
       data.frame(Error = e$message)
     })
-  })
+  }, ignoreNULL = FALSE)
 
   # Render the table with the data from our reactive expression
   output$library_table <- DT::renderDataTable({
