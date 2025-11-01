@@ -224,6 +224,7 @@ server <- function(input, output, session) {
     filters$search <- input$library_search
     filters$tipo <- input$library_tipo
     filters$mostrar <- as.numeric(input$library_mostrar)
+    filters$trigger <- filters$trigger + 1  # Increment trigger to force reactive update
   })
 
   # 3. Observer for the 'Clear' button.
@@ -233,11 +234,12 @@ server <- function(input, output, session) {
     updateTextInput(session, "library_search", value = "")
     updateSelectInput(session, "library_tipo", selected = "Todos")
     updateSelectInput(session, "library_mostrar", selected = 100)
-    
+
     # Reset filters to trigger a refresh to the full list
     filters$search <- ""
     filters$tipo <- "Todos"
     filters$mostrar <- 100
+    filters$trigger <- filters$trigger + 1  # Increment trigger to force reactive update
   })
 
   # 4. A reactive expression to fetch data from the database.
