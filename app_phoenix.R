@@ -307,84 +307,105 @@ server <- function(input, output, session) {
 
   # -- HOME TAB SERVER LOGIC (EXECUTIVE SUMMARY) --
 
-  # Total documents count
+  # Cached reactive for Home tab statistics
+  # This executes all basic stats queries once and caches the results
+  # Only re-executes when database connection changes or on manual invalidation
+  home_stats <- reactive({
+    if (!DB_AVAILABLE) {
+      return(list(
+        total_docs = NA,
+        doc_types_count = NA,
+        latest_date = NA,
+        oldest_date = NA,
+        error = FALSE
+      ))
+    }
+
+    tryCatch({
+      # Execute all basic stats in separate queries (will optimize to single query in Phase 3)
+      total_result <- dbGetQuery(secure_db_connection, "SELECT COUNT(*) as total FROM documents")
+      types_result <- dbGetQuery(secure_db_connection, "SELECT COUNT(DISTINCT tipo) as count FROM documents")
+      latest_result <- dbGetQuery(secure_db_connection, "SELECT MAX(data) as latest FROM documents")
+      oldest_result <- dbGetQuery(secure_db_connection, "SELECT MIN(data) as oldest FROM documents")
+
+      list(
+        total_docs = total_result$total,
+        doc_types_count = types_result$count,
+        latest_date = latest_result$latest,
+        oldest_date = oldest_result$oldest,
+        error = FALSE
+      )
+    }, error = function(e) {
+      cat("Error fetching home stats:", e$message, "\n")
+      list(
+        total_docs = NA,
+        doc_types_count = NA,
+        latest_date = NA,
+        oldest_date = NA,
+        error = TRUE
+      )
+    })
+  })
+
+  # Total documents count - uses cached data
   output$home_total_docs <- renderText({
-    if (!DB_AVAILABLE) return("N/A")
-
-    tryCatch({
-      result <- dbGetQuery(secure_db_connection, "SELECT COUNT(*) as total FROM documents")
-      format(result$total, big.mark = ",")
-    }, error = function(e) {
-      "Error"
-    })
+    stats <- home_stats()
+    if (stats$error) return("Error")
+    if (is.na(stats$total_docs)) return("N/A")
+    format(stats$total_docs, big.mark = ",")
   })
 
-  # Number of distinct document types
+  # Number of distinct document types - uses cached data
   output$home_doc_types_count <- renderText({
-    if (!DB_AVAILABLE) return("N/A")
-
-    tryCatch({
-      result <- dbGetQuery(secure_db_connection, "SELECT COUNT(DISTINCT tipo) as count FROM documents")
-      as.character(result$count)
-    }, error = function(e) {
-      "Error"
-    })
+    stats <- home_stats()
+    if (stats$error) return("Error")
+    if (is.na(stats$doc_types_count)) return("N/A")
+    as.character(stats$doc_types_count)
   })
 
-  # Latest document date
+  # Latest document date - uses cached data
   output$home_latest_date <- renderText({
-    if (!DB_AVAILABLE) return("N/A")
-
-    tryCatch({
-      result <- dbGetQuery(secure_db_connection, "SELECT MAX(data) as latest FROM documents")
-      if (is.null(result$latest) || is.na(result$latest)) {
-        "N/A"
-      } else {
-        format(as.Date(result$latest), "%d/%m/%Y")
-      }
-    }, error = function(e) {
-      "Error"
-    })
+    stats <- home_stats()
+    if (stats$error) return("Error")
+    if (is.null(stats$latest_date) || is.na(stats$latest_date)) return("N/A")
+    format(as.Date(stats$latest_date), "%d/%m/%Y")
   })
 
-  # Oldest document date
+  # Oldest document date - uses cached data
   output$home_oldest_date <- renderText({
-    if (!DB_AVAILABLE) return("N/A")
-
-    tryCatch({
-      result <- dbGetQuery(secure_db_connection, "SELECT MIN(data) as oldest FROM documents")
-      if (is.null(result$oldest) || is.na(result$oldest)) {
-        "N/A"
-      } else {
-        format(as.Date(result$oldest), "%d/%m/%Y")
-      }
-    }, error = function(e) {
-      "Error"
-    })
+    stats <- home_stats()
+    if (stats$error) return("Error")
+    if (is.null(stats$oldest_date) || is.na(stats$oldest_date)) return("N/A")
+    format(as.Date(stats$oldest_date), "%d/%m/%Y")
   })
 
-  # Document type breakdown table
-  output$home_type_breakdown <- DT::renderDataTable({
+  # Cached reactive for Home tab type breakdown
+  home_type_breakdown_data <- reactive({
     if (!DB_AVAILABLE) {
       return(data.frame(Message = "Database not available"))
     }
 
     tryCatch({
-      result <- dbGetQuery(secure_db_connection,
+      dbGetQuery(secure_db_connection,
         "SELECT tipo AS \"Document Type\",
                 COUNT(*) as \"Count\",
                 ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM documents), 2) as \"Percentage\"
          FROM documents
          GROUP BY tipo
          ORDER BY COUNT(*) DESC")
-      result
     }, error = function(e) {
+      cat("Error fetching type breakdown:", e$message, "\n")
       data.frame(Error = e$message)
     })
+  })
+
+  # Document type breakdown table - uses cached data
+  output$home_type_breakdown <- DT::renderDataTable({
+    home_type_breakdown_data()
   }, options = list(pageLength = 10, scrollX = TRUE, dom = 't'))
 
-  # Recent activity table
-  output$home_recent_activity <- DT::renderDataTable({
+  # Cached reactive for Home tab recent activity
+  home_recent_activity_data <- reactive({
     if (!DB_AVAILABLE) {
       return(data.frame(Message = "Database not available"))
     }
@@ -405,8 +426,14 @@ server <- function(input, output, session) {
 
       result
     }, error = function(e) {
+      cat("Error fetching recent activity:", e$message, "\n")
       data.frame(Error = e$message)
     })
+  })
+
+  # Recent activity table - uses cached data
+  output$home_recent_activity <- DT::renderDataTable({
+    home_recent_activity_data()
   }, options = list(pageLength = 10, scrollX = TRUE, dom = 't'))
 
   # -- GEOGRAPHIC SERVER LOGIC --
