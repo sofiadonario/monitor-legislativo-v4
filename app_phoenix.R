@@ -212,10 +212,15 @@ server <- function(input, output, session) {
     trigger = 0  # Force reactive to execute on any change
   )
 
-  # Force initial execution by changing trigger after session starts
+  # Force initial execution by changing trigger ONCE at session start
+  # once = TRUE ensures this runs exactly once, preventing infinite loop
+  # priority = 100 ensures it runs before other observers
+  # isolate() prevents the observer from depending on filters$trigger changes
   observe({
-    filters$trigger <- filters$trigger + 1
-  })
+    isolate({
+      filters$trigger <- filters$trigger + 1
+    })
+  }, once = TRUE, priority = 100)
 
   # 2. Observer for the 'Apply' button.
   # This updates the reactiveValues, which in turn triggers the data query.
