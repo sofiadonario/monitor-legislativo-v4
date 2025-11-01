@@ -212,14 +212,10 @@ server <- function(input, output, session) {
     trigger = 0  # Force reactive to execute on any change
   )
 
-  # Force initial execution by changing trigger ONCE at session start
-  # once = TRUE ensures this runs exactly once, preventing infinite loop
-  # priority = 100 ensures it runs before other observers
-  # isolate() prevents the observer from depending on filters$trigger changes
+  # Force initial data load by incrementing trigger ONCE at session start
+  # The trigger will be read by library_data reactive, forcing it to execute
   observe({
-    isolate({
-      filters$trigger <- filters$trigger + 1
-    })
+    filters$trigger <- filters$trigger + 1
   }, once = TRUE, priority = 100)
 
   # 2. Observer for the 'Apply' button.
