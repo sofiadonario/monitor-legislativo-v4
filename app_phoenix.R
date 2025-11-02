@@ -14,7 +14,7 @@ suppressPackageStartupMessages({
   library(DBI)
   library(RPostgres)
   library(DT)
-  library(leaflet)
+  # library(leaflet)  # Temporarily disabled for local testing
 })
 
 # ==============================================================================
@@ -179,17 +179,17 @@ ui <- navbarPage(
     )
   ),
 
-  # -- GEOGRAPHIC TAB --
-  tabPanel(
-    "Geographic",
-    icon = icon("map-marked-alt"),
-    fluidPage(
-      h1("Geographic Visualization"),
-      p("A basic map to prove the concept of the visualization component."),
-      hr(),
-      leaflet::leafletOutput("geo_map", height = "600px")
-    )
-  ),
+  # -- GEOGRAPHIC TAB -- (Temporarily disabled for local testing)
+  # tabPanel(
+  #   "Geographic",
+  #   icon = icon("map-marked-alt"),
+  #   fluidPage(
+  #     h1("Geographic Visualization"),
+  #     p("A basic map to prove the concept of the visualization component."),
+  #     hr(),
+  #     leaflet::leafletOutput("geo_map", height = "600px")
+  #   )
+  # ),
 
   # -- PLACEHOLDER TABS --
   tabPanel("Analytics", h1("Analytics"), p("This section is under development.")),
@@ -200,6 +200,8 @@ ui <- navbarPage(
 # 4. SERVER LOGIC (STABLE & MONOLITHIC - v3 with State Machine)
 # ==============================================================================
 server <- function(input, output, session) {
+  # DEBUG: confirm server startup
+  cat("=== SERVER FUNCTION STARTED ===\n")
 
   # -- LIBRARY SERVER LOGIC (REFACTORED TO BE MORE ROBUST) --
 
@@ -221,6 +223,7 @@ server <- function(input, output, session) {
   # 2. Observer for the 'Apply' button.
   # This updates the reactiveValues, which in turn triggers the data query.
   observeEvent(input$library_apply, {
+    cat("=== APPLY BUTTON CLICKED - input$library_apply =", input$library_apply, "===\n")
     filters$search <- input$library_search
     filters$tipo <- input$library_tipo
     filters$mostrar <- as.numeric(input$library_mostrar)
@@ -230,6 +233,7 @@ server <- function(input, output, session) {
   # 3. Observer for the 'Clear' button.
   # This resets both the UI inputs and the reactive filter values.
   observeEvent(input$library_clear, {
+    cat("=== CLEAR BUTTON CLICKED - input$library_clear =", input$library_clear, "===\n")
     # Reset UI
     updateTextInput(session, "library_search", value = "")
     updateSelectInput(session, "library_tipo", selected = "Todos")
@@ -251,11 +255,11 @@ server <- function(input, output, session) {
     }
 
     # Get current filter values from our reactiveValues
-    # Read trigger to establish reactive dependency
-    filters$trigger
+    # Read ALL reactive values to establish dependencies on any change
     current_search <- filters$search
     current_tipo <- filters$tipo
     current_mostrar <- as.numeric(filters$mostrar)
+    current_trigger <- filters$trigger  # Read trigger last to establish dependency
 
     # Start with the base query
     query <- "SELECT id, titulo, tipo, data FROM documents"
@@ -300,6 +304,7 @@ server <- function(input, output, session) {
 
   # 5. Render the table with the data from our reactive expression.
   output$library_table <- DT::renderDataTable({
+    cat("=== LIBRARY_TABLE OUTPUT RENDERING ===\n")
     library_data()
   }, options = list(pageLength = 10, scrollX = TRUE))
 
@@ -439,13 +444,13 @@ server <- function(input, output, session) {
     home_recent_activity_data()
   }, options = list(pageLength = 10, scrollX = TRUE, dom = 't'))
 
-  # -- GEOGRAPHIC SERVER LOGIC --
-  output$geo_map <- leaflet::renderLeaflet({
-    leaflet() %>%
-      addTiles() %>%
-      setView(lng = -54, lat = -15, zoom = 4) %>%
-      addMarkers(lng = -47.9292, lat = -15.7801, popup = "Brasília")
-  })
+  # -- GEOGRAPHIC SERVER LOGIC -- (Temporarily disabled for local testing)
+  # output$geo_map <- leaflet::renderLeaflet({
+  #   leaflet() %>%
+  #     addTiles() %>%
+  #     setView(lng = -54, lat = -15, zoom = 4) %>%
+  #     addMarkers(lng = -47.9292, lat = -15.7801, popup = "Brasília")
+  # })
 
   # Gracefully close the database connection when the app stops
   onSessionEnded(function() {
