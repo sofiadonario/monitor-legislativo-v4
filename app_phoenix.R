@@ -214,11 +214,10 @@ server <- function(input, output, session) {
     trigger = 0  # Force reactive to execute on any change
   )
 
-  # Force initial data load AFTER reactive graph is fully initialized
-  # session$onFlushed() ensures all outputs are bound before trigger increments
-  session$onFlushed(function() {
-    filters$trigger <- filters$trigger + 1
-  }, once = TRUE)
+  # No automatic trigger on startup - data loads when user clicks Library tab
+  # This avoids the "outside of reactive consumer" error that occurs when
+  # outputOptions(suspendWhenHidden = FALSE) tries to render before
+  # the reactive graph is fully initialized
 
   # 2. Observer for the 'Apply' button.
   # This updates the reactiveValues, which in turn triggers the data query.
@@ -308,10 +307,7 @@ server <- function(input, output, session) {
     library_data()
   }, options = list(pageLength = 10, scrollX = TRUE))
 
-  # CRITICAL: Force this output to render even when Library tab is hidden
-  # This ensures the reactive dependency is established at session start
-  # Works in combination with session$onFlushed() above
-  outputOptions(output, "library_table", suspendWhenHidden = FALSE)
+  # No outputOptions needed - data loads naturally when user clicks Library tab
 
   # -- HOME TAB SERVER LOGIC (EXECUTIVE SUMMARY) --
 
