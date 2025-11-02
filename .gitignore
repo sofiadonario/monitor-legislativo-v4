@@ -170,6 +170,8 @@ dev-tools/scripts/*.tar.gz
 Dockerfile.*
 !Dockerfile
 !Dockerfile.railway
+!Dockerfile.base
+!Dockerfile.fast
 
 # Docker artifacts
 .dockerignore.backup
