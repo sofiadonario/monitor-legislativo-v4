@@ -167,8 +167,11 @@ ui <- navbarPage(
         h4("Filtros de Pesquisa"),
         fluidRow(
           column(6, textInput("library_search", "Termo de Pesquisa:", placeholder = "Ex: 'tributário' ou 'lei 14.133'")),
-          column(3, selectInput("library_tipo", "Tipo de Documento:", choices = c("Todos", "Lei", "Decreto", "Projeto de Lei"))),
-          column(3, selectInput("library_mostrar", "Mostrar:", choices = c(100, 500, 1000, 5000, 10000, 999999), selected = 100))
+          column(3, selectInput("library_tipo", "Tipo de Documento:",
+                 choices = c("Todos", "Lei", "Decreto", "Projeto de Lei", "Medida Provisória",
+                            "Resolução", "Portaria", "Instrução Normativa", "Parecer",
+                            "Acórdão", "Súmula"))),
+          column(3, selectInput("library_mostrar", "Mostrar:", choices = c(100, 500, 1000, 5000, 10000, 999999), selected = 999999))
         ),
         actionButton("library_apply", "Aplicar Filtros", icon = icon("search")),
         actionButton("library_clear", "Limpar", icon = icon("times"))
@@ -210,7 +213,7 @@ server <- function(input, output, session) {
   filters <- reactiveValues(
     search = "",
     tipo = "Todos",
-    mostrar = 100,
+    mostrar = 999999,
     trigger = 0  # Force reactive to execute on any change
   )
 
@@ -236,12 +239,12 @@ server <- function(input, output, session) {
     # Reset UI
     updateTextInput(session, "library_search", value = "")
     updateSelectInput(session, "library_tipo", selected = "Todos")
-    updateSelectInput(session, "library_mostrar", selected = 100)
+    updateSelectInput(session, "library_mostrar", selected = 999999)
 
     # Reset filters to trigger a refresh to the full list
     filters$search <- ""
     filters$tipo <- "Todos"
-    filters$mostrar <- 100
+    filters$mostrar <- 999999
     filters$trigger <- filters$trigger + 1  # Increment trigger to force reactive update
   })
 
