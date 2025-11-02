@@ -303,6 +303,10 @@ server <- function(input, output, session) {
     library_data()
   }, options = list(pageLength = 10, scrollX = TRUE))
 
+  # CRITICAL: Force this output to render even when Library tab is hidden
+  # This ensures the reactive dependency is established at session start
+  outputOptions(output, "library_table", suspendWhenHidden = FALSE)
+
   # -- HOME TAB SERVER LOGIC (EXECUTIVE SUMMARY) --
 
   # Cached reactive for Home tab statistics
