@@ -307,7 +307,9 @@ server <- function(input, output, session) {
     library_data()
   }, options = list(pageLength = 10, scrollX = TRUE))
 
-  # No outputOptions needed - data loads naturally when user clicks Library tab
+  # Force the output to bind to reactive graph even when tab is hidden
+  # This establishes the reactive dependency so buttons can trigger queries
+  outputOptions(output, "library_table", suspendWhenHidden = FALSE)
 
   # -- HOME TAB SERVER LOGIC (EXECUTIVE SUMMARY) --
 
