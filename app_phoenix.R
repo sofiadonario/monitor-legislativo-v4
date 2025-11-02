@@ -217,10 +217,10 @@ server <- function(input, output, session) {
     trigger = 0  # Force reactive to execute on any change
   )
 
-  # No automatic trigger on startup - data loads when user clicks Library tab
-  # This avoids the "outside of reactive consumer" error that occurs when
-  # outputOptions(suspendWhenHidden = FALSE) tries to render before
-  # the reactive graph is fully initialized
+  # Force initial execution by changing trigger after session starts
+  observe({
+    filters$trigger <- filters$trigger + 1
+  })
 
   # 2. Observer for the 'Apply' button.
   # This updates the reactiveValues, which in turn triggers the data query.
