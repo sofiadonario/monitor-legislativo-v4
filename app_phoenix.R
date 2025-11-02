@@ -212,11 +212,11 @@ server <- function(input, output, session) {
     trigger = 0  # Force reactive to execute on any change
   )
 
-  # Force initial data load by incrementing trigger ONCE at session start
-  # The trigger will be read by library_data reactive, forcing it to execute
-  observe({
+  # Force initial data load AFTER reactive graph is fully initialized
+  # session$onFlushed() ensures all outputs are bound before trigger increments
+  session$onFlushed(function() {
     filters$trigger <- filters$trigger + 1
-  }, once = TRUE, priority = 100)
+  }, once = TRUE)
 
   # 2. Observer for the 'Apply' button.
   # This updates the reactiveValues, which in turn triggers the data query.
@@ -302,10 +302,6 @@ server <- function(input, output, session) {
   output$library_table <- DT::renderDataTable({
     library_data()
   }, options = list(pageLength = 10, scrollX = TRUE))
-
-  # CRITICAL: Force this output to render even when Library tab is hidden
-  # This ensures the reactive dependency is established at session start
-  outputOptions(output, "library_table", suspendWhenHidden = FALSE)
 
   # -- HOME TAB SERVER LOGIC (EXECUTIVE SUMMARY) --
 
