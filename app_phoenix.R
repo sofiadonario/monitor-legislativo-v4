@@ -171,7 +171,7 @@ ui <- navbarPage(
                  choices = c("Todos", "Lei", "Decreto", "Projeto de Lei", "Medida Provisória",
                             "Resolução", "Portaria", "Instrução Normativa", "Parecer",
                             "Acórdão", "Súmula"))),
-          column(3, selectInput("library_mostrar", "Mostrar:", choices = c(100, 500, 1000, 5000, 10000, 999999), selected = 999999))
+          column(3, selectInput("library_mostrar", "Mostrar:", choices = c(100, 500, 1000, 5000, 10000, 999999), selected = 100))
         ),
         actionButton("library_apply", "Aplicar Filtros", icon = icon("search")),
         actionButton("library_clear", "Limpar", icon = icon("times"))
@@ -213,14 +213,16 @@ server <- function(input, output, session) {
   filters <- reactiveValues(
     search = "",
     tipo = "Todos",
-    mostrar = 999999,
+    mostrar = 100,
     trigger = 0  # Force reactive to execute on any change
   )
 
-  # Force initial execution by changing trigger after session starts
-  observe({
-    filters$trigger <- filters$trigger + 1
-  })
+  # Fire a single trigger once the UI is fully bound (avoids infinite loop)
+  session$onFlushed(function() {
+    isolate({
+      filters$trigger <- filters$trigger + 1
+    })
+  }, once = TRUE)
 
   # 2. Observer for the 'Apply' button.
   # This updates the reactiveValues, which in turn triggers the data query.
@@ -239,12 +241,12 @@ server <- function(input, output, session) {
     # Reset UI
     updateTextInput(session, "library_search", value = "")
     updateSelectInput(session, "library_tipo", selected = "Todos")
-    updateSelectInput(session, "library_mostrar", selected = 999999)
+    updateSelectInput(session, "library_mostrar", selected = 100)
 
     # Reset filters to trigger a refresh to the full list
     filters$search <- ""
     filters$tipo <- "Todos"
-    filters$mostrar <- 999999
+    filters$mostrar <- 100
     filters$trigger <- filters$trigger + 1  # Increment trigger to force reactive update
   })
 
