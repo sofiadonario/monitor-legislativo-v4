@@ -462,9 +462,15 @@ server <- function(input, output, session) {
         dbGetQuery(secure_db_connection,
           "SELECT uf, COUNT(*) AS n FROM documents GROUP BY uf")
       }, error = function(e) data.frame())
+
       if (nrow(counts) > 0) {
         state_coords <- merge(state_coords, counts, by = "uf", all.x = TRUE)
       }
+    }
+
+    # Ensure column 'n' exists and is numeric
+    if (!"n" %in% names(state_coords)) {
+      state_coords$n <- 0
     }
     state_coords$n[is.na(state_coords$n)] <- 0
 
