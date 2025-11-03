@@ -500,7 +500,7 @@ server <- function(input, output, session) {
     tipo = "Todos",
     date_start = NULL,
     date_end = NULL,
-    trigger = 0
+    trigger = 1
   )
 
   # Apply button observer
@@ -652,11 +652,6 @@ server <- function(input, output, session) {
 
   # Force Geographic map to bind to reactive graph even when tab is hidden
   outputOptions(output, "geo_map", suspendWhenHidden = FALSE)
-
-  # Force initial execution by incrementing trigger after session starts
-  observe({
-    geo_filters$trigger <- geo_filters$trigger + 1
-  })
 
   # -- ANALYTICS SERVER LOGIC --
 
