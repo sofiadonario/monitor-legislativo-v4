@@ -15,6 +15,8 @@ suppressPackageStartupMessages({
   library(RPostgres)
   library(DT)
   library(leaflet)
+  library(sf)
+  library(ggplot2)
 })
 
 # ==============================================================================
@@ -194,8 +196,22 @@ ui <- navbarPage(
     )
   ),
 
+  # -- ANALYTICS TAB --
+  tabPanel(
+    "Analytics",
+    icon = icon("chart-bar"),
+    fluidPage(
+      h2("Análise de Documentos"),
+      p("Distribuição por tipo e evolução mensal"),
+      hr(),
+      fluidRow(
+        column(6, plotOutput("analytics_type_bar", height = "400px")),
+        column(6, plotOutput("analytics_month_line", height = "400px"))
+      )
+    )
+  ),
+
   # -- PLACEHOLDER TABS --
-  tabPanel("Analytics", h1("Analytics"), p("This section is under development.")),
   tabPanel("Text Mining", h1("Text Mining"), p("This section is under development."))
 )
 
@@ -448,44 +464,86 @@ server <- function(input, output, session) {
   }, options = list(pageLength = 10, scrollX = TRUE, dom = 't'))
 
   # -- GEOGRAPHIC SERVER LOGIC --
-  output$geo_map <- leaflet::renderLeaflet({
-    # Predefined state centroids (rough) for Brazil
-    state_coords <- data.frame(
-      uf = c("AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SE","SP","TO"),
-      lat = c(-9.02,-9.62,-3.47,1.41,-12.96,-5.20,-15.78,-19.19,-15.83,-4.96,-12.64,-20.44,-18.10,-4.43,-7.06,-25.25,-8.28,-6.60,-22.84,-5.81,-30.00,-11.22,1.99,-27.33,-10.57,-23.55,-10.25),
-      lng = c(-70.81,-36.82,-65.10,-51.77,-38.51,-39.30,-47.93,-40.34,-47.86,-45.27,-55.42,-54.65,-44.38,-52.48,-35.55,-52.02,-35.01,-42.28,-43.15,-36.59,-53.00,-63.02,-61.33,-50.50,-37.07,-46.63,-48.25)
-    )
+  # Load IBGE state polygons once
+  brazil_states_sf <- reactiveVal(NULL)
 
-    # Fetch counts per state if DB available
+  observeEvent(TRUE, {  # run once
+    if (is.null(brazil_states_sf())) {
+      geo_url <- "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
+      try({
+        brazil_states_sf(sf::st_read(geo_url, quiet = TRUE))
+      })
+    }
+  }, once = TRUE)
+
+  output$geo_map <- leaflet::renderLeaflet({
+    shp <- brazil_states_sf()
+    validate(need(!is.null(shp), "Carregando mapa..."))
+
+    # Counts per UF
+    counts <- data.frame(uf = shp$name, n = 0)
     if (DB_AVAILABLE) {
-      counts <- tryCatch({
+      db_counts <- tryCatch({
         dbGetQuery(secure_db_connection,
           "SELECT uf, COUNT(*) AS n FROM documents GROUP BY uf")
       }, error = function(e) data.frame())
-
-      if (nrow(counts) > 0) {
-        state_coords <- merge(state_coords, counts, by = "uf", all.x = TRUE)
+      if (nrow(db_counts) > 0) {
+        counts <- merge(counts, db_counts, by = "uf", all.x = TRUE, suffixes = c("", "_db"))
+        counts$n <- ifelse(is.na(counts$n_db), 0, counts$n_db)
+        counts$n_db <- NULL
       }
     }
 
-    # Ensure column 'n' exists and is numeric
-    if (!"n" %in% names(state_coords)) {
-      state_coords$n <- 0
-    }
-    state_coords$n[is.na(state_coords$n)] <- 0
+    shp <- merge(shp, counts, by.x = "name", by.y = "uf", all.x = TRUE)
+    shp$n[is.na(shp$n)] <- 0
 
-    pal <- colorNumeric("YlOrRd", domain = state_coords$n)
+    pal <- colorNumeric("YlOrRd", domain = shp$n)
 
-    leaflet(state_coords) %>%
+    leaflet(shp) %>%
       addTiles() %>%
       setView(lng = -54, lat = -15, zoom = 4) %>%
-      addCircleMarkers(~lng, ~lat,
-        radius = ~pmax(4, sqrt(n))*2,
-        color = ~pal(n),
-        stroke = FALSE, fillOpacity = 0.7,
-        label = ~paste0(uf, ": ", n, " documentos")) %>%
+      addPolygons(fillColor = ~pal(n), color = "#444", weight = 1,
+                  fillOpacity = 0.7, label = ~paste0(name, ": ", n)) %>%
       addLegend("bottomright", pal = pal, values = ~n,
-        title = "Nº Documentos", opacity = 1)
+                title = "Nº Documentos", opacity = 1)
+  })
+
+  # -- ANALYTICS SERVER LOGIC --
+
+  analytics_data <- reactive({
+    if (!DB_AVAILABLE) return(NULL)
+
+    tryCatch({
+      list(
+        by_type = dbGetQuery(secure_db_connection,
+          "SELECT tipo AS type, COUNT(*) AS n FROM documents GROUP BY tipo ORDER BY n DESC"),
+        by_month = dbGetQuery(secure_db_connection,
+          "SELECT DATE_TRUNC('month', data) AS month, COUNT(*) AS n
+             FROM documents
+             GROUP BY month
+             ORDER BY month")
+      )
+    }, error = function(e) NULL)
+  })
+
+  output$analytics_type_bar <- renderPlot({
+    dat <- analytics_data()
+    if (is.null(dat)) return()
+    ggplot(dat$by_type, aes(x = reorder(type, n), y = n)) +
+      geom_col(fill = "steelblue") +
+      coord_flip() +
+      labs(x = "Tipo", y = "Quantidade de Documentos", title = "Documentos por Tipo") +
+      theme_minimal()
+  })
+
+  output$analytics_month_line <- renderPlot({
+    dat <- analytics_data()
+    if (is.null(dat)) return()
+    ggplot(dat$by_month, aes(x = as.Date(month), y = n)) +
+      geom_line(color = "firebrick", size = 1) +
+      geom_point(color = "firebrick") +
+      labs(x = "Mês", y = "Quantidade", title = "Documentos por Mês") +
+      theme_minimal()
   })
 
   # Gracefully close the database connection when the app stops
