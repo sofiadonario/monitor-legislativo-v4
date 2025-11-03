@@ -190,7 +190,37 @@ ui <- navbarPage(
     icon = icon("map-marked-alt"),
     fluidPage(
       h1("Geographic Visualization"),
-      p("A basic map to prove the concept of the visualization component."),
+      p("Visualização geográfica de documentos legislativos por estado"),
+      hr(),
+      fluidRow(
+        column(3,
+          selectInput("geo_filter_tipo", "Filtrar por Tipo:",
+                     choices = c("Todos", "Lei", "Decreto", "Projeto de Lei",
+                                "Medida Provisória", "Resolução", "Portaria",
+                                "Instrução Normativa", "Parecer", "Acórdão", "Súmula"),
+                     selected = "Todos")
+        ),
+        column(4,
+          dateRangeInput("geo_date_range", "Período:",
+                        start = NULL, end = NULL,
+                        format = "dd/mm/yyyy",
+                        language = "pt-BR",
+                        separator = " até ")
+        ),
+        column(3,
+          actionButton("geo_apply", "Aplicar Filtros",
+                      class = "btn-primary",
+                      style = "margin-top: 25px;"),
+          actionButton("geo_clear", "Limpar",
+                      class = "btn-secondary",
+                      style = "margin-top: 25px; margin-left: 10px;")
+        ),
+        column(2,
+          downloadButton("geo_download", "Exportar Dados",
+                        class = "btn-success",
+                        style = "margin-top: 25px;")
+        )
+      ),
       hr(),
       leaflet::leafletOutput("geo_map", height = "600px")
     )
@@ -464,6 +494,74 @@ server <- function(input, output, session) {
   }, options = list(pageLength = 10, scrollX = TRUE, dom = 't'))
 
   # -- GEOGRAPHIC SERVER LOGIC --
+
+  # Reactive values for Geographic filters
+  geo_filters <- reactiveValues(
+    tipo = "Todos",
+    date_start = NULL,
+    date_end = NULL,
+    trigger = 0
+  )
+
+  # Apply button observer
+  observeEvent(input$geo_apply, {
+    geo_filters$tipo <- input$geo_filter_tipo
+    geo_filters$date_start <- input$geo_date_range[1]
+    geo_filters$date_end <- input$geo_date_range[2]
+    geo_filters$trigger <- geo_filters$trigger + 1
+  })
+
+  # Clear button observer
+  observeEvent(input$geo_clear, {
+    updateSelectInput(session, "geo_filter_tipo", selected = "Todos")
+    updateDateRangeInput(session, "geo_date_range", start = NULL, end = NULL)
+    geo_filters$tipo <- "Todos"
+    geo_filters$date_start <- NULL
+    geo_filters$date_end <- NULL
+    geo_filters$trigger <- geo_filters$trigger + 1
+  })
+
+  # Download handler for filtered geographic data
+  output$geo_download <- downloadHandler(
+    filename = function() {
+      paste0("geographic_data_", format(Sys.Date(), "%Y%m%d"), ".csv")
+    },
+    content = function(file) {
+      if (!DB_AVAILABLE) {
+        write.csv(data.frame(Error = "Database not available"), file, row.names = FALSE)
+        return()
+      }
+
+      # Read current filter state
+      current_tipo <- geo_filters$tipo
+      current_date_start <- geo_filters$date_start
+      current_date_end <- geo_filters$date_end
+
+      # Build filtered query
+      query <- "SELECT uf, COUNT(*) AS document_count FROM documents WHERE 1=1"
+
+      if (current_tipo != "Todos") {
+        query <- paste0(query, " AND tipo = '", current_tipo, "'")
+      }
+
+      if (!is.null(current_date_start) && !is.null(current_date_end)) {
+        query <- paste0(query,
+                       " AND data >= '", current_date_start, "'",
+                       " AND data <= '", current_date_end, "'")
+      }
+
+      query <- paste0(query, " GROUP BY uf ORDER BY document_count DESC")
+
+      # Execute query and write CSV
+      tryCatch({
+        data <- dbGetQuery(secure_db_connection, query)
+        write.csv(data, file, row.names = FALSE)
+      }, error = function(e) {
+        write.csv(data.frame(Error = e$message), file, row.names = FALSE)
+      })
+    }
+  )
+
   # Load IBGE state polygons once
   brazil_states_sf <- reactiveVal(NULL)
 
@@ -476,14 +574,36 @@ server <- function(input, output, session) {
   }, once = TRUE)
 
   output$geo_map <- leaflet::renderLeaflet({
+    # Establish reactive dependency on filter trigger
+    current_trigger <- geo_filters$trigger
+    current_tipo <- geo_filters$tipo
+    current_date_start <- geo_filters$date_start
+    current_date_end <- geo_filters$date_end
+
     shp <- brazil_states_sf()
 
-    # Base counts query (may be empty)
+    # Build filtered query
     counts <- data.frame()
     if (DB_AVAILABLE) {
+      # Start with base query
+      query <- "SELECT uf, COUNT(*) AS n FROM documents WHERE 1=1"
+
+      # Add document type filter
+      if (current_tipo != "Todos") {
+        query <- paste0(query, " AND tipo = '", current_tipo, "'")
+      }
+
+      # Add date range filter
+      if (!is.null(current_date_start) && !is.null(current_date_end)) {
+        query <- paste0(query,
+                       " AND data >= '", current_date_start, "'",
+                       " AND data <= '", current_date_end, "'")
+      }
+
+      query <- paste0(query, " GROUP BY uf")
+
       db_counts <- tryCatch({
-        dbGetQuery(secure_db_connection,
-          "SELECT uf, COUNT(*) AS n FROM documents GROUP BY uf")
+        dbGetQuery(secure_db_connection, query)
       }, error = function(e) data.frame())
       counts <- db_counts
     }
