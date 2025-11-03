@@ -14,7 +14,7 @@ suppressPackageStartupMessages({
   library(DBI)
   library(RPostgres)
   library(DT)
-  # library(leaflet)  # Temporarily disabled for local testing
+  library(leaflet)
 })
 
 # ==============================================================================
@@ -182,17 +182,17 @@ ui <- navbarPage(
     )
   ),
 
-  # -- GEOGRAPHIC TAB -- (Temporarily disabled for local testing)
-  # tabPanel(
-  #   "Geographic",
-  #   icon = icon("map-marked-alt"),
-  #   fluidPage(
-  #     h1("Geographic Visualization"),
-  #     p("A basic map to prove the concept of the visualization component."),
-  #     hr(),
-  #     leaflet::leafletOutput("geo_map", height = "600px")
-  #   )
-  # ),
+  # -- GEOGRAPHIC TAB --
+  tabPanel(
+    "Geographic",
+    icon = icon("map-marked-alt"),
+    fluidPage(
+      h1("Geographic Visualization"),
+      p("A basic map to prove the concept of the visualization component."),
+      hr(),
+      leaflet::leafletOutput("geo_map", height = "600px")
+    )
+  ),
 
   # -- PLACEHOLDER TABS --
   tabPanel("Analytics", h1("Analytics"), p("This section is under development.")),
@@ -447,13 +447,13 @@ server <- function(input, output, session) {
     home_recent_activity_data()
   }, options = list(pageLength = 10, scrollX = TRUE, dom = 't'))
 
-  # -- GEOGRAPHIC SERVER LOGIC -- (Temporarily disabled for local testing)
-  # output$geo_map <- leaflet::renderLeaflet({
-  #   leaflet() %>%
-  #     addTiles() %>%
-  #     setView(lng = -54, lat = -15, zoom = 4) %>%
-  #     addMarkers(lng = -47.9292, lat = -15.7801, popup = "Brasília")
-  # })
+  # -- GEOGRAPHIC SERVER LOGIC --
+  output$geo_map <- leaflet::renderLeaflet({
+    leaflet() %>%
+      addTiles() %>%
+      setView(lng = -54, lat = -15, zoom = 4) %>%
+      addMarkers(lng = -47.9292, lat = -15.7801, popup = "Brasília")
+  })
 
   # Gracefully close the database connection when the app stops
   onSessionEnded(function() {
