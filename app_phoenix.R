@@ -81,7 +81,7 @@ DB_AVAILABLE <- !is.null(secure_db_connection)
 # 3. UI DEFINITION (STABLE & MONOLITHIC)
 # ==============================================================================
 ui <- navbarPage(
-  title = "Monitor Legislativo v4 (Phoenix)",
+  title = "Monitor Legislativo",
   theme = shinytheme("cerulean"), # Re-enabled theme
 
   # -- Custom CSS to fix blur/rendering bug --
@@ -449,10 +449,37 @@ server <- function(input, output, session) {
 
   # -- GEOGRAPHIC SERVER LOGIC --
   output$geo_map <- leaflet::renderLeaflet({
-    leaflet() %>%
+    # Predefined state centroids (rough) for Brazil
+    state_coords <- data.frame(
+      uf = c("AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SE","SP","TO"),
+      lat = c(-9.02,-9.62,-3.47,1.41,-12.96,-5.20,-15.78,-19.19,-15.83,-4.96,-12.64,-20.44,-18.10,-4.43,-7.06,-25.25,-8.28,-6.60,-22.84,-5.81,-30.00,-11.22,1.99,-27.33,-10.57,-23.55,-10.25),
+      lng = c(-70.81,-36.82,-65.10,-51.77,-38.51,-39.30,-47.93,-40.34,-47.86,-45.27,-55.42,-54.65,-44.38,-52.48,-35.55,-52.02,-35.01,-42.28,-43.15,-36.59,-53.00,-63.02,-61.33,-50.50,-37.07,-46.63,-48.25)
+    )
+
+    # Fetch counts per state if DB available
+    if (DB_AVAILABLE) {
+      counts <- tryCatch({
+        dbGetQuery(secure_db_connection,
+          "SELECT uf, COUNT(*) AS n FROM documents GROUP BY uf")
+      }, error = function(e) data.frame())
+      if (nrow(counts) > 0) {
+        state_coords <- merge(state_coords, counts, by = "uf", all.x = TRUE)
+      }
+    }
+    state_coords$n[is.na(state_coords$n)] <- 0
+
+    pal <- colorNumeric("YlOrRd", domain = state_coords$n)
+
+    leaflet(state_coords) %>%
       addTiles() %>%
       setView(lng = -54, lat = -15, zoom = 4) %>%
-      addMarkers(lng = -47.9292, lat = -15.7801, popup = "Brasília")
+      addCircleMarkers(~lng, ~lat,
+        radius = ~pmax(4, sqrt(n))*2,
+        color = ~pal(n),
+        stroke = FALSE, fillOpacity = 0.7,
+        label = ~paste0(uf, ": ", n, " documentos")) %>%
+      addLegend("bottomright", pal = pal, values = ~n,
+        title = "Nº Documentos", opacity = 1)
   })
 
   # Gracefully close the database connection when the app stops
