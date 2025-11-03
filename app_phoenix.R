@@ -488,6 +488,11 @@ server <- function(input, output, session) {
       counts <- db_counts
     }
 
+    # Guarantee counts has uf + n columns
+    if (!("uf" %in% names(counts) && "n" %in% names(counts))) {
+      counts <- data.frame(uf = shp$name, n = 0)
+    }
+
     # If polygons available and valid, render choropleth; else fallback to centroids
     if (!is.null(shp) && "name" %in% names(shp)) {
       shp <- merge(shp, counts, by.x = "name", by.y = "uf", all.x = TRUE)
