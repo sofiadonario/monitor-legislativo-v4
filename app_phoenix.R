@@ -592,6 +592,14 @@ server <- function(input, output, session) {
 
   # Observer to update map data when filters change (uses leafletProxy)
   observe({
+    # Memory cleanup on exit (PRD 3.1, 5.2 - P0 Critical)
+    on.exit({
+      if (exists("shp_merged")) rm(shp_merged)
+      if (exists("counts")) rm(counts)
+      if (exists("db_counts")) rm(db_counts)
+      gc(verbose = FALSE, reset = TRUE)
+    })
+
     # Establish reactive dependency on filter trigger
     current_trigger <- geo_filters$trigger
     current_tipo <- geo_filters$tipo
@@ -604,39 +612,43 @@ server <- function(input, output, session) {
     cat("Filter date_start:", as.character(current_date_start), "\n")
     cat("Filter date_end:", as.character(current_date_end), "\n")
 
-    shp <- brazil_states_sf()
+    # Show loading indicator (PRD 4.1 - P1 High)
+    withProgress(message = 'Atualizando mapa geográfico...', value = 0, {
+      incProgress(0.2, detail = "Carregando dados dos estados")
+      shp <- brazil_states_sf()
 
-    # Build filtered query
-    counts <- data.frame()
-    if (DB_AVAILABLE) {
-      # Start with base query
-      query <- "SELECT estado, COUNT(*) AS n FROM documents WHERE 1=1"
+      # Build filtered query
+      incProgress(0.2, detail = "Consultando banco de dados")
+      counts <- data.frame()
+      if (DB_AVAILABLE) {
+        # Start with base query
+        query <- "SELECT estado, COUNT(*) AS n FROM documents WHERE 1=1"
 
-      # Add document type filter
-      if (current_tipo != "Todos") {
-        query <- paste0(query, " AND tipo = '", current_tipo, "'")
+        # Add document type filter
+        if (current_tipo != "Todos") {
+          query <- paste0(query, " AND tipo = '", current_tipo, "'")
+        }
+
+        # Add date range filter
+        if (!is.null(current_date_start) && !is.null(current_date_end)) {
+          query <- paste0(query,
+                         " AND data >= '", current_date_start, "'",
+                         " AND data <= '", current_date_end, "'")
+        }
+
+        query <- paste0(query, " GROUP BY estado")
+
+        cat("Executing query:", query, "\n")
+        db_counts <- tryCatch({
+          result <- dbGetQuery(secure_db_connection, query)
+          cat("Query returned", nrow(result), "rows\n")
+          result
+        }, error = function(e) {
+          cat("Query error:", e$message, "\n")
+          data.frame()
+        })
+        counts <- db_counts
       }
-
-      # Add date range filter
-      if (!is.null(current_date_start) && !is.null(current_date_end)) {
-        query <- paste0(query,
-                       " AND data >= '", current_date_start, "'",
-                       " AND data <= '", current_date_end, "'")
-      }
-
-      query <- paste0(query, " GROUP BY estado")
-
-      cat("Executing query:", query, "\n")
-      db_counts <- tryCatch({
-        result <- dbGetQuery(secure_db_connection, query)
-        cat("Query returned", nrow(result), "rows\n")
-        result
-      }, error = function(e) {
-        cat("Query error:", e$message, "\n")
-        data.frame()
-      })
-      counts <- db_counts
-    }
 
     # Guarantee counts has estado + n columns
     # Use 2-letter codes (sigla) not full names, since database uses abbreviations
@@ -653,58 +665,61 @@ server <- function(input, output, session) {
       }
     }
 
-    # Use leafletProxy to update the existing map
-    if (!is.null(shp) && "sigla" %in% names(shp)) {
-      # CRITICAL FIX: Merge on 'sigla' (2-letter codes like "SP") not 'name' (full names)
-      # Database stores estado as abbreviations (SP, RJ, MG), GeoJSON has both 'name' and 'sigla'
-      shp_merged <- merge(shp, counts, by.x = "sigla", by.y = "estado", all.x = TRUE)
-      shp_merged$n[is.na(shp_merged$n)] <- 0
+      # Use leafletProxy to update the existing map
+      incProgress(0.2, detail = "Mesclando dados geográficos")
+      if (!is.null(shp) && "sigla" %in% names(shp)) {
+        # CRITICAL FIX: Merge on 'sigla' (2-letter codes like "SP") not 'name' (full names)
+        # Database stores estado as abbreviations (SP, RJ, MG), GeoJSON has both 'name' and 'sigla'
+        shp_merged <- merge(shp, counts, by.x = "sigla", by.y = "estado", all.x = TRUE)
+        shp_merged$n[is.na(shp_merged$n)] <- 0
 
-      cat("Merge result - rows:", nrow(shp_merged), "| n range:", min(shp_merged$n), "-", max(shp_merged$n), "\n")
-      cat("Document counts by state:\n")
-      print(data.frame(estado = shp_merged$sigla, documentos = shp_merged$n))
+        cat("Merge result - rows:", nrow(shp_merged), "| n range:", min(shp_merged$n), "-", max(shp_merged$n), "\n")
+        cat("Document counts by state:\n")
+        print(data.frame(estado = shp_merged$sigla, documentos = shp_merged$n))
 
-      # Create palette with better gradient visualization
-      # Use colorBin with quantile breaks for better visual differentiation
-      n_values <- shp_merged$n
-      max_n <- max(n_values, na.rm = TRUE)
+        # Create palette with better gradient visualization
+        # Use colorBin with quantile breaks for better visual differentiation
+        incProgress(0.2, detail = "Criando paleta de cores")
+        n_values <- shp_merged$n
+        max_n <- max(n_values, na.rm = TRUE)
 
-      # Create intelligent breaks for the color bins
-      if (max_n == 0) {
-        # All zeros - use single color
-        pal <- colorBin("YlOrRd", domain = c(0, 1), bins = c(0, 0.5, 1))
-      } else if (max_n <= 10) {
-        # Few documents - use simple breaks
-        pal <- colorBin("YlOrRd", domain = c(0, max_n), bins = 5)
+        # Create intelligent breaks for the color bins
+        if (max_n == 0) {
+          # All zeros - use single color
+          pal <- colorBin("YlOrRd", domain = c(0, 1), bins = c(0, 0.5, 1))
+        } else if (max_n <= 10) {
+          # Few documents - use simple breaks
+          pal <- colorBin("YlOrRd", domain = c(0, max_n), bins = 5)
+        } else {
+          # Use quantile-based breaks for good visual distribution
+          # This ensures each color bin represents roughly equal number of observations
+          breaks <- unique(quantile(n_values[n_values > 0], probs = seq(0, 1, 0.2), na.rm = TRUE))
+          breaks <- c(0, breaks)
+          pal <- colorBin("YlOrRd", domain = c(0, max_n), bins = breaks)
+        }
+
+        cat("Color palette created with", length(pal), "breaks\n")
+
+        incProgress(0.2, detail = "Renderizando mapa")
+        leafletProxy("geo_map") %>%
+          clearShapes() %>%
+          clearControls() %>%
+          addPolygons(
+            data = shp_merged,
+            fillColor = ~pal(n),
+            color = "#444",
+            weight = 1,
+            fillOpacity = 0.7,
+            label = ~paste0(name, ": ", n, " documentos")
+          ) %>%
+          addLegend(
+            "bottomright",
+            pal = pal,
+            values = n_values,
+            title = "Nº Documentos",
+            opacity = 1
+          )
       } else {
-        # Use quantile-based breaks for good visual distribution
-        # This ensures each color bin represents roughly equal number of observations
-        breaks <- unique(quantile(n_values[n_values > 0], probs = seq(0, 1, 0.2), na.rm = TRUE))
-        breaks <- c(0, breaks)
-        pal <- colorBin("YlOrRd", domain = c(0, max_n), bins = breaks)
-      }
-
-      cat("Color palette created with", length(pal), "breaks\n")
-
-      leafletProxy("geo_map") %>%
-        clearShapes() %>%
-        clearControls() %>%
-        addPolygons(
-          data = shp_merged,
-          fillColor = ~pal(n),
-          color = "#444",
-          weight = 1,
-          fillOpacity = 0.7,
-          label = ~paste0(name, ": ", n, " documentos")
-        ) %>%
-        addLegend(
-          "bottomright",
-          pal = pal,
-          values = n_values,
-          title = "Nº Documentos",
-          opacity = 1
-        )
-    } else {
       # Fallback simple centroid markers
       centroids <- data.frame(
         uf = c("AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SE","SP","TO"),
@@ -728,6 +743,7 @@ server <- function(input, output, session) {
         addLegend("bottomright", pal = pal, values = centroids$n,
           title = "Nº Documentos", opacity = 1)
     }
+    }) # Close withProgress
   })
 
   # Force Geographic map to bind to reactive graph even when tab is hidden
