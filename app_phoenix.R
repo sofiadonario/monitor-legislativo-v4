@@ -595,6 +595,12 @@ server <- function(input, output, session) {
         cat("Export - Columns:", names(map_data), "\n")
         cat("Export - n values:", paste(map_data$n, collapse=", "), "\n")
 
+        # Ensure the object is recognized as sf (fixes class loss from reactiveVal)
+        if (!inherits(map_data, "sf")) {
+          cat("Export - Converting to sf object\n")
+          map_data <- sf::st_as_sf(map_data)
+        }
+
         # Create static choropleth map using ggplot2 + sf
         n_values <- map_data$n
         max_n <- max(n_values, na.rm = TRUE)
