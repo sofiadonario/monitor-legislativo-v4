@@ -221,6 +221,13 @@ ui <- navbarPage(
                         style = "margin-top: 25px;")
         )
       ),
+      fluidRow(
+        column(12,
+          downloadButton("geo_download_map", "Exportar Mapa (PNG)",
+                        class = "btn-info",
+                        style = "margin-top: 10px; margin-bottom: 10px;")
+        )
+      ),
       hr(),
       leaflet::leafletOutput("geo_map", height = "600px")
     )
@@ -503,6 +510,9 @@ server <- function(input, output, session) {
     trigger = 1
   )
 
+  # Store current map data for export (PRD 4.3 - P1 High)
+  current_map_data <- reactiveVal(NULL)
+
   # Apply button observer
   observeEvent(input$geo_apply, {
     geo_filters$tipo <- input$geo_filter_tipo
@@ -558,6 +568,70 @@ server <- function(input, output, session) {
         write.csv(data, file, row.names = FALSE)
       }, error = function(e) {
         write.csv(data.frame(Error = e$message), file, row.names = FALSE)
+      })
+    }
+  )
+
+  # Download handler for map export as PNG (PRD 4.3 - P1 High)
+  output$geo_download_map <- downloadHandler(
+    filename = function() {
+      paste0("mapa_geografico_", format(Sys.Date(), "%Y%m%d"), ".png")
+    },
+    content = function(file) {
+      map_data <- current_map_data()
+
+      if (is.null(map_data)) {
+        # Create empty plot with message
+        p <- ggplot() +
+          annotate("text", x = 0, y = 0, label = "Nenhum dado disponível para exportação", size = 6) +
+          theme_void()
+        ggsave(file, plot = p, width = 10, height = 8, dpi = 300, bg = "white")
+        return()
+      }
+
+      tryCatch({
+        # Create static choropleth map using ggplot2 + sf
+        n_values <- map_data$n
+        max_n <- max(n_values, na.rm = TRUE)
+
+        # Create the map
+        p <- ggplot(data = map_data) +
+          geom_sf(aes(fill = n), color = "#444444", size = 0.3) +
+          scale_fill_gradient(
+            low = "#fff5eb",
+            high = "#d62728",
+            name = "Nº Documentos",
+            breaks = if(max_n > 0) pretty(c(0, max_n), n = 5) else c(0, 1),
+            limits = c(0, max(max_n, 1))
+          ) +
+          labs(
+            title = "Distribuição Geográfica de Documentos Legislativos",
+            subtitle = paste("Dados extraídos em", format(Sys.Date(), "%d/%m/%Y")),
+            caption = "Fonte: Monitor Legislativo - MackIntegridade"
+          ) +
+          theme_minimal(base_size = 12) +
+          theme(
+            plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
+            plot.subtitle = element_text(size = 12, hjust = 0.5, color = "gray40"),
+            plot.caption = element_text(size = 10, hjust = 1, color = "gray50"),
+            legend.position = "right",
+            legend.title = element_text(face = "bold"),
+            panel.grid = element_blank(),
+            axis.text = element_blank(),
+            axis.title = element_blank()
+          )
+
+        # Save as PNG with high resolution
+        ggsave(file, plot = p, width = 12, height = 10, dpi = 300, bg = "white")
+
+      }, error = function(e) {
+        # Error handling - create error message plot
+        p <- ggplot() +
+          annotate("text", x = 0, y = 0,
+                  label = paste("Erro ao exportar mapa:", e$message),
+                  size = 6, color = "red") +
+          theme_void()
+        ggsave(file, plot = p, width = 10, height = 8, dpi = 300, bg = "white")
       })
     }
   )
@@ -672,6 +746,9 @@ server <- function(input, output, session) {
         # Database stores estado as abbreviations (SP, RJ, MG), GeoJSON has both 'name' and 'sigla'
         shp_merged <- merge(shp, counts, by.x = "sigla", by.y = "estado", all.x = TRUE)
         shp_merged$n[is.na(shp_merged$n)] <- 0
+
+        # Store for export functionality (PRD 4.3 - P1 High)
+        current_map_data(shp_merged)
 
         cat("Merge result - rows:", nrow(shp_merged), "| n range:", min(shp_merged$n), "-", max(shp_merged$n), "\n")
         cat("Document counts by state:\n")
