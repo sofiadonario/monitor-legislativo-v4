@@ -703,13 +703,10 @@ server <- function(input, output, session) {
       theme_minimal()
   })
 
-  # Gracefully close the database connection when the app stops
-  onSessionEnded(function() {
-    if (DB_AVAILABLE) {
-      dbDisconnect(secure_db_connection)
-      cat("Database connection closed.\n")
-    }
-  })
+  # Note: Database connection is NOT closed per-session because it's a GLOBAL connection
+  # shared across all users. Cloud Run will terminate the container when inactive,
+  # which will automatically clean up the connection. Closing it on session end would
+  # break the connection for other active users.
 }
 
 # ==============================================================================
