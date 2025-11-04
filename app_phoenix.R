@@ -661,12 +661,30 @@ server <- function(input, output, session) {
       shp_merged$n[is.na(shp_merged$n)] <- 0
 
       cat("Merge result - rows:", nrow(shp_merged), "| n range:", min(shp_merged$n), "-", max(shp_merged$n), "\n")
+      cat("Document counts by state:\n")
+      print(data.frame(estado = shp_merged$sigla, documentos = shp_merged$n))
 
-      # Create palette with explicit domain to ensure color variation
-      # Add small epsilon to ensure domain has range even when all values are zero
+      # Create palette with better gradient visualization
+      # Use colorBin with quantile breaks for better visual differentiation
       n_values <- shp_merged$n
-      domain_range <- c(0, max(n_values) + 0.1)
-      pal <- colorNumeric("YlOrRd", domain = domain_range)
+      max_n <- max(n_values, na.rm = TRUE)
+
+      # Create intelligent breaks for the color bins
+      if (max_n == 0) {
+        # All zeros - use single color
+        pal <- colorBin("YlOrRd", domain = c(0, 1), bins = c(0, 0.5, 1))
+      } else if (max_n <= 10) {
+        # Few documents - use simple breaks
+        pal <- colorBin("YlOrRd", domain = c(0, max_n), bins = 5)
+      } else {
+        # Use quantile-based breaks for good visual distribution
+        # This ensures each color bin represents roughly equal number of observations
+        breaks <- unique(quantile(n_values[n_values > 0], probs = seq(0, 1, 0.2), na.rm = TRUE))
+        breaks <- c(0, breaks)
+        pal <- colorBin("YlOrRd", domain = c(0, max_n), bins = breaks)
+      }
+
+      cat("Color palette created with", length(pal), "breaks\n")
 
       leafletProxy("geo_map") %>%
         clearShapes() %>%
