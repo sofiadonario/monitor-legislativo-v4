@@ -573,14 +573,23 @@ server <- function(input, output, session) {
     }
   }, once = TRUE)
 
+  # Initial base map render (runs once)
   output$geo_map <- leaflet::renderLeaflet({
+    cat("=== CREATING BASE MAP ===\n")
+    leaflet() %>%
+      addTiles() %>%
+      setView(lng = -54, lat = -15, zoom = 4)
+  })
+
+  # Observer to update map data when filters change (uses leafletProxy)
+  observe({
     # Establish reactive dependency on filter trigger
     current_trigger <- geo_filters$trigger
     current_tipo <- geo_filters$tipo
     current_date_start <- geo_filters$date_start
     current_date_end <- geo_filters$date_end
 
-    cat("=== GEO_MAP RENDERING ===\n")
+    cat("=== UPDATING MAP DATA ===\n")
     cat("Trigger value:", current_trigger, "\n")
     cat("Filter tipo:", current_tipo, "\n")
     cat("Filter date_start:", as.character(current_date_start), "\n")
@@ -625,17 +634,18 @@ server <- function(input, output, session) {
       counts <- data.frame(estado = shp$name, n = 0)
     }
 
-    # If polygons available and valid, render choropleth; else fallback to centroids
+    # Use leafletProxy to update the existing map
     if (!is.null(shp) && "name" %in% names(shp)) {
       shp <- merge(shp, counts, by.x = "name", by.y = "estado", all.x = TRUE)
       shp$n[is.na(shp$n)] <- 0
       pal <- colorNumeric("YlOrRd", domain = shp$n)
-      leaflet(shp) %>%
-        addTiles() %>%
-        setView(lng = -54, lat = -15, zoom = 4) %>%
-        addPolygons(fillColor = ~pal(n), color = "#444", weight = 1,
+
+      leafletProxy("geo_map") %>%
+        clearShapes() %>%
+        clearControls() %>%
+        addPolygons(data = shp, fillColor = ~pal(n), color = "#444", weight = 1,
                     fillOpacity = 0.7, label = ~paste0(name, ": ", n)) %>%
-        addLegend("bottomright", pal = pal, values = ~n,
+        addLegend("bottomright", pal = pal, values = shp$n,
                   title = "Nº Documentos", opacity = 1)
     } else {
       # Fallback simple centroid markers
@@ -650,14 +660,15 @@ server <- function(input, output, session) {
       if (!"n" %in% names(centroids)) centroids$n <- 0
       centroids$n[is.na(centroids$n)] <- 0
       pal <- colorNumeric("YlOrRd", domain = centroids$n)
-      leaflet(centroids) %>%
-        addTiles() %>%
-        setView(lng = -54, lat = -15, zoom = 4) %>%
-        addCircleMarkers(~lng, ~lat,
+
+      leafletProxy("geo_map") %>%
+        clearMarkers() %>%
+        clearControls() %>%
+        addCircleMarkers(data = centroids, ~lng, ~lat,
           radius = ~pmax(4, sqrt(n))*2,
           color = ~pal(n), stroke = FALSE, fillOpacity = 0.7,
           label = ~paste0(uf, ": ", n, " documentos")) %>%
-        addLegend("bottomright", pal = pal, values = ~n,
+        addLegend("bottomright", pal = pal, values = centroids$n,
           title = "Nº Documentos", opacity = 1)
     }
   })
