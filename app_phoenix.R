@@ -538,7 +538,7 @@ server <- function(input, output, session) {
       current_date_end <- geo_filters$date_end
 
       # Build filtered query
-      query <- "SELECT uf, COUNT(*) AS document_count FROM documents WHERE 1=1"
+      query <- "SELECT estado, COUNT(*) AS document_count FROM documents WHERE 1=1"
 
       if (current_tipo != "Todos") {
         query <- paste0(query, " AND tipo = '", current_tipo, "'")
@@ -550,7 +550,7 @@ server <- function(input, output, session) {
                        " AND data <= '", current_date_end, "'")
       }
 
-      query <- paste0(query, " GROUP BY uf ORDER BY document_count DESC")
+      query <- paste0(query, " GROUP BY estado ORDER BY document_count DESC")
 
       # Execute query and write CSV
       tryCatch({
@@ -592,7 +592,7 @@ server <- function(input, output, session) {
     counts <- data.frame()
     if (DB_AVAILABLE) {
       # Start with base query
-      query <- "SELECT uf, COUNT(*) AS n FROM documents WHERE 1=1"
+      query <- "SELECT estado, COUNT(*) AS n FROM documents WHERE 1=1"
 
       # Add document type filter
       if (current_tipo != "Todos") {
@@ -606,7 +606,7 @@ server <- function(input, output, session) {
                        " AND data <= '", current_date_end, "'")
       }
 
-      query <- paste0(query, " GROUP BY uf")
+      query <- paste0(query, " GROUP BY estado")
 
       cat("Executing query:", query, "\n")
       db_counts <- tryCatch({
@@ -620,14 +620,14 @@ server <- function(input, output, session) {
       counts <- db_counts
     }
 
-    # Guarantee counts has uf + n columns
-    if (!("uf" %in% names(counts) && "n" %in% names(counts))) {
-      counts <- data.frame(uf = shp$name, n = 0)
+    # Guarantee counts has estado + n columns
+    if (!("estado" %in% names(counts) && "n" %in% names(counts))) {
+      counts <- data.frame(estado = shp$name, n = 0)
     }
 
     # If polygons available and valid, render choropleth; else fallback to centroids
     if (!is.null(shp) && "name" %in% names(shp)) {
-      shp <- merge(shp, counts, by.x = "name", by.y = "uf", all.x = TRUE)
+      shp <- merge(shp, counts, by.x = "name", by.y = "estado", all.x = TRUE)
       shp$n[is.na(shp$n)] <- 0
       pal <- colorNumeric("YlOrRd", domain = shp$n)
       leaflet(shp) %>%
@@ -645,7 +645,7 @@ server <- function(input, output, session) {
         lng = c(-70.81,-36.82,-65.10,-51.77,-38.51,-39.30,-47.93,-40.34,-47.86,-45.27,-55.42,-54.65,-44.38,-52.48,-35.55,-52.02,-35.01,-42.28,-43.15,-36.59,-53.00,-63.02,-61.33,-50.50,-37.07,-46.63,-48.25)
       )
       if (nrow(counts) > 0) {
-        centroids <- merge(centroids, counts, by = "uf", all.x = TRUE)
+        centroids <- merge(centroids, counts, by.x = "uf", by.y = "estado", all.x = TRUE)
       }
       if (!"n" %in% names(centroids)) centroids$n <- 0
       centroids$n[is.na(centroids$n)] <- 0
