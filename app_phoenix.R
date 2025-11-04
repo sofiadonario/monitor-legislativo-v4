@@ -580,6 +580,12 @@ server <- function(input, output, session) {
     current_date_start <- geo_filters$date_start
     current_date_end <- geo_filters$date_end
 
+    cat("=== GEO_MAP RENDERING ===\n")
+    cat("Trigger value:", current_trigger, "\n")
+    cat("Filter tipo:", current_tipo, "\n")
+    cat("Filter date_start:", as.character(current_date_start), "\n")
+    cat("Filter date_end:", as.character(current_date_end), "\n")
+
     shp <- brazil_states_sf()
 
     # Build filtered query
@@ -602,9 +608,15 @@ server <- function(input, output, session) {
 
       query <- paste0(query, " GROUP BY uf")
 
+      cat("Executing query:", query, "\n")
       db_counts <- tryCatch({
-        dbGetQuery(secure_db_connection, query)
-      }, error = function(e) data.frame())
+        result <- dbGetQuery(secure_db_connection, query)
+        cat("Query returned", nrow(result), "rows\n")
+        result
+      }, error = function(e) {
+        cat("Query error:", e$message, "\n")
+        data.frame()
+      })
       counts <- db_counts
     }
 
