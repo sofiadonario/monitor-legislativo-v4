@@ -583,16 +583,22 @@ server <- function(input, output, session) {
       if (is.null(map_data)) {
         # Create empty plot with message
         p <- ggplot() +
-          annotate("text", x = 0, y = 0, label = "Nenhum dado disponível para exportação", size = 6) +
+          annotate("text", x = 0, y = 0, label = "Nenhum dado disponível para exportação\nClique em 'Aplicar Filtros' primeiro", size = 6) +
           theme_void()
         ggsave(file, plot = p, width = 10, height = 8, dpi = 300, bg = "white")
         return()
       }
 
       tryCatch({
+        # Debug: print data structure
+        cat("Export - Data class:", class(map_data), "\n")
+        cat("Export - Columns:", names(map_data), "\n")
+        cat("Export - n values:", paste(map_data$n, collapse=", "), "\n")
+
         # Create static choropleth map using ggplot2 + sf
         n_values <- map_data$n
         max_n <- max(n_values, na.rm = TRUE)
+        cat("Export - max_n:", max_n, "\n")
 
         # Create the map
         p <- ggplot(data = map_data) +
