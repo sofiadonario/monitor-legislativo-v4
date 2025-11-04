@@ -568,7 +568,16 @@ server <- function(input, output, session) {
   observeEvent(TRUE, {  # run once
     if (is.null(brazil_states_sf())) {
       geo_url <- "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
-      shp <- tryCatch(sf::st_read(geo_url, quiet = TRUE), error = function(e) NULL)
+      shp <- tryCatch({
+        raw_shp <- sf::st_read(geo_url, quiet = TRUE)
+        # Add 'sigla' field to the shapefile for merging with database (uses 2-letter codes)
+        # This ensures proper join between GeoJSON (full names) and database (abbreviations)
+        if (!is.null(raw_shp) && "sigla" %in% names(raw_shp)) {
+          raw_shp
+        } else {
+          NULL
+        }
+      }, error = function(e) NULL)
       brazil_states_sf(shp)
     }
   }, once = TRUE)
@@ -630,23 +639,53 @@ server <- function(input, output, session) {
     }
 
     # Guarantee counts has estado + n columns
+    # Use 2-letter codes (sigla) not full names, since database uses abbreviations
     if (!("estado" %in% names(counts) && "n" %in% names(counts))) {
-      counts <- data.frame(estado = shp$name, n = 0)
+      if (!is.null(shp) && "sigla" %in% names(shp)) {
+        counts <- data.frame(estado = shp$sigla, n = 0)
+      } else {
+        # Ultimate fallback with all Brazilian state codes
+        counts <- data.frame(
+          estado = c("AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+                    "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SE","SP","TO"),
+          n = 0
+        )
+      }
     }
 
     # Use leafletProxy to update the existing map
-    if (!is.null(shp) && "name" %in% names(shp)) {
-      shp <- merge(shp, counts, by.x = "name", by.y = "estado", all.x = TRUE)
-      shp$n[is.na(shp$n)] <- 0
-      pal <- colorNumeric("YlOrRd", domain = shp$n)
+    if (!is.null(shp) && "sigla" %in% names(shp)) {
+      # CRITICAL FIX: Merge on 'sigla' (2-letter codes like "SP") not 'name' (full names)
+      # Database stores estado as abbreviations (SP, RJ, MG), GeoJSON has both 'name' and 'sigla'
+      shp_merged <- merge(shp, counts, by.x = "sigla", by.y = "estado", all.x = TRUE)
+      shp_merged$n[is.na(shp_merged$n)] <- 0
+
+      cat("Merge result - rows:", nrow(shp_merged), "| n range:", min(shp_merged$n), "-", max(shp_merged$n), "\n")
+
+      # Create palette with explicit domain to ensure color variation
+      # Add small epsilon to ensure domain has range even when all values are zero
+      n_values <- shp_merged$n
+      domain_range <- c(0, max(n_values) + 0.1)
+      pal <- colorNumeric("YlOrRd", domain = domain_range)
 
       leafletProxy("geo_map") %>%
         clearShapes() %>%
         clearControls() %>%
-        addPolygons(data = shp, fillColor = ~pal(n), color = "#444", weight = 1,
-                    fillOpacity = 0.7, label = ~paste0(name, ": ", n)) %>%
-        addLegend("bottomright", pal = pal, values = shp$n,
-                  title = "Nº Documentos", opacity = 1)
+        addPolygons(
+          data = shp_merged,
+          fillColor = ~pal(n),
+          color = "#444",
+          weight = 1,
+          fillOpacity = 0.7,
+          label = ~paste0(name, ": ", n, " documentos")
+        ) %>%
+        addLegend(
+          "bottomright",
+          pal = pal,
+          values = n_values,
+          title = "Nº Documentos",
+          opacity = 1
+        )
     } else {
       # Fallback simple centroid markers
       centroids <- data.frame(
