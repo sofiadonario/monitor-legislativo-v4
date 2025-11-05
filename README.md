@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > **✅ PRODUCTION READY: Comprehensive Platform Consolidation Complete**
-> **Status**: Production Stable | **Version**: 4.0 | **Updated**: January 2025
+> **Status**: Production Stable | **Version**: 4.0 | **Updated**: November 2024
 
 ## 📋 Table of Contents
 
@@ -77,6 +77,49 @@ The platform recently underwent a **comprehensive consolidation** that unified 1
 - **Deploy Time**: <5 minutes cold start on Railway
 - **Uptime**: 99.9% target with automated health checks
 
+### Recent Updates (November 2024)
+
+**Geographic Visualization Enhancements (v145-v146)**
+
+The Geographic visualization module received critical improvements to fix data display issues and enhance visual clarity:
+
+**v145: Data Merge Fix**
+- **Problem**: Geographic map filters were updating queries but not visual display
+- **Root Cause**: Database stores state codes as 2-letter abbreviations ("SP", "RJ", "MG"), but GeoJSON merge was using full state names
+- **Solution**: Changed merge operation from `by.x = "name"` to `by.x = "sigla"` to match database format
+- **Impact**: Map now correctly displays document counts and updates when filters are applied
+
+**v146: Color Gradient Improvements**
+- **Problem**: Linear color scale (`colorNumeric`) didn't provide enough visual distinction between states
+- **Solution**: Implemented intelligent `colorBin` with quantile-based breaks
+  - States with similar document counts receive similar color tones
+  - States with different counts show noticeably different colors
+  - Adaptive break selection based on data distribution
+- **Impact**: Clear choropleth visualization with proper gradient showing document density across states
+
+**v152: Geographic Analytics Enhancement (November 2024)**
+- **New Features**: Added comprehensive analytics sidebar to Geographic tab
+  - **State Ranking Table**: Interactive table showing top states by document count with color-coded bars
+  - **Summary Statistics Panel**: Real-time display of total documents, active states, date range, and filters
+  - **Performance Metrics**: Live query timing and memory usage tracking for optimization
+- **Layout Improvements**:
+  - Map now uses 8-column width with 4-column analytics sidebar
+  - Better use of screen real estate for data exploration
+  - Responsive design maintains usability on different screen sizes
+- **Performance Tracking**: Added instrumentation to database queries for monitoring and optimization
+- **Impact**: Enhanced user experience with immediate insight into data distribution and system performance
+
+**Technical Improvements:**
+- Split `renderLeaflet` into base map + `leafletProxy` updates (performance)
+- Added diagnostic logging for troubleshooting merge operations
+- Enhanced fallback data structure handling
+- Quantile-based color bins ensure optimal visual distribution
+
+**Deployment:**
+- Successfully deployed to Google Cloud Run (southamerica-east1)
+- Revision: mackmonitor-00190-rxf
+- URL: https://mackmonitor-667999538255.southamerica-east1.run.app
+
 ## Features
 
 ### 📊 Core Analytics
@@ -89,11 +132,15 @@ The platform recently underwent a **comprehensive consolidation** that unified 1
 
 ### 🗺️ Geographic Visualization
 
-- Interactive Leaflet maps with Brazilian IBGE boundaries
-- State and municipal-level distribution analysis
-- Transport corridor analysis integration
-- Density visualization and clustering
-- Geographic-temporal correlation analysis
+- **Interactive Leaflet Maps** with Brazilian IBGE boundaries (state and municipal level)
+- **Choropleth Visualization** with quantile-based color gradients for document density
+- **Real-time Filter Updates** - map responds to document type and date range filters
+- **Smart Data Merging** - correct mapping between database state codes and GeoJSON polygons
+- **Performance Optimized** - uses leafletProxy pattern for efficient map updates
+- **State-level Analysis** - distribution of 134k+ documents across 27 Brazilian states
+- **Transport Corridor Integration** - analysis of legislative documents by transport regions
+- **Density Visualization** - clear color gradients showing legislative activity concentration
+- **Geographic-Temporal Correlation** - analyze legislative trends across regions and time
 
 ### 🔍 Advanced Search
 
@@ -151,10 +198,11 @@ The platform recently underwent a **comprehensive consolidation** that unified 1
 - **RColorBrewer** - Color schemes
 
 ### Deployment
-- **Railway** - Production hosting platform
+- **Google Cloud Run** - Current production hosting (southamerica-east1)
+- **Railway** - Alternative hosting platform
 - **Docker** - Containerization (Ubuntu 24.04)
 - **GitHub Actions** - CI/CD automation
-- **PostgreSQL** - Railway-managed database
+- **PostgreSQL** - Cloud SQL database (managed by Google Cloud)
 
 ### Optional Enhancements
 - **data.table** - High-performance data operations
@@ -323,9 +371,43 @@ Rscript tests/run_available_tests.R
 
 ## Deployment
 
-### Railway (Production)
+### Google Cloud Run (Current Production)
 
-The application is configured for automatic deployment on Railway:
+The application is currently deployed on Google Cloud Run for optimal performance and scalability:
+
+**Current Deployment:**
+- **Region**: southamerica-east1 (São Paulo, Brazil)
+- **Revision**: mackmonitor-00190-rxf
+- **URL**: https://mackmonitor-667999538255.southamerica-east1.run.app
+- **Database**: Cloud SQL PostgreSQL with Unix socket connection
+- **Build**: Docker-based with Cloud Build
+- **Auto-scaling**: Automatic based on request volume
+
+**Deployment Command:**
+```bash
+# Build and push image
+gcloud builds submit --tag us-central1-docker.pkg.dev/mackmonitor/monitor-repo/mackmonitor:v146 \
+  --project=mackmonitor --region=us-central1
+
+# Deploy to Cloud Run
+gcloud run deploy mackmonitor \
+  --image us-central1-docker.pkg.dev/mackmonitor/monitor-repo/mackmonitor:v146 \
+  --platform managed \
+  --region southamerica-east1 \
+  --allow-unauthenticated \
+  --project=mackmonitor
+```
+
+**Key Features:**
+- Serverless container deployment
+- Built-in load balancing
+- Automatic HTTPS
+- Cloud SQL connection via Unix socket
+- Low-latency serving from São Paulo region
+
+### Railway (Alternative)
+
+The application is also configured for deployment on Railway:
 
 1. **Automatic Configuration** via `railway.toml`
 2. **Environment Variables** set in Railway dashboard
@@ -533,7 +615,12 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 *Monitor Legislativo v4 - Transforming legislative data into actionable insights*
 
-**Version**: 4.0 | **Last Updated**: January 2025 | **Status**: Production Ready ✅
-# Railway deploy Sat Oct 18 19:24:53 -03 2025
-# Cache bust Sun Oct 19 11:26:19 -03 2025
-# Force complete rebuild Sun Oct 19 19:23:08 -03 2025
+**Version**: 4.0 | **Last Updated**: November 2024 | **Status**: Production Ready ✅
+
+---
+
+## Recent Deployments
+
+- **v146** (November 2024): Color gradient improvements with quantile-based bins
+- **v145** (November 2024): Geographic map data merge fix (sigla field)
+- **Google Cloud Run**: Current production environment (southamerica-east1)
