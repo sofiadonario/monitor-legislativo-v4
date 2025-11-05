@@ -229,7 +229,25 @@ ui <- navbarPage(
         )
       ),
       hr(),
-      leaflet::leafletOutput("geo_map", height = "600px")
+      fluidRow(
+        column(8,
+          # Main map
+          leaflet::leafletOutput("geo_map", height = "600px")
+        ),
+        column(4,
+          # Quick Win #1: State ranking table
+          h4("Ranking de Estados"),
+          DT::dataTableOutput("geo_state_ranking"),
+          hr(),
+          # Quick Win #2: Summary statistics
+          h4("Estatísticas Resumidas"),
+          uiOutput("geo_summary_stats"),
+          hr(),
+          # Quick Win #6: Performance metrics
+          h5("Métricas de Desempenho"),
+          htmlOutput("geo_performance_metrics", style = "font-size: 12px; color: #666;")
+        )
+      )
     )
   ),
 
@@ -513,6 +531,15 @@ server <- function(input, output, session) {
   # Store current map data for export (PRD 4.3 - P1 High)
   current_map_data <- reactiveVal(NULL)
 
+  # Store query results and performance metrics (Quick Win #1, #2, #6)
+  geo_performance <- reactiveValues(
+    query_time = NA,
+    total_documents = 0,
+    states_with_data = 0,
+    date_range = list(min = NA, max = NA),
+    memory_used_mb = NA
+  )
+
   # Apply button observer
   observeEvent(input$geo_apply, {
     geo_filters$tipo <- input$geo_filter_tipo
@@ -707,6 +734,10 @@ server <- function(input, output, session) {
       incProgress(0.2, detail = "Consultando banco de dados")
       counts <- data.frame()
       if (DB_AVAILABLE) {
+        # Track query performance (Quick Win #6)
+        query_start_time <- Sys.time()
+        memory_before <- as.numeric(object.size(ls())) / 1024 / 1024  # MB
+
         # Start with base query
         query <- "SELECT estado, COUNT(*) AS n FROM documents WHERE 1=1"
 
@@ -734,6 +765,13 @@ server <- function(input, output, session) {
           data.frame()
         })
         counts <- db_counts
+
+        # Update performance metrics (Quick Win #6)
+        query_end_time <- Sys.time()
+        geo_performance$query_time <- as.numeric(difftime(query_end_time, query_start_time, units = "secs"))
+        geo_performance$total_documents <- sum(counts$n, na.rm = TRUE)
+        geo_performance$states_with_data <- nrow(counts[counts$n > 0, ])
+        geo_performance$memory_used_mb <- as.numeric(object.size(ls())) / 1024 / 1024 - memory_before
       }
 
     # Guarantee counts has estado + n columns
@@ -839,6 +877,125 @@ server <- function(input, output, session) {
 
   # Force Geographic map to bind to reactive graph even when tab is hidden
   outputOptions(output, "geo_map", suspendWhenHidden = FALSE)
+
+  # Quick Win #1: State Ranking Table
+  output$geo_state_ranking <- DT::renderDataTable({
+    req(current_map_data())
+
+    tryCatch({
+      map_data <- current_map_data()
+
+      # Create ranking from map data
+      ranking_data <- data.frame(
+        Estado = map_data$name,
+        Sigla = map_data$sigla,
+        Documentos = map_data$n,
+        stringsAsFactors = FALSE
+      )
+
+      # Sort by document count descending
+      ranking_data <- ranking_data[order(-ranking_data$Documentos), ]
+
+      # Only show states with data
+      ranking_data <- ranking_data[ranking_data$Documentos > 0, ]
+
+      DT::datatable(
+        ranking_data,
+        options = list(
+          pageLength = 10,
+          dom = 'tp',  # Only table and pagination
+          ordering = FALSE,  # Already ordered
+          searching = FALSE,
+          scrollY = "400px",
+          scrollCollapse = TRUE
+        ),
+        rownames = FALSE,
+        class = 'compact stripe'
+      ) %>%
+        DT::formatStyle('Documentos',
+                       background = DT::styleColorBar(range(ranking_data$Documentos), '#FFA07A'),
+                       backgroundSize = '100% 90%',
+                       backgroundRepeat = 'no-repeat',
+                       backgroundPosition = 'center')
+    }, error = function(e) {
+      DT::datatable(data.frame(Info = "Clique em 'Aplicar Filtros' para ver o ranking"),
+                   options = list(dom = 't'), rownames = FALSE)
+    })
+  })
+
+  # Quick Win #2: Summary Statistics Panel
+  output$geo_summary_stats <- renderUI({
+    req(current_map_data())
+
+    tryCatch({
+      total_docs <- geo_performance$total_documents
+      states_with_data <- geo_performance$states_with_data
+
+      # Get date range from filters if available
+      date_info <- if (!is.null(geo_filters$date_start) && !is.null(geo_filters$date_end)) {
+        paste(format(geo_filters$date_start, "%d/%m/%Y"), "a",
+              format(geo_filters$date_end, "%d/%m/%Y"))
+      } else {
+        "Todos os períodos"
+      }
+
+      # Get document type filter
+      tipo_info <- if (geo_filters$tipo != "Todos") {
+        geo_filters$tipo
+      } else {
+        "Todos os tipos"
+      }
+
+      tagList(
+        tags$div(style = "padding: 10px; background: #f8f9fa; border-radius: 5px;",
+          tags$p(style = "margin: 5px 0;",
+            tags$strong("Total de Documentos: "),
+            tags$span(style = "color: #007bff;", format(total_docs, big.mark = "."))
+          ),
+          tags$p(style = "margin: 5px 0;",
+            tags$strong("Estados com Dados: "),
+            tags$span(style = "color: #28a745;", paste0(states_with_data, " / 27"))
+          ),
+          tags$p(style = "margin: 5px 0;",
+            tags$strong("Período: "),
+            tags$span(style = "color: #6c757d;", date_info)
+          ),
+          tags$p(style = "margin: 5px 0;",
+            tags$strong("Tipo de Documento: "),
+            tags$span(style = "color: #6c757d;", tipo_info)
+          )
+        )
+      )
+    }, error = function(e) {
+      tags$p("Aguardando dados...")
+    })
+  })
+
+  # Quick Win #6: Performance Metrics Panel
+  output$geo_performance_metrics <- renderUI({
+    req(geo_performance$query_time)
+
+    tryCatch({
+      query_time <- geo_performance$query_time
+      memory_used <- geo_performance$memory_used_mb
+
+      query_color <- if (query_time < 1) "#28a745" else if (query_time < 3) "#ffc107" else "#dc3545"
+
+      HTML(paste0(
+        "<div style='padding: 5px;'>",
+        "<p style='margin: 3px 0;'><strong>Tempo de Consulta:</strong> ",
+        "<span style='color: ", query_color, ";'>",
+        sprintf("%.2f", query_time), " segundos</span></p>",
+        "<p style='margin: 3px 0;'><strong>Memória Utilizada:</strong> ",
+        sprintf("%.1f", abs(memory_used)), " MB</p>",
+        "<p style='margin: 3px 0; font-size: 11px; color: #999;'>",
+        "Atualizado: ", format(Sys.time(), "%H:%M:%S"), "</p>",
+        "</div>"
+      ))
+    }, error = function(e) {
+      HTML("<p>Aguardando métricas...</p>")
+    })
+  })
 
   # -- ANALYTICS SERVER LOGIC --
 
