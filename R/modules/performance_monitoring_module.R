@@ -17,8 +17,11 @@
 
 library(shiny)
 library(DT)
-library(plotly)
 library(DBI)
+# plotly is optional - will be loaded when needed for charts
+if (requireNamespace("plotly", quietly = TRUE)) {
+  library(plotly)
+}
 
 # ==============================================================================
 # PERFORMANCE MONITORING HELPER FUNCTIONS
