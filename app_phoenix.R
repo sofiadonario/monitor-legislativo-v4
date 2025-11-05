@@ -758,6 +758,8 @@ server <- function(input, output, session) {
         # Database stores estado as abbreviations (SP, RJ, MG), GeoJSON has both 'name' and 'sigla'
         shp_merged <- merge(shp, counts, by.x = "sigla", by.y = "estado", all.x = TRUE)
         shp_merged$n[is.na(shp_merged$n)] <- 0
+        # Ensure n is numeric (fix for max() returning wrong value)
+        shp_merged$n <- as.numeric(shp_merged$n)
 
         # Store for export functionality (PRD 4.3 - P1 High)
         current_map_data(shp_merged)
