@@ -183,56 +183,16 @@ performanceMonitoringUI <- function(id) {
             # KPI Cards Row
             fluidRow(
               # Database Connection Status
-              column(3,
-                div(
-                  class = "info-box",
-                  style = uiOutput(ns("kpi_db_style"), inline = TRUE),
-                  span(class = "info-box-icon", icon("database")),
-                  div(class = "info-box-content",
-                    span(class = "info-box-text", "Conexão DB"),
-                    span(class = "info-box-number", textOutput(ns("kpi_db_status"), inline = TRUE))
-                  )
-                )
-              ),
+              column(3, uiOutput(ns("kpi_db_card"))),
 
               # Index Health Status
-              column(3,
-                div(
-                  class = "info-box",
-                  style = uiOutput(ns("kpi_index_style"), inline = TRUE),
-                  span(class = "info-box-icon", icon("list-ol")),
-                  div(class = "info-box-content",
-                    span(class = "info-box-text", "Índices"),
-                    span(class = "info-box-number", textOutput(ns("kpi_index_count"), inline = TRUE))
-                  )
-                )
-              ),
+              column(3, uiOutput(ns("kpi_index_card"))),
 
               # Query Performance Status
-              column(3,
-                div(
-                  class = "info-box",
-                  style = uiOutput(ns("kpi_query_style"), inline = TRUE),
-                  span(class = "info-box-icon", icon("bolt")),
-                  div(class = "info-box-content",
-                    span(class = "info-box-text", "Performance"),
-                    span(class = "info-box-number", textOutput(ns("kpi_query_speed"), inline = TRUE))
-                  )
-                )
-              ),
+              column(3, uiOutput(ns("kpi_query_card"))),
 
               # Table Health Status
-              column(3,
-                div(
-                  class = "info-box",
-                  style = uiOutput(ns("kpi_health_style"), inline = TRUE),
-                  span(class = "info-box-icon", icon("heartbeat")),
-                  div(class = "info-box-content",
-                    span(class = "info-box-text", "Saúde da Tabela"),
-                    span(class = "info-box-number", textOutput(ns("kpi_health_status"), inline = TRUE))
-                  )
-                )
-              )
+              column(3, uiOutput(ns("kpi_health_card")))
             ),
 
             br(),
@@ -603,108 +563,126 @@ performanceMonitoringServer <- function(id, db_connection) {
     })
 
     # =========================================================================
-    # DASHBOARD TAB - KPI OUTPUTS
+    # DASHBOARD TAB - KPI CARD OUTPUTS
     # =========================================================================
 
-    # Database connection status
-    output$kpi_db_status <- renderText({
-      if (is.null(db_connection())) "OFFLINE" else "ONLINE"
-    })
+    # Database connection KPI card
+    output$kpi_db_card <- renderUI({
+      status <- if (is.null(db_connection())) "OFFLINE" else "ONLINE"
+      bg_color <- if (is.null(db_connection())) "#dc3545" else "#28a745"
 
-    output$kpi_db_style <- renderUI({
-      if (is.null(db_connection())) {
-        "background-color: #dc3545;"  # Red
-      } else {
-        "background-color: #28a745;"  # Green
-      }
-    })
-
-    # Index count and status
-    output$kpi_index_count <- renderText({
-      if (is.null(rv$index_data)) return("--")
-      paste0(nrow(rv$index_data), "/10")
-    })
-
-    output$kpi_index_style <- renderUI({
-      if (is.null(rv$index_data)) return("background-color: #6c757d;")
-
-      required_indexes <- c(
-        "idx_documents_tipo",
-        "idx_documents_data_desc",
-        "idx_documents_tipo_data",
-        "idx_documents_titulo_gin"
+      div(
+        class = "info-box",
+        style = paste0("background-color: ", bg_color, ";"),
+        span(class = "info-box-icon", icon("database")),
+        div(class = "info-box-content",
+          span(class = "info-box-text", "Conexão DB"),
+          span(class = "info-box-number", status)
+        )
       )
-
-      existing <- rv$index_data$indexname
-      missing <- setdiff(required_indexes, existing)
-
-      if (length(missing) == 0) {
-        "background-color: #28a745;"  # Green
-      } else if (length(missing) <= 2) {
-        "background-color: #ffc107;"  # Yellow
-      } else {
-        "background-color: #dc3545;"  # Red
-      }
     })
 
-    # Query performance status
-    output$kpi_query_speed <- renderText({
-      if (is.null(rv$performance_data)) return("--")
-
-      filter_time <- rv$performance_data$filter_time
-
-      if (filter_time < 0.05) {
-        "EXCELENTE"
-      } else if (filter_time < 0.2) {
-        "BOM"
+    # Index health KPI card
+    output$kpi_index_card <- renderUI({
+      if (is.null(rv$index_data)) {
+        count_text <- "--"
+        bg_color <- "#6c757d"
       } else {
-        "LENTO"
+        count_text <- paste0(nrow(rv$index_data), "/10")
+
+        required_indexes <- c(
+          "idx_documents_tipo",
+          "idx_documents_data_desc",
+          "idx_documents_tipo_data",
+          "idx_documents_titulo_gin"
+        )
+
+        existing <- rv$index_data$indexname
+        missing <- setdiff(required_indexes, existing)
+
+        if (length(missing) == 0) {
+          bg_color <- "#28a745"  # Green
+        } else if (length(missing) <= 2) {
+          bg_color <- "#ffc107"  # Yellow
+        } else {
+          bg_color <- "#dc3545"  # Red
+        }
       }
+
+      div(
+        class = "info-box",
+        style = paste0("background-color: ", bg_color, ";"),
+        span(class = "info-box-icon", icon("list-ol")),
+        div(class = "info-box-content",
+          span(class = "info-box-text", "Índices"),
+          span(class = "info-box-number", count_text)
+        )
+      )
     })
 
-    output$kpi_query_style <- renderUI({
-      if (is.null(rv$performance_data)) return("background-color: #6c757d;")
-
-      filter_time <- rv$performance_data$filter_time
-
-      if (filter_time < 0.05) {
-        "background-color: #28a745;"  # Green
-      } else if (filter_time < 0.2) {
-        "background-color: #ffc107;"  # Yellow
+    # Query performance KPI card
+    output$kpi_query_card <- renderUI({
+      if (is.null(rv$performance_data)) {
+        speed_text <- "--"
+        bg_color <- "#6c757d"
       } else {
-        "background-color: #dc3545;"  # Red
+        filter_time <- rv$performance_data$filter_time
+
+        if (filter_time < 0.05) {
+          speed_text <- "EXCELENTE"
+          bg_color <- "#28a745"  # Green
+        } else if (filter_time < 0.2) {
+          speed_text <- "BOM"
+          bg_color <- "#ffc107"  # Yellow
+        } else {
+          speed_text <- "LENTO"
+          bg_color <- "#dc3545"  # Red
+        }
       }
+
+      div(
+        class = "info-box",
+        style = paste0("background-color: ", bg_color, ";"),
+        span(class = "info-box-icon", icon("bolt")),
+        div(class = "info-box-content",
+          span(class = "info-box-text", "Performance"),
+          span(class = "info-box-number", speed_text)
+        )
+      )
     })
 
-    # Table health status
-    output$kpi_health_status <- renderText({
-      if (is.null(rv$health_data)) return("--")
-
-      dead_pct <- rv$health_data$dead_tuple_pct
-
-      if (is.na(dead_pct)) {
-        "OK"
-      } else if (dead_pct < 5) {
-        "EXCELENTE"
-      } else if (dead_pct < 10) {
-        "BOM"
+    # Table health KPI card
+    output$kpi_health_card <- renderUI({
+      if (is.null(rv$health_data)) {
+        health_text <- "--"
+        bg_color <- "#6c757d"
       } else {
-        "ATENÇÃO"
+        dead_pct <- rv$health_data$dead_tuple_pct
+
+        if (is.na(dead_pct)) {
+          health_text <- "OK"
+          bg_color <- "#28a745"
+        } else if (dead_pct < 5) {
+          health_text <- "EXCELENTE"
+          bg_color <- "#28a745"  # Green
+        } else if (dead_pct < 10) {
+          health_text <- "BOM"
+          bg_color <- "#ffc107"  # Yellow
+        } else {
+          health_text <- "ATENÇÃO"
+          bg_color <- "#dc3545"  # Red
+        }
       }
-    })
 
-    output$kpi_health_style <- renderUI({
-      if (is.null(rv$health_data)) return("background-color: #6c757d;")
-
-      dead_pct <- rv$health_data$dead_tuple_pct
-
-      if (is.na(dead_pct) || dead_pct < 5) {
-        "background-color: #28a745;"  # Green
-      } else if (dead_pct < 10) {
-        "background-color: #ffc107;"  # Yellow
-      } else {
-        "background-color: #dc3545;"  # Red
-      }
+      div(
+        class = "info-box",
+        style = paste0("background-color: ", bg_color, ";"),
+        span(class = "info-box-icon", icon("heartbeat")),
+        div(class = "info-box-content",
+          span(class = "info-box-text", "Saúde da Tabela"),
+          span(class = "info-box-number", health_text)
+        )
+      )
     })
 
     # Summary stats
