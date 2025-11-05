@@ -19,10 +19,10 @@ SELECT indexname FROM pg_indexes WHERE tablename = 'documents' ORDER BY indexnam
 CREATE INDEX IF NOT EXISTS idx_documents_tipo ON documents(tipo);
 
 -- Index on data for sorting (descending order for newest-first queries)
-CREATE INDEX IF NOT EXISTS idx_documents_data_desc ON documents(data_publicacao DESC);
+CREATE INDEX IF NOT EXISTS idx_documents_data_desc ON documents(data DESC);
 
 -- Composite index for tipo+data queries (most common pattern)
-CREATE INDEX IF NOT EXISTS idx_documents_tipo_data ON documents(tipo, data_publicacao DESC);
+CREATE INDEX IF NOT EXISTS idx_documents_tipo_data ON documents(tipo, data DESC);
 
 -- Full-text search index for Portuguese
 CREATE INDEX IF NOT EXISTS idx_documents_titulo_gin

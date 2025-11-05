@@ -80,10 +80,10 @@ check_query_performance <- function(conn) {
   cat("\nTesting: Filter by tipo + sort by data...\n")
   start <- Sys.time()
   result1 <- dbGetQuery(conn, "
-    SELECT id, titulo, tipo, data_publicacao
+    SELECT id, titulo, tipo, data
     FROM documents
     WHERE tipo = 'Lei'
-    ORDER BY data_publicacao DESC
+    ORDER BY data DESC
     LIMIT 100;
   ")
   time1 <- as.numeric(difftime(Sys.time(), start, units = "secs"))
@@ -93,10 +93,10 @@ check_query_performance <- function(conn) {
   cat("\nTesting: Text search on titulo...\n")
   start <- Sys.time()
   result2 <- dbGetQuery(conn, "
-    SELECT id, titulo, tipo, data_publicacao
+    SELECT id, titulo, tipo, data
     FROM documents
     WHERE titulo ILIKE '%transporte%'
-    ORDER BY data_publicacao DESC
+    ORDER BY data DESC
     LIMIT 100;
   ")
   time2 <- as.numeric(difftime(Sys.time(), start, units = "secs"))
