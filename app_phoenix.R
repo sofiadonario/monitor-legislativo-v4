@@ -248,7 +248,9 @@ ui <- navbarPage(
           hr(),
           # Quick Win #6: Performance metrics
           h5("Métricas de Desempenho"),
-          htmlOutput("geo_performance_metrics", style = "font-size: 12px; color: #666;")
+          div(style = "font-size: 12px; color: #666;",
+            uiOutput("geo_performance_metrics")
+          )
         )
       )
     )
