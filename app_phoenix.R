@@ -19,6 +19,9 @@ suppressPackageStartupMessages({
   library(ggplot2)
 })
 
+# Load performance monitoring module
+source("R/modules/performance_monitoring_module.R", local = TRUE)
+
 # ==============================================================================
 # 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
 # ==============================================================================
@@ -267,7 +270,16 @@ ui <- navbarPage(
   ),
 
   # -- PLACEHOLDER TABS --
-  tabPanel("Text Mining", h1("Text Mining"), p("This section is under development."))
+  tabPanel("Text Mining", h1("Text Mining"), p("This section is under development.")),
+
+  # -- SYSTEM / PERFORMANCE MONITORING TAB --
+  tabPanel(
+    "System",
+    icon = icon("server"),
+    fluidPage(
+      performanceMonitoringUI("perf_monitor")
+    )
+  )
 )
 
 # ==============================================================================
@@ -1034,6 +1046,13 @@ server <- function(input, output, session) {
       labs(x = "Mês", y = "Quantidade", title = "Documentos por Mês") +
       theme_minimal()
   })
+
+  # -- PERFORMANCE MONITORING SERVER --
+  # Performance monitoring uses the global secure_db_connection
+  performanceMonitoringServer(
+    "perf_monitor",
+    db_connection = reactive({ secure_db_connection })
+  )
 
   # Note: Database connection is NOT closed per-session because it's a GLOBAL connection
   # shared across all users. Cloud Run will terminate the container when inactive,
