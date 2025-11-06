@@ -556,10 +556,12 @@ server <- function(input, output, session) {
 
   # Apply button observer
   observeEvent(input$geo_apply, {
+    cat("=== GEO APPLY BUTTON CLICKED ===\n")
     geo_filters$tipo <- input$geo_filter_tipo
     geo_filters$date_start <- input$geo_date_range[1]
     geo_filters$date_end <- input$geo_date_range[2]
     geo_filters$trigger <- geo_filters$trigger + 1
+    cat("Trigger incremented to:", geo_filters$trigger, "\n")
   })
 
   # Clear button observer
@@ -732,6 +734,9 @@ server <- function(input, output, session) {
     current_tipo <- geo_filters$tipo
     current_date_start <- geo_filters$date_start
     current_date_end <- geo_filters$date_end
+
+    cat("=== MAP OBSERVER TRIGGERED ===\n")
+    cat("Current trigger value:", current_trigger, "\n")
 
     # Don't run on initial load - only when user actually applies filters
     req(current_trigger > 0)
