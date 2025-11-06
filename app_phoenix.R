@@ -539,7 +539,7 @@ server <- function(input, output, session) {
     tipo = "Todos",
     date_start = NULL,
     date_end = NULL,
-    trigger = 1
+    trigger = 0  # Start at 0 - only load map when user applies filters
   )
 
   # Store current map data for export (PRD 4.3 - P1 High)
@@ -732,6 +732,9 @@ server <- function(input, output, session) {
     current_tipo <- geo_filters$tipo
     current_date_start <- geo_filters$date_start
     current_date_end <- geo_filters$date_end
+
+    # Don't run on initial load - only when user actually applies filters
+    req(current_trigger > 0)
 
     cat("=== UPDATING MAP DATA ===\n")
     cat("Trigger value:", current_trigger, "\n")
