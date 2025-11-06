@@ -719,6 +719,9 @@ server <- function(input, output, session) {
       setView(lng = -54, lat = -15, zoom = 4)
   })
 
+  # Only render map when Geographic tab is visible (prevents startup timeout)
+  outputOptions(output, "geo_map", suspendWhenHidden = TRUE)
+
   # Observer to update map data when filters change (uses leafletProxy)
   observe({
     # Memory cleanup on exit (PRD 3.1, 5.2 - P0 Critical)
