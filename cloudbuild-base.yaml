@@ -1,0 +1,12 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build',
+           '-f', 'Dockerfile.base',
+           '-t', 'us-central1-docker.pkg.dev/mackmonitor/monitor-repo/mackmonitor-base:latest',
+           '.']
+images:
+  - 'us-central1-docker.pkg.dev/mackmonitor/monitor-repo/mackmonitor-base:latest'
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+timeout: 7200s

@@ -52,7 +52,17 @@
       "Bash(nc -zv:*)",
       "Bash(gcloud projects add-iam-policy-binding:*)",
       "Bash(PGPASSWORD=\"Sdonario1\" psql \"host=/cloudsql/mackmonitor:southamerica-east1:mackmonitor-db dbname=monitor_legislativo user=monitor_user\" -c \"ALTER TABLE documents ADD COLUMN id SERIAL PRIMARY KEY;\")",
-      "Bash(PGPASSWORD=\"Sdonario1\" /opt/homebrew/opt/postgresql@14/bin/psql:*)"
+      "Bash(PGPASSWORD=\"Sdonario1\" /opt/homebrew/opt/postgresql@14/bin/psql:*)",
+      "Bash(git mv:*)",
+      "Bash(PGPASSWORD=\"Sdonario1\" psql \"host=/cloudsql/mackmonitor:southamerica-east1:mackmonitor-db dbname=monitor_legislativo user=monitor_user\" -c \"\\d documents\")",
+      "Bash(gcloud run revisions list:*)",
+      "Bash(gcloud logging read:*)",
+      "Bash(gcloud sql operations list:*)",
+      "Bash(gcloud sql connect:*)",
+      "Bash(R --quiet --no-save -e:*)",
+      "Bash(PGPASSWORD=Sdonario1 psql:*)",
+      "Bash(printenv:*)",
+      "Bash(gcloud run revisions describe:*)"
     ],
     "deny": [],
     "ask": []
