@@ -223,7 +223,7 @@ geographicUI <- function(id) {
                 div(
                   class = "info-box bg-primary",
                   style = "color: white; padding: 15px; border-radius: 5px; text-align: center;",
-                  h4(uiOutput(ns("total_documents_card")), style = "margin: 0;"),
+                  div(style = "margin: 0;", h4(uiOutput(ns("total_documents_card")))),
                   p("Total de Documentos", style = "margin: 0;")
                 )
               ),
@@ -231,7 +231,7 @@ geographicUI <- function(id) {
                 div(
                   class = "info-box bg-success",
                   style = "color: white; padding: 15px; border-radius: 5px; text-align: center;",
-                  h4(uiOutput(ns("states_coverage_card")), style = "margin: 0;"),
+                  div(style = "margin: 0;", h4(uiOutput(ns("states_coverage_card")))),
                   p("Estados com Dados", style = "margin: 0;")
                 )
               ),
@@ -239,7 +239,7 @@ geographicUI <- function(id) {
                 div(
                   class = "info-box bg-warning",
                   style = "color: white; padding: 15px; border-radius: 5px; text-align: center;",
-                  h4(uiOutput(ns("regions_coverage_card")), style = "margin: 0;"),
+                  div(style = "margin: 0;", h4(uiOutput(ns("regions_coverage_card")))),
                   p("Regiões Cobertas", style = "margin: 0;")
                 )
               ),
@@ -247,7 +247,7 @@ geographicUI <- function(id) {
                 div(
                   class = "info-box bg-info",
                   style = "color: white; padding: 15px; border-radius: 5px; text-align: center;",
-                  h4(uiOutput(ns("municipalities_card")), style = "margin: 0;"),
+                  div(style = "margin: 0;", h4(uiOutput(ns("municipalities_card")))),
                   p("Municípios Identificados", style = "margin: 0;")
                 )
               )
