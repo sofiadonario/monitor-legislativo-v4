@@ -539,8 +539,15 @@ server <- function(input, output, session) {
     tipo = "Todos",
     date_start = NULL,
     date_end = NULL,
-    trigger = 0  # Start at 0 - only load map when user applies filters
+    trigger = 0  # Start at 0 - will be triggered once on session start
   )
+
+  # Fire initial trigger once the UI is fully bound (ensures map loads on first view)
+  session$onFlushed(function() {
+    isolate({
+      geo_filters$trigger <- geo_filters$trigger + 1
+    })
+  }, once = TRUE)
 
   # Store current map data for export (PRD 4.3 - P1 High)
   current_map_data <- reactiveVal(NULL)
@@ -715,7 +722,8 @@ server <- function(input, output, session) {
   output$geo_map <- leaflet::renderLeaflet({
     cat("=== CREATING BASE MAP ===\n")
     leaflet() %>%
-      addTiles() %>%
+      # Use HTTPS tile provider to avoid mixed-content blocking in browsers
+      addProviderTiles(providers$CartoDB.Positron) %>%
       setView(lng = -54, lat = -15, zoom = 4)
   })
 
@@ -737,9 +745,6 @@ server <- function(input, output, session) {
 
     cat("=== MAP OBSERVER TRIGGERED ===\n")
     cat("Current trigger value:", current_trigger, "\n")
-
-    # Don't run on initial load - only when user actually applies filters
-    req(current_trigger > 0)
 
     cat("=== UPDATING MAP DATA ===\n")
     cat("Trigger value:", current_trigger, "\n")
