@@ -62,7 +62,8 @@
       "Bash(R --quiet --no-save -e:*)",
       "Bash(PGPASSWORD=Sdonario1 psql:*)",
       "Bash(printenv:*)",
-      "Bash(gcloud run revisions describe:*)"
+      "Bash(gcloud run revisions describe:*)",
+      "Bash(gcloud artifacts docker images list:*)"
     ],
     "deny": [],
     "ask": []

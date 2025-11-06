@@ -19,9 +19,6 @@ suppressPackageStartupMessages({
   library(ggplot2)
 })
 
-# Load performance monitoring module
-source("R/modules/performance_monitoring_module.R", local = TRUE)
-
 # ==============================================================================
 # 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
 # ==============================================================================
@@ -81,6 +78,16 @@ init_secure_database <- function() {
 # Establish connection on app startup
 secure_db_connection <- init_secure_database()
 DB_AVAILABLE <- !is.null(secure_db_connection)
+
+# Display connection status
+if (DB_AVAILABLE) {
+  cat("✅ Database connected successfully\n")
+} else {
+  cat("⚠️ Database not connected. Documents will not be available.\n")
+  cat("   To configure database, set these environment variables:\n")
+  cat("   PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD\n")
+  cat("   Or run: source('setup_local_env.R')\n")
+}
 
 # ==============================================================================
 # 3. UI DEFINITION (STABLE & MONOLITHIC)
@@ -232,27 +239,7 @@ ui <- navbarPage(
         )
       ),
       hr(),
-      fluidRow(
-        column(8,
-          # Main map
-          leaflet::leafletOutput("geo_map", height = "600px")
-        ),
-        column(4,
-          # Quick Win #1: State ranking table
-          h4("Ranking de Estados"),
-          DT::dataTableOutput("geo_state_ranking"),
-          hr(),
-          # Quick Win #2: Summary statistics
-          h4("Estatísticas Resumidas"),
-          uiOutput("geo_summary_stats"),
-          hr(),
-          # Quick Win #6: Performance metrics
-          h5("Métricas de Desempenho"),
-          div(style = "font-size: 12px; color: #666;",
-            uiOutput("geo_performance_metrics")
-          )
-        )
-      )
+      leaflet::leafletOutput("geo_map", height = "600px")
     )
   ),
 
@@ -272,16 +259,7 @@ ui <- navbarPage(
   ),
 
   # -- PLACEHOLDER TABS --
-  tabPanel("Text Mining", h1("Text Mining"), p("This section is under development.")),
-
-  # -- SYSTEM / PERFORMANCE MONITORING TAB --
-  tabPanel(
-    "System",
-    icon = icon("server"),
-    fluidPage(
-      performanceMonitoringUI("perf_monitor")
-    )
-  )
+  tabPanel("Text Mining", h1("Text Mining"), p("This section is under development."))
 )
 
 # ==============================================================================
@@ -340,7 +318,13 @@ server <- function(input, output, session) {
   library_data <- reactive({
     # Use the user's added check for DB availability
     if (!DB_AVAILABLE) {
-      return(data.frame(Error = "Database connection not available"))
+      return(data.frame(
+        Message = c("Database connection not available", 
+                   "To configure the database:",
+                   "1. Set environment variables: PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD",
+                   "2. Or run: source('setup_local_env.R')",
+                   "3. Then restart the application")
+      ))
     }
 
     # Get current filter values from our reactiveValues
@@ -539,36 +523,18 @@ server <- function(input, output, session) {
     tipo = "Todos",
     date_start = NULL,
     date_end = NULL,
-    trigger = 0  # Start at 0 - will be triggered once on session start
+    trigger = 1
   )
-
-  # Fire initial trigger once the UI is fully bound (ensures map loads on first view)
-  session$onFlushed(function() {
-    isolate({
-      geo_filters$trigger <- geo_filters$trigger + 1
-    })
-  }, once = TRUE)
 
   # Store current map data for export (PRD 4.3 - P1 High)
   current_map_data <- reactiveVal(NULL)
 
-  # Store query results and performance metrics (Quick Win #1, #2, #6)
-  geo_performance <- reactiveValues(
-    query_time = NA,
-    total_documents = 0,
-    states_with_data = 0,
-    date_range = list(min = NA, max = NA),
-    memory_used_mb = NA
-  )
-
   # Apply button observer
   observeEvent(input$geo_apply, {
-    cat("=== GEO APPLY BUTTON CLICKED ===\n")
     geo_filters$tipo <- input$geo_filter_tipo
     geo_filters$date_start <- input$geo_date_range[1]
     geo_filters$date_end <- input$geo_date_range[2]
     geo_filters$trigger <- geo_filters$trigger + 1
-    cat("Trigger incremented to:", geo_filters$trigger, "\n")
   })
 
   # Clear button observer
@@ -698,22 +664,60 @@ server <- function(input, output, session) {
     }
   )
 
-  # Load IBGE state polygons once
+  # Load IBGE state polygons once with fallback
   brazil_states_sf <- reactiveVal(NULL)
 
   observeEvent(TRUE, {  # run once
     if (is.null(brazil_states_sf())) {
-      geo_url <- "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
-      shp <- tryCatch({
-        raw_shp <- sf::st_read(geo_url, quiet = TRUE)
-        # Add 'sigla' field to the shapefile for merging with database (uses 2-letter codes)
-        # This ensures proper join between GeoJSON (full names) and database (abbreviations)
-        if (!is.null(raw_shp) && "sigla" %in% names(raw_shp)) {
-          raw_shp
-        } else {
-          NULL
+      # Try loading from local file first, then from URL
+      local_paths <- c(
+        "data/brazil_states.geojson",
+        "data/geo/brazil_states.geojson"
+      )
+      
+      shp <- NULL
+      
+      # Try local files first
+      for (path in local_paths) {
+        if (file.exists(path)) {
+          cat("Loading geographic data from local file:", path, "\n")
+          shp <- tryCatch({
+            sf::st_read(path, quiet = TRUE)
+          }, error = function(e) NULL)
+          if (!is.null(shp)) break
         }
-      }, error = function(e) NULL)
+      }
+      
+      # If no local file, try URL
+      if (is.null(shp)) {
+        geo_url <- "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
+        cat("Loading geographic data from URL:", geo_url, "\n")
+        shp <- tryCatch({
+          raw_shp <- sf::st_read(geo_url, quiet = TRUE)
+          # Add 'sigla' field to the shapefile for merging with database (uses 2-letter codes)
+          # This ensures proper join between GeoJSON (full names) and database (abbreviations)
+          if (!is.null(raw_shp) && "sigla" %in% names(raw_shp)) {
+            raw_shp
+          } else if (!is.null(raw_shp) && "abbreviation" %in% names(raw_shp)) {
+            raw_shp$sigla <- raw_shp$abbreviation
+            raw_shp
+          } else {
+            raw_shp
+          }
+        }, error = function(e) {
+          cat("Failed to load from URL:", e$message, "\n")
+          NULL
+        })
+      }
+      
+      # If still no data, create minimal fallback
+      if (is.null(shp)) {
+        cat("⚠️ Could not load geographic data. Maps will not display properly.\n")
+        cat("   To fix: Download brazil-states.geojson and place in data/ folder\n")
+      } else {
+        cat("✅ Geographic data loaded successfully\n")
+      }
+      
       brazil_states_sf(shp)
     }
   }, once = TRUE)
@@ -722,8 +726,7 @@ server <- function(input, output, session) {
   output$geo_map <- leaflet::renderLeaflet({
     cat("=== CREATING BASE MAP ===\n")
     leaflet() %>%
-      # Use HTTPS tile provider to avoid mixed-content blocking in browsers
-      addProviderTiles(providers$CartoDB.Positron) %>%
+      addTiles() %>%
       setView(lng = -54, lat = -15, zoom = 4)
   })
 
@@ -743,9 +746,6 @@ server <- function(input, output, session) {
     current_date_start <- geo_filters$date_start
     current_date_end <- geo_filters$date_end
 
-    cat("=== MAP OBSERVER TRIGGERED ===\n")
-    cat("Current trigger value:", current_trigger, "\n")
-
     cat("=== UPDATING MAP DATA ===\n")
     cat("Trigger value:", current_trigger, "\n")
     cat("Filter tipo:", current_tipo, "\n")
@@ -756,15 +756,19 @@ server <- function(input, output, session) {
     withProgress(message = 'Atualizando mapa geográfico...', value = 0, {
       incProgress(0.2, detail = "Carregando dados dos estados")
       shp <- brazil_states_sf()
+      
+      # Check if geographic data is available
+      if (is.null(shp)) {
+        cat("⚠️ Geographic data not available - map cannot be updated\n")
+        showNotification("Dados geográficos não disponíveis. Por favor, verifique a conexão com a internet ou adicione o arquivo brazil_states.geojson localmente.", 
+                        type = "warning", duration = 10)
+        return()
+      }
 
       # Build filtered query
       incProgress(0.2, detail = "Consultando banco de dados")
       counts <- data.frame()
       if (DB_AVAILABLE) {
-        # Track query performance (Quick Win #6)
-        query_start_time <- Sys.time()
-        memory_before <- as.numeric(object.size(ls())) / 1024 / 1024  # MB
-
         # Start with base query
         query <- "SELECT estado, COUNT(*) AS n FROM documents WHERE 1=1"
 
@@ -792,13 +796,6 @@ server <- function(input, output, session) {
           data.frame()
         })
         counts <- db_counts
-
-        # Update performance metrics (Quick Win #6)
-        query_end_time <- Sys.time()
-        geo_performance$query_time <- as.numeric(difftime(query_end_time, query_start_time, units = "secs"))
-        geo_performance$total_documents <- sum(counts$n, na.rm = TRUE)
-        geo_performance$states_with_data <- nrow(counts[counts$n > 0, ])
-        geo_performance$memory_used_mb <- as.numeric(object.size(ls())) / 1024 / 1024 - memory_before
       }
 
     # Guarantee counts has estado + n columns
@@ -818,13 +815,29 @@ server <- function(input, output, session) {
 
       # Use leafletProxy to update the existing map
       incProgress(0.2, detail = "Mesclando dados geográficos")
-      if (!is.null(shp) && "sigla" %in% names(shp)) {
-        # CRITICAL FIX: Merge on 'sigla' (2-letter codes like "SP") not 'name' (full names)
-        # Database stores estado as abbreviations (SP, RJ, MG), GeoJSON has both 'name' and 'sigla'
-        shp_merged <- merge(shp, counts, by.x = "sigla", by.y = "estado", all.x = TRUE)
-        shp_merged$n[is.na(shp_merged$n)] <- 0
-        # Ensure n is numeric (fix for max() returning wrong value)
-        shp_merged$n <- as.numeric(shp_merged$n)
+      if (!is.null(shp)) {
+        # Check which field to use for merging
+        merge_field <- if ("sigla" %in% names(shp)) {
+          "sigla"
+        } else if ("abbreviation" %in% names(shp)) {
+          "abbreviation"
+        } else {
+          cat("⚠️ Warning: No state code field found in geographic data\n")
+          NULL
+        }
+        
+        if (!is.null(merge_field)) {
+          # CRITICAL FIX: Merge on state codes (2-letter codes like "SP") not full names
+          # Database stores estado as abbreviations (SP, RJ, MG)
+          shp_merged <- merge(shp, counts, by.x = merge_field, by.y = "estado", all.x = TRUE)
+          shp_merged$n[is.na(shp_merged$n)] <- 0
+          # Ensure n is numeric (fix for max() returning wrong value)
+          shp_merged$n <- as.numeric(shp_merged$n)
+        } else {
+          # If no proper merge field, use shapefile as-is with zero counts
+          shp_merged <- shp
+          shp_merged$n <- 0
+        }
 
         # Store for export functionality (PRD 4.3 - P1 High)
         current_map_data(shp_merged)
@@ -902,124 +915,8 @@ server <- function(input, output, session) {
     }) # Close withProgress
   })
 
-  # Quick Win #1: State Ranking Table
-  output$geo_state_ranking <- DT::renderDataTable({
-    req(current_map_data())
-
-    tryCatch({
-      map_data <- current_map_data()
-
-      # Create ranking from map data
-      ranking_data <- data.frame(
-        Estado = map_data$name,
-        Sigla = map_data$sigla,
-        Documentos = map_data$n,
-        stringsAsFactors = FALSE
-      )
-
-      # Sort by document count descending
-      ranking_data <- ranking_data[order(-ranking_data$Documentos), ]
-
-      # Only show states with data
-      ranking_data <- ranking_data[ranking_data$Documentos > 0, ]
-
-      DT::datatable(
-        ranking_data,
-        options = list(
-          pageLength = 10,
-          dom = 'tp',  # Only table and pagination
-          ordering = FALSE,  # Already ordered
-          searching = FALSE,
-          scrollY = "400px",
-          scrollCollapse = TRUE
-        ),
-        rownames = FALSE,
-        class = 'compact stripe'
-      ) %>%
-        DT::formatStyle('Documentos',
-                       background = DT::styleColorBar(range(ranking_data$Documentos), '#FFA07A'),
-                       backgroundSize = '100% 90%',
-                       backgroundRepeat = 'no-repeat',
-                       backgroundPosition = 'center')
-    }, error = function(e) {
-      DT::datatable(data.frame(Info = "Clique em 'Aplicar Filtros' para ver o ranking"),
-                   options = list(dom = 't'), rownames = FALSE)
-    })
-  })
-
-  # Quick Win #2: Summary Statistics Panel
-  output$geo_summary_stats <- renderUI({
-    req(current_map_data())
-
-    tryCatch({
-      total_docs <- geo_performance$total_documents
-      states_with_data <- geo_performance$states_with_data
-
-      # Get date range from filters if available
-      date_info <- if (!is.null(geo_filters$date_start) && !is.null(geo_filters$date_end)) {
-        paste(format(geo_filters$date_start, "%d/%m/%Y"), "a",
-              format(geo_filters$date_end, "%d/%m/%Y"))
-      } else {
-        "Todos os períodos"
-      }
-
-      # Get document type filter
-      tipo_info <- if (geo_filters$tipo != "Todos") {
-        geo_filters$tipo
-      } else {
-        "Todos os tipos"
-      }
-
-      tagList(
-        tags$div(style = "padding: 10px; background: #f8f9fa; border-radius: 5px;",
-          tags$p(style = "margin: 5px 0;",
-            tags$strong("Total de Documentos: "),
-            tags$span(style = "color: #007bff;", format(total_docs, big.mark = "."))
-          ),
-          tags$p(style = "margin: 5px 0;",
-            tags$strong("Estados com Dados: "),
-            tags$span(style = "color: #28a745;", paste0(states_with_data, " / 27"))
-          ),
-          tags$p(style = "margin: 5px 0;",
-            tags$strong("Período: "),
-            tags$span(style = "color: #6c757d;", date_info)
-          ),
-          tags$p(style = "margin: 5px 0;",
-            tags$strong("Tipo de Documento: "),
-            tags$span(style = "color: #6c757d;", tipo_info)
-          )
-        )
-      )
-    }, error = function(e) {
-      tags$p("Aguardando dados...")
-    })
-  })
-
-  # Quick Win #6: Performance Metrics Panel
-  output$geo_performance_metrics <- renderUI({
-    req(geo_performance$query_time)
-
-    tryCatch({
-      query_time <- geo_performance$query_time
-      memory_used <- geo_performance$memory_used_mb
-
-      query_color <- if (query_time < 1) "#28a745" else if (query_time < 3) "#ffc107" else "#dc3545"
-
-      HTML(paste0(
-        "<div style='padding: 5px;'>",
-        "<p style='margin: 3px 0;'><strong>Tempo de Consulta:</strong> ",
-        "<span style='color: ", query_color, ";'>",
-        sprintf("%.2f", query_time), " segundos</span></p>",
-        "<p style='margin: 3px 0;'><strong>Memória Utilizada:</strong> ",
-        sprintf("%.1f", abs(memory_used)), " MB</p>",
-        "<p style='margin: 3px 0; font-size: 11px; color: #999;'>",
-        "Atualizado: ", format(Sys.time(), "%H:%M:%S"), "</p>",
-        "</div>"
-      ))
-    }, error = function(e) {
-      HTML("<p>Aguardando métricas...</p>")
-    })
-  })
+  # Force Geographic map to bind to reactive graph even when tab is hidden
+  outputOptions(output, "geo_map", suspendWhenHidden = FALSE)
 
   # -- ANALYTICS SERVER LOGIC --
 
@@ -1058,13 +955,6 @@ server <- function(input, output, session) {
       labs(x = "Mês", y = "Quantidade", title = "Documentos por Mês") +
       theme_minimal()
   })
-
-  # -- PERFORMANCE MONITORING SERVER --
-  # Performance monitoring uses the global secure_db_connection
-  performanceMonitoringServer(
-    "perf_monitor",
-    db_connection = reactive({ secure_db_connection })
-  )
 
   # Note: Database connection is NOT closed per-session because it's a GLOBAL connection
   # shared across all users. Cloud Run will terminate the container when inactive,
