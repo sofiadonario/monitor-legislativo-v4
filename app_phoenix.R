@@ -900,9 +900,6 @@ server <- function(input, output, session) {
     }) # Close withProgress
   })
 
-  # Force Geographic map to bind to reactive graph even when tab is hidden
-  outputOptions(output, "geo_map", suspendWhenHidden = FALSE)
-
   # Quick Win #1: State Ranking Table
   output$geo_state_ranking <- DT::renderDataTable({
     req(current_map_data())
