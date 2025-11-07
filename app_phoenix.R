@@ -20,7 +20,26 @@ suppressPackageStartupMessages({
 })
 
 # ==============================================================================
-# 1.5 LOAD ENHANCED MODULES
+# 1.5 LOAD UTILITY FUNCTIONS
+# ==============================================================================
+# Load UI utilities for safe rendering
+if (file.exists("R/utils/ui_utils.R")) {
+  source("R/utils/ui_utils.R")
+  cat("✅ UI Utilities loaded\n")
+} else {
+  cat("⚠️ UI Utilities not found\n")
+}
+
+# Load IBGE integration utilities
+if (file.exists("R/utils/ibge_integration.R")) {
+  source("R/utils/ibge_integration.R")
+  cat("✅ IBGE Integration Utilities loaded\n")
+} else {
+  cat("⚠️ IBGE Integration Utilities not found\n")
+}
+
+# ==============================================================================
+# 1.6 LOAD ENHANCED MODULES
 # ==============================================================================
 if (file.exists("modules/geographic_enhanced.R")) {
   source("modules/geographic_enhanced.R")
@@ -868,30 +887,101 @@ server <- function(input, output, session) {
     }
   )
 
-  # SVG and PDF export handlers (placeholders for now - similar to PNG)
+  # SVG export handler
   output$geo_download_svg <- downloadHandler(
     filename = function() {
       paste0("geographic_map_", format(Sys.Date(), "%Y%m%d"), ".svg")
     },
     content = function(file) {
-      showNotification("SVG export coming soon! Using PNG format.", type = "warning", duration = 3)
-      # For now, redirect to PNG export
-      file_png <- tempfile(fileext = ".png")
-      output$geo_download_png$contentType
-      output$geo_download_png$content(file_png)
-      file.copy(file_png, file, overwrite = TRUE)
+      tryCatch({
+        data <- enhanced_geo_data()
+
+        if (is.null(data) || nrow(data) == 0) {
+          showNotification("No data available for export", type = "warning", duration = 3)
+          return()
+        }
+
+        # Get current visualization mode
+        current_mode <- geo_filters$viz_mode
+        if (is.null(current_mode)) current_mode <- "absolute"
+
+        # Create static plot
+        plot <- create_static_map_plot(data, mode = current_mode)
+
+        # Save as SVG
+        ggsave(
+          file,
+          plot = plot,
+          device = "svg",
+          width = 12,
+          height = 10,
+          units = "in",
+          dpi = 300
+        )
+
+        showNotification("SVG exported successfully!", type = "message", duration = 3)
+
+      }, error = function(e) {
+        cat("SVG export error:", e$message, "\n")
+        showNotification(paste("SVG export failed:", e$message), type = "error", duration = 5)
+
+        # Create error plot
+        p <- ggplot() +
+          annotate("text", x = 0, y = 0,
+                   label = paste("Export error:", e$message),
+                   size = 6, color = "red") +
+          theme_void()
+        ggsave(file, plot = p, device = "svg", width = 10, height = 8, bg = "white")
+      })
     }
   )
 
+  # PDF export handler
   output$geo_download_pdf <- downloadHandler(
     filename = function() {
       paste0("geographic_map_", format(Sys.Date(), "%Y%m%d"), ".pdf")
     },
     content = function(file) {
-      showNotification("PDF export coming soon! Using PNG format.", type = "warning", duration = 3)
-      file_png <- tempfile(fileext = ".png")
-      output$geo_download_png$content(file_png)
-      file.copy(file_png, file, overwrite = TRUE)
+      tryCatch({
+        data <- enhanced_geo_data()
+
+        if (is.null(data) || nrow(data) == 0) {
+          showNotification("No data available for export", type = "warning", duration = 3)
+          return()
+        }
+
+        # Get current visualization mode
+        current_mode <- geo_filters$viz_mode
+        if (is.null(current_mode)) current_mode <- "absolute"
+
+        # Create static plot
+        plot <- create_static_map_plot(data, mode = current_mode)
+
+        # Save as PDF
+        ggsave(
+          file,
+          plot = plot,
+          device = "pdf",
+          width = 12,
+          height = 10,
+          units = "in",
+          dpi = 300
+        )
+
+        showNotification("PDF exported successfully!", type = "message", duration = 3)
+
+      }, error = function(e) {
+        cat("PDF export error:", e$message, "\n")
+        showNotification(paste("PDF export failed:", e$message), type = "error", duration = 5)
+
+        # Create error plot
+        p <- ggplot() +
+          annotate("text", x = 0, y = 0,
+                   label = paste("Export error:", e$message),
+                   size = 6, color = "red") +
+          theme_void()
+        ggsave(file, plot = p, device = "pdf", width = 10, height = 8, bg = "white")
+      })
     }
   )
 

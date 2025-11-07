@@ -16,6 +16,12 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(htmltools)
   library(RColorBrewer)
+  library(ggplot2)
+  library(scales)
+  # Optional libraries for temporal analysis
+  if (requireNamespace("zoo", quietly = TRUE)) {
+    library(zoo)
+  }
 })
 
 # ==============================================================================
@@ -32,7 +38,7 @@ GEO_ENHANCED_CONFIG <- list(
 
   geographic_levels = list(
     state = list(enabled = TRUE, min_zoom = 3, max_zoom = 7),
-    municipality = list(enabled = TRUE, min_zoom = 7, max_zoom = 12, limit = 500)
+    municipality = list(enabled = TRUE, min_zoom = 7, max_zoom = 12, limit = 2000)
   ),
 
   export_formats = c("PNG", "PDF", "SVG", "CSV", "GeoJSON"),
@@ -117,7 +123,11 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
     if (level == "state") {
       query <- paste0(query, " GROUP BY estado HAVING COUNT(*) >= 5 ORDER BY document_count DESC")
     } else {
-      query <- paste0(query, " GROUP BY estado, municipio HAVING COUNT(*) >= 5 ORDER BY document_count DESC LIMIT 500")
+      # Get municipality limit from config
+      muni_limit <- GEO_ENHANCED_CONFIG$geographic_levels$municipality$limit
+      if (is.null(muni_limit)) muni_limit <- 2000
+
+      query <- paste0(query, " GROUP BY estado, municipio HAVING COUNT(*) >= 5 ORDER BY document_count DESC LIMIT ", muni_limit)
     }
 
     # Execute query
@@ -481,15 +491,112 @@ create_hover_label <- function(data, level, mode_config) {
 # EXPORT FUNCTIONS
 # ==============================================================================
 
+#' Create Static Map Plot for Export
+#'
+#' Creates a static ggplot2 map suitable for SVG/PDF export
+#'
+#' @param data Geographic data with geometry
+#' @param mode Visualization mode
+#' @param title Map title
+#' @return ggplot object
+create_static_map_plot <- function(data, mode = "absolute", title = NULL) {
+
+  cat("🗺️ Creating static map plot for export - mode:", mode, "\n")
+
+  if (is.null(data) || nrow(data) == 0) {
+    # Return empty plot with message
+    return(ggplot() +
+      annotate("text", x = 0, y = 0, label = "No data available", size = 6) +
+      theme_void())
+  }
+
+  tryCatch({
+    # Get mode configuration
+    mode_config <- GEO_ENHANCED_CONFIG$visualization_modes[[mode]]
+    if (is.null(mode_config)) {
+      mode_config <- GEO_ENHANCED_CONFIG$visualization_modes$absolute
+    }
+
+    # Determine value column
+    value_col <- mode_config$column
+    if (!value_col %in% names(data)) {
+      value_col <- "document_count"
+    }
+
+    # Check if data has geometry
+    if (!inherits(data, "sf") || !"geometry" %in% names(data)) {
+      # Create a simple bar chart instead
+      plot_data <- data %>%
+        arrange(desc(get(value_col))) %>%
+        head(20)
+
+      p <- ggplot(plot_data, aes(x = reorder(estado, get(value_col)), y = get(value_col))) +
+        geom_col(fill = "#1e3a8a") +
+        coord_flip() +
+        labs(
+          title = title %||% paste("Geographic Distribution -", mode_config$name),
+          subtitle = paste("Top 20 states/regions"),
+          x = NULL,
+          y = mode_config$name
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title = element_text(size = 16, face = "bold"),
+          plot.subtitle = element_text(size = 12, color = "gray40"),
+          axis.text = element_text(size = 10),
+          panel.grid.major.y = element_blank()
+        )
+
+      return(p)
+    }
+
+    # Create choropleth map with ggplot2
+    p <- ggplot(data) +
+      geom_sf(aes(fill = get(value_col)), color = "#444444", size = 0.3) +
+      scale_fill_distiller(
+        palette = gsub("s$", "", mode_config$color),  # Remove 's' from palette name
+        direction = 1,
+        name = mode_config$name,
+        labels = scales::comma
+      ) +
+      labs(
+        title = title %||% paste("Brazilian Legislative Documents -", mode_config$name),
+        subtitle = paste("Total features:", nrow(data), "| Documents:",
+                        format(sum(data$document_count, na.rm = TRUE), big.mark = ",")),
+        caption = paste("Monitor Legislativo v4 | Generated:", format(Sys.time(), "%Y-%m-%d %H:%M"))
+      ) +
+      theme_void() +
+      theme(
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5, margin = margin(b = 5)),
+        plot.subtitle = element_text(size = 11, hjust = 0.5, color = "gray40", margin = margin(b = 10)),
+        plot.caption = element_text(size = 8, color = "gray50", hjust = 1, margin = margin(t = 10)),
+        legend.position = "right",
+        legend.title = element_text(size = 10, face = "bold"),
+        legend.text = element_text(size = 9),
+        plot.margin = margin(20, 20, 20, 20)
+      )
+
+    return(p)
+
+  }, error = function(e) {
+    cat("❌ Error creating static map:", e$message, "\n")
+    return(ggplot() +
+      annotate("text", x = 0, y = 0, label = paste("Export error:", e$message),
+               size = 5, color = "red") +
+      theme_void())
+  })
+}
+
 #' Export Geographic Data
 #'
 #' Exports data in various formats
 #'
 #' @param data Geographic data to export
 #' @param format Export format
+#' @param mode Visualization mode (for SVG/PDF)
 #' @param filename Output filename
 #' @return Export result with file path
-export_geographic_data <- function(data, format = "CSV", filename = NULL) {
+export_geographic_data <- function(data, format = "CSV", mode = "absolute", filename = NULL) {
 
   cat("📤 Exporting geographic data - format:", format, "\n")
 
@@ -542,6 +649,42 @@ export_geographic_data <- function(data, format = "CSV", filename = NULL) {
 
         sf::st_write(data, output_path, driver = "GeoJSON", delete_dsn = TRUE, quiet = TRUE)
         list(success = TRUE, file_path = output_path, features = nrow(data))
+      },
+
+      "SVG" = {
+        # Create static map plot
+        plot <- create_static_map_plot(data, mode = mode)
+
+        # Save as SVG
+        ggsave(
+          filename = output_path,
+          plot = plot,
+          device = "svg",
+          width = 12,
+          height = 10,
+          units = "in",
+          dpi = 300
+        )
+
+        list(success = TRUE, file_path = output_path, format = "SVG")
+      },
+
+      "PDF" = {
+        # Create static map plot
+        plot <- create_static_map_plot(data, mode = mode)
+
+        # Save as PDF
+        ggsave(
+          filename = output_path,
+          plot = plot,
+          device = "pdf",
+          width = 12,
+          height = 10,
+          units = "in",
+          dpi = 300
+        )
+
+        list(success = TRUE, file_path = output_path, format = "PDF")
       },
 
       {
@@ -608,13 +751,166 @@ calculate_viz_statistics <- function(data) {
   )
 }
 
+#' Calculate Temporal Statistics
+#'
+#' Calculates temporal trends and activity patterns for geographic data
+#'
+#' @param db_conn Database connection
+#' @param level Geographic level ("state" or "municipality")
+#' @param filters List of filters to apply
+#' @return Data frame with temporal statistics
+calculate_temporal_statistics <- function(db_conn, level = "state", filters = NULL) {
+
+  cat("📊 Calculating temporal statistics at level:", level, "\n")
+
+  tryCatch({
+    # Build temporal query
+    if (level == "state") {
+      query <- "
+        SELECT
+          estado,
+          DATE_TRUNC('month', data) as month,
+          COUNT(*) as monthly_count,
+          COUNT(DISTINCT tipo) as document_types
+        FROM lexml_documents
+        WHERE estado IS NOT NULL AND estado != ''
+          AND data IS NOT NULL
+      "
+    } else {
+      query <- "
+        SELECT
+          estado,
+          municipio,
+          DATE_TRUNC('month', data) as month,
+          COUNT(*) as monthly_count,
+          COUNT(DISTINCT tipo) as document_types
+        FROM lexml_documents
+        WHERE estado IS NOT NULL AND estado != ''
+          AND municipio IS NOT NULL AND municipio != ''
+          AND data IS NOT NULL
+      "
+    }
+
+    # Add filters if provided
+    if (!is.null(filters)) {
+      if (!is.null(filters$tipo) && filters$tipo != "Todos") {
+        query <- paste0(query, " AND tipo = '", filters$tipo, "'")
+      }
+      if (!is.null(filters$date_start) && !is.null(filters$date_end)) {
+        query <- paste0(query,
+                       " AND data >= '", filters$date_start, "'",
+                       " AND data <= '", filters$date_end, "'")
+      }
+    }
+
+    # Add GROUP BY and ORDER BY
+    if (level == "state") {
+      query <- paste0(query, " GROUP BY estado, DATE_TRUNC('month', data) ORDER BY estado, month")
+    } else {
+      query <- paste0(query, " GROUP BY estado, municipio, DATE_TRUNC('month', data) ORDER BY estado, municipio, month")
+    }
+
+    # Execute query
+    result <- dbGetQuery(db_conn, query)
+
+    if (is.null(result) || nrow(result) == 0) {
+      cat("⚠️ No temporal data found\n")
+      return(NULL)
+    }
+
+    # Calculate trends
+    result <- result %>%
+      mutate(
+        month = as.Date(month),
+        year = format(month, "%Y"),
+        month_name = format(month, "%B %Y")
+      ) %>%
+      group_by(if (level == "state") estado else paste(estado, municipio)) %>%
+      mutate(
+        cumulative_count = cumsum(monthly_count),
+        rolling_avg_3m = zoo::rollmean(monthly_count, k = 3, fill = NA, align = "right"),
+        trend = ifelse(
+          !is.na(lag(monthly_count)) & lag(monthly_count) > 0,
+          ((monthly_count - lag(monthly_count)) / lag(monthly_count)) * 100,
+          NA
+        )
+      ) %>%
+      ungroup()
+
+    cat("✅ Calculated temporal statistics for", length(unique(result[[1]])), "locations\n")
+    return(result)
+
+  }, error = function(e) {
+    cat("❌ Error calculating temporal statistics:", e$message, "\n")
+    return(NULL)
+  })
+}
+
+#' Get Temporal Summary
+#'
+#' Generates a summary of temporal activity patterns
+#'
+#' @param temporal_data Temporal statistics data frame
+#' @return List with temporal summary statistics
+get_temporal_summary <- function(temporal_data) {
+
+  if (is.null(temporal_data) || nrow(temporal_data) == 0) {
+    return(list(
+      total_months = 0,
+      avg_monthly_docs = 0,
+      peak_month = "N/A",
+      peak_month_count = 0,
+      growth_rate = 0
+    ))
+  }
+
+  tryCatch({
+    # Calculate summary metrics
+    total_months <- length(unique(temporal_data$month))
+    avg_monthly <- mean(temporal_data$monthly_count, na.rm = TRUE)
+
+    # Find peak month
+    peak_idx <- which.max(temporal_data$monthly_count)
+    peak_month <- format(temporal_data$month[peak_idx], "%B %Y")
+    peak_count <- temporal_data$monthly_count[peak_idx]
+
+    # Calculate overall growth rate
+    first_month_total <- sum(temporal_data$monthly_count[temporal_data$month == min(temporal_data$month)], na.rm = TRUE)
+    last_month_total <- sum(temporal_data$monthly_count[temporal_data$month == max(temporal_data$month)], na.rm = TRUE)
+
+    growth_rate <- if (first_month_total > 0) {
+      ((last_month_total - first_month_total) / first_month_total) * 100
+    } else {
+      0
+    }
+
+    return(list(
+      total_months = total_months,
+      avg_monthly_docs = round(avg_monthly, 1),
+      peak_month = peak_month,
+      peak_month_count = peak_count,
+      growth_rate = round(growth_rate, 1)
+    ))
+
+  }, error = function(e) {
+    cat("❌ Error calculating temporal summary:", e$message, "\n")
+    return(list(
+      total_months = 0,
+      avg_monthly_docs = 0,
+      peak_month = "N/A",
+      peak_month_count = 0,
+      growth_rate = 0
+    ))
+  })
+}
+
 # ==============================================================================
 # MODULE INITIALIZATION
 # ==============================================================================
 
 cat("✅ Enhanced Geographic Module loaded successfully\n")
-cat("   - Municipality-level visualization: ENABLED\n")
+cat("   - Municipality-level visualization: ENABLED (limit: 2000)\n")
 cat("   - Advanced interactivity: ENABLED\n")
 cat("   - Enhanced controls: ENABLED\n")
-cat("   - Multiple export formats: ENABLED\n")
+cat("   - Multiple export formats: ENABLED (PNG, PDF, SVG, CSV, GeoJSON)\n")
 cat("   - Performance optimizations: ENABLED\n")
