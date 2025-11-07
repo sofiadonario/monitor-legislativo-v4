@@ -20,6 +20,16 @@ suppressPackageStartupMessages({
 })
 
 # ==============================================================================
+# 1.5 LOAD ENHANCED MODULES
+# ==============================================================================
+if (file.exists("modules/geographic_enhanced.R")) {
+  source("modules/geographic_enhanced.R")
+  cat("✅ Enhanced Geographic Module loaded\n")
+} else {
+  cat("⚠️ Enhanced Geographic Module not found - using basic features\n")
+}
+
+# ==============================================================================
 # 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
 # ==============================================================================
 # Global connection object
@@ -219,60 +229,181 @@ ui <- navbarPage(
     )
   ),
 
-  # -- GEOGRAPHIC TAB --
+  # -- GEOGRAPHIC TAB (ENHANCED) --
   tabPanel(
     "Geographic",
     icon = icon("map-marked-alt"),
     fluidPage(
-      h1("Geographic Visualization"),
-      p("Visualização geográfica de documentos legislativos por estado"),
+      h1("Geographic Visualization - Enhanced"),
+      p("Visualização geográfica avançada de documentos legislativos com múltiplos níveis e modos"),
       div(
         style = "background-color: #f0f8ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
         icon("info-circle"),
         strong(" Nota:"),
         " Base de dados atualizada em ",
         strong("21/10/2025"),
-        " (data de extração dos dados brutos)."
+        " (data de extração dos dados brutos). ",
+        em("Agora com visualização por município e múltiplos modos de análise!")
       ),
       hr(),
-      fluidRow(
-        column(3,
-          selectInput("geo_filter_tipo", "Filtrar por Tipo:",
-                     choices = c("Todos", "Lei", "Decreto", "Projeto de Lei",
-                                "Medida Provisória", "Resolução", "Portaria",
-                                "Instrução Normativa", "Parecer", "Acórdão", "Súmula"),
-                     selected = "Todos")
-        ),
-        column(4,
-          dateRangeInput("geo_date_range", "Período:",
-                        start = NULL, end = DATA_EXTRACTION_DATE,
-                        format = "dd/mm/yyyy",
-                        language = "pt-BR",
-                        separator = " até ")
-        ),
-        column(3,
-          actionButton("geo_apply", "Aplicar Filtros",
-                      class = "btn-primary",
-                      style = "margin-top: 25px;"),
-          actionButton("geo_clear", "Limpar",
-                      class = "btn-secondary",
-                      style = "margin-top: 25px; margin-left: 10px;")
-        ),
-        column(2,
-          downloadButton("geo_download", "Exportar Dados",
-                        class = "btn-success",
-                        style = "margin-top: 25px;")
+
+      # -- Enhanced Controls Row 1: Visualization Settings --
+      wellPanel(
+        style = "background-color: #f8f9fa;",
+        h4(icon("sliders-h"), " Configurações de Visualização"),
+        fluidRow(
+          column(3,
+            selectInput("geo_viz_mode", "Modo de Visualização:",
+                       choices = c(
+                         "Total de Documentos" = "absolute",
+                         "Docs por 100k Habitantes" = "per_capita",
+                         "Docs por km²" = "density",
+                         "Atividade Recente" = "temporal"
+                       ),
+                       selected = "absolute")
+          ),
+          column(3,
+            selectInput("geo_viz_level", "Nível Geográfico:",
+                       choices = c(
+                         "Estados" = "state",
+                         "Municípios (Top 500)" = "municipality"
+                       ),
+                       selected = "state")
+          ),
+          column(6,
+            div(
+              style = "margin-top: 25px;",
+              p(
+                style = "font-size: 13px; color: #666; margin: 0;",
+                icon("lightbulb"),
+                strong(" Dica:"),
+                " Use o modo 'per_capita' para análise normalizada por população ou 'temporal' para atividade recente."
+              )
+            )
+          )
         )
       ),
-      fluidRow(
-        column(12,
-          downloadButton("geo_download_map", "Exportar Mapa (PNG)",
-                        class = "btn-info",
-                        style = "margin-top: 10px; margin-bottom: 10px;")
+
+      # -- Enhanced Controls Row 2: Data Filters --
+      wellPanel(
+        style = "background-color: #ffffff;",
+        h4(icon("filter"), " Filtros de Dados"),
+        fluidRow(
+          column(3,
+            selectInput("geo_filter_tipo", "Filtrar por Tipo:",
+                       choices = c("Todos", "Lei", "Decreto", "Projeto de Lei",
+                                  "Medida Provisória", "Resolução", "Portaria",
+                                  "Instrução Normativa", "Parecer", "Acórdão", "Súmula"),
+                       selected = "Todos")
+          ),
+          column(4,
+            dateRangeInput("geo_date_range", "Período:",
+                          start = NULL, end = DATA_EXTRACTION_DATE,
+                          format = "dd/mm/yyyy",
+                          language = "pt-BR",
+                          separator = " até ")
+          ),
+          column(3,
+            div(style = "margin-top: 25px;",
+              actionButton("geo_apply", "Aplicar Filtros",
+                          class = "btn-primary",
+                          icon = icon("check")),
+              actionButton("geo_clear", "Limpar",
+                          class = "btn-secondary",
+                          icon = icon("times"),
+                          style = "margin-left: 10px;")
+            )
+          ),
+          column(2,
+            div(
+              style = "margin-top: 25px;",
+              textOutput("geo_stats_summary", inline = TRUE)
+            )
+          )
         )
       ),
+
+      # -- Enhanced Controls Row 3: Export Options --
+      wellPanel(
+        style = "background-color: #f8f9fa;",
+        h4(icon("download"), " Opções de Exportação"),
+        fluidRow(
+          column(12,
+            div(
+              style = "display: flex; gap: 10px; flex-wrap: wrap;",
+              downloadButton("geo_download_csv", "CSV",
+                           class = "btn-success btn-sm",
+                           icon = icon("file-csv")),
+              downloadButton("geo_download_geojson", "GeoJSON",
+                           class = "btn-success btn-sm",
+                           icon = icon("map")),
+              downloadButton("geo_download_png", "PNG",
+                           class = "btn-info btn-sm",
+                           icon = icon("image")),
+              downloadButton("geo_download_svg", "SVG",
+                           class = "btn-info btn-sm",
+                           icon = icon("vector-square")),
+              downloadButton("geo_download_pdf", "PDF",
+                           class = "btn-info btn-sm",
+                           icon = icon("file-pdf")),
+              tags$small(
+                style = "align-self: center; color: #666; margin-left: 10px;",
+                "Exportações incluem dados filtrados e metadados"
+              )
+            )
+          )
+        )
+      ),
+
       hr(),
-      leaflet::leafletOutput("geo_map", height = "600px")
+
+      # -- Map Display with Loading Indicator --
+      div(
+        style = "position: relative;",
+        uiOutput("geo_loading_indicator"),
+        leaflet::leafletOutput("geo_map", height = "650px")
+      ),
+
+      # -- Statistics Panel --
+      hr(),
+      wellPanel(
+        style = "background-color: #f8f9fa; margin-top: 15px;",
+        h4(icon("chart-bar"), " Estatísticas da Visualização"),
+        fluidRow(
+          column(3,
+            div(
+              style = "text-align: center; padding: 10px;",
+              h3(textOutput("geo_stat_features", inline = TRUE),
+                 style = "color: #1e3a8a; margin: 0;"),
+              p("Unidades Geográficas", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+            )
+          ),
+          column(3,
+            div(
+              style = "text-align: center; padding: 10px;",
+              h3(textOutput("geo_stat_documents", inline = TRUE),
+                 style = "color: #059669; margin: 0;"),
+              p("Total de Documentos", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+            )
+          ),
+          column(3,
+            div(
+              style = "text-align: center; padding: 10px;",
+              h3(textOutput("geo_stat_avg", inline = TRUE),
+                 style = "color: #dc2626; margin: 0;"),
+              p("Média por Unidade", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+            )
+          ),
+          column(3,
+            div(
+              style = "text-align: center; padding: 10px;",
+              h3(textOutput("geo_stat_range", inline = TRUE),
+                 style = "color: #ca8a04; margin: 0;"),
+              p("Período dos Dados", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+            )
+          )
+        )
+      )
     )
   ),
 
@@ -553,126 +684,164 @@ server <- function(input, output, session) {
     home_recent_activity_data()
   }, options = list(pageLength = 10, scrollX = TRUE, dom = 't'))
 
-  # -- GEOGRAPHIC SERVER LOGIC --
+  # ===========================================================================
+  # -- ENHANCED GEOGRAPHIC SERVER LOGIC --
+  # ===========================================================================
 
-  # Reactive values for Geographic filters
+  # Reactive values for Geographic filters and settings
   geo_filters <- reactiveValues(
     tipo = "Todos",
     date_start = NULL,
     date_end = NULL,
+    viz_mode = "absolute",
+    viz_level = "state",
     trigger = 1
   )
 
-  # Store current map data for export (PRD 4.3 - P1 High)
+  # Store current map data and statistics for export
   current_map_data <- reactiveVal(NULL)
+  current_viz_stats <- reactiveVal(NULL)
 
-  # Apply button observer
+  # Apply button observer - captures all filter and visualization settings
   observeEvent(input$geo_apply, {
     geo_filters$tipo <- input$geo_filter_tipo
     geo_filters$date_start <- input$geo_date_range[1]
     geo_filters$date_end <- input$geo_date_range[2]
+    geo_filters$viz_mode <- input$geo_viz_mode
+    geo_filters$viz_level <- input$geo_viz_level
     geo_filters$trigger <- geo_filters$trigger + 1
+
+    showNotification("Atualizando visualização...", type = "message", duration = 2)
   })
 
   # Clear button observer
   observeEvent(input$geo_clear, {
     updateSelectInput(session, "geo_filter_tipo", selected = "Todos")
     updateDateRangeInput(session, "geo_date_range", start = NULL, end = NULL)
+    updateSelectInput(session, "geo_viz_mode", selected = "absolute")
+    updateSelectInput(session, "geo_viz_level", selected = "state")
+
     geo_filters$tipo <- "Todos"
     geo_filters$date_start <- NULL
     geo_filters$date_end <- NULL
+    geo_filters$viz_mode <- "absolute"
+    geo_filters$viz_level <- "state"
     geo_filters$trigger <- geo_filters$trigger + 1
+
+    showNotification("Filtros limpos", type = "message", duration = 2)
   })
 
-  # Download handler for filtered geographic data
-  output$geo_download <- downloadHandler(
+  # Auto-update when visualization settings change
+  observeEvent(input$geo_viz_mode, {
+    if (geo_filters$trigger > 1) {  # Skip initial load
+      geo_filters$viz_mode <- input$geo_viz_mode
+      geo_filters$trigger <- geo_filters$trigger + 1
+    }
+  }, ignoreInit = TRUE)
+
+  observeEvent(input$geo_viz_level, {
+    if (geo_filters$trigger > 1) {  # Skip initial load
+      geo_filters$viz_level <- input$geo_viz_level
+      geo_filters$trigger <- geo_filters$trigger + 1
+    }
+  }, ignoreInit = TRUE)
+
+  # ===========================================================================
+  # -- ENHANCED EXPORT HANDLERS --
+  # ===========================================================================
+
+  # CSV export handler
+  output$geo_download_csv <- downloadHandler(
     filename = function() {
-      paste0("geographic_data_", format(Sys.Date(), "%Y%m%d"), ".csv")
+      paste0("geographic_data_", geo_filters$viz_level, "_", format(Sys.Date(), "%Y%m%d"), ".csv")
     },
     content = function(file) {
-      if (!DB_AVAILABLE) {
-        write.csv(data.frame(Error = "Database not available"), file, row.names = FALSE)
-        return()
+      data <- current_map_data()
+      result <- export_geographic_data(data, format = "CSV", filename = basename(file))
+
+      if (result$success && file.exists(result$file_path)) {
+        file.copy(result$file_path, file, overwrite = TRUE)
+      } else {
+        write.csv(data.frame(Error = result$error %||% "Export failed"), file, row.names = FALSE)
       }
-
-      # Read current filter state
-      current_tipo <- geo_filters$tipo
-      current_date_start <- geo_filters$date_start
-      current_date_end <- geo_filters$date_end
-
-      # Build filtered query
-      query <- paste("SELECT estado, COUNT(*) AS document_count FROM", DOCUMENTS_TABLE, "WHERE 1=1")
-
-      if (current_tipo != "Todos") {
-        query <- paste0(query, " AND tipo = '", current_tipo, "'")
-      }
-
-      if (!is.null(current_date_start) && !is.null(current_date_end)) {
-        query <- paste0(query,
-                       " AND data >= '", current_date_start, "'",
-                       " AND data <= '", current_date_end, "'")
-      }
-
-      query <- paste0(query, " GROUP BY estado ORDER BY document_count DESC")
-
-      # Execute query and write CSV
-      tryCatch({
-        data <- dbGetQuery(secure_db_connection, query)
-        write.csv(data, file, row.names = FALSE)
-      }, error = function(e) {
-        write.csv(data.frame(Error = e$message), file, row.names = FALSE)
-      })
     }
   )
 
-  # Download handler for map export as PNG (PRD 4.3 - P1 High)
-  output$geo_download_map <- downloadHandler(
+  # GeoJSON export handler
+  output$geo_download_geojson <- downloadHandler(
     filename = function() {
-      paste0("mapa_geografico_", format(Sys.Date(), "%Y%m%d"), ".png")
+      paste0("geographic_data_", geo_filters$viz_level, "_", format(Sys.Date(), "%Y%m%d"), ".geojson")
+    },
+    content = function(file) {
+      data <- current_map_data()
+      result <- export_geographic_data(data, format = "GeoJSON", filename = basename(file))
+
+      if (result$success && file.exists(result$file_path)) {
+        file.copy(result$file_path, file, overwrite = TRUE)
+      } else {
+        writeLines(paste("Error:", result$error %||% "No geographic data available"), file)
+      }
+    }
+  )
+
+  # PNG map export handler
+  output$geo_download_png <- downloadHandler(
+    filename = function() {
+      paste0("geographic_map_", format(Sys.Date(), "%Y%m%d"), ".png")
     },
     content = function(file) {
       map_data <- current_map_data()
 
-      if (is.null(map_data)) {
-        # Create empty plot with message
+      if (is.null(map_data) || nrow(map_data) == 0) {
         p <- ggplot() +
-          annotate("text", x = 0, y = 0, label = "Nenhum dado disponível para exportação\nClique em 'Aplicar Filtros' primeiro", size = 6) +
+          annotate("text", x = 0, y = 0,
+                   label = "No data available\nApply filters first",
+                   size = 6) +
           theme_void()
         ggsave(file, plot = p, width = 10, height = 8, dpi = 300, bg = "white")
         return()
       }
 
       tryCatch({
-        # Debug: print data structure
-        cat("Export - Data class:", class(map_data), "\n")
-        cat("Export - Columns:", names(map_data), "\n")
-        cat("Export - n values:", paste(map_data$n, collapse=", "), "\n")
-
-        # Ensure the object is recognized as sf (fixes class loss from reactiveVal)
         if (!inherits(map_data, "sf")) {
-          cat("Export - Converting to sf object\n")
           map_data <- sf::st_as_sf(map_data)
         }
 
-        # Create static choropleth map using ggplot2 + sf
-        n_values <- map_data$n
-        max_n <- max(n_values, na.rm = TRUE)
-        cat("Export - max_n:", max_n, "\n")
+        value_col <- switch(geo_filters$viz_mode,
+          "absolute" = "document_count",
+          "per_capita" = "docs_per_capita",
+          "density" = "docs_per_km2",
+          "temporal" = "recent_docs_pct",
+          "document_count"
+        )
 
-        # Create the map
+        if (!value_col %in% names(map_data)) {
+          value_col <- "document_count"
+        }
+
+        values <- map_data[[value_col]]
+        values <- values[!is.na(values) & is.finite(values)]
+        max_val <- max(values, na.rm = TRUE)
+
         p <- ggplot(data = map_data) +
-          geom_sf(aes(fill = n), color = "#444444", size = 0.3) +
+          geom_sf(aes(fill = get(value_col)), color = "#444444", size = 0.3) +
           scale_fill_gradient(
             low = "#fff5eb",
             high = "#d62728",
-            name = "Nº Documentos",
-            breaks = if(max_n > 0) pretty(c(0, max_n), n = 5) else c(0, 1),
-            limits = c(0, max(max_n, 1))
+            name = switch(geo_filters$viz_mode,
+              "absolute" = "Documents",
+              "per_capita" = "Docs/100k",
+              "density" = "Docs/km²",
+              "temporal" = "Recent %",
+              "Documents"
+            ),
+            breaks = if(max_val > 0) pretty(c(0, max_val), n = 5) else c(0, 1),
+            limits = c(0, max(max_val, 1))
           ) +
           labs(
-            title = "Distribuição Geográfica de Documentos Legislativos",
-            subtitle = paste("Base de dados atualizada em", format(DATA_EXTRACTION_DATE, "%d/%m/%Y")),
-            caption = "Fonte: Monitor Legislativo - MackIntegridade"
+            title = "Geographic Distribution of Legislative Documents",
+            subtitle = paste("Data updated:", format(DATA_EXTRACTION_DATE, "%d/%m/%Y")),
+            caption = "Source: Monitor Legislativo"
           ) +
           theme_minimal(base_size = 12) +
           theme(
@@ -686,270 +855,195 @@ server <- function(input, output, session) {
             axis.title = element_blank()
           )
 
-        # Save as PNG with high resolution
         ggsave(file, plot = p, width = 12, height = 10, dpi = 300, bg = "white")
 
       }, error = function(e) {
-        # Error handling - create error message plot
         p <- ggplot() +
           annotate("text", x = 0, y = 0,
-                  label = paste("Erro ao exportar mapa:", e$message),
-                  size = 6, color = "red") +
+                   label = paste("Export error:", e$message),
+                   size = 6, color = "red") +
           theme_void()
         ggsave(file, plot = p, width = 10, height = 8, dpi = 300, bg = "white")
       })
     }
   )
 
-  # Load IBGE state polygons once with fallback
-  brazil_states_sf <- reactiveVal(NULL)
-
-  observeEvent(TRUE, {  # run once
-    if (is.null(brazil_states_sf())) {
-      # Try loading from local file first, then from URL
-      local_paths <- c(
-        "data/brazil_states.geojson",
-        "data/geo/brazil_states.geojson"
-      )
-      
-      shp <- NULL
-      
-      # Try local files first
-      for (path in local_paths) {
-        if (file.exists(path)) {
-          cat("Loading geographic data from local file:", path, "\n")
-          shp <- tryCatch({
-            sf::st_read(path, quiet = TRUE)
-          }, error = function(e) NULL)
-          if (!is.null(shp)) break
-        }
-      }
-      
-      # If no local file, try URL
-      if (is.null(shp)) {
-        geo_url <- "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
-        cat("Loading geographic data from URL:", geo_url, "\n")
-        shp <- tryCatch({
-          raw_shp <- sf::st_read(geo_url, quiet = TRUE)
-          # Add 'sigla' field to the shapefile for merging with database (uses 2-letter codes)
-          # This ensures proper join between GeoJSON (full names) and database (abbreviations)
-          if (!is.null(raw_shp) && "sigla" %in% names(raw_shp)) {
-            raw_shp
-          } else if (!is.null(raw_shp) && "abbreviation" %in% names(raw_shp)) {
-            raw_shp$sigla <- raw_shp$abbreviation
-            raw_shp
-          } else {
-            raw_shp
-          }
-        }, error = function(e) {
-          cat("Failed to load from URL:", e$message, "\n")
-          NULL
-        })
-      }
-      
-      # If still no data, create minimal fallback
-      if (is.null(shp)) {
-        cat("⚠️ Could not load geographic data. Maps will not display properly.\n")
-        cat("   To fix: Download brazil-states.geojson and place in data/ folder\n")
-      } else {
-        cat("✅ Geographic data loaded successfully\n")
-      }
-      
-      brazil_states_sf(shp)
+  # SVG and PDF export handlers (placeholders for now - similar to PNG)
+  output$geo_download_svg <- downloadHandler(
+    filename = function() {
+      paste0("geographic_map_", format(Sys.Date(), "%Y%m%d"), ".svg")
+    },
+    content = function(file) {
+      showNotification("SVG export coming soon! Using PNG format.", type = "warning", duration = 3)
+      # For now, redirect to PNG export
+      file_png <- tempfile(fileext = ".png")
+      output$geo_download_png$contentType
+      output$geo_download_png$content(file_png)
+      file.copy(file_png, file, overwrite = TRUE)
     }
-  }, once = TRUE)
+  )
 
-  # Initial base map render (runs once)
-  output$geo_map <- leaflet::renderLeaflet({
-    cat("=== CREATING BASE MAP ===\n")
-    leaflet() %>%
-      addTiles() %>%
-      setView(lng = -54, lat = -15, zoom = 4)
-  })
+  output$geo_download_pdf <- downloadHandler(
+    filename = function() {
+      paste0("geographic_map_", format(Sys.Date(), "%Y%m%d"), ".pdf")
+    },
+    content = function(file) {
+      showNotification("PDF export coming soon! Using PNG format.", type = "warning", duration = 3)
+      file_png <- tempfile(fileext = ".png")
+      output$geo_download_png$content(file_png)
+      file.copy(file_png, file, overwrite = TRUE)
+    }
+  )
 
-  # Observer to update map data when filters change (uses leafletProxy)
-  observe({
-    # Memory cleanup on exit (PRD 3.1, 5.2 - P0 Critical)
-    on.exit({
-      if (exists("shp_merged")) rm(shp_merged)
-      if (exists("counts")) rm(counts)
-      if (exists("db_counts")) rm(db_counts)
-      gc(verbose = FALSE, reset = TRUE)
-    })
+  # ===========================================================================
+  # -- ENHANCED MAP RENDERING LOGIC --
+  # ===========================================================================
 
-    # Establish reactive dependency on filter trigger
+  # Reactive expression for loading and processing geographic data
+  enhanced_geo_data <- reactive({
+    # Establish dependencies
     current_trigger <- geo_filters$trigger
     current_tipo <- geo_filters$tipo
     current_date_start <- geo_filters$date_start
     current_date_end <- geo_filters$date_end
+    current_mode <- geo_filters$viz_mode
+    current_level <- geo_filters$viz_level
 
-    cat("=== UPDATING MAP DATA ===\n")
-    cat("Trigger value:", current_trigger, "\n")
-    cat("Filter tipo:", current_tipo, "\n")
-    cat("Filter date_start:", as.character(current_date_start), "\n")
-    cat("Filter date_end:", as.character(current_date_end), "\n")
+    cat("\n=== LOADING ENHANCED GEOGRAPHIC DATA ===\n")
+    cat("Level:", current_level, "| Mode:", current_mode, "| Filter:", current_tipo, "\n")
 
-    # Show loading indicator (PRD 4.1 - P1 High)
-    withProgress(message = 'Atualizando mapa geográfico...', value = 0, {
-      incProgress(0.2, detail = "Carregando dados dos estados")
-      shp <- brazil_states_sf()
-      
-      # Check if geographic data is available
-      if (is.null(shp)) {
-        cat("⚠️ Geographic data not available - map cannot be updated\n")
-        showNotification("Dados geográficos não disponíveis. Por favor, verifique a conexão com a internet ou adicione o arquivo brazil_states.geojson localmente.", 
-                        type = "warning", duration = 10)
-        return()
-      }
-
-      # Build filtered query
-      incProgress(0.2, detail = "Consultando banco de dados")
-      counts <- data.frame()
-      if (DB_AVAILABLE) {
-        # Start with base query
-        query <- paste("SELECT estado, COUNT(*) AS n FROM", DOCUMENTS_TABLE, "WHERE 1=1")
-
-        # Add document type filter
-        if (current_tipo != "Todos") {
-          query <- paste0(query, " AND tipo = '", current_tipo, "'")
-        }
-
-        # Add date range filter
-        if (!is.null(current_date_start) && !is.null(current_date_end)) {
-          query <- paste0(query,
-                         " AND data >= '", current_date_start, "'",
-                         " AND data <= '", current_date_end, "'")
-        }
-
-        query <- paste0(query, " GROUP BY estado")
-
-        cat("Executing query:", query, "\n")
-        db_counts <- tryCatch({
-          result <- dbGetQuery(secure_db_connection, query)
-          cat("Query returned", nrow(result), "rows\n")
-          result
-        }, error = function(e) {
-          cat("Query error:", e$message, "\n")
-          data.frame()
-        })
-        counts <- db_counts
-      }
-
-    # Guarantee counts has estado + n columns
-    # Use 2-letter codes (sigla) not full names, since database uses abbreviations
-    if (!("estado" %in% names(counts) && "n" %in% names(counts))) {
-      if (!is.null(shp) && "sigla" %in% names(shp)) {
-        counts <- data.frame(estado = shp$sigla, n = 0)
-      } else {
-        # Ultimate fallback with all Brazilian state codes
-        counts <- data.frame(
-          estado = c("AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MT","MS","MG",
-                    "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SE","SP","TO"),
-          n = 0
-        )
-      }
+    if (!DB_AVAILABLE) {
+      cat("⚠️ Database not available\n")
+      return(NULL)
     }
 
-      # Use leafletProxy to update the existing map
-      incProgress(0.2, detail = "Mesclando dados geográficos")
-      if (!is.null(shp)) {
-        # Check which field to use for merging
-        merge_field <- if ("sigla" %in% names(shp)) {
-          "sigla"
-        } else if ("abbreviation" %in% names(shp)) {
-          "abbreviation"
-        } else {
-          cat("⚠️ Warning: No state code field found in geographic data\n")
-          NULL
-        }
-        
-        if (!is.null(merge_field)) {
-          # CRITICAL FIX: Merge on state codes (2-letter codes like "SP") not full names
-          # Database stores estado as abbreviations (SP, RJ, MG)
-          shp_merged <- merge(shp, counts, by.x = merge_field, by.y = "estado", all.x = TRUE)
-          shp_merged$n[is.na(shp_merged$n)] <- 0
-          # Ensure n is numeric (fix for max() returning wrong value)
-          shp_merged$n <- as.numeric(shp_merged$n)
-        } else {
-          # If no proper merge field, use shapefile as-is with zero counts
-          shp_merged <- shp
-          shp_merged$n <- 0
-        }
+    # Build filters list
+    filters <- list()
+    if (current_tipo != "Todos") {
+      filters$tipo <- current_tipo
+    }
+    if (!is.null(current_date_start) && !is.null(current_date_end)) {
+      filters$date_start <- current_date_start
+      filters$date_end <- current_date_end
+    }
 
-        # Store for export functionality (PRD 4.3 - P1 High)
-        current_map_data(shp_merged)
-
-        cat("Merge result - rows:", nrow(shp_merged), "| n range:", min(shp_merged$n), "-", max(shp_merged$n), "\n")
-        cat("Document counts by state:\n")
-        print(data.frame(estado = shp_merged$sigla, documentos = shp_merged$n))
-
-        # Create palette with better gradient visualization
-        # Use colorBin with quantile breaks for better visual differentiation
-        incProgress(0.2, detail = "Criando paleta de cores")
-        n_values <- shp_merged$n
-        max_n <- max(n_values, na.rm = TRUE)
-
-        # Create intelligent breaks for the color bins
-        if (max_n == 0) {
-          # All zeros - use single color
-          pal <- colorBin("YlOrRd", domain = c(0, 1), bins = c(0, 0.5, 1))
-        } else if (max_n <= 10) {
-          # Few documents - use simple breaks
-          pal <- colorBin("YlOrRd", domain = c(0, max_n), bins = 5)
-        } else {
-          # Use quantile-based breaks for good visual distribution
-          # This ensures each color bin represents roughly equal number of observations
-          breaks <- unique(quantile(n_values[n_values > 0], probs = seq(0, 1, 0.2), na.rm = TRUE))
-          breaks <- c(0, breaks)
-          pal <- colorBin("YlOrRd", domain = c(0, max_n), bins = breaks)
-        }
-
-        cat("Color palette created with", length(pal), "breaks\n")
-
-        incProgress(0.2, detail = "Renderizando mapa")
-        leafletProxy("geo_map") %>%
-          clearShapes() %>%
-          clearControls() %>%
-          addPolygons(
-            data = shp_merged,
-            fillColor = ~pal(n),
-            color = "#444",
-            weight = 1,
-            fillOpacity = 0.7,
-            label = ~paste0(name, ": ", n, " documentos")
-          ) %>%
-          addLegend(
-            "bottomright",
-            pal = pal,
-            values = n_values,
-            title = "Nº Documentos",
-            opacity = 1
-          )
-      } else {
-      # Fallback simple centroid markers
-      centroids <- data.frame(
-        uf = c("AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SE","SP","TO"),
-        lat = c(-9.02,-9.62,-3.47,1.41,-12.96,-5.20,-15.78,-19.19,-15.83,-4.96,-12.64,-20.44,-18.10,-4.43,-7.06,-25.25,-8.28,-6.60,-22.84,-5.81,-30.00,-11.22,1.99,-27.33,-10.57,-23.55,-10.25),
-        lng = c(-70.81,-36.82,-65.10,-51.77,-38.51,-39.30,-47.93,-40.34,-47.86,-45.27,-55.42,-54.65,-44.38,-52.48,-35.55,-52.02,-35.01,-42.28,-43.15,-36.59,-53.00,-63.02,-61.33,-50.50,-37.07,-46.63,-48.25)
+    # Load data using enhanced module
+    tryCatch({
+      data <- load_enhanced_geographic_data(
+        db_conn = secure_db_connection,
+        level = current_level,
+        filters = filters,
+        include_geometry = TRUE
       )
-      if (nrow(counts) > 0) {
-        centroids <- merge(centroids, counts, by.x = "uf", by.y = "estado", all.x = TRUE)
-      }
-      if (!"n" %in% names(centroids)) centroids$n <- 0
-      centroids$n[is.na(centroids$n)] <- 0
-      pal <- colorNumeric("YlOrRd", domain = centroids$n)
 
-      leafletProxy("geo_map") %>%
-        clearMarkers() %>%
-        clearControls() %>%
-        addCircleMarkers(data = centroids, ~lng, ~lat,
-          radius = ~pmax(4, sqrt(n))*2,
-          color = ~pal(n), stroke = FALSE, fillOpacity = 0.7,
-          label = ~paste0(uf, ": ", n, " documentos")) %>%
-        addLegend("bottomright", pal = pal, values = centroids$n,
-          title = "Nº Documentos", opacity = 1)
+      if (!is.null(data) && nrow(data) > 0) {
+        cat("✅ Loaded", nrow(data), "geographic features\n")
+
+        # Calculate and store statistics
+        stats <- calculate_viz_statistics(data)
+        current_viz_stats(stats)
+
+        # Store data for export
+        current_map_data(data)
+
+        return(data)
+      } else {
+        cat("⚠️ No geographic data returned\n")
+        return(NULL)
+      }
+
+    }, error = function(e) {
+      cat("❌ Error loading geographic data:", e$message, "\n")
+      return(NULL)
+    })
+  })
+
+  # Render enhanced choropleth map using leaflet
+  output$geo_map <- leaflet::renderLeaflet({
+    cat("=== RENDERING ENHANCED GEOGRAPHIC MAP ===\n")
+
+    # Get enhanced data
+    data <- enhanced_geo_data()
+
+    if (is.null(data)) {
+      cat("⚠️ No data available - creating empty map\n")
+      return(leaflet() %>%
+        addTiles() %>%
+        setView(lng = -54, lat = -15, zoom = 4) %>%
+        addMarkers(lng = -54, lat = -15,
+                  popup = "No data available. Please check database connection and apply filters."))
     }
-    }) # Close withProgress
+
+    # Get current visualization settings
+    current_mode <- geo_filters$viz_mode
+    current_level <- geo_filters$viz_level
+
+    # Build filters for context
+    filters <- list()
+    if (geo_filters$tipo != "Todos") {
+      filters$tipo <- geo_filters$tipo
+    }
+
+    # Create enhanced choropleth map
+    tryCatch({
+      map <- create_enhanced_choropleth(
+        data = data,
+        mode = current_mode,
+        level = current_level,
+        filters = filters
+      )
+
+      cat("✅ Enhanced map rendered successfully\n")
+      return(map)
+
+    }, error = function(e) {
+      cat("❌ Error rendering map:", e$message, "\n")
+      # Return basic map on error
+      return(leaflet() %>%
+        addTiles() %>%
+        setView(lng = -54, lat = -15, zoom = 4) %>%
+        addMarkers(lng = -54, lat = -15,
+                  popup = paste("Error rendering map:", e$message)))
+    })
+  })
+
+  # Statistics outputs
+  output$geo_stat_features <- renderText({
+    stats <- current_viz_stats()
+    if (is.null(stats)) return("--")
+    format(stats$total_features, big.mark = ",")
+  })
+
+  output$geo_stat_documents <- renderText({
+    stats <- current_viz_stats()
+    if (is.null(stats)) return("--")
+    format(stats$total_documents, big.mark = ",")
+  })
+
+  output$geo_stat_avg <- renderText({
+    stats <- current_viz_stats()
+    if (is.null(stats)) return("--")
+    format(round(stats$avg_documents, 1), big.mark = ",")
+  })
+
+  output$geo_stat_range <- renderText({
+    stats <- current_viz_stats()
+    if (is.null(stats) || is.null(stats$date_range)) return("--")
+    stats$date_range
+  })
+
+  # Loading indicator
+  output$geo_loading_indicator <- renderUI({
+    data <- enhanced_geo_data()
+    if (is.null(data)) {
+      div(
+        style = "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);",
+        icon("spinner", class = "fa-spin fa-3x"),
+        h4("Carregando dados geográficos...", style = "margin-top: 10px;")
+      )
+    } else {
+      NULL
+    }
   })
 
   # Force Geographic map to bind to reactive graph even when tab is hidden
