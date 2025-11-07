@@ -17,16 +17,44 @@ suppressPackageStartupMessages({
   library(leaflet)
   library(sf)
   library(ggplot2)
+  library(data.table)
+  library(plotly)
 })
 
 # ==============================================================================
-# 1.5 LOAD ENHANCED MODULES
+# 1.5 LOAD UTILITY FUNCTIONS AND MODULES
 # ==============================================================================
+
+# Load scalar safety utilities (required by transport corridor module)
+if (file.exists("R/utils/scalar_utils.R")) {
+  source("R/utils/scalar_utils.R")
+  cat("✅ Scalar utility functions loaded\n")
+} else {
+  cat("⚠️ Scalar utility functions not found\n")
+}
+
+# Load enhanced geographic module
 if (file.exists("modules/geographic_enhanced.R")) {
   source("modules/geographic_enhanced.R")
   cat("✅ Enhanced Geographic Module loaded\n")
 } else {
   cat("⚠️ Enhanced Geographic Module not found - using basic features\n")
+}
+
+# Load transport corridor module
+if (file.exists("modules/maps/transport_corridor_analysis.R")) {
+  source("modules/maps/transport_corridor_analysis.R")
+  cat("✅ Transport Corridor Analysis Module loaded\n")
+} else {
+  cat("⚠️ Transport Corridor Analysis Module not found\n")
+}
+
+# Load Brazilian geo integration (geocoding functions)
+if (file.exists("R/visualization/brazilian_geo_integration.R")) {
+  source("R/visualization/brazilian_geo_integration.R")
+  cat("✅ Brazilian Geo Integration (Geocoding) loaded\n")
+} else {
+  cat("⚠️ Brazilian Geo Integration not found\n")
 }
 
 # ==============================================================================
@@ -253,31 +281,53 @@ ui <- navbarPage(
         h4(icon("sliders-h"), " Configurações de Visualização"),
         fluidRow(
           column(3,
-            selectInput("geo_viz_mode", "Modo de Visualização:",
+            selectInput("geo_analysis_type", "Tipo de Análise:",
                        choices = c(
-                         "Total de Documentos" = "absolute",
-                         "Docs por 100k Habitantes" = "per_capita",
-                         "Docs por km²" = "density",
-                         "Atividade Recente" = "temporal"
+                         "Análise Geográfica Padrão" = "standard",
+                         "Corredores de Transporte" = "transport"
                        ),
-                       selected = "absolute")
+                       selected = "standard")
           ),
           column(3,
-            selectInput("geo_viz_level", "Nível Geográfico:",
-                       choices = c(
-                         "Estados" = "state",
-                         "Municípios (Top 500)" = "municipality"
-                       ),
-                       selected = "state")
+            conditionalPanel(
+              condition = "input.geo_analysis_type == 'standard'",
+              selectInput("geo_viz_mode", "Modo de Visualização:",
+                         choices = c(
+                           "Total de Documentos" = "absolute",
+                           "Docs por 100k Habitantes" = "per_capita",
+                           "Docs por km²" = "density",
+                           "Atividade Recente" = "temporal"
+                         ),
+                         selected = "absolute")
+            )
           ),
-          column(6,
+          column(3,
+            conditionalPanel(
+              condition = "input.geo_analysis_type == 'standard'",
+              selectInput("geo_viz_level", "Nível Geográfico:",
+                         choices = c(
+                           "Estados" = "state",
+                           "Municípios (Todos 5,570)" = "municipality"
+                         ),
+                         selected = "state")
+            )
+          ),
+          column(3,
+            conditionalPanel(
+              condition = "input.geo_analysis_type == 'standard' && input.geo_viz_mode == 'temporal'",
+              checkboxInput("geo_enable_animation",
+                           "Ativar Animação Temporal",
+                           value = FALSE)
+            )
+          ),
+          column(3,
             div(
               style = "margin-top: 25px;",
               p(
                 style = "font-size: 13px; color: #666; margin: 0;",
                 icon("lightbulb"),
                 strong(" Dica:"),
-                " Use o modo 'per_capita' para análise normalizada por população ou 'temporal' para atividade recente."
+                " Use 'temporal' + animação para ver mudanças ao longo do tempo."
               )
             )
           )
@@ -323,6 +373,45 @@ ui <- navbarPage(
         )
       ),
 
+      # -- Temporal Animation Controls (shown when animation enabled) --
+      conditionalPanel(
+        condition = "input.geo_enable_animation == true && input.geo_viz_mode == 'temporal'",
+        wellPanel(
+          style = "background-color: #e8f4f8;",
+          h4(icon("film"), " Controles de Animação Temporal"),
+          fluidRow(
+            column(4,
+              sliderInput("geo_animation_year",
+                         "Ano de Visualização:",
+                         min = 2000,
+                         max = as.numeric(format(Sys.Date(), "%Y")),
+                         value = as.numeric(format(Sys.Date(), "%Y")) - 5,
+                         step = 1,
+                         animate = animationOptions(interval = 1000, loop = TRUE),
+                         sep = "")
+            ),
+            column(4,
+              selectInput("geo_animation_period",
+                         "Período de Agregação:",
+                         choices = c(
+                           "Anual" = "year",
+                           "Trimestral" = "quarter",
+                           "Mensal" = "month"
+                         ),
+                         selected = "year")
+            ),
+            column(4,
+              div(style = "margin-top: 25px;",
+                p(style = "font-size: 13px; color: #666;",
+                  icon("play-circle"),
+                  " Use o controle deslizante ou clique em ▶ para animar"
+                )
+              )
+            )
+          )
+        )
+      ),
+
       # -- Enhanced Controls Row 3: Export Options --
       wellPanel(
         style = "background-color: #f8f9fa;",
@@ -357,49 +446,86 @@ ui <- navbarPage(
 
       hr(),
 
-      # -- Map Display with Loading Indicator --
-      div(
-        style = "position: relative;",
-        uiOutput("geo_loading_indicator"),
-        leaflet::leafletOutput("geo_map", height = "650px")
+      # -- Transport Corridor Controls (shown when transport analysis selected) --
+      conditionalPanel(
+        condition = "input.geo_analysis_type == 'transport'",
+        transportCorridorUI("transport_corridor")
       ),
 
-      # -- Statistics Panel --
-      hr(),
-      wellPanel(
-        style = "background-color: #f8f9fa; margin-top: 15px;",
-        h4(icon("chart-bar"), " Estatísticas da Visualização"),
-        fluidRow(
-          column(3,
-            div(
-              style = "text-align: center; padding: 10px;",
-              h3(textOutput("geo_stat_features", inline = TRUE),
-                 style = "color: #1e3a8a; margin: 0;"),
-              p("Unidades Geográficas", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+      # -- Standard Geographic Map (shown when standard analysis selected) --
+      conditionalPanel(
+        condition = "input.geo_analysis_type == 'standard'",
+        # -- Map Display with Loading Indicator --
+        div(
+          style = "position: relative;",
+          uiOutput("geo_loading_indicator"),
+          leaflet::leafletOutput("geo_map", height = "650px")
+        )
+      ),
+
+      # -- Statistics Panel (shown only for standard analysis) --
+      conditionalPanel(
+        condition = "input.geo_analysis_type == 'standard'",
+        hr(),
+        wellPanel(
+          style = "background-color: #f8f9fa; margin-top: 15px;",
+          h4(icon("chart-bar"), " Estatísticas da Visualização"),
+          fluidRow(
+            column(3,
+              div(
+                style = "text-align: center; padding: 10px;",
+                h3(textOutput("geo_stat_features", inline = TRUE),
+                   style = "color: #1e3a8a; margin: 0;"),
+                p("Unidades Geográficas", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+              )
+            ),
+            column(3,
+              div(
+                style = "text-align: center; padding: 10px;",
+                h3(textOutput("geo_stat_documents", inline = TRUE),
+                   style = "color: #059669; margin: 0;"),
+                p("Total de Documentos", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+              )
+            ),
+            column(3,
+              div(
+                style = "text-align: center; padding: 10px;",
+                h3(textOutput("geo_stat_avg", inline = TRUE),
+                   style = "color: #dc2626; margin: 0;"),
+                p("Média por Unidade", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+              )
+            ),
+            column(3,
+              div(
+                style = "text-align: center; padding: 10px;",
+                h3(textOutput("geo_stat_range", inline = TRUE),
+                   style = "color: #ca8a04; margin: 0;"),
+                p("Período dos Dados", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+              )
             )
           ),
-          column(3,
-            div(
-              style = "text-align: center; padding: 10px;",
-              h3(textOutput("geo_stat_documents", inline = TRUE),
-                 style = "color: #059669; margin: 0;"),
-              p("Total de Documentos", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
-            )
-          ),
-          column(3,
-            div(
-              style = "text-align: center; padding: 10px;",
-              h3(textOutput("geo_stat_avg", inline = TRUE),
-                 style = "color: #dc2626; margin: 0;"),
-              p("Média por Unidade", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
-            )
-          ),
-          column(3,
-            div(
-              style = "text-align: center; padding: 10px;",
-              h3(textOutput("geo_stat_range", inline = TRUE),
-                 style = "color: #ca8a04; margin: 0;"),
-              p("Período dos Dados", style = "margin: 5px 0 0 0; color: #666; font-size: 13px;")
+          hr(),
+          fluidRow(
+            column(12,
+              div(
+                style = "background-color: #f0f9ff; padding: 15px; border-left: 4px solid #3b82f6; margin-top: 10px;",
+                h5(icon("map-pin"), " Informação sobre Geocodificação", style = "margin-top: 0; color: #1e40af;"),
+                p(
+                  style = "margin-bottom: 5px; font-size: 14px;",
+                  "O sistema inclui capacidade de geocodificação baseada em texto para documentos legislativos."
+                ),
+                p(
+                  style = "margin-bottom: 0; font-size: 13px; color: #666;",
+                  icon("check-circle", style = "color: #059669;"),
+                  " Detecção automática de estados e municípios brasileiros no texto dos documentos",
+                  br(),
+                  icon("check-circle", style = "color: #059669;"),
+                  " Atribuição de coordenadas geográficas e códigos IBGE",
+                  br(),
+                  icon("info-circle", style = "color: #3b82f6;"),
+                  " Para ativar a geocodificação em lote, consulte a documentação técnica"
+                )
+              )
             )
           )
         )
@@ -731,6 +857,43 @@ server <- function(input, output, session) {
     showNotification("Filtros limpos", type = "message", duration = 2)
   })
 
+  # ===========================================================================
+  # -- TRANSPORT CORRIDOR INTEGRATION --
+  # ===========================================================================
+
+  # Reactive data source for transport corridors
+  transport_legislative_data <- reactive({
+    if (!DB_AVAILABLE) {
+      return(data.frame())
+    }
+
+    tryCatch({
+      # Query legislative documents with geographic data
+      query <- paste("
+        SELECT
+          id, titulo as title, tipo as type, data as date,
+          estado as state, municipio,
+          CAST(latitude AS NUMERIC) as lat,
+          CAST(longitude AS NUMERIC) as lng
+        FROM", DOCUMENTS_TABLE, "
+        WHERE latitude IS NOT NULL
+          AND longitude IS NOT NULL
+        ORDER BY data DESC
+        LIMIT 10000
+      ")
+
+      result <- dbGetQuery(secure_db_connection, query)
+      cat("✅ Loaded", nrow(result), "documents for transport corridor analysis\n")
+      return(result)
+    }, error = function(e) {
+      cat("❌ Error loading transport corridor data:", e$message, "\n")
+      return(data.frame())
+    })
+  })
+
+  # Call the transport corridor server module
+  transportCorridorServer("transport_corridor", legislative_data = transport_legislative_data)
+
   # Auto-update when visualization settings change
   observeEvent(input$geo_viz_mode, {
     if (geo_filters$trigger > 1) {  # Skip initial load
@@ -909,8 +1072,16 @@ server <- function(input, output, session) {
     current_mode <- geo_filters$viz_mode
     current_level <- geo_filters$viz_level
 
+    # Animation dependencies
+    animation_enabled <- isTRUE(input$geo_enable_animation)
+    animation_year <- if(animation_enabled) input$geo_animation_year else NULL
+    animation_period <- if(animation_enabled) input$geo_animation_period else NULL
+
     cat("\n=== LOADING ENHANCED GEOGRAPHIC DATA ===\n")
     cat("Level:", current_level, "| Mode:", current_mode, "| Filter:", current_tipo, "\n")
+    if (animation_enabled) {
+      cat("Animation: ENABLED | Year:", animation_year, "| Period:", animation_period, "\n")
+    }
 
     if (!DB_AVAILABLE) {
       cat("⚠️ Database not available\n")
@@ -922,7 +1093,22 @@ server <- function(input, output, session) {
     if (current_tipo != "Todos") {
       filters$tipo <- current_tipo
     }
-    if (!is.null(current_date_start) && !is.null(current_date_end)) {
+
+    # Apply temporal animation filter if enabled
+    if (animation_enabled && !is.null(animation_year)) {
+      if (animation_period == "year") {
+        filters$date_start <- as.Date(paste0(animation_year, "-01-01"))
+        filters$date_end <- as.Date(paste0(animation_year, "-12-31"))
+      } else if (animation_period == "quarter") {
+        # For now, show full year - can be enhanced later
+        filters$date_start <- as.Date(paste0(animation_year, "-01-01"))
+        filters$date_end <- as.Date(paste0(animation_year, "-12-31"))
+      } else if (animation_period == "month") {
+        # For now, show full year - can be enhanced later
+        filters$date_start <- as.Date(paste0(animation_year, "-01-01"))
+        filters$date_end <- as.Date(paste0(animation_year, "-12-31"))
+      }
+    } else if (!is.null(current_date_start) && !is.null(current_date_end)) {
       filters$date_start <- current_date_start
       filters$date_end <- current_date_end
     }
