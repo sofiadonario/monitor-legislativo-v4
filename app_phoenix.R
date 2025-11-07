@@ -34,7 +34,7 @@ get_database_config <- function() {
     return(list(
       host = paste("/cloudsql", "mackmonitor:southamerica-east1:mackmonitor-db", sep = "/"),
       port = 5432,
-      dbname = Sys.getenv("PGDATABASE", "monitor_legislativo"),
+      dbname = Sys.getenv("PGDATABASE", "mackmonitor-db"),
       user = Sys.getenv("PGUSER", "monitor_user"),
       password = Sys.getenv("PGPASSWORD", "")
     ))
@@ -42,11 +42,13 @@ get_database_config <- function() {
   
   # Method 2: Fallback to environment variables for local development
   cat("📋 Local environment detected. Using PGHOST/PGUSER...\n")
+  
+  # Read database config with proper defaults that match your .Renviron
   return(list(
-    host = Sys.getenv("PGHOST", "localhost"),
+    host = Sys.getenv("PGHOST", "34.39.228.246"),
     port = as.integer(Sys.getenv("PGPORT", "5432")),
-    dbname = Sys.getenv("PGDATABASE", "monitor_legislativo"),
-    user = Sys.getenv("PGUSER", "postgres"),
+    dbname = Sys.getenv("PGDATABASE", "mackmonitor-db"),
+    user = Sys.getenv("PGUSER", "monitor_user"),
     password = Sys.getenv("PGPASSWORD", "")
   ))
 }
@@ -78,6 +80,26 @@ init_secure_database <- function() {
 # Establish connection on app startup
 secure_db_connection <- init_secure_database()
 DB_AVAILABLE <- !is.null(secure_db_connection)
+
+# Check which table name to use
+DOCUMENTS_TABLE <- "lexml_documents"  # Default to lexml_documents
+if (DB_AVAILABLE) {
+  tables <- tryCatch(
+    dbListTables(secure_db_connection),
+    error = function(e) character(0)
+  )
+  
+  if ("documents" %in% tables) {
+    DOCUMENTS_TABLE <- "documents"
+    cat("✅ Using 'documents' table\n")
+  } else if ("lexml_documents" %in% tables) {
+    DOCUMENTS_TABLE <- "lexml_documents"
+    cat("✅ Using 'lexml_documents' table\n")
+  } else {
+    cat("⚠️ Warning: Neither 'documents' nor 'lexml_documents' table found\n")
+    cat("   Available tables:", paste(tables, collapse = ", "), "\n")
+  }
+}
 
 # Display connection status
 if (DB_AVAILABLE) {
@@ -334,8 +356,8 @@ server <- function(input, output, session) {
     current_mostrar <- as.numeric(filters$mostrar)
     current_trigger <- filters$trigger  # Read trigger last to establish dependency
 
-    # Start with the base query
-    query <- "SELECT id, titulo, tipo, data FROM documents"
+    # Start with the base query using the detected table
+    query <- paste("SELECT id, titulo, tipo, data FROM", DOCUMENTS_TABLE)
 
     # Build WHERE clauses based on current filter values
     conditions <- list()
@@ -403,10 +425,10 @@ server <- function(input, output, session) {
 
     tryCatch({
       # Execute all basic stats in separate queries (will optimize to single query in Phase 3)
-      total_result <- dbGetQuery(secure_db_connection, "SELECT COUNT(*) as total FROM documents")
-      types_result <- dbGetQuery(secure_db_connection, "SELECT COUNT(DISTINCT tipo) as count FROM documents")
-      latest_result <- dbGetQuery(secure_db_connection, "SELECT MAX(data) as latest FROM documents")
-      oldest_result <- dbGetQuery(secure_db_connection, "SELECT MIN(data) as oldest FROM documents")
+      total_result <- dbGetQuery(secure_db_connection, paste("SELECT COUNT(*) as total FROM", DOCUMENTS_TABLE))
+      types_result <- dbGetQuery(secure_db_connection, paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE))
+      latest_result <- dbGetQuery(secure_db_connection, paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE))
+      oldest_result <- dbGetQuery(secure_db_connection, paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE))
 
       list(
         total_docs = total_result$total,
@@ -466,13 +488,15 @@ server <- function(input, output, session) {
     }
 
     tryCatch({
-      dbGetQuery(secure_db_connection,
-        "SELECT tipo AS \"Document Type\",
-                COUNT(*) as \"Count\",
-                ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM documents), 2) as \"Percentage\"
-         FROM documents
-         GROUP BY tipo
-         ORDER BY COUNT(*) DESC")
+      query <- paste0(
+        "SELECT tipo AS \"Document Type\", ",
+        "COUNT(*) as \"Count\", ",
+        "ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM ", DOCUMENTS_TABLE, "), 2) as \"Percentage\" ",
+        "FROM ", DOCUMENTS_TABLE, " ",
+        "GROUP BY tipo ",
+        "ORDER BY COUNT(*) DESC"
+      )
+      dbGetQuery(secure_db_connection, query)
     }, error = function(e) {
       cat("Error fetching type breakdown:", e$message, "\n")
       data.frame(Error = e$message)
@@ -491,13 +515,15 @@ server <- function(input, output, session) {
     }
 
     tryCatch({
-      result <- dbGetQuery(secure_db_connection,
-        "SELECT tipo AS \"Type\",
-                data AS \"Date\",
-                LEFT(titulo, 50) || '...' AS \"Title\"
-         FROM documents
-         ORDER BY data DESC
-         LIMIT 10")
+      query <- paste0(
+        "SELECT tipo AS \"Type\", ",
+        "data AS \"Date\", ",
+        "LEFT(titulo, 50) || '...' AS \"Title\" ",
+        "FROM ", DOCUMENTS_TABLE, " ",
+        "ORDER BY data DESC ",
+        "LIMIT 10"
+      )
+      result <- dbGetQuery(secure_db_connection, query)
 
       # Format the date column
       if (nrow(result) > 0 && "Date" %in% names(result)) {
@@ -564,7 +590,7 @@ server <- function(input, output, session) {
       current_date_end <- geo_filters$date_end
 
       # Build filtered query
-      query <- "SELECT estado, COUNT(*) AS document_count FROM documents WHERE 1=1"
+      query <- paste("SELECT estado, COUNT(*) AS document_count FROM", DOCUMENTS_TABLE, "WHERE 1=1")
 
       if (current_tipo != "Todos") {
         query <- paste0(query, " AND tipo = '", current_tipo, "'")
@@ -770,7 +796,7 @@ server <- function(input, output, session) {
       counts <- data.frame()
       if (DB_AVAILABLE) {
         # Start with base query
-        query <- "SELECT estado, COUNT(*) AS n FROM documents WHERE 1=1"
+        query <- paste("SELECT estado, COUNT(*) AS n FROM", DOCUMENTS_TABLE, "WHERE 1=1")
 
         # Add document type filter
         if (current_tipo != "Todos") {
@@ -926,12 +952,12 @@ server <- function(input, output, session) {
     tryCatch({
       list(
         by_type = dbGetQuery(secure_db_connection,
-          "SELECT tipo AS type, COUNT(*) AS n FROM documents GROUP BY tipo ORDER BY n DESC"),
+          paste("SELECT tipo AS type, COUNT(*) AS n FROM", DOCUMENTS_TABLE, "GROUP BY tipo ORDER BY n DESC")),
         by_month = dbGetQuery(secure_db_connection,
-          "SELECT DATE_TRUNC('month', data) AS month, COUNT(*) AS n
-             FROM documents
-             GROUP BY month
-             ORDER BY month")
+          paste0("SELECT DATE_TRUNC('month', data) AS month, COUNT(*) AS n ",
+                 "FROM ", DOCUMENTS_TABLE, " ",
+                 "GROUP BY month ",
+                 "ORDER BY month"))
       )
     }, error = function(e) NULL)
   })
