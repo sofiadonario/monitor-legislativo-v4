@@ -26,6 +26,9 @@ suppressPackageStartupMessages({
 secure_db_connection <- NULL
 DB_AVAILABLE <- FALSE
 
+# Data extraction date from raw data files (./data_current/README.md)
+DATA_EXTRACTION_DATE <- as.Date("2025-10-21")
+
 get_database_config <- function() {
   # Method 1: PRIORITIZE Google Cloud Run Unix Socket
   is_in_cloud_run <- !is.na(Sys.getenv("K_SERVICE", unset = NA))
@@ -223,6 +226,14 @@ ui <- navbarPage(
     fluidPage(
       h1("Geographic Visualization"),
       p("Visualização geográfica de documentos legislativos por estado"),
+      div(
+        style = "background-color: #f0f8ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
+        icon("info-circle"),
+        strong(" Nota:"),
+        " Base de dados atualizada em ",
+        strong("21/10/2025"),
+        " (data de extração dos dados brutos)."
+      ),
       hr(),
       fluidRow(
         column(3,
@@ -234,7 +245,7 @@ ui <- navbarPage(
         ),
         column(4,
           dateRangeInput("geo_date_range", "Período:",
-                        start = NULL, end = NULL,
+                        start = NULL, end = DATA_EXTRACTION_DATE,
                         format = "dd/mm/yyyy",
                         language = "pt-BR",
                         separator = " até ")
@@ -660,7 +671,7 @@ server <- function(input, output, session) {
           ) +
           labs(
             title = "Distribuição Geográfica de Documentos Legislativos",
-            subtitle = paste("Dados extraídos em", format(Sys.Date(), "%d/%m/%Y")),
+            subtitle = paste("Base de dados atualizada em", format(DATA_EXTRACTION_DATE, "%d/%m/%Y")),
             caption = "Fonte: Monitor Legislativo - MackIntegridade"
           ) +
           theme_minimal(base_size = 12) +
