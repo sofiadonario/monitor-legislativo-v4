@@ -11,6 +11,7 @@
 suppressPackageStartupMessages({
   library(shiny)
   library(shinythemes)
+  library(shinycssloaders)  # Loading indicators
   library(DBI)
   library(RPostgres)
   library(DT)
@@ -20,6 +21,7 @@ suppressPackageStartupMessages({
   library(plotly)
   library(data.table)
   library(stringr)
+  library(dplyr)  # For advanced visualizations
 })
 
 # ==============================================================================
@@ -90,6 +92,14 @@ if (file.exists("R/visualization/brazilian_geo_integration.R")) {
   cat("✅ Brazilian Geo Integration (Geocoding) loaded\n")
 } else {
   cat("⚠️ Brazilian Geo Integration not found\n")
+}
+
+# Load Advanced Visualizations Engine (Priority 6 - PRD Implementation)
+if (file.exists("modules/analytics/advanced_visualizations.R")) {
+  source("modules/analytics/advanced_visualizations.R")
+  cat("✅ Advanced Visualizations Engine loaded\n")
+} else {
+  cat("⚠️ Advanced Visualizations Engine not found - using basic charts only\n")
 }
 
 # ==============================================================================
@@ -611,19 +621,144 @@ ui <- navbarPage(
     ) # End of fluidPage
   ), # End of Geographic tabPanel
 
-  # -- ANALYTICS TAB --
+  # -- ANALYTICS TAB (Enhanced with Priority 6 - Advanced Visualizations) --
   tabPanel(
     "Analytics",
     icon = icon("chart-bar"),
     fluidPage(
       h2("Análise de Documentos"),
-      p("Distribuição por tipo e evolução mensal"),
+      p("Análise estatística e visualizações avançadas dos documentos legislativos"),
       hr(),
-      fluidRow(
-        column(6, plotOutput("analytics_type_bar", height = "400px")),
-        column(6, plotOutput("analytics_month_line", height = "400px"))
-      )
-    )
+
+      # Sub-tabs for Basic and Advanced Analytics
+      tabsetPanel(
+        id = "analytics_subtabs",
+
+        # BASIC ANALYTICS SUB-TAB
+        tabPanel(
+          "Básico",
+          icon = icon("chart-simple"),
+          br(),
+          h3("Estatísticas Gerais"),
+          p("Distribuição por tipo e evolução temporal dos documentos"),
+          hr(),
+          fluidRow(
+            column(6, plotOutput("analytics_type_bar", height = "400px")),
+            column(6, plotOutput("analytics_month_line", height = "400px"))
+          )
+        ),
+
+        # ADVANCED VISUALIZATIONS SUB-TAB
+        tabPanel(
+          "Avançado",
+          icon = icon("chart-network"),
+          br(),
+          h3("Visualizações Avançadas"),
+          p("Análises multidimensionais: redes, hierarquias e correlações"),
+          hr(),
+
+          # Advanced visualization controls
+          fluidRow(
+            column(3,
+              wellPanel(
+                h4("Configurações"),
+                selectInput(
+                  "viz_type",
+                  "Tipo de Visualização:",
+                  choices = c(
+                    "Rede de Citações" = "network",
+                    "Mapa de Árvore (Treemap)" = "treemap",
+                    "Nuvem de Palavras" = "wordcloud",
+                    "Correlações" = "correlation"
+                  ),
+                  selected = "network"
+                ),
+                conditionalPanel(
+                  condition = "input.viz_type == 'network'",
+                  selectInput(
+                    "network_layout",
+                    "Layout da Rede:",
+                    choices = c(
+                      "Force Directed" = "force",
+                      "Circular" = "circular",
+                      "Hierarchical" = "hierarchical"
+                    ),
+                    selected = "force"
+                  )
+                ),
+                conditionalPanel(
+                  condition = "input.viz_type == 'wordcloud'",
+                  sliderInput(
+                    "wordcloud_max",
+                    "Máx. Palavras:",
+                    min = 50,
+                    max = 200,
+                    value = 100
+                  )
+                ),
+                actionButton(
+                  "refresh_viz",
+                  "Atualizar Visualização",
+                  icon = icon("refresh"),
+                  class = "btn-primary"
+                )
+              )
+            ),
+            column(9,
+              # Dynamic visualization output
+              conditionalPanel(
+                condition = "input.viz_type == 'network'",
+                shinycssloaders::withSpinner(
+                  htmlOutput("advanced_network_viz"),
+                  type = 6,
+                  color = "#3c8dbc"
+                )
+              ),
+              conditionalPanel(
+                condition = "input.viz_type == 'treemap'",
+                shinycssloaders::withSpinner(
+                  plotlyOutput("advanced_treemap_viz", height = "600px"),
+                  type = 6,
+                  color = "#3c8dbc"
+                )
+              ),
+              conditionalPanel(
+                condition = "input.viz_type == 'wordcloud'",
+                shinycssloaders::withSpinner(
+                  htmlOutput("advanced_wordcloud_viz"),
+                  type = 6,
+                  color = "#3c8dbc"
+                )
+              ),
+              conditionalPanel(
+                condition = "input.viz_type == 'correlation'",
+                shinycssloaders::withSpinner(
+                  plotOutput("advanced_correlation_viz", height = "600px"),
+                  type = 6,
+                  color = "#3c8dbc"
+                )
+              )
+            )
+          ),
+
+          # Additional info
+          hr(),
+          fluidRow(
+            column(12,
+              div(
+                class = "alert alert-info",
+                icon("info-circle"),
+                " ",
+                strong("Nota:"),
+                " As visualizações avançadas requerem pacotes adicionais. ",
+                "Se alguma visualização não estiver disponível, instale os pacotes necessários ",
+                "listados em data_current/processed/R_analytical_framework/DESCRIPTION."
+              )
+            )
+          )
+        )
+      ) # End of analytics tabsetPanel
+    ) # End of fluidPage
   ),
 
   # -- PLACEHOLDER TABS --
@@ -1569,6 +1704,223 @@ server <- function(input, output, session) {
       geom_point(color = "firebrick") +
       labs(x = "Mês", y = "Quantidade", title = "Documentos por Mês") +
       theme_minimal()
+  })
+
+  # -- ADVANCED VISUALIZATIONS SERVER LOGIC (Priority 6) --
+
+  # Reactive data for advanced visualizations
+  advanced_viz_data <- reactive({
+    if (!DB_AVAILABLE || is.null(secure_db_connection)) {
+      return(NULL)
+    }
+
+    tryCatch({
+      # Get document data for advanced visualizations
+      query <- paste0(
+        "SELECT tipo, data, titulo, ementa, estado ",
+        "FROM ", DOCUMENTS_TABLE, " ",
+        "WHERE data IS NOT NULL ",
+        "LIMIT 1000"  # Limit for performance
+      )
+      dbGetQuery(secure_db_connection, query)
+    }, error = function(e) {
+      cat("Error loading advanced viz data:", e$message, "\n")
+      NULL
+    })
+  }) %>% bindEvent(input$refresh_viz, ignoreNULL = FALSE)
+
+  # Network visualization
+  output$advanced_network_viz <- renderUI({
+    data <- advanced_viz_data()
+    if (is.null(data) || nrow(data) == 0) {
+      return(div(
+        class = "alert alert-warning",
+        icon("exclamation-triangle"),
+        " Dados insuficientes para gerar rede de citações. ",
+        "Necessário conectar ao banco de dados e ter dados disponíveis."
+      ))
+    }
+
+    # Check if networkD3 is available
+    if (!requireNamespace("networkD3", quietly = TRUE)) {
+      return(div(
+        class = "alert alert-warning",
+        icon("exclamation-triangle"),
+        " Pacote 'networkD3' não instalado. ",
+        "Execute: install.packages('networkD3')"
+      ))
+    }
+
+    # Create simple network based on document types
+    tryCatch({
+      nodes <- data.frame(
+        name = unique(data$tipo),
+        group = 1
+      )
+
+      # Create edges based on co-occurrence by date
+      edges_list <- list()
+      for (i in seq_len(min(nrow(data) - 1, 100))) {
+        edges_list[[i]] <- data.frame(
+          source = match(data$tipo[i], nodes$name) - 1,
+          target = match(data$tipo[i + 1], nodes$name) - 1,
+          value = 1
+        )
+      }
+      edges <- do.call(rbind, edges_list)
+      edges <- edges[edges$source != edges$target, ]
+
+      network <- networkD3::forceNetwork(
+        Links = edges,
+        Nodes = nodes,
+        Source = "source",
+        Target = "target",
+        Value = "value",
+        NodeID = "name",
+        Group = "group",
+        opacity = 0.9,
+        zoom = TRUE,
+        fontSize = 14
+      )
+
+      network
+    }, error = function(e) {
+      div(
+        class = "alert alert-danger",
+        icon("times-circle"),
+        " Erro ao gerar rede: ", e$message
+      )
+    })
+  })
+
+  # Treemap visualization
+  output$advanced_treemap_viz <- renderPlotly({
+    data <- advanced_viz_data()
+    if (is.null(data) || nrow(data) == 0) {
+      return(plotly::plot_ly() %>%
+        plotly::layout(
+          title = "Dados insuficientes",
+          annotations = list(
+            text = "Conecte ao banco de dados para visualizar",
+            showarrow = FALSE
+          )
+        ))
+    }
+
+    # Create treemap of document types
+    tryCatch({
+      type_counts <- data %>%
+        dplyr::group_by(tipo) %>%
+        dplyr::summarise(count = n(), .groups = "drop") %>%
+        dplyr::arrange(desc(count))
+
+      plotly::plot_ly(
+        type = "treemap",
+        labels = type_counts$tipo,
+        parents = rep("", nrow(type_counts)),
+        values = type_counts$count,
+        textposition = "middle center",
+        marker = list(
+          colorscale = "Viridis"
+        )
+      ) %>%
+        plotly::layout(
+          title = "Distribuição Hierárquica de Tipos de Documentos"
+        )
+    }, error = function(e) {
+      plotly::plot_ly() %>%
+        plotly::layout(
+          title = paste("Erro:", e$message)
+        )
+    })
+  })
+
+  # Word cloud visualization
+  output$advanced_wordcloud_viz <- renderUI({
+    data <- advanced_viz_data()
+    if (is.null(data) || nrow(data) == 0) {
+      return(div(
+        class = "alert alert-warning",
+        icon("exclamation-triangle"),
+        " Dados insuficientes para gerar nuvem de palavras."
+      ))
+    }
+
+    # Check if wordcloud2 is available
+    if (!requireNamespace("wordcloud2", quietly = TRUE)) {
+      return(div(
+        class = "alert alert-warning",
+        icon("exclamation-triangle"),
+        " Pacote 'wordcloud2' não instalado. ",
+        "Execute: install.packages('wordcloud2')"
+      ))
+    }
+
+    tryCatch({
+      # Extract words from titles
+      words <- tolower(unlist(strsplit(data$titulo, " ")))
+      words <- words[nchar(words) > 3]  # Filter short words
+
+      word_freq <- as.data.frame(table(words))
+      colnames(word_freq) <- c("word", "freq")
+      word_freq <- word_freq[order(-word_freq$freq), ]
+      word_freq <- head(word_freq, input$wordcloud_max)
+
+      wordcloud2::wordcloud2(
+        data = word_freq,
+        size = 0.5,
+        color = "random-light",
+        backgroundColor = "white"
+      )
+    }, error = function(e) {
+      div(
+        class = "alert alert-danger",
+        icon("times-circle"),
+        " Erro ao gerar nuvem de palavras: ", e$message
+      )
+    })
+  })
+
+  # Correlation visualization
+  output$advanced_correlation_viz <- renderPlot({
+    data <- advanced_viz_data()
+    if (is.null(data) || nrow(data) == 0) {
+      plot.new()
+      text(0.5, 0.5, "Dados insuficientes para análise de correlação", cex = 1.5)
+      return()
+    }
+
+    # Check if corrplot is available
+    if (!requireNamespace("corrplot", quietly = TRUE)) {
+      plot.new()
+      text(0.5, 0.5, "Pacote 'corrplot' não instalado\nExecute: install.packages('corrplot')", cex = 1.2)
+      return()
+    }
+
+    tryCatch({
+      # Create correlation matrix from document types and states
+      type_matrix <- table(data$tipo, data$estado)
+
+      # If we have enough data, compute correlation
+      if (nrow(type_matrix) > 1 && ncol(type_matrix) > 1) {
+        cor_matrix <- cor(t(type_matrix))
+        corrplot::corrplot(
+          cor_matrix,
+          method = "circle",
+          type = "upper",
+          tl.col = "black",
+          tl.srt = 45,
+          title = "Correlação entre Tipos de Documentos por Estado",
+          mar = c(0, 0, 2, 0)
+        )
+      } else {
+        plot.new()
+        text(0.5, 0.5, "Dados insuficientes para matriz de correlação", cex = 1.5)
+      }
+    }, error = function(e) {
+      plot.new()
+      text(0.5, 0.5, paste("Erro:", e$message), cex = 1.2)
+    })
   })
 
   # Note: Database connection is NOT closed per-session because it's a GLOBAL connection
