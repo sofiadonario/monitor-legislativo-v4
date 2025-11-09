@@ -49,6 +49,14 @@ if (file.exists("R/utils/scalar_utils.R")) {
   cat("⚠️ Scalar utilities not found - some features may fail\n")
 }
 
+# Load query caching system
+if (file.exists("R/utils/query_cache.R")) {
+  source("R/utils/query_cache.R")
+  cat("✅ Query caching system loaded\n")
+} else {
+  cat("⚠️ Query caching system not found - queries will not be cached\n")
+}
+
 # ==============================================================================
 # 1.6 LOAD ENHANCED MODULES
 # ==============================================================================
@@ -577,14 +585,14 @@ ui <- navbarPage(
             div(
               style = "background-color: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);",
               h4(icon("chart-line"), " Evolução Temporal", style = "color: #ea580c; margin-top: 0;"),
-              plotOutput("federal_timeline", height = "350px")
+              plotly::plotlyOutput("federal_timeline", height = "350px")
             )
           ),
           column(5,
             div(
               style = "background-color: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);",
               h4(icon("chart-pie"), " Tipos de Documentos", style = "color: #ea580c; margin-top: 0;"),
-              plotOutput("federal_type_breakdown", height = "350px")
+              plotly::plotlyOutput("federal_type_breakdown", height = "350px")
             )
           )
         )
@@ -620,8 +628,8 @@ ui <- navbarPage(
       p("Distribuição por tipo e evolução mensal"),
       hr(),
       fluidRow(
-        column(6, plotOutput("analytics_type_bar", height = "400px")),
-        column(6, plotOutput("analytics_month_line", height = "400px"))
+        column(6, plotly::plotlyOutput("analytics_type_bar", height = "400px")),
+        column(6, plotly::plotlyOutput("analytics_month_line", height = "400px"))
       )
     )
   ),
@@ -683,6 +691,12 @@ server <- function(input, output, session) {
       updateSelectInput(session, "library_tipo", selected = "Todos")
       updateSelectInput(session, "library_mostrar", selected = 100)
 
+      # Clear query cache for fresh data
+      if (exists("clear_query_cache")) {
+        clear_query_cache()
+        cat("🧹 Cache cleared by user\n")
+      }
+
       filters$search <- ""
       filters$tipo <- "Todos"
       filters$mostrar <- 100
@@ -728,7 +742,19 @@ server <- function(input, output, session) {
       cat("Executing query:", query, "\n")
 
       tryCatch({
-        result <- dbGetQuery(secure_db_connection, query)
+        # Use cached query with 5-minute TTL for search results
+        params <- list(
+          search = current_search,
+          tipo = current_tipo,
+          limit = current_mostrar
+        )
+        result <- cached_query(
+          connection = secure_db_connection,
+          query = query,
+          params = params,
+          ttl = 5 * 60,  # 5 minutes
+          cache_type = "library_search"
+        )
         cat("Query returned", nrow(result), "rows\n")
         if (nrow(result) == 0) {
           return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
@@ -765,11 +791,35 @@ server <- function(input, output, session) {
     }
 
     tryCatch({
-      # Execute all basic stats in separate queries (will optimize to single query in Phase 3)
-      total_result <- dbGetQuery(secure_db_connection, paste("SELECT COUNT(*) as total FROM", DOCUMENTS_TABLE))
-      types_result <- dbGetQuery(secure_db_connection, paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE))
-      latest_result <- dbGetQuery(secure_db_connection, paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE))
-      oldest_result <- dbGetQuery(secure_db_connection, paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE))
+      # Execute all basic stats with caching (15-minute TTL for dashboard stats)
+      total_result <- cached_query(
+        secure_db_connection,
+        paste("SELECT COUNT(*) as total FROM", DOCUMENTS_TABLE),
+        list(stat = "total"),
+        ttl = 15 * 60,
+        cache_type = "home_stats"
+      )
+      types_result <- cached_query(
+        secure_db_connection,
+        paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE),
+        list(stat = "types"),
+        ttl = 15 * 60,
+        cache_type = "home_stats"
+      )
+      latest_result <- cached_query(
+        secure_db_connection,
+        paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE),
+        list(stat = "latest"),
+        ttl = 15 * 60,
+        cache_type = "home_stats"
+      )
+      oldest_result <- cached_query(
+        secure_db_connection,
+        paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE),
+        list(stat = "oldest"),
+        ttl = 15 * 60,
+        cache_type = "home_stats"
+      )
 
       list(
         total_docs = total_result$total,
@@ -1353,17 +1403,12 @@ server <- function(input, output, session) {
   })
 
   # Timeline chart - federal documents over years
-  output$federal_timeline <- renderPlot({
-    if (!DB_AVAILABLE) {
-      plot.new()
-      text(0.5, 0.5, "Banco de dados não disponível", cex = 1.2, col = "gray")
-      return()
-    }
+  output$federal_timeline <- plotly::renderPlotly({
+    if (!DB_AVAILABLE) return(NULL)
 
     tryCatch({
-      # Query federal documents by year
-      timeline_data <- dbGetQuery(secure_db_connection,
-        "SELECT
+      # Query federal documents by year with caching
+      query <- "SELECT
           EXTRACT(YEAR FROM data::date) as year,
           COUNT(*) as count
         FROM documents
@@ -1372,54 +1417,92 @@ server <- function(input, output, session) {
           AND data != ''
           AND EXTRACT(YEAR FROM data::date) >= 2000
         GROUP BY year
-        ORDER BY year")
+        ORDER BY year"
 
-      if (nrow(timeline_data) == 0) {
-        plot.new()
-        text(0.5, 0.5, "Sem dados disponíveis", cex = 1.2, col = "gray")
-        return()
-      }
+      timeline_data <- cached_query(
+        connection = secure_db_connection,
+        query = query,
+        params = list(federal = "timeline"),
+        ttl = 15 * 60,
+        cache_type = "federal_timeline"
+      )
 
-      # Create timeline plot
-      par(mar = c(4, 4, 2, 1), family = "sans")
-      plot(timeline_data$year, timeline_data$count,
-           type = "l", lwd = 3, col = "#ea580c",
-           xlab = "Ano", ylab = "Número de Documentos",
-           main = "",
-           las = 1, cex.axis = 0.9, cex.lab = 1.0)
+      if (is.null(timeline_data) || nrow(timeline_data) == 0) return(NULL)
 
-      # Add points
-      points(timeline_data$year, timeline_data$count,
-             pch = 19, col = "#ea580c", cex = 1.2)
-
-      # Add grid
-      grid(col = "gray90", lty = 1)
-
-      # Add trend line
+      # Calculate trend line if enough data
       if (nrow(timeline_data) > 2) {
         trend_model <- lm(count ~ year, data = timeline_data)
-        lines(timeline_data$year, predict(trend_model),
-              col = "#dc2626", lty = 2, lwd = 2)
+        timeline_data$trend <- predict(trend_model)
       }
 
+      # Create interactive plotly timeline
+      p <- plot_ly(data = timeline_data) %>%
+        add_trace(
+          x = ~year,
+          y = ~count,
+          type = "scatter",
+          mode = "lines+markers",
+          name = "Documentos",
+          line = list(color = "#ea580c", width = 3),
+          marker = list(size = 8, color = "#ea580c"),
+          hovertemplate = paste(
+            "<b>Ano:</b> %{x}<br>",
+            "<b>Documentos:</b> %{y:,}<br>",
+            "<extra></extra>"
+          )
+        )
+
+      # Add trend line if available
+      if (nrow(timeline_data) > 2) {
+        p <- p %>%
+          add_trace(
+            x = ~year,
+            y = ~trend,
+            type = "scatter",
+            mode = "lines",
+            name = "Tendência",
+            line = list(color = "#dc2626", width = 2, dash = "dash"),
+            hoverinfo = "skip"
+          )
+      }
+
+      p %>%
+        layout(
+          xaxis = list(
+            title = "Ano",
+            showgrid = TRUE,
+            gridcolor = "#f0f0f0"
+          ),
+          yaxis = list(
+            title = "Número de Documentos",
+            showgrid = TRUE,
+            gridcolor = "#f0f0f0"
+          ),
+          hovermode = "x unified",
+          margin = list(l = 80, r = 50, t = 50, b = 80),
+          plot_bgcolor = "#fafafa",
+          paper_bgcolor = "white",
+          showlegend = TRUE,
+          legend = list(x = 0.02, y = 0.98)
+        ) %>%
+        config(
+          displayModeBar = TRUE,
+          displaylogo = FALSE,
+          modeBarButtonsToRemove = c("lasso2d", "select2d")
+        )
+
     }, error = function(e) {
-      plot.new()
-      text(0.5, 0.5, paste("Erro:", e$message), cex = 1, col = "red")
+      NULL
     })
   })
 
   # Type breakdown chart
-  output$federal_type_breakdown <- renderPlot({
-    if (!DB_AVAILABLE) {
-      plot.new()
-      text(0.5, 0.5, "Banco de dados não disponível", cex = 1.2, col = "gray")
-      return()
-    }
+  output$federal_type_breakdown <- plotly::renderPlotly({
+    if (!DB_AVAILABLE) return(NULL)
 
     tryCatch({
-      # Query federal documents by type (extracted from URN)
-      type_data <- dbGetQuery(secure_db_connection,
-        "SELECT
+      # Query federal documents by type (extracted from URN) with caching
+      query <- "SELECT
           CASE
             WHEN SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') IS NULL OR SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') = ''
             THEN 'Não especificado'
@@ -1430,35 +1513,62 @@ server <- function(input, output, session) {
         WHERE estado = 'Federal'
         GROUP BY tipo
         ORDER BY count DESC
-        LIMIT 8")
+        LIMIT 8"
 
-      if (nrow(type_data) == 0) {
-        plot.new()
-        text(0.5, 0.5, "Sem dados disponíveis", cex = 1.2, col = "gray")
-        return()
-      }
+      type_data <- cached_query(
+        connection = secure_db_connection,
+        query = query,
+        params = list(federal = "type_breakdown"),
+        ttl = 15 * 60,
+        cache_type = "federal_type"
+      )
 
-      # Convert count to numeric and create named vector
-      counts <- as.numeric(type_data$count)
-      names(counts) <- type_data$tipo
+      if (is.null(type_data) || nrow(type_data) == 0) return(NULL)
 
-      # Create horizontal bar chart
-      par(mar = c(4, 8, 2, 2), family = "sans")
-      barplot(counts,
-              horiz = TRUE,
-              las = 1,
-              col = colorRampPalette(c("#fed7aa", "#ea580c"))(length(counts)),
-              border = NA,
-              xlab = "Número de Documentos",
-              cex.names = 0.85,
-              cex.axis = 0.9)
+      # Generate color palette
+      n_colors <- nrow(type_data)
+      colors <- colorRampPalette(c("#fed7aa", "#ea580c"))(n_colors)
 
-      # Add grid
-      grid(col = "gray90", lty = 1, nx = NULL, ny = NA)
+      # Create interactive plotly horizontal bar chart
+      plot_ly(
+        data = type_data,
+        x = ~count,
+        y = ~reorder(tipo, count),
+        type = "bar",
+        orientation = "h",
+        marker = list(
+          color = colors,
+          line = list(width = 0)
+        ),
+        hovertemplate = paste(
+          "<b>Tipo:</b> %{y}<br>",
+          "<b>Documentos:</b> %{x:,}<br>",
+          "<extra></extra>"
+        )
+      ) %>%
+        layout(
+          xaxis = list(
+            title = "Número de Documentos",
+            showgrid = TRUE,
+            gridcolor = "#f0f0f0"
+          ),
+          yaxis = list(
+            title = "",
+            showgrid = FALSE
+          ),
+          hovermode = "closest",
+          margin = list(l = 200, r = 50, t = 50, b = 80),
+          plot_bgcolor = "#fafafa",
+          paper_bgcolor = "white"
+        ) %>%
+        config(
+          displayModeBar = TRUE,
+          displaylogo = FALSE,
+          modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d")
+        )
 
     }, error = function(e) {
-      plot.new()
-      text(0.5, 0.5, paste("Erro:", e$message), cex = 1, col = "red")
+      NULL
     })
   })
 
@@ -1539,36 +1649,133 @@ server <- function(input, output, session) {
     if (!DB_AVAILABLE) return(NULL)
 
     tryCatch({
+      # Use cached queries with 15-minute TTL for analytics
+      type_query <- paste("SELECT tipo AS type, COUNT(*) AS n FROM", DOCUMENTS_TABLE, "GROUP BY tipo ORDER BY n DESC")
+      month_query <- paste0("SELECT DATE_TRUNC('month', data) AS month, COUNT(*) AS n ",
+                           "FROM ", DOCUMENTS_TABLE, " ",
+                           "GROUP BY month ",
+                           "ORDER BY month")
+
       list(
-        by_type = dbGetQuery(secure_db_connection,
-          paste("SELECT tipo AS type, COUNT(*) AS n FROM", DOCUMENTS_TABLE, "GROUP BY tipo ORDER BY n DESC")),
-        by_month = dbGetQuery(secure_db_connection,
-          paste0("SELECT DATE_TRUNC('month', data) AS month, COUNT(*) AS n ",
-                 "FROM ", DOCUMENTS_TABLE, " ",
-                 "GROUP BY month ",
-                 "ORDER BY month"))
+        by_type = cached_query(
+          connection = secure_db_connection,
+          query = type_query,
+          params = list(analytics = "by_type"),
+          ttl = 15 * 60,
+          cache_type = "analytics_type"
+        ),
+        by_month = cached_query(
+          connection = secure_db_connection,
+          query = month_query,
+          params = list(analytics = "by_month"),
+          ttl = 15 * 60,
+          cache_type = "analytics_month"
+        )
       )
     }, error = function(e) NULL)
   })
 
-  output$analytics_type_bar <- renderPlot({
+  output$analytics_type_bar <- plotly::renderPlotly({
     dat <- analytics_data()
-    if (is.null(dat)) return()
-    ggplot(dat$by_type, aes(x = reorder(type, n), y = n)) +
-      geom_col(fill = "steelblue") +
-      coord_flip() +
-      labs(x = "Tipo", y = "Quantidade de Documentos", title = "Documentos por Tipo") +
-      theme_minimal()
+    if (is.null(dat)) return(NULL)
+
+    # Create interactive plotly bar chart
+    plot_ly(
+      data = dat$by_type,
+      x = ~n,
+      y = ~reorder(type, n),
+      type = "bar",
+      orientation = "h",
+      marker = list(color = "steelblue"),
+      hovertemplate = paste(
+        "<b>Tipo:</b> %{y}<br>",
+        "<b>Quantidade:</b> %{x:,}<br>",
+        "<extra></extra>"
+      )
+    ) %>%
+      layout(
+        title = list(
+          text = "Documentos por Tipo",
+          font = list(size = 16)
+        ),
+        xaxis = list(
+          title = "Quantidade de Documentos",
+          showgrid = TRUE,
+          gridcolor = "#e0e0e0"
+        ),
+        yaxis = list(
+          title = "Tipo",
+          showgrid = FALSE
+        ),
+        hovermode = "closest",
+        margin = list(l = 150, r = 50, t = 80, b = 50),
+        plot_bgcolor = "#fafafa",
+        paper_bgcolor = "white"
+      ) %>%
+      config(
+        displayModeBar = TRUE,
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d")
+      )
   })
 
-  output$analytics_month_line <- renderPlot({
+  output$analytics_month_line <- plotly::renderPlotly({
     dat <- analytics_data()
-    if (is.null(dat)) return()
-    ggplot(dat$by_month, aes(x = as.Date(month), y = n)) +
-      geom_line(color = "firebrick", size = 1) +
-      geom_point(color = "firebrick") +
-      labs(x = "Mês", y = "Quantidade", title = "Documentos por Mês") +
-      theme_minimal()
+    if (is.null(dat)) return(NULL)
+
+    # Create interactive plotly timeline with range selector
+    plot_ly(
+      data = dat$by_month,
+      x = ~as.Date(month),
+      y = ~n,
+      type = "scatter",
+      mode = "lines+markers",
+      line = list(color = "firebrick", width = 2),
+      marker = list(size = 6, color = "firebrick"),
+      hovertemplate = paste(
+        "<b>Data:</b> %{x|%B %Y}<br>",
+        "<b>Documentos:</b> %{y:,}<br>",
+        "<extra></extra>"
+      )
+    ) %>%
+      layout(
+        title = list(
+          text = "Documentos por Mês",
+          font = list(size = 16)
+        ),
+        xaxis = list(
+          title = "Mês",
+          showgrid = TRUE,
+          gridcolor = "#e0e0e0",
+          rangeslider = list(visible = TRUE),
+          rangeselector = list(
+            buttons = list(
+              list(count = 6, label = "6M", step = "month", stepmode = "backward"),
+              list(count = 1, label = "1A", step = "year", stepmode = "backward"),
+              list(count = 5, label = "5A", step = "year", stepmode = "backward"),
+              list(step = "all", label = "Tudo")
+            ),
+            x = 0,
+            y = 1.1,
+            xanchor = "left",
+            yanchor = "top"
+          )
+        ),
+        yaxis = list(
+          title = "Quantidade",
+          showgrid = TRUE,
+          gridcolor = "#e0e0e0"
+        ),
+        hovermode = "x unified",
+        margin = list(l = 80, r = 50, t = 100, b = 120),
+        plot_bgcolor = "#fafafa",
+        paper_bgcolor = "white"
+      ) %>%
+      config(
+        displayModeBar = TRUE,
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = c("lasso2d", "select2d")
+      )
   })
 
   # Note: Database connection is NOT closed per-session because it's a GLOBAL connection

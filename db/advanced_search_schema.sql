@@ -3,11 +3,22 @@
 -- ============================================================================
 --
 -- This schema implements a comprehensive search architecture optimized for:
--- - 134,014 Brazilian legislative documents 
+-- - 134,014 Brazilian legislative documents
 -- - Portuguese full-text search with legal term recognition
 -- - Geographic and temporal filtering
 -- - Sub-second query performance on Railway PostgreSQL
 -- - Advanced ranking and relevance scoring
+--
+-- BRAZILIAN GEOGRAPHIC HIERARCHY (Correct Structure):
+-- Country (Brasil)
+--   └── Region (Norte, Nordeste, Centro-Oeste, Sudeste, Sul) [5 regions]
+--       └── State/Estado (SP, RJ, MG, etc.) [27 states + Federal District]
+--           └── Municipality/Município [5,570 municipalities]
+--
+-- Database Fields:
+-- - estado: State abbreviation (e.g., 'SP', 'RJ') or 'Federal' for national docs
+-- - municipality: Municipality name (when applicable)
+-- - region: Geographic region (derived from estado mapping)
 --
 -- Author: Senior Data Scientist - Brazilian Legislative Analytics Team
 -- Date: January 2025

@@ -8,6 +8,15 @@
 # - Enhanced controls (leaflet_controls.R)
 # - Geographic aggregation (geographic_aggregation.R)
 # - SVG/PDF export (export_capabilities.R)
+#
+# BRAZILIAN GEOGRAPHIC HIERARCHY (Correct Structure):
+# Country (Brasil)
+#   └── Region (Norte, Nordeste, Centro-Oeste, Sudeste, Sul) [5 regions]
+#       └── State/Estado (SP, RJ, MG, etc.) [27 states + Federal District]
+#           └── Municipality/Município [5,570 municipalities]
+#
+# Note: The database uses 'estado' for state-level data and 'municipio' for
+# municipality-level data. Federal legislation is tagged with estado='Federal'.
 # ==============================================================================
 
 suppressPackageStartupMessages({
@@ -120,8 +129,25 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
       query <- paste0(query, " GROUP BY estado, municipio HAVING COUNT(*) >= 2 ORDER BY document_count DESC LIMIT 500")
     }
 
-    # Execute query
-    result <- dbGetQuery(db_conn, query)
+    # Execute query with caching (15-minute TTL for geographic data)
+    # Note: Requires query_cache.R to be sourced
+    if (exists("cached_query")) {
+      params <- list(
+        level = level,
+        tipo = if (!is.null(filters$tipo)) filters$tipo else "Todos",
+        date_range = if (!is.null(filters$date_start)) paste(filters$date_start, filters$date_end, sep = "_") else "all"
+      )
+      result <- cached_query(
+        connection = db_conn,
+        query = query,
+        params = params,
+        ttl = 15 * 60,  # 15 minutes
+        cache_type = "geographic"
+      )
+    } else {
+      # Fallback if caching not available
+      result <- dbGetQuery(db_conn, query)
+    }
 
     if (is.null(result) || nrow(result) == 0) {
       cat("⚠️ No geographic data found\n")
