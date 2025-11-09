@@ -59,14 +59,14 @@ if (file.exists("modules/geographic_enhanced.R")) {
   cat("⚠️ Enhanced Geographic Module not found - using basic features\n")
 }
 
-# Load Transport Corridor Analysis Module
-if (file.exists("modules/maps/transport_corridor_analysis.R")) {
-  transport_module <- source("modules/maps/transport_corridor_analysis.R")$value
-  cat("✅ Transport Corridor Analysis Module loaded\n")
-} else {
-  cat("⚠️ Transport Corridor Analysis Module not found\n")
-  transport_module <- NULL
-}
+# Load Transport Corridor Analysis Module (temporarily disabled - requires shinydashboard)
+# if (file.exists("modules/maps/transport_corridor_analysis.R")) {
+#   transport_module <- source("modules/maps/transport_corridor_analysis.R")$value
+#   cat("✅ Transport Corridor Analysis Module loaded\n")
+# } else {
+#   cat("⚠️ Transport Corridor Analysis Module not found\n")
+transport_module <- NULL
+# }
 
 # Load Enhanced Library Module
 if (file.exists("R/modules/library_enhanced_module.R")) {
