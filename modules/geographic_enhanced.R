@@ -38,7 +38,7 @@ GEO_ENHANCED_CONFIG <- list(
 
   geographic_levels = list(
     state = list(enabled = TRUE, min_zoom = 3, max_zoom = 7),
-    municipality = list(enabled = TRUE, min_zoom = 7, max_zoom = 12, limit = 2000)
+    municipality = list(enabled = TRUE, min_zoom = 7, max_zoom = 12, limit = 5570, use_webgl = TRUE)
   ),
 
   export_formats = c("PNG", "PDF", "SVG", "CSV", "GeoJSON"),
@@ -123,11 +123,8 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
     if (level == "state") {
       query <- paste0(query, " GROUP BY estado HAVING COUNT(*) >= 5 ORDER BY document_count DESC")
     } else {
-      # Get municipality limit from config
-      muni_limit <- GEO_ENHANCED_CONFIG$geographic_levels$municipality$limit
-      if (is.null(muni_limit)) muni_limit <- 2000
-
-      query <- paste0(query, " GROUP BY estado, municipio HAVING COUNT(*) >= 5 ORDER BY document_count DESC LIMIT ", muni_limit)
+      municipality_limit <- GEO_ENHANCED_CONFIG$geographic_levels$municipality$limit
+      query <- paste0(query, " GROUP BY estado, municipio HAVING COUNT(*) >= 5 ORDER BY document_count DESC LIMIT ", municipality_limit)
     }
 
     # Execute query
@@ -316,45 +313,82 @@ create_enhanced_choropleth <- function(data, mode = "absolute", level = "state",
     # Add choropleth layer if geometry exists
     if ("geometry" %in% names(data) && inherits(data, "sf")) {
 
-      map <- map %>%
-        addPolygons(
-          data = data,
-          fillColor = ~pal(get(value_col)),
-          fillOpacity = 0.7,
-          color = "#444444",
-          weight = 1,
-          opacity = 1,
+      # Check if we should use WebGL (for municipalities with large datasets)
+      use_webgl <- level == "municipality" &&
+                   nrow(data) > 1000 &&
+                   GEO_ENHANCED_CONFIG$geographic_levels$municipality$use_webgl &&
+                   requireNamespace("leafgl", quietly = TRUE)
 
-          # Enhanced popup with statistics
-          popup = ~create_enhanced_popup(data, level),
+      if (use_webgl) {
+        cat("🚀 Using WebGL acceleration for", nrow(data), "municipality polygons\n")
 
-          # Hover label
-          label = ~create_hover_label(data, level, mode_config),
+        # Use WebGL-accelerated rendering
+        map <- map %>%
+          leafgl::addGlPolygons(
+            data = data,
+            fillColor = ~pal(get(value_col)),
+            fillOpacity = 0.7,
+            color = "#444444",
+            weight = 1,
+            opacity = 1,
+            popup = ~create_enhanced_popup(data, level),
+            label = ~create_hover_label(data, level, mode_config),
+            layerId = ~paste(estado, municipio, sep = "_"),
+            group = "choropleth"
+          ) %>%
+          addLegend(
+            "bottomright",
+            pal = pal,
+            values = values,
+            title = mode_config$name,
+            opacity = 1,
+            labFormat = labelFormat(big.mark = ",")
+          ) %>%
+          addScaleBar(position = "bottomleft")
+      } else {
+        cat("📊 Using standard leaflet rendering for", nrow(data), "features\n")
 
-          # Highlight on hover
-          highlightOptions = highlightOptions(
-            weight = 3,
-            color = "#ff6b35",
-            fillOpacity = 0.9,
-            bringToFront = TRUE
-          ),
+        # Standard leaflet rendering
+        map <- map %>%
+          addPolygons(
+            data = data,
+            fillColor = ~pal(get(value_col)),
+            fillOpacity = 0.7,
+            color = "#444444",
+            weight = 1,
+            opacity = 1,
 
-          # Layer ID for interactivity
-          layerId = ~if(level == "state") estado else paste(estado, municipio, sep = "_")
-        ) %>%
+            # Enhanced popup with statistics
+            popup = ~create_enhanced_popup(data, level),
 
-        # Add legend
-        addLegend(
-          "bottomright",
-          pal = pal,
-          values = values,
-          title = mode_config$name,
-          opacity = 1,
-          labFormat = labelFormat(big.mark = ",")
-        ) %>%
+            # Hover label
+            label = ~create_hover_label(data, level, mode_config),
 
-        # Add scale bar
-        addScaleBar(position = "bottomleft")
+            # Highlight on hover
+            highlightOptions = highlightOptions(
+              weight = 3,
+              color = "#ff6b35",
+              fillOpacity = 0.9,
+              bringToFront = TRUE
+            ),
+
+            # Layer ID for interactivity
+            layerId = ~if(level == "state") estado else paste(estado, municipio, sep = "_")
+          ) %>%
+
+          # Add legend
+          addLegend(
+            "bottomright",
+            pal = pal,
+            values = values,
+            title = mode_config$name,
+            opacity = 1,
+            labFormat = labelFormat(big.mark = ",")
+          ) %>%
+
+          # Add scale bar
+          addScaleBar(position = "bottomleft")
+      }
 
     } else {
       # Fallback: centroid markers

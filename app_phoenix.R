@@ -84,6 +84,14 @@ if (file.exists("R/modules/collection_module.R")) {
   cat("⚠️ Collection Module not found\n")
 }
 
+# Load Brazilian Geo Integration (geocoding functions)
+if (file.exists("R/visualization/brazilian_geo_integration.R")) {
+  source("R/visualization/brazilian_geo_integration.R")
+  cat("✅ Brazilian Geo Integration (Geocoding) loaded\n")
+} else {
+  cat("⚠️ Brazilian Geo Integration not found\n")
+}
+
 # ==============================================================================
 # 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
 # ==============================================================================
