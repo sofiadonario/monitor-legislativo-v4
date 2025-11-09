@@ -68,6 +68,22 @@ if (file.exists("modules/maps/transport_corridor_analysis.R")) {
   transport_module <- NULL
 }
 
+# Load Enhanced Library Module
+if (file.exists("R/modules/library_enhanced_module.R")) {
+  source("R/modules/library_enhanced_module.R")
+  cat("✅ Enhanced Library Module loaded\n")
+} else {
+  cat("⚠️ Enhanced Library Module not found - using basic features\n")
+}
+
+# Load Collection Module
+if (file.exists("R/modules/collection_module.R")) {
+  source("R/modules/collection_module.R")
+  cat("✅ Collection Module loaded\n")
+} else {
+  cat("⚠️ Collection Module not found\n")
+}
+
 # ==============================================================================
 # 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
 # ==============================================================================
@@ -241,31 +257,37 @@ ui <- navbarPage(
     )
   ),
 
-  # -- LIBRARY TAB --
+  # -- LIBRARY TAB (ENHANCED) --
   tabPanel(
     "Library",
     icon = icon("book"),
-    fluidPage(
-      h2("Biblioteca de Documentos Legislativos"),
-      p("Pesquise, filtre e explore a coleção completa de documentos legislativos brasileiros."),
-      hr(),
-      wellPanel(
-        h4("Filtros de Pesquisa"),
-        fluidRow(
-          column(6, textInput("library_search", "Termo de Pesquisa:", placeholder = "Ex: 'tributário' ou 'lei 14.133'")),
-          column(3, selectInput("library_tipo", "Tipo de Documento:",
-                 choices = c("Todos", "Lei", "Decreto", "Projeto de Lei", "Medida Provisória",
-                            "Resolução", "Portaria", "Instrução Normativa", "Parecer",
-                            "Acórdão", "Súmula"))),
-          column(3, selectInput("library_mostrar", "Mostrar:", choices = c(100, 500, 1000, 5000, 10000, 999999), selected = 100))
+    if (exists("libraryEnhancedUI")) {
+      # Use enhanced library module if available
+      libraryEnhancedUI("library_enhanced")
+    } else {
+      # Fallback to basic library tab
+      fluidPage(
+        h2("Biblioteca de Documentos Legislativos"),
+        p("Pesquise, filtre e explore a coleção completa de documentos legislativos brasileiros."),
+        hr(),
+        wellPanel(
+          h4("Filtros de Pesquisa"),
+          fluidRow(
+            column(6, textInput("library_search", "Termo de Pesquisa:", placeholder = "Ex: 'tributário' ou 'lei 14.133'")),
+            column(3, selectInput("library_tipo", "Tipo de Documento:",
+                   choices = c("Todos", "Lei", "Decreto", "Projeto de Lei", "Medida Provisória",
+                              "Resolução", "Portaria", "Instrução Normativa", "Parecer",
+                              "Acórdão", "Súmula"))),
+            column(3, selectInput("library_mostrar", "Mostrar:", choices = c(100, 500, 1000, 5000, 10000, 999999), selected = 100))
+          ),
+          actionButton("library_apply", "Aplicar Filtros", icon = icon("search")),
+          actionButton("library_clear", "Limpar", icon = icon("times"))
         ),
-        actionButton("library_apply", "Aplicar Filtros", icon = icon("search")),
-        actionButton("library_clear", "Limpar", icon = icon("times"))
-      ),
-      hr(),
-      h4("Resultados da Pesquisa"),
-      DT::dataTableOutput("library_table")
-    )
+        hr(),
+        h4("Resultados da Pesquisa"),
+        DT::dataTableOutput("library_table")
+      )
+    }
   ),
 
   # -- GEOGRAPHIC TAB (ENHANCED) --
@@ -502,121 +524,116 @@ server <- function(input, output, session) {
   # DEBUG: confirm server startup
   cat("=== SERVER FUNCTION STARTED ===\n")
 
-  # -- LIBRARY SERVER LOGIC (REFACTORED TO BE MORE ROBUST) --
+  # -- LIBRARY SERVER LOGIC (ENHANCED) --
 
-  # 1. A reactiveValues object to hold the current filter state.
-  # This is the "single source of truth" for the query.
-  filters <- reactiveValues(
-    search = "",
-    tipo = "Todos",
-    mostrar = 100,
-    trigger = 0  # Force reactive to execute on any change
-  )
+  # Use enhanced library module if available, otherwise use basic implementation
+  if (exists("libraryEnhancedServer")) {
+    cat("✅ Initializing Enhanced Library Module\n")
+    library_enhanced <- libraryEnhancedServer(
+      "library_enhanced",
+      db_connection = secure_db_connection,
+      db_available = DB_AVAILABLE,
+      documents_table = DOCUMENTS_TABLE
+    )
+  } else {
+    cat("⚠️ Enhanced Library Module not available - using basic implementation\n")
 
-  # Fire a single trigger once the UI is fully bound (avoids infinite loop)
-  session$onFlushed(function() {
-    isolate({
+    # FALLBACK: Basic library implementation
+    # 1. A reactiveValues object to hold the current filter state.
+    filters <- reactiveValues(
+      search = "",
+      tipo = "Todos",
+      mostrar = 100,
+      trigger = 0
+    )
+
+    # Fire a single trigger once the UI is fully bound
+    session$onFlushed(function() {
+      isolate({
+        filters$trigger <- filters$trigger + 1
+      })
+    }, once = TRUE)
+
+    # 2. Observer for the 'Apply' button.
+    observeEvent(input$library_apply, {
+      cat("=== APPLY BUTTON CLICKED ===\n")
+      filters$search <- input$library_search
+      filters$tipo <- input$library_tipo
+      filters$mostrar <- as.numeric(input$library_mostrar)
       filters$trigger <- filters$trigger + 1
     })
-  }, once = TRUE)
 
-  # 2. Observer for the 'Apply' button.
-  # This updates the reactiveValues, which in turn triggers the data query.
-  observeEvent(input$library_apply, {
-    cat("=== APPLY BUTTON CLICKED - input$library_apply =", input$library_apply, "===\n")
-    filters$search <- input$library_search
-    filters$tipo <- input$library_tipo
-    filters$mostrar <- as.numeric(input$library_mostrar)
-    filters$trigger <- filters$trigger + 1  # Increment trigger to force reactive update
-  })
+    # 3. Observer for the 'Clear' button.
+    observeEvent(input$library_clear, {
+      cat("=== CLEAR BUTTON CLICKED ===\n")
+      updateTextInput(session, "library_search", value = "")
+      updateSelectInput(session, "library_tipo", selected = "Todos")
+      updateSelectInput(session, "library_mostrar", selected = 100)
 
-  # 3. Observer for the 'Clear' button.
-  # This resets both the UI inputs and the reactive filter values.
-  observeEvent(input$library_clear, {
-    cat("=== CLEAR BUTTON CLICKED - input$library_clear =", input$library_clear, "===\n")
-    # Reset UI
-    updateTextInput(session, "library_search", value = "")
-    updateSelectInput(session, "library_tipo", selected = "Todos")
-    updateSelectInput(session, "library_mostrar", selected = 100)
-
-    # Reset filters to trigger a refresh to the full list
-    filters$search <- ""
-    filters$tipo <- "Todos"
-    filters$mostrar <- 100
-    filters$trigger <- filters$trigger + 1  # Increment trigger to force reactive update
-  })
-
-  # 4. A reactive expression to fetch data from the database.
-  # This automatically re-runs whenever 'filters' changes.
-  library_data <- reactive({
-    # Use the user's added check for DB availability
-    if (!DB_AVAILABLE) {
-      return(data.frame(
-        Message = c("Database connection not available", 
-                   "To configure the database:",
-                   "1. Set environment variables: PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD",
-                   "2. Or run: source('setup_local_env.R')",
-                   "3. Then restart the application")
-      ))
-    }
-
-    # Get current filter values from our reactiveValues
-    # Read ALL reactive values to establish dependencies on any change
-    current_search <- filters$search
-    current_tipo <- filters$tipo
-    current_mostrar <- as.numeric(filters$mostrar)
-    current_trigger <- filters$trigger  # Read trigger last to establish dependency
-
-    # Start with the base query using the detected table
-    query <- paste("SELECT id, titulo, tipo, data FROM", DOCUMENTS_TABLE)
-
-    # Build WHERE clauses based on current filter values
-    conditions <- list()
-
-    # Search Term Filter
-    if (current_search != "") {
-      search_term <- gsub("'", "''", current_search)
-      conditions <- c(conditions, paste0("titulo ILIKE '%", search_term, "%'"))
-    }
-
-    # Document Type Filter
-    if (current_tipo != "Todos") {
-      tipo_term <- gsub("'", "''", current_tipo)
-      conditions <- c(conditions, paste0("tipo = '", tipo_term, "'"))
-    }
-
-    # Append WHERE clauses to the query
-    if (length(conditions) > 0) {
-      query <- paste(query, "WHERE", paste(conditions, collapse = " AND "))
-    }
-
-    # Add ORDER BY and LIMIT clauses
-    query <- paste(query, "ORDER BY data DESC LIMIT", as.integer(current_mostrar))
-    
-    cat("Executing query:", query, "\n")
-    
-    # Execute query and return result
-    tryCatch({
-      result <- dbGetQuery(secure_db_connection, query)
-      cat("Query returned", nrow(result), "rows\n")
-      if (nrow(result) == 0) {
-        return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
-      }
-      result
-    }, error = function(e) {
-      data.frame(Error = e$message)
+      filters$search <- ""
+      filters$tipo <- "Todos"
+      filters$mostrar <- 100
+      filters$trigger <- filters$trigger + 1
     })
-  })
 
-  # 5. Render the table with the data from our reactive expression.
-  output$library_table <- DT::renderDataTable({
-    cat("=== LIBRARY_TABLE OUTPUT RENDERING ===\n")
-    library_data()
-  }, options = list(pageLength = 10, scrollX = TRUE))
+    # 4. A reactive expression to fetch data from the database.
+    library_data <- reactive({
+      if (!DB_AVAILABLE) {
+        return(data.frame(
+          Message = c("Database connection not available",
+                     "To configure the database:",
+                     "1. Set environment variables: PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD",
+                     "2. Or run: source('setup_local_env.R')",
+                     "3. Then restart the application")
+        ))
+      }
 
-  # Force the output to bind to reactive graph even when tab is hidden
-  # This establishes the reactive dependency so buttons can trigger queries
-  outputOptions(output, "library_table", suspendWhenHidden = FALSE)
+      current_search <- filters$search
+      current_tipo <- filters$tipo
+      current_mostrar <- as.numeric(filters$mostrar)
+      current_trigger <- filters$trigger
+
+      query <- paste("SELECT id, titulo, tipo, data FROM", DOCUMENTS_TABLE)
+      conditions <- list()
+
+      if (current_search != "") {
+        search_term <- gsub("'", "''", current_search)
+        conditions <- c(conditions, paste0("titulo ILIKE '%", search_term, "%'"))
+      }
+
+      if (current_tipo != "Todos") {
+        tipo_term <- gsub("'", "''", current_tipo)
+        conditions <- c(conditions, paste0("tipo = '", tipo_term, "'"))
+      }
+
+      if (length(conditions) > 0) {
+        query <- paste(query, "WHERE", paste(conditions, collapse = " AND "))
+      }
+
+      query <- paste(query, "ORDER BY data DESC LIMIT", as.integer(current_mostrar))
+
+      cat("Executing query:", query, "\n")
+
+      tryCatch({
+        result <- dbGetQuery(secure_db_connection, query)
+        cat("Query returned", nrow(result), "rows\n")
+        if (nrow(result) == 0) {
+          return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
+        }
+        result
+      }, error = function(e) {
+        data.frame(Error = e$message)
+      })
+    })
+
+    # 5. Render the table
+    output$library_table <- DT::renderDataTable({
+      cat("=== LIBRARY_TABLE OUTPUT RENDERING ===\n")
+      library_data()
+    }, options = list(pageLength = 10, scrollX = TRUE))
+
+    outputOptions(output, "library_table", suspendWhenHidden = FALSE)
+  }
 
   # -- HOME TAB SERVER LOGIC (EXECUTIVE SUMMARY) --
 
