@@ -231,13 +231,25 @@ safe_renderPlotly <- function(expr, context = NULL) {
   })
 }
 
-safe_valueBox <- local({
-  orig <- get("valueBox", asNamespace("shinydashboard"))
+safe_valueBox <- if (requireNamespace("shinydashboard", quietly = TRUE)) {
+  local({
+    orig <- get("valueBox", asNamespace("shinydashboard"))
+    function(value, subtitle, icon = NULL, color = "aqua") {
+      value <- scalar_chr(value)  # never length-0
+      orig(value, subtitle, icon = icon, color = color)
+    }
+  })
+} else {
   function(value, subtitle, icon = NULL, color = "aqua") {
-    value <- scalar_chr(value)  # never length-0
-    orig(value, subtitle, icon = icon, color = color)
+    value <- scalar_chr(value)
+    # Fallback: return a simple div
+    div(
+      style = "padding: 15px; border-radius: 4px;",
+      h3(value),
+      p(subtitle)
+    )
   }
-})
+}
 
 # Keep the old version for backward compatibility
 safe_valueBox_old <- function(value, ..., default = "—") {
