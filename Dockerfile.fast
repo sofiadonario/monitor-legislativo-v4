@@ -12,6 +12,7 @@ FROM us-central1-docker.pkg.dev/mackmonitor/monitor-repo/mackmonitor-base:latest
 WORKDIR /app
 COPY app_phoenix.R /app/
 COPY modules /app/modules
+COPY R /app/R
 COPY data_current /app/data_current
 
 # Health check
