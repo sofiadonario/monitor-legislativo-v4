@@ -1563,7 +1563,11 @@ server <- function(input, output, session) {
           COUNT(*) as count
         FROM documents
         WHERE estado = 'Federal'
-        GROUP BY tipo
+        GROUP BY CASE
+            WHEN SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') IS NULL OR SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') = ''
+            THEN 'Não especificado'
+            ELSE REPLACE(SUBSTRING(urn FROM 'br:[^:]+:([^:]+):'), '.', ' ')
+          END
         ORDER BY count DESC
         LIMIT 8")
 
