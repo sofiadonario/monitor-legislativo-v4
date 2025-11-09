@@ -16,12 +16,6 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(htmltools)
   library(RColorBrewer)
-  library(ggplot2)
-  library(scales)
-  # Optional libraries for temporal analysis
-  if (requireNamespace("zoo", quietly = TRUE)) {
-    library(zoo)
-  }
 })
 
 # ==============================================================================
@@ -38,7 +32,7 @@ GEO_ENHANCED_CONFIG <- list(
 
   geographic_levels = list(
     state = list(enabled = TRUE, min_zoom = 3, max_zoom = 7),
-    municipality = list(enabled = TRUE, min_zoom = 7, max_zoom = 12, limit = 5570, use_webgl = TRUE)
+    municipality = list(enabled = TRUE, min_zoom = 7, max_zoom = 12, limit = 500)
   ),
 
   export_formats = c("PNG", "PDF", "SVG", "CSV", "GeoJSON"),
@@ -79,10 +73,10 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
           COUNT(*) as document_count,
           COUNT(DISTINCT tipo) as document_types,
           COUNT(DISTINCT municipio) as municipality_count,
-          MIN(data) as first_document,
-          MAX(data) as last_document,
-          COUNT(CASE WHEN data >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as recent_documents
-        FROM lexml_documents
+          MIN(data::date) as first_document,
+          MAX(data::date) as last_document,
+          COUNT(CASE WHEN data::date >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as recent_documents
+        FROM documents
         WHERE estado IS NOT NULL AND estado != ''
       "
 
@@ -95,10 +89,10 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
           CONCAT(estado, '_', UPPER(TRIM(municipio))) as estado_municipio,
           COUNT(*) as document_count,
           COUNT(DISTINCT tipo) as document_types,
-          MIN(data) as first_document,
-          MAX(data) as last_document,
-          COUNT(CASE WHEN data >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as recent_documents
-        FROM lexml_documents
+          MIN(data::date) as first_document,
+          MAX(data::date) as last_document,
+          COUNT(CASE WHEN data::date >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as recent_documents
+        FROM documents
         WHERE estado IS NOT NULL AND estado != ''
           AND municipio IS NOT NULL AND municipio != ''
       "
@@ -114,17 +108,16 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
       }
       if (!is.null(filters$date_start) && !is.null(filters$date_end)) {
         query <- paste0(query,
-                       " AND data >= '", filters$date_start, "'",
-                       " AND data <= '", filters$date_end, "'")
+                       " AND data::date >= '", filters$date_start, "'::date",
+                       " AND data::date <= '", filters$date_end, "'::date")
       }
     }
 
     # Add GROUP BY
     if (level == "state") {
-      query <- paste0(query, " GROUP BY estado HAVING COUNT(*) >= 5 ORDER BY document_count DESC")
+      query <- paste0(query, " GROUP BY estado ORDER BY document_count DESC")
     } else {
-      municipality_limit <- GEO_ENHANCED_CONFIG$geographic_levels$municipality$limit
-      query <- paste0(query, " GROUP BY estado, municipio HAVING COUNT(*) >= 5 ORDER BY document_count DESC LIMIT ", municipality_limit)
+      query <- paste0(query, " GROUP BY estado, municipio HAVING COUNT(*) >= 2 ORDER BY document_count DESC LIMIT 500")
     }
 
     # Execute query
@@ -166,13 +159,25 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
         stringsAsFactors = FALSE
       )
 
-      result <- result %>%
-        left_join(state_populations, by = "estado") %>%
+      # Use right_join to include all states, even those with 0 documents
+      result <- state_populations %>%
+        left_join(result, by = "estado") %>%
         mutate(
+          # Fill missing values with 0 or appropriate defaults
+          document_count = ifelse(is.na(document_count), 0, as.numeric(document_count)),
+          document_types = ifelse(is.na(document_types), 0, as.numeric(document_types)),
+          municipality_count = ifelse(is.na(municipality_count), 0, as.numeric(municipality_count)),
+          recent_documents = ifelse(is.na(recent_documents), 0, as.numeric(recent_documents)),
+          recent_docs_pct = ifelse(is.na(recent_docs_pct), 0, as.numeric(recent_docs_pct)),
+          activity_level = ifelse(is.na(activity_level), "Very Low", as.character(activity_level)),
+          # Handle date columns - keep NA for states with no documents
+          first_document = as.Date(first_document, origin = "1970-01-01"),
+          last_document = as.Date(last_document, origin = "1970-01-01"),
+          # Calculate per-capita metrics
           docs_per_capita = ifelse(!is.na(population) & population > 0,
-                                  (document_count / population) * 100000, NA),
+                                  (as.numeric(document_count) / as.numeric(population)) * 100000, 0),
           docs_per_km2 = ifelse(!is.na(area_km2) & area_km2 > 0,
-                               document_count / area_km2, NA)
+                               as.numeric(document_count) / as.numeric(area_km2), 0)
         )
     }
 
@@ -295,14 +300,43 @@ create_enhanced_choropleth <- function(data, mode = "absolute", level = "state",
     values <- data[[value_col]]
     values <- values[!is.na(values) & is.finite(values)]
 
-    if (length(values) == 0 || max(values) == 0) {
+    if (length(values) == 0) {
+      # No data - use simple palette
+      pal <- colorBin(mode_config$color, domain = c(0, 1), bins = c(0, 0.5, 1))
+    } else if (max(values) == 0) {
       # All zeros - use simple palette
       pal <- colorBin(mode_config$color, domain = c(0, 1), bins = c(0, 0.5, 1))
     } else {
-      # Use quantile breaks for better distribution
-      breaks <- unique(quantile(values[values > 0], probs = seq(0, 1, 0.2), na.rm = TRUE))
-      breaks <- c(0, breaks)
-      pal <- colorBin(mode_config$color, domain = range(values, na.rm = TRUE), bins = breaks)
+      # Create proper breaks including 0
+      max_val <- max(values, na.rm = TRUE)
+
+      # If we have non-zero values, create meaningful breaks
+      if (max_val > 0) {
+        # Calculate breaks based on all values (including 0)
+        non_zero_vals <- values[values > 0]
+
+        if (length(non_zero_vals) > 5) {
+          # Use quantiles for good distribution
+          breaks <- unique(quantile(non_zero_vals, probs = seq(0, 1, 0.2), na.rm = TRUE))
+          breaks <- c(0, breaks)
+        } else {
+          # Few values - use simple equal breaks
+          breaks <- seq(0, max_val, length.out = 6)
+        }
+
+        # Ensure breaks are unique and sorted
+        breaks <- unique(sort(breaks))
+
+        # Create color palette with explicit domain
+        pal <- colorBin(
+          palette = mode_config$color,
+          domain = c(0, max_val),
+          bins = breaks,
+          na.color = "#E5E5E5"  # Light gray for NA
+        )
+      } else {
+        pal <- colorBin(mode_config$color, domain = c(0, 1), bins = c(0, 0.5, 1))
+      }
     }
 
     # Create base map
@@ -313,82 +347,45 @@ create_enhanced_choropleth <- function(data, mode = "absolute", level = "state",
     # Add choropleth layer if geometry exists
     if ("geometry" %in% names(data) && inherits(data, "sf")) {
 
-      # Check if we should use WebGL (for municipalities with large datasets)
-      use_webgl <- level == "municipality" &&
-                   nrow(data) > 1000 &&
-                   GEO_ENHANCED_CONFIG$geographic_levels$municipality$use_webgl &&
-                   requireNamespace("leafgl", quietly = TRUE)
+      map <- map %>%
+        addPolygons(
+          data = data,
+          fillColor = ~pal(get(value_col)),
+          fillOpacity = 0.7,
+          color = "#444444",
+          weight = 1,
+          opacity = 1,
 
-      if (use_webgl) {
-        cat("🚀 Using WebGL acceleration for", nrow(data), "municipality polygons\n")
+          # Enhanced popup with statistics
+          popup = ~create_enhanced_popup(data, level),
 
-        # Use WebGL-accelerated rendering
-        map <- map %>%
-          leafgl::addGlPolygons(
-            data = data,
-            fillColor = ~pal(get(value_col)),
-            fillOpacity = 0.7,
-            color = "#444444",
-            weight = 1,
-            opacity = 1,
-            popup = ~create_enhanced_popup(data, level),
-            label = ~create_hover_label(data, level, mode_config),
-            layerId = ~paste(estado, municipio, sep = "_"),
-            group = "choropleth"
-          ) %>%
-          addLegend(
-            "bottomright",
-            pal = pal,
-            values = values,
-            title = mode_config$name,
-            opacity = 1,
-            labFormat = labelFormat(big.mark = ",")
-          ) %>%
-          addScaleBar(position = "bottomleft")
-      } else {
-        cat("📊 Using standard leaflet rendering for", nrow(data), "features\n")
+          # Hover label
+          label = ~create_hover_label(data, level, mode_config),
 
-        # Standard leaflet rendering
-        map <- map %>%
-          addPolygons(
-            data = data,
-            fillColor = ~pal(get(value_col)),
-            fillOpacity = 0.7,
-            color = "#444444",
-            weight = 1,
-            opacity = 1,
+          # Highlight on hover
+          highlightOptions = highlightOptions(
+            weight = 3,
+            color = "#ff6b35",
+            fillOpacity = 0.9,
+            bringToFront = TRUE
+          ),
 
-            # Enhanced popup with statistics
-            popup = ~create_enhanced_popup(data, level),
+          # Layer ID for interactivity
+          layerId = ~if(level == "state") estado else paste(estado, municipio, sep = "_")
+        ) %>%
 
-            # Hover label
-            label = ~create_hover_label(data, level, mode_config),
+        # Add legend
+        addLegend(
+          "bottomright",
+          pal = pal,
+          values = ~get(value_col),
+          title = mode_config$name,
+          opacity = 1,
+          labFormat = labelFormat(big.mark = ",", digits = 0)
+        ) %>%
 
-            # Highlight on hover
-            highlightOptions = highlightOptions(
-              weight = 3,
-              color = "#ff6b35",
-              fillOpacity = 0.9,
-              bringToFront = TRUE
-            ),
-
-            # Layer ID for interactivity
-            layerId = ~if(level == "state") estado else paste(estado, municipio, sep = "_")
-          ) %>%
-
-          # Add legend
-          addLegend(
-            "bottomright",
-            pal = pal,
-            values = values,
-            title = mode_config$name,
-            opacity = 1,
-            labFormat = labelFormat(big.mark = ",")
-          ) %>%
-
-          # Add scale bar
-          addScaleBar(position = "bottomleft")
-      }
+        # Add scale bar
+        addScaleBar(position = "bottomleft")
 
     } else {
       # Fallback: centroid markers
@@ -525,112 +522,15 @@ create_hover_label <- function(data, level, mode_config) {
 # EXPORT FUNCTIONS
 # ==============================================================================
 
-#' Create Static Map Plot for Export
-#'
-#' Creates a static ggplot2 map suitable for SVG/PDF export
-#'
-#' @param data Geographic data with geometry
-#' @param mode Visualization mode
-#' @param title Map title
-#' @return ggplot object
-create_static_map_plot <- function(data, mode = "absolute", title = NULL) {
-
-  cat("🗺️ Creating static map plot for export - mode:", mode, "\n")
-
-  if (is.null(data) || nrow(data) == 0) {
-    # Return empty plot with message
-    return(ggplot() +
-      annotate("text", x = 0, y = 0, label = "No data available", size = 6) +
-      theme_void())
-  }
-
-  tryCatch({
-    # Get mode configuration
-    mode_config <- GEO_ENHANCED_CONFIG$visualization_modes[[mode]]
-    if (is.null(mode_config)) {
-      mode_config <- GEO_ENHANCED_CONFIG$visualization_modes$absolute
-    }
-
-    # Determine value column
-    value_col <- mode_config$column
-    if (!value_col %in% names(data)) {
-      value_col <- "document_count"
-    }
-
-    # Check if data has geometry
-    if (!inherits(data, "sf") || !"geometry" %in% names(data)) {
-      # Create a simple bar chart instead
-      plot_data <- data %>%
-        arrange(desc(get(value_col))) %>%
-        head(20)
-
-      p <- ggplot(plot_data, aes(x = reorder(estado, get(value_col)), y = get(value_col))) +
-        geom_col(fill = "#1e3a8a") +
-        coord_flip() +
-        labs(
-          title = title %||% paste("Geographic Distribution -", mode_config$name),
-          subtitle = paste("Top 20 states/regions"),
-          x = NULL,
-          y = mode_config$name
-        ) +
-        theme_minimal() +
-        theme(
-          plot.title = element_text(size = 16, face = "bold"),
-          plot.subtitle = element_text(size = 12, color = "gray40"),
-          axis.text = element_text(size = 10),
-          panel.grid.major.y = element_blank()
-        )
-
-      return(p)
-    }
-
-    # Create choropleth map with ggplot2
-    p <- ggplot(data) +
-      geom_sf(aes(fill = get(value_col)), color = "#444444", size = 0.3) +
-      scale_fill_distiller(
-        palette = gsub("s$", "", mode_config$color),  # Remove 's' from palette name
-        direction = 1,
-        name = mode_config$name,
-        labels = scales::comma
-      ) +
-      labs(
-        title = title %||% paste("Brazilian Legislative Documents -", mode_config$name),
-        subtitle = paste("Total features:", nrow(data), "| Documents:",
-                        format(sum(data$document_count, na.rm = TRUE), big.mark = ",")),
-        caption = paste("Monitor Legislativo v4 | Generated:", format(Sys.time(), "%Y-%m-%d %H:%M"))
-      ) +
-      theme_void() +
-      theme(
-        plot.title = element_text(size = 16, face = "bold", hjust = 0.5, margin = margin(b = 5)),
-        plot.subtitle = element_text(size = 11, hjust = 0.5, color = "gray40", margin = margin(b = 10)),
-        plot.caption = element_text(size = 8, color = "gray50", hjust = 1, margin = margin(t = 10)),
-        legend.position = "right",
-        legend.title = element_text(size = 10, face = "bold"),
-        legend.text = element_text(size = 9),
-        plot.margin = margin(20, 20, 20, 20)
-      )
-
-    return(p)
-
-  }, error = function(e) {
-    cat("❌ Error creating static map:", e$message, "\n")
-    return(ggplot() +
-      annotate("text", x = 0, y = 0, label = paste("Export error:", e$message),
-               size = 5, color = "red") +
-      theme_void())
-  })
-}
-
 #' Export Geographic Data
 #'
 #' Exports data in various formats
 #'
 #' @param data Geographic data to export
 #' @param format Export format
-#' @param mode Visualization mode (for SVG/PDF)
 #' @param filename Output filename
 #' @return Export result with file path
-export_geographic_data <- function(data, format = "CSV", mode = "absolute", filename = NULL) {
+export_geographic_data <- function(data, format = "CSV", filename = NULL) {
 
   cat("📤 Exporting geographic data - format:", format, "\n")
 
@@ -685,42 +585,6 @@ export_geographic_data <- function(data, format = "CSV", mode = "absolute", file
         list(success = TRUE, file_path = output_path, features = nrow(data))
       },
 
-      "SVG" = {
-        # Create static map plot
-        plot <- create_static_map_plot(data, mode = mode)
-
-        # Save as SVG
-        ggsave(
-          filename = output_path,
-          plot = plot,
-          device = "svg",
-          width = 12,
-          height = 10,
-          units = "in",
-          dpi = 300
-        )
-
-        list(success = TRUE, file_path = output_path, format = "SVG")
-      },
-
-      "PDF" = {
-        # Create static map plot
-        plot <- create_static_map_plot(data, mode = mode)
-
-        # Save as PDF
-        ggsave(
-          filename = output_path,
-          plot = plot,
-          device = "pdf",
-          width = 12,
-          height = 10,
-          units = "in",
-          dpi = 300
-        )
-
-        list(success = TRUE, file_path = output_path, format = "PDF")
-      },
-
       {
         list(success = FALSE, error = paste("Export format not yet implemented:", format))
       }
@@ -767,175 +631,39 @@ calculate_viz_statistics <- function(data) {
     ))
   }
 
-  list(
-    total_features = nrow(data),
-    total_documents = sum(data$document_count, na.rm = TRUE),
-    avg_documents = round(mean(data$document_count, na.rm = TRUE), 1),
-    max_documents = max(data$document_count, na.rm = TRUE),
-    min_documents = min(data$document_count, na.rm = TRUE),
-    date_range = if ("first_document" %in% names(data) && "last_document" %in% names(data)) {
-      paste(
-        format(min(data$first_document, na.rm = TRUE), "%d/%m/%Y"),
-        "to",
-        format(max(data$last_document, na.rm = TRUE), "%d/%m/%Y")
-      )
-    } else {
-      "N/A"
-    }
-  )
-}
+  # Safely calculate statistics with proper type handling
+  safe_sum <- as.integer(sum(as.numeric(data$document_count), na.rm = TRUE))
+  safe_mean <- round(mean(as.numeric(data$document_count), na.rm = TRUE), 1)
+  safe_max <- as.integer(max(as.numeric(data$document_count), na.rm = TRUE))
+  safe_min <- as.integer(min(as.numeric(data$document_count), na.rm = TRUE))
 
-#' Calculate Temporal Statistics
-#'
-#' Calculates temporal trends and activity patterns for geographic data
-#'
-#' @param db_conn Database connection
-#' @param level Geographic level ("state" or "municipality")
-#' @param filters List of filters to apply
-#' @return Data frame with temporal statistics
-calculate_temporal_statistics <- function(db_conn, level = "state", filters = NULL) {
+  # Handle date range safely
+  date_range_text <- "N/A"
+  if ("first_document" %in% names(data) && "last_document" %in% names(data)) {
+    tryCatch({
+      valid_first_dates <- data$first_document[!is.na(data$first_document)]
+      valid_last_dates <- data$last_document[!is.na(data$last_document)]
 
-  cat("📊 Calculating temporal statistics at level:", level, "\n")
-
-  tryCatch({
-    # Build temporal query
-    if (level == "state") {
-      query <- "
-        SELECT
-          estado,
-          DATE_TRUNC('month', data) as month,
-          COUNT(*) as monthly_count,
-          COUNT(DISTINCT tipo) as document_types
-        FROM lexml_documents
-        WHERE estado IS NOT NULL AND estado != ''
-          AND data IS NOT NULL
-      "
-    } else {
-      query <- "
-        SELECT
-          estado,
-          municipio,
-          DATE_TRUNC('month', data) as month,
-          COUNT(*) as monthly_count,
-          COUNT(DISTINCT tipo) as document_types
-        FROM lexml_documents
-        WHERE estado IS NOT NULL AND estado != ''
-          AND municipio IS NOT NULL AND municipio != ''
-          AND data IS NOT NULL
-      "
-    }
-
-    # Add filters if provided
-    if (!is.null(filters)) {
-      if (!is.null(filters$tipo) && filters$tipo != "Todos") {
-        query <- paste0(query, " AND tipo = '", filters$tipo, "'")
-      }
-      if (!is.null(filters$date_start) && !is.null(filters$date_end)) {
-        query <- paste0(query,
-                       " AND data >= '", filters$date_start, "'",
-                       " AND data <= '", filters$date_end, "'")
-      }
-    }
-
-    # Add GROUP BY and ORDER BY
-    if (level == "state") {
-      query <- paste0(query, " GROUP BY estado, DATE_TRUNC('month', data) ORDER BY estado, month")
-    } else {
-      query <- paste0(query, " GROUP BY estado, municipio, DATE_TRUNC('month', data) ORDER BY estado, municipio, month")
-    }
-
-    # Execute query
-    result <- dbGetQuery(db_conn, query)
-
-    if (is.null(result) || nrow(result) == 0) {
-      cat("⚠️ No temporal data found\n")
-      return(NULL)
-    }
-
-    # Calculate trends
-    result <- result %>%
-      mutate(
-        month = as.Date(month),
-        year = format(month, "%Y"),
-        month_name = format(month, "%B %Y")
-      ) %>%
-      group_by(if (level == "state") estado else paste(estado, municipio)) %>%
-      mutate(
-        cumulative_count = cumsum(monthly_count),
-        rolling_avg_3m = zoo::rollmean(monthly_count, k = 3, fill = NA, align = "right"),
-        trend = ifelse(
-          !is.na(lag(monthly_count)) & lag(monthly_count) > 0,
-          ((monthly_count - lag(monthly_count)) / lag(monthly_count)) * 100,
-          NA
+      if (length(valid_first_dates) > 0 && length(valid_last_dates) > 0) {
+        date_range_text <- paste(
+          format(min(valid_first_dates), "%d/%m/%Y"),
+          "to",
+          format(max(valid_last_dates), "%d/%m/%Y")
         )
-      ) %>%
-      ungroup()
-
-    cat("✅ Calculated temporal statistics for", length(unique(result[[1]])), "locations\n")
-    return(result)
-
-  }, error = function(e) {
-    cat("❌ Error calculating temporal statistics:", e$message, "\n")
-    return(NULL)
-  })
-}
-
-#' Get Temporal Summary
-#'
-#' Generates a summary of temporal activity patterns
-#'
-#' @param temporal_data Temporal statistics data frame
-#' @return List with temporal summary statistics
-get_temporal_summary <- function(temporal_data) {
-
-  if (is.null(temporal_data) || nrow(temporal_data) == 0) {
-    return(list(
-      total_months = 0,
-      avg_monthly_docs = 0,
-      peak_month = "N/A",
-      peak_month_count = 0,
-      growth_rate = 0
-    ))
+      }
+    }, error = function(e) {
+      date_range_text <<- "N/A"
+    })
   }
 
-  tryCatch({
-    # Calculate summary metrics
-    total_months <- length(unique(temporal_data$month))
-    avg_monthly <- mean(temporal_data$monthly_count, na.rm = TRUE)
-
-    # Find peak month
-    peak_idx <- which.max(temporal_data$monthly_count)
-    peak_month <- format(temporal_data$month[peak_idx], "%B %Y")
-    peak_count <- temporal_data$monthly_count[peak_idx]
-
-    # Calculate overall growth rate
-    first_month_total <- sum(temporal_data$monthly_count[temporal_data$month == min(temporal_data$month)], na.rm = TRUE)
-    last_month_total <- sum(temporal_data$monthly_count[temporal_data$month == max(temporal_data$month)], na.rm = TRUE)
-
-    growth_rate <- if (first_month_total > 0) {
-      ((last_month_total - first_month_total) / first_month_total) * 100
-    } else {
-      0
-    }
-
-    return(list(
-      total_months = total_months,
-      avg_monthly_docs = round(avg_monthly, 1),
-      peak_month = peak_month,
-      peak_month_count = peak_count,
-      growth_rate = round(growth_rate, 1)
-    ))
-
-  }, error = function(e) {
-    cat("❌ Error calculating temporal summary:", e$message, "\n")
-    return(list(
-      total_months = 0,
-      avg_monthly_docs = 0,
-      peak_month = "N/A",
-      peak_month_count = 0,
-      growth_rate = 0
-    ))
-  })
+  list(
+    total_features = nrow(data),
+    total_documents = safe_sum,
+    avg_documents = safe_mean,
+    max_documents = safe_max,
+    min_documents = safe_min,
+    date_range = date_range_text
+  )
 }
 
 # ==============================================================================
@@ -943,8 +671,8 @@ get_temporal_summary <- function(temporal_data) {
 # ==============================================================================
 
 cat("✅ Enhanced Geographic Module loaded successfully\n")
-cat("   - Municipality-level visualization: ENABLED (limit: 2000)\n")
+cat("   - Municipality-level visualization: ENABLED\n")
 cat("   - Advanced interactivity: ENABLED\n")
 cat("   - Enhanced controls: ENABLED\n")
-cat("   - Multiple export formats: ENABLED (PNG, PDF, SVG, CSV, GeoJSON)\n")
+cat("   - Multiple export formats: ENABLED\n")
 cat("   - Performance optimizations: ENABLED\n")

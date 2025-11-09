@@ -483,6 +483,111 @@ ui <- navbarPage(
             )
           )
         )
+      ),
+
+      # -- Data Coverage Info Panel --
+      wellPanel(
+        style = "background-color: #f0f9ff; border-left: 4px solid #3b82f6; margin-top: 15px;",
+        h4(icon("info-circle"), " Cobertura Geográfica dos Dados",
+           style = "color: #1e40af; margin-top: 0;"),
+        fluidRow(
+          column(3,
+            div(
+              style = "text-align: center; padding: 12px; background-color: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);",
+              h3(textOutput("geo_coverage_mapped", inline = TRUE),
+                 style = "color: #059669; margin: 5px 0; font-size: 24px;"),
+              p("Estaduais", style = "font-size: 12px; color: #666; margin: 0; font-weight: 500;"),
+              p("(no mapa)", style = "font-size: 10px; color: #999; margin: 0;")
+            )
+          ),
+          column(3,
+            div(
+              style = "text-align: center; padding: 12px; background-color: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);",
+              h3(textOutput("geo_coverage_federal", inline = TRUE),
+                 style = "color: #ea580c; margin: 5px 0; font-size: 24px;"),
+              p("Federais", style = "font-size: 12px; color: #666; margin: 0; font-weight: 500;"),
+              p("(nacional)", style = "font-size: 10px; color: #999; margin: 0;")
+            )
+          ),
+          column(3,
+            div(
+              style = "text-align: center; padding: 12px; background-color: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);",
+              h3(textOutput("geo_coverage_labor", inline = TRUE),
+                 style = "color: #8b5cf6; margin: 5px 0; font-size: 24px;"),
+              p("Justiça Trabalho", style = "font-size: 12px; color: #666; margin: 0; font-weight: 500;"),
+              p("(regional)", style = "font-size: 10px; color: #999; margin: 0;")
+            )
+          ),
+          column(3,
+            div(
+              style = "text-align: center; padding: 12px; background-color: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);",
+              h3(textOutput("geo_coverage_no_urn", inline = TRUE),
+                 style = "color: #64748b; margin: 5px 0; font-size: 24px;"),
+              p("Sem URN", style = "font-size: 12px; color: #666; margin: 0; font-weight: 500;"),
+              p("(impossível)", style = "font-size: 10px; color: #999; margin: 0;")
+            )
+          )
+        ),
+        div(
+          style = "margin-top: 15px; padding: 12px; background-color: white; border-radius: 4px;",
+          p(icon("lightbulb", style = "color: #3b82f6;"),
+            strong(" Por que alguns documentos não aparecem no mapa?"),
+            style = "margin: 0 0 10px 0; color: #1e40af; font-size: 14px;"),
+          tags$ul(
+            style = "font-size: 13px; color: #475569; margin: 0; padding-left: 25px;",
+            tags$li(
+              tags$strong("Documentos Federais:"),
+              " Legislação federal (Congresso, STF, Presidência) aplica-se igualmente a todo o Brasil. Não há variação geográfica específica por estado."
+            ),
+            tags$li(
+              tags$strong("Justiça do Trabalho Regional:"),
+              " Tribunais Regionais do Trabalho são órgãos federais que atuam em regiões específicas, não mapeadas por estado individual."
+            ),
+            tags$li(
+              tags$strong("Documentos sem URN:"),
+              " Artigos acadêmicos, livros e outras fontes bibliográficas sem URN oficial do LexML."
+            )
+          )
+        )
+      ),
+
+      # -- FEDERAL LEGISLATION SECTION --
+      hr(),
+      wellPanel(
+        style = "background-color: #fff8f0; border-left: 4px solid #ea580c; margin-top: 20px;",
+        h3(icon("landmark"), " Legislação Federal - Análise Detalhada",
+           style = "color: #c2410c; margin-top: 0;"),
+        p(
+          style = "font-size: 14px; color: #78716c; margin-bottom: 20px;",
+          "Documentos federais aplicam-se igualmente a todo o Brasil. Esta seção apresenta análises temporais e por tipo de legislação federal."
+        ),
+
+        # Total Count Card
+        div(
+          style = "background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); padding: 25px; border-radius: 8px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);",
+          h1(textOutput("federal_total_count", inline = TRUE),
+             style = "color: white; margin: 0; font-size: 48px; font-weight: 700;"),
+          p("Documentos Federais no Sistema",
+            style = "color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px; font-weight: 500;")
+        ),
+
+        # Timeline and Type Breakdown
+        fluidRow(
+          column(7,
+            div(
+              style = "background-color: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);",
+              h4(icon("chart-line"), " Evolução Temporal", style = "color: #ea580c; margin-top: 0;"),
+              plotOutput("federal_timeline", height = "350px")
+            )
+          ),
+          column(5,
+            div(
+              style = "background-color: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);",
+              h4(icon("chart-pie"), " Tipos de Documentos", style = "color: #ea580c; margin-top: 0;"),
+              plotOutput("federal_type_breakdown", height = "350px")
+            )
+          )
+        )
       )
         ), # End of Main Map tabPanel
 
@@ -1182,19 +1287,179 @@ server <- function(input, output, session) {
   output$geo_stat_documents <- renderText({
     stats <- current_viz_stats()
     if (is.null(stats)) return("--")
-    format(stats$total_documents, big.mark = ",")
+    format(as.integer(stats$total_documents), big.mark = ",", scientific = FALSE)
   })
 
   output$geo_stat_avg <- renderText({
     stats <- current_viz_stats()
     if (is.null(stats)) return("--")
-    format(round(stats$avg_documents, 1), big.mark = ",")
+    format(round(as.numeric(stats$avg_documents), 1), big.mark = ",", scientific = FALSE)
   })
 
   output$geo_stat_range <- renderText({
     stats <- current_viz_stats()
     if (is.null(stats) || is.null(stats$date_range)) return("--")
     stats$date_range
+  })
+
+  # Geographic coverage outputs
+  output$geo_coverage_mapped <- renderText({
+    if (!DB_AVAILABLE) return("--")
+    # Get state documents (excluding Federal and Justiça Trabalho)
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection,
+        "SELECT COUNT(*) as count FROM documents WHERE estado IS NOT NULL AND estado != '' AND estado NOT IN ('Federal', 'Justiça Trabalho')")
+      format(result$count[1], big.mark = ",")
+    }, error = function(e) "--")
+  })
+
+  output$geo_coverage_federal <- renderText({
+    if (!DB_AVAILABLE) return("--")
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection,
+        "SELECT COUNT(*) as count FROM documents WHERE estado = 'Federal'")
+      format(result$count[1], big.mark = ",")
+    }, error = function(e) "--")
+  })
+
+  output$geo_coverage_labor <- renderText({
+    if (!DB_AVAILABLE) return("--")
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection,
+        "SELECT COUNT(*) as count FROM documents WHERE estado = 'Justiça Trabalho'")
+      format(result$count[1], big.mark = ",")
+    }, error = function(e) "--")
+  })
+
+  output$geo_coverage_no_urn <- renderText({
+    if (!DB_AVAILABLE) return("--")
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection,
+        "SELECT COUNT(*) as count FROM documents WHERE estado IS NULL OR estado = ''")
+      format(result$count[1], big.mark = ",")
+    }, error = function(e) "--")
+  })
+
+  # === FEDERAL LEGISLATION OUTPUTS ===
+
+  # Total count of federal documents
+  output$federal_total_count <- renderText({
+    if (!DB_AVAILABLE) return("--")
+    tryCatch({
+      result <- dbGetQuery(secure_db_connection,
+        "SELECT COUNT(*) as count FROM documents WHERE estado = 'Federal'")
+      format(result$count[1], big.mark = ".", decimal.mark = ",")
+    }, error = function(e) "--")
+  })
+
+  # Timeline chart - federal documents over years
+  output$federal_timeline <- renderPlot({
+    if (!DB_AVAILABLE) {
+      plot.new()
+      text(0.5, 0.5, "Banco de dados não disponível", cex = 1.2, col = "gray")
+      return()
+    }
+
+    tryCatch({
+      # Query federal documents by year
+      timeline_data <- dbGetQuery(secure_db_connection,
+        "SELECT
+          EXTRACT(YEAR FROM data::date) as year,
+          COUNT(*) as count
+        FROM documents
+        WHERE estado = 'Federal'
+          AND data IS NOT NULL
+          AND data != ''
+          AND EXTRACT(YEAR FROM data::date) >= 2000
+        GROUP BY year
+        ORDER BY year")
+
+      if (nrow(timeline_data) == 0) {
+        plot.new()
+        text(0.5, 0.5, "Sem dados disponíveis", cex = 1.2, col = "gray")
+        return()
+      }
+
+      # Create timeline plot
+      par(mar = c(4, 4, 2, 1), family = "sans")
+      plot(timeline_data$year, timeline_data$count,
+           type = "l", lwd = 3, col = "#ea580c",
+           xlab = "Ano", ylab = "Número de Documentos",
+           main = "",
+           las = 1, cex.axis = 0.9, cex.lab = 1.0)
+
+      # Add points
+      points(timeline_data$year, timeline_data$count,
+             pch = 19, col = "#ea580c", cex = 1.2)
+
+      # Add grid
+      grid(col = "gray90", lty = 1)
+
+      # Add trend line
+      if (nrow(timeline_data) > 2) {
+        trend_model <- lm(count ~ year, data = timeline_data)
+        lines(timeline_data$year, predict(trend_model),
+              col = "#dc2626", lty = 2, lwd = 2)
+      }
+
+    }, error = function(e) {
+      plot.new()
+      text(0.5, 0.5, paste("Erro:", e$message), cex = 1, col = "red")
+    })
+  })
+
+  # Type breakdown chart
+  output$federal_type_breakdown <- renderPlot({
+    if (!DB_AVAILABLE) {
+      plot.new()
+      text(0.5, 0.5, "Banco de dados não disponível", cex = 1.2, col = "gray")
+      return()
+    }
+
+    tryCatch({
+      # Query federal documents by type (extracted from URN)
+      type_data <- dbGetQuery(secure_db_connection,
+        "SELECT
+          CASE
+            WHEN SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') IS NULL OR SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') = ''
+            THEN 'Não especificado'
+            ELSE REPLACE(SUBSTRING(urn FROM 'br:[^:]+:([^:]+):'), '.', ' ')
+          END as tipo,
+          COUNT(*) as count
+        FROM documents
+        WHERE estado = 'Federal'
+        GROUP BY tipo
+        ORDER BY count DESC
+        LIMIT 8")
+
+      if (nrow(type_data) == 0) {
+        plot.new()
+        text(0.5, 0.5, "Sem dados disponíveis", cex = 1.2, col = "gray")
+        return()
+      }
+
+      # Convert count to numeric and create named vector
+      counts <- as.numeric(type_data$count)
+      names(counts) <- type_data$tipo
+
+      # Create horizontal bar chart
+      par(mar = c(4, 8, 2, 2), family = "sans")
+      barplot(counts,
+              horiz = TRUE,
+              las = 1,
+              col = colorRampPalette(c("#fed7aa", "#ea580c"))(length(counts)),
+              border = NA,
+              xlab = "Número de Documentos",
+              cex.names = 0.85,
+              cex.axis = 0.9)
+
+      # Add grid
+      grid(col = "gray90", lty = 1, nx = NULL, ny = NA)
+
+    }, error = function(e) {
+      plot.new()
+      text(0.5, 0.5, paste("Erro:", e$message), cex = 1, col = "red")
+    })
   })
 
   # Loading indicator

@@ -11,6 +11,7 @@ FROM us-central1-docker.pkg.dev/mackmonitor/monitor-repo/mackmonitor-base:latest
 # Copy application code (this is the only layer that changes frequently)
 WORKDIR /app
 COPY app_phoenix.R /app/
+COPY modules /app/modules
 COPY data_current /app/data_current
 
 # Health check
