@@ -17,6 +17,9 @@ suppressPackageStartupMessages({
   library(leaflet)
   library(sf)
   library(ggplot2)
+  library(plotly)
+  library(data.table)
+  library(stringr)
 })
 
 # ==============================================================================
@@ -38,6 +41,14 @@ if (file.exists("R/utils/ibge_integration.R")) {
   cat("⚠️ IBGE Integration Utilities not found\n")
 }
 
+# Load scalar utilities
+if (file.exists("R/utils/scalar_utils.R")) {
+  source("R/utils/scalar_utils.R")
+  cat("✅ Scalar utilities loaded\n")
+} else {
+  cat("⚠️ Scalar utilities not found - some features may fail\n")
+}
+
 # ==============================================================================
 # 1.6 LOAD ENHANCED MODULES
 # ==============================================================================
@@ -46,6 +57,15 @@ if (file.exists("modules/geographic_enhanced.R")) {
   cat("✅ Enhanced Geographic Module loaded\n")
 } else {
   cat("⚠️ Enhanced Geographic Module not found - using basic features\n")
+}
+
+# Load Transport Corridor Analysis Module
+if (file.exists("modules/maps/transport_corridor_analysis.R")) {
+  transport_module <- source("modules/maps/transport_corridor_analysis.R")$value
+  cat("✅ Transport Corridor Analysis Module loaded\n")
+} else {
+  cat("⚠️ Transport Corridor Analysis Module not found\n")
+  transport_module <- NULL
 }
 
 # ==============================================================================
@@ -262,9 +282,20 @@ ui <- navbarPage(
         " Base de dados atualizada em ",
         strong("21/10/2025"),
         " (data de extração dos dados brutos). ",
-        em("Agora com visualização por município e múltiplos modos de análise!")
+        em("Agora com visualização por município, múltiplos modos de análise e corredores de transporte!")
       ),
       hr(),
+
+      # Sub-tabs for different geographic analyses
+      tabsetPanel(
+        id = "geo_subtabs",
+        type = "tabs",
+
+        # TAB 1: Main Choropleth Map
+        tabPanel(
+          "Mapa Principal",
+          icon = icon("map"),
+          br(),
 
       # -- Enhanced Controls Row 1: Visualization Settings --
       wellPanel(
@@ -423,8 +454,27 @@ ui <- navbarPage(
           )
         )
       )
-    )
-  ),
+        ), # End of Main Map tabPanel
+
+        # TAB 2: Transport Corridors
+        tabPanel(
+          "Corredores de Transporte",
+          icon = icon("road"),
+          br(),
+          if (!is.null(transport_module)) {
+            transport_module$ui("transport_corridor")
+          } else {
+            div(
+              class = "alert alert-warning",
+              icon("exclamation-triangle"),
+              " Módulo de Corredores de Transporte não disponível"
+            )
+          }
+        ) # End of Transport Corridors tabPanel
+
+      ) # End of tabsetPanel
+    ) # End of fluidPage
+  ), # End of Geographic tabPanel
 
   # -- ANALYTICS TAB --
   tabPanel(
@@ -1138,6 +1188,60 @@ server <- function(input, output, session) {
 
   # Force Geographic map to bind to reactive graph even when tab is hidden
   outputOptions(output, "geo_map", suspendWhenHidden = FALSE)
+
+  # -- TRANSPORT CORRIDORS SERVER LOGIC --
+
+  # Reactive data for transport corridors (filtered legislative documents)
+  transport_legislative_data <- reactive({
+    if (!DB_AVAILABLE) return(NULL)
+
+    tryCatch({
+      # Get basic document data
+      query <- paste0("
+        SELECT
+          id,
+          titulo,
+          tipo,
+          data,
+          estado,
+          municipio,
+          texto,
+          url
+        FROM ", DOCUMENTS_TABLE, "
+        WHERE texto IS NOT NULL
+        LIMIT 10000
+      ")
+
+      docs <- dbGetQuery(secure_db_connection, query)
+
+      # Rename columns to match transport module expectations
+      if (nrow(docs) > 0) {
+        docs$title <- docs$titulo
+        docs$type <- docs$tipo
+        docs$date <- as.Date(docs$data)
+        docs$state <- docs$estado
+
+        cat("📊 Loaded", nrow(docs), "documents for transport corridor analysis\n")
+      }
+
+      return(docs)
+
+    }, error = function(e) {
+      cat("❌ Error loading transport data:", e$message, "\n")
+      return(NULL)
+    })
+  })
+
+  # Call transport corridor server module if available
+  if (!is.null(transport_module)) {
+    transport_corridor_values <- transport_module$server(
+      "transport_corridor",
+      legislative_data = transport_legislative_data
+    )
+    cat("✅ Transport Corridor server module initialized\n")
+  } else {
+    cat("⚠️ Transport Corridor server module not available\n")
+  }
 
   # -- ANALYTICS SERVER LOGIC --
 
