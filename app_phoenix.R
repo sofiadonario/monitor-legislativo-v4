@@ -11,6 +11,7 @@
 suppressPackageStartupMessages({
   library(shiny)
   library(shinythemes)
+  library(shinycssloaders)  # Loading indicators
   library(DBI)
   library(RPostgres)
   library(DT)
@@ -20,6 +21,7 @@ suppressPackageStartupMessages({
   library(plotly)
   library(data.table)
   library(stringr)
+  library(dplyr)  # For advanced visualizations
 })
 
 # ==============================================================================
@@ -49,14 +51,6 @@ if (file.exists("R/utils/scalar_utils.R")) {
   cat("⚠️ Scalar utilities not found - some features may fail\n")
 }
 
-# Load query caching system
-if (file.exists("R/utils/query_cache.R")) {
-  source("R/utils/query_cache.R")
-  cat("✅ Query caching system loaded\n")
-} else {
-  cat("⚠️ Query caching system not found - queries will not be cached\n")
-}
-
 # ==============================================================================
 # 1.6 LOAD ENHANCED MODULES
 # ==============================================================================
@@ -67,14 +61,14 @@ if (file.exists("modules/geographic_enhanced.R")) {
   cat("⚠️ Enhanced Geographic Module not found - using basic features\n")
 }
 
-# Load Transport Corridor Analysis Module
-if (file.exists("modules/maps/transport_corridor_analysis.R")) {
-  transport_module <- source("modules/maps/transport_corridor_analysis.R")$value
-  cat("✅ Transport Corridor Analysis Module loaded\n")
-} else {
-  cat("⚠️ Transport Corridor Analysis Module not found\n")
-  transport_module <- NULL
-}
+# Load Transport Corridor Analysis Module (temporarily disabled - requires shinydashboard)
+# if (file.exists("modules/maps/transport_corridor_analysis.R")) {
+#   transport_module <- source("modules/maps/transport_corridor_analysis.R")$value
+#   cat("✅ Transport Corridor Analysis Module loaded\n")
+# } else {
+#   cat("⚠️ Transport Corridor Analysis Module not found\n")
+transport_module <- NULL
+# }
 
 # Load Enhanced Library Module
 if (file.exists("R/modules/library_enhanced_module.R")) {
@@ -98,6 +92,14 @@ if (file.exists("R/visualization/brazilian_geo_integration.R")) {
   cat("✅ Brazilian Geo Integration (Geocoding) loaded\n")
 } else {
   cat("⚠️ Brazilian Geo Integration not found\n")
+}
+
+# Load Advanced Visualizations Engine (Priority 6 - PRD Implementation)
+if (file.exists("modules/analytics/advanced_visualizations.R")) {
+  source("modules/analytics/advanced_visualizations.R")
+  cat("✅ Advanced Visualizations Engine loaded\n")
+} else {
+  cat("⚠️ Advanced Visualizations Engine not found - using basic charts only\n")
 }
 
 # ==============================================================================
@@ -585,14 +587,14 @@ ui <- navbarPage(
             div(
               style = "background-color: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);",
               h4(icon("chart-line"), " Evolução Temporal", style = "color: #ea580c; margin-top: 0;"),
-              plotly::plotlyOutput("federal_timeline", height = "350px")
+              plotOutput("federal_timeline", height = "350px")
             )
           ),
           column(5,
             div(
               style = "background-color: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);",
               h4(icon("chart-pie"), " Tipos de Documentos", style = "color: #ea580c; margin-top: 0;"),
-              plotly::plotlyOutput("federal_type_breakdown", height = "350px")
+              plotOutput("federal_type_breakdown", height = "350px")
             )
           )
         )
@@ -619,19 +621,144 @@ ui <- navbarPage(
     ) # End of fluidPage
   ), # End of Geographic tabPanel
 
-  # -- ANALYTICS TAB --
+  # -- ANALYTICS TAB (Enhanced with Priority 6 - Advanced Visualizations) --
   tabPanel(
     "Analytics",
     icon = icon("chart-bar"),
     fluidPage(
       h2("Análise de Documentos"),
-      p("Distribuição por tipo e evolução mensal"),
+      p("Análise estatística e visualizações avançadas dos documentos legislativos"),
       hr(),
-      fluidRow(
-        column(6, plotly::plotlyOutput("analytics_type_bar", height = "400px")),
-        column(6, plotly::plotlyOutput("analytics_month_line", height = "400px"))
-      )
-    )
+
+      # Sub-tabs for Basic and Advanced Analytics
+      tabsetPanel(
+        id = "analytics_subtabs",
+
+        # BASIC ANALYTICS SUB-TAB
+        tabPanel(
+          "Básico",
+          icon = icon("chart-simple"),
+          br(),
+          h3("Estatísticas Gerais"),
+          p("Distribuição por tipo e evolução temporal dos documentos"),
+          hr(),
+          fluidRow(
+            column(6, plotOutput("analytics_type_bar", height = "400px")),
+            column(6, plotOutput("analytics_month_line", height = "400px"))
+          )
+        ),
+
+        # ADVANCED VISUALIZATIONS SUB-TAB
+        tabPanel(
+          "Avançado",
+          icon = icon("chart-network"),
+          br(),
+          h3("Visualizações Avançadas"),
+          p("Análises multidimensionais: redes, hierarquias e correlações"),
+          hr(),
+
+          # Advanced visualization controls
+          fluidRow(
+            column(3,
+              wellPanel(
+                h4("Configurações"),
+                selectInput(
+                  "viz_type",
+                  "Tipo de Visualização:",
+                  choices = c(
+                    "Rede de Citações" = "network",
+                    "Mapa de Árvore (Treemap)" = "treemap",
+                    "Nuvem de Palavras" = "wordcloud",
+                    "Correlações" = "correlation"
+                  ),
+                  selected = "network"
+                ),
+                conditionalPanel(
+                  condition = "input.viz_type == 'network'",
+                  selectInput(
+                    "network_layout",
+                    "Layout da Rede:",
+                    choices = c(
+                      "Force Directed" = "force",
+                      "Circular" = "circular",
+                      "Hierarchical" = "hierarchical"
+                    ),
+                    selected = "force"
+                  )
+                ),
+                conditionalPanel(
+                  condition = "input.viz_type == 'wordcloud'",
+                  sliderInput(
+                    "wordcloud_max",
+                    "Máx. Palavras:",
+                    min = 50,
+                    max = 200,
+                    value = 100
+                  )
+                ),
+                actionButton(
+                  "refresh_viz",
+                  "Atualizar Visualização",
+                  icon = icon("refresh"),
+                  class = "btn-primary"
+                )
+              )
+            ),
+            column(9,
+              # Dynamic visualization output
+              conditionalPanel(
+                condition = "input.viz_type == 'network'",
+                shinycssloaders::withSpinner(
+                  htmlOutput("advanced_network_viz"),
+                  type = 6,
+                  color = "#3c8dbc"
+                )
+              ),
+              conditionalPanel(
+                condition = "input.viz_type == 'treemap'",
+                shinycssloaders::withSpinner(
+                  plotlyOutput("advanced_treemap_viz", height = "600px"),
+                  type = 6,
+                  color = "#3c8dbc"
+                )
+              ),
+              conditionalPanel(
+                condition = "input.viz_type == 'wordcloud'",
+                shinycssloaders::withSpinner(
+                  htmlOutput("advanced_wordcloud_viz"),
+                  type = 6,
+                  color = "#3c8dbc"
+                )
+              ),
+              conditionalPanel(
+                condition = "input.viz_type == 'correlation'",
+                shinycssloaders::withSpinner(
+                  plotOutput("advanced_correlation_viz", height = "600px"),
+                  type = 6,
+                  color = "#3c8dbc"
+                )
+              )
+            )
+          ),
+
+          # Additional info
+          hr(),
+          fluidRow(
+            column(12,
+              div(
+                class = "alert alert-info",
+                icon("info-circle"),
+                " ",
+                strong("Nota:"),
+                " As visualizações avançadas requerem pacotes adicionais. ",
+                "Se alguma visualização não estiver disponível, instale os pacotes necessários ",
+                "listados em data_current/processed/R_analytical_framework/DESCRIPTION."
+              )
+            )
+          )
+        )
+      ) # End of analytics tabsetPanel
+    ) # End of fluidPage
   ),
 
   # -- PLACEHOLDER TABS --
@@ -691,12 +818,6 @@ server <- function(input, output, session) {
       updateSelectInput(session, "library_tipo", selected = "Todos")
       updateSelectInput(session, "library_mostrar", selected = 100)
 
-      # Clear query cache for fresh data
-      if (exists("clear_query_cache")) {
-        clear_query_cache()
-        cat("🧹 Cache cleared by user\n")
-      }
-
       filters$search <- ""
       filters$tipo <- "Todos"
       filters$mostrar <- 100
@@ -742,19 +863,7 @@ server <- function(input, output, session) {
       cat("Executing query:", query, "\n")
 
       tryCatch({
-        # Use cached query with 5-minute TTL for search results
-        params <- list(
-          search = current_search,
-          tipo = current_tipo,
-          limit = current_mostrar
-        )
-        result <- cached_query(
-          connection = secure_db_connection,
-          query = query,
-          params = params,
-          ttl = 5 * 60,  # 5 minutes
-          cache_type = "library_search"
-        )
+        result <- dbGetQuery(secure_db_connection, query)
         cat("Query returned", nrow(result), "rows\n")
         if (nrow(result) == 0) {
           return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
@@ -791,35 +900,11 @@ server <- function(input, output, session) {
     }
 
     tryCatch({
-      # Execute all basic stats with caching (15-minute TTL for dashboard stats)
-      total_result <- cached_query(
-        secure_db_connection,
-        paste("SELECT COUNT(*) as total FROM", DOCUMENTS_TABLE),
-        list(stat = "total"),
-        ttl = 15 * 60,
-        cache_type = "home_stats"
-      )
-      types_result <- cached_query(
-        secure_db_connection,
-        paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE),
-        list(stat = "types"),
-        ttl = 15 * 60,
-        cache_type = "home_stats"
-      )
-      latest_result <- cached_query(
-        secure_db_connection,
-        paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE),
-        list(stat = "latest"),
-        ttl = 15 * 60,
-        cache_type = "home_stats"
-      )
-      oldest_result <- cached_query(
-        secure_db_connection,
-        paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE),
-        list(stat = "oldest"),
-        ttl = 15 * 60,
-        cache_type = "home_stats"
-      )
+      # Execute all basic stats in separate queries (will optimize to single query in Phase 3)
+      total_result <- dbGetQuery(secure_db_connection, paste("SELECT COUNT(*) as total FROM", DOCUMENTS_TABLE))
+      types_result <- dbGetQuery(secure_db_connection, paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE))
+      latest_result <- dbGetQuery(secure_db_connection, paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE))
+      oldest_result <- dbGetQuery(secure_db_connection, paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE))
 
       list(
         total_docs = total_result$total,
@@ -1403,12 +1488,17 @@ server <- function(input, output, session) {
   })
 
   # Timeline chart - federal documents over years
-  output$federal_timeline <- plotly::renderPlotly({
-    if (!DB_AVAILABLE) return(NULL)
+  output$federal_timeline <- renderPlot({
+    if (!DB_AVAILABLE) {
+      plot.new()
+      text(0.5, 0.5, "Banco de dados não disponível", cex = 1.2, col = "gray")
+      return()
+    }
 
     tryCatch({
-      # Query federal documents by year with caching
-      query <- "SELECT
+      # Query federal documents by year
+      timeline_data <- dbGetQuery(secure_db_connection,
+        "SELECT
           EXTRACT(YEAR FROM data::date) as year,
           COUNT(*) as count
         FROM documents
@@ -1417,92 +1507,54 @@ server <- function(input, output, session) {
           AND data != ''
           AND EXTRACT(YEAR FROM data::date) >= 2000
         GROUP BY year
-        ORDER BY year"
+        ORDER BY year")
 
-      timeline_data <- cached_query(
-        connection = secure_db_connection,
-        query = query,
-        params = list(federal = "timeline"),
-        ttl = 15 * 60,
-        cache_type = "federal_timeline"
-      )
+      if (nrow(timeline_data) == 0) {
+        plot.new()
+        text(0.5, 0.5, "Sem dados disponíveis", cex = 1.2, col = "gray")
+        return()
+      }
 
-      if (is.null(timeline_data) || nrow(timeline_data) == 0) return(NULL)
+      # Create timeline plot
+      par(mar = c(4, 4, 2, 1), family = "sans")
+      plot(timeline_data$year, timeline_data$count,
+           type = "l", lwd = 3, col = "#ea580c",
+           xlab = "Ano", ylab = "Número de Documentos",
+           main = "",
+           las = 1, cex.axis = 0.9, cex.lab = 1.0)
 
-      # Calculate trend line if enough data
+      # Add points
+      points(timeline_data$year, timeline_data$count,
+             pch = 19, col = "#ea580c", cex = 1.2)
+
+      # Add grid
+      grid(col = "gray90", lty = 1)
+
+      # Add trend line
       if (nrow(timeline_data) > 2) {
         trend_model <- lm(count ~ year, data = timeline_data)
-        timeline_data$trend <- predict(trend_model)
+        lines(timeline_data$year, predict(trend_model),
+              col = "#dc2626", lty = 2, lwd = 2)
       }
-
-      # Create interactive plotly timeline
-      p <- plot_ly(data = timeline_data) %>%
-        add_trace(
-          x = ~year,
-          y = ~count,
-          type = "scatter",
-          mode = "lines+markers",
-          name = "Documentos",
-          line = list(color = "#ea580c", width = 3),
-          marker = list(size = 8, color = "#ea580c"),
-          hovertemplate = paste(
-            "<b>Ano:</b> %{x}<br>",
-            "<b>Documentos:</b> %{y:,}<br>",
-            "<extra></extra>"
-          )
-        )
-
-      # Add trend line if available
-      if (nrow(timeline_data) > 2) {
-        p <- p %>%
-          add_trace(
-            x = ~year,
-            y = ~trend,
-            type = "scatter",
-            mode = "lines",
-            name = "Tendência",
-            line = list(color = "#dc2626", width = 2, dash = "dash"),
-            hoverinfo = "skip"
-          )
-      }
-
-      p %>%
-        layout(
-          xaxis = list(
-            title = "Ano",
-            showgrid = TRUE,
-            gridcolor = "#f0f0f0"
-          ),
-          yaxis = list(
-            title = "Número de Documentos",
-            showgrid = TRUE,
-            gridcolor = "#f0f0f0"
-          ),
-          hovermode = "x unified",
-          margin = list(l = 80, r = 50, t = 50, b = 80),
-          plot_bgcolor = "#fafafa",
-          paper_bgcolor = "white",
-          showlegend = TRUE,
-          legend = list(x = 0.02, y = 0.98)
-        ) %>%
-        config(
-          displayModeBar = TRUE,
-          displaylogo = FALSE,
-          modeBarButtonsToRemove = c("lasso2d", "select2d")
-        )
 
     }, error = function(e) {
-      NULL
+      plot.new()
+      text(0.5, 0.5, paste("Erro:", e$message), cex = 1, col = "red")
     })
   })
 
   # Type breakdown chart
-  output$federal_type_breakdown <- plotly::renderPlotly({
-    if (!DB_AVAILABLE) return(NULL)
+  output$federal_type_breakdown <- renderPlot({
+    if (!DB_AVAILABLE) {
+      plot.new()
+      text(0.5, 0.5, "Banco de dados não disponível", cex = 1.2, col = "gray")
+      return()
+    }
 
     tryCatch({
-      # Query federal documents by type (extracted from URN) with caching
-      query <- "SELECT
+      # Query federal documents by type (extracted from URN)
+      type_data <- dbGetQuery(secure_db_connection,
+        "SELECT
           CASE
             WHEN SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') IS NULL OR SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') = ''
             THEN 'Não especificado'
@@ -1513,62 +1565,35 @@ server <- function(input, output, session) {
         WHERE estado = 'Federal'
         GROUP BY tipo
         ORDER BY count DESC
-        LIMIT 8"
+        LIMIT 8")
 
-      type_data <- cached_query(
-        connection = secure_db_connection,
-        query = query,
-        params = list(federal = "type_breakdown"),
-        ttl = 15 * 60,
-        cache_type = "federal_type"
-      )
+      if (nrow(type_data) == 0) {
+        plot.new()
+        text(0.5, 0.5, "Sem dados disponíveis", cex = 1.2, col = "gray")
+        return()
+      }
 
-      if (is.null(type_data) || nrow(type_data) == 0) return(NULL)
+      # Convert count to numeric and create named vector
+      counts <- as.numeric(type_data$count)
+      names(counts) <- type_data$tipo
 
-      # Generate color palette
-      n_colors <- nrow(type_data)
-      colors <- colorRampPalette(c("#fed7aa", "#ea580c"))(n_colors)
+      # Create horizontal bar chart
+      par(mar = c(4, 8, 2, 2), family = "sans")
+      barplot(counts,
+              horiz = TRUE,
+              las = 1,
+              col = colorRampPalette(c("#fed7aa", "#ea580c"))(length(counts)),
+              border = NA,
+              xlab = "Número de Documentos",
+              cex.names = 0.85,
+              cex.axis = 0.9)
 
-      # Create interactive plotly horizontal bar chart
-      plot_ly(
-        data = type_data,
-        x = ~count,
-        y = ~reorder(tipo, count),
-        type = "bar",
-        orientation = "h",
-        marker = list(
-          color = colors,
-          line = list(width = 0)
-        ),
-        hovertemplate = paste(
-          "<b>Tipo:</b> %{y}<br>",
-          "<b>Documentos:</b> %{x:,}<br>",
-          "<extra></extra>"
-        )
-      ) %>%
-        layout(
-          xaxis = list(
-            title = "Número de Documentos",
-            showgrid = TRUE,
-            gridcolor = "#f0f0f0"
-          ),
-          yaxis = list(
-            title = "",
-            showgrid = FALSE
-          ),
-          hovermode = "closest",
-          margin = list(l = 200, r = 50, t = 50, b = 80),
-          plot_bgcolor = "#fafafa",
-          paper_bgcolor = "white"
-        ) %>%
-        config(
-          displayModeBar = TRUE,
-          displaylogo = FALSE,
-          modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d")
-        )
+      # Add grid
+      grid(col = "gray90", lty = 1, nx = NULL, ny = NA)
 
     }, error = function(e) {
-      NULL
+      plot.new()
+      text(0.5, 0.5, paste("Erro:", e$message), cex = 1, col = "red")
     })
   })
 
@@ -1649,133 +1674,253 @@ server <- function(input, output, session) {
     if (!DB_AVAILABLE) return(NULL)
 
     tryCatch({
-      # Use cached queries with 15-minute TTL for analytics
-      type_query <- paste("SELECT tipo AS type, COUNT(*) AS n FROM", DOCUMENTS_TABLE, "GROUP BY tipo ORDER BY n DESC")
-      month_query <- paste0("SELECT DATE_TRUNC('month', data) AS month, COUNT(*) AS n ",
-                           "FROM ", DOCUMENTS_TABLE, " ",
-                           "GROUP BY month ",
-                           "ORDER BY month")
-
       list(
-        by_type = cached_query(
-          connection = secure_db_connection,
-          query = type_query,
-          params = list(analytics = "by_type"),
-          ttl = 15 * 60,
-          cache_type = "analytics_type"
-        ),
-        by_month = cached_query(
-          connection = secure_db_connection,
-          query = month_query,
-          params = list(analytics = "by_month"),
-          ttl = 15 * 60,
-          cache_type = "analytics_month"
-        )
+        by_type = dbGetQuery(secure_db_connection,
+          paste("SELECT tipo AS type, COUNT(*) AS n FROM", DOCUMENTS_TABLE, "GROUP BY tipo ORDER BY n DESC")),
+        by_month = dbGetQuery(secure_db_connection,
+          paste0("SELECT DATE_TRUNC('month', data) AS month, COUNT(*) AS n ",
+                 "FROM ", DOCUMENTS_TABLE, " ",
+                 "GROUP BY month ",
+                 "ORDER BY month"))
       )
     }, error = function(e) NULL)
   })
 
-  output$analytics_type_bar <- plotly::renderPlotly({
+  output$analytics_type_bar <- renderPlot({
     dat <- analytics_data()
-    if (is.null(dat)) return(NULL)
-
-    # Create interactive plotly bar chart
-    plot_ly(
-      data = dat$by_type,
-      x = ~n,
-      y = ~reorder(type, n),
-      type = "bar",
-      orientation = "h",
-      marker = list(color = "steelblue"),
-      hovertemplate = paste(
-        "<b>Tipo:</b> %{y}<br>",
-        "<b>Quantidade:</b> %{x:,}<br>",
-        "<extra></extra>"
-      )
-    ) %>%
-      layout(
-        title = list(
-          text = "Documentos por Tipo",
-          font = list(size = 16)
-        ),
-        xaxis = list(
-          title = "Quantidade de Documentos",
-          showgrid = TRUE,
-          gridcolor = "#e0e0e0"
-        ),
-        yaxis = list(
-          title = "Tipo",
-          showgrid = FALSE
-        ),
-        hovermode = "closest",
-        margin = list(l = 150, r = 50, t = 80, b = 50),
-        plot_bgcolor = "#fafafa",
-        paper_bgcolor = "white"
-      ) %>%
-      config(
-        displayModeBar = TRUE,
-        displaylogo = FALSE,
-        modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d")
-      )
+    if (is.null(dat)) return()
+    ggplot(dat$by_type, aes(x = reorder(type, n), y = n)) +
+      geom_col(fill = "steelblue") +
+      coord_flip() +
+      labs(x = "Tipo", y = "Quantidade de Documentos", title = "Documentos por Tipo") +
+      theme_minimal()
   })
 
-  output$analytics_month_line <- plotly::renderPlotly({
+  output$analytics_month_line <- renderPlot({
     dat <- analytics_data()
-    if (is.null(dat)) return(NULL)
+    if (is.null(dat)) return()
+    ggplot(dat$by_month, aes(x = as.Date(month), y = n)) +
+      geom_line(color = "firebrick", size = 1) +
+      geom_point(color = "firebrick") +
+      labs(x = "Mês", y = "Quantidade", title = "Documentos por Mês") +
+      theme_minimal()
+  })
 
-    # Create interactive plotly timeline with range selector
-    plot_ly(
-      data = dat$by_month,
-      x = ~as.Date(month),
-      y = ~n,
-      type = "scatter",
-      mode = "lines+markers",
-      line = list(color = "firebrick", width = 2),
-      marker = list(size = 6, color = "firebrick"),
-      hovertemplate = paste(
-        "<b>Data:</b> %{x|%B %Y}<br>",
-        "<b>Documentos:</b> %{y:,}<br>",
-        "<extra></extra>"
+  # -- ADVANCED VISUALIZATIONS SERVER LOGIC (Priority 6) --
+
+  # Reactive data for advanced visualizations
+  advanced_viz_data <- reactive({
+    if (!DB_AVAILABLE || is.null(secure_db_connection)) {
+      return(NULL)
+    }
+
+    tryCatch({
+      # Get document data for advanced visualizations
+      query <- paste0(
+        "SELECT tipo, data, titulo, ementa, estado ",
+        "FROM ", DOCUMENTS_TABLE, " ",
+        "WHERE data IS NOT NULL ",
+        "LIMIT 1000"  # Limit for performance
       )
-    ) %>%
-      layout(
-        title = list(
-          text = "Documentos por Mês",
-          font = list(size = 16)
-        ),
-        xaxis = list(
-          title = "Mês",
-          showgrid = TRUE,
-          gridcolor = "#e0e0e0",
-          rangeslider = list(visible = TRUE),
-          rangeselector = list(
-            buttons = list(
-              list(count = 6, label = "6M", step = "month", stepmode = "backward"),
-              list(count = 1, label = "1A", step = "year", stepmode = "backward"),
-              list(count = 5, label = "5A", step = "year", stepmode = "backward"),
-              list(step = "all", label = "Tudo")
-            ),
-            x = 0,
-            y = 1.1,
-            xanchor = "left",
-            yanchor = "top"
+      dbGetQuery(secure_db_connection, query)
+    }, error = function(e) {
+      cat("Error loading advanced viz data:", e$message, "\n")
+      NULL
+    })
+  }) %>% bindEvent(input$refresh_viz, ignoreNULL = FALSE)
+
+  # Network visualization
+  output$advanced_network_viz <- renderUI({
+    data <- advanced_viz_data()
+    if (is.null(data) || nrow(data) == 0) {
+      return(div(
+        class = "alert alert-warning",
+        icon("exclamation-triangle"),
+        " Dados insuficientes para gerar rede de citações. ",
+        "Necessário conectar ao banco de dados e ter dados disponíveis."
+      ))
+    }
+
+    # Check if networkD3 is available
+    if (!requireNamespace("networkD3", quietly = TRUE)) {
+      return(div(
+        class = "alert alert-warning",
+        icon("exclamation-triangle"),
+        " Pacote 'networkD3' não instalado. ",
+        "Execute: install.packages('networkD3')"
+      ))
+    }
+
+    # Create simple network based on document types
+    tryCatch({
+      nodes <- data.frame(
+        name = unique(data$tipo),
+        group = 1
+      )
+
+      # Create edges based on co-occurrence by date
+      edges_list <- list()
+      for (i in seq_len(min(nrow(data) - 1, 100))) {
+        edges_list[[i]] <- data.frame(
+          source = match(data$tipo[i], nodes$name) - 1,
+          target = match(data$tipo[i + 1], nodes$name) - 1,
+          value = 1
+        )
+      }
+      edges <- do.call(rbind, edges_list)
+      edges <- edges[edges$source != edges$target, ]
+
+      network <- networkD3::forceNetwork(
+        Links = edges,
+        Nodes = nodes,
+        Source = "source",
+        Target = "target",
+        Value = "value",
+        NodeID = "name",
+        Group = "group",
+        opacity = 0.9,
+        zoom = TRUE,
+        fontSize = 14
+      )
+
+      network
+    }, error = function(e) {
+      div(
+        class = "alert alert-danger",
+        icon("times-circle"),
+        " Erro ao gerar rede: ", e$message
+      )
+    })
+  })
+
+  # Treemap visualization
+  output$advanced_treemap_viz <- renderPlotly({
+    data <- advanced_viz_data()
+    if (is.null(data) || nrow(data) == 0) {
+      return(plotly::plot_ly() %>%
+        plotly::layout(
+          title = "Dados insuficientes",
+          annotations = list(
+            text = "Conecte ao banco de dados para visualizar",
+            showarrow = FALSE
           )
-        ),
-        yaxis = list(
-          title = "Quantidade",
-          showgrid = TRUE,
-          gridcolor = "#e0e0e0"
-        ),
-        hovermode = "x unified",
-        margin = list(l = 80, r = 50, t = 100, b = 120),
-        plot_bgcolor = "#fafafa",
-        paper_bgcolor = "white"
+        ))
+    }
+
+    # Create treemap of document types
+    tryCatch({
+      type_counts <- data %>%
+        dplyr::group_by(tipo) %>%
+        dplyr::summarise(count = n(), .groups = "drop") %>%
+        dplyr::arrange(desc(count))
+
+      plotly::plot_ly(
+        type = "treemap",
+        labels = type_counts$tipo,
+        parents = rep("", nrow(type_counts)),
+        values = type_counts$count,
+        textposition = "middle center",
+        marker = list(
+          colorscale = "Viridis"
+        )
       ) %>%
-      config(
-        displayModeBar = TRUE,
-        displaylogo = FALSE,
-        modeBarButtonsToRemove = c("lasso2d", "select2d")
+        plotly::layout(
+          title = "Distribuição Hierárquica de Tipos de Documentos"
+        )
+    }, error = function(e) {
+      plotly::plot_ly() %>%
+        plotly::layout(
+          title = paste("Erro:", e$message)
+        )
+    })
+  })
+
+  # Word cloud visualization
+  output$advanced_wordcloud_viz <- renderUI({
+    data <- advanced_viz_data()
+    if (is.null(data) || nrow(data) == 0) {
+      return(div(
+        class = "alert alert-warning",
+        icon("exclamation-triangle"),
+        " Dados insuficientes para gerar nuvem de palavras."
+      ))
+    }
+
+    # Check if wordcloud2 is available
+    if (!requireNamespace("wordcloud2", quietly = TRUE)) {
+      return(div(
+        class = "alert alert-warning",
+        icon("exclamation-triangle"),
+        " Pacote 'wordcloud2' não instalado. ",
+        "Execute: install.packages('wordcloud2')"
+      ))
+    }
+
+    tryCatch({
+      # Extract words from titles
+      words <- tolower(unlist(strsplit(data$titulo, " ")))
+      words <- words[nchar(words) > 3]  # Filter short words
+
+      word_freq <- as.data.frame(table(words))
+      colnames(word_freq) <- c("word", "freq")
+      word_freq <- word_freq[order(-word_freq$freq), ]
+      word_freq <- head(word_freq, input$wordcloud_max)
+
+      wordcloud2::wordcloud2(
+        data = word_freq,
+        size = 0.5,
+        color = "random-light",
+        backgroundColor = "white"
       )
+    }, error = function(e) {
+      div(
+        class = "alert alert-danger",
+        icon("times-circle"),
+        " Erro ao gerar nuvem de palavras: ", e$message
+      )
+    })
+  })
+
+  # Correlation visualization
+  output$advanced_correlation_viz <- renderPlot({
+    data <- advanced_viz_data()
+    if (is.null(data) || nrow(data) == 0) {
+      plot.new()
+      text(0.5, 0.5, "Dados insuficientes para análise de correlação", cex = 1.5)
+      return()
+    }
+
+    # Check if corrplot is available
+    if (!requireNamespace("corrplot", quietly = TRUE)) {
+      plot.new()
+      text(0.5, 0.5, "Pacote 'corrplot' não instalado\nExecute: install.packages('corrplot')", cex = 1.2)
+      return()
+    }
+
+    tryCatch({
+      # Create correlation matrix from document types and states
+      type_matrix <- table(data$tipo, data$estado)
+
+      # If we have enough data, compute correlation
+      if (nrow(type_matrix) > 1 && ncol(type_matrix) > 1) {
+        cor_matrix <- cor(t(type_matrix))
+        corrplot::corrplot(
+          cor_matrix,
+          method = "circle",
+          type = "upper",
+          tl.col = "black",
+          tl.srt = 45,
+          title = "Correlação entre Tipos de Documentos por Estado",
+          mar = c(0, 0, 2, 0)
+        )
+      } else {
+        plot.new()
+        text(0.5, 0.5, "Dados insuficientes para matriz de correlação", cex = 1.5)
+      }
+    }, error = function(e) {
+      plot.new()
+      text(0.5, 0.5, paste("Erro:", e$message), cex = 1.2)
+    })
   })
 
   # Note: Database connection is NOT closed per-session because it's a GLOBAL connection

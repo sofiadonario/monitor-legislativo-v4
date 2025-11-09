@@ -1,3 +1,17 @@
+# ============================================================================
+# ⚠️  DEPRECATED: This file is a duplicate and should NOT be used!
+# ============================================================================
+#
+# This is a duplicate of R/utils/cache_utils.R which is the canonical version.
+#
+# PLEASE USE: source("R/utils/cache_utils.R") instead
+#
+# This file is retained for historical reference but will be removed in a
+# future version. See docs/CACHE_CONSOLIDATION.md for details.
+#
+# Migration: Priority 5 - Cache File Consolidation (November 2025)
+# ============================================================================
+
 # Cache Utilities Module for Monitor Legislativo v4
 # Implements caching for improved performance
 
