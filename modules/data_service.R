@@ -129,35 +129,30 @@ load_demo_data <- function(filters = list(), limit = NULL, offset = NULL) {
   }
 }
 
-# Standardize column names across all data sources
+# Standardize column names across all data sources (Portuguese-only)
+# NOTE: All column names use Portuguese to match database schema
+# This eliminates translation overhead and maintains consistency
 standardize_columns <- function(data) {
-  # Map various column name variations to standard names
-  column_map <- c(
-    "titulo" = "title",
-    "título" = "title",
-    "categoria" = "category",
-    "estado" = "state",
-    "uf" = "state",
-    "data" = "date",
-    "data_publicacao" = "date",
-    "resumo" = "summary",
-    "ementa" = "summary",
-    "tipo_documento" = "document_type",
-    "tipo" = "document_type",
-    "autor" = "author",
-    "municipio" = "municipality",
-    "cidade" = "municipality"
+  # Map column name variations to standard Portuguese names
+  column_name_variants <- c(
+    "título" = "titulo",        # Normalize accented variant
+    "data_publicacao" = "data", # Normalize date column variants
+    "ementa" = "resumo",        # Normalize summary column variants
+    "tipo_documento" = "tipo",  # Normalize document type variants
+    "uf" = "estado",            # Normalize state abbreviation
+    "cidade" = "municipio"      # Normalize municipality variants
   )
 
-  # Rename columns if they exist
-  for (old_name in names(column_map)) {
-    if (old_name %in% names(data)) {
-      names(data)[names(data) == old_name] <- column_map[old_name]
+  # Rename variant columns if they exist
+  for (variant in names(column_name_variants)) {
+    if (variant %in% names(data)) {
+      standard_name <- column_name_variants[variant]
+      names(data)[names(data) == variant] <- standard_name
     }
   }
 
-  # Ensure required columns exist
-  required_cols <- c("id", "title", "category", "state", "date", "summary")
+  # Ensure required columns exist (using Portuguese names)
+  required_cols <- c("id", "titulo", "tipo", "estado", "data")
   for (col in required_cols) {
     if (!(col %in% names(data))) {
       data[[col]] <- NA
@@ -167,69 +162,76 @@ standardize_columns <- function(data) {
   return(data)
 }
 
-# Apply filters to dataset
+# Apply filters to dataset (using Portuguese column names)
 apply_filters <- function(data, filters) {
   if (length(filters) == 0) {
     return(data)
   }
 
-  # Search text filter
+  # Search text filter (titulo and resumo)
   if (!isTRUE(is.null(filters$search)) && nchar(filters$search) > 0) {
     search_pattern <- str_to_lower(filters$search)
     data <- data %>%
       filter(
-        str_detect(str_to_lower(title), search_pattern) |
-        str_detect(str_to_lower(summary), search_pattern)
+        str_detect(str_to_lower(titulo), search_pattern) |
+        (exists("resumo", where = data) && str_detect(str_to_lower(resumo), search_pattern))
       )
   }
 
-  # Category filter
-  if (!isTRUE(is.null(filters$category)) && filters$category != "All") {
-    data <- data %>% filter(category == filters$category)
+  # Category filter (categoria)
+  if (!isTRUE(is.null(filters$categoria)) && filters$categoria != "Todos") {
+    data <- data %>% filter(categoria == filters$categoria)
   }
 
-  # State filter
-  if (!isTRUE(is.null(filters$state)) && filters$state != "All") {
-    data <- data %>% filter(state == filters$state)
+  # State filter (estado)
+  if (!isTRUE(is.null(filters$estado)) && filters$estado != "Todos") {
+    data <- data %>% filter(estado == filters$estado)
   }
 
-  # Date range filter
-  if (!isTRUE(is.null(filters$start_date)) && !is.null(filters$end_date)) {
+  # Date range filter (data)
+  if (!isTRUE(is.null(filters$data_inicio)) && !is.null(filters$data_fim)) {
     data <- data %>%
-      filter(date >= filters$start_date & date <= filters$end_date)
+      filter(data >= filters$data_inicio & data <= filters$data_fim)
   }
 
-  # Document type filter
-  if (!isTRUE(is.null(filters$document_type)) && filters$document_type != "All") {
-    data <- data %>% filter(document_type == filters$document_type)
+  # Document type filter (tipo)
+  if (!isTRUE(is.null(filters$tipo)) && filters$tipo != "Todos") {
+    data <- data %>% filter(tipo == filters$tipo)
   }
 
   return(data)
 }
 
-# Build safe parameterized query
-build_safe_query <- function(filters, limit = NULL, offset = NULL) {
-  base_query <- "SELECT * FROM documents WHERE 1=1"
+# Build safe parameterized query (Portuguese column names)
+# This supports server-side pagination with optimized counting
+build_safe_query <- function(filters, limit = NULL, offset = NULL, table_name = "documents") {
+  base_query <- paste("SELECT * FROM", table_name, "WHERE 1=1")
   params <- list()
   param_counter <- 1
 
   # Add filter conditions (using Portuguese column names from database)
   if (!isTRUE(is.null(filters$search)) && nchar(filters$search) > 0) {
     base_query <- paste0(base_query, " AND (titulo ILIKE $", param_counter,
-                        " OR ementa ILIKE $", param_counter, ")")
+                        " OR resumo ILIKE $", param_counter, ")")
     params[[param_counter]] <- paste0("%", filters$search, "%")
     param_counter <- param_counter + 1
   }
 
-  if (!isTRUE(is.null(filters$category)) && filters$category != "All") {
+  if (!isTRUE(is.null(filters$categoria)) && filters$categoria != "Todos") {
     base_query <- paste0(base_query, " AND categoria = $", param_counter)
-    params[[param_counter]] <- filters$category
+    params[[param_counter]] <- filters$categoria
     param_counter <- param_counter + 1
   }
 
-  if (!isTRUE(is.null(filters$state)) && filters$state != "All") {
+  if (!isTRUE(is.null(filters$estado)) && filters$estado != "Todos") {
     base_query <- paste0(base_query, " AND estado = $", param_counter)
-    params[[param_counter]] <- filters$state
+    params[[param_counter]] <- filters$estado
+    param_counter <- param_counter + 1
+  }
+
+  if (!isTRUE(is.null(filters$tipo)) && filters$tipo != "Todos") {
+    base_query <- paste0(base_query, " AND tipo = $", param_counter)
+    params[[param_counter]] <- filters$tipo
     param_counter <- param_counter + 1
   }
 
@@ -243,6 +245,117 @@ build_safe_query <- function(filters, limit = NULL, offset = NULL) {
   }
 
   return(list(statement = base_query, params = params))
+}
+
+# Build optimized count query for pagination
+# This creates an efficient COUNT(*) query without loading data
+build_count_query <- function(filters, table_name = "documents") {
+  base_query <- paste("SELECT COUNT(*) as total FROM", table_name, "WHERE 1=1")
+  params <- list()
+  param_counter <- 1
+
+  # Add same filter conditions as main query (but no ORDER BY, LIMIT, OFFSET)
+  if (!isTRUE(is.null(filters$search)) && nchar(filters$search) > 0) {
+    base_query <- paste0(base_query, " AND (titulo ILIKE $", param_counter,
+                        " OR resumo ILIKE $", param_counter, ")")
+    params[[param_counter]] <- paste0("%", filters$search, "%")
+    param_counter <- param_counter + 1
+  }
+
+  if (!isTRUE(is.null(filters$categoria)) && filters$categoria != "Todos") {
+    base_query <- paste0(base_query, " AND categoria = $", param_counter)
+    params[[param_counter]] <- filters$categoria
+    param_counter <- param_counter + 1
+  }
+
+  if (!isTRUE(is.null(filters$estado)) && filters$estado != "Todos") {
+    base_query <- paste0(base_query, " AND estado = $", param_counter)
+    params[[param_counter]] <- filters$estado
+    param_counter <- param_counter + 1
+  }
+
+  if (!isTRUE(is.null(filters$tipo)) && filters$tipo != "Todos") {
+    base_query <- paste0(base_query, " AND tipo = $", param_counter)
+    params[[param_counter]] <- filters$tipo
+    param_counter <- param_counter + 1
+  }
+
+  return(list(statement = base_query, params = params))
+}
+
+# Build paginated query for library search
+# Returns both the query and count query for efficient server-side pagination
+build_paginated_library_query <- function(
+  search_term = "",
+  tipo = "Todos",
+  estado = "Todos",
+  year_min = NULL,
+  year_max = NULL,
+  date_start = NULL,
+  date_end = NULL,
+  sort_by = "data DESC",
+  limit = 100,
+  offset = 0,
+  table_name = "documents"
+) {
+  # Build WHERE conditions
+  conditions <- c("1=1")
+
+  # Search term filter (titulo and resumo)
+  if (nchar(search_term) > 0) {
+    search_escaped <- gsub("'", "''", search_term)
+    conditions <- c(conditions, sprintf(
+      "(titulo ILIKE '%%%s%%' OR resumo ILIKE '%%%s%%')",
+      search_escaped, search_escaped
+    ))
+  }
+
+  # Document type filter
+  if (tipo != "Todos" && nchar(tipo) > 0) {
+    tipo_escaped <- gsub("'", "''", tipo)
+    conditions <- c(conditions, sprintf("tipo = '%s'", tipo_escaped))
+  }
+
+  # State filter
+  if (estado != "Todos" && nchar(estado) > 0) {
+    estado_escaped <- gsub("'", "''", estado)
+    conditions <- c(conditions, sprintf("estado = '%s'", estado_escaped))
+  }
+
+  # Year range filter
+  if (!is.null(year_min) && !is.null(year_max)) {
+    conditions <- c(conditions, sprintf(
+      "EXTRACT(YEAR FROM data) BETWEEN %d AND %d",
+      as.integer(year_min), as.integer(year_max)
+    ))
+  }
+
+  # Date range filter
+  if (!is.null(date_start)) {
+    conditions <- c(conditions, sprintf("data >= '%s'", as.character(date_start)))
+  }
+  if (!is.null(date_end)) {
+    conditions <- c(conditions, sprintf("data <= '%s'", as.character(date_end)))
+  }
+
+  where_clause <- paste(conditions, collapse = " AND ")
+
+  # Build main query with pagination
+  main_query <- sprintf(
+    "SELECT id, titulo, tipo, data, estado FROM %s WHERE %s ORDER BY %s LIMIT %d OFFSET %d",
+    table_name, where_clause, sort_by, as.integer(limit), as.integer(offset)
+  )
+
+  # Build count query (no ORDER BY, LIMIT, OFFSET for efficiency)
+  count_query <- sprintf(
+    "SELECT COUNT(*) as total FROM %s WHERE %s",
+    table_name, where_clause
+  )
+
+  return(list(
+    main_query = main_query,
+    count_query = count_query
+  ))
 }
 
 # Clean Database Connection Management
@@ -436,36 +549,34 @@ release_db_connection <- function(con) {
   # Don't disconnect here as we're reusing the connection
 }
 
-# Create empty dataset with proper structure
+# Create empty dataset with proper structure (Portuguese column names)
 create_empty_dataset <- function() {
   data.frame(
     id = integer(),
-    title = character(),
-    category = character(),
-    state = character(),
-    date = as.Date(character()),
-    summary = character(),
-    document_type = character(),
-    author = character(),
+    titulo = character(),
+    tipo = character(),
+    estado = character(),
+    data = as.Date(character()),
+    resumo = character(),
+    autor = character(),
     urn = character(),
-    municipality = character(),
+    municipio = character(),
     stringsAsFactors = FALSE
   )
 }
 
-# Create minimal demo dataset
+# Create minimal demo dataset (Portuguese column names)
 create_demo_dataset <- function(n = 100) {
   data.frame(
     id = 1:n,
-    title = paste("Demo Law", 1:n),
-    category = sample(c("Federal", "State", "Municipal"), n, replace = TRUE),
-    state = sample(c("SP", "RJ", "MG", "RS", "PR"), n, replace = TRUE),
-    date = seq(Sys.Date() - 365, Sys.Date(), length.out = n),
-    summary = paste("This is a demo legislative document number", 1:n),
-    document_type = sample(c("Lei", "Decreto", "Portaria"), n, replace = TRUE),
-    author = paste("Author", sample(1:20, n, replace = TRUE)),
+    titulo = paste("Lei Demo", 1:n),
+    tipo = sample(c("Lei", "Decreto", "Portaria"), n, replace = TRUE),
+    estado = sample(c("SP", "RJ", "MG", "RS", "PR"), n, replace = TRUE),
+    data = seq(Sys.Date() - 365, Sys.Date(), length.out = n),
+    resumo = paste("Este é um documento legislativo demo número", 1:n),
+    autor = paste("Autor", sample(1:20, n, replace = TRUE)),
     urn = paste0("urn:demo:", 1:n),
-    municipality = sample(c("São Paulo", "Rio de Janeiro", "Belo Horizonte"), n, replace = TRUE),
+    municipio = sample(c("São Paulo", "Rio de Janeiro", "Belo Horizonte"), n, replace = TRUE),
     stringsAsFactors = FALSE
   )
 }
@@ -491,32 +602,32 @@ prepare_chart_data <- function(data, chart_type = "bar") {
 
 prepare_timeline_data <- function(data) {
   data %>%
-    mutate(date = as.Date(date)) %>%
-    group_by(date) %>%
+    mutate(data = as.Date(data)) %>%
+    group_by(data) %>%
     summarise(count = n(), .groups = 'drop') %>%
-    arrange(date)
+    arrange(data)
 }
 
 prepare_geographic_data <- function(data) {
   data %>%
-    group_by(state) %>%
+    group_by(estado) %>%
     summarise(
       count = n(),
-      documents = list(title),
+      documents = list(titulo),
       .groups = 'drop'
     )
 }
 
 prepare_category_data <- function(data) {
   data %>%
-    group_by(category) %>%
+    group_by(categoria) %>%
     summarise(count = n(), .groups = 'drop') %>%
     arrange(desc(count))
 }
 
 prepare_bar_chart_data <- function(data) {
   data %>%
-    group_by(document_type) %>%
+    group_by(tipo) %>%
     summarise(count = n(), .groups = 'drop') %>%
     arrange(desc(count)) %>%
     head(10)
@@ -524,15 +635,16 @@ prepare_bar_chart_data <- function(data) {
 
 create_empty_chart_data <- function(chart_type) {
   switch(chart_type,
-    "timeline" = data.frame(date = as.Date(character()), count = integer()),
-    "geographic" = data.frame(state = character(), count = integer()),
-    "category" = data.frame(category = character(), count = integer()),
+    "timeline" = data.frame(data = as.Date(character()), count = integer()),
+    "geographic" = data.frame(estado = character(), count = integer()),
+    "category" = data.frame(categoria = character(), count = integer()),
     data.frame(label = character(), count = integer())
   )
 }
 
 # Analytics data function (replacing analytics_data_fixed_csv)
 # FIX v50: Safe with isTRUE()
+# NOTE: Uses Portuguese column names (data, resumo)
 get_analytics_data <- function() {
   # Get all documents for analytics
   data <- get_documents(limit = DATA_SERVICE_CONFIG$max_results)
@@ -542,12 +654,12 @@ get_analytics_data <- function() {
     return(create_empty_dataset())
   }
 
-  # Prepare for analytics
+  # Prepare for analytics (using Portuguese column names)
   data <- data %>%
     mutate(
-      year = format(as.Date(date), "%Y"),
-      month = format(as.Date(date), "%Y-%m"),
-      has_summary = !is.na(summary) & nchar(summary) > 0
+      ano = format(as.Date(data), "%Y"),
+      mes = format(as.Date(data), "%Y-%m"),
+      tem_resumo = !is.na(resumo) & nchar(resumo) > 0
     )
 
   return(data)
@@ -558,5 +670,8 @@ list(
   get_documents = get_documents,
   get_analytics_data = get_analytics_data,
   prepare_chart_data = prepare_chart_data,
+  build_paginated_library_query = build_paginated_library_query,
+  build_count_query = build_count_query,
+  build_safe_query = build_safe_query,
   log_message = log_message
 )
