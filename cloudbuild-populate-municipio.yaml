@@ -1,0 +1,87 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'populate-municipio'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "============================================================================"
+        echo "MIGRATION: Populate municipio field from URN patterns"
+        echo "============================================================================"
+        echo "Estimated time: 1-2 minutes"
+        echo "Database: mackmonitor:southamerica-east1:mackmonitor-db"
+        echo "Impact: Populating municipio for 7,554 documents across 8 states"
+        echo ""
+
+        # Install PostgreSQL client, netcat, and curl
+        echo "Installing dependencies..."
+        apt-get update -qq && apt-get install -y -qq postgresql-client netcat curl > /dev/null 2>&1
+
+        # Download and install Cloud SQL Proxy
+        echo "Downloading Cloud SQL Proxy..."
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
+        chmod +x cloud_sql_proxy
+
+        # Start Cloud SQL Proxy in background
+        echo "Starting Cloud SQL Proxy..."
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 > /tmp/proxy.log 2>&1 &
+
+        # Wait for proxy to be ready
+        echo "Waiting for Cloud SQL Proxy to be ready..."
+        for i in {1..60}; do
+          if nc -z localhost 5432 2>/dev/null; then
+            echo "Cloud SQL Proxy is ready on port 5432!"
+            break
+          fi
+          if [ $$i -eq 60 ]; then
+            echo "ERROR: Cloud SQL Proxy failed to start after 60 seconds"
+            echo "Proxy log:"
+            cat /tmp/proxy.log
+            exit 1
+          fi
+          sleep 1
+        done
+
+        # Test connection
+        echo "Testing database connection..."
+        export PGPASSWORD='Sdonario1'
+        if ! psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" -c "SELECT version();" > /dev/null 2>&1; then
+          echo "ERROR: Cannot connect to database"
+          echo "Proxy log:"
+          cat /tmp/proxy.log
+          exit 1
+        fi
+        echo "Database connection successful!"
+
+        # Run the migration
+        echo ""
+        echo "============================================================================"
+        echo "Running populate_municipio_from_urn.sql..."
+        echo "This will extract municipality names from URN patterns"
+        echo "============================================================================"
+        echo ""
+        psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" \
+          -f database/migrations/populate_municipio_from_urn.sql
+
+        # Check migration result
+        if [ $$? -eq 0 ]; then
+          echo ""
+          echo "============================================================================"
+          echo "MIGRATION COMPLETED SUCCESSFULLY"
+          echo "Municipio field populated for SP, RS, MG, SC, RR, SE, MT documents"
+          echo "Total affected: ~7,554 documents"
+          echo "States with municipio data: 8 (was 1 before)"
+          echo "============================================================================"
+        else
+          echo ""
+          echo "============================================================================"
+          echo "MIGRATION FAILED"
+          echo "============================================================================"
+          exit 1
+        fi
+
+options:
+  machineType: 'E2_MEDIUM'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 300s

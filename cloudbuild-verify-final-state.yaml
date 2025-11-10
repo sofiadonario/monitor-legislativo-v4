@@ -1,0 +1,34 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'verify-final-state'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "============================================================================"
+        echo "VERIFICATION: Final State After Migration 003"
+        echo "============================================================================"
+        echo "Database: mackmonitor:southamerica-east1:mackmonitor-db"
+        echo ""
+
+        apt-get update -qq && apt-get install -y -qq postgresql-client netcat curl > /dev/null 2>&1
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 > /dev/null 2>&1 &
+
+        for i in {1..30}; do
+          if nc -z localhost 5432 2>/dev/null; then
+            break
+          fi
+          sleep 1
+        done
+
+        export PGPASSWORD='Sdonario1'
+        psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" \
+          -f verify-final-state.sql
+
+options:
+  machineType: 'E2_MEDIUM'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 180s
