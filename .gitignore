@@ -35,6 +35,7 @@ env.bak/
 venv.bak/
 Lib/
 Scripts/
+!scripts/
 pyvenv.cfg
 *_env/
 *env/
@@ -132,17 +133,26 @@ legacy/data/
 # Development & Testing Files
 #################################################
 
-# Test files and temporary scripts
-test_*.R
-debug_*.R
-temp*.R
-*_test*.R
-*_debug*.R
-syntax_test.R
-app_minimal*.R
-app_test*.R
-app_debug*.R
-app_backup*.R
+# Test files and temporary scripts in root (should be in tests/)
+/test_*.R
+/debug_*.R
+/temp*.R
+/*_test*.R
+/*_debug*.R
+/syntax_test.R
+/app_minimal*.R
+/app_test*.R
+/app_debug*.R
+/app_backup*.R
+/quick_test.R
+/setup_local_env.R
+
+# SQL analysis scripts in root (should be in database/analysis/)
+/analyze-*.sql
+/check-*.sql
+/find-*.sql
+/*_analysis*.sql
+/*_investigation*.sql
 
 # Archive and legacy code
 .archive/
@@ -177,6 +187,10 @@ Dockerfile.*
 # Docker artifacts
 .dockerignore.backup
 docker-compose.override.yml
+
+# Cloud Build configs (keeping main one only)
+cloudbuild-*.yaml
+!cloudbuild.yaml
 
 #################################################
 # Documentation & Reports

@@ -1,9 +1,0 @@
-```mermaid
-graph LR;
-  UserBrowser["User Browser"] -->|"HTTPS"| Frontend["React + Vite Frontend"];
-  Frontend -->|"REST / WebSocket"| FastAPI["Python FastAPI Backend"];
-  FastAPI -->|"SQL"| Postgres[("PostgreSQL DB")];
-  FastAPI -->|"HTTP"| RShiny["R Shiny Dashboard"];
-  UserBrowser -->|"HTTPS"| RShiny;
-  FastAPI -->>|"SSE/WebSocket"| Frontend;
-``` 
