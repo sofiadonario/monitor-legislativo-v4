@@ -35,7 +35,7 @@ RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
   install.packages(c( \
     'shiny', 'DT', 'leaflet', 'DBI', 'RPostgres', 'dplyr', 'bslib', 'shinythemes', \
     'data.table','lubridate','tidyr','magrittr','stringr','readr', \
-    'ggplot2','scales','RColorBrewer','plotly', \
+    'ggplot2','scales','RColorBrewer','plotly','viridis', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
     'shinythemes','shinycssloaders','shinyjs','shinyWidgets', \
     'units','s2','sf','openxlsx','xml2' \
@@ -43,7 +43,7 @@ RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
 
 # 5) Spatial data helpers (optional)
 RUN R -q -e "tryCatch({ \
-  pak::pkg_install(c('geobr', 'rmapshaper', 'geojsonio')); \
+  pak::pkg_install(c('geobr', 'rmapshaper', 'geojsonio', 'leafgl')); \
   cat('Spatial helpers installed successfully\\n') \
 }, error = function(e) { \
   cat('WARNING: Some spatial helpers failed (non-critical):', e\$message, '\\n') \

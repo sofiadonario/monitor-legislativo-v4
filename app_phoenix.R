@@ -70,6 +70,21 @@ if (file.exists("modules/geographic_enhanced.R")) {
 transport_module <- NULL
 # }
 
+# Load Estado Mapeado Map Visualization Module
+if (file.exists("modules/maps/estado_mapeado_ui.R")) {
+  source("modules/maps/estado_mapeado_ui.R")
+  cat("✅ Estado Mapeado UI Module loaded\n")
+} else {
+  cat("⚠️ Estado Mapeado UI Module not found\n")
+}
+
+if (file.exists("modules/maps/estado_mapeado_server.R")) {
+  source("modules/maps/estado_mapeado_server.R")
+  cat("✅ Estado Mapeado Server Module loaded\n")
+} else {
+  cat("⚠️ Estado Mapeado Server Module not found\n")
+}
+
 # Load Enhanced Library Module
 if (file.exists("R/modules/library_enhanced_module.R")) {
   source("R/modules/library_enhanced_module.R")
@@ -615,7 +630,23 @@ ui <- navbarPage(
               " Módulo de Corredores de Transporte não disponível"
             )
           }
-        ) # End of Transport Corridors tabPanel
+        ), # End of Transport Corridors tabPanel
+
+        # TAB 3: Estado Mapeado Geographic Visualization
+        tabPanel(
+          "Mapa por Estado",
+          icon = icon("map-marker-alt"),
+          br(),
+          if (exists("estadoMapeadoUI")) {
+            estadoMapeadoUI("estado_mapeado_map")
+          } else {
+            div(
+              class = "alert alert-warning",
+              icon("exclamation-triangle"),
+              " Módulo de Visualização por Estado não disponível"
+            )
+          }
+        ) # End of Estado Mapeado tabPanel
 
       ) # End of tabsetPanel
     ) # End of fluidPage
@@ -785,6 +816,31 @@ server <- function(input, output, session) {
     )
   } else {
     cat("⚠️ Enhanced Library Module not available - using basic implementation\n")
+  }
+
+  # -- ESTADO MAPEADO MAP MODULE --
+  if (exists("estadoMapeadoServer") && DB_AVAILABLE) {
+    cat("✅ Initializing Estado Mapeado Map Module\n")
+    tryCatch({
+      estadoMapeadoServer(
+        "estado_mapeado_map",
+        db_connection = secure_db_connection,
+        table_name = DOCUMENTS_TABLE
+      )
+    }, error = function(e) {
+      cat("❌ Error initializing Estado Mapeado Module:", e$message, "\n")
+    })
+  } else {
+    if (!exists("estadoMapeadoServer")) {
+      cat("⚠️ Estado Mapeado Module not available\n")
+    }
+    if (!DB_AVAILABLE) {
+      cat("⚠️ Database not available - Estado Mapeado Module disabled\n")
+    }
+  }
+
+  # -- BASIC LIBRARY SERVER FALLBACK --
+  if (!exists("libraryEnhancedServer")) {
 
     # FALLBACK: Basic library implementation
     # 1. A reactiveValues object to hold the current filter state.

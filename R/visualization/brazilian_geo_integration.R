@@ -34,11 +34,10 @@ required_packages <- c(
   "rmapshaper"       # Map simplification for performance
 )
 
+# Disabled automatic package installation - all packages should be pre-installed
 for (pkg in required_packages) {
   if (!require(pkg, quietly = TRUE, character.only = TRUE)) {
-    cat("📦 Installing", pkg, "...\n")
-    install.packages(pkg)
-    library(pkg, character.only = TRUE)
+    stop(paste0("Required package '", pkg, "' is not installed. Please install it manually."))
   }
 }
 
