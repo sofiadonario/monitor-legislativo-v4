@@ -145,6 +145,7 @@ app_debug*.R
 app_backup*.R
 
 # Archive and legacy code
+.archive/
 archive/temporary/
 archive/app_development_versions/
 archive/backup_files/
@@ -190,6 +191,9 @@ docker-compose.override.yml
 !MIGRATION_PLAN.md
 !REPOSITORY_CLEANUP.md
 !DEBUGGING_LOG.md
+!docs/FILE_ORGANIZATION_MAP.md
+!docs/ORGANIZATION_PLAN.md
+!analysis/README.md
 
 # Reports and analysis
 *_REPORT*.md

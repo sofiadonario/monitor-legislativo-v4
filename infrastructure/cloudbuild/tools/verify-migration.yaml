@@ -1,0 +1,43 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'verify-migration-010-status'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "=========================================="
+        echo "VERIFY MIGRATION 010 STATUS"
+        echo "=========================================="
+
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 &
+        PROXY_PID=$$!
+
+        for i in {1..30}; do
+          if nc -z 127.0.0.1 5432 2>/dev/null; then
+            break
+          fi
+          sleep 2
+        done
+
+        export PGPASSWORD="Sdonario1"
+        apt-get update && apt-get install -y postgresql-client
+
+        echo ""
+        echo "Current estado_mapeado distribution:"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT
+          COUNT(*) FILTER (WHERE estado_mapeado IS NULL) as null_count,
+          COUNT(*) FILTER (WHERE estado_mapeado = 'Nacional') as nacional,
+          COUNT(*) FILTER (WHERE estado_mapeado = 'Estadual') as estadual,
+          COUNT(*) FILTER (WHERE estado_mapeado = 'Não Identificado') as nao_identificado,
+          COUNT(*) as total
+        FROM documents;"
+
+        kill $$PROXY_PID 2>/dev/null || true
+
+timeout: 300s
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
