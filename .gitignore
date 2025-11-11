@@ -362,6 +362,21 @@ legacy/r-shiny/
 /r-shiny-app/
 /fixes/
 /test_choropleth_direct_files/
+/legacy/
+/archive/
+
+# Root-level directories that should be in subdirectories
+/cdn/
+/compliance/
+/health/
+/monitoring/
+/performance/
+/pipeline/
+/sql/
+/testing/
+/docker/
+/recruitment/
+/deployment/
 
 # Backup and old files
 *_DESKTOP-*

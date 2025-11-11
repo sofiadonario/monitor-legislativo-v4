@@ -23,7 +23,17 @@
       "Bash(then mv verify-final-state.sql database/analysis/)",
       "Bash(do if [ -d \"$dir\" ])",
       "Bash(then rm -rf \"$dir\")",
-      "Bash(then mv \"$dir\" .archive/)"
+      "Bash(then mv \"$dir\" .archive/)",
+      "Bash(if [ -d \"sql\" ])",
+      "Bash(then for file in sql/*.sql)",
+      "Bash(then mv \"$file\" database/analysis/)",
+      "Bash(if [ -d \"testing\" ])",
+      "Bash(then mkdir -p tests/performance)",
+      "Bash(then mv \"$file\" tests/performance/)",
+      "Bash(then mv \"$dir\" scripts/)",
+      "Bash(if [ -d \"docker\" ])",
+      "Bash(then mv docker infrastructure/)",
+      "Bash(else echo \"Directory $dir/ is not empty\")"
     ],
     "deny": [],
     "ask": []

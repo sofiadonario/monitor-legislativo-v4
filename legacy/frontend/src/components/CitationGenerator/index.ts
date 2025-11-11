@@ -1,1 +1,0 @@
-export { CitationGenerator } from './CitationGenerator';
