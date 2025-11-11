@@ -121,6 +121,7 @@ reports/
 exports/
 logs/
 *.log
+app_output.log
 
 # Large datasets
 data_current/processed/**/*.csv
@@ -357,6 +358,10 @@ legacy/backend/
 legacy/frontend/
 legacy/config/
 legacy/r-shiny/
+/_legacy/
+/r-shiny-app/
+/fixes/
+/test_choropleth_direct_files/
 
 # Backup and old files
 *_DESKTOP-*
@@ -364,6 +369,12 @@ legacy/r-shiny/
 app.R.backup*
 *_backup_*
 backup_*
+*.pre-bslib
+backup_before_*
+ui_v*.R
+/global.R.pre-bslib
+/server.R.pre-bslib
+/ui.R.pre-bslib
 
 # Specific files to ignore
 found_municipalities.csv
@@ -374,3 +385,10 @@ municipality_*.png
 activity_heatmap.png
 states_timeline.png
 transport_timeline.png
+
+# Cloud SQL Proxy artifacts
+mackmonitor:*
+
+# Personal/unrelated files
+R analysis/
+"R analysis/"

@@ -16,7 +16,14 @@
       "Bash(if [ -d \"implementation\" ])",
       "Bash(then mv implementation .archive/)",
       "Bash(else echo \"implementation/ does not exist\")",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(do if [ -f \"$file\" ])",
+      "Bash(then mv \"$file\" .archive/old_backups/)",
+      "Bash(if [ -f \"verify-final-state.sql\" ])",
+      "Bash(then mv verify-final-state.sql database/analysis/)",
+      "Bash(do if [ -d \"$dir\" ])",
+      "Bash(then rm -rf \"$dir\")",
+      "Bash(then mv \"$dir\" .archive/)"
     ],
     "deny": [],
     "ask": []
