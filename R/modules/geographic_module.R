@@ -21,6 +21,16 @@ library(memoise)
 # Load IBGE integration utilities
 source("R/utils/ibge_integration.R", local = TRUE)
 
+# Load geographic layer calculation functions
+if (file.exists("R/modules/geographic_layers.R")) {
+  source("R/modules/geographic_layers.R", local = TRUE)
+}
+
+# Load enhanced rendering functions
+if (file.exists("R/modules/geographic_enhanced_rendering.R")) {
+  source("R/modules/geographic_enhanced_rendering.R", local = TRUE)
+}
+
 #' Geographic Module UI
 #' 
 #' Creates the user interface for geographic analysis including interactive maps,
@@ -98,14 +108,34 @@ geographicUI <- function(id) {
             language = "pt-BR"
           ),
           
-          # Map visualization options
+          # Map visualization options - Enhanced Layer Control
+          h5("Camadas de Dados:", style = "color: #2c3e50; margin-top: 15px;"),
           checkboxGroupInput(
             inputId = ns("map_layers"),
-            label = "Camadas do Mapa:",
+            label = NULL,
+            choices = list(
+              "📊 População por Estado" = "population_density",
+              "📈 Legislação per Capita (por 100k hab)" = "bills_per_capita",
+              "📝 Distribuição de Tipos de Documentos" = "document_types",
+              "🏛️ Nível de Autoridade (Federal/Estadual/Municipal)" = "authority_levels",
+              "🚗 Legislação de Transporte" = "transport_docs",
+              "⚡ Produtividade Legislativa (últimos 5 anos)" = "productivity",
+              "⭐ Índice de Qualidade de Documentos" = "quality_index",
+              "🗓️ Atividade Recente (últimos 5 anos)" = "recent_activity",
+              "🏙️ Cobertura Municipal" = "municipal_coverage"
+            ),
+            selected = c("bills_per_capita")
+          ),
+
+          hr(),
+
+          h5("Camadas de Referência:", style = "color: #2c3e50;"),
+          checkboxGroupInput(
+            inputId = ns("reference_layers"),
+            label = NULL,
             choices = list(
               "Limites Estaduais" = "states",
               "Limites Municipais" = "municipalities",
-              "Densidade Populacional" = "population",
               "Rodovias Principais" = "highways"
             ),
             selected = c("states")
@@ -696,9 +726,27 @@ geographicServer <- function(id, reactive_data) {
       })
     }
     
-    # Render interactive map with IBGE boundaries
+    # Render interactive map with IBGE boundaries and toggleable layers
     output$interactive_map <- renderLeaflet({
-      # Create base map centered on Brazil
+      # Use enhanced rendering function with layer controls
+      if (exists("render_enhanced_geographic_map")) {
+        tryCatch({
+          # Get database connection from parent environment if available
+          db_conn <- if (exists("db_connection", envir = parent.frame())) {
+            get("db_connection", envir = parent.frame())
+          } else {
+            NULL
+          }
+
+          map <- render_enhanced_geographic_map(values, input, db_conn)
+          return(map)
+
+        }, error = function(e) {
+          message("Enhanced rendering failed, using fallback: ", e$message)
+        })
+      }
+
+      # Fallback to basic map if enhanced rendering fails
       map <- leaflet() %>%
         addProviderTiles(
           providers$CartoDB.Positron,
