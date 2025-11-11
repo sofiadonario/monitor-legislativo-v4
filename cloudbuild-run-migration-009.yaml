@@ -1,0 +1,90 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'run-migration-009-backup'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "=========================================="
+        echo "MIGRATION 009: BACKUP ESTADO_MAPEADO"
+        echo "=========================================="
+        echo ""
+
+        # Download cloud_sql_proxy using curl
+        echo "Downloading cloud_sql_proxy..."
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
+
+        if [ ! -f cloud_sql_proxy ]; then
+          echo "ERROR: cloud_sql_proxy download failed"
+          exit 1
+        fi
+
+        echo "Download successful"
+
+        echo "Setting execute permissions..."
+        chmod +x cloud_sql_proxy
+
+        if [ ! -x cloud_sql_proxy ]; then
+          echo "ERROR: chmod failed or file is not executable"
+          exit 1
+        fi
+
+        echo "File size: $$(ls -lh cloud_sql_proxy)"
+        echo "File permissions: $$(ls -l cloud_sql_proxy)"
+
+        # Start Cloud SQL Proxy
+        echo "Starting Cloud SQL Proxy..."
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 &
+        PROXY_PID=$$!
+        echo "Proxy started with PID: $$PROXY_PID"
+
+        # Wait for proxy to be ready with retry loop
+        echo "Waiting for Cloud SQL Proxy to be ready..."
+        for i in {1..30}; do
+          if nc -z 127.0.0.1 5432 2>/dev/null; then
+            echo "Proxy is ready!"
+            break
+          fi
+          echo "Waiting... ($$i/30)"
+          sleep 2
+        done
+
+        # Set password
+        export PGPASSWORD="Sdonario1"
+
+        # Install PostgreSQL client
+        apt-get update && apt-get install -y postgresql-client
+
+        # Run migration
+        echo "Running migration 009 (backup estado_mapeado)..."
+
+        # Step 1: Add backup column
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "ALTER TABLE documents ADD COLUMN IF NOT EXISTS estado_mapeado_backup TEXT;"
+
+        # Step 2: Copy current values to backup
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "UPDATE documents SET estado_mapeado_backup = estado_mapeado;"
+
+        # Step 3: Verify backup with simple query
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "SELECT COUNT(*) as original FROM documents WHERE estado_mapeado IS NOT NULL;"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "SELECT COUNT(*) as backup FROM documents WHERE estado_mapeado_backup IS NOT NULL;"
+
+        echo "Backup completed successfully"
+        MIGRATION_EXIT_CODE=0
+
+        # Cleanup
+        kill $$PROXY_PID 2>/dev/null || true
+
+        if [ $$MIGRATION_EXIT_CODE -eq 0 ]; then
+          echo ""
+          echo "✅ Migration 009 completed successfully!"
+          exit 0
+        else
+          echo ""
+          echo "❌ Migration 009 failed with exit code $$MIGRATION_EXIT_CODE"
+          exit $$MIGRATION_EXIT_CODE
+        fi
+
+timeout: 1200s  # 20 minutes
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY

@@ -1,0 +1,69 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'mark-bibliografia'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "=========================================="
+        echo "MARK BIBLIOGRAPHIC MATERIALS"
+        echo "=========================================="
+
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 &
+        PROXY_PID=$$!
+
+        for i in {1..30}; do
+          if nc -z 127.0.0.1 5432 2>/dev/null; then
+            break
+          fi
+          sleep 2
+        done
+
+        export PGPASSWORD="Sdonario1"
+        apt-get update && apt-get install -y postgresql-client
+
+        echo ""
+        echo "Marking bibliographic materials (NULL URN documents) as 'Bibliografia'..."
+
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        UPDATE documents
+        SET estado_mapeado = 'Bibliografia'
+        WHERE urn IS NULL
+          AND estado_mapeado IS NULL;"
+
+        echo ""
+        echo "Final distribution:"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT
+          COALESCE(estado_mapeado, 'NULL') as categoria,
+          COUNT(*) as count,
+          ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER(), 2) as pct
+        FROM documents
+        GROUP BY estado_mapeado
+        ORDER BY COUNT(*) DESC
+        LIMIT 20;"
+
+        echo ""
+        echo "Summary by document type:"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT
+          CASE
+            WHEN urn IS NULL THEN 'Bibliographic'
+            ELSE 'Legislative'
+          END as doc_type,
+          COUNT(*) as total,
+          COUNT(*) FILTER (WHERE estado_mapeado IS NOT NULL AND estado_mapeado != 'Bibliografia') as with_geo,
+          COUNT(*) FILTER (WHERE estado_mapeado = 'Bibliografia') as bibliografia,
+          COUNT(*) FILTER (WHERE estado_mapeado IS NULL) as unmapped,
+          ROUND(100.0 * COUNT(*) FILTER (WHERE estado_mapeado IS NOT NULL AND estado_mapeado != 'Bibliografia') / COUNT(*), 2) as pct_geo_coverage
+        FROM documents
+        GROUP BY doc_type;"
+
+        kill $$PROXY_PID 2>/dev/null || true
+
+timeout: 300s
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY

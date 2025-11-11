@@ -1,0 +1,112 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'investigate-null-urns'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "=========================================="
+        echo "INVESTIGATE NULL URN DOCUMENTS"
+        echo "=========================================="
+
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 &
+        PROXY_PID=$$!
+
+        for i in {1..30}; do
+          if nc -z 127.0.0.1 5432 2>/dev/null; then
+            break
+          fi
+          sleep 2
+        done
+
+        export PGPASSWORD="Sdonario1"
+        apt-get update && apt-get install -y postgresql-client
+
+        echo ""
+        echo "1. Field availability for NULL URN documents:"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT
+          COUNT(*) as total_null_urn,
+          COUNT(tipo) as has_tipo,
+          COUNT(autoridade) as has_autoridade,
+          COUNT(poder) as has_poder,
+          COUNT(numero) as has_numero,
+          COUNT(ano) as has_ano,
+          COUNT(data) as has_data,
+          COUNT(ementa) as has_ementa,
+          COUNT(url) as has_url
+        FROM documents
+        WHERE urn IS NULL;"
+
+        echo ""
+        echo "2. Sample of NULL URN documents with their available fields:"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT
+          id,
+          tipo,
+          autoridade,
+          poder,
+          numero,
+          ano,
+          SUBSTRING(ementa, 1, 80) as ementa_sample,
+          SUBSTRING(url, 1, 100) as url_sample
+        FROM documents
+        WHERE urn IS NULL
+        LIMIT 20;"
+
+        echo ""
+        echo "3. Tipo distribution for NULL URN documents:"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT
+          COALESCE(tipo, 'NULL') as tipo,
+          COUNT(*) as count,
+          ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER(), 2) as pct
+        FROM documents
+        WHERE urn IS NULL
+        GROUP BY tipo
+        ORDER BY COUNT(*) DESC
+        LIMIT 15;"
+
+        echo ""
+        echo "4. Autoridade distribution for NULL URN documents:"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT
+          COALESCE(autoridade, 'NULL') as autoridade,
+          COUNT(*) as count,
+          ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER(), 2) as pct
+        FROM documents
+        WHERE urn IS NULL
+        GROUP BY autoridade
+        ORDER BY COUNT(*) DESC
+        LIMIT 15;"
+
+        echo ""
+        echo "5. URL patterns for NULL URN documents:"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT
+          CASE
+            WHEN url LIKE '%federal%' THEN 'federal'
+            WHEN url LIKE '%senado%' THEN 'senado'
+            WHEN url LIKE '%camara%' THEN 'camara'
+            WHEN url LIKE '%planalto%' THEN 'planalto'
+            WHEN url LIKE '%stf%' THEN 'stf'
+            WHEN url LIKE '%stj%' THEN 'stj'
+            WHEN url LIKE '%tst%' THEN 'tst'
+            WHEN url IS NULL THEN 'NULL'
+            ELSE 'other'
+          END as url_pattern,
+          COUNT(*) as count,
+          ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER(), 2) as pct
+        FROM documents
+        WHERE urn IS NULL
+        GROUP BY url_pattern
+        ORDER BY COUNT(*) DESC;"
+
+        kill $$PROXY_PID 2>/dev/null || true
+
+timeout: 300s
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY

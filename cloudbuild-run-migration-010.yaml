@@ -1,0 +1,212 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'run-migration-010-urn-parser'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "=========================================="
+        echo "MIGRATION 010: IMPROVED URN PARSER"
+        echo "=========================================="
+        echo ""
+
+        # Download cloud_sql_proxy using curl
+        echo "Downloading cloud_sql_proxy..."
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
+
+        if [ ! -f cloud_sql_proxy ]; then
+          echo "ERROR: cloud_sql_proxy download failed"
+          exit 1
+        fi
+
+        echo "Download successful"
+
+        echo "Setting execute permissions..."
+        chmod +x cloud_sql_proxy
+
+        if [ ! -x cloud_sql_proxy ]; then
+          echo "ERROR: chmod failed or file is not executable"
+          exit 1
+        fi
+
+        echo "File size: $$(ls -lh cloud_sql_proxy)"
+        echo "File permissions: $$(ls -l cloud_sql_proxy)"
+
+        # Start Cloud SQL Proxy
+        echo "Starting Cloud SQL Proxy..."
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 &
+        PROXY_PID=$$!
+        echo "Proxy started with PID: $$PROXY_PID"
+
+        # Wait for proxy to be ready with retry loop
+        echo "Waiting for Cloud SQL Proxy to be ready..."
+        for i in {1..30}; do
+          if nc -z 127.0.0.1 5432 2>/dev/null; then
+            echo "Proxy is ready!"
+            break
+          fi
+          echo "Waiting... ($$i/30)"
+          sleep 2
+        done
+
+        # Set password
+        export PGPASSWORD="Sdonario1"
+
+        # Install PostgreSQL client
+        apt-get update && apt-get install -y postgresql-client
+
+        # Run migration
+        echo "Running migration 010 (improved URN parser)..."
+        echo "This may take several minutes for 119K+ documents..."
+        echo ""
+
+        # Execute inline SQL using heredoc
+        cat << 'MIGRATION_SQL' | psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo
+        DO \$\$
+        DECLARE
+            before_unidentified INTEGER;
+            after_unidentified INTEGER;
+            before_nacional INTEGER;
+            before_estadual INTEGER;
+            before_null INTEGER;
+            total_docs INTEGER;
+            updated_count INTEGER;
+        BEGIN
+            SELECT COUNT(*) INTO total_docs FROM documents;
+
+            SELECT COUNT(*) INTO before_unidentified
+            FROM documents
+            WHERE estado_mapeado IS NULL
+               OR estado_mapeado = 'Nacional'
+               OR estado_mapeado = 'Estadual'
+               OR estado_mapeado = 'Não Identificado';
+
+            SELECT COUNT(*) INTO before_nacional FROM documents WHERE estado_mapeado = 'Nacional';
+            SELECT COUNT(*) INTO before_estadual FROM documents WHERE estado_mapeado = 'Estadual';
+            SELECT COUNT(*) INTO before_null FROM documents WHERE estado_mapeado IS NULL;
+
+            RAISE NOTICE '========================================';
+            RAISE NOTICE 'BASELINE METRICS';
+            RAISE NOTICE '========================================';
+            RAISE NOTICE 'Total documents: %', total_docs;
+            RAISE NOTICE 'Unidentified before: % (%.2f%%)', before_unidentified,
+                         (before_unidentified * 100.0 / total_docs);
+            RAISE NOTICE '  - Nacional: %', before_nacional;
+            RAISE NOTICE '  - Estadual (generic): %', before_estadual;
+            RAISE NOTICE '  - NULL: %', before_null;
+            RAISE NOTICE '';
+
+            RAISE NOTICE 'Starting URN parsing update...';
+
+            UPDATE documents
+            SET estado_mapeado = CASE
+                WHEN LOWER(urn) LIKE '%:federal:%'
+                  OR LOWER(urn) LIKE '%:congresso.nacional:%' THEN 'Nacional'
+                WHEN urn ~* ':estado:([a-z]{2}):' THEN
+                    UPPER(substring(urn from ':estado:([a-z]{2}):'))
+                WHEN urn ~* ':estado:([a-z]{2}):municipal:' THEN
+                    UPPER(substring(urn from ':estado:([a-z]{2}):municipal:'))
+                WHEN urn ~* ':br:([a-z]{2}):' THEN
+                    UPPER(substring(urn from ':br:([a-z]{2}):'))
+                WHEN urn ~* 'assembleia[._]legislativa:([a-z]{2})' THEN
+                    UPPER(substring(urn from 'assembleia[._]legislativa:([a-z]{2})'))
+                WHEN LOWER(urn) LIKE '%distrito.federal%'
+                  OR LOWER(urn) LIKE '%distrito_federal%' THEN 'DF'
+                WHEN LOWER(urn) LIKE '%sao.paulo%' OR LOWER(urn) LIKE '%sao_paulo%' THEN 'SP'
+                WHEN LOWER(urn) LIKE '%rio.de.janeiro%' OR LOWER(urn) LIKE '%rio_de_janeiro%' THEN 'RJ'
+                WHEN LOWER(urn) LIKE '%minas.gerais%' OR LOWER(urn) LIKE '%minas_gerais%' THEN 'MG'
+                WHEN LOWER(urn) LIKE '%bahia%' THEN 'BA'
+                WHEN LOWER(urn) LIKE '%rio.grande.do.sul%' OR LOWER(urn) LIKE '%rio_grande_do_sul%' THEN 'RS'
+                WHEN LOWER(urn) LIKE '%parana%' THEN 'PR'
+                WHEN LOWER(urn) LIKE '%pernambuco%' THEN 'PE'
+                WHEN LOWER(urn) LIKE '%ceara%' THEN 'CE'
+                WHEN LOWER(urn) LIKE '%para%' THEN 'PA'
+                WHEN LOWER(urn) LIKE '%santa.catarina%' OR LOWER(urn) LIKE '%santa_catarina%' THEN 'SC'
+                WHEN LOWER(urn) LIKE '%goias%' THEN 'GO'
+                WHEN LOWER(urn) LIKE '%maranhao%' THEN 'MA'
+                WHEN LOWER(urn) LIKE '%paraiba%' THEN 'PB'
+                WHEN LOWER(urn) LIKE '%espirito.santo%' OR LOWER(urn) LIKE '%espirito_santo%' THEN 'ES'
+                WHEN LOWER(urn) LIKE '%piaui%' THEN 'PI'
+                WHEN LOWER(urn) LIKE '%alagoas%' THEN 'AL'
+                WHEN LOWER(urn) LIKE '%rio.grande.do.norte%' OR LOWER(urn) LIKE '%rio_grande_do_norte%' THEN 'RN'
+                WHEN LOWER(urn) LIKE '%mato.grosso.do.sul%' OR LOWER(urn) LIKE '%mato_grosso_do_sul%' THEN 'MS'
+                WHEN LOWER(urn) LIKE '%mato.grosso%' OR LOWER(urn) LIKE '%mato_grosso%' THEN 'MT'
+                WHEN LOWER(urn) LIKE '%sergipe%' THEN 'SE'
+                WHEN LOWER(urn) LIKE '%rondonia%' THEN 'RO'
+                WHEN LOWER(urn) LIKE '%tocantins%' THEN 'TO'
+                WHEN LOWER(urn) LIKE '%acre%' THEN 'AC'
+                WHEN LOWER(urn) LIKE '%amapa%' THEN 'AP'
+                WHEN LOWER(urn) LIKE '%roraima%' THEN 'RR'
+                WHEN LOWER(urn) LIKE '%amazonas%' THEN 'AM'
+                ELSE estado_mapeado
+            END
+            WHERE
+                (estado_mapeado IS NULL
+                 OR estado_mapeado = 'Estadual'
+                 OR estado_mapeado = 'Não Identificado'
+                 OR estado_mapeado = 'Nacional')
+                AND urn IS NOT NULL;
+
+            GET DIAGNOSTICS updated_count = ROW_COUNT;
+
+            RAISE NOTICE 'Updated % records', updated_count;
+            RAISE NOTICE '';
+
+            SELECT COUNT(*) INTO after_unidentified
+            FROM documents
+            WHERE estado_mapeado IS NULL
+               OR estado_mapeado = 'Nacional'
+               OR estado_mapeado = 'Estadual'
+               OR estado_mapeado = 'Não Identificado';
+
+            RAISE NOTICE '========================================';
+            RAISE NOTICE 'RESULTS';
+            RAISE NOTICE '========================================';
+            RAISE NOTICE 'Unidentified after: % (%.2f%%)', after_unidentified,
+                         (after_unidentified * 100.0 / total_docs);
+            RAISE NOTICE 'Improvement: % documents (%.2f%% reduction)',
+                         (before_unidentified - after_unidentified),
+                         ((before_unidentified - after_unidentified) * 100.0 / before_unidentified);
+            RAISE NOTICE '';
+
+            RAISE NOTICE 'New Geographic Distribution:';
+            FOR rec IN (
+                SELECT
+                    COALESCE(estado_mapeado, 'NULL') as estado,
+                    COUNT(*) as count,
+                    ROUND(100.0 * COUNT(*) / total_docs, 2) as pct
+                FROM documents
+                GROUP BY estado_mapeado
+                ORDER BY COUNT(*) DESC
+                LIMIT 15
+            ) LOOP
+                RAISE NOTICE '  % : % (%.2f%%)', rec.estado, rec.count, rec.pct;
+            END LOOP;
+
+            RAISE NOTICE '';
+            RAISE NOTICE '✅ Migration 010 completed successfully!';
+            RAISE NOTICE '========================================';
+
+        END \$\$;
+        MIGRATION_SQL
+
+        MIGRATION_EXIT_CODE=$$?
+
+        # Cleanup
+        kill $$PROXY_PID 2>/dev/null || true
+
+        if [ $$MIGRATION_EXIT_CODE -eq 0 ]; then
+          echo ""
+          echo "✅ Migration 010 completed successfully!"
+          echo "Check the output above for before/after metrics"
+          exit 0
+        else
+          echo ""
+          echo "❌ Migration 010 failed with exit code $$MIGRATION_EXIT_CODE"
+          exit $$MIGRATION_EXIT_CODE
+        fi
+
+timeout: 1800s  # 30 minutes (URN parsing is complex)
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY

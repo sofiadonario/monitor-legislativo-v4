@@ -1,0 +1,52 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'analyze-null-records'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "=========================================="
+        echo "ANALYZE NULL ESTADO_MAPEADO RECORDS"
+        echo "=========================================="
+
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 &
+        PROXY_PID=$$!
+
+        for i in {1..30}; do
+          if nc -z 127.0.0.1 5432 2>/dev/null; then
+            break
+          fi
+          sleep 2
+        done
+
+        export PGPASSWORD="Sdonario1"
+        apt-get update && apt-get install -y postgresql-client
+
+        echo ""
+        echo "NULL estado_mapeado analysis:"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT
+          COUNT(*) as total_null_estado,
+          COUNT(*) FILTER (WHERE urn IS NULL) as urn_also_null,
+          COUNT(*) FILTER (WHERE urn IS NOT NULL) as urn_not_null,
+          ROUND(100.0 * COUNT(*) FILTER (WHERE urn IS NULL) / COUNT(*), 2) as pct_urn_null
+        FROM documents
+        WHERE estado_mapeado IS NULL;"
+
+        echo ""
+        echo "Sample of NULL estado_mapeado with NON-NULL URN (if any):"
+        psql -h 127.0.0.1 -p 5432 -U monitor_user -d monitor_legislativo -c "
+        SELECT id, urn, tipo, autoridade
+        FROM documents
+        WHERE estado_mapeado IS NULL
+          AND urn IS NOT NULL
+        LIMIT 10;"
+
+        kill $$PROXY_PID 2>/dev/null || true
+
+timeout: 300s
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
