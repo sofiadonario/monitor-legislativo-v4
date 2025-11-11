@@ -41,7 +41,7 @@ RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
 
 # 5) Spatial data helpers (optional - geobr can be heavy)
 RUN R -q -e "tryCatch({ \
-  pak::pkg_install(c('geobr', 'rmapshaper', 'geojsonio')); \
+  pak::pkg_install(c('geobr', 'rmapshaper', 'geojsonio', 'leafgl')); \
   cat('Spatial helpers installed successfully\\n') \
 }, error = function(e) { \
   cat('WARNING: Some spatial helpers failed (non-critical):', e\$message, '\\n') \
