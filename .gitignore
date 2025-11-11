@@ -377,6 +377,16 @@ legacy/r-shiny/
 /docker/
 /recruitment/
 /deployment/
+/sdk/
+/security/
+/lexml_overview/
+/auth/
+/config/
+
+# Virtual environments in data directories
+data_current/temp_venv/
+data_current/*_venv/
+data_current/*env/
 
 # Backup and old files
 *_DESKTOP-*

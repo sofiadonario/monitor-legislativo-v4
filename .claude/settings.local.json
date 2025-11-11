@@ -33,7 +33,13 @@
       "Bash(then mv \"$dir\" scripts/)",
       "Bash(if [ -d \"docker\" ])",
       "Bash(then mv docker infrastructure/)",
-      "Bash(else echo \"Directory $dir/ is not empty\")"
+      "Bash(else echo \"Directory $dir/ is not empty\")",
+      "Bash(if [ -d \"sdk\" ])",
+      "Bash(then mv sdk .archive/)",
+      "Bash(if [ -d \"security\" ])",
+      "Bash(then cp -r security/* scripts/security/)",
+      "Bash(if [ -d \"auth\" ])",
+      "Bash(then mkdir -p .archive/auth_old)"
     ],
     "deny": [],
     "ask": []
