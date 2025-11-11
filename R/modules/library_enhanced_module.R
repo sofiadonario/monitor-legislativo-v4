@@ -31,6 +31,11 @@ if (!exists("init_search_service")) {
   source("R/services/search_wrapper.R", local = FALSE)
 }
 
+# Source text normalization utilities
+if (file.exists("R/utils/text_normalization.R")) {
+  source("R/utils/text_normalization.R", local = FALSE)
+}
+
 #' Enhanced Library Tab UI
 #'
 #' @param id Module namespace ID
@@ -880,6 +885,19 @@ libraryEnhancedServer <- function(id, db_connection, db_available, documents_tab
 
       if (is.null(data) || nrow(data) == 0) {
         return(data)
+      }
+
+      # Apply text normalization to improve Portuguese readability
+      if (exists("clean_dataframe_text")) {
+        tryCatch({
+          data <- clean_dataframe_text(
+            data,
+            columns = c("titulo", "ementa", "content", "assuntos", "tipo", "orgao_emissor"),
+            aggressive = FALSE
+          )
+        }, error = function(e) {
+          message("Text normalization warning: ", e$message)
+        })
       }
 
       # Format data table with Portuguese locale and enhanced features
