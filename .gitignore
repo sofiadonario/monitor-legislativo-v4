@@ -193,7 +193,23 @@ docker-compose.override.yml
 !DEBUGGING_LOG.md
 !docs/FILE_ORGANIZATION_MAP.md
 !docs/ORGANIZATION_PLAN.md
+!docs/MARKDOWN_CLEANUP_PLAN.md
 !analysis/README.md
+!database/migrations/README.md
+
+# Prevent markdown proliferation - specific patterns
+*_SUMMARY*.md
+*_REPORT*.md
+*_DIAGNOSTIC*.md
+*_IMPLEMENTATION*.md
+*_COMPLETE*.md
+*_STATUS*.md
+*_FINAL*.md
+*_AUDIT*.md
+diagnostic_*.md
+investigation_*.md
+project_plan*.md
+*CHECKLIST*.md
 
 # Reports and analysis
 *_REPORT*.md
