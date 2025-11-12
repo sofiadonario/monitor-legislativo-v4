@@ -1,76 +1,17 @@
-# Railway cache bust - $(date)
-# Last rebuild: Sun Oct 26 21:00:00 -03 2025
-# FIX v92: Return to Rocker 4.5.1 and REMOVE interactive packages to isolate crash
-FROM rocker/shiny:4.5.1
+# Fast deployment using pre-built base image
+FROM southamerica-east1-docker.pkg.dev/mackmonitor/monitor-legislativo-v4/base-image:latest
 
-# 1) System libs - Re-add libgdal-dev for 4.5.1 compatibility
-# NOTE: liblwgeom-dev doesn't exist in Ubuntu 24.04 (noble) - removed
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgdal-dev \
-    build-essential g++ make cmake pkg-config \
-    libabsl-dev \
-    libpq-dev libssl-dev libcurl4-openssl-dev libxml2-dev \
-    libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    libgeos-dev libproj-dev libudunits2-dev libsqlite3-dev \
-    protobuf-compiler libprotobuf-dev \
-    postgresql-client \
-    curl \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# 2) CRITICAL: Disable renv and all user profiles in production
-# This prevents any auto-activation or profile hijacking of library paths
-ENV RENV_CONFIG_AUTO_ACTIVATE=FALSE
-ENV RENV_CONFIG_ACTIVATE_ON_LOAD=FALSE
-ENV R_PROFILE_USER=/dev/null
-ENV R_ENVIRON_USER=/dev/null
-
-# 3) Install pak for better dependency management
-RUN R -q -e "install.packages('pak', repos='https://r-lib.github.io/p/pak/stable/')"
-
-# 4) Install R packages explicitly
-RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
-  install.packages(c( \
-    'shiny', 'DT', 'leaflet', 'DBI', 'RPostgres', 'dplyr', 'bslib', 'shinythemes', \
-    'data.table','lubridate','tidyr','magrittr','stringr','readr', \
-    'ggplot2','scales','RColorBrewer','plotly', \
-    'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
-    'shinythemes','shinycssloaders','shinyjs','shinyWidgets', \
-    'units','s2','sf','openxlsx','xml2' \
-  ), repos='https://cloud.r-project.org')"
-
-# 5) Spatial data helpers (optional - geobr can be heavy)
-RUN R -q -e "tryCatch({ \
-  pak::pkg_install(c('geobr', 'rmapshaper', 'geojsonio', 'leafgl')); \
-  cat('Spatial helpers installed successfully\\n') \
-}, error = function(e) { \
-  cat('WARNING: Some spatial helpers failed (non-critical):', e\$message, '\\n') \
-})"
-
-# 6) VERIFICATION: Fail build if must-haves aren't truly there
-RUN R -q -e "stopifnot( \
-  requireNamespace('shiny', quietly=TRUE), \
-  requireNamespace('DT', quietly=TRUE), \
-  requireNamespace('leaflet', quietly=TRUE), \
-  requireNamespace('DBI', quietly=TRUE), \
-  requireNamespace('RPostgres', quietly=TRUE), \
-  requireNamespace('dplyr', quietly=TRUE), \
-  requireNamespace('bslib', quietly=TRUE) \
-); cat('✅ All critical packages verified at build time\\n')"
-
-# 7) Copy application into /app directory (simple setup)
-ARG CACHEBUST=$(date +%Y%m%d%H%M%S)
+# Copy application files
 WORKDIR /app
 COPY . /app/
 
-# 8) Environment + port
+# Environment + port
 ENV PORT=3838
 EXPOSE 3838
 
-# 9) Health check
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3838/health || exit 1
 
-# 10) Start app directly with R (bypass shiny-server)
-# v55: Skip sourcing global_integrated.R (CONFIRMED FIX!)
-CMD ["R", "-e", "shiny::runApp('app_phoenix.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', '3838')))" ]
+# Start app
+CMD ["R", "-e", "shiny::runApp('app_phoenix.R', host='0.0.0.0', port=as.numeric(Sys.getenv('PORT', '3838')))"]

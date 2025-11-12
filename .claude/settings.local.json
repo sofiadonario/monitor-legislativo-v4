@@ -39,7 +39,9 @@
       "Bash(if [ -d \"security\" ])",
       "Bash(then cp -r security/* scripts/security/)",
       "Bash(if [ -d \"auth\" ])",
-      "Bash(then mkdir -p .archive/auth_old)"
+      "Bash(then mkdir -p .archive/auth_old)",
+      "Bash(gcloud builds cancel:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

@@ -34,45 +34,57 @@ estadoMapeadoServer <- function(id, db_connection, table_name = "documents") {
     # Load Brazilian state boundaries
     brazil_states <- reactive({
       tryCatch({
-        # Try to load geobr package for official Brazilian boundaries
-        if (requireNamespace("geobr", quietly = TRUE)) {
-          states_sf <- geobr::read_state(year = 2020, showProgress = FALSE)
+        # Load from local GeoJSON file (fast, no internet required)
+        geojson_path <- "data/brazil_states.geojson"
+
+        if (file.exists(geojson_path)) {
+          cat("Loading Brazilian states from local GeoJSON:", geojson_path, "\n")
+          states_sf <- sf::st_read(geojson_path, quiet = TRUE)
+          cat("✅ Loaded", nrow(states_sf), "state polygons from GeoJSON\n")
           return(states_sf)
         } else {
-          # Fallback: Create simplified state boundaries with centroids
-          # These are approximate coordinates for Brazilian states
-          states_data <- data.frame(
-            abbrev_state = c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
-                            "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
-                            "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
-            name_state = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará",
-                          "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão",
-                          "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará",
-                          "Paraíba", "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro",
-                          "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia",
-                          "Roraima", "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"),
-            lon = c(-70.55, -36.66, -51.07, -63.07, -41.70, -39.52, -47.93, -40.31,
-                   -49.25, -44.30, -55.67, -54.62, -44.55, -52.00, -36.78, -51.21,
-                   -37.97, -42.80, -43.21, -36.52, -53.02, -63.58, -60.67, -50.30,
-                   -48.64, -37.43, -48.29),
-            lat = c(-9.02, -9.66, 1.41, -4.16, -12.58, -5.49, -15.83, -19.18,
-                   -15.94, -4.96, -12.64, -20.44, -18.51, -3.80, -7.23, -24.95,
-                   -8.31, -7.61, -22.91, -5.81, -30.04, -10.93, 1.82, -27.25,
-                   -22.22, -10.57, -10.17),
-            stringsAsFactors = FALSE
-          )
+          cat("⚠️ Local GeoJSON not found, trying geobr...\n")
 
-          # Convert to sf object with points
-          states_sf <- sf::st_as_sf(
-            states_data,
-            coords = c("lon", "lat"),
-            crs = 4326
-          )
+          # Fallback: Try geobr (slow, requires internet)
+          if (requireNamespace("geobr", quietly = TRUE)) {
+            states_sf <- geobr::read_state(year = 2020, showProgress = FALSE)
+            return(states_sf)
+          } else {
+            # Last resort: Create simplified state boundaries with centroids
+            cat("⚠️ Creating simplified state boundaries (no polygons)\n")
+            states_data <- data.frame(
+              abbrev_state = c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
+                              "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
+                              "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
+              name_state = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará",
+                            "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão",
+                            "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará",
+                            "Paraíba", "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro",
+                            "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia",
+                            "Roraima", "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"),
+              lon = c(-70.55, -36.66, -51.07, -63.07, -41.70, -39.52, -47.93, -40.31,
+                     -49.25, -44.30, -55.67, -54.62, -44.55, -52.00, -36.78, -51.21,
+                     -37.97, -42.80, -43.21, -36.52, -53.02, -63.58, -60.67, -50.30,
+                     -48.64, -37.43, -48.29),
+              lat = c(-9.02, -9.66, 1.41, -4.16, -12.58, -5.49, -15.83, -19.18,
+                     -15.94, -4.96, -12.64, -20.44, -18.51, -3.80, -7.23, -24.95,
+                     -8.31, -7.61, -22.91, -5.81, -30.04, -10.93, 1.82, -27.25,
+                     -22.22, -10.57, -10.17),
+              stringsAsFactors = FALSE
+            )
 
-          return(states_sf)
+            # Convert to sf object with points
+            states_sf <- sf::st_as_sf(
+              states_data,
+              coords = c("lon", "lat"),
+              crs = 4326
+            )
+
+            return(states_sf)
+          }
         }
       }, error = function(e) {
-        cat("Warning: Could not load state geometries:", e$message, "\n")
+        cat("❌ Error loading state geometries:", e$message, "\n")
         return(NULL)
       })
     })
@@ -270,15 +282,17 @@ estadoMapeadoServer <- function(id, db_connection, table_name = "documents") {
           filter(!estado %in% c("Nacional", "Não Identificado", "Estadual", "DF"))
 
         # Join with state geometries
-        if ("abbrev_state" %in% names(states_sf)) {
-          # Full geobr data
-          states_with_data <- states_sf %>%
-            left_join(state_counts, by = c("abbrev_state" = "estado"))
+        # Check which column name is used for state abbreviation
+        state_col <- if ("sigla" %in% names(states_sf)) {
+          "sigla"  # Local GeoJSON uses 'sigla'
+        } else if ("abbrev_state" %in% names(states_sf)) {
+          "abbrev_state"  # geobr uses 'abbrev_state'
         } else {
-          # Simplified fallback
-          states_with_data <- states_sf %>%
-            left_join(state_counts, by = c("abbrev_state" = "estado"))
+          "abbrev_state"  # Fallback
         }
+
+        states_with_data <- states_sf %>%
+          left_join(state_counts, by = setNames("estado", state_col))
 
         # Replace NA counts with 0
         states_with_data$count[is.na(states_with_data$count)] <- 0

@@ -35,7 +35,7 @@ RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
   install.packages(c( \
     'shiny', 'DT', 'leaflet', 'DBI', 'RPostgres', 'dplyr', 'bslib', 'shinythemes', \
     'data.table','lubridate','tidyr','magrittr','stringr','readr', \
-    'ggplot2','scales','RColorBrewer','plotly','viridis', \
+    'ggplot2','scales','RColorBrewer','plotly','viridis','networkD3', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
     'shinythemes','shinycssloaders','shinyjs','shinyWidgets', \
     'units','s2','sf','openxlsx','xml2' \

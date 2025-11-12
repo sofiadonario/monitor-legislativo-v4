@@ -1736,14 +1736,19 @@ server <- function(input, output, session) {
     tryCatch({
       list(
         by_type = dbGetQuery(secure_db_connection,
-          paste("SELECT tipo AS type, COUNT(*) AS n FROM", DOCUMENTS_TABLE, "GROUP BY tipo ORDER BY n DESC")),
+          paste("SELECT tipo_documento AS type, COUNT(*) AS n FROM", DOCUMENTS_TABLE,
+                "WHERE tipo_documento IS NOT NULL GROUP BY tipo_documento ORDER BY n DESC")),
         by_month = dbGetQuery(secure_db_connection,
-          paste0("SELECT DATE_TRUNC('month', data) AS month, COUNT(*) AS n ",
+          paste0("SELECT TO_DATE(ano || '-' || mes || '-01', 'YYYY-MM-DD') AS month, COUNT(*) AS n ",
                  "FROM ", DOCUMENTS_TABLE, " ",
-                 "GROUP BY month ",
-                 "ORDER BY month"))
+                 "WHERE ano IS NOT NULL AND mes IS NOT NULL ",
+                 "GROUP BY ano, mes ",
+                 "ORDER BY ano, mes"))
       )
-    }, error = function(e) NULL)
+    }, error = function(e) {
+      cat("Analytics query error:", e$message, "\n")
+      return(NULL)
+    })
   })
 
   output$analytics_type_bar <- renderPlot({

@@ -108,6 +108,7 @@ renv/staging/
 
 # Allow essential data files for production
 !data/brazil_states.R
+!data/brazil_states.geojson
 !modules/maps/essential_data.csv
 !lexml_overview/use_version/Geral.csv
 !data_current/processed/production/sample_data.csv
