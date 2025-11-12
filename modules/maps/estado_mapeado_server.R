@@ -40,6 +40,15 @@ estadoMapeadoServer <- function(id, db_connection, table_name = "documents") {
         if (file.exists(geojson_path)) {
           cat("Loading Brazilian states from local GeoJSON:", geojson_path, "\n")
           states_sf <- sf::st_read(geojson_path, quiet = TRUE)
+
+          # Standardize column names to match geobr format
+          if ("name" %in% names(states_sf) && !"name_state" %in% names(states_sf)) {
+            states_sf$name_state <- states_sf$name
+          }
+          if ("sigla" %in% names(states_sf) && !"abbrev_state" %in% names(states_sf)) {
+            states_sf$abbrev_state <- states_sf$sigla
+          }
+
           cat("✅ Loaded", nrow(states_sf), "state polygons from GeoJSON\n")
           return(states_sf)
         } else {
