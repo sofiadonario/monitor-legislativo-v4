@@ -5,7 +5,7 @@
 # Only rebuild this when you need to add new R packages or system libraries.
 # ==============================================================================
 
-FROM rocker/shiny:4.5.1
+FROM rocker/shiny:4.5.2
 
 # 1) Install all system dependencies (slowest part - ~10 minutes)
 RUN apt-get update && apt-get install -y --no-install-recommends \
