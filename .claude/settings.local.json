@@ -41,7 +41,11 @@
       "Bash(if [ -d \"auth\" ])",
       "Bash(then mkdir -p .archive/auth_old)",
       "Bash(gcloud builds cancel:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(PGPASSWORD=\"${PGPASSWORD}\" psql:*)",
+      "Bash(gcloud builds submit:*)",
+      "Bash(psql:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

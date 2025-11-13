@@ -117,6 +117,65 @@ if (file.exists("modules/analytics/advanced_visualizations.R")) {
   cat("⚠️ Advanced Visualizations Engine not found - using basic charts only\n")
 }
 
+# Load Readability Analytics Module (Sprint 1 - Foundation)
+if (file.exists("modules/analytics/readability_ui.R")) {
+  source("modules/analytics/readability_ui.R")
+  cat("✅ Readability Analytics UI Module loaded\n")
+} else {
+  cat("⚠️ Readability Analytics UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/readability_server.R")) {
+  source("modules/analytics/readability_server.R")
+  cat("✅ Readability Analytics Server Module loaded\n")
+} else {
+  cat("⚠️ Readability Analytics Server Module not found\n")
+}
+
+# Load Multi-Jurisdictional Comparison Module (Sprint 1 - Foundation)
+if (file.exists("R/analytics/multi_jurisdictional_comparison.R")) {
+  source("R/analytics/multi_jurisdictional_comparison.R")
+  cat("✅ Multi-Jurisdictional Comparison Module loaded\n")
+} else {
+  cat("⚠️ Multi-Jurisdictional Comparison Module not found\n")
+}
+
+if (file.exists("modules/analytics/jurisdictional_ui.R")) {
+  source("modules/analytics/jurisdictional_ui.R")
+  cat("✅ Jurisdictional Comparison UI Module loaded\n")
+} else {
+  cat("⚠️ Jurisdictional Comparison UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/jurisdictional_server.R")) {
+  source("modules/analytics/jurisdictional_server.R")
+  cat("✅ Jurisdictional Comparison Server Module loaded\n")
+} else {
+  cat("⚠️ Jurisdictional Comparison Server Module not found\n")
+}
+
+# Load Text Reuse Detection (LSH) Module (Sprint 1 - Foundation)
+if (file.exists("R/analytics/text_reuse_lsh.R")) {
+  source("R/analytics/text_reuse_lsh.R")
+  cat("✅ Text Reuse Detection (LSH) Module loaded\n")
+} else {
+  cat("⚠️ Text Reuse Detection Module not found\n")
+}
+
+if (file.exists("modules/analytics/text_reuse_ui.R")) {
+  source("modules/analytics/text_reuse_ui.R")
+  cat("✅ Text Reuse UI Module loaded\n")
+} else {
+  cat("⚠️ Text Reuse UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/text_reuse_server.R")) {
+  source("modules/analytics/text_reuse_server.R")
+  cat("✅ Text Reuse Server Module loaded\n")
+} else {
+  cat("⚠️ Text Reuse Server Module not found\n")
+}
+
 # ==============================================================================
 # 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
 # ==============================================================================
@@ -792,6 +851,27 @@ ui <- navbarPage(
     ) # End of fluidPage
   ),
 
+  # -- READABILITY ANALYTICS TAB (Sprint 1 - Foundation) --
+  tabPanel(
+    "Legibilidade",
+    icon = icon("book-reader"),
+    readabilityUI("readability_module")
+  ),
+
+  # -- MULTI-JURISDICTIONAL COMPARISON TAB (Sprint 1 - Foundation) --
+  tabPanel(
+    "Comparação Jurisdicional",
+    icon = icon("balance-scale"),
+    jurisdictionalUI("jurisdictional_comparison")
+  ),
+
+  # -- TEXT REUSE DETECTION TAB (Sprint 1 - Foundation) --
+  tabPanel(
+    "Reuso de Texto",
+    icon = icon("copy"),
+    textReuseUI("text_reuse_module")
+  ),
+
   # -- PLACEHOLDER TABS --
   tabPanel("Text Mining", h1("Text Mining"), p("This section is under development."))
 )
@@ -816,6 +896,45 @@ server <- function(input, output, session) {
     )
   } else {
     cat("⚠️ Enhanced Library Module not available - using basic implementation\n")
+  }
+
+  # Initialize Readability Analytics Module (Sprint 1 - Foundation)
+  if (exists("readabilityServer")) {
+    cat("✅ Initializing Readability Analytics Module\n")
+    readability_analytics <- readabilityServer(
+      "readability_module",
+      db_connection = secure_db_connection,
+      db_available = DB_AVAILABLE,
+      documents_table = DOCUMENTS_TABLE
+    )
+  } else {
+    cat("⚠️ Readability Analytics Module not available\n")
+  }
+
+  # Initialize Multi-Jurisdictional Comparison Module (Sprint 1 - Foundation)
+  if (exists("jurisdictionalServer")) {
+    cat("✅ Initializing Multi-Jurisdictional Comparison Module\n")
+    jurisdictional_comparison <- jurisdictionalServer(
+      "jurisdictional_comparison",
+      db_connection = secure_db_connection,
+      db_available = DB_AVAILABLE,
+      documents_table = DOCUMENTS_TABLE
+    )
+  } else {
+    cat("⚠️ Multi-Jurisdictional Comparison Module not available\n")
+  }
+
+  # Initialize Text Reuse Detection Module (Sprint 1 - Foundation)
+  if (exists("textReuseServer")) {
+    cat("✅ Initializing Text Reuse Detection Module\n")
+    text_reuse_module <- textReuseServer(
+      "text_reuse_module",
+      db_connection = secure_db_connection,
+      db_available = DB_AVAILABLE,
+      documents_table = DOCUMENTS_TABLE
+    )
+  } else {
+    cat("⚠️ Text Reuse Detection Module not available\n")
   }
 
   # -- ESTADO MAPEADO MAP MODULE --

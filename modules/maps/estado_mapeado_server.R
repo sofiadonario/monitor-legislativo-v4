@@ -287,8 +287,9 @@ estadoMapeadoServer <- function(id, db_connection, table_name = "documents") {
       if (!is.null(states_sf) && nrow(geo_counts) > 0) {
 
         # Filter out Nacional and Não Identificado for state mapping
+        # Note: DF (Distrito Federal) is a valid state and should NOT be filtered
         state_counts <- geo_counts %>%
-          filter(!estado %in% c("Nacional", "Não Identificado", "Estadual", "DF"))
+          filter(!estado %in% c("Nacional", "Não Identificado", "Estadual"))
 
         # Join with state geometries
         # Check which column name is used for state abbreviation
