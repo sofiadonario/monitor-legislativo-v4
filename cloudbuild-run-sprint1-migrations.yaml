@@ -1,0 +1,104 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'run-sprint1-migrations'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "============================================================================"
+        echo "SPRINT 1 DATABASE MIGRATIONS"
+        echo "============================================================================"
+        echo "Migration 1: Jurisdictional Summary Views"
+        echo "Migration 2: Text Reuse Detection Tables (012)"
+        echo "============================================================================"
+        echo ""
+
+        # Install required packages
+        apt-get update -qq && apt-get install -y -qq postgresql-client netcat curl > /dev/null 2>&1
+
+        # Download and setup Cloud SQL Proxy
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 2>/dev/null
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 > /tmp/proxy.log 2>&1 &
+
+        # Wait for proxy to be ready
+        for i in {1..60}; do
+          if nc -z localhost 5432 2>/dev/null; then
+            echo "✅ Cloud SQL Proxy is ready!"
+            break
+          fi
+          [ $$i -eq 60 ] && echo "❌ ERROR: Proxy timeout" && cat /tmp/proxy.log && exit 1
+          sleep 1
+        done
+
+        # Set password and test connection
+        export PGPASSWORD='Sdonario1'
+        if ! psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" -c "SELECT version();" > /dev/null 2>&1; then
+          echo "❌ ERROR: Cannot connect to database"
+          cat /tmp/proxy.log
+          exit 1
+        fi
+
+        echo ""
+        echo "============================================================================"
+        echo "MIGRATION 1: Creating Jurisdictional Summary Views"
+        echo "============================================================================"
+        echo ""
+
+        START_TIME=$$(date +%s)
+        psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" \
+          -f database/views/jurisdictional_summary.sql
+        STATUS1=$$?
+        END_TIME=$$(date +%s)
+        DURATION1=$$((END_TIME - START_TIME))
+
+        if [ $$STATUS1 -eq 0 ]; then
+          echo "✅ Jurisdictional views created successfully ($${DURATION1}s)"
+        else
+          echo "❌ Jurisdictional views creation failed"
+          exit 1
+        fi
+
+        echo ""
+        echo "============================================================================"
+        echo "MIGRATION 2: Creating Text Reuse Detection Tables"
+        echo "============================================================================"
+        echo ""
+
+        START_TIME=$$(date +%s)
+        psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" \
+          -f database/migrations/012_add_text_reuse_tables.sql
+        STATUS2=$$?
+        END_TIME=$$(date +%s)
+        DURATION2=$$((END_TIME - START_TIME))
+
+        if [ $$STATUS2 -eq 0 ]; then
+          echo "✅ Text reuse tables created successfully ($${DURATION2}s)"
+        else
+          echo "❌ Text reuse tables creation failed"
+          exit 1
+        fi
+
+        echo ""
+        echo "============================================================================"
+        echo "✅ ALL SPRINT 1 MIGRATIONS COMPLETED SUCCESSFULLY"
+        echo "============================================================================"
+        echo "Total time: $$(($${DURATION1} + $${DURATION2}))s"
+        echo ""
+        echo "Created:"
+        echo "  ✅ 4 Materialized views for jurisdictional comparison"
+        echo "  ✅ 5 Tables for text reuse detection"
+        echo "  ✅ 2 Materialized views for text reuse analytics"
+        echo "  ✅ 15+ Indexes for optimal query performance"
+        echo ""
+        echo "Next Steps:"
+        echo "  1. Run LSH indexing: Rscript R/analytics/batch_lsh_indexing.R full"
+        echo "  2. Refresh materialized views periodically"
+        echo "  3. Monitor index usage and performance"
+        echo "============================================================================"
+
+options:
+  machineType: 'E2_MEDIUM'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 600s

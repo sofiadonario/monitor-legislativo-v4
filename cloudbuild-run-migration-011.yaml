@@ -1,0 +1,138 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'run-migration-011'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "============================================================================"
+        echo "MIGRATION 011: Add Readability Scores to Documents Table"
+        echo "============================================================================"
+        echo "Estimated time: ~2-3 minutes"
+        echo "Database: mackmonitor:southamerica-east1:mackmonitor-db"
+        echo "Impact: Adding 6 columns + indexes + views (NO data population)"
+        echo "Target: 118,920 documents"
+        echo "Operation: DDL only (ALTER TABLE, CREATE INDEX, CREATE VIEW)"
+        echo ""
+        echo "This migration adds infrastructure for readability metrics:"
+        echo "  - 6 new columns for readability scores"
+        echo "  - 5 performance indexes"
+        echo "  - 2 analytical views"
+        echo "  - 1 trigger function for timestamp tracking"
+        echo ""
+        echo "Note: Actual score calculation happens in R application layer"
+        echo "============================================================================"
+        echo ""
+
+        # Install required packages
+        apt-get update -qq && apt-get install -y -qq postgresql-client netcat curl > /dev/null 2>&1
+
+        # Download and setup Cloud SQL Proxy
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 > /tmp/proxy.log 2>&1 &
+
+        # Wait for proxy to be ready
+        for i in {1..60}; do
+          if nc -z localhost 5432 2>/dev/null; then
+            echo "✅ Cloud SQL Proxy is ready!"
+            break
+          fi
+          [ $$i -eq 60 ] && echo "❌ ERROR: Proxy timeout" && cat /tmp/proxy.log && exit 1
+          sleep 1
+        done
+
+        # Set password and test connection
+        export PGPASSWORD='Sdonario1'
+        if ! psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" -c "SELECT version();" > /dev/null 2>&1; then
+          echo "❌ ERROR: Cannot connect to database"
+          cat /tmp/proxy.log
+          exit 1
+        fi
+
+        echo ""
+        echo "============================================================================"
+        echo "Running migration 011_add_readability_scores.sql..."
+        echo "============================================================================"
+        echo ""
+
+        # Run the migration with timing
+        START_TIME=$$(date +%s)
+
+        psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" \
+          -f database/migrations/011_add_readability_scores.sql
+
+        MIGRATION_STATUS=$$?
+        END_TIME=$$(date +%s)
+        DURATION=$$((END_TIME - START_TIME))
+
+        echo ""
+        if [ $$MIGRATION_STATUS -eq 0 ]; then
+          echo "============================================================================"
+          echo "✅ MIGRATION 011 COMPLETED SUCCESSFULLY"
+          echo "============================================================================"
+          echo "Execution time: $${DURATION}s"
+          echo ""
+          echo "Migration Results:"
+          echo "  ✅ Added 6 readability score columns to documents table"
+          echo "  ✅ Created 5 performance indexes for efficient queries"
+          echo "  ✅ Created readability_summary view for analytics"
+          echo "  ✅ Created readability_analysis_queue for processing"
+          echo "  ✅ Added trigger function for timestamp tracking"
+          echo ""
+          echo "Next Steps:"
+          echo "  1. Deploy R application with readability calculation logic"
+          echo "  2. Run batch processing to analyze existing documents"
+          echo "  3. Monitor readability_analysis_queue for progress"
+          echo "  4. Use readability_summary view in Shiny dashboard"
+          echo ""
+          echo "Database ready for readability analysis!"
+          echo "============================================================================"
+        else
+          echo "============================================================================"
+          echo "❌ MIGRATION 011 FAILED"
+          echo "============================================================================"
+          echo "Execution time: $${DURATION}s"
+          echo "Check logs above for error details"
+          echo ""
+          echo "Troubleshooting:"
+          echo "  1. Verify database connection and credentials"
+          echo "  2. Check for conflicting column names or indexes"
+          echo "  3. Ensure sufficient database privileges"
+          echo "  4. Review PostgreSQL logs for detailed error messages"
+          echo ""
+          echo "Rollback:"
+          echo "  See rollback script at end of migration file"
+          echo "============================================================================"
+          exit 1
+        fi
+
+        # Verify migration success with additional checks
+        echo ""
+        echo "Running post-migration verification..."
+
+        # Verify columns were added
+        COLUMN_COUNT=$(psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" -t -c "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'documents' AND column_name IN ('flesch_kincaid_score', 'fog_index', 'smog_index', 'avg_sentence_length', 'avg_word_length', 'readability_updated_at');")
+        echo "Columns added: $$COLUMN_COUNT / 6"
+
+        # Verify indexes were created
+        INDEX_COUNT=$(psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" -t -c "SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'documents' AND (indexname LIKE '%readability%' OR indexname IN ('idx_documents_flesch_kincaid', 'idx_documents_fog_index', 'idx_documents_smog_index'));")
+        echo "Indexes created: $$INDEX_COUNT"
+
+        # Verify views were created
+        VIEW_COUNT=$(psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" -t -c "SELECT COUNT(*) FROM information_schema.views WHERE table_schema = 'public' AND table_name IN ('readability_summary', 'readability_analysis_queue');")
+        echo "Views created: $$VIEW_COUNT / 2"
+
+        # Show documents ready for analysis
+        DOC_COUNT=$(psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" -t -c "SELECT COUNT(*) FROM documents WHERE texto_completo IS NOT NULL AND texto_completo != '';")
+        echo "Documents ready for analysis: $$DOC_COUNT"
+
+        echo ""
+        echo "✅ Post-migration verification complete!"
+        echo "============================================================================"
+
+options:
+  machineType: 'E2_MEDIUM'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 600s

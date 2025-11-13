@@ -1,0 +1,103 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'run-sprint2-migrations'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "============================================================================"
+        echo "SPRINT 2 DATABASE MIGRATIONS"
+        echo "============================================================================"
+        echo "Migration 1: Network Backbone Tables (013)"
+        echo "Migration 2: Amendment Summary Views"
+        echo "============================================================================"
+        echo ""
+
+        # Install required packages
+        apt-get update -qq && apt-get install -y -qq postgresql-client netcat curl > /dev/null 2>&1
+
+        # Download and setup Cloud SQL Proxy
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 2>/dev/null
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 > /tmp/proxy.log 2>&1 &
+
+        # Wait for proxy to be ready
+        for i in {1..60}; do
+          if nc -z localhost 5432 2>/dev/null; then
+            echo "✅ Cloud SQL Proxy is ready!"
+            break
+          fi
+          [ $$i -eq 60 ] && echo "❌ ERROR: Proxy timeout" && cat /tmp/proxy.log && exit 1
+          sleep 1
+        done
+
+        # Set password and test connection
+        export PGPASSWORD='Sdonario1'
+        if ! psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" -c "SELECT version();" > /dev/null 2>&1; then
+          echo "❌ ERROR: Cannot connect to database"
+          cat /tmp/proxy.log
+          exit 1
+        fi
+
+        echo ""
+        echo "============================================================================"
+        echo "MIGRATION 1: Creating Network Backbone Tables"
+        echo "============================================================================"
+        echo ""
+
+        START_TIME=$$(date +%s)
+        psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" \
+          -f database/migrations/013_add_network_tables.sql
+        STATUS1=$$?
+        END_TIME=$$(date +%s)
+        DURATION1=$$((END_TIME - START_TIME))
+
+        if [ $$STATUS1 -eq 0 ]; then
+          echo "✅ Network tables created successfully ($${DURATION1}s)"
+        else
+          echo "❌ Network tables creation failed"
+          exit 1
+        fi
+
+        echo ""
+        echo "============================================================================"
+        echo "MIGRATION 2: Creating Amendment Summary Views"
+        echo "============================================================================"
+        echo ""
+
+        START_TIME=$$(date +%s)
+        psql "host=localhost port=5432 dbname=monitor_legislativo user=monitor_user" \
+          -f database/views/amendment_summary.sql
+        STATUS2=$$?
+        END_TIME=$$(date +%s)
+        DURATION2=$$((END_TIME - START_TIME))
+
+        if [ $$STATUS2 -eq 0 ]; then
+          echo "✅ Amendment views created successfully ($${DURATION2}s)"
+        else
+          echo "❌ Amendment views creation failed"
+          exit 1
+        fi
+
+        echo ""
+        echo "============================================================================"
+        echo "✅ ALL SPRINT 2 MIGRATIONS COMPLETED SUCCESSFULLY"
+        echo "============================================================================"
+        echo "Total time: $$(($${DURATION1} + $${DURATION2}))s"
+        echo ""
+        echo "Created:"
+        echo "  ✅ 4 Network tables (edges, nodes, metrics, cache)"
+        echo "  ✅ 5 Amendment materialized views"
+        echo "  ✅ 20+ Indexes for optimal query performance"
+        echo ""
+        echo "Next Steps:"
+        echo "  1. Build networks for visualization"
+        echo "  2. Run amendment detection on document corpus"
+        echo "  3. Refresh materialized views periodically"
+        echo "============================================================================"
+
+options:
+  machineType: 'E2_MEDIUM'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 600s

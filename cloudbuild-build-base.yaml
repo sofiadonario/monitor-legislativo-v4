@@ -1,0 +1,25 @@
+# Build base Docker image with all R packages pre-compiled
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--no-cache'
+      - '-f'
+      - 'Dockerfile.base'
+      - '-t'
+      - 'southamerica-east1-docker.pkg.dev/mackmonitor/monitor-legislativo-v4/base-image:latest'
+      - '.'
+    timeout: 3600s
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'southamerica-east1-docker.pkg.dev/mackmonitor/monitor-legislativo-v4/base-image:latest'
+
+images:
+  - 'southamerica-east1-docker.pkg.dev/mackmonitor/monitor-legislativo-v4/base-image:latest'
+
+timeout: 3600s
+options:
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: 100

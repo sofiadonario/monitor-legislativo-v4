@@ -1,0 +1,233 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'calculate-readability-scores'
+    entrypoint: 'bash'
+    timeout: 7200s  # 2 hours max
+    args:
+      - '-c'
+      - |
+        echo "============================================================================"
+        echo "BATCH READABILITY CALCULATION"
+        echo "============================================================================"
+        echo "Database: mackmonitor:southamerica-east1:mackmonitor-db"
+        echo "Target: ~118,920 documents"
+        echo "Estimated time: 90-120 minutes"
+        echo "Method: Flesch-Kincaid, FOG Index, SMOG Index"
+        echo "============================================================================"
+        echo ""
+
+        # Install required packages
+        echo "📦 Installing dependencies..."
+        apt-get update -qq && apt-get install -y -qq postgresql-client netcat curl r-base r-base-dev > /dev/null 2>&1
+
+        # Install R packages
+        echo "📦 Installing R packages..."
+        R -q -e "install.packages(c('stringr', 'dplyr', 'DBI', 'RPostgres'), repos='https://cloud.r-project.org', quiet=TRUE)" 2>&1 | grep -v "^>"
+
+        # Download and setup Cloud SQL Proxy
+        echo "🔗 Setting up Cloud SQL Proxy..."
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 2>/dev/null
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 > /tmp/proxy.log 2>&1 &
+
+        # Wait for proxy to be ready
+        for i in {1..60}; do
+          if nc -z localhost 5432 2>/dev/null; then
+            echo "✅ Cloud SQL Proxy is ready!"
+            break
+          fi
+          [ $$i -eq 60 ] && echo "❌ ERROR: Proxy timeout" && cat /tmp/proxy.log && exit 1
+          sleep 1
+        done
+
+        # Set database connection parameters
+        export PGHOST="localhost"
+        export PGPORT="5432"
+        export PGDATABASE="monitor_legislativo"
+        export PGUSER="monitor_user"
+        export PGPASSWORD="Sdonario1"
+
+        # Test connection
+        if ! psql -c "SELECT COUNT(*) FROM documents WHERE texto_completo IS NOT NULL;" > /dev/null 2>&1; then
+          echo "❌ ERROR: Cannot connect to database"
+          cat /tmp/proxy.log
+          exit 1
+        fi
+
+        echo ""
+        echo "============================================================================"
+        echo "📊 Starting readability calculation..."
+        echo "============================================================================"
+        echo ""
+
+        # Create a streamlined R script for batch processing
+        cat > /tmp/batch_calculate.R << 'RSCRIPT'
+        library(stringr)
+        library(dplyr)
+        library(DBI)
+        library(RPostgres)
+
+        # Source the readability metrics functions
+        source("R/analytics/readability_metrics.R")
+
+        # Connect to database
+        con <- dbConnect(
+          RPostgres::Postgres(),
+          host = Sys.getenv("PGHOST"),
+          port = as.integer(Sys.getenv("PGPORT")),
+          dbname = Sys.getenv("PGDATABASE"),
+          user = Sys.getenv("PGUSER"),
+          password = Sys.getenv("PGPASSWORD")
+        )
+
+        cat("✅ Connected to database\n")
+
+        # Get documents that need analysis
+        cat("📋 Fetching documents...\n")
+        docs <- dbGetQuery(con,
+          "SELECT id, texto_completo
+           FROM documents
+           WHERE texto_completo IS NOT NULL
+             AND texto_completo != ''
+             AND flesch_kincaid_score IS NULL
+           ORDER BY id
+           LIMIT 120000")
+
+        total_docs <- nrow(docs)
+        cat(sprintf("📊 Found %d documents to process\n\n", total_docs))
+
+        if (total_docs == 0) {
+          cat("✅ All documents already processed!\n")
+          dbDisconnect(con)
+          quit(status = 0)
+        }
+
+        # Process in batches
+        batch_size <- 500
+        num_batches <- ceiling(total_docs / batch_size)
+        start_time <- Sys.time()
+
+        for (batch_num in 1:num_batches) {
+          batch_start <- (batch_num - 1) * batch_size + 1
+          batch_end <- min(batch_num * batch_size, total_docs)
+          batch_docs <- docs[batch_start:batch_end, ]
+
+          # Calculate metrics for batch
+          batch_results <- lapply(1:nrow(batch_docs), function(i) {
+            tryCatch({
+              metrics <- calculate_all_readability_metrics(batch_docs$texto_completo[i])
+              list(
+                id = batch_docs$id[i],
+                flesch_kincaid_score = metrics$flesch_kincaid,
+                fog_index = metrics$fog_index,
+                smog_index = metrics$smog_index,
+                avg_sentence_length = metrics$avg_sentence_length,
+                avg_word_length = metrics$avg_word_length
+              )
+            }, error = function(e) {
+              list(
+                id = batch_docs$id[i],
+                flesch_kincaid_score = NA,
+                fog_index = NA,
+                smog_index = NA,
+                avg_sentence_length = NA,
+                avg_word_length = NA
+              )
+            })
+          })
+
+          # Convert to data frame
+          batch_df <- do.call(rbind, lapply(batch_results, as.data.frame))
+
+          # Update database
+          for (i in 1:nrow(batch_df)) {
+            dbExecute(con,
+              "UPDATE documents
+               SET flesch_kincaid_score = $1,
+                   fog_index = $2,
+                   smog_index = $3,
+                   avg_sentence_length = $4,
+                   avg_word_length = $5,
+                   readability_updated_at = CURRENT_TIMESTAMP
+               WHERE id = $6",
+              params = list(
+                batch_df$flesch_kincaid_score[i],
+                batch_df$fog_index[i],
+                batch_df$smog_index[i],
+                batch_df$avg_sentence_length[i],
+                batch_df$avg_word_length[i],
+                batch_df$id[i]
+              ))
+          }
+
+          # Progress reporting
+          elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+          docs_processed <- batch_end
+          docs_per_sec <- docs_processed / elapsed
+          remaining_docs <- total_docs - docs_processed
+          eta_secs <- remaining_docs / docs_per_sec
+
+          cat(sprintf("✅ Batch %d/%d complete | Processed: %d/%d (%.1f%%) | Speed: %.1f docs/sec | ETA: %.0f min\n",
+            batch_num, num_batches, docs_processed, total_docs,
+            (docs_processed / total_docs) * 100, docs_per_sec, eta_secs / 60))
+        }
+
+        # Final summary
+        total_time <- as.numeric(difftime(Sys.time(), start_time, units = "mins"))
+        cat("\n============================================================================\n")
+        cat(sprintf("✅ BATCH PROCESSING COMPLETE\n"))
+        cat(sprintf("📊 Processed: %d documents\n", total_docs))
+        cat(sprintf("⏱️  Total time: %.1f minutes\n", total_time))
+        cat(sprintf("🚀 Average speed: %.1f docs/sec\n", total_docs / (total_time * 60)))
+        cat("============================================================================\n")
+
+        dbDisconnect(con)
+        RSCRIPT
+
+        # Run the R script
+        START_TIME=$$(date +%s)
+        Rscript /tmp/batch_calculate.R
+        R_STATUS=$$?
+        END_TIME=$$(date +%s)
+        DURATION=$$((END_TIME - START_TIME))
+
+        echo ""
+        if [ $$R_STATUS -eq 0 ]; then
+          echo "============================================================================"
+          echo "✅ READABILITY CALCULATION COMPLETED SUCCESSFULLY"
+          echo "============================================================================"
+          echo "Total execution time: $$(($${DURATION} / 60)) minutes $$(($${DURATION} % 60)) seconds"
+          echo ""
+
+          # Verify results
+          PROCESSED_COUNT=$$(psql -t -c "SELECT COUNT(*) FROM documents WHERE flesch_kincaid_score IS NOT NULL;")
+          echo "📊 Documents with readability scores: $$PROCESSED_COUNT"
+
+          # Show sample statistics
+          psql -c "SELECT
+            ROUND(AVG(flesch_kincaid_score)::numeric, 2) as avg_flesch,
+            ROUND(AVG(fog_index)::numeric, 2) as avg_fog,
+            ROUND(AVG(smog_index)::numeric, 2) as avg_smog,
+            COUNT(*) as total_analyzed
+          FROM documents
+          WHERE flesch_kincaid_score IS NOT NULL;"
+
+          echo ""
+          echo "✅ Readability dashboard is now ready to use!"
+          echo "============================================================================"
+        else
+          echo "============================================================================"
+          echo "❌ READABILITY CALCULATION FAILED"
+          echo "============================================================================"
+          echo "Exit code: $$R_STATUS"
+          echo "Check logs above for error details"
+          echo "============================================================================"
+          exit 1
+        fi
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  diskSizeGb: 100
+
+timeout: 7200s  # 2 hours
