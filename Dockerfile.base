@@ -38,7 +38,8 @@ RUN R -q -e "options(timeout=900, Ncpus=parallel::detectCores()); \
     'ggplot2','scales','RColorBrewer','plotly','viridis','networkD3', \
     'htmltools','httpuv','fastmap','promises','future','jsonlite','glue','digest','httr','memoise', \
     'shinythemes','shinycssloaders','shinyjs','shinyWidgets', \
-    'units','s2','sf','openxlsx','xml2' \
+    'units','s2','sf','openxlsx','xml2', \
+    'igraph','visNetwork','tidygraph','ggraph','textreuse','forecast','changepoint' \
   ), repos='https://cloud.r-project.org')"
 
 # 5) Spatial data helpers (optional)
