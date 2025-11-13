@@ -1,0 +1,225 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'run-lsh-indexing'
+    entrypoint: 'bash'
+    timeout: 3600s
+    args:
+      - '-c'
+      - |
+        echo "============================================================================"
+        echo "LSH INDEXING - Text Reuse Detection"
+        echo "============================================================================"
+        echo "Database: mackmonitor:southamerica-east1:mackmonitor-db"
+        echo "Target: ~118,920 documents"
+        echo "Estimated time: 60 minutes"
+        echo "Method: MinHash + LSH (100 hash functions, 20 bands)"
+        echo "============================================================================"
+        echo ""
+
+        # Install required packages
+        echo "📦 Installing dependencies..."
+        apt-get update -qq && apt-get install -y -qq postgresql-client netcat curl r-base r-base-dev > /dev/null 2>&1
+
+        # Install R packages
+        echo "📦 Installing R packages..."
+        R -q -e "install.packages(c('stringr', 'dplyr', 'DBI', 'RPostgres', 'digest', 'textreuse'), repos='https://cloud.r-project.org', quiet=TRUE)" 2>&1 | grep -v "^>"
+
+        # Download and setup Cloud SQL Proxy
+        echo "🔗 Setting up Cloud SQL Proxy..."
+        curl -o cloud_sql_proxy https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 2>/dev/null
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 > /tmp/proxy.log 2>&1 &
+
+        # Wait for proxy to be ready
+        for i in {1..60}; do
+          if nc -z localhost 5432 2>/dev/null; then
+            echo "✅ Cloud SQL Proxy is ready!"
+            break
+          fi
+          [ $$i -eq 60 ] && echo "❌ ERROR: Proxy timeout" && cat /tmp/proxy.log && exit 1
+          sleep 1
+        done
+
+        # Set database connection parameters
+        export PGHOST="localhost"
+        export PGPORT="5432"
+        export PGDATABASE="monitor_legislativo"
+        export PGUSER="monitor_user"
+        export PGPASSWORD="Sdonario1"
+
+        # Test connection
+        if ! psql -c "SELECT COUNT(*) FROM documents WHERE texto_completo IS NOT NULL;" > /dev/null 2>&1; then
+          echo "❌ ERROR: Cannot connect to database"
+          cat /tmp/proxy.log
+          exit 1
+        fi
+
+        echo ""
+        echo "============================================================================"
+        echo "📊 Starting LSH indexing..."
+        echo "============================================================================"
+        echo ""
+
+        # Create LSH indexing R script
+        cat > /tmp/lsh_batch.R << 'RSCRIPT'
+        library(stringr)
+        library(dplyr)
+        library(DBI)
+        library(RPostgres)
+        library(digest)
+
+        # Source the LSH functions
+        source("R/analytics/text_reuse_lsh.R")
+
+        # Connect to database
+        con <- dbConnect(
+          RPostgres::Postgres(),
+          host = Sys.getenv("PGHOST"),
+          port = as.integer(Sys.getenv("PGPORT")),
+          dbname = Sys.getenv("PGDATABASE"),
+          user = Sys.getenv("PGUSER"),
+          password = Sys.getenv("PGPASSWORD")
+        )
+
+        cat("✅ Connected to database\n")
+
+        # Get documents that need indexing
+        cat("📋 Fetching documents...\n")
+        docs <- dbGetQuery(con,
+          "SELECT id, texto_completo
+           FROM documents
+           WHERE texto_completo IS NOT NULL
+             AND texto_completo != ''
+             AND id NOT IN (SELECT DISTINCT document_id FROM text_reuse_signatures)
+           ORDER BY id
+           LIMIT 120000")
+
+        total_docs <- nrow(docs)
+        cat(sprintf("📊 Found %d documents to index\n\n", total_docs))
+
+        if (total_docs == 0) {
+          cat("✅ All documents already indexed!\n")
+          dbDisconnect(con)
+          quit(status = 0)
+        }
+
+        # LSH parameters
+        num_hashes <- 100
+        num_bands <- 20
+        rows_per_band <- 5
+
+        # Process in batches
+        batch_size <- 500
+        num_batches <- ceiling(total_docs / batch_size)
+        start_time <- Sys.time()
+
+        for (batch_num in 1:num_batches) {
+          batch_start <- (batch_num - 1) * batch_size + 1
+          batch_end <- min(batch_num * batch_size, total_docs)
+          batch_docs <- docs[batch_start:batch_end, ]
+
+          # Calculate MinHash signatures
+          for (i in 1:nrow(batch_docs)) {
+            tryCatch({
+              # Create shingles
+              shingles <- create_shingles(batch_docs$texto_completo[i], k = 5)
+
+              if (length(shingles) > 0) {
+                # Create MinHash signature
+                signature <- minhash_signature(shingles, num_hashes = num_hashes)
+
+                # Store signature in database
+                dbExecute(con,
+                  "INSERT INTO text_reuse_signatures (document_id, signature, num_shingles)
+                   VALUES ($1, $2, $3)
+                   ON CONFLICT (document_id) DO NOTHING",
+                  params = list(
+                    batch_docs$id[i],
+                    serialize(signature, NULL),
+                    length(shingles)
+                  ))
+
+                # Create LSH buckets
+                for (band in 1:num_bands) {
+                  band_start <- (band - 1) * rows_per_band + 1
+                  band_end <- band * rows_per_band
+                  band_sig <- signature[band_start:band_end]
+                  bucket_hash <- digest::digest(band_sig, algo = "md5")
+
+                  dbExecute(con,
+                    "INSERT INTO lsh_buckets (band_number, bucket_hash, document_id)
+                     VALUES ($1, $2, $3)
+                     ON CONFLICT (band_number, bucket_hash, document_id) DO NOTHING",
+                    params = list(band, bucket_hash, batch_docs$id[i]))
+                }
+              }
+            }, error = function(e) {
+              cat(sprintf("⚠️  Error processing doc %d: %s\n", batch_docs$id[i], e$message))
+            })
+          }
+
+          # Progress reporting
+          elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+          docs_processed <- batch_end
+          docs_per_sec <- docs_processed / elapsed
+          remaining_docs <- total_docs - docs_processed
+          eta_secs <- remaining_docs / docs_per_sec
+
+          cat(sprintf("✅ Batch %d/%d | Processed: %d/%d (%.1f%%) | Speed: %.1f docs/sec | ETA: %.0f min\n",
+            batch_num, num_batches, docs_processed, total_docs,
+            (docs_processed / total_docs) * 100, docs_per_sec, eta_secs / 60))
+        }
+
+        # Final summary
+        total_time <- as.numeric(difftime(Sys.time(), start_time, units = "mins"))
+        cat("\n============================================================================\n")
+        cat(sprintf("✅ LSH INDEXING COMPLETE\n"))
+        cat(sprintf("📊 Indexed: %d documents\n", total_docs))
+        cat(sprintf("⏱️  Total time: %.1f minutes\n", total_time))
+        cat(sprintf("🚀 Average speed: %.1f docs/sec\n", total_docs / (total_time * 60)))
+        cat("============================================================================\n")
+
+        # Verify results
+        sig_count <- dbGetQuery(con, "SELECT COUNT(*) as cnt FROM text_reuse_signatures")$cnt
+        bucket_count <- dbGetQuery(con, "SELECT COUNT(*) as cnt FROM lsh_buckets")$cnt
+        cat(sprintf("\n📊 Verification:\n"))
+        cat(sprintf("  - Signatures created: %d\n", sig_count))
+        cat(sprintf("  - LSH buckets created: %d\n", bucket_count))
+        cat(sprintf("  - Buckets per document: %.1f\n", bucket_count / sig_count))
+
+        dbDisconnect(con)
+        RSCRIPT
+
+        # Run the R script
+        START_TIME=$$(date +%s)
+        Rscript /tmp/lsh_batch.R
+        R_STATUS=$$?
+        END_TIME=$$(date +%s)
+        DURATION=$$((END_TIME - START_TIME))
+
+        echo ""
+        if [ $$R_STATUS -eq 0 ]; then
+          echo "============================================================================"
+          echo "✅ LSH INDEXING COMPLETED SUCCESSFULLY"
+          echo "============================================================================"
+          echo "Total execution time: $$(($${DURATION} / 60)) minutes $$(($${DURATION} % 60)) seconds"
+          echo ""
+          echo "✅ Text reuse detection is now ready!"
+          echo "   Users can now find similar documents using the 'Reuso de Texto' tab"
+          echo "============================================================================"
+        else
+          echo "============================================================================"
+          echo "❌ LSH INDEXING FAILED"
+          echo "============================================================================"
+          echo "Exit code: $$R_STATUS"
+          echo "Check logs above for error details"
+          echo "============================================================================"
+          exit 1
+        fi
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  diskSizeGb: 100
+
+timeout: 3600s
