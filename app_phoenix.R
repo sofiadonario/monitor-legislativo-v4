@@ -176,6 +176,86 @@ if (file.exists("modules/analytics/text_reuse_server.R")) {
   cat("⚠️ Text Reuse Server Module not found\n")
 }
 
+# Load Network Backbone Extraction Module (Sprint 2 - Network Analytics)
+if (file.exists("R/analytics/network_backbone.R")) {
+  source("R/analytics/network_backbone.R")
+  cat("✅ Network Backbone Module loaded\n")
+} else {
+  cat("⚠️ Network Backbone Module not found\n")
+}
+
+if (file.exists("R/analytics/backbone_visualization.R")) {
+  source("R/analytics/backbone_visualization.R")
+  cat("✅ Backbone Visualization Module loaded\n")
+} else {
+  cat("⚠️ Backbone Visualization Module not found\n")
+}
+
+if (file.exists("modules/analytics/network_backbone_ui.R")) {
+  source("modules/analytics/network_backbone_ui.R")
+  cat("✅ Network Backbone UI Module loaded\n")
+} else {
+  cat("⚠️ Network Backbone UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/network_backbone_server.R")) {
+  source("modules/analytics/network_backbone_server.R")
+  cat("✅ Network Backbone Server Module loaded\n")
+} else {
+  cat("⚠️ Network Backbone Server Module not found\n")
+}
+
+# Load Amendment Pattern Analysis Module (Sprint 2 - Network Analytics)
+if (file.exists("R/analytics/amendment_patterns.R")) {
+  source("R/analytics/amendment_patterns.R")
+  cat("✅ Amendment Pattern Analysis Module loaded\n")
+} else {
+  cat("⚠️ Amendment Pattern Analysis Module not found\n")
+}
+
+if (file.exists("modules/analytics/amendment_ui.R")) {
+  source("modules/analytics/amendment_ui.R")
+  cat("✅ Amendment Analysis UI Module loaded\n")
+} else {
+  cat("⚠️ Amendment Analysis UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/amendment_server.R")) {
+  source("modules/analytics/amendment_server.R")
+  cat("✅ Amendment Analysis Server Module loaded\n")
+} else {
+  cat("⚠️ Amendment Analysis Server Module not found\n")
+}
+
+# Load Anomaly Detection Module (Sprint 2 - Network Analytics)
+if (file.exists("R/analytics/anomaly_detection.R")) {
+  source("R/analytics/anomaly_detection.R")
+  cat("✅ Anomaly Detection Module loaded\n")
+} else {
+  cat("⚠️ Anomaly Detection Module not found\n")
+}
+
+if (file.exists("R/analytics/anomaly_scoring.R")) {
+  source("R/analytics/anomaly_scoring.R")
+  cat("✅ Anomaly Scoring Module loaded\n")
+} else {
+  cat("⚠️ Anomaly Scoring Module not found\n")
+}
+
+if (file.exists("modules/analytics/anomaly_ui.R")) {
+  source("modules/analytics/anomaly_ui.R")
+  cat("✅ Anomaly Detection UI Module loaded\n")
+} else {
+  cat("⚠️ Anomaly Detection UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/anomaly_server.R")) {
+  source("modules/analytics/anomaly_server.R")
+  cat("✅ Anomaly Detection Server Module loaded\n")
+} else {
+  cat("⚠️ Anomaly Detection Server Module not found\n")
+}
+
 # ==============================================================================
 # 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
 # ==============================================================================
@@ -872,6 +952,27 @@ ui <- navbarPage(
     textReuseUI("text_reuse_module")
   ),
 
+  # -- NETWORK BACKBONE EXTRACTION TAB (Sprint 2 - Network Analytics) --
+  tabPanel(
+    "Análise de Redes",
+    icon = icon("project-diagram"),
+    networkBackboneUI("network_backbone_module")
+  ),
+
+  # -- AMENDMENT PATTERN ANALYSIS TAB (Sprint 2 - Network Analytics) --
+  tabPanel(
+    "Padrões de Emendas",
+    icon = icon("edit"),
+    amendmentUI("amendment_module")
+  ),
+
+  # -- ANOMALY DETECTION TAB (Sprint 2 - Network Analytics) --
+  tabPanel(
+    "Detecção de Anomalias",
+    icon = icon("exclamation-triangle"),
+    anomalyUI("anomaly_module")
+  ),
+
   # -- PLACEHOLDER TABS --
   tabPanel("Text Mining", h1("Text Mining"), p("This section is under development."))
 )
@@ -935,6 +1036,45 @@ server <- function(input, output, session) {
     )
   } else {
     cat("⚠️ Text Reuse Detection Module not available\n")
+  }
+
+  # Initialize Network Backbone Module (Sprint 2 - Network Analytics)
+  if (exists("networkBackboneServer")) {
+    cat("✅ Initializing Network Backbone Module\n")
+    network_backbone_module <- networkBackboneServer(
+      "network_backbone_module",
+      db_connection = secure_db_connection,
+      db_available = DB_AVAILABLE,
+      documents_table = DOCUMENTS_TABLE
+    )
+  } else {
+    cat("⚠️ Network Backbone Module not available\n")
+  }
+
+  # Initialize Amendment Pattern Analysis Module (Sprint 2 - Network Analytics)
+  if (exists("amendmentServer")) {
+    cat("✅ Initializing Amendment Pattern Analysis Module\n")
+    amendment_module <- amendmentServer(
+      "amendment_module",
+      db_connection = secure_db_connection,
+      db_available = DB_AVAILABLE,
+      documents_table = DOCUMENTS_TABLE
+    )
+  } else {
+    cat("⚠️ Amendment Pattern Analysis Module not available\n")
+  }
+
+  # Initialize Anomaly Detection Module (Sprint 2 - Network Analytics)
+  if (exists("anomalyServer")) {
+    cat("✅ Initializing Anomaly Detection Module\n")
+    anomaly_module <- anomalyServer(
+      "anomaly_module",
+      db_connection = secure_db_connection,
+      db_available = DB_AVAILABLE,
+      documents_table = DOCUMENTS_TABLE
+    )
+  } else {
+    cat("⚠️ Anomaly Detection Module not available\n")
   }
 
   # -- ESTADO MAPEADO MAP MODULE --

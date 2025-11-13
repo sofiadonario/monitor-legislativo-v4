@@ -45,7 +45,9 @@
       "Bash(PGPASSWORD=\"${PGPASSWORD}\" psql:*)",
       "Bash(gcloud builds submit:*)",
       "Bash(psql:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(cd:*)",
+      "Bash(git push origin main)"
     ],
     "deny": [],
     "ask": []
