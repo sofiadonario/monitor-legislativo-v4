@@ -317,6 +317,51 @@ if (file.exists("modules/analytics/library_analytics_dashboard.R")) {
   cat("⚠️ Library Analytics Dashboard Module not found\n")
 }
 
+# Network Backbone Extraction Module (Sprint 2 - Network Analytics)
+if (file.exists("modules/analytics/network_backbone_ui.R")) {
+  source("modules/analytics/network_backbone_ui.R")
+  cat("✅ Network Backbone UI Module loaded\n")
+} else {
+  cat("⚠️ Network Backbone UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/network_backbone_server.R")) {
+  source("modules/analytics/network_backbone_server.R")
+  cat("✅ Network Backbone Server Module loaded\n")
+} else {
+  cat("⚠️ Network Backbone Server Module not found\n")
+}
+
+# Amendment Pattern Analysis Module (Sprint 2 - Network Analytics)
+if (file.exists("modules/analytics/amendment_ui.R")) {
+  source("modules/analytics/amendment_ui.R")
+  cat("✅ Amendment Pattern UI Module loaded\n")
+} else {
+  cat("⚠️ Amendment Pattern UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/amendment_server.R")) {
+  source("modules/analytics/amendment_server.R")
+  cat("✅ Amendment Pattern Server Module loaded\n")
+} else {
+  cat("⚠️ Amendment Pattern Server Module not found\n")
+}
+
+# Anomaly Detection Module (Sprint 2 - Network Analytics)
+if (file.exists("modules/analytics/anomaly_ui.R")) {
+  source("modules/analytics/anomaly_ui.R")
+  cat("✅ Anomaly Detection UI Module loaded\n")
+} else {
+  cat("⚠️ Anomaly Detection UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/anomaly_server.R")) {
+  source("modules/analytics/anomaly_server.R")
+  cat("✅ Anomaly Detection Server Module loaded\n")
+} else {
+  cat("⚠️ Anomaly Detection Server Module not found\n")
+}
+
 # ==============================================================================
 # 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
 # ==============================================================================

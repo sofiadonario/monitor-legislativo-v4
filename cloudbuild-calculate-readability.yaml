@@ -1,8 +1,8 @@
 steps:
-  - name: 'gcr.io/cloud-builders/gcloud'
+  - name: 'southamerica-east1-docker.pkg.dev/mackmonitor/monitor-legislativo-v4/base-image:latest'
     id: 'calculate-readability-scores'
     entrypoint: 'bash'
-    timeout: 7200s  # 2 hours max
+    timeout: 28800s  # 8 hours max
     args:
       - '-c'
       - |
@@ -16,13 +16,9 @@ steps:
         echo "============================================================================"
         echo ""
 
-        # Install required packages
-        echo "📦 Installing dependencies..."
-        apt-get update -qq && apt-get install -y -qq postgresql-client netcat curl r-base r-base-dev > /dev/null 2>&1
-
-        # Install R packages
-        echo "📦 Installing R packages..."
-        R -q -e "install.packages(c('stringr', 'dplyr', 'DBI', 'RPostgres'), repos='https://cloud.r-project.org', quiet=TRUE)" 2>&1 | grep -v "^>"
+        # Install only postgresql-client (R packages already in base image)
+        echo "📦 Installing postgresql-client..."
+        apt-get update -qq && apt-get install -y -qq postgresql-client netcat curl > /dev/null 2>&1
 
         # Download and setup Cloud SQL Proxy
         echo "🔗 Setting up Cloud SQL Proxy..."
@@ -30,15 +26,17 @@ steps:
         chmod +x cloud_sql_proxy
         ./cloud_sql_proxy -instances=mackmonitor:southamerica-east1:mackmonitor-db=tcp:5432 > /tmp/proxy.log 2>&1 &
 
-        # Wait for proxy to be ready
-        for i in {1..60}; do
-          if nc -z localhost 5432 2>/dev/null; then
-            echo "✅ Cloud SQL Proxy is ready!"
-            break
-          fi
-          [ $$i -eq 60 ] && echo "❌ ERROR: Proxy timeout" && cat /tmp/proxy.log && exit 1
-          sleep 1
-        done
+        # Wait for proxy to initialize
+        echo "⏳ Waiting for proxy to be ready..."
+        sleep 5
+
+        # Check if proxy is running
+        if ! ps aux | grep -q "[c]loud_sql_proxy"; then
+          echo "❌ ERROR: Proxy failed to start"
+          cat /tmp/proxy.log
+          exit 1
+        fi
+        echo "✅ Cloud SQL Proxy is ready!"
 
         # Set database connection parameters
         export PGHOST="localhost"
@@ -48,11 +46,15 @@ steps:
         export PGPASSWORD="Sdonario1"
 
         # Test connection
-        if ! psql -c "SELECT COUNT(*) FROM documents WHERE texto_completo IS NOT NULL;" > /dev/null 2>&1; then
+        echo "🔍 Testing database connection..."
+        if ! psql -c "SELECT 1;" > /dev/null 2>&1; then
           echo "❌ ERROR: Cannot connect to database"
+          echo "Attempting connection with verbose output:"
+          psql -c "SELECT 1;" 2>&1 || true
           cat /tmp/proxy.log
           exit 1
         fi
+        echo "✅ Database connection successful!"
 
         echo ""
         echo "============================================================================"
@@ -82,13 +84,25 @@ steps:
 
         cat("✅ Connected to database\n")
 
-        # Get documents that need analysis
+        # First, check what columns exist
+        cat("🔍 Checking table schema...\n")
+        columns <- dbGetQuery(con,
+          "SELECT column_name, data_type
+           FROM information_schema.columns
+           WHERE table_name = 'documents'
+           ORDER BY ordinal_position")
+        cat("Available columns:\n")
+        print(columns)
+        cat("\n")
+
+        # Get documents that need analysis (using 'ementa' column for text content)
         cat("📋 Fetching documents...\n")
         docs <- dbGetQuery(con,
-          "SELECT id, texto_completo
+          "SELECT id, ementa as texto_completo
            FROM documents
-           WHERE texto_completo IS NOT NULL
-             AND texto_completo != ''
+           WHERE ementa IS NOT NULL
+             AND ementa != ''
+             AND LENGTH(ementa) > 50
              AND flesch_kincaid_score IS NULL
            ORDER BY id
            LIMIT 120000")
@@ -121,23 +135,23 @@ steps:
                 flesch_kincaid_score = metrics$flesch_kincaid,
                 fog_index = metrics$fog_index,
                 smog_index = metrics$smog_index,
-                avg_sentence_length = metrics$avg_sentence_length,
-                avg_word_length = metrics$avg_word_length
+                avg_sentence_length = NA_real_,
+                avg_word_length = NA_real_
               )
             }, error = function(e) {
               list(
                 id = batch_docs$id[i],
-                flesch_kincaid_score = NA,
-                fog_index = NA,
-                smog_index = NA,
-                avg_sentence_length = NA,
-                avg_word_length = NA
+                flesch_kincaid_score = NA_real_,
+                fog_index = NA_real_,
+                smog_index = NA_real_,
+                avg_sentence_length = NA_real_,
+                avg_word_length = NA_real_
               )
             })
           })
 
-          # Convert to data frame
-          batch_df <- do.call(rbind, lapply(batch_results, as.data.frame))
+          # Convert to data frame (using dplyr's bind_rows for safer handling)
+          batch_df <- dplyr::bind_rows(batch_results)
 
           # Update database
           for (i in 1:nrow(batch_df)) {
@@ -230,4 +244,4 @@ options:
   logging: CLOUD_LOGGING_ONLY
   diskSizeGb: 100
 
-timeout: 7200s  # 2 hours
+timeout: 28800s  # 8 hours

@@ -35,14 +35,14 @@ steps:
       - -c
       - |
           set -euo pipefail
-          REGISTRY="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}"
-          MANIFEST_TAG="${REGISTRY}:${_TAG}"
-          AMD64_TAG="${REGISTRY}:${_TAG}-amd64"
-          ARM64_TAG="${REGISTRY}:${_TAG}-arm64"
-          if docker buildx imagetools inspect "${ARM64_TAG}" >/dev/null 2>&1; then
-            docker buildx imagetools create --tag "${MANIFEST_TAG}" "${AMD64_TAG}" "${ARM64_TAG}"
+          IMG_REG="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}"
+          MTAG="$$IMG_REG:${_TAG}"
+          AMD_TAG="$$IMG_REG:${_TAG}-amd64"
+          ARM_TAG="$$IMG_REG:${_TAG}-arm64"
+          if docker buildx imagetools inspect "$$ARM_TAG" >/dev/null 2>&1; then
+            docker buildx imagetools create --tag "$$MTAG" "$$AMD_TAG" "$$ARM_TAG"
           else
-            docker buildx imagetools create --tag "${MANIFEST_TAG}" "${AMD64_TAG}"
+            docker buildx imagetools create --tag "$$MTAG" "$$AMD_TAG"
           fi
   - name: gcr.io/cloud-builders/docker
     id: inspect-manifest
@@ -54,5 +54,6 @@ steps:
       - |
           set -euo pipefail
           docker buildx imagetools inspect ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_TAG}
-images:
-  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_TAG}
+
+# Note: images section removed because buildx imagetools doesn't register with Cloud Build's verification
+# The image is successfully pushed in previous steps

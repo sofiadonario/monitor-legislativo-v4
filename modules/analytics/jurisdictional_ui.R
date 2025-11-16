@@ -439,7 +439,7 @@ jurisdictionalUI <- function(id) {
         br(),
         div(
           class = "viz-container",
-          h4(icon("radar"), " Gráfico Radar - Comparação Multi-Métrica"),
+          h4(icon("chart-area"), " Gráfico Radar - Comparação Multi-Métrica"),
           plotlyOutput(ns("radar_chart_multimetric"), height = "600px")
         ),
         div(
