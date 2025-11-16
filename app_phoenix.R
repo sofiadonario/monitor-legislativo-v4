@@ -154,6 +154,14 @@ if (file.exists("modules/analytics/jurisdictional_server.R")) {
   cat("⚠️ Jurisdictional Comparison Server Module not found\n")
 }
 
+# Load Methodology module
+if (file.exists("R/modules/methodology_module.R")) {
+  source("R/modules/methodology_module.R")
+  cat("✅ Methodology module loaded\n")
+} else {
+  cat("⚠️ Methodology module not found\n")
+}
+
 # Load Text Reuse Detection (LSH) Module (Sprint 1 - Foundation)
 if (file.exists("R/analytics/text_reuse_lsh.R")) {
   source("R/analytics/text_reuse_lsh.R")
@@ -254,6 +262,59 @@ if (file.exists("modules/analytics/anomaly_server.R")) {
   cat("✅ Anomaly Detection Server Module loaded\n")
 } else {
   cat("⚠️ Anomaly Detection Server Module not found\n")
+}
+
+# Load Semantic Search Module (Sprint 3 - Advanced NLP)
+if (file.exists("modules/analytics/semantic_search_ui.R")) {
+  source("modules/analytics/semantic_search_ui.R")
+  cat("✅ Semantic Search UI Module loaded\n")
+} else {
+  cat("⚠️ Semantic Search UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/semantic_search_server.R")) {
+  source("modules/analytics/semantic_search_server.R")
+  cat("✅ Semantic Search Server Module loaded\n")
+} else {
+  cat("⚠️ Semantic Search Server Module not found\n")
+}
+
+# Load Topic Explorer Module (Sprint 3 - Advanced NLP)
+if (file.exists("modules/analytics/topic_explorer_ui.R")) {
+  source("modules/analytics/topic_explorer_ui.R")
+  cat("✅ Topic Explorer UI Module loaded\n")
+} else {
+  cat("⚠️ Topic Explorer UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/topic_explorer_server.R")) {
+  source("modules/analytics/topic_explorer_server.R")
+  cat("✅ Topic Explorer Server Module loaded\n")
+} else {
+  cat("⚠️ Topic Explorer Server Module not found\n")
+}
+
+# Load BERT Precedent Search Module (Sprint 3 - Advanced NLP)
+if (file.exists("modules/analytics/bert_precedent_ui.R")) {
+  source("modules/analytics/bert_precedent_ui.R")
+  cat("✅ BERT Precedent Search UI Module loaded\n")
+} else {
+  cat("⚠️ BERT Precedent Search UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/bert_precedent_server.R")) {
+  source("modules/analytics/bert_precedent_server.R")
+  cat("✅ BERT Precedent Search Server Module loaded\n")
+} else {
+  cat("⚠️ BERT Precedent Search Server Module not found\n")
+}
+
+# Library Analytics Dashboard Module (Sprint 4 - Phase 2)
+if (file.exists("modules/analytics/library_analytics_dashboard.R")) {
+  source("modules/analytics/library_analytics_dashboard.R")
+  cat("✅ Library Analytics Dashboard Module loaded\n")
+} else {
+  cat("⚠️ Library Analytics Dashboard Module not found\n")
 }
 
 # ==============================================================================
@@ -791,22 +852,97 @@ ui <- navbarPage(
     ) # End of fluidPage
   ), # End of Geographic tabPanel
 
-  # -- ANALYTICS TAB (Enhanced with Priority 6 - Advanced Visualizations) --
+
+  # -- ANALYTICS TAB (Sprints 1-2: All 6 Features) --
   tabPanel(
     "Analytics",
-    icon = icon("chart-bar"),
+    icon = icon("chart-line"),
     fluidPage(
-      h2("Análise de Documentos"),
-      p("Análise estatística e visualizações avançadas dos documentos legislativos"),
+      h2(icon("chart-line"), " Advanced Analytics"),
+      p("Análises avançadas de documentos legislativos brasileiros"),
       hr(),
 
-      # Sub-tabs for Basic and Advanced Analytics
       tabsetPanel(
         id = "analytics_subtabs",
+        type = "pills",
 
-        # BASIC ANALYTICS SUB-TAB
+        # Sprint 1 - Foundation Layer
         tabPanel(
-          "Básico",
+          "Legibilidade",
+          icon = icon("book-reader"),
+          br(),
+          readabilityUI("readability_module")
+        ),
+
+        tabPanel(
+          "Comparação Jurisdicional",
+          icon = icon("balance-scale"),
+          br(),
+          jurisdictionalUI("jurisdictional_comparison")
+        ),
+
+        tabPanel(
+          "Reuso de Texto",
+          icon = icon("copy"),
+          br(),
+          text_reuse_ui("text_reuse_module")
+        ),
+
+        # Sprint 2 - Network Analytics
+        tabPanel(
+          "Análise de Redes",
+          icon = icon("project-diagram"),
+          br(),
+          network_backbone_ui("network_backbone_module")
+        ),
+
+        tabPanel(
+          "Padrões de Emendas",
+          icon = icon("edit"),
+          br(),
+          amendment_ui("amendment_module")
+        ),
+
+        tabPanel(
+          "Detecção de Anomalias",
+          icon = icon("exclamation-triangle"),
+          br(),
+          anomalyUI("anomaly_module")
+        ),
+
+        # Sprint 3 - Advanced NLP
+        tabPanel(
+          "Busca Semântica",
+          icon = icon("search"),
+          br(),
+          semantic_search_ui("semantic_search_module")
+        ),
+
+        tabPanel(
+          "Explorador de Tópicos",
+          icon = icon("lightbulb"),
+          br(),
+          topic_explorer_ui("topic_explorer_module")
+        ),
+
+        tabPanel(
+          "Precedentes Jurídicos",
+          icon = icon("gavel"),
+          br(),
+          bert_precedent_ui("bert_precedent_module")
+        ),
+
+        # Library Analytics Dashboard (Sprint 4 - Phase 2)
+        tabPanel(
+          "Analytics da Biblioteca",
+          icon = icon("chart-line"),
+          br(),
+          library_analytics_dashboard_ui()
+        ),
+
+        # Basic Visualizations
+        tabPanel(
+          "Visualizações Básicas",
           icon = icon("chart-simple"),
           br(),
           h3("Estatísticas Gerais"),
@@ -818,13 +954,13 @@ ui <- navbarPage(
           )
         ),
 
-        # ADVANCED VISUALIZATIONS SUB-TAB
+        # Advanced Visualizations
         tabPanel(
-          "Avançado",
-          icon = icon("chart-network"),
+          "Visualizações Avançadas",
+          icon = icon("project-diagram"),
           br(),
-          h3("Visualizações Avançadas"),
-          p("Análises multidimensionais: redes, hierarquias e correlações"),
+          h3("Análises Multidimensionais"),
+          p("Redes, hierarquias e correlações"),
           hr(),
 
           # Advanced visualization controls
@@ -927,50 +1063,15 @@ ui <- navbarPage(
             )
           )
         )
-      ) # End of analytics tabsetPanel
-    ) # End of fluidPage
+      ) # End analytics tabsetPanel
+    ) # End fluidPage
   ),
 
-  # -- READABILITY ANALYTICS TAB (Sprint 1 - Foundation) --
+  # -- METODOLOGIA TAB --
   tabPanel(
-    "Legibilidade",
-    icon = icon("book-reader"),
-    readabilityUI("readability_module")
-  ),
-
-  # -- MULTI-JURISDICTIONAL COMPARISON TAB (Sprint 1 - Foundation) --
-  tabPanel(
-    "Comparação Jurisdicional",
-    icon = icon("balance-scale"),
-    jurisdictionalUI("jurisdictional_comparison")
-  ),
-
-  # -- TEXT REUSE DETECTION TAB (Sprint 1 - Foundation) --
-  tabPanel(
-    "Reuso de Texto",
-    icon = icon("copy"),
-    textReuseUI("text_reuse_module")
-  ),
-
-  # -- NETWORK BACKBONE EXTRACTION TAB (Sprint 2 - Network Analytics) --
-  tabPanel(
-    "Análise de Redes",
-    icon = icon("project-diagram"),
-    networkBackboneUI("network_backbone_module")
-  ),
-
-  # -- AMENDMENT PATTERN ANALYSIS TAB (Sprint 2 - Network Analytics) --
-  tabPanel(
-    "Padrões de Emendas",
-    icon = icon("edit"),
-    amendmentUI("amendment_module")
-  ),
-
-  # -- ANOMALY DETECTION TAB (Sprint 2 - Network Analytics) --
-  tabPanel(
-    "Detecção de Anomalias",
-    icon = icon("exclamation-triangle"),
-    anomalyUI("anomaly_module")
+    "Metodologia",
+    icon = icon("book-open"),
+    methodology_ui("methodology_module")
   ),
 
   # -- PLACEHOLDER TABS --
@@ -1075,6 +1176,59 @@ server <- function(input, output, session) {
     )
   } else {
     cat("⚠️ Anomaly Detection Module not available\n")
+  }
+
+  # Initialize Semantic Search Module (Sprint 3 - Advanced NLP)
+  if (exists("semantic_search_server")) {
+    cat("✅ Initializing Semantic Search Module\n")
+    semantic_search <- semantic_search_server(
+      "semantic_search_module",
+      db_pool = secure_db_connection
+    )
+  } else {
+    cat("⚠️ Semantic Search Module not available\n")
+  }
+
+  # Initialize Topic Explorer Module (Sprint 3 - Advanced NLP)
+  if (exists("topic_explorer_server")) {
+    cat("✅ Initializing Topic Explorer Module\n")
+    topic_explorer <- topic_explorer_server(
+      "topic_explorer_module",
+      db_pool = secure_db_connection
+    )
+  } else {
+    cat("⚠️ Topic Explorer Module not available\n")
+  }
+
+  # Initialize BERT Precedent Search Module (Sprint 3 - Advanced NLP)
+  if (exists("bert_precedent_server")) {
+    cat("✅ Initializing BERT Precedent Search Module\n")
+    bert_precedent <- bert_precedent_server(
+      "bert_precedent_module",
+      db_pool = secure_db_connection
+    )
+  } else {
+    cat("⚠️ BERT Precedent Search Module not available\n")
+  }
+
+  # Initialize Library Analytics Dashboard Module (Sprint 4 - Phase 2)
+  if (exists("library_analytics_server")) {
+    cat("✅ Initializing Library Analytics Dashboard Module\n")
+    library_analytics <- library_analytics_server(
+      input = input,
+      output = output,
+      session = session
+    )
+  } else {
+    cat("⚠️ Library Analytics Dashboard Module not available\n")
+  }
+
+  # Initialize Methodology Module
+  if (exists("methodology_server")) {
+    cat("✅ Initializing Methodology Module\n")
+    methodology_server("methodology_module")
+  } else {
+    cat("⚠️ Methodology Module not available\n")
   }
 
   # -- ESTADO MAPEADO MAP MODULE --
