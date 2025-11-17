@@ -358,6 +358,147 @@ Sprint 4 Phase 1 delivers production-ready user interfaces for all Sprint 3 NLP 
 - `docs/SPRINT4_STATUS_DISCOVERY.md` - Comprehensive implementation analysis
 - `docs/SPRINT4_PLANNING.md` - Feature roadmap and specifications
 
+**Análise de Votação Legislativa (Novembro 2025)**
+
+Análise abrangente de comportamento de votação legislativa, examinando ~1000 proposições em 5 áreas temáticas ao longo de 3 legislaturas brasileiras (2015-2027).
+
+**Recursos Implementados:**
+
+1. **Coleta de Dados de Votação**
+   - Integração com API de Dados Abertos da Câmara dos Deputados
+   - 500 proposições por tema (Transporte, Energia, Cidades, Meio Ambiente, Economia)
+   - População automatizada de dados com Cloud Build
+   - Cobertura de 3 legislaturas: 55 (2015-2019), 56 (2019-2023), 57 (2023-2027)
+
+2. **Esquema de Banco de Dados**
+   - Tabela `bill_events` para rastreamento do ciclo de vida
+   - Tabela `legislators` com informações de partido e estado
+   - Tabela `roll_call_votes` para registros de votação individual
+   - Índices otimizados para busca rápida
+
+3. **Funções de Análise de Dados**
+   - `get_bill_count_by_theme()` - Análise de distribuição temática
+   - `get_bill_timeline()` - Tendências temporais por tema
+   - `get_legislature_distribution()` - Cobertura entre legislaturas
+   - `get_top_legislators()` - Legisladores mais ativos
+   - `get_party_voting_patterns()` - Comportamento de votação por partido
+
+4. **Visualizações**
+   - Gráfico de barras de distribuição temática (horizontal, codificado por cores)
+   - Linha do tempo de atividade de proposições (multi-linha, por tema)
+   - Gráfico de distribuição por legislatura (3 períodos legislativos)
+   - Mapa de calor de votação partidária (gradiente baseado em quantis)
+   - Filtros interativos e design responsivo
+
+5. **Pipeline de Análise Automatizado**
+   - Configuração Cloud Build (`cloudbuild-analyze-voting-data.yaml`)
+   - Timeout de 10 minutos, máquina E2_HIGHCPU_4
+   - Instalação automática de pacotes R
+   - Integração com Cloud SQL Proxy
+   - Resultados salvos em `analysis/voting_data/`
+
+6. **Documentação de Pesquisa**
+   - README abrangente (`R/analytics/README_VOTING_ANALYSIS.md`)
+   - Plano de Análise Avançada (`docs/ADVANCED_ANALYTICS_PLAN.md`)
+   - Plano de Integração com App Shiny (`docs/SHINY_APP_INTEGRATION_PLAN.md`)
+   - Exemplos de fluxo completo e guias de solução de problemas
+
+**Especificações Técnicas:**
+
+**Cobertura de Dados:**
+- **Volume**: ~1000 proposições únicas
+- **Temas**: Transporte (61), Energia (54), Cidades (41), Meio Ambiente (48), Economia (40)
+- **Alcance Temporal**: 2015-2027 (3 legislaturas completas)
+- **Deduplicação Automatizada**: Proposições que aparecem em múltiplos temas contadas uma vez
+
+**Tabelas do Banco de Dados:**
+```sql
+-- Eventos do ciclo de vida das proposições
+CREATE TABLE bill_events (
+  id SERIAL PRIMARY KEY,
+  bill_id TEXT NOT NULL,
+  event_type TEXT CHECK (event_type IN (
+    'introduced', 'committee_assigned', 'passed', 'rejected'
+  )),
+  event_date DATE NOT NULL,
+  days_since_introduction INTEGER,
+  committee_name TEXT,
+  description TEXT,
+  vote_result TEXT
+);
+
+-- Legisladores
+CREATE TABLE legislators (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  party TEXT,
+  state TEXT,
+  position TEXT,
+  term_start DATE,
+  term_end DATE,
+  dw_nominate_1 NUMERIC,
+  dw_nominate_2 NUMERIC
+);
+
+-- Votos nominais
+CREATE TABLE roll_call_votes (
+  id SERIAL PRIMARY KEY,
+  bill_id TEXT NOT NULL,
+  legislator_id TEXT REFERENCES legislators(id),
+  vote TEXT CHECK (vote IN ('yes', 'no', 'abstain', 'absent')),
+  vote_date DATE NOT NULL,
+  session_number INTEGER,
+  party_position TEXT
+);
+```
+
+**Pipeline de Análise:**
+```bash
+# População de dados (60 minutos, E2_HIGHCPU_8)
+gcloud builds submit \
+  --config=cloudbuild-populate-voting-data.yaml \
+  --region=southamerica-east1 \
+  --project=mackmonitor
+
+# Execução de análise (10 minutos, E2_HIGHCPU_4)
+gcloud builds submit \
+  --config=cloudbuild-analyze-voting-data.yaml \
+  --region=southamerica-east1 \
+  --project=mackmonitor
+```
+
+**Aplicações de Pesquisa:**
+
+1. **Análise de Coorte**
+   - Comparar comportamento de votação entre legislaturas
+   - Identificar padrões partidários
+   - Variação regional por estado
+
+2. **Análise Temática**
+   - Taxas de aprovação de proposições por tema
+   - Formação de coalizões de votação
+   - Intensidade de debate legislativo
+
+3. **Perfil de Legisladores**
+   - Frequência de votação e lealdade partidária
+   - Padrões de votação cruzada
+   - Especialização temática
+
+**Impacto:**
+- Dataset de 1000 proposições com registros completos de votação
+- Cobertura temporal de 3 legislaturas para análise de tendências
+- 5 áreas temáticas para pesquisa comparativa de políticas
+- Base para análise preditiva e aprendizado de máquina
+- Documentação de qualidade acadêmica para pesquisa reproduzível
+- Processamento em lote automatizado para análise em larga escala
+
+**Documentação Criada:**
+- `R/analytics/README_VOTING_ANALYSIS.md` - Guia completo de análise (400+ linhas)
+- `docs/ADVANCED_ANALYTICS_PLAN.md` - Roteiro de melhorias futuras
+- `docs/SHINY_APP_INTEGRATION_PLAN.md` - Plano de integração com aplicativo
+- `cloudbuild-populate-voting-data.yaml` - Job de população de dados
+- `cloudbuild-analyze-voting-data.yaml` - Job de execução de análise
+
 ## Features
 
 ### 📊 Core Analytics
