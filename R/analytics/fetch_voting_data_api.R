@@ -252,10 +252,11 @@ fetch_recent_proposals <- function(limit = 200, tema_codes = c(61, 54, 41, 48, 4
     cat(sprintf("Fetching from Theme %d...\n", tema_code))
 
     # Filter by theme code
-    # Order DESC by ID to get most recent bills first (today backwards)
+    # Order ASC by ID to get OLDER bills first (more likely to have votes)
+    # Recent bills are still in committee and haven't been voted on yet
     params <- list(
       codTema = tema_code,
-      ordem = "DESC",
+      ordem = "ASC",
       ordenarPor = "id",
       itens = limit
     )
@@ -415,9 +416,9 @@ populate_voting_data_from_api <- function(pool, limit = 200) {
       }, error = function(e) {
         cat(sprintf("  ⚠️  Events error: %s\n", e$message))
       })
-    }
 
-    processed <- processed + 1
+      processed <- processed + 1
+    }
 
     # Rate limiting (optimized)
     Sys.sleep(0.3)
