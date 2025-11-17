@@ -155,7 +155,7 @@ fetch_proposal_votes <- function(proposal_id) {
         legislator_id = paste0("dep_", v$deputado_$id),
         vote = tolower(v$tipoVoto),
         vote_date = vote_date,
-        session_number = votacao$siglaOrgao,
+        # session_number omitted - API returns text (committee abbreviations) not integers
         stringsAsFactors = FALSE
       )
     })
