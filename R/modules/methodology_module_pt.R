@@ -108,6 +108,10 @@ voting_content_pt <- function() {
   div(
     h4(icon("chart-bar"), " Análise de Dados de Votação"),
 
+    div(class = "alert alert-info",
+      p(strong("Importante:"), " Esta análise inclui ", strong("apenas proposições com votações registradas"), ". Proposições sem dados de votação foram excluídas para garantir análise estatística válida.")
+    ),
+
     wellPanel(
       h5("Visão Geral"),
       p("Análise de comportamento de votação legislativa examinando ~1000 proposições em 5 áreas temáticas (Transporte, Energia, Cidades, Meio Ambiente, Economia) ao longo de 3 legislaturas brasileiras (2015-2027).")
@@ -224,7 +228,8 @@ END'
           tags$li(strong("Cobertura da API:"), " Limitada à Câmara dos Deputados (sem dados do Senado ainda)"),
           tags$li(strong("Dados Históricos:"), " Varia por legislatura (dados mais antigos podem estar incompletos)"),
           tags$li(strong("Mudanças de Legisladores:"), " Trocas de partido no meio do mandato não totalmente capturadas"),
-          tags$li(strong("Contexto de Voto:"), " Faltam emendas de proposições e modificações de comissões")
+          tags$li(strong("Contexto de Voto:"), " Faltam emendas de proposições e modificações de comissões"),
+          tags$li(strong("Seleção de Dados:"), " Apenas proposições com votações registradas foram incluídas na análise. Proposições sem dados de votação foram excluídas para garantir validade estatística")
         )
       )
     )

@@ -362,6 +362,37 @@ if (file.exists("modules/analytics/anomaly_server.R")) {
   cat("⚠️ Anomaly Detection Server Module not found\n")
 }
 
+# Sprint 4 - Predictive Analytics Modules
+# Survival Analysis Module (Sprint 4 - PRD 4.1)
+if (file.exists("modules/analytics/survival_ui.R")) {
+  source("modules/analytics/survival_ui.R")
+  cat("✅ Survival Analysis UI Module loaded\n")
+} else {
+  cat("⚠️ Survival Analysis UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/survival_server.R")) {
+  source("modules/analytics/survival_server.R")
+  cat("✅ Survival Analysis Server Module loaded\n")
+} else {
+  cat("⚠️ Survival Analysis Server Module not found\n")
+}
+
+# Voting Prediction Module (Sprint 4 - PRD 4.2)
+if (file.exists("modules/analytics/voting_ui.R")) {
+  source("modules/analytics/voting_ui.R")
+  cat("✅ Voting Prediction UI Module loaded\n")
+} else {
+  cat("⚠️ Voting Prediction UI Module not found\n")
+}
+
+if (file.exists("modules/analytics/voting_server.R")) {
+  source("modules/analytics/voting_server.R")
+  cat("✅ Voting Prediction Server Module loaded\n")
+} else {
+  cat("⚠️ Voting Prediction Server Module not found\n")
+}
+
 # ==============================================================================
 # 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
 # ==============================================================================
@@ -977,6 +1008,21 @@ ui <- navbarPage(
           bert_precedent_ui("bert_precedent_module")
         ),
 
+        # Sprint 4 - Predictive Analytics
+        tabPanel(
+          "Análise de Sobrevivência",
+          icon = icon("chart-line"),
+          br(),
+          survival_ui("survival_module")
+        ),
+
+        tabPanel(
+          "Previsão de Votos",
+          icon = icon("vote-yea"),
+          br(),
+          voting_ui("voting_module")
+        ),
+
         # Library Analytics Dashboard (Sprint 4 - Phase 2)
         tabPanel(
           "Analytics da Biblioteca",
@@ -1254,6 +1300,28 @@ server <- function(input, output, session) {
     )
   } else {
     cat("⚠️ BERT Precedent Search Module not available\n")
+  }
+
+  # Initialize Survival Analysis Module (Sprint 4 - PRD 4.1)
+  if (exists("survival_server")) {
+    cat("✅ Initializing Survival Analysis Module\n")
+    survival_analysis <- survival_server(
+      "survival_module",
+      pool = secure_db_connection
+    )
+  } else {
+    cat("⚠️ Survival Analysis Module not available\n")
+  }
+
+  # Initialize Voting Prediction Module (Sprint 4 - PRD 4.2)
+  if (exists("voting_server")) {
+    cat("✅ Initializing Voting Prediction Module\n")
+    voting_prediction <- voting_server(
+      "voting_module",
+      pool = secure_db_connection
+    )
+  } else {
+    cat("⚠️ Voting Prediction Module not available\n")
   }
 
   # Initialize Library Analytics Dashboard Module (Sprint 4 - Phase 2)
