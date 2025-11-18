@@ -347,6 +347,28 @@ if (file.exists("modules/analytics/amendment_server.R")) {
   cat("⚠️ Amendment Pattern Server Module not found\n")
 }
 
+# Executive Summary Module (Sprint 4 - Phase 2)
+if (file.exists("modules/executive_summary_ui.R")) {
+  source("modules/executive_summary_ui.R")
+  cat("✅ Executive Summary UI Module loaded\n")
+} else {
+  cat("⚠️ Executive Summary UI Module not found\n")
+}
+
+if (file.exists("modules/executive_summary_server.R")) {
+  source("modules/executive_summary_server.R")
+  cat("✅ Executive Summary Server Module loaded\n")
+} else {
+  cat("⚠️ Executive Summary Server Module not found\n")
+}
+
+if (file.exists("modules/executive_summary_analytics.R")) {
+  source("modules/executive_summary_analytics.R")
+  cat("✅ Executive Summary Analytics Module loaded\n")
+} else {
+  cat("⚠️ Executive Summary Analytics Module not found\n")
+}
+
 # Anomaly Detection Module (Sprint 2 - Network Analytics)
 if (file.exists("modules/analytics/anomaly_ui.R")) {
   source("modules/analytics/anomaly_ui.R")
@@ -564,6 +586,15 @@ ui <- navbarPage(
         )
       )
     )
+  ),
+
+  # -- EXECUTIVE SUMMARY TAB (SPRINT 4 - PHASE 2) --
+  # Module converted to navbarPage-compatible layout (panel_box replaces shinydashboard box)
+  tabPanel(
+    "Executive Summary",
+    icon = icon("dashboard"),
+    br(),
+    executive_summary_ui("executive_summary_module")
   ),
 
   # -- LIBRARY TAB (ENHANCED) --
@@ -1342,6 +1373,18 @@ server <- function(input, output, session) {
     methodology_server("methodology_module")
   } else {
     cat("⚠️ Methodology Module not available\n")
+  }
+
+  # Initialize Executive Summary Module (Sprint 4 - Phase 2)
+  # Module now navbarPage-compatible with panel_box layout
+  if (exists("executive_summary_server")) {
+    cat("✅ Initializing Executive Summary Module\n")
+    executive_summary <- executive_summary_server(
+      "executive_summary_module",
+      db_pool = secure_db_connection
+    )
+  } else {
+    cat("⚠️ Executive Summary Module not available\n")
   }
 
   # -- ESTADO MAPEADO MAP MODULE --
