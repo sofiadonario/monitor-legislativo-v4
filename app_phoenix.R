@@ -221,19 +221,20 @@ if (file.exists("R/analytics/amendment_patterns.R")) {
   cat("⚠️ Amendment Pattern Analysis Module not found\n")
 }
 
-if (file.exists("modules/analytics/amendment_ui.R")) {
-  source("modules/analytics/amendment_ui.R")
-  cat("✅ Amendment Analysis UI Module loaded\n")
-} else {
-  cat("⚠️ Amendment Analysis UI Module not found\n")
-}
-
-if (file.exists("modules/analytics/amendment_server.R")) {
-  source("modules/analytics/amendment_server.R")
-  cat("✅ Amendment Analysis Server Module loaded\n")
-} else {
-  cat("⚠️ Amendment Analysis Server Module not found\n")
-}
+# TEMPORARILY DISABLED: Amendment modules load shinydashboard which conflicts with navbarPage
+# if (file.exists("modules/analytics/amendment_ui.R")) {
+#   source("modules/analytics/amendment_ui.R")
+#   cat("✅ Amendment Analysis UI Module loaded\n")
+# } else {
+#   cat("⚠️ Amendment Analysis UI Module not found\n")
+# }
+#
+# if (file.exists("modules/analytics/amendment_server.R")) {
+#   source("modules/analytics/amendment_server.R")
+#   cat("✅ Amendment Analysis Server Module loaded\n")
+# } else {
+#   cat("⚠️ Amendment Analysis Server Module not found\n")
+# }
 
 # Load Anomaly Detection Module (Sprint 2 - Network Analytics)
 if (file.exists("R/analytics/anomaly_detection.R")) {
@@ -333,19 +334,20 @@ if (file.exists("modules/analytics/network_backbone_server.R")) {
 }
 
 # Amendment Pattern Analysis Module (Sprint 2 - Network Analytics)
-if (file.exists("modules/analytics/amendment_ui.R")) {
-  source("modules/analytics/amendment_ui.R")
-  cat("✅ Amendment Pattern UI Module loaded\n")
-} else {
-  cat("⚠️ Amendment Pattern UI Module not found\n")
-}
-
-if (file.exists("modules/analytics/amendment_server.R")) {
-  source("modules/analytics/amendment_server.R")
-  cat("✅ Amendment Pattern Server Module loaded\n")
-} else {
-  cat("⚠️ Amendment Pattern Server Module not found\n")
-}
+# TEMPORARILY DISABLED: Amendment modules load shinydashboard which conflicts with navbarPage
+# if (file.exists("modules/analytics/amendment_ui.R")) {
+#   source("modules/analytics/amendment_ui.R")
+#   cat("✅ Amendment Pattern UI Module loaded\n")
+# } else {
+#   cat("⚠️ Amendment Pattern UI Module not found\n")
+# }
+#
+# if (file.exists("modules/analytics/amendment_server.R")) {
+#   source("modules/analytics/amendment_server.R")
+#   cat("✅ Amendment Pattern Server Module loaded\n")
+# } else {
+#   cat("⚠️ Amendment Pattern Server Module not found\n")
+# }
 
 # Executive Summary Module (Sprint 4 - Phase 2)
 if (file.exists("modules/executive_summary_ui.R")) {
