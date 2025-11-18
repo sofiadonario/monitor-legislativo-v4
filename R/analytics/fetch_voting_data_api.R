@@ -179,7 +179,10 @@ fetch_proposal_votes <- function(proposal_id) {
     return(NULL)
   }
 
-  bind_rows(all_votes)
+  # Bind all votes and remove duplicates (same bill_id, legislator_id, vote_date)
+  # This handles cases where legislators voted multiple times on same bill/date
+  bind_rows(all_votes) %>%
+    distinct(bill_id, legislator_id, vote_date, .keep_all = TRUE)
 }
 
 #' Fetch Bill Events (Tramitação) for a Proposal
