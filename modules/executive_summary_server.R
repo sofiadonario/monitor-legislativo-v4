@@ -452,71 +452,7 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   #       cat("[EXEC GUARD] exec_geographic_analysis metric column missing – validating\n", file = stderr())
   #       validate(need(FALSE, "Loading geographic data..."))
   #     }
-      if (!"state_clean" %in% names(geo_data)) {
-        cat("[EXEC GUARD] exec_geographic_analysis state_clean column missing – validating\n", file = stderr())
-        validate(need(FALSE, "Loading geographic data..."))
-      }
 
-      metric_values <- suppressWarnings(as.numeric(geo_data[[metric_col]]))
-      distinct_regions <- length(unique(geo_data$state_clean))
-      distinct_metric <- length(unique(metric_values[!is.na(metric_values)]))
-      if (isTRUE(is.na(metric_values[1])) || isTRUE(distinct_regions < 2) || isTRUE(distinct_metric < 2)) {
-        cat(sprintf("[EXEC GUARD] exec_geographic_analysis insufficient variation (regions=%d, values=%d) – validating\n",
-                    distinct_regions, distinct_metric), file = stderr())
-        validate(need(FALSE, "Waiting for additional geographic data..."))
-      }
-
-      cat("[EXEC DEBUG] exec_geographic_analysis rendering geographic chart\n", file = stderr())
-      
-      # Create bar chart
-      geo_data_top <- head(geo_data[order(geo_data[[metric_col]], decreasing = TRUE), ], 15)
-      
-      plot_ly(geo_data_top, 
-              x = ~reorder(state_clean, get(metric_col)), 
-              y = ~get(metric_col),
-              type = 'bar',
-              marker = list(
-                color = ~get(metric_col),
-                colorscale = 'Viridis',
-                showscale = TRUE
-              ),
-              hovertemplate = paste0(
-                "<b>%{x}</b><br>",
-                metric_title, ": %{y}<br>",
-                "Region: ", geo_data_top$region, "<br>",
-                "<extra></extra>"
-              )) %>%
-        layout(
-          title = list(text = paste("Geographic Distribution by", metric_title), font = list(size = 14)),
-          xaxis = list(title = "State", tickangle = -45),
-          yaxis = list(title = metric_title),
-          margin = list(t = 50, b = 100, l = 60, r = 20)
-        )
-      
-    }, error = function(e) {
-      if (inherits(e, "shiny.silent.error")) {
-        stop(e)
-      }
-      # Silently handle "Expecting a single value" errors during startup
-      if (!grepl("Expecting a single value", e$message, fixed = TRUE)) {
-        cat("❌ Error in exec_geographic_analysis:", e$message, "\n", file = stderr())
-      } else {
-        cat("[EXEC SUPPRESS] exec_geographic_analysis captured extent error\n", file = stderr())
-      }
-      plot_ly() %>%
-        add_annotations(
-          text = "Loading chart...",
-          x = 0.5, y = 0.5,
-          showarrow = FALSE,
-          font = list(size = 12, color = "#6c757d")
-        ) %>%
-        layout(
-          xaxis = list(visible = FALSE),
-          yaxis = list(visible = FALSE)
-        )
-    })
-  })
-  
   # ============================================================================
   # 6. ACTION BUTTON HANDLERS
   # ============================================================================
