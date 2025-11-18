@@ -150,10 +150,20 @@ fetch_proposal_votes <- function(proposal_id) {
     if (length(vote_data$dados) == 0) next
 
     votes <- map_df(vote_data$dados, function(v) {
+      # Translate Portuguese vote types to English for DB constraint
+      vote_pt <- tolower(v$tipoVoto)
+      vote_en <- switch(vote_pt,
+        "sim" = "yes",
+        "não" = "no",
+        "abstenção" = "abstain",
+        "obstrução" = "abstain",  # Obstruction votes treated as abstentions
+        "ausente" = "absent",
+        "absent")  # Default to "absent" for unknown types
+
       data.frame(
         bill_id = proposal_id,
         legislator_id = paste0("dep_", v$deputado_$id),
-        vote = tolower(v$tipoVoto),
+        vote = vote_en,
         vote_date = vote_date,
         # session_number omitted - API returns text (committee abbreviations) not integers
         stringsAsFactors = FALSE
