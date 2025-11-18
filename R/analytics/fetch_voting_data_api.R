@@ -462,6 +462,23 @@ populate_voting_data_from_api <- function(pool, limit = 200) {
   if (length(all_votes) > 0) {
     votes_df <- bind_rows(all_votes)
 
+    # Get valid legislator IDs from database to filter out votes for non-existent legislators
+    valid_legislators <- dbGetQuery(con, "SELECT id FROM legislators")$id
+
+    # Count votes before filtering
+    votes_before <- nrow(votes_df)
+
+    # Filter votes to only include those for legislators in the database
+    votes_df <- votes_df %>%
+      filter(legislator_id %in% valid_legislators)
+
+    votes_after <- nrow(votes_df)
+    filtered_count <- votes_before - votes_after
+
+    if (filtered_count > 0) {
+      cat(sprintf("⚠️  Filtered out %d votes for non-existent legislators\n", filtered_count))
+    }
+
     # Clear existing votes
     dbExecute(con, "DELETE FROM roll_call_votes")
     cat("🗑️  Cleared existing roll call votes\n")
