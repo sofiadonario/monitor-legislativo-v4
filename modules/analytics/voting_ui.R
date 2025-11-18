@@ -307,7 +307,7 @@ voting_ui <- function(id) {
     fluidRow(
       box(
         title = "Methodology & References",
-        status = "default",
+        status = "primary",
         solidHeader = TRUE,
         collapsible = TRUE,
         collapsed = TRUE,
