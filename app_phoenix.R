@@ -1005,12 +1005,13 @@ ui <- navbarPage(
           network_backbone_ui("network_backbone_module")
         ),
 
-        tabPanel(
-          "Padrões de Emendas",
-          icon = icon("edit"),
-          br(),
-          amendment_ui("amendment_module")
-        ),
+        # TEMPORARILY DISABLED: Amendment module loads shinydashboard which conflicts with navbarPage
+        # tabPanel(
+        #   "Padrões de Emendas",
+        #   icon = icon("edit"),
+        #   br(),
+        #   amendment_ui("amendment_module")
+        # ),
 
         tabPanel(
           "Detecção de Anomalias",
