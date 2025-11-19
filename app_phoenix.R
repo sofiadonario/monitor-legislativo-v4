@@ -1383,8 +1383,7 @@ server <- function(input, output, session) {
   if (exists("executive_summary_server")) {
     cat("✅ Initializing Executive Summary Module\n")
     executive_summary <- executive_summary_server(
-      "executive_summary_module",
-      db_pool = secure_db_connection
+      "executive_summary_module"
     )
   } else {
     cat("⚠️ Executive Summary Module not available\n")
