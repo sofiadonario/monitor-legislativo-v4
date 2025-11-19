@@ -51,6 +51,28 @@ if (file.exists("R/utils/scalar_utils.R")) {
   cat("⚠️ Scalar utilities not found - some features may fail\n")
 }
 
+# Load input validation module
+if (file.exists("R/security/input_validation.R")) {
+  source("R/security/input_validation.R")
+  cat("✅ Input validation module loaded\n")
+} else {
+  cat("⚠️ Input validation module not found\n")
+}
+
+# ==============================================================================
+# 1.5.5 CONFIGURE SECURITY HEADERS
+# ==============================================================================
+options(shiny.http.response.filter = function(request, response) {
+  response$headers[["X-Frame-Options"]] <- "DENY"
+  response$headers[["X-Content-Type-Options"]] <- "nosniff"
+  response$headers[["X-XSS-Protection"]] <- "1; mode=block"
+  response$headers[["Strict-Transport-Security"]] <- "max-age=31536000; includeSubDomains"
+  response$headers[["Content-Security-Policy"]] <- "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline';"
+  response$headers[["Referrer-Policy"]] <- "strict-origin-when-cross-origin"
+  response
+})
+cat("✅ Security headers configured\n")
+
 # ==============================================================================
 # 1.6 LOAD ENHANCED MODULES
 # ==============================================================================
@@ -418,78 +440,33 @@ if (file.exists("modules/analytics/voting_server.R")) {
 }
 
 # ==============================================================================
-# 2. DATABASE CONNECTION LOGIC (PROVEN & STABLE)
+# 2. DATABASE CONNECTION LOGIC (OPTIMIZED WITH CONNECTION POOLING)
 # ==============================================================================
-# Global connection object
-secure_db_connection <- NULL
+# Phase 2: Performance Optimization - Task 2.1 (Connection Pooling)
+# Replaced single connection with production-grade connection pool
+
+# Source connection pool manager
+source("R/database/pool_manager.R")
+
+# Global connection pool object
+db_pool <- NULL
 DB_AVAILABLE <- FALSE
 
 # Data extraction date from raw data files (./data_current/README.md)
 DATA_EXTRACTION_DATE <- as.Date("2025-10-21")
 
-get_database_config <- function() {
-  # Method 1: PRIORITIZE Google Cloud Run Unix Socket
-  is_in_cloud_run <- !is.na(Sys.getenv("K_SERVICE", unset = NA))
-  if (is_in_cloud_run) {
-    cat("✅ Detected Google Cloud Run environment\n")
-    return(list(
-      host = paste("/cloudsql", "mackmonitor:southamerica-east1:mackmonitor-db", sep = "/"),
-      port = 5432,
-      dbname = Sys.getenv("PGDATABASE", "mackmonitor-db"),
-      user = Sys.getenv("PGUSER", "monitor_user"),
-      password = Sys.getenv("PGPASSWORD", "")
-    ))
-  }
-  
-  # Method 2: Fallback to environment variables for local development
-  cat("📋 Local environment detected. Using PGHOST/PGUSER...\n")
-  
-  # Read database config with proper defaults that match your .Renviron
-  return(list(
-    host = Sys.getenv("PGHOST", "34.39.228.246"),
-    port = as.integer(Sys.getenv("PGPORT", "5432")),
-    dbname = Sys.getenv("PGDATABASE", "mackmonitor-db"),
-    user = Sys.getenv("PGUSER", "monitor_user"),
-    password = Sys.getenv("PGPASSWORD", "")
-  ))
-}
-
-init_secure_database <- function() { 
-  config <- get_database_config()
-  
-  tryCatch({
-    conn <- dbConnect(
-      RPostgres::Postgres(),
-      host = config$host,
-      port = config$port, 
-      dbname = config$dbname,
-      user = config$user,
-      password = config$password,
-      sslmode = "prefer",
-      connect_timeout = 20
-    )
-    
-    cat("✅ SECURE DATABASE CONNECTION ESTABLISHED\n")
-    return(conn)
-    
-  }, error = function(e) {
-    cat("❌ SECURE DATABASE CONNECTION FAILED:", e$message, "\n")
-    return(NULL)
-  })
-}
-
-# Establish connection on app startup
-secure_db_connection <- init_secure_database()
-DB_AVAILABLE <- !is.null(secure_db_connection)
+# Initialize connection pool on app startup
+db_pool <- init_db_pool()
+DB_AVAILABLE <- !is.null(db_pool) && check_pool_health()
 
 # Check which table name to use
 DOCUMENTS_TABLE <- "lexml_documents"  # Default to lexml_documents
 if (DB_AVAILABLE) {
   tables <- tryCatch(
-    dbListTables(secure_db_connection),
+    pool::dbListTables(db_pool),
     error = function(e) character(0)
   )
-  
+
   if ("documents" %in% tables) {
     DOCUMENTS_TABLE <- "documents"
     cat("✅ Using 'documents' table\n")
@@ -615,7 +592,10 @@ ui <- navbarPage(
         wellPanel(
           h4("Filtros de Pesquisa"),
           fluidRow(
-            column(6, textInput("library_search", "Termo de Pesquisa:", placeholder = "Ex: 'tributário' ou 'lei 14.133'")),
+            column(6, tags$div(
+              textInput("library_search", "Termo de Pesquisa:", placeholder = "Ex: 'tributário' ou 'lei 14.133'"),
+              tags$script(HTML("document.getElementById('library_search').setAttribute('maxlength', '500');"))
+            )),
             column(3, selectInput("library_tipo", "Tipo de Documento:",
                    choices = c("Todos", "Lei", "Decreto", "Projeto de Lei", "Medida Provisória",
                               "Resolução", "Portaria", "Instrução Normativa", "Parecer",
@@ -1217,7 +1197,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Enhanced Library Module\n")
     library_enhanced <- libraryEnhancedServer(
       "library_enhanced",
-      db_connection = secure_db_connection,
+      db_connection = db_pool,
       db_available = DB_AVAILABLE,
       documents_table = DOCUMENTS_TABLE
     )
@@ -1230,7 +1210,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Readability Analytics Module\n")
     readability_analytics <- readabilityServer(
       "readability_module",
-      db_connection = secure_db_connection,
+      db_connection = db_pool,
       db_available = DB_AVAILABLE,
       documents_table = DOCUMENTS_TABLE
     )
@@ -1243,7 +1223,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Multi-Jurisdictional Comparison Module\n")
     jurisdictional_comparison <- jurisdictionalServer(
       "jurisdictional_comparison",
-      db_connection = secure_db_connection,
+      db_connection = db_pool,
       db_available = DB_AVAILABLE,
       documents_table = DOCUMENTS_TABLE
     )
@@ -1256,7 +1236,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Text Reuse Detection Module\n")
     text_reuse_module <- text_reuse_server(
       "text_reuse_module",
-      db_connection = secure_db_connection
+      db_connection = db_pool
     )
   } else {
     cat("⚠️ Text Reuse Detection Module not available\n")
@@ -1267,7 +1247,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Network Backbone Module\n")
     network_backbone_module <- network_backbone_server(
       "network_backbone_module",
-      db_connection = secure_db_connection
+      db_connection = db_pool
     )
   } else {
     cat("⚠️ Network Backbone Module not available\n")
@@ -1278,7 +1258,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Amendment Pattern Analysis Module\n")
     amendment_module <- amendmentServer(
       "amendment_module",
-      db_connection = secure_db_connection,
+      db_connection = db_pool,
       db_available = DB_AVAILABLE,
       documents_table = DOCUMENTS_TABLE
     )
@@ -1291,7 +1271,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Anomaly Detection Module\n")
     anomaly_module <- anomalyServer(
       "anomaly_module",
-      db_connection = secure_db_connection,
+      db_connection = db_pool,
       db_available = DB_AVAILABLE,
       documents_table = DOCUMENTS_TABLE
     )
@@ -1304,7 +1284,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Semantic Search Module\n")
     semantic_search <- semantic_search_server(
       "semantic_search_module",
-      db_pool = secure_db_connection
+      db_pool = db_pool
     )
   } else {
     cat("⚠️ Semantic Search Module not available\n")
@@ -1315,7 +1295,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Topic Explorer Module\n")
     topic_explorer <- topic_explorer_server(
       "topic_explorer_module",
-      db_pool = secure_db_connection
+      db_pool = db_pool
     )
   } else {
     cat("⚠️ Topic Explorer Module not available\n")
@@ -1326,7 +1306,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing BERT Precedent Search Module\n")
     bert_precedent <- bert_precedent_server(
       "bert_precedent_module",
-      db_pool = secure_db_connection
+      db_pool = db_pool
     )
   } else {
     cat("⚠️ BERT Precedent Search Module not available\n")
@@ -1389,7 +1369,7 @@ server <- function(input, output, session) {
     tryCatch({
       estadoMapeadoServer(
         "estado_mapeado_map",
-        db_connection = secure_db_connection,
+        db_connection = db_pool,
         table_name = DOCUMENTS_TABLE
       )
     }, error = function(e) {
@@ -1484,7 +1464,7 @@ server <- function(input, output, session) {
       cat("Executing query:", query, "\n")
 
       tryCatch({
-        result <- dbGetQuery(secure_db_connection, query)
+        result <- pool::dbGetQuery(db_pool, query)
         cat("Query returned", nrow(result), "rows\n")
         if (nrow(result) == 0) {
           return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
@@ -1522,10 +1502,10 @@ server <- function(input, output, session) {
 
     tryCatch({
       # Execute all basic stats in separate queries (will optimize to single query in Phase 3)
-      total_result <- dbGetQuery(secure_db_connection, paste("SELECT COUNT(*) as total FROM", DOCUMENTS_TABLE))
-      types_result <- dbGetQuery(secure_db_connection, paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE))
-      latest_result <- dbGetQuery(secure_db_connection, paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE))
-      oldest_result <- dbGetQuery(secure_db_connection, paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE))
+      total_result <- pool::dbGetQuery(db_pool, paste("SELECT COUNT(*) as total FROM", DOCUMENTS_TABLE))
+      types_result <- pool::dbGetQuery(db_pool, paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE))
+      latest_result <- pool::dbGetQuery(db_pool, paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE))
+      oldest_result <- pool::dbGetQuery(db_pool, paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE))
 
       list(
         total_docs = total_result$total,
@@ -1593,7 +1573,7 @@ server <- function(input, output, session) {
         "GROUP BY tipo ",
         "ORDER BY COUNT(*) DESC"
       )
-      dbGetQuery(secure_db_connection, query)
+      pool::dbGetQuery(db_pool, query)
     }, error = function(e) {
       cat("Error fetching type breakdown:", e$message, "\n")
       data.frame(Error = e$message)
@@ -1620,7 +1600,7 @@ server <- function(input, output, session) {
         "ORDER BY data DESC ",
         "LIMIT 10"
       )
-      result <- dbGetQuery(secure_db_connection, query)
+      result <- pool::dbGetQuery(db_pool, query)
 
       # Format the date column
       if (nrow(result) > 0 && "Date" %in% names(result)) {
@@ -2063,7 +2043,7 @@ server <- function(input, output, session) {
     if (!DB_AVAILABLE) return("--")
     # Get state documents (excluding Federal and Justiça Trabalho)
     tryCatch({
-      result <- dbGetQuery(secure_db_connection,
+      result <- pool::dbGetQuery(db_pool,
         "SELECT COUNT(*) as count FROM documents WHERE estado IS NOT NULL AND estado != '' AND estado NOT IN ('Federal', 'Justiça Trabalho')")
       format(result$count[1], big.mark = ",")
     }, error = function(e) "--")
@@ -2072,7 +2052,7 @@ server <- function(input, output, session) {
   output$geo_coverage_federal <- renderText({
     if (!DB_AVAILABLE) return("--")
     tryCatch({
-      result <- dbGetQuery(secure_db_connection,
+      result <- pool::dbGetQuery(db_pool,
         "SELECT COUNT(*) as count FROM documents WHERE estado = 'Federal'")
       format(result$count[1], big.mark = ",")
     }, error = function(e) "--")
@@ -2081,7 +2061,7 @@ server <- function(input, output, session) {
   output$geo_coverage_labor <- renderText({
     if (!DB_AVAILABLE) return("--")
     tryCatch({
-      result <- dbGetQuery(secure_db_connection,
+      result <- pool::dbGetQuery(db_pool,
         "SELECT COUNT(*) as count FROM documents WHERE estado = 'Justiça Trabalho'")
       format(result$count[1], big.mark = ",")
     }, error = function(e) "--")
@@ -2090,7 +2070,7 @@ server <- function(input, output, session) {
   output$geo_coverage_no_urn <- renderText({
     if (!DB_AVAILABLE) return("--")
     tryCatch({
-      result <- dbGetQuery(secure_db_connection,
+      result <- pool::dbGetQuery(db_pool,
         "SELECT COUNT(*) as count FROM documents WHERE estado IS NULL OR estado = ''")
       format(result$count[1], big.mark = ",")
     }, error = function(e) "--")
@@ -2102,7 +2082,7 @@ server <- function(input, output, session) {
   output$federal_total_count <- renderText({
     if (!DB_AVAILABLE) return("--")
     tryCatch({
-      result <- dbGetQuery(secure_db_connection,
+      result <- pool::dbGetQuery(db_pool,
         "SELECT COUNT(*) as count FROM documents WHERE estado = 'Federal'")
       format(result$count[1], big.mark = ".", decimal.mark = ",")
     }, error = function(e) "--")
@@ -2118,7 +2098,7 @@ server <- function(input, output, session) {
 
     tryCatch({
       # Query federal documents by year
-      timeline_data <- dbGetQuery(secure_db_connection,
+      timeline_data <- pool::dbGetQuery(db_pool,
         "SELECT
           EXTRACT(YEAR FROM data::date) as year,
           COUNT(*) as count
@@ -2174,7 +2154,7 @@ server <- function(input, output, session) {
 
     tryCatch({
       # Query federal documents by type (extracted from URN)
-      type_data <- dbGetQuery(secure_db_connection,
+      type_data <- pool::dbGetQuery(db_pool,
         "SELECT
           CASE
             WHEN SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') IS NULL OR SUBSTRING(urn FROM 'br:[^:]+:([^:]+):') = ''
@@ -2262,7 +2242,7 @@ server <- function(input, output, session) {
         LIMIT 10000
       ")
 
-      docs <- dbGetQuery(secure_db_connection, query)
+      docs <- pool::dbGetQuery(db_pool, query)
 
       # Rename columns to match transport module expectations
       if (nrow(docs) > 0) {
@@ -2300,10 +2280,10 @@ server <- function(input, output, session) {
 
     tryCatch({
       list(
-        by_type = dbGetQuery(secure_db_connection,
+        by_type = pool::dbGetQuery(db_pool,
           paste("SELECT tipo_documento AS type, COUNT(*) AS n FROM", DOCUMENTS_TABLE,
                 "WHERE tipo_documento IS NOT NULL GROUP BY tipo_documento ORDER BY n DESC")),
-        by_month = dbGetQuery(secure_db_connection,
+        by_month = pool::dbGetQuery(db_pool,
           paste0("SELECT TO_DATE(ano || '-' || mes || '-01', 'YYYY-MM-DD') AS month, COUNT(*) AS n ",
                  "FROM ", DOCUMENTS_TABLE, " ",
                  "WHERE ano IS NOT NULL AND mes IS NOT NULL ",
@@ -2352,7 +2332,7 @@ server <- function(input, output, session) {
         "WHERE data IS NOT NULL ",
         "LIMIT 1000"  # Limit for performance
       )
-      dbGetQuery(secure_db_connection, query)
+      pool::dbGetQuery(db_pool, query)
     }, error = function(e) {
       cat("Error loading advanced viz data:", e$message, "\n")
       NULL
