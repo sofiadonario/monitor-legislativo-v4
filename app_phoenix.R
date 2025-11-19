@@ -1252,26 +1252,22 @@ server <- function(input, output, session) {
   }
 
   # Initialize Text Reuse Detection Module (Sprint 1 - Foundation)
-  if (exists("textReuseServer")) {
+  if (exists("text_reuse_server")) {
     cat("✅ Initializing Text Reuse Detection Module\n")
-    text_reuse_module <- textReuseServer(
+    text_reuse_module <- text_reuse_server(
       "text_reuse_module",
-      db_connection = secure_db_connection,
-      db_available = DB_AVAILABLE,
-      documents_table = DOCUMENTS_TABLE
+      db_connection = secure_db_connection
     )
   } else {
     cat("⚠️ Text Reuse Detection Module not available\n")
   }
 
   # Initialize Network Backbone Module (Sprint 2 - Network Analytics)
-  if (exists("networkBackboneServer")) {
+  if (exists("network_backbone_server")) {
     cat("✅ Initializing Network Backbone Module\n")
-    network_backbone_module <- networkBackboneServer(
+    network_backbone_module <- network_backbone_server(
       "network_backbone_module",
-      db_connection = secure_db_connection,
-      db_available = DB_AVAILABLE,
-      documents_table = DOCUMENTS_TABLE
+      db_connection = secure_db_connection
     )
   } else {
     cat("⚠️ Network Backbone Module not available\n")
@@ -1382,9 +1378,7 @@ server <- function(input, output, session) {
   # Module now navbarPage-compatible with panel_box layout
   if (exists("executive_summary_server")) {
     cat("✅ Initializing Executive Summary Module\n")
-    executive_summary <- executive_summary_server(
-      "executive_summary_module"
-    )
+    moduleServer("executive_summary_module", executive_summary_server)
   } else {
     cat("⚠️ Executive Summary Module not available\n")
   }
