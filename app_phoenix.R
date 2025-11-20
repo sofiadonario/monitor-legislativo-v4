@@ -451,6 +451,9 @@ source("R/database/pool_manager.R")
 # Source query cache system (Phase 2, Task 2.2)
 source("R/utils/query_cache.R")
 
+# Source pagination utilities (Phase 2, Task 2.3)
+source("R/utils/pagination.R")
+
 # Global connection pool object
 db_pool <- NULL
 DB_AVAILABLE <- FALSE

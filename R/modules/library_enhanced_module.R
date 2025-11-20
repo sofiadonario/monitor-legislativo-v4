@@ -687,16 +687,8 @@ libraryEnhancedServer <- function(id, db_connection, db_available, documents_tab
       }
 
       # Fall back to direct SQL if search service failed or not available
+      # Phase 2, Task 2.3: Integrate pagination utilities with caching
       if (is.null(result)) {
-        # Use optimized pagination query builder from data_service
-        # Source data_service if not already loaded
-        if (!exists("build_paginated_library_query")) {
-          if (file.exists("modules/data_service.R")) {
-            data_service <- source("modules/data_service.R", local = TRUE)$value
-            build_paginated_library_query <- data_service$build_paginated_library_query
-          }
-        }
-
         # Convert sort_by to SQL ORDER BY clause
         order_clause <- switch(current_sort_by,
           "date_desc" = "data DESC",
@@ -716,75 +708,87 @@ libraryEnhancedServer <- function(id, db_connection, db_available, documents_tab
           ano_min_adjusted <- max(as.integer(format(two_years_ago, "%Y")), current_ano_min)
         }
 
-        # Build queries using optimized query builder
-        if (exists("build_paginated_library_query")) {
-          queries <- build_paginated_library_query(
-            search_term = current_search,
-            tipo = current_tipo,
-            estado = current_estado,
-            year_min = ano_min_adjusted,
-            year_max = ano_max_adjusted,
-            date_start = current_date_start,
-            date_end = current_date_end,
-            sort_by = order_clause,
-            limit = current_limit,
-            offset = current_offset,
-            table_name = documents_table
+        # Build base query without LIMIT/OFFSET
+        base_query <- paste("SELECT id, titulo, tipo, data, estado, ementa, resumo FROM", documents_table, "WHERE 1=1")
+
+        if (current_search != "") {
+          search_escaped <- gsub("'", "''", current_search)
+          base_query <- paste0(base_query, " AND (titulo ILIKE '%", search_escaped, "%' OR resumo ILIKE '%", search_escaped, "%')")
+        }
+
+        if (current_tipo != "Todos") {
+          tipo_escaped <- gsub("'", "''", current_tipo)
+          base_query <- paste0(base_query, " AND tipo = '", tipo_escaped, "'")
+        }
+
+        if (current_estado != "Todos") {
+          estado_escaped <- gsub("'", "''", current_estado)
+          base_query <- paste0(base_query, " AND estado = '", estado_escaped, "'")
+        }
+
+        # Add year range filter
+        if (!is.null(ano_min_adjusted) && !is.null(ano_max_adjusted)) {
+          base_query <- paste0(base_query, " AND EXTRACT(YEAR FROM data) BETWEEN ", ano_min_adjusted, " AND ", ano_max_adjusted)
+        }
+
+        # Add date range filter
+        if (!is.null(current_date_start)) {
+          base_query <- paste0(base_query, " AND data >= '", current_date_start, "'")
+        }
+        if (!is.null(current_date_end)) {
+          base_query <- paste0(base_query, " AND data <= '", current_date_end, "'")
+        }
+
+        # Add ORDER BY
+        base_query <- paste(base_query, "ORDER BY", order_clause)
+
+        # Apply pagination using utility function (Phase 2, Task 2.3)
+        paginated_query <- paginate_query(
+          base_query = base_query,
+          page = filters$current_page,
+          page_size = current_limit
+        )
+
+        message("Executing paginated query with caching (Phase 2, Tasks 2.2 + 2.3)")
+
+        # Execute query with caching (Phase 2, Task 2.2)
+        tryCatch({
+          # Use cached_query with pagination
+          result <- cached_query(
+            connection = db_connection,
+            query = paginated_query,
+            params = list(
+              search = current_search,
+              tipo = current_tipo,
+              estado = current_estado,
+              ano_min = ano_min_adjusted,
+              ano_max = ano_max_adjusted,
+              date_start = current_date_start,
+              date_end = current_date_end,
+              sort = current_sort_by,
+              page = filters$current_page,
+              page_size = current_limit
+            ),
+            ttl = CACHE_TTL$search,
+            cache_type = "library"
           )
 
-          message("Executing optimized paginated query")
+          # Extract total rows from paginated result (Phase 2, Task 2.3)
+          if (!is.null(result) && nrow(result) > 0) {
+            pagination_data <- extract_pagination_data(result)
+            result <- pagination_data$data
+            filters$total_count <- pagination_data$total_rows
 
-          # Execute query
-          tryCatch({
-            # Get count first (more efficient)
-            total_result <- dbGetQuery(db_connection, queries$count_query)
-            filters$total_count <- total_result$total[1]
-
-            # Then get paginated results
-            result <- dbGetQuery(db_connection, queries$main_query)
-
-            message("Optimized query returned ", nrow(result), " rows (total: ", filters$total_count, ")")
-
-          }, error = function(e) {
-            message("Database error: ", e$message)
-            result <- data.frame(Error = paste("Database error:", e$message))
+            message("Paginated query returned ", nrow(result), " rows (total: ", filters$total_count, ")")
+          } else {
             filters$total_count <- 0
-          })
-        } else {
-          # Fallback to manual query building if data_service not available
-          message("Warning: build_paginated_library_query not found, using fallback")
-          query <- paste("SELECT id, titulo, tipo, data, estado FROM", documents_table, "WHERE 1=1")
-
-          if (current_search != "") {
-            search_escaped <- gsub("'", "''", current_search)
-            query <- paste0(query, " AND (titulo ILIKE '%", search_escaped, "%' OR resumo ILIKE '%", search_escaped, "%')")
           }
 
-          if (current_tipo != "Todos") {
-            tipo_escaped <- gsub("'", "''", current_tipo)
-            query <- paste0(query, " AND tipo = '", tipo_escaped, "'")
-          }
-
-          if (current_estado != "Todos") {
-            estado_escaped <- gsub("'", "''", current_estado)
-            query <- paste0(query, " AND estado = '", estado_escaped, "'")
-          }
-
-          query <- paste(query, "ORDER BY", order_clause, "LIMIT", current_limit, "OFFSET", current_offset)
-
-          tryCatch({
-            result <- dbGetQuery(db_connection, query)
-            count_query <- gsub("SELECT id, titulo, tipo, data, estado FROM", "SELECT COUNT(*) as total FROM", query)
-            count_query <- gsub("ORDER BY.*", "", count_query)
-            count_query <- gsub("LIMIT.*", "", count_query)
-            total_result <- dbGetQuery(db_connection, count_query)
-            filters$total_count <- total_result$total[1]
-          }, error = function(e) {
-            message("Database error: ", e$message)
-            result <- data.frame(Error = paste("Database error:", e$message))
-            filters$total_count <- 0
-          })
-        }
+        }, error = function(e) {
+          message("Database error: ", e$message)
+          result <- data.frame(Error = paste("Database error:", e$message))
+          filters$total_count <- 0
+        })
       }
 
       # Handle empty results
