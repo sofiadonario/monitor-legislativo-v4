@@ -448,6 +448,9 @@ if (file.exists("modules/analytics/voting_server.R")) {
 # Source connection pool manager
 source("R/database/pool_manager.R")
 
+# Source query cache system (Phase 2, Task 2.2)
+source("R/utils/query_cache.R")
+
 # Global connection pool object
 db_pool <- NULL
 DB_AVAILABLE <- FALSE
@@ -1464,7 +1467,17 @@ server <- function(input, output, session) {
       cat("Executing query:", query, "\n")
 
       tryCatch({
-        result <- pool::dbGetQuery(db_pool, query)
+        result <- cached_query(
+          connection = db_pool,
+          query = query,
+          params = list(
+            search = current_search,
+            tipo = current_tipo,
+            mostrar = current_mostrar
+          ),
+          ttl = CACHE_TTL$search,
+          cache_type = "library"
+        )
         cat("Query returned", nrow(result), "rows\n")
         if (nrow(result) == 0) {
           return(data.frame(Message = "Nenhum documento encontrado para os filtros selecionados."))
@@ -1501,11 +1514,31 @@ server <- function(input, output, session) {
     }
 
     tryCatch({
-      # Execute all basic stats in separate queries (will optimize to single query in Phase 3)
-      total_result <- pool::dbGetQuery(db_pool, paste("SELECT COUNT(*) as total FROM", DOCUMENTS_TABLE))
-      types_result <- pool::dbGetQuery(db_pool, paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE))
-      latest_result <- pool::dbGetQuery(db_pool, paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE))
-      oldest_result <- pool::dbGetQuery(db_pool, paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE))
+      # Execute all basic stats with caching (Phase 2, Task 2.2)
+      total_result <- cached_query(
+        connection = db_pool,
+        query = paste("SELECT COUNT(*) as total FROM", DOCUMENTS_TABLE),
+        ttl = CACHE_TTL$dashboard,
+        cache_type = "dashboard"
+      )
+      types_result <- cached_query(
+        connection = db_pool,
+        query = paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE),
+        ttl = CACHE_TTL$dashboard,
+        cache_type = "dashboard"
+      )
+      latest_result <- cached_query(
+        connection = db_pool,
+        query = paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE),
+        ttl = CACHE_TTL$dashboard,
+        cache_type = "dashboard"
+      )
+      oldest_result <- cached_query(
+        connection = db_pool,
+        query = paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE),
+        ttl = CACHE_TTL$dashboard,
+        cache_type = "dashboard"
+      )
 
       list(
         total_docs = total_result$total,
