@@ -515,6 +515,14 @@ libraryEnhancedServer <- function(id, db_connection, db_available, documents_tab
       last_results = NULL
     )
 
+    # Debounced search input (Phase 2, Task 2.5: 500ms debounce)
+    search_debounced <- debounce(reactive(input$library_search), 500)
+
+    # Throttled filter inputs (Phase 2, Task 2.5: 1s throttle)
+    estado_throttled <- throttle(reactive(input$filter_estado), 1000)
+    tipo_throttled <- throttle(reactive(input$library_tipo), 1000)
+    tema_throttled <- throttle(reactive(input$filter_tema), 1000)
+
     # Trigger initial load
     session$onFlushed(function() {
       isolate({
