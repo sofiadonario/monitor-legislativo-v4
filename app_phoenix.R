@@ -454,6 +454,9 @@ source("R/utils/query_cache.R")
 # Source pagination utilities (Phase 2, Task 2.3)
 source("R/utils/pagination.R")
 
+# Source query optimizer (Phase 2, Task 2.4)
+source("R/database/query_optimizer.R")
+
 # Global connection pool object
 db_pool <- NULL
 DB_AVAILABLE <- FALSE
@@ -464,6 +467,24 @@ DATA_EXTRACTION_DATE <- as.Date("2025-10-21")
 # Initialize connection pool on app startup
 db_pool <- init_db_pool()
 DB_AVAILABLE <- !is.null(db_pool) && check_pool_health()
+
+# Initialize query optimizer (Phase 2, Task 2.4)
+if (DB_AVAILABLE) {
+  optimizer_result <- tryCatch({
+    init_database_query_optimizer(
+      db_connection = db_pool,
+      create_indexes = TRUE,
+      enable_monitoring = TRUE
+    )
+  }, error = function(e) {
+    cat("⚠️ Query optimizer initialization failed:", e$message, "\n")
+    NULL
+  })
+
+  if (!is.null(optimizer_result) && optimizer_result$success) {
+    cat("✅ Query optimizer initialized successfully\n")
+  }
+}
 
 # Check which table name to use
 DOCUMENTS_TABLE <- "lexml_documents"  # Default to lexml_documents
