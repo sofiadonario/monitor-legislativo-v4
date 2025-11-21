@@ -457,6 +457,11 @@ source("R/utils/pagination.R")
 # Source query optimizer (Phase 2, Task 2.4)
 source("R/database/query_optimizer.R")
 
+# Source security modules (Phase 1: Security Integration)
+source("R/database/safe_queries.R")
+source("R/security/csrf_protection.R")
+source("R/security/security_headers.R")
+
 # Global connection pool object
 db_pool <- NULL
 DB_AVAILABLE <- FALSE
@@ -1211,6 +1216,39 @@ ui <- navbarPage(
 )
 
 # ==============================================================================
+# 3.5 SECURITY CONFIGURATION (Phase 1: Security Integration)
+# ==============================================================================
+# Configure security headers for all HTTP responses
+
+options(shiny.http.response.filter = function(request, response) {
+  # Apply security headers
+  response$headers[["X-Frame-Options"]] <- "DENY"
+  response$headers[["X-Content-Type-Options"]] <- "nosniff"
+  response$headers[["X-XSS-Protection"]] <- "1; mode=block"
+  response$headers[["Referrer-Policy"]] <- "strict-origin-when-cross-origin"
+
+  # HSTS - Only enable in production with HTTPS
+  if (Sys.getenv("ENVIRONMENT") == "production") {
+    response$headers[["Strict-Transport-Security"]] <- "max-age=31536000; includeSubDomains"
+  }
+
+  # Content Security Policy
+  response$headers[["Content-Security-Policy"]] <- paste(
+    "default-src 'self';",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com;",
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com;",
+    "img-src 'self' data: https: blob:;",
+    "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net;",
+    "connect-src 'self';",
+    "frame-ancestors 'none';"
+  )
+
+  response
+})
+
+cat("✅ Security headers configured\n")
+
+# ==============================================================================
 # 4. SERVER LOGIC (STABLE & MONOLITHIC - v3 with State Machine)
 # ==============================================================================
 server <- function(input, output, session) {
@@ -1469,36 +1507,54 @@ server <- function(input, output, session) {
       current_mostrar <- as.numeric(filters$mostrar)
       current_trigger <- filters$trigger
 
+      # Validate search input (Phase 1: Security Integration - Input Validation)
+      if (current_search != "") {
+        validation_result <- validate_search_term(current_search)
+        if (!validation_result$valid) {
+          return(data.frame(
+            Error = paste("Erro de validação:", validation_result$error)
+          ))
+        }
+        # Use sanitized version
+        current_search <- validation_result$sanitized
+      }
+
+      # Build parameterized query (Phase 1: Security Integration - SQL Injection Prevention)
       query <- paste("SELECT id, titulo, tipo, data FROM", DOCUMENTS_TABLE)
       conditions <- list()
+      params <- list()
+      param_index <- 1
 
+      # Add search condition with parameterization
       if (current_search != "") {
-        search_term <- gsub("'", "''", current_search)
-        conditions <- c(conditions, paste0("titulo ILIKE '%", search_term, "%'"))
+        conditions <- c(conditions, paste0("titulo ILIKE $", param_index))
+        params[[param_index]] <- paste0("%", current_search, "%")
+        param_index <- param_index + 1
       }
 
+      # Add tipo filter with parameterization
       if (current_tipo != "Todos") {
-        tipo_term <- gsub("'", "''", current_tipo)
-        conditions <- c(conditions, paste0("tipo = '", tipo_term, "'"))
+        conditions <- c(conditions, paste0("tipo = $", param_index))
+        params[[param_index]] <- current_tipo
+        param_index <- param_index + 1
       }
 
+      # Build WHERE clause
       if (length(conditions) > 0) {
         query <- paste(query, "WHERE", paste(conditions, collapse = " AND "))
       }
 
-      query <- paste(query, "ORDER BY data DESC LIMIT", as.integer(current_mostrar))
+      # Add LIMIT with parameterization
+      query <- paste(query, "ORDER BY data DESC LIMIT $", param_index)
+      params[[param_index]] <- as.integer(current_mostrar)
 
-      cat("Executing query:", query, "\n")
+      cat("Executing parameterized query with", length(params), "parameters\n")
 
       tryCatch({
         result <- cached_query(
           connection = db_pool,
           query = query,
-          params = list(
-            search = current_search,
-            tipo = current_tipo,
-            mostrar = current_mostrar
-          ),
+          params = params,
           ttl = CACHE_TTL$search,
           cache_type = "library"
         )
