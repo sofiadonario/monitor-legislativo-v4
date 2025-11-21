@@ -528,14 +528,149 @@ ui <- navbarPage(
   title = "Monitor Legislativo",
   theme = shinytheme("cerulean"), # Re-enabled theme
 
-  # -- Custom CSS to fix blur/rendering bug --
+  # -- Custom CSS and Scripts --
   header = tags$head(
     tags$style(HTML("
       body {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
+
+      /* Cookie Consent Banner (Phase 3: LGPD Compliance - Task 3.2) */
+      #cookie-consent-banner {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #2c3e50;
+        color: white;
+        padding: 20px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+        z-index: 9999;
+        display: none;
+      }
+
+      #cookie-consent-banner.show {
+        display: block;
+        animation: slideUp 0.3s ease-out;
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+
+      .cookie-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .cookie-text {
+        flex: 1;
+        min-width: 300px;
+      }
+
+      .cookie-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .cookie-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s;
+      }
+
+      .cookie-btn.accept {
+        background-color: #27ae60;
+        color: white;
+      }
+
+      .cookie-btn.accept:hover {
+        background-color: #229954;
+      }
+
+      .cookie-btn.reject {
+        background-color: #7f8c8d;
+        color: white;
+      }
+
+      .cookie-btn.reject:hover {
+        background-color: #5d6d7e;
+      }
+    ")),
+
+    # JS Cookie library for cookie management
+    tags$script(src = "https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"),
+
+    # Cookie consent JavaScript
+    tags$script(HTML("
+      // Show cookie banner on page load if consent not given
+      $(document).on('shiny:connected', function() {
+        var cookieConsent = Cookies.get('cookie_consent');
+        if (!cookieConsent) {
+          $('#cookie-consent-banner').addClass('show');
+        }
+      });
+
+      // Hide banner function
+      Shiny.addCustomMessageHandler('hideCookieBanner', function(message) {
+        $('#cookie-consent-banner').removeClass('show');
+        setTimeout(function() {
+          $('#cookie-consent-banner').css('display', 'none');
+        }, 300);
+      });
     "))
+  ),
+
+  # -- Cookie Consent Banner (Phase 3: LGPD Compliance - Task 3.2) --
+  tags$div(
+    id = "cookie-consent-banner",
+    class = "cookie-consent",
+    tags$div(
+      class = "cookie-content",
+      tags$div(
+        class = "cookie-text",
+        tags$p(
+          style = "margin: 0;",
+          HTML("<strong>🍪 Este site utiliza cookies</strong><br>"),
+          "Utilizamos cookies essenciais para o funcionamento do site e cookies analíticos para melhorar sua experiência. ",
+          tags$a(
+            href = "#",
+            onclick = "document.querySelectorAll('.navbar-nav a')[document.querySelectorAll('.navbar-nav a').length-2].click(); return false;",
+            "Leia nossa Política de Privacidade"
+          ),
+          " para mais informações."
+        )
+      ),
+      tags$div(
+        class = "cookie-buttons",
+        tags$button(
+          id = "accept_cookies_btn",
+          class = "cookie-btn accept",
+          onclick = "Shiny.setInputValue('cookie_accept', Math.random()); Cookies.set('cookie_consent', 'accepted', { expires: 365 });",
+          "✓ Aceitar Cookies"
+        ),
+        tags$button(
+          id = "reject_cookies_btn",
+          class = "cookie-btn reject",
+          onclick = "Shiny.setInputValue('cookie_reject', Math.random()); Cookies.set('cookie_consent', 'rejected', { expires: 365 });",
+          "✗ Rejeitar Não Essenciais"
+        )
+      )
+    )
   ),
 
   # -- HOME TAB (EXECUTIVE SUMMARY) --
@@ -1212,7 +1347,39 @@ ui <- navbarPage(
   ),
 
   # -- PLACEHOLDER TABS --
-  tabPanel("Text Mining", h1("Text Mining"), p("This section is under development."))
+  tabPanel("Text Mining", h1("Text Mining"), p("This section is under development.")),
+
+  # -- PRIVACY POLICY TAB (Phase 3: LGPD Compliance - Task 3.5) --
+  tabPanel(
+    "Política de Privacidade",
+    icon = icon("shield-alt"),
+    fluidPage(
+      style = "max-width: 1200px; margin: auto; padding: 20px;",
+      includeMarkdown("docs/lgpd/privacy_policy_pt.md")
+    )
+  ),
+
+  # -- FOOTER (Phase 3: LGPD Compliance - Task 3.6) --
+  footer = tags$footer(
+    style = "background-color: #f8f9fa; border-top: 1px solid #dee2e6; padding: 20px; margin-top: 40px; text-align: center;",
+    HTML("
+      <div style='max-width: 1200px; margin: auto;'>
+        <div style='margin-bottom: 10px;'>
+          <strong>Monitor Legislativo v4</strong> - Universidade Presbiteriana Mackenzie
+        </div>
+        <div style='margin-bottom: 10px;'>
+          <i class='fa fa-shield-alt'></i> <strong>Encarregado de Proteção de Dados (DPO):</strong>
+          <a href='mailto:dpo@mackenzie.br'>dpo@mackenzie.br</a>
+        </div>
+        <div style='font-size: 0.9em; color: #6c757d;'>
+          Para questões sobre privacidade e proteção de dados, entre em contato com nosso DPO.<br>
+          <a href='#' onclick='Shiny.setInputValue(\"show_privacy_policy\", Math.random())'>Política de Privacidade</a> |
+          <a href='https://www.gov.br/anpd/' target='_blank'>ANPD</a> |
+          Em conformidade com a LGPD (Lei nº 13.709/2018)
+        </div>
+      </div>
+    ")
+  )
 )
 
 # ==============================================================================
@@ -1254,6 +1421,54 @@ cat("✅ Security headers configured\n")
 server <- function(input, output, session) {
   # DEBUG: confirm server startup
   cat("=== SERVER FUNCTION STARTED ===\n")
+
+  # ==============================================================================
+  # LGPD COMPLIANCE - COOKIE CONSENT (Phase 3: Task 3.2)
+  # ==============================================================================
+
+  # Handle cookie acceptance
+  observeEvent(input$cookie_accept, {
+    cat("✅ User accepted cookies\n")
+    session$sendCustomMessage("hideCookieBanner", list())
+
+    # Log consent (if audit logging is enabled)
+    if (exists("log_user_action")) {
+      tryCatch({
+        log_user_action(
+          action = "cookie_consent",
+          details = list(
+            consent_type = "accepted",
+            timestamp = Sys.time()
+          ),
+          session = session
+        )
+      }, error = function(e) {
+        cat("⚠️ Could not log cookie consent:", e$message, "\n")
+      })
+    }
+  })
+
+  # Handle cookie rejection
+  observeEvent(input$cookie_reject, {
+    cat("⚠️ User rejected non-essential cookies\n")
+    session$sendCustomMessage("hideCookieBanner", list())
+
+    # Log consent rejection (if audit logging is enabled)
+    if (exists("log_user_action")) {
+      tryCatch({
+        log_user_action(
+          action = "cookie_consent",
+          details = list(
+            consent_type = "rejected",
+            timestamp = Sys.time()
+          ),
+          session = session
+        )
+      }, error = function(e) {
+        cat("⚠️ Could not log cookie rejection:", e$message, "\n")
+      })
+    }
+  })
 
   # -- LIBRARY SERVER LOGIC (ENHANCED) --
 
