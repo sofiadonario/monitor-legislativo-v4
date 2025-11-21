@@ -1,3 +1,11 @@
+# =============================================================================
+# Local Development Environment Configuration
+# =============================================================================
+# SECURITY WARNING: This file contains development credentials
+# Never commit this file to version control
+# See .env.template for setup instructions
+# =============================================================================
+
 PGHOST="34.39.228.246"
 PGPORT="5432"
 PGDATABASE="mackmonitor-db"

@@ -6,7 +6,11 @@
 [![Railway](https://img.shields.io/badge/Deployed%20on-Railway-black.svg)](https://railway.app/)
 [![LGPD](https://img.shields.io/badge/LGPD-Compliant-green.svg)](https://www.lgpd.com.br/)
 [![Tests](https://img.shields.io/badge/Tests-46%20Passing-brightgreen.svg)](tests/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+[![Security](https://img.shields.io/badge/Security-Policy-informational)](SECURITY.md)
+[![Code of Conduct](https://img.shields.io/badge/Code%20of%20Conduct-Contributor%20Covenant-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![Contributing](https://img.shields.io/badge/Contributing-Guide-orange.svg)](CONTRIBUTING.md)
+[![Reproducibility](https://img.shields.io/badge/Research-Reproducible-success.svg)](REPRODUCIBILITY.md)
 
 > **✅ PRODUCTION READY: Comprehensive Platform Consolidation Complete**
 > **Status**: Production Stable | **Version**: 4.0 | **Updated**: November 2025

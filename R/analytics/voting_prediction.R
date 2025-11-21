@@ -477,7 +477,11 @@ main <- function(mode = "full", save_to_db = FALSE) {
     port = as.integer(Sys.getenv("DB_PORT", "5432")),
     dbname = Sys.getenv("DB_NAME", "monitor_legislativo"),
     user = Sys.getenv("DB_USER", "monitor_user"),
-    password = Sys.getenv("DB_PASSWORD", "Sdonario1")
+    password = {
+      pwd <- Sys.getenv("DB_PASSWORD", "")
+      if (pwd == "") stop("DB_PASSWORD environment variable required. Set in .Renviron or system env.")
+      pwd
+    }
   )
 
   on.exit(dbDisconnect(con))

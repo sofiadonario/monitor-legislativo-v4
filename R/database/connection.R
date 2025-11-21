@@ -283,12 +283,16 @@ get_railway_db_config <- function() {
     # Only use hardcoded values as absolute fallback for development
     if (Sys.getenv("R_CONFIG_ACTIVE", "development") == "development") {
       cat("⚠️ Using development fallback configuration\n")
+      password <- Sys.getenv("PGPASSWORD", "")
+      if (password == "") {
+        stop("PGPASSWORD environment variable required. Set in .Renviron or system env.")
+      }
       config <- list(
         host = "localhost",
         port = "5432",
         database = "monitor_legislativo",
         user = "postgres",
-        password = "postgres"
+        password = password
       )
     } else {
       stop("Database configuration incomplete - please set environment variables")

@@ -217,24 +217,51 @@ execute_export <- function(query_params, format, fields = NULL, job_id = NULL) {
   params <- list()
   param_count <- 1
   
+  # SECURITY FIX: Use parameterized queries instead of shQuote() and direct concatenation
   if (!is.null(query_params$estado)) {
-    base_query <- paste(base_query, "AND estado =", shQuote(query_params$estado))
+    base_query <- paste(base_query, "AND estado = $", param_count)
+    params[[param_count]] <- query_params$estado
+    param_count <- param_count + 1
   }
-  
+
   if (!is.null(query_params$ano)) {
-    base_query <- paste(base_query, "AND ano =", as.numeric(query_params$ano))
+    # SECURITY FIX: Validate year parameter before using in SQL
+    ano_num <- suppressWarnings(as.numeric(query_params$ano))
+    if (is.na(ano_num) || ano_num < 1900 || ano_num > 2100) {
+      stop("Invalid ano parameter: must be between 1900 and 2100")
+    }
+    base_query <- paste(base_query, "AND ano = $", param_count)
+    params[[param_count]] <- ano_num
+    param_count <- param_count + 1
   }
-  
+
+  # SECURITY FIX: Use parameterized query instead of shQuote()
   if (!is.null(query_params$tipo)) {
-    base_query <- paste(base_query, "AND LOWER(species) LIKE", shQuote(paste0("%", tolower(query_params$tipo), "%")))
+    base_query <- paste(base_query, "AND LOWER(species) LIKE $", param_count)
+    params[[param_count]] <- paste0("%", tolower(query_params$tipo), "%")
+    param_count <- param_count + 1
   }
-  
+
+  # SECURITY FIX: Validate year_start parameter before using in SQL
   if (!is.null(query_params$year_start)) {
-    base_query <- paste(base_query, "AND ano >=", as.numeric(query_params$year_start))
+    year_start_num <- suppressWarnings(as.numeric(query_params$year_start))
+    if (is.na(year_start_num) || year_start_num < 1900 || year_start_num > 2100) {
+      stop("Invalid year_start parameter: must be between 1900 and 2100")
+    }
+    base_query <- paste(base_query, "AND ano >= $", param_count)
+    params[[param_count]] <- year_start_num
+    param_count <- param_count + 1
   }
-  
+
+  # SECURITY FIX: Validate year_end parameter before using in SQL
   if (!is.null(query_params$year_end)) {
-    base_query <- paste(base_query, "AND ano <=", as.numeric(query_params$year_end))
+    year_end_num <- suppressWarnings(as.numeric(query_params$year_end))
+    if (is.na(year_end_num) || year_end_num < 1900 || year_end_num > 2100) {
+      stop("Invalid year_end parameter: must be between 1900 and 2100")
+    }
+    base_query <- paste(base_query, "AND ano <= $", param_count)
+    params[[param_count]] <- year_end_num
+    param_count <- param_count + 1
   }
   
   # Add ordering and limit

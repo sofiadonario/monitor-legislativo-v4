@@ -69,7 +69,19 @@
       "Bash(gcloud run services describe:*)",
       "Bash(gcloud builds triggers list:*)",
       "Bash(gcloud run services delete:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(gcloud run services logs read:*)",
+      "Bash(gcloud run services list:*)",
+      "Bash(gcloud run revisions list:*)",
+      "Bash(gcloud run services update:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(Rscript -e:*)",
+      "Bash(Rscript:*)",
+      "Bash(gcloud auth login:*)",
+      "Bash(gcloud secrets add-iam-policy-binding:*)",
+      "Bash(R CMD PARSE:*)"
     ],
     "deny": [],
     "ask": []

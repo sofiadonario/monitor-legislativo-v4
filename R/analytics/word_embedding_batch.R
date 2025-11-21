@@ -79,7 +79,10 @@ log_info("Connecting to database...")
 db_host <- Sys.getenv("DB_HOST", "34.151.237.30")
 db_name <- Sys.getenv("DB_NAME", "lexml_db")
 db_user <- Sys.getenv("DB_USER", "mackmonitor")
-db_pass <- Sys.getenv("DB_PASSWORD", "Sdonario1")
+db_pass <- Sys.getenv("DB_PASSWORD", "")
+if (db_pass == "") {
+  stop("DB_PASSWORD environment variable required. Set in .Renviron or system env.")
+}
 db_port <- as.integer(Sys.getenv("DB_PORT", "5432"))
 
 log_info("Database: {db_host}:{db_port}/{db_name}")

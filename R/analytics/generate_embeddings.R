@@ -358,13 +358,18 @@ main <- function(mode = "full", batch_size = 1000, similarity_threshold = 0.5) {
   cat(sprintf("Batch size: %d\n", batch_size))
 
   # Connect to database
+  password <- Sys.getenv("DB_PASSWORD", "")
+  if (password == "") {
+    stop("DB_PASSWORD environment variable required. Set in .Renviron or system env.")
+  }
+
   con <- dbConnect(
     RPostgres::Postgres(),
     host = Sys.getenv("DB_HOST", "localhost"),
     port = as.integer(Sys.getenv("DB_PORT", "5432")),
     dbname = Sys.getenv("DB_NAME", "monitor_legislativo"),
     user = Sys.getenv("DB_USER", "monitor_user"),
-    password = Sys.getenv("DB_PASSWORD", "Sdonario1")
+    password = password
   )
 
   on.exit(dbDisconnect(con))

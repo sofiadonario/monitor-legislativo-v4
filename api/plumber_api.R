@@ -357,11 +357,20 @@ function(state = NULL, year = NULL, type = NULL, limit = 100, offset = 0) {
       query <- paste(query, "ORDER BY data_publicacao DESC LIMIT ? OFFSET ?")
       params <- append(params, c(limit, offset))
       
-      # Execute query with parameters (simplified for this example)
+      # SECURITY FIX: Validate limit and offset parameters before using in SQL
+      limit_num <- suppressWarnings(as.integer(limit))
+      offset_num <- suppressWarnings(as.integer(offset))
+
+      if (is.na(limit_num) || limit_num < 1 || limit_num > 1000) {
+        stop("Invalid limit parameter: must be between 1 and 1000")
+      }
+      if (is.na(offset_num) || offset_num < 0) {
+        stop("Invalid offset parameter: must be non-negative")
+      }
+
+      # Execute query with validated parameters
       base_query <- "SELECT * FROM documents ORDER BY data_publicacao DESC LIMIT $1 OFFSET $2"
-      result <- dbGetQuery(secure_db_pool, 
-                          paste("SELECT * FROM documents ORDER BY data_publicacao DESC LIMIT", 
-                                limit, "OFFSET", offset))
+      result <- dbGetQuery(secure_db_pool, base_query, params = list(limit_num, offset_num))
       
       return(success_response(
         data = result,
@@ -431,8 +440,11 @@ function(id) {
   
   tryCatch({
     if (exists("secure_db_pool") && !is.null(secure_db_pool)) {
-      result <- dbGetQuery(secure_db_pool, 
-                          paste("SELECT * FROM documents WHERE id =", shQuote(id)))
+      # SECURITY FIX: Use parameterized query instead of shQuote()
+      # This prevents SQL injection attacks on the id parameter
+      result <- dbGetQuery(secure_db_pool,
+                          "SELECT * FROM documents WHERE id = $1",
+                          params = list(id))
       
       if (nrow(result) > 0) {
         return(success_response(

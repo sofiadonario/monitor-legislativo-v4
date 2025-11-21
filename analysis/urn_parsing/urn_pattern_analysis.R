@@ -9,13 +9,17 @@ library(dplyr)
 library(stringr)
 
 # Database connection parameters
+password <- Sys.getenv("PGPASSWORD", "")
+if (password == "") {
+  stop("PGPASSWORD environment variable required. Set in .Renviron or system env.")
+}
 con <- dbConnect(
   PostgreSQL(),
   host = "127.0.0.1",
   port = 5433,
   dbname = "monitor_legislativo",
   user = "monitor_user",
-  password = "Sdonario1"
+  password = password
 )
 
 cat("=============================================================\n")
@@ -215,9 +219,18 @@ cat("7. DETAILED URN STRUCTURE PATTERNS\n")
 cat("===========================================================\n\n")
 
 # Get more URNs for comprehensive pattern analysis
-get_detailed_patterns <- function(category_condition, category_name, limit = 100) {
-  query <- sprintf("SELECT urn FROM documents WHERE %s LIMIT %d", category_condition, limit)
-  urns <- dbGetQuery(con, query)$urn
+# SECURITY: Refactored to use parameterized query to prevent SQL injection
+get_detailed_patterns <- function(category_type, category_value, category_name, limit = 100) {
+  # Build parameterized query based on category type
+  if (category_type == "equals") {
+    query <- "SELECT urn FROM documents WHERE estado_mapeado = $1 LIMIT $2"
+    urns <- dbGetQuery(con, query, list(category_value, as.integer(limit)))$urn
+  } else if (category_type == "null") {
+    query <- "SELECT urn FROM documents WHERE estado_mapeado IS NULL LIMIT $1"
+    urns <- dbGetQuery(con, query, list(as.integer(limit)))$urn
+  } else {
+    stop("Invalid category_type. Must be 'equals' or 'null'")
+  }
 
   if (length(urns) == 0) return(NULL)
 
@@ -263,10 +276,11 @@ get_detailed_patterns <- function(category_condition, category_name, limit = 100
 }
 
 # Analyze detailed patterns for each category
-get_detailed_patterns("estado_mapeado = 'Nacional'", "NACIONAL", 100)
-get_detailed_patterns("estado_mapeado = 'Estadual'", "ESTADUAL (GENERIC)", 100)
-get_detailed_patterns("estado_mapeado IS NULL", "NULL", 100)
-get_detailed_patterns("estado_mapeado = 'Não Identificado'", "NÃO IDENTIFICADO", 100)
+# Using parameterized queries to prevent SQL injection
+get_detailed_patterns("equals", "Nacional", "NACIONAL", 100)
+get_detailed_patterns("equals", "Estadual", "ESTADUAL (GENERIC)", 100)
+get_detailed_patterns("null", NULL, "NULL", 100)
+get_detailed_patterns("equals", "Não Identificado", "NÃO IDENTIFICADO", 100)
 
 # ============================================================
 # 8. RECOMMENDATIONS

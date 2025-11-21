@@ -738,8 +738,13 @@ RailwayPerformanceBenchmarkManager <- R6Class(
           
           for (i in 1:5) {  # Each user performs 5 searches
             term <- sample(search_terms, 1)
-            query <- paste0("SELECT * FROM documents WHERE titulo ILIKE '%", term, "%' LIMIT 20")
-            
+            # SECURITY FIX: Escape special characters for LIKE pattern
+            # Escape backslashes first, then % and _
+            safe_term <- gsub("\\\\", "\\\\\\\\", term)
+            safe_term <- gsub("%", "\\\\%", safe_term)
+            safe_term <- gsub("_", "\\\\_", safe_term)
+            query <- paste0("SELECT * FROM documents WHERE titulo ILIKE '%", safe_term, "%' LIMIT 20")
+
             query_start <- Sys.time()
             result <- private$.connection_manager$execute_query(query)
             query_end <- Sys.time()
@@ -854,8 +859,14 @@ RailwayPerformanceBenchmarkManager <- R6Class(
         state <- sample(state_samples, 1)
         
         start_time <- Sys.time()
-        
+
         if (!is.null(private$.connection_manager)) {
+          # SECURITY FIX: Validate and escape state parameter
+          # State codes should be 2-letter uppercase (BR standard)
+          if (!grepl("^[A-Z]{2}$", state)) {
+            warning("Invalid state code: ", state, " - skipping query")
+            next  # Skip this iteration if state is invalid
+          }
           query <- paste0("SELECT COUNT(*) as count FROM documents WHERE estado = '", state, "'")
           result <- private$.connection_manager$execute_query(query)
         } else {

@@ -1,4 +1,4 @@
-# Repository Cleanup Plan
+execute it# Repository Cleanup Plan
 ## Monitor Legislativo v4 - Pre-bslib Migration
 
 **Date**: 2025-10-26

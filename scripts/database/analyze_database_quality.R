@@ -54,12 +54,16 @@ get_database_config <- function() {
 
   # Default to local development
   cat("Using default local configuration\n")
+  password <- Sys.getenv("PGPASSWORD", "")
+  if (password == "") {
+    stop("PGPASSWORD environment variable required. Set in .Renviron or system env.")
+  }
   return(list(
     host = "localhost",
     port = 5432,
     dbname = "monitor_legislativo",
     user = "postgres",
-    password = "postgres"
+    password = password
   ))
 }
 

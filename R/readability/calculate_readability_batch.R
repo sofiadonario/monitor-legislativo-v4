@@ -52,13 +52,18 @@ connect_db <- function() {
   log_debug("Establishing database connection...")
 
   # Get credentials from environment or use defaults
+  password <- Sys.getenv("DB_PASSWORD", "")
+  if (password == "") {
+    stop("DB_PASSWORD environment variable required. Set in .Renviron or system env.")
+  }
+
   con <- dbConnect(
     RPostgres::Postgres(),
     host = Sys.getenv("DB_HOST", "localhost"),
     port = as.integer(Sys.getenv("DB_PORT", "5432")),
     dbname = Sys.getenv("DB_NAME", "monitor_legislativo"),
     user = Sys.getenv("DB_USER", "monitor_user"),
-    password = Sys.getenv("DB_PASSWORD", "Sdonario1")
+    password = password
   )
 
   log_info("Database connection established")

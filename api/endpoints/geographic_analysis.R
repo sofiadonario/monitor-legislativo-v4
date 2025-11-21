@@ -112,12 +112,21 @@ function(req, res, level = "state", metric = "count", estado = NULL, year_start 
           WHERE estado IS NOT NULL AND estado != ''
         "
         
-        # Add year filters if provided
+        # SECURITY FIX: Validate year parameters before using in SQL
+        # Ensure years are numeric and within reasonable range (1900-2100)
         if (!is.null(year_start)) {
-          base_query <- paste(base_query, "AND EXTRACT(YEAR FROM data_publicacao) >=", as.numeric(year_start))
+          year_start_num <- suppressWarnings(as.numeric(year_start))
+          if (is.na(year_start_num) || year_start_num < 1900 || year_start_num > 2100) {
+            stop("Invalid year_start parameter: must be between 1900 and 2100")
+          }
+          base_query <- paste(base_query, "AND EXTRACT(YEAR FROM data_publicacao) >=", year_start_num)
         }
         if (!is.null(year_end)) {
-          base_query <- paste(base_query, "AND EXTRACT(YEAR FROM data_publicacao) <=", as.numeric(year_end))
+          year_end_num <- suppressWarnings(as.numeric(year_end))
+          if (is.na(year_end_num) || year_end_num < 1900 || year_end_num > 2100) {
+            stop("Invalid year_end parameter: must be between 1900 and 2100")
+          }
+          base_query <- paste(base_query, "AND EXTRACT(YEAR FROM data_publicacao) <=", year_end_num)
         }
         
         base_query <- paste(base_query, "
@@ -157,18 +166,27 @@ function(req, res, level = "state", metric = "count", estado = NULL, year_start 
             COUNT(DISTINCT species) as tipos_documentos,
             MIN(data_publicacao) as primeiro_documento,
             MAX(data_publicacao) as ultimo_documento
-          FROM documents 
+          FROM documents
           WHERE estado IS NOT NULL AND estado != ''
         "
-        
-        # Add year filters
+
+        # SECURITY FIX: Validate year parameters before using in SQL
+        # Ensure years are numeric and within reasonable range (1900-2100)
         if (!is.null(year_start)) {
-          query <- paste(query, "AND EXTRACT(YEAR FROM data_publicacao) >=", as.numeric(year_start))
+          year_start_num <- suppressWarnings(as.numeric(year_start))
+          if (is.na(year_start_num) || year_start_num < 1900 || year_start_num > 2100) {
+            stop("Invalid year_start parameter: must be between 1900 and 2100")
+          }
+          query <- paste(query, "AND EXTRACT(YEAR FROM data_publicacao) >=", year_start_num)
         }
         if (!is.null(year_end)) {
-          query <- paste(query, "AND EXTRACT(YEAR FROM data_publicacao) <=", as.numeric(year_end))
+          year_end_num <- suppressWarnings(as.numeric(year_end))
+          if (is.na(year_end_num) || year_end_num < 1900 || year_end_num > 2100) {
+            stop("Invalid year_end parameter: must be between 1900 and 2100")
+          }
+          query <- paste(query, "AND EXTRACT(YEAR FROM data_publicacao) <=", year_end_num)
         }
-        
+
         query <- paste(query, "
           GROUP BY regiao
           ORDER BY total_documentos DESC
@@ -207,15 +225,24 @@ function(req, res, level = "state", metric = "count", estado = NULL, year_start 
         if (!is.null(estado)) {
           query <- paste(query, "AND estado =", shQuote(toupper(estado)))
         }
-        
-        # Add year filters
+
+        # SECURITY FIX: Validate year parameters before using in SQL
+        # Ensure years are numeric and within reasonable range (1900-2100)
         if (!is.null(year_start)) {
-          query <- paste(query, "AND EXTRACT(YEAR FROM data_publicacao) >=", as.numeric(year_start))
+          year_start_num <- suppressWarnings(as.numeric(year_start))
+          if (is.na(year_start_num) || year_start_num < 1900 || year_start_num > 2100) {
+            stop("Invalid year_start parameter: must be between 1900 and 2100")
+          }
+          query <- paste(query, "AND EXTRACT(YEAR FROM data_publicacao) >=", year_start_num)
         }
         if (!is.null(year_end)) {
-          query <- paste(query, "AND EXTRACT(YEAR FROM data_publicacao) <=", as.numeric(year_end))
+          year_end_num <- suppressWarnings(as.numeric(year_end))
+          if (is.na(year_end_num) || year_end_num < 1900 || year_end_num > 2100) {
+            stop("Invalid year_end parameter: must be between 1900 and 2100")
+          }
+          query <- paste(query, "AND EXTRACT(YEAR FROM data_publicacao) <=", year_end_num)
         }
-        
+
         query <- paste(query, "
           GROUP BY municipio, estado
           ORDER BY total_documentos DESC

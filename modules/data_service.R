@@ -205,6 +205,11 @@ apply_filters <- function(data, filters) {
 # Build safe parameterized query (Portuguese column names)
 # This supports server-side pagination with optimized counting
 build_safe_query <- function(filters, limit = NULL, offset = NULL, table_name = "documents") {
+  # SECURITY FIX: Whitelist valid table names to prevent SQL injection
+  valid_tables <- c("documents", "usuarios", "logs", "configuracoes")
+  if (!table_name %in% valid_tables) {
+    stop(paste("Invalid table name:", table_name, "- must be one of:", paste(valid_tables, collapse = ", ")))
+  }
   base_query <- paste("SELECT * FROM", table_name, "WHERE 1=1")
   params <- list()
   param_counter <- 1
@@ -250,6 +255,12 @@ build_safe_query <- function(filters, limit = NULL, offset = NULL, table_name = 
 # Build optimized count query for pagination
 # This creates an efficient COUNT(*) query without loading data
 build_count_query <- function(filters, table_name = "documents") {
+  # SECURITY FIX: Whitelist valid table names to prevent SQL injection
+  valid_tables <- c("documents", "usuarios", "logs", "configuracoes")
+  if (!table_name %in% valid_tables) {
+    stop(paste("Invalid table name:", table_name, "- must be one of:", paste(valid_tables, collapse = ", ")))
+  }
+
   base_query <- paste("SELECT COUNT(*) as total FROM", table_name, "WHERE 1=1")
   params <- list()
   param_counter <- 1
