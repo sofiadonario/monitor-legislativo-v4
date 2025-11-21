@@ -457,6 +457,11 @@ source("R/utils/pagination.R")
 # Source query optimizer (Phase 2, Task 2.4)
 source("R/database/query_optimizer.R")
 
+# Source security modules (Phase 1: Security Integration)
+source("R/database/safe_queries.R")
+source("R/security/csrf_protection.R")
+source("R/security/security_headers.R")
+
 # Global connection pool object
 db_pool <- NULL
 DB_AVAILABLE <- FALSE
@@ -523,14 +528,149 @@ ui <- navbarPage(
   title = "Monitor Legislativo",
   theme = shinytheme("cerulean"), # Re-enabled theme
 
-  # -- Custom CSS to fix blur/rendering bug --
+  # -- Custom CSS and Scripts --
   header = tags$head(
     tags$style(HTML("
       body {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
+
+      /* Cookie Consent Banner (Phase 3: LGPD Compliance - Task 3.2) */
+      #cookie-consent-banner {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #2c3e50;
+        color: white;
+        padding: 20px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+        z-index: 9999;
+        display: none;
+      }
+
+      #cookie-consent-banner.show {
+        display: block;
+        animation: slideUp 0.3s ease-out;
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+
+      .cookie-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .cookie-text {
+        flex: 1;
+        min-width: 300px;
+      }
+
+      .cookie-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .cookie-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s;
+      }
+
+      .cookie-btn.accept {
+        background-color: #27ae60;
+        color: white;
+      }
+
+      .cookie-btn.accept:hover {
+        background-color: #229954;
+      }
+
+      .cookie-btn.reject {
+        background-color: #7f8c8d;
+        color: white;
+      }
+
+      .cookie-btn.reject:hover {
+        background-color: #5d6d7e;
+      }
+    ")),
+
+    # JS Cookie library for cookie management
+    tags$script(src = "https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"),
+
+    # Cookie consent JavaScript
+    tags$script(HTML("
+      // Show cookie banner on page load if consent not given
+      $(document).on('shiny:connected', function() {
+        var cookieConsent = Cookies.get('cookie_consent');
+        if (!cookieConsent) {
+          $('#cookie-consent-banner').addClass('show');
+        }
+      });
+
+      // Hide banner function
+      Shiny.addCustomMessageHandler('hideCookieBanner', function(message) {
+        $('#cookie-consent-banner').removeClass('show');
+        setTimeout(function() {
+          $('#cookie-consent-banner').css('display', 'none');
+        }, 300);
+      });
     "))
+  ),
+
+  # -- Cookie Consent Banner (Phase 3: LGPD Compliance - Task 3.2) --
+  tags$div(
+    id = "cookie-consent-banner",
+    class = "cookie-consent",
+    tags$div(
+      class = "cookie-content",
+      tags$div(
+        class = "cookie-text",
+        tags$p(
+          style = "margin: 0;",
+          HTML("<strong>🍪 Este site utiliza cookies</strong><br>"),
+          "Utilizamos cookies essenciais para o funcionamento do site e cookies analíticos para melhorar sua experiência. ",
+          tags$a(
+            href = "#",
+            onclick = "document.querySelectorAll('.navbar-nav a')[document.querySelectorAll('.navbar-nav a').length-2].click(); return false;",
+            "Leia nossa Política de Privacidade"
+          ),
+          " para mais informações."
+        )
+      ),
+      tags$div(
+        class = "cookie-buttons",
+        tags$button(
+          id = "accept_cookies_btn",
+          class = "cookie-btn accept",
+          onclick = "Shiny.setInputValue('cookie_accept', Math.random()); Cookies.set('cookie_consent', 'accepted', { expires: 365 });",
+          "✓ Aceitar Cookies"
+        ),
+        tags$button(
+          id = "reject_cookies_btn",
+          class = "cookie-btn reject",
+          onclick = "Shiny.setInputValue('cookie_reject', Math.random()); Cookies.set('cookie_consent', 'rejected', { expires: 365 });",
+          "✗ Rejeitar Não Essenciais"
+        )
+      )
+    )
   ),
 
   # -- HOME TAB (EXECUTIVE SUMMARY) --
@@ -581,13 +721,21 @@ ui <- navbarPage(
         column(6,
           wellPanel(
             h4(icon("list"), " Documents by Type"),
-            DT::dataTableOutput("home_type_breakdown")
+            shinycssloaders::withSpinner(
+              DT::dataTableOutput("home_type_breakdown"),
+              type = 6,
+              color = "#3c8dbc"
+            )
           )
         ),
         column(6,
           wellPanel(
             h4(icon("calendar-alt"), " Recent Activity (Last 10)"),
-            DT::dataTableOutput("home_recent_activity")
+            shinycssloaders::withSpinner(
+              DT::dataTableOutput("home_recent_activity"),
+              type = 6,
+              color = "#3c8dbc"
+            )
           )
         )
       )
@@ -634,7 +782,11 @@ ui <- navbarPage(
         ),
         hr(),
         h4("Resultados da Pesquisa"),
-        DT::dataTableOutput("library_table")
+        shinycssloaders::withSpinner(
+          DT::dataTableOutput("library_table"),
+          type = 6,
+          color = "#3c8dbc"
+        )
       )
     }
   ),
@@ -1207,8 +1359,73 @@ ui <- navbarPage(
   ),
 
   # -- PLACEHOLDER TABS --
-  tabPanel("Text Mining", h1("Text Mining"), p("This section is under development."))
+  tabPanel("Text Mining", h1("Text Mining"), p("This section is under development.")),
+
+  # -- PRIVACY POLICY TAB (Phase 3: LGPD Compliance - Task 3.5) --
+  tabPanel(
+    "Política de Privacidade",
+    icon = icon("shield-alt"),
+    fluidPage(
+      style = "max-width: 1200px; margin: auto; padding: 20px;",
+      includeMarkdown("docs/lgpd/privacy_policy_pt.md")
+    )
+  ),
+
+  # -- FOOTER (Phase 3: LGPD Compliance - Task 3.6) --
+  footer = tags$footer(
+    style = "background-color: #f8f9fa; border-top: 1px solid #dee2e6; padding: 20px; margin-top: 40px; text-align: center;",
+    HTML("
+      <div style='max-width: 1200px; margin: auto;'>
+        <div style='margin-bottom: 10px;'>
+          <strong>Monitor Legislativo v4</strong> - Universidade Presbiteriana Mackenzie
+        </div>
+        <div style='margin-bottom: 10px;'>
+          <i class='fa fa-shield-alt'></i> <strong>Encarregado de Proteção de Dados (DPO):</strong>
+          <a href='mailto:dpo@mackenzie.br'>dpo@mackenzie.br</a>
+        </div>
+        <div style='font-size: 0.9em; color: #6c757d;'>
+          Para questões sobre privacidade e proteção de dados, entre em contato com nosso DPO.<br>
+          <a href='#' onclick='Shiny.setInputValue(\"show_privacy_policy\", Math.random())'>Política de Privacidade</a> |
+          <a href='https://www.gov.br/anpd/' target='_blank'>ANPD</a> |
+          Em conformidade com a LGPD (Lei nº 13.709/2018)
+        </div>
+      </div>
+    ")
+  )
 )
+
+# ==============================================================================
+# 3.5 SECURITY CONFIGURATION (Phase 1: Security Integration)
+# ==============================================================================
+# Configure security headers for all HTTP responses
+
+options(shiny.http.response.filter = function(request, response) {
+  # Apply security headers
+  response$headers[["X-Frame-Options"]] <- "DENY"
+  response$headers[["X-Content-Type-Options"]] <- "nosniff"
+  response$headers[["X-XSS-Protection"]] <- "1; mode=block"
+  response$headers[["Referrer-Policy"]] <- "strict-origin-when-cross-origin"
+
+  # HSTS - Only enable in production with HTTPS
+  if (Sys.getenv("ENVIRONMENT") == "production") {
+    response$headers[["Strict-Transport-Security"]] <- "max-age=31536000; includeSubDomains"
+  }
+
+  # Content Security Policy
+  response$headers[["Content-Security-Policy"]] <- paste(
+    "default-src 'self';",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com;",
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com;",
+    "img-src 'self' data: https: blob:;",
+    "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net;",
+    "connect-src 'self';",
+    "frame-ancestors 'none';"
+  )
+
+  response
+})
+
+cat("✅ Security headers configured\n")
 
 # ==============================================================================
 # 4. SERVER LOGIC (STABLE & MONOLITHIC - v3 with State Machine)
@@ -1216,6 +1433,54 @@ ui <- navbarPage(
 server <- function(input, output, session) {
   # DEBUG: confirm server startup
   cat("=== SERVER FUNCTION STARTED ===\n")
+
+  # ==============================================================================
+  # LGPD COMPLIANCE - COOKIE CONSENT (Phase 3: Task 3.2)
+  # ==============================================================================
+
+  # Handle cookie acceptance
+  observeEvent(input$cookie_accept, {
+    cat("✅ User accepted cookies\n")
+    session$sendCustomMessage("hideCookieBanner", list())
+
+    # Log consent (if audit logging is enabled)
+    if (exists("log_user_action")) {
+      tryCatch({
+        log_user_action(
+          action = "cookie_consent",
+          details = list(
+            consent_type = "accepted",
+            timestamp = Sys.time()
+          ),
+          session = session
+        )
+      }, error = function(e) {
+        cat("⚠️ Could not log cookie consent:", e$message, "\n")
+      })
+    }
+  })
+
+  # Handle cookie rejection
+  observeEvent(input$cookie_reject, {
+    cat("⚠️ User rejected non-essential cookies\n")
+    session$sendCustomMessage("hideCookieBanner", list())
+
+    # Log consent rejection (if audit logging is enabled)
+    if (exists("log_user_action")) {
+      tryCatch({
+        log_user_action(
+          action = "cookie_consent",
+          details = list(
+            consent_type = "rejected",
+            timestamp = Sys.time()
+          ),
+          session = session
+        )
+      }, error = function(e) {
+        cat("⚠️ Could not log cookie rejection:", e$message, "\n")
+      })
+    }
+  })
 
   # -- LIBRARY SERVER LOGIC (ENHANCED) --
 
@@ -1469,36 +1734,54 @@ server <- function(input, output, session) {
       current_mostrar <- as.numeric(filters$mostrar)
       current_trigger <- filters$trigger
 
+      # Validate search input (Phase 1: Security Integration - Input Validation)
+      if (current_search != "") {
+        validation_result <- validate_search_term(current_search)
+        if (!validation_result$valid) {
+          return(data.frame(
+            Error = paste("Erro de validação:", validation_result$error)
+          ))
+        }
+        # Use sanitized version
+        current_search <- validation_result$sanitized
+      }
+
+      # Build parameterized query (Phase 1: Security Integration - SQL Injection Prevention)
       query <- paste("SELECT id, titulo, tipo, data FROM", DOCUMENTS_TABLE)
       conditions <- list()
+      params <- list()
+      param_index <- 1
 
+      # Add search condition with parameterization
       if (current_search != "") {
-        search_term <- gsub("'", "''", current_search)
-        conditions <- c(conditions, paste0("titulo ILIKE '%", search_term, "%'"))
+        conditions <- c(conditions, paste0("titulo ILIKE $", param_index))
+        params[[param_index]] <- paste0("%", current_search, "%")
+        param_index <- param_index + 1
       }
 
+      # Add tipo filter with parameterization
       if (current_tipo != "Todos") {
-        tipo_term <- gsub("'", "''", current_tipo)
-        conditions <- c(conditions, paste0("tipo = '", tipo_term, "'"))
+        conditions <- c(conditions, paste0("tipo = $", param_index))
+        params[[param_index]] <- current_tipo
+        param_index <- param_index + 1
       }
 
+      # Build WHERE clause
       if (length(conditions) > 0) {
         query <- paste(query, "WHERE", paste(conditions, collapse = " AND "))
       }
 
-      query <- paste(query, "ORDER BY data DESC LIMIT", as.integer(current_mostrar))
+      # Add LIMIT with parameterization
+      query <- paste(query, "ORDER BY data DESC LIMIT $", param_index)
+      params[[param_index]] <- as.integer(current_mostrar)
 
-      cat("Executing query:", query, "\n")
+      cat("Executing parameterized query with", length(params), "parameters\n")
 
       tryCatch({
         result <- cached_query(
           connection = db_pool,
           query = query,
-          params = list(
-            search = current_search,
-            tipo = current_tipo,
-            mostrar = current_mostrar
-          ),
+          params = params,
           ttl = CACHE_TTL$search,
           cache_type = "library"
         )
