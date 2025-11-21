@@ -721,13 +721,21 @@ ui <- navbarPage(
         column(6,
           wellPanel(
             h4(icon("list"), " Documents by Type"),
-            DT::dataTableOutput("home_type_breakdown")
+            shinycssloaders::withSpinner(
+              DT::dataTableOutput("home_type_breakdown"),
+              type = 6,
+              color = "#3c8dbc"
+            )
           )
         ),
         column(6,
           wellPanel(
             h4(icon("calendar-alt"), " Recent Activity (Last 10)"),
-            DT::dataTableOutput("home_recent_activity")
+            shinycssloaders::withSpinner(
+              DT::dataTableOutput("home_recent_activity"),
+              type = 6,
+              color = "#3c8dbc"
+            )
           )
         )
       )
@@ -774,7 +782,11 @@ ui <- navbarPage(
         ),
         hr(),
         h4("Resultados da Pesquisa"),
-        DT::dataTableOutput("library_table")
+        shinycssloaders::withSpinner(
+          DT::dataTableOutput("library_table"),
+          type = 6,
+          color = "#3c8dbc"
+        )
       )
     }
   ),
