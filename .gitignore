@@ -212,6 +212,7 @@ cloudbuild-*.yaml
 !docs/MARKDOWN_CLEANUP_PLAN.md
 !analysis/README.md
 !database/migrations/README.md
+!docs/prd/*.md
 
 # Prevent markdown proliferation - specific patterns
 *_SUMMARY*.md
