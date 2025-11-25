@@ -926,7 +926,4 @@ calculate_query_success_rate <- function(recent_queries) {
   return((successful_queries / length(recent_queries)) * 100)
 }
 
-cat(\"🗄️ Database Query Optimizer loaded - Week 8 Performance Implementation\
-\")
-cat(\"   Optimized for PostgreSQL on Railway with Brazilian legislative data\
-\")"
+

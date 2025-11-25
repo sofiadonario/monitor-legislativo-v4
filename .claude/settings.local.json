@@ -81,7 +81,15 @@
       "Bash(Rscript:*)",
       "Bash(gcloud auth login:*)",
       "Bash(gcloud secrets add-iam-policy-binding:*)",
-      "Bash(R CMD PARSE:*)"
+      "Bash(R CMD PARSE:*)",
+      "Bash(gcloud sql instances list:*)",
+      "Bash(gcloud config get-value:*)",
+      "Bash(gcloud secrets list:*)",
+      "Bash(gcloud secrets versions access:*)",
+      "Bash(gcloud sql users list:*)",
+      "Bash(\"/Users/sofiadonario/Library/CloudStorage/OneDrive-Personal/Doutorado Stuff/MackIntegridade/monitor_legislativo_v4/R/database/query_optimizer.R\")",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

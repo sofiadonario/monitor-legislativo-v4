@@ -455,7 +455,13 @@ source("R/utils/query_cache.R")
 source("R/utils/pagination.R")
 
 # Source query optimizer (Phase 2, Task 2.4)
-source("R/database/query_optimizer.R")
+tryCatch({
+  source("R/database/query_optimizer.R")
+  cat("✅ Query optimizer loaded\n")
+}, error = function(e) {
+  cat("⚠️ Query optimizer failed to load:", e$message, "\n")
+  cat("⚠️ Continuing without query optimizer\n")
+})
 
 # Source security modules (Phase 1: Security Integration)
 source("R/database/safe_queries.R")
