@@ -420,3 +420,5 @@ mackmonitor:*
 # Personal/unrelated files
 R analysis/
 "R analysis/"
+# Allow architecture documentation
+!docs/architecture/*.md
