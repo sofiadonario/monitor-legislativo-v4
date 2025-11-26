@@ -9,7 +9,12 @@
 # Version: 1.0
 # ==============================================================================
 
-library(googleCloudStorageR)
+# Check and load required packages
+GCS_DEPENDENCIES_AVAILABLE <- requireNamespace("googleCloudStorageR", quietly = TRUE)
+
+if (!GCS_DEPENDENCIES_AVAILABLE) {
+  warning("Cloud Storage dependencies not available (googleCloudStorageR)")
+}
 
 # Global bucket name (configured in Week 1)
 GCS_BUCKET_NAME <- "monitor-legislativo-reports"
@@ -19,6 +24,12 @@ GCS_BUCKET_NAME <- "monitor-legislativo-reports"
 #' @return TRUE if successful, FALSE otherwise
 #' @export
 init_gcs_auth <- function() {
+  # Check dependencies first
+  if (!GCS_DEPENDENCIES_AVAILABLE) {
+    cat("❌ googleCloudStorageR package not available\n")
+    return(FALSE)
+  }
+
   tryCatch({
     # Check if running on Google Cloud (uses Application Default Credentials)
     if (nchar(Sys.getenv("GOOGLE_CLOUD_PROJECT")) > 0 ||

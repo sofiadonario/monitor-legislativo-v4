@@ -9,8 +9,13 @@
 # Version: 1.0
 # ==============================================================================
 
-library(rmarkdown)
-library(pagedown)
+# Check and load required packages
+PDF_DEPENDENCIES_AVAILABLE <- requireNamespace("rmarkdown", quietly = TRUE) &&
+                              requireNamespace("pagedown", quietly = TRUE)
+
+if (!PDF_DEPENDENCIES_AVAILABLE) {
+  warning("PDF generation dependencies not available (rmarkdown, pagedown)")
+}
 
 #' Generate executive summary PDF report
 #'
@@ -21,6 +26,11 @@ library(pagedown)
 #' @return Path to generated PDF file
 #' @export
 generate_executive_pdf <- function(kpis, state_summary, monthly_trends, output_dir = "/tmp") {
+  # Check dependencies first
+  if (!PDF_DEPENDENCIES_AVAILABLE) {
+    stop("PDF generation dependencies not available. Please install: rmarkdown, pagedown")
+  }
+
   tryCatch({
     cat("📄 Generating executive PDF report...\n")
 
