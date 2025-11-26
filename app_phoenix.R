@@ -393,6 +393,14 @@ if (file.exists("modules/executive_summary_analytics.R")) {
   cat("⚠️ Executive Summary Analytics Module not found\n")
 }
 
+# Executive Export Module (Week 2 - BI Enhancements)
+if (file.exists("R/modules/executive_export_module.R")) {
+  source("R/modules/executive_export_module.R")
+  cat("✅ Executive Export Module loaded\n")
+} else {
+  cat("⚠️ Executive Export Module not found\n")
+}
+
 # Anomaly Detection Module (Sprint 2 - Network Analytics)
 if (file.exists("modules/analytics/anomaly_ui.R")) {
   source("modules/analytics/anomaly_ui.R")
@@ -754,6 +762,11 @@ ui <- navbarPage(
     "Executive Summary",
     icon = icon("dashboard"),
     br(),
+
+    # Export Module (Week 2 - BI Enhancements)
+    if (exists("executive_export_ui")) executive_export_ui("executive_export_module"),
+
+    # Executive Summary UI
     executive_summary_ui("executive_summary_module")
   ),
 
@@ -1659,6 +1672,14 @@ server <- function(input, output, session) {
     moduleServer("executive_summary_module", executive_summary_server)
   } else {
     cat("⚠️ Executive Summary Module not available\n")
+  }
+
+  # Initialize Executive Export Module (Week 2 - BI Enhancements)
+  if (exists("executive_export_server") && DB_AVAILABLE) {
+    cat("✅ Initializing Executive Export Module\n")
+    executive_export_server("executive_export_module", db_pool = pool)
+  } else {
+    cat("⚠️ Executive Export Module not available or DB not connected\n")
   }
 
   # -- ESTADO MAPEADO MAP MODULE --
