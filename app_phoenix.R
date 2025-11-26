@@ -394,9 +394,15 @@ if (file.exists("modules/executive_summary_analytics.R")) {
 }
 
 # Executive Export Module (Week 2 - BI Enhancements)
+# Only load if dependencies available (pagedown, googleCloudStorageR)
 if (file.exists("R/modules/executive_export_module.R")) {
-  source("R/modules/executive_export_module.R")
-  cat("✅ Executive Export Module loaded\n")
+  tryCatch({
+    source("R/modules/executive_export_module.R")
+    cat("✅ Executive Export Module loaded\n")
+  }, error = function(e) {
+    cat("⚠️ Executive Export Module failed to load:", e$message, "\n")
+    cat("⚠️ PDF/HTML export features will be disabled\n")
+  })
 } else {
   cat("⚠️ Executive Export Module not found\n")
 }
@@ -1676,8 +1682,13 @@ server <- function(input, output, session) {
 
   # Initialize Executive Export Module (Week 2 - BI Enhancements)
   if (exists("executive_export_server") && DB_AVAILABLE) {
-    cat("✅ Initializing Executive Export Module\n")
-    executive_export_server("executive_export_module", db_pool = pool)
+    tryCatch({
+      cat("✅ Initializing Executive Export Module\n")
+      executive_export_server("executive_export_module", db_pool = pool)
+    }, error = function(e) {
+      cat("⚠️ Executive Export Module initialization failed:", e$message, "\n")
+      cat("⚠️ Export features will be disabled\n")
+    })
   } else {
     cat("⚠️ Executive Export Module not available or DB not connected\n")
   }
