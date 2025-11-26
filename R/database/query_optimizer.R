@@ -64,8 +64,7 @@ init_database_query_optimizer <- function(db_connection = NULL,
                                          create_indexes = TRUE,
                                          enable_monitoring = TRUE) {
   
-  cat(\"🗄️ Initializing Database Query Optimizer for PostgreSQL\
-\")
+  cat("🗄️ Initializing Database Query Optimizer for PostgreSQL\n")
   
   tryCatch({
     # Validate database connection
@@ -92,14 +91,10 @@ init_database_query_optimizer <- function(db_connection = NULL,
     # Optimize connection settings for Railway
     optimize_connection_settings(db_connection)
     
-    cat(\"✅ Database Query Optimizer initialized successfully\
-\")
-    cat(\"   - Schema tables analyzed:\", length(schema_analysis$tables), \"\
-\")
-    cat(\"   - Indexes created:\", if(create_indexes) length(index_creation_results$created) else 0, \"\
-\")
-    cat(\"   - Monitoring enabled:\", enable_monitoring, \"\
-\")
+    cat("✅ Database Query Optimizer initialized successfully\n")
+    cat("   - Schema tables analyzed:", length(schema_analysis$tables), "\n")
+    cat("   - Indexes created:", if(create_indexes) length(index_creation_results$created) else 0, "\n")
+    cat("   - Monitoring enabled:", enable_monitoring, "\n")
     
     return(list(
       status = \"success\",
@@ -110,9 +105,8 @@ init_database_query_optimizer <- function(db_connection = NULL,
     ))
     
   }, error = function(e) {
-    cat(\"❌ Database optimization initialization failed:\", e$message, \"\
-\")
-    return(list(status = \"error\", error = e$message))
+    cat("❌ Database optimization initialization failed:", e$message, "\n")
+    return(list(status = "error", error = e$message))
   })
 }
 
@@ -188,10 +182,8 @@ execute_optimized_query <- function(query, params = NULL,
       track_query_performance(query, execution_time_ms, \"error\", query_hash, e$message)
     }
     
-    cat(\"❌ Query execution error:\", e$message, \"\
-\")
-    cat(\"   Query:\", substr(query, 1, 100), \"...\
-\")
+    cat("❌ Query execution error:", e$message, "\n")
+    cat("   Query:", substr(query, 1, 100), "...\n")
     
     stop(e)
   })
@@ -211,8 +203,7 @@ execute_optimized_query <- function(query, params = NULL,
 optimize_legislative_search_query <- function(search_terms, filters = list(),
                                              limit = 100, offset = 0) {
   
-  cat(\"🔍 Optimizing legislative search query...\
-\")
+  cat(\"🔍 Optimizing legislative search query...\n\")
   
   # Build optimized search query with PostgreSQL features
   optimized_query <- build_optimized_search_query(search_terms, filters, limit, offset)
@@ -225,8 +216,7 @@ optimize_legislative_search_query <- function(search_terms, filters = list(),
     track_performance = TRUE
   )
   
-  cat(\"✅ Legislative search completed:\", nrow(search_results), \"results\
-\")
+  cat(\"✅ Legislative search completed:\", nrow(search_results), \"results\n\")
   
   return(search_results)
 }
@@ -241,8 +231,7 @@ optimize_legislative_search_query <- function(search_terms, filters = list(),
 #' @export
 create_optimized_indexes <- function(db_connection) {
   
-  cat(\"🔧 Creating optimized indexes for Brazilian legislative data...\
-\")
+  cat(\"🔧 Creating optimized indexes for Brazilian legislative data...\n\")
   
   index_creation_results <- list(
     created = character(0),
@@ -324,32 +313,25 @@ create_optimized_indexes <- function(db_connection) {
       index_exists <- check_index_exists(db_connection, index_def$name)
       
       if (index_exists) {
-        cat(\"   ⏭️ Index already exists:\", index_def$name, \"\
-\")
+        cat(\"   ⏭️ Index already exists:\", index_def$name, \"\n\")
         index_creation_results$skipped <- c(index_creation_results$skipped, index_def$name)
       } else {
         # Create the index
         dbExecute(db_connection, index_def$sql)
-        cat(\"   ✅ Created index:\", index_def$name, \"\
-\")
+        cat(\"   ✅ Created index:\", index_def$name, \"\n\")
         index_creation_results$created <- c(index_creation_results$created, index_def$name)
       }
       
     }, error = function(e) {
-      cat(\"   ❌ Failed to create index:\", index_def$name, \"-\", e$message, \"\
-\")
+      cat(\"   ❌ Failed to create index:\", index_def$name, \"-\", e$message, \"\n\")
       index_creation_results$failed <- c(index_creation_results$failed, index_def$name)
     })
   }
   
-  cat(\"🔧 Index creation completed:\
-\")
-  cat(\"   - Created:\", length(index_creation_results$created), \"indexes\
-\")
-  cat(\"   - Skipped:\", length(index_creation_results$skipped), \"indexes\
-\")
-  cat(\"   - Failed:\", length(index_creation_results$failed), \"indexes\
-\")
+  cat(\"🔧 Index creation completed:\n\")
+  cat(\"   - Created:\", length(index_creation_results$created), \"indexes\n\")
+  cat(\"   - Skipped:\", length(index_creation_results$skipped), \"indexes\n\")
+  cat(\"   - Failed:\", length(index_creation_results$failed), \"indexes\n\")
   
   return(index_creation_results)
 }
@@ -364,8 +346,7 @@ create_optimized_indexes <- function(db_connection) {
 #' @export
 analyze_database_schema <- function(db_connection) {
   
-  cat(\"🔍 Analyzing database schema for optimization opportunities...\
-\")
+  cat(\"🔍 Analyzing database schema for optimization opportunities...\n\")
   
   tryCatch({
     # Get table information
@@ -394,20 +375,15 @@ analyze_database_schema <- function(db_connection) {
       )
     )
     
-    cat(\"✅ Schema analysis completed:\
-\")
-    cat(\"   - Tables analyzed:\", length(tables_info), \"\
-\")
-    cat(\"   - Existing indexes:\", length(existing_indexes), \"\
-\")
-    cat(\"   - Optimization recommendations:\", length(schema_analysis$optimization_recommendations), \"\
-\")
+    cat(\"✅ Schema analysis completed:\n\")
+    cat(\"   - Tables analyzed:\", length(tables_info), \"\n\")
+    cat(\"   - Existing indexes:\", length(existing_indexes), \"\n\")
+    cat(\"   - Optimization recommendations:\", length(schema_analysis$optimization_recommendations), \"\n\")
     
     return(schema_analysis)
     
   }, error = function(e) {
-    cat(\"❌ Schema analysis failed:\", e$message, \"\
-\")
+    cat(\"❌ Schema analysis failed:\", e$message, \"\n\")
     return(list(status = \"error\", error = e$message))
   })
 }
@@ -443,8 +419,7 @@ get_optimized_db_connection <- function() {
     return(conn)
     
   }, error = function(e) {
-    cat(\"❌ Database connection failed:\", e$message, \"\
-\")
+    cat(\"❌ Database connection failed:\", e$message, \"\n\")
     stop(\"Could not establish optimized database connection\")
   })
 }
@@ -493,12 +468,10 @@ configure_connection_performance <- function(db_connection) {
       dbExecute(db_connection, setting)
     }
     
-    cat(\"⚙️ Database connection optimized for Railway PostgreSQL\
-\")
+    cat(\"⚙️ Database connection optimized for Railway PostgreSQL\n\")
     
   }, error = function(e) {
-    cat(\"⚠️ Warning: Could not apply all performance settings:\", e$message, \"\
-\")
+    cat(\"⚠️ Warning: Could not apply all performance settings:\", e$message, \"\n\")
   })
 }
 
@@ -587,12 +560,10 @@ configure_portuguese_text_search <- function(db_connection) {
     # Set as default text search configuration
     dbExecute(db_connection, \"SET default_text_search_config = 'portuguese'\")
     
-    cat(\"🇧🇷 Portuguese text search configuration enabled\
-\")
+    cat(\"🇧🇷 Portuguese text search configuration enabled\n\")
     
   }, error = function(e) {
-    cat(\"⚠️ Warning: Portuguese text search setup failed:\", e$message, \"\
-\")
+    cat(\"⚠️ Warning: Portuguese text search setup failed:\", e$message, \"\n\")
   })
 }
 
@@ -634,10 +605,8 @@ track_query_performance <- function(query, execution_time_ms, status, query_hash
 #' Handle slow query detection and optimization
 handle_slow_query <- function(query, execution_time_ms, execution_plan = NULL) {
   
-  cat(\"🐌 Slow query detected:\", round(execution_time_ms, 2), \"ms\
-\")
-  cat(\"   Query:\", substr(query, 1, 100), \"...\
-\")
+  cat(\"🐌 Slow query detected:\", round(execution_time_ms, 2), \"ms\n\")
+  cat(\"   Query:\", substr(query, 1, 100), \"...\n\")
   
   # Analyze why the query was slow
   slow_query_analysis <- analyze_slow_query(query, execution_time_ms, execution_plan)
@@ -646,11 +615,9 @@ handle_slow_query <- function(query, execution_time_ms, execution_plan = NULL) {
   optimization_suggestions <- generate_query_optimization_suggestions(query, slow_query_analysis)
   
   if (length(optimization_suggestions) > 0) {
-    cat(\"   💡 Optimization suggestions:\
-\")
+    cat(\"   💡 Optimization suggestions:\n\")
     for (suggestion in optimization_suggestions) {
-      cat(\"      -\", suggestion, \"\
-\")
+      cat(\"      -\", suggestion, \"\n\")
     }
   }
 }
@@ -834,19 +801,16 @@ optimize_connection_settings <- function(db_connection) {
       dbExecute(db_connection, setting)
     }
     
-    cat(\"🔧 Connection settings optimized for Railway\
-\")
+    cat(\"🔧 Connection settings optimized for Railway\n\")
     
   }, error = function(e) {
-    cat(\"⚠️ Warning: Connection optimization failed:\", e$message, \"\
-\")
+    cat(\"⚠️ Warning: Connection optimization failed:\", e$message, \"\n\")
   })
 }
 
 setup_query_monitoring <- function(db_connection) {
   
-  cat(\"📊 Query performance monitoring enabled\
-\")
+  cat(\"📊 Query performance monitoring enabled\n\")
   
   # In production, this would set up:
   # - pg_stat_statements extension
@@ -856,11 +820,9 @@ setup_query_monitoring <- function(db_connection) {
   tryCatch({
     # Enable query statistics if available
     dbExecute(db_connection, \"SELECT pg_stat_reset()\")
-    cat(\"   - Query statistics reset\
-\")
+    cat(\"   - Query statistics reset\n\")
   }, error = function(e) {
-    cat(\"   - Query statistics not available\
-\")
+    cat(\"   - Query statistics not available\n\")
   })
 }
 
