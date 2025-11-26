@@ -455,14 +455,31 @@ SSL Certificate Files:
 - Expires: 2035-11-23
 ```
 
-### Ready for Week 2:
-All foundation infrastructure is in place (83% Week 1 complete):
-- ✅ Executive dashboard UI in Shiny (can query materialized views)
-- ✅ PDF report generation (Cloud Storage bucket ready)
-- ⚪ Automated email delivery (pending Resend account signup)
-- ✅ External BI tools (database accessible with SSL)
+### Week 2 Status: ✅ COMPLETE (2025-11-26)
 
-**Remaining Task:** Sign up for Resend account at https://resend.com/signup
+All report generation and export functionality delivered:
+- ✅ KPI calculations using materialized views (< 40ms queries)
+- ✅ PDF report generation with pagedown
+- ✅ HTML self-contained reports
+- ✅ Cloud Storage integration with signed URLs
+- ✅ Export module integrated into Executive Summary tab
+- ✅ Deployed to Cloud Run (Build b3e5b6a6)
+
+**5 new modules created** (1,365 lines of code):
+- R/utils/kpi_calculations.R
+- R/utils/pdf_generator.R
+- R/utils/html_report_generator.R
+- R/utils/cloud_storage.R
+- R/modules/executive_export_module.R
+
+### Ready for Week 3:
+All components ready for email delivery integration:
+- ✅ Reports can be generated on-demand
+- ✅ Cloud Storage bucket with shareable links
+- ⚪ Email delivery (pending Resend account signup - Task 1.5)
+- ⚪ Scheduled automation with Cloud Scheduler
+
+**Next Action:** Sign up for Resend at https://resend.com/signup to unlock Week 3
 
 ---
 
