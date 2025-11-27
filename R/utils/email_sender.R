@@ -10,8 +10,13 @@
 # Week 3 - Task 3.2
 # ==============================================================================
 
-library(httr)
-library(jsonlite)
+# Check and load required packages
+EMAIL_DEPENDENCIES_AVAILABLE <- requireNamespace("httr", quietly = TRUE) &&
+                                requireNamespace("jsonlite", quietly = TRUE)
+
+if (!EMAIL_DEPENDENCIES_AVAILABLE) {
+  warning("Email sender dependencies not available (httr, jsonlite)")
+}
 
 # Resend API configuration
 RESEND_API_URL <- "https://api.resend.com/emails"

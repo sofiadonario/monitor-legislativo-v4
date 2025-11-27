@@ -11,8 +11,13 @@
 # Version: 1.0
 # ==============================================================================
 
-library(DBI)
-library(RPostgres)
+# Check and load required packages
+KPI_DEPENDENCIES_AVAILABLE <- requireNamespace("DBI", quietly = TRUE) &&
+                              requireNamespace("RPostgres", quietly = TRUE)
+
+if (!KPI_DEPENDENCIES_AVAILABLE) {
+  warning("KPI calculation dependencies not available (DBI, RPostgres)")
+}
 
 #' Get executive KPIs from materialized view
 #'

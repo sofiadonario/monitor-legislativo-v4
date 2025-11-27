@@ -9,9 +9,14 @@
 # Week 3 - Task 3.4
 # ==============================================================================
 
-library(shiny)
-library(DBI)
-library(DT)
+# Check and load required packages
+RECIPIENT_MGMT_DEPENDENCIES <- requireNamespace("shiny", quietly = TRUE) &&
+                                requireNamespace("DBI", quietly = TRUE) &&
+                                requireNamespace("DT", quietly = TRUE)
+
+if (!RECIPIENT_MGMT_DEPENDENCIES) {
+  warning("Recipient management dependencies not available (shiny, DBI, DT)")
+}
 
 #' Recipient Management UI
 #'
