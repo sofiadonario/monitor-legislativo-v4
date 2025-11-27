@@ -262,17 +262,17 @@ gcloud secrets add-iam-policy-binding bi-readonly-password \
 
 ---
 
-### Task 1.5: Resend Email Account Setup
+### Task 1.5: Resend Email Account Setup ✅ COMPLETE
 **Objective:** Configure professional email delivery for reports
 **Estimated Time:** 45 minutes
 **Cost Impact:** $0 (FREE tier: 3,000 emails/month)
 
 #### Steps:
-- [ ] Sign up for Resend account
-- [ ] Verify sender domain (optional)
-- [ ] Generate API key
-- [ ] Test email sending
-- [ ] Store API key in Secret Manager
+- [x] Sign up for Resend account
+- [ ] Verify sender domain (optional - not needed for testing)
+- [x] Generate API key
+- [x] Test email sending
+- [x] Store API key in Secret Manager
 
 #### Implementation:
 ```bash
@@ -308,10 +308,20 @@ curl -X POST https://api.resend.com/emails \
 3. Update "from" addresses to use verified domain
 
 **Success Criteria:**
-- Account created and verified
-- API key generated and stored securely
-- Test email delivered successfully
-- Domain verified (if using custom domain)
+- ✅ Account created and verified
+- ✅ API key generated and stored securely
+- ✅ Test email delivered successfully (ID: 54166d4f-b72e-4a82-a049-b82daf74ba0c)
+- ⚪ Domain verification (optional - deferred)
+
+**Completion Summary (2025-11-27):**
+- Secret created: `resend-api-key` in GCP Secret Manager
+- Permissions granted: Cloud Run service account has `secretAccessor` role
+- Test email sent to: sofiadonario@hotmail.com ✅
+- Setup guide created: `docs/resend-setup-guide.md`
+- Email template created: `R/templates/email_report_template.html`
+- Ready for Week 3 email delivery integration!
+
+**Note:** Free tier allows sending only to account owner email (sofiadonario@hotmail.com) until domain is verified. This is sufficient for development and testing.
 
 ---
 
@@ -411,7 +421,7 @@ Once Week 1 foundation is complete, Week 2 will focus on:
 
 ## Progress Tracking
 
-**Week 1 Progress:** 83% complete (5/6 tasks)
+**Week 1 Progress:** 100% complete (6/6 tasks) ✅
 
 | Task | Status | Completion |
 |------|--------|------------|
@@ -419,10 +429,10 @@ Once Week 1 foundation is complete, Week 2 will focus on:
 | 1.2 Cloud Scheduler | ✅ Complete | 100% (service account ready) |
 | 1.3 Materialized Views | ✅ Complete | 100% |
 | 1.4 Read-Only User | ✅ Complete | 100% |
-| 1.5 Resend Email | ⚪ Pending Manual Setup | 0% (requires account signup) |
+| 1.5 Resend Email | ✅ Complete | 100% (configured 2025-11-27) |
 | 1.6 Network Config | ✅ Complete | 100% |
 
-**Completed on:** 2025-11-25
+**Completed on:** 2025-11-27 (final task completed)
 
 ### What's Working:
 - ✅ Cloud Storage bucket: `gs://monitor-legislativo-reports`
@@ -437,6 +447,8 @@ Once Week 1 foundation is complete, Week 2 will focus on:
 - ✅ Query performance: All views < 40ms ⚡
 - ✅ SSL connections: Required for all database access
 - ✅ SSL certificates: Generated and tested (expires 2035)
+- ✅ Resend email service: API key stored, tested successfully
+- ✅ Email delivery: Test email sent (ID: 54166d4f-b72e-4a82-a049-b82daf74ba0c)
 
 ### Database Connection Details:
 ```
@@ -472,16 +484,48 @@ All report generation and export functionality delivered:
 - R/utils/cloud_storage.R
 - R/modules/executive_export_module.R
 
-### Ready for Week 3:
+### Ready for Week 3: ✅ ALL PREREQUISITES COMPLETE
 All components ready for email delivery integration:
 - ✅ Reports can be generated on-demand
 - ✅ Cloud Storage bucket with shareable links
-- ⚪ Email delivery (pending Resend account signup - Task 1.5)
-- ⚪ Scheduled automation with Cloud Scheduler
+- ✅ Email delivery configured (Resend - completed 2025-11-27)
+- ✅ Week 1 infrastructure 100% complete
+- ⚪ Scheduled automation with Cloud Scheduler (Week 3 task)
 
-**Next Action:** Sign up for Resend at https://resend.com/signup to unlock Week 3
+**Status:** Ready to begin Week 3 email delivery module implementation!
 
 ---
 
-**Last Updated:** 2025-11-25
-**Next Review:** Daily standup
+## Deployment Debugging Log (2025-11-27)
+
+### Issue: Week 2 Features Failed to Deploy
+**Problem:** Multiple deployment attempts (builds b3e5b6a6, fb61263a, 5bc53e8f, 8ecf9135) all failed with "container failed to start" error.
+
+**Root Causes Identified:**
+1. **Missing R package dependencies** (pagedown, googleCloudStorageR)
+   - App tried to load packages that weren't installed
+   - Fix: Added conditional library loading with requireNamespace()
+
+2. **Malformed strings in query_optimizer.R**
+   - Backslash-newline sequences created incomplete string literals
+   - Error: "nul character not allowed" and "INCOMPLETE_STRING"
+   - Fix: Converted all `\<newline>` to `\n` using Perl replacement
+   - Fix: Replaced all escaped quotes `\"` with regular quotes `"`
+
+**Commits Applied:**
+- `2278f97` - Conditional library loading for export modules
+- `8cb7c3f` - Fixed backslash-newline sequences
+- `e37086a` - Replaced escaped quotes throughout file
+
+**Current Status:** Build 640c41cb in progress (expected to succeed)
+
+**Lessons Learned:**
+- Always verify R syntax locally before deploying
+- Library loading should be conditional for optional features
+- Cloud Run logs are essential for debugging startup failures
+- Graceful degradation allows core app to work even if features are unavailable
+
+---
+
+**Last Updated:** 2025-11-27
+**Next Review:** After successful deployment
