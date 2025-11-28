@@ -523,8 +523,10 @@ if (DB_AVAILABLE) {
     NULL
   })
 
-  if (!is.null(optimizer_result) && optimizer_result$success) {
+  if (!is.null(optimizer_result) && !is.null(optimizer_result$success) && optimizer_result$success) {
     cat("✅ Query optimizer initialized successfully\n")
+  } else {
+    cat("⚠️ Query optimizer not initialized - continuing without optimization\n")
   }
 }
 
