@@ -1409,7 +1409,15 @@ ui <- navbarPage(
     icon = icon("shield-alt"),
     fluidPage(
       style = "max-width: 1200px; margin: auto; padding: 20px;",
-      includeMarkdown("docs/lgpd/privacy_policy_pt.md")
+      tryCatch({
+        if (requireNamespace("markdown", quietly = TRUE)) {
+          includeMarkdown("docs/lgpd/privacy_policy_pt.md")
+        } else {
+          p("Política de Privacidade - Conteúdo temporariamente indisponível")
+        }
+      }, error = function(e) {
+        p("Política de Privacidade - Conteúdo temporariamente indisponível")
+      })
     )
   ),
 
