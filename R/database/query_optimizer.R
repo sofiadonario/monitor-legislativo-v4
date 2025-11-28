@@ -4,9 +4,14 @@
 # Advanced database query optimization specifically designed for
 # Brazilian legislative document processing on Railway PostgreSQL
 
-library(DBI)
-library(RPostgreSQL)
-library(dplyr)
+# Check and load required packages
+QUERY_OPTIMIZER_DEPENDENCIES <- requireNamespace("DBI", quietly = TRUE) &&
+                                 requireNamespace("RPostgreSQL", quietly = TRUE) &&
+                                 requireNamespace("dplyr", quietly = TRUE)
+
+if (!QUERY_OPTIMIZER_DEPENDENCIES) {
+  warning("Query optimizer dependencies not available (DBI, RPostgreSQL, dplyr)")
+}
 
 # Global query optimization configuration
 .QUERY_OPTIMIZER_CONFIG <- list(
