@@ -5,7 +5,12 @@
 # Uses double-submit cookie pattern and synchronizer token pattern
 # =============================================================================
 
-library(digest)
+# Check and load required packages
+CSRF_DEPENDENCIES <- requireNamespace("digest", quietly = TRUE)
+
+if (!CSRF_DEPENDENCIES) {
+  warning("CSRF protection dependencies not available (digest)")
+}
 
 # Source the security hardening module for token generation/validation
 if (file.exists("scripts/R/security_hardening.R")) {

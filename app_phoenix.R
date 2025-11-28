@@ -36,13 +36,12 @@ if (file.exists("R/utils/ui_utils.R")) {
 }
 
 # Load IBGE integration utilities
-# TEMPORARILY DISABLED TO DEBUG LINE 84 ERROR
-# if (file.exists("R/utils/ibge_integration.R")) {
-#   source("R/utils/ibge_integration.R")
-#   cat("✅ IBGE Integration Utilities loaded\n")
-# } else {
-  cat("⚠️ IBGE Integration Utilities DISABLED for debugging\n")
-# }
+if (file.exists("R/utils/ibge_integration.R")) {
+  source("R/utils/ibge_integration.R")
+  cat("✅ IBGE Integration Utilities loaded\n")
+} else {
+  cat("⚠️ IBGE Integration Utilities not found\n")
+}
 
 # Load scalar utilities
 if (file.exists("R/utils/scalar_utils.R")) {

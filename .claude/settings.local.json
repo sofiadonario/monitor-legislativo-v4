@@ -15,7 +15,8 @@
       "Bash(if hexdump -v -e '/1 \"\"\"\"%02X\\n\"\"\"\"' R/database/query_optimizer.R)",
       "Bash(then echo \"NUL byte found!\")",
       "Bash(else echo \"No NUL bytes found\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(git ls-tree:*)"
     ],
     "deny": [],
     "ask": []
