@@ -2,6 +2,21 @@
 # Monitor Legislativo v4 - Advanced Spatial Visualization
 # ========================================================
 
+# Check and load required packages
+INTERACTIVE_MAPPING_DEPENDENCIES <- requireNamespace("leaflet", quietly = TRUE) &&
+                                requireNamespace("sf", quietly = TRUE) &&
+                                requireNamespace("dplyr", quietly = TRUE) &&
+                                requireNamespace("RColorBrewer", quietly = TRUE) &&
+                                requireNamespace("htmltools", quietly = TRUE) &&
+                                requireNamespace("htmlwidgets", quietly = TRUE) &&
+                                requireNamespace("stringr", quietly = TRUE) &&
+                                requireNamespace("jsonlite", quietly = TRUE)
+
+if (!INTERACTIVE_MAPPING_DEPENDENCIES) {
+  warning("interactive_mapping dependencies not available (leaflet, sf, dplyr, RColorBrewer, htmltools, htmlwidgets, stringr, jsonlite)")
+}
+
+
 #' Interactive Mapping System for Legislative Geographic Analysis
 #' 
 #' Advanced interactive mapping capabilities using Leaflet for visualizing
@@ -55,14 +70,6 @@
 #' @import RColorBrewer
 #' @export
 
-library(leaflet)
-library(sf)
-library(dplyr)
-library(RColorBrewer)
-library(htmltools)
-library(htmlwidgets)
-library(stringr)
-library(jsonlite)
 
 # Load required modules
 source("R/data/ibge_integration.R", encoding = "UTF-8")

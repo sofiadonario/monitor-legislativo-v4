@@ -19,17 +19,24 @@
 cat("🚀 Loading WebGL Visualization Framework\n")
 
 # Load required libraries with error handling
+
+# Check and load required packages
+WEBGL_DEPENDENCIES <- requireNamespace("plotly", quietly = TRUE) &&
+                                requireNamespace("dplyr", quietly = TRUE) &&
+                                requireNamespace("htmlwidgets", quietly = TRUE) &&
+                                requireNamespace("jsonlite", quietly = TRUE) &&
+                                requireNamespace("memoise", quietly = TRUE)
+
+if (!WEBGL_DEPENDENCIES) {
+  warning("webgl_framework dependencies not available (plotly, dplyr, htmlwidgets, jsonlite, memoise)")
+}
+
 if (!require(plotly, quietly = TRUE)) install.packages("plotly")
 if (!require(dplyr, quietly = TRUE)) install.packages("dplyr")
 if (!require(htmlwidgets, quietly = TRUE)) install.packages("htmlwidgets")
 if (!require(jsonlite, quietly = TRUE)) install.packages("jsonlite")
 if (!require(memoise, quietly = TRUE)) install.packages("memoise")
 
-library(plotly)
-library(dplyr)
-library(htmlwidgets)
-library(jsonlite)
-library(memoise)
 
 # Performance thresholds configuration
 WEBGL_CONFIG <- list(
