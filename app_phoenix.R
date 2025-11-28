@@ -478,9 +478,26 @@ tryCatch({
 })
 
 # Source security modules (Phase 1: Security Integration)
-source("R/database/safe_queries.R")
-source("R/security/csrf_protection.R")
-source("R/security/security_headers.R")
+tryCatch({
+  source("R/database/safe_queries.R")
+  cat("✅ Safe queries module loaded\n")
+}, error = function(e) {
+  cat("⚠️ Safe queries failed to load:", e$message, "\n")
+})
+
+tryCatch({
+  source("R/security/csrf_protection.R")
+  cat("✅ CSRF protection loaded\n")
+}, error = function(e) {
+  cat("⚠️ CSRF protection failed to load:", e$message, "\n")
+})
+
+tryCatch({
+  source("R/security/security_headers.R")
+  cat("✅ Security headers loaded\n")
+}, error = function(e) {
+  cat("⚠️ Security headers failed to load:", e$message, "\n")
+})
 
 # Global connection pool object
 db_pool <- NULL
