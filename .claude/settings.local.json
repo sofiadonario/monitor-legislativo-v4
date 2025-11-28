@@ -9,7 +9,13 @@
       "Bash(gcloud sql ssl-certs create:*)",
       "Bash(/tmp/server-ca.pem)",
       "Bash(gcloud sql ssl-certs describe:*)",
-      "Bash(/tmp/bi-tools-client-cert.pem)"
+      "Bash(/tmp/bi-tools-client-cert.pem)",
+      "Bash(perl -i.bak3 -pe:*)",
+      "Bash(gcloud run revisions describe:*)",
+      "Bash(if hexdump -v -e '/1 \"\"\"\"%02X\\n\"\"\"\"' R/database/query_optimizer.R)",
+      "Bash(then echo \"NUL byte found!\")",
+      "Bash(else echo \"No NUL bytes found\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []
