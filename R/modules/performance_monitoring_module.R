@@ -502,7 +502,7 @@ performanceMonitoringServer <- function(id, db_connection) {
     # =========================================================================
 
     refresh_data <- function() {
-      conn <- db_connection()
+      conn <- secure_db_connection
 
       if (is.null(conn)) {
         rv$monitoring_log <- paste0(
@@ -568,8 +568,8 @@ performanceMonitoringServer <- function(id, db_connection) {
 
     # Database connection KPI card
     output$kpi_db_card <- renderUI({
-      status <- if (is.null(db_connection())) "OFFLINE" else "ONLINE"
-      bg_color <- if (is.null(db_connection())) "#dc3545" else "#28a745"
+      status <- if (is.null(secure_db_connection)) "OFFLINE" else "ONLINE"
+      bg_color <- if (is.null(secure_db_connection)) "#dc3545" else "#28a745"
 
       div(
         class = "info-box",

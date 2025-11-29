@@ -1938,7 +1938,7 @@ server <- function(input, output, session) {
   output$home_total_docs <- renderText({
     stats <- home_stats()
     if (stats$error) return("Error")
-    if (is.na(stats$total_docs)) return("N/A")
+    if (is.null(stats$total_docs) || length(stats$total_docs) == 0 || is.na(stats$total_docs)) return("N/A")
     format(stats$total_docs, big.mark = ",")
   })
 
@@ -1946,7 +1946,7 @@ server <- function(input, output, session) {
   output$home_doc_types_count <- renderText({
     stats <- home_stats()
     if (stats$error) return("Error")
-    if (is.na(stats$doc_types_count)) return("N/A")
+    if (is.null(stats$doc_types_count) || length(stats$doc_types_count) == 0 || is.na(stats$doc_types_count)) return("N/A")
     as.character(stats$doc_types_count)
   })
 
