@@ -6,7 +6,8 @@
 #'
 #' @param id Module namespace ID
 #' @param pool Database connection pool
-survival_server <- function(id, pool) {
+#' @param table_name Name of the documents table (default: "lexml_documents")
+survival_server <- function(id, pool, table_name = "lexml_documents") {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -26,7 +27,7 @@ survival_server <- function(id, pool) {
       req(pool)
 
       doc_types <- pool %>%
-        tbl("documentos") %>%
+        tbl(table_name) %>%
         distinct(tipo_documento) %>%
         collect() %>%
         pull(tipo_documento) %>%

@@ -1668,7 +1668,8 @@ server <- function(input, output, session) {
     cat("✅ Initializing Survival Analysis Module\n")
     survival_analysis <- survival_server(
       "survival_module",
-      pool = secure_db_connection
+      pool = secure_db_connection,
+      table_name = DOCUMENTS_TABLE
     )
   } else {
     cat("⚠️ Survival Analysis Module not available\n")
