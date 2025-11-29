@@ -510,8 +510,12 @@ DATA_EXTRACTION_DATE <- as.Date("2025-10-21")
 db_pool <- init_db_pool()
 DB_AVAILABLE <- !is.null(db_pool) && check_pool_health()
 
-# Create alias for modules that expect secure_db_connection
+# Create aliases for modules that expect different connection names
 secure_db_connection <- db_pool
+
+# Create function aliases for missing db_connection functions
+db_connection <- function() { db_pool }
+get_db_connection <- function() { db_pool }
 
 # Initialize query optimizer (Phase 2, Task 2.4)
 if (DB_AVAILABLE) {
