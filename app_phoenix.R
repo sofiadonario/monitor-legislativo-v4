@@ -1587,7 +1587,7 @@ server <- function(input, output, session) {
     cat("✅ Initializing Text Reuse Detection Module\n")
     text_reuse_module <- text_reuse_server(
       "text_reuse_module",
-      db_connection = db_pool
+      db_connection = db_connection  # Pass the function, not the pool object
     )
   } else {
     cat("⚠️ Text Reuse Detection Module not available\n")

@@ -2,7 +2,7 @@
 FROM southamerica-east1-docker.pkg.dev/mackmonitor/monitor-legislativo-v4/base-image:latest
 
 # Install missing packages for production app
-RUN R -q -e "install.packages(c('pool','shinydashboard','redux','logger','httr2','future.apply','quanteda','spdep','R6','RPostgreSQL','arrow','cachem','cluster','fpc','htmlwidgets','knitr','microbenchmark','optparse','plumber','profvis','stringi','testthat','uuid','yaml','rmarkdown','dbplyr'), repos='https://cloud.r-project.org')"
+RUN R -q -e "install.packages(c('pool','shinydashboard','redux','logger','httr2','future.apply','quanteda','spdep','R6','RPostgreSQL','arrow','cachem','cluster','fpc','htmlwidgets','knitr','microbenchmark','optparse','plumber','profvis','stringi','testthat','uuid','yaml','rmarkdown','dbplyr','bsicons'), repos='https://cloud.r-project.org')"
 
 # Sprint 3: Advanced NLP packages
 RUN R -q -e "install.packages(c('word2vec','text2vec','RcppAnnoy','umap','stm','tidytext','igraph','visNetwork','reticulate','diffobj'), repos='https://cloud.r-project.org')"
