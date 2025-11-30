@@ -517,6 +517,21 @@ secure_db_connection <- db_pool
 db_connection <- function() { db_pool }
 get_db_connection <- function() { db_pool }
 
+# Create get_documents function for Executive Summary module
+get_documents <- function() {
+  if (!DB_AVAILABLE) {
+    return(data.frame())
+  }
+
+  tryCatch({
+    dplyr::tbl(db_pool, DOCUMENTS_TABLE) %>%
+      dplyr::collect()
+  }, error = function(e) {
+    cat("❌ Error fetching documents:", e$message, "\n")
+    data.frame()
+  })
+}
+
 # Initialize query optimizer (Phase 2, Task 2.4)
 if (DB_AVAILABLE) {
   optimizer_result <- tryCatch({
