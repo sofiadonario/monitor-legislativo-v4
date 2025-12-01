@@ -81,7 +81,7 @@ analyze_temporal_trends_executive <- function(data, cache_enabled = TRUE) {
     })
     
     # Create data hash for caching
-    data_hash <- digest::digest(list(nrow(data), names(data), head(data$date, 100)))
+    data_hash <- digest::digest(list(nrow(data), names(data), head(data$data, 100)))
     return(analyze_fn(data_hash))
   } else {
     return(perform_temporal_analysis(data))
@@ -94,7 +94,7 @@ perform_temporal_analysis <- function(data) {
     # Prepare temporal data
     temporal_data <- data %>%
       mutate(
-        parsed_date = as.Date(date),
+        parsed_date = as.Date(data),
         year = year(parsed_date),
         month = month(parsed_date),
         year_month = floor_date(parsed_date, "month"),
@@ -275,7 +275,7 @@ analyze_geographic_distribution <- function(data) {
         jurisprudence_count = sum(categoria == "Jurisprudência", na.rm = TRUE),
         doctrine_count = sum(categoria == "Doutrina", na.rm = TRUE),
         transport_related = sum(safe_grepl("transporte|rodoviário|logística", paste(titulo, ementa)), na.rm = TRUE),
-        recent_activity = sum(year(as.Date(date)) >= (year(Sys.Date()) - 1), na.rm = TRUE),
+        recent_activity = sum(year(as.Date(data)) >= (year(Sys.Date()) - 1), na.rm = TRUE),
         avg_docs_per_month = document_count / 12,  # Assuming 1-year analysis period
         .groups = "drop"
       ) %>%
@@ -484,7 +484,7 @@ analyze_document_patterns <- function(data) {
     
     # Temporal anomalies
     monthly_counts <- data %>%
-      mutate(year_month = floor_date(as.Date(date), "month")) %>%
+      mutate(year_month = floor_date(as.Date(data), "month")) %>%
       filter(!is.na(year_month)) %>%
       count(year_month) %>%
       arrange(year_month)
@@ -574,9 +574,9 @@ generate_executive_kpis <- function(data, temporal_analysis, geographic_analysis
     core_kpis <- list(
       # Volume Metrics
       total_documents = nrow(data),
-      current_year_documents = sum(year(as.Date(data$date)) == current_year, na.rm = TRUE),
+      current_year_documents = sum(year(as.Date(data$data)) == current_year, na.rm = TRUE),
       monthly_average = round(
-        sum(year(as.Date(data$date)) == current_year, na.rm = TRUE) / current_month, 0
+        sum(year(as.Date(data$data)) == current_year, na.rm = TRUE) / current_month, 0
       ),
       
       # Coverage Metrics
@@ -586,7 +586,7 @@ generate_executive_kpis <- function(data, temporal_analysis, geographic_analysis
       
       # Quality Metrics
       complete_metadata_pct = (sum(!is.na(data$titulo) & !is.na(data$data) & !is.na(data$categoria)) / nrow(data)) * 100,
-      recent_data_pct = (sum(as.Date(data$date) >= (current_date - days(30)), na.rm = TRUE) / nrow(data)) * 100,
+      recent_data_pct = (sum(as.Date(data$data) >= (current_date - days(30)), na.rm = TRUE) / nrow(data)) * 100,
       
       # Transport Focus Metrics
       transport_relevance_pct = (sum(safe_grepl("transporte|rodoviário|logística|frete", paste(data$titulo, data$ementa)), na.rm = TRUE) / nrow(data)) * 100,
@@ -622,14 +622,14 @@ generate_executive_kpis <- function(data, temporal_analysis, geographic_analysis
     
     # Legislative Productivity Metrics
     productivity_metrics <- list(
-      documents_per_day = round(nrow(data) / as.numeric(difftime(current_date, min(as.Date(data$date), na.rm = TRUE), units = "days")), 2),
+      documents_per_day = round(nrow(data) / as.numeric(difftime(current_date, min(as.Date(data$data), na.rm = TRUE), units = "days")), 2),
       legislation_to_jurisprudence_ratio = round(
         sum(data$categoria == "Legislação", na.rm = TRUE) / 
         sum(data$categoria == "Jurisprudência", na.rm = TRUE), 2
       ),
       federal_dominance_pct = (sum(safe_grepl("Federal", data$jurisdicao), na.rm = TRUE) / nrow(data)) * 100,
       recent_legislative_activity = sum(
-        year(as.Date(data$date)) == current_year & 
+        year(as.Date(data$data)) == current_year & 
         data$categoria == "Legislação", na.rm = TRUE
       )
     )
