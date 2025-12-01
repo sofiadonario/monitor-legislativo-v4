@@ -520,14 +520,21 @@ get_db_connection <- function() { db_pool }
 # Create get_documents function for Executive Summary module
 get_documents <- function() {
   if (!DB_AVAILABLE) {
+    cat("⚠️ get_documents: DB not available\n")
     return(data.frame())
   }
 
+  cat("📊 get_documents: Fetching documents from table:", DOCUMENTS_TABLE, "\n")
+
   tryCatch({
-    dplyr::tbl(db_pool, DOCUMENTS_TABLE) %>%
+    result <- dplyr::tbl(db_pool, DOCUMENTS_TABLE) %>%
       dplyr::collect()
+
+    cat("✅ get_documents: Fetched", nrow(result), "documents\n")
+    return(result)
   }, error = function(e) {
-    cat("❌ Error fetching documents:", e$message, "\n")
+    cat("❌ get_documents error:", e$message, "\n")
+    cat("   Stack trace:", paste(sys.calls(), collapse = "\n"), "\n")
     data.frame()
   })
 }

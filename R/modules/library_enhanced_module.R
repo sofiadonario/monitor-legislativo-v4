@@ -830,7 +830,7 @@ libraryEnhancedServer <- function(id, db_connection, db_available, documents_tab
         role = "status",
         `aria-live` = "polite",
         icon("info-circle"),
-        sprintf(" Mostrando %d-%d de %d documentos | Página %d de %d",
+        sprintf(" Mostrando %.0f-%.0f de %.0f documentos | Página %.0f de %.0f",
                 start_idx, end_idx, total, current_page, total_pages)
       )
     })
@@ -861,7 +861,7 @@ libraryEnhancedServer <- function(id, db_connection, db_available, documents_tab
 
         span(
           style = "font-weight: bold;",
-          sprintf("Página %d de %d", current_page, total_pages)
+          sprintf("Página %.0f de %.0f", current_page, total_pages)
         ),
 
         if (current_page < total_pages) {

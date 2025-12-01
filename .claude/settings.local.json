@@ -16,7 +16,8 @@
       "Bash(then echo \"NUL byte found!\")",
       "Bash(else echo \"No NUL bytes found\")",
       "Bash(fi)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": []
