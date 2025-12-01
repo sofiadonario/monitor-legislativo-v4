@@ -539,6 +539,10 @@ get_documents <- function() {
   })
 }
 
+# Ensure get_documents is in global environment
+assign("get_documents", get_documents, envir = .GlobalEnv)
+cat("✅ get_documents function registered in global environment\n")
+
 # Initialize query optimizer (Phase 2, Task 2.4)
 if (DB_AVAILABLE) {
   optimizer_result <- tryCatch({
