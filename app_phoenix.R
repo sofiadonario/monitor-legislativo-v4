@@ -1920,6 +1920,8 @@ server <- function(input, output, session) {
     }
 
     tryCatch({
+      cat("[HOME_STATS] Fetching home statistics...\n")
+
       # Execute all basic stats with caching (Phase 2, Task 2.2)
       total_result <- cached_query(
         connection = db_pool,
@@ -1927,32 +1929,43 @@ server <- function(input, output, session) {
         ttl = CACHE_TTL$dashboard,
         cache_type = "dashboard"
       )
+      cat("[HOME_STATS] total_result:", class(total_result), "nrow:", nrow(total_result), "\n")
+      cat("[HOME_STATS] total_result$total:", total_result$total, "\n")
+
       types_result <- cached_query(
         connection = db_pool,
         query = paste("SELECT COUNT(DISTINCT tipo) as count FROM", DOCUMENTS_TABLE),
         ttl = CACHE_TTL$dashboard,
         cache_type = "dashboard"
       )
+      cat("[HOME_STATS] types_result$count:", types_result$count, "\n")
+
       latest_result <- cached_query(
         connection = db_pool,
         query = paste("SELECT MAX(data) as latest FROM", DOCUMENTS_TABLE),
         ttl = CACHE_TTL$dashboard,
         cache_type = "dashboard"
       )
+      cat("[HOME_STATS] latest_result$latest:", latest_result$latest, "\n")
+
       oldest_result <- cached_query(
         connection = db_pool,
         query = paste("SELECT MIN(data) as oldest FROM", DOCUMENTS_TABLE),
         ttl = CACHE_TTL$dashboard,
         cache_type = "dashboard"
       )
+      cat("[HOME_STATS] oldest_result$oldest:", oldest_result$oldest, "\n")
 
-      list(
-        total_docs = total_result$total,
-        doc_types_count = types_result$count,
-        latest_date = latest_result$latest,
-        oldest_date = oldest_result$oldest,
+      stats <- list(
+        total_docs = total_result$total[1],
+        doc_types_count = types_result$count[1],
+        latest_date = latest_result$latest[1],
+        oldest_date = oldest_result$oldest[1],
         error = FALSE
       )
+
+      cat("[HOME_STATS] Returning stats - total_docs:", stats$total_docs, "\n")
+      stats
     }, error = function(e) {
       cat("Error fetching home stats:", e$message, "\n")
       list(
