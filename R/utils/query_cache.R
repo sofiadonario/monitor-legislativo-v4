@@ -97,7 +97,8 @@ cached_query <- function(connection, query, params = list(), ttl = 300, cache_ty
   # Check if result is in cache
   cached_result <- query_cache$get(cache_key)
 
-  if (!is.null(cached_result)) {
+  # Check for cache hit (cachem returns key_missing() object when key doesn't exist)
+  if (!is.null(cached_result) && !inherits(cached_result, "key_missing")) {
     # Cache hit
     cache_stats$hits <- cache_stats$hits + 1
 
