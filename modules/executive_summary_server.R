@@ -43,6 +43,27 @@ init_executive_summary_server <- function(input, output, session, get_document_d
     last_updated = NULL,
     cache_valid = FALSE
   )
+
+  # Try to load cached results from disk on startup
+  cache_file <- file.path("cache/performance/",
+                         paste0("executive_summary_", format(Sys.Date(), "%Y%m%d"), ".rds"))
+  if (file.exists(cache_file)) {
+    tryCatch({
+      cached_data <- readRDS(cache_file)
+      file_time <- file.info(cache_file)$mtime
+      age_minutes <- as.numeric(difftime(Sys.time(), file_time, units = "mins"))
+
+      # Use cache if less than 30 minutes old
+      if (age_minutes < 30) {
+        values$analytics_results <- cached_data
+        values$last_updated <- file_time
+        values$cache_valid <- TRUE
+        cat(sprintf("✅ Loaded cached analytics from disk (%.1f minutes old)\n", age_minutes))
+      }
+    }, error = function(e) {
+      cat("⚠️ Could not load cache file:", e$message, "\n")
+    })
+  }
   
   # ============================================================================
   # 2. MAIN ANALYTICS REACTIVE
