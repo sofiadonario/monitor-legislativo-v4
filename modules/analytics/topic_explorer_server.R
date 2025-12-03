@@ -66,12 +66,16 @@ topic_explorer_server <- function(id, db_pool) {
         }
 
       }, error = function(e) {
-        logger::log_error("Error loading STM models: {e$message}")
-        showNotification(
-          sprintf("Erro ao carregar modelos: %s", e$message),
-          type = "error",
-          duration = 5
-        )
+        # Only show notification for real errors, not missing table
+        if (!grepl("does not exist", e$message, ignore.case = TRUE)) {
+          logger::log_error("Error loading STM models: {e$message}")
+          showNotification(
+            sprintf("Erro ao carregar modelos: %s", e$message),
+            type = "error",
+            duration = 5
+          )
+        }
+        # Silently ignore "relation does not exist" errors - table not created yet
       })
     })
 
