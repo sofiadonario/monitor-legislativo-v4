@@ -180,7 +180,11 @@ create_enhanced_value_box <- function(value, subtitle, icon_name, color, trend =
 # ============================================================================
 
 #' Create strategic insights panel UI (navbarPage compatible)
-create_strategic_insights_ui <- function() {
+#' @param ns Namespace function for module outputs
+create_strategic_insights_ui <- function(ns = NULL) {
+  # Create fallback namespace if not provided
+  if (is.null(ns)) ns <- function(x) x
+
   fluidRow(
     panel_box(
       title = HTML("<i class='fa fa-lightbulb'></i> Strategic Intelligence Dashboard"),
@@ -196,15 +200,15 @@ create_strategic_insights_ui <- function() {
 
             # KPI Values with trends
             div(id = "kpi-container",
-              uiOutput("exec_kpi_total_documents"),
-              uiOutput("exec_kpi_monthly_growth"),
-              uiOutput("exec_kpi_data_quality"),
+              uiOutput(ns("exec_kpi_total_documents")),
+              uiOutput(ns("exec_kpi_monthly_growth")),
+              uiOutput(ns("exec_kpi_data_quality")),
               style = "margin-bottom: 15px;"
             ),
 
             # Mini chart placeholder
             div(
-              plotlyOutput("exec_mini_trend_chart", height = "120px"),
+              plotlyOutput(ns("exec_mini_trend_chart"), height = "120px"),
               style = "margin-top: 10px;"
             ),
 
@@ -220,15 +224,15 @@ create_strategic_insights_ui <- function() {
                style = "color: #2c3e50; margin-top: 0;"),
 
             div(id = "geo-intelligence",
-              uiOutput("exec_geo_coverage"),
-              uiOutput("exec_geo_hotspots"),
-              uiOutput("exec_geo_gaps"),
+              uiOutput(ns("exec_geo_coverage")),
+              uiOutput(ns("exec_geo_hotspots")),
+              uiOutput(ns("exec_geo_gaps")),
               style = "margin-bottom: 15px;"
             ),
 
             # Mini map or chart
             div(
-              plotlyOutput("exec_mini_geo_chart", height = "120px"),
+              plotlyOutput(ns("exec_mini_geo_chart"), height = "120px"),
               style = "margin-top: 10px;"
             ),
 
@@ -244,14 +248,14 @@ create_strategic_insights_ui <- function() {
                style = "color: #2c3e50; margin-top: 0;"),
 
             div(id = "smart-alerts",
-              uiOutput("exec_alert_system"),
-              uiOutput("exec_anomaly_detection"),
+              uiOutput(ns("exec_alert_system")),
+              uiOutput(ns("exec_anomaly_detection")),
               style = "margin-bottom: 15px;"
             ),
 
             # Alert status indicator
             div(
-              uiOutput("exec_alert_status_indicator"),
+              uiOutput(ns("exec_alert_status_indicator")),
               style = "margin-top: 10px;"
             ),
 
@@ -269,7 +273,11 @@ create_strategic_insights_ui <- function() {
 # ============================================================================
 
 #' Create advanced visualization panels UI (navbarPage compatible)
-create_advanced_visualizations_ui <- function() {
+#' @param ns Namespace function for module outputs
+create_advanced_visualizations_ui <- function(ns = NULL) {
+  # Create fallback namespace if not provided
+  if (is.null(ns)) ns <- function(x) x
+
   fluidRow(
     # Temporal Trends with Forecasting
     column(8,
@@ -281,7 +289,7 @@ create_advanced_visualizations_ui <- function() {
         # Trend controls
         fluidRow(
           column(3,
-            selectInput("exec_trend_period", "Time Period:",
+            selectInput(ns("exec_trend_period"), "Time Period:",
               choices = list(
                 "Last 12 Months" = "12m",
                 "Last 24 Months" = "24m",
@@ -292,7 +300,7 @@ create_advanced_visualizations_ui <- function() {
             )
           ),
           column(3,
-            selectInput("exec_trend_grouping", "Group By:",
+            selectInput(ns("exec_trend_grouping"), "Group By:",
               choices = list(
                 "Monthly" = "month",
                 "Quarterly" = "quarter",
@@ -302,22 +310,22 @@ create_advanced_visualizations_ui <- function() {
             )
           ),
           column(3,
-            checkboxInput("exec_show_forecast", "Show Forecast", value = TRUE)
+            checkboxInput(ns("exec_show_forecast"), "Show Forecast", value = TRUE)
           ),
           column(3,
-            checkboxInput("exec_show_anomalies", "Highlight Anomalies", value = TRUE)
+            checkboxInput(ns("exec_show_anomalies"), "Highlight Anomalies", value = TRUE)
           )
         ),
 
         # Main trend visualization
         with_spinner_safe(
-          plotlyOutput("exec_advanced_trends", height = "400px"),
+          plotlyOutput(ns("exec_advanced_trends"), height = "400px"),
           type = 4, color = "#3498db"
         ),
 
         # Trend insights summary
         div(
-          uiOutput("exec_trend_insights"),
+          uiOutput(ns("exec_trend_insights")),
           style = "margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;"
         ),
 
@@ -335,7 +343,7 @@ create_advanced_visualizations_ui <- function() {
         # Geographic controls
         fluidRow(
           column(12,
-            selectInput("exec_geo_metric", "Display Metric:",
+            selectInput(ns("exec_geo_metric"), "Display Metric:",
               choices = list(
                 "Document Count" = "count",
                 "Activity Level" = "activity",
@@ -349,14 +357,14 @@ create_advanced_visualizations_ui <- function() {
 
         # Geographic visualization
         with_spinner_safe(
-          plotlyOutput("exec_geographic_analysis", height = "300px"),
+          plotlyOutput(ns("exec_geographic_analysis"), height = "300px"),
           type = 4, color = "#28a745"
         ),
 
         # Top regions summary
         div(
           h5("Top Performing Regions", style = "margin-bottom: 10px;"),
-          uiOutput("exec_top_regions"),
+          uiOutput(ns("exec_top_regions")),
           style = "margin-top: 15px;"
         ),
 
@@ -371,7 +379,11 @@ create_advanced_visualizations_ui <- function() {
 # ============================================================================
 
 #' Create actionable insights panel UI (navbarPage compatible)
-create_actionable_insights_ui <- function() {
+#' @param ns Namespace function for module outputs
+create_actionable_insights_ui <- function(ns = NULL) {
+  # Create fallback namespace if not provided
+  if (is.null(ns)) ns <- function(x) x
+
   fluidRow(
     # Priority Actions
     column(6,
@@ -382,18 +394,18 @@ create_actionable_insights_ui <- function() {
 
         # Priority action items
         div(id = "priority-actions",
-          uiOutput("exec_priority_actions_list"),
+          uiOutput(ns("exec_priority_actions_list")),
           style = "min-height: 200px;"
         ),
 
         # Action buttons
         div(
-          actionButton("exec_export_actions",
+          actionButton(ns("exec_export_actions"),
             HTML("<i class='fa fa-download'></i> Export Action Plan"),
             class = "btn-warning btn-sm",
             style = "margin-right: 10px;"
           ),
-          actionButton("exec_schedule_review",
+          actionButton(ns("exec_schedule_review"),
             HTML("<i class='fa fa-calendar'></i> Schedule Review"),
             class = "btn-outline-warning btn-sm"
           ),
@@ -413,18 +425,18 @@ create_actionable_insights_ui <- function() {
 
         # Strategic recommendation items
         div(id = "strategic-recommendations",
-          uiOutput("exec_strategic_recommendations_list"),
+          uiOutput(ns("exec_strategic_recommendations_list")),
           style = "min-height: 200px;"
         ),
 
         # Recommendation actions
         div(
-          actionButton("exec_create_report",
+          actionButton(ns("exec_create_report"),
             HTML("<i class='fa fa-file-alt'></i> Generate Report"),
             class = "btn-danger btn-sm",
             style = "margin-right: 10px;"
           ),
-          actionButton("exec_share_insights",
+          actionButton(ns("exec_share_insights"),
             HTML("<i class='fa fa-share-alt'></i> Share Insights"),
             class = "btn-outline-danger btn-sm"
           ),
@@ -442,7 +454,11 @@ create_actionable_insights_ui <- function() {
 # ============================================================================
 
 #' Create advanced data tables UI (navbarPage compatible)
-create_advanced_tables_ui <- function() {
+#' @param ns Namespace function for module outputs
+create_advanced_tables_ui <- function(ns = NULL) {
+  # Create fallback namespace if not provided
+  if (is.null(ns)) ns <- function(x) x
+
   fluidRow(
     # Document Pattern Analysis
     column(6,
@@ -454,7 +470,7 @@ create_advanced_tables_ui <- function() {
         # Pattern analysis controls
         fluidRow(
           column(6,
-            selectInput("exec_pattern_view", "Analysis View:",
+            selectInput(ns("exec_pattern_view"), "Analysis View:",
               choices = list(
                 "Document Types" = "types",
                 "Transport Modes" = "transport",
@@ -465,7 +481,7 @@ create_advanced_tables_ui <- function() {
             )
           ),
           column(6,
-            numericInput("exec_pattern_limit", "Show Top:",
+            numericInput(ns("exec_pattern_limit"), "Show Top:",
               value = 10, min = 5, max = 50, step = 5
             )
           )
@@ -473,7 +489,7 @@ create_advanced_tables_ui <- function() {
 
         # Pattern analysis table
         with_spinner_safe(
-          DT::dataTableOutput("exec_pattern_analysis_table"),
+          DT::dataTableOutput(ns("exec_pattern_analysis_table")),
           type = 4, color = "#007bff"
         ),
 
@@ -491,7 +507,7 @@ create_advanced_tables_ui <- function() {
         # Document filter controls
         fluidRow(
           column(6,
-            selectInput("exec_impact_category", "Category:",
+            selectInput(ns("exec_impact_category"), "Category:",
               choices = list(
                 "All Categories" = "all",
                 "Legislation" = "legislation",
@@ -502,7 +518,7 @@ create_advanced_tables_ui <- function() {
             )
           ),
           column(6,
-            selectInput("exec_impact_period", "Time Period:",
+            selectInput(ns("exec_impact_period"), "Time Period:",
               choices = list(
                 "Last 30 Days" = "30d",
                 "Last 90 Days" = "90d",
@@ -516,7 +532,7 @@ create_advanced_tables_ui <- function() {
 
         # High-impact documents table
         with_spinner_safe(
-          DT::dataTableOutput("exec_high_impact_documents"),
+          DT::dataTableOutput(ns("exec_high_impact_documents")),
           type = 4, color = "#17a2b8"
         ),
 
@@ -531,7 +547,11 @@ create_advanced_tables_ui <- function() {
 # ============================================================================
 
 #' Create system health monitoring UI (navbarPage compatible)
-create_system_health_ui <- function() {
+#' @param ns Namespace function for module outputs
+create_system_health_ui <- function(ns = NULL) {
+  # Create fallback namespace if not provided
+  if (is.null(ns)) ns <- function(x) x
+
   fluidRow(
     # Data Quality Dashboard
     column(8,
@@ -544,30 +564,30 @@ create_system_health_ui <- function() {
         fluidRow(
           column(3,
             div(class = "quality-metric-card",
-              div(class = "metric-value", uiOutput("exec_completeness_metric")),
+              div(class = "metric-value", uiOutput(ns("exec_completeness_metric"))),
               div(class = "metric-label", "Completeness"),
-              div(class = "metric-progress", uiOutput("exec_completeness_progress"))
+              div(class = "metric-progress", uiOutput(ns("exec_completeness_progress")))
             )
           ),
           column(3,
             div(class = "quality-metric-card",
-              div(class = "metric-value", uiOutput("exec_recency_metric")),
+              div(class = "metric-value", uiOutput(ns("exec_recency_metric"))),
               div(class = "metric-label", "Data Recency"),
-              div(class = "metric-progress", uiOutput("exec_recency_progress"))
+              div(class = "metric-progress", uiOutput(ns("exec_recency_progress")))
             )
           ),
           column(3,
             div(class = "quality-metric-card",
-              div(class = "metric-value", uiOutput("exec_accuracy_metric")),
+              div(class = "metric-value", uiOutput(ns("exec_accuracy_metric"))),
               div(class = "metric-label", "Accuracy"),
-              div(class = "metric-progress", uiOutput("exec_accuracy_progress"))
+              div(class = "metric-progress", uiOutput(ns("exec_accuracy_progress")))
             )
           ),
           column(3,
             div(class = "quality-metric-card",
-              div(class = "metric-value", uiOutput("exec_coverage_metric")),
+              div(class = "metric-value", uiOutput(ns("exec_coverage_metric"))),
               div(class = "metric-label", "Coverage"),
-              div(class = "metric-progress", uiOutput("exec_coverage_progress"))
+              div(class = "metric-progress", uiOutput(ns("exec_coverage_progress")))
             )
           )
         ),
@@ -575,7 +595,7 @@ create_system_health_ui <- function() {
         # Detailed system status
         div(
           h5("Detailed System Status", style = "margin-top: 20px; margin-bottom: 15px;"),
-          verbatimTextOutput("exec_detailed_system_status"),
+          verbatimTextOutput(ns("exec_detailed_system_status")),
           style = "margin-top: 20px; background: #f8f9fa; padding: 15px; border-radius: 5px;"
         ),
 
@@ -592,22 +612,22 @@ create_system_health_ui <- function() {
 
         # Action buttons
         div(
-          actionButton("exec_refresh_all_data",
+          actionButton(ns("exec_refresh_all_data"),
             HTML("<i class='fa fa-sync-alt'></i> Refresh All Data"),
             class = "btn-primary btn-block",
             style = "margin-bottom: 10px;"
           ),
-          actionButton("exec_export_executive_summary",
+          actionButton(ns("exec_export_executive_summary"),
             HTML("<i class='fa fa-file-pdf'></i> Export Executive Summary"),
             class = "btn-success btn-block",
             style = "margin-bottom: 10px;"
           ),
-          actionButton("exec_schedule_automated_report",
+          actionButton(ns("exec_schedule_automated_report"),
             HTML("<i class='fa fa-calendar-alt'></i> Schedule Automated Report"),
             class = "btn-info btn-block",
             style = "margin-bottom: 10px;"
           ),
-          actionButton("exec_configure_alerts",
+          actionButton(ns("exec_configure_alerts"),
             HTML("<i class='fa fa-bell'></i> Configure Alerts"),
             class = "btn-warning btn-block",
             style = "margin-bottom: 10px;"
@@ -619,14 +639,14 @@ create_system_health_ui <- function() {
         # System health indicators
         div(
           h5("System Health Indicators", style = "margin: 15px 0 5px 0;"),
-          uiOutput("exec_system_health_indicators"),
+          uiOutput(ns("exec_system_health_indicators")),
           style = "margin-top: 15px;"
         ),
 
         # Performance metrics
         div(
           h6("Performance Metrics", style = "margin: 15px 0 5px 0; color: #6c757d;"),
-          uiOutput("exec_performance_metrics"),
+          uiOutput(ns("exec_performance_metrics")),
           style = "font-size: 12px;"
         ),
 
@@ -815,8 +835,8 @@ create_enhanced_executive_summary_ui <- function(id = "executive_summary_module"
     # Add enhanced CSS
     generate_executive_summary_css(),
 
-    # Strategic Insights Panel
-    create_strategic_insights_ui(),
+    # Strategic Insights Panel (now with namespace)
+    create_strategic_insights_ui(ns),
 
     # Enhanced KPI Value Boxes Row
     fluidRow(
@@ -836,17 +856,17 @@ create_enhanced_executive_summary_ui <- function(id = "executive_summary_module"
       valueBoxOutput(ns("exec_alert_count"), width = 2)
     ),
 
-    # Advanced Visualizations
-    create_advanced_visualizations_ui(),
+    # Advanced Visualizations (now with namespace)
+    create_advanced_visualizations_ui(ns),
 
-    # Actionable Insights
-    create_actionable_insights_ui(),
+    # Actionable Insights (now with namespace)
+    create_actionable_insights_ui(ns),
 
-    # Detailed Analysis Tables
-    create_advanced_tables_ui(),
+    # Detailed Analysis Tables (now with namespace)
+    create_advanced_tables_ui(ns),
 
-    # System Health and Monitoring
-    create_system_health_ui()
+    # System Health and Monitoring (now with namespace)
+    create_system_health_ui(ns)
   )
 }
 
