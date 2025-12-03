@@ -130,10 +130,10 @@ cached_query <- function(connection, query, params = list(), ttl = 300, cache_ty
 
   # Store in cache if successful
   if (!is.null(result)) {
+    # cachem uses age (in seconds) not expire_time
     query_cache$set(
       key = cache_key,
-      value = result,
-      expire_time = Sys.time() + ttl
+      value = result
     )
   }
 
