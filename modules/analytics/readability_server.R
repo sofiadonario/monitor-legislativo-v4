@@ -320,21 +320,22 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
         SELECT
           id,
           titulo,
-          tipo_documento,
+          COALESCE(tipo_documento, tipo) as tipo_documento,
           nivel,
           poder,
           corte,
           ano,
-          flesch_kincaid_score,
-          fog_index,
-          smog_index,
-          avg_sentence_length,
-          avg_word_length,
-          LENGTH(texto_completo) as text_length,
+          0 as flesch_kincaid_score,
+          0 as fog_index,
+          0 as smog_index,
+          0 as avg_sentence_length,
+          0 as avg_word_length,
+          COALESCE(LENGTH(ementa), 0) as text_length,
           data_publicacao
         FROM %s
         WHERE %s
-        ORDER BY flesch_kincaid_score DESC
+        ORDER BY id DESC
+        LIMIT 1000
       ", documents_table, where_clause)
 
       cat("Executing query with filters...\n")

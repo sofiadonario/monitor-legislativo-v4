@@ -73,21 +73,24 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
 
   tryCatch({
 
-    # Build base query
+    # Build base query - simplified for compatibility
     if (level == "state") {
 
+      # Use simpler query that avoids potential column issues
       query <- "
         SELECT
           estado,
           COUNT(*) as document_count,
           COUNT(DISTINCT tipo) as document_types,
-          COUNT(DISTINCT municipio) as municipality_count,
-          MIN(data::date) as first_document,
-          MAX(data::date) as last_document,
-          COUNT(CASE WHEN data::date >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as recent_documents
+          0 as municipality_count,
+          MIN(data) as first_document,
+          MAX(data) as last_document,
+          COUNT(CASE WHEN data >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as recent_documents
         FROM documents
-        WHERE estado IS NOT NULL AND estado != ''
+        WHERE estado IS NOT NULL AND estado != '' AND estado NOT IN ('Federal', 'Justiça Trabalho')
       "
+
+      cat("[GEO-QUERY] State-level query built\n")
 
     } else if (level == "municipality") {
 
@@ -130,24 +133,42 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
     }
 
     # Execute query with caching (15-minute TTL for geographic data)
-    # Note: Requires query_cache.R to be sourced
-    if (exists("cached_query")) {
-      params <- list(
-        level = level,
-        tipo = if (!is.null(filters$tipo)) filters$tipo else "Todos",
-        date_range = if (!is.null(filters$date_start)) paste(filters$date_start, filters$date_end, sep = "_") else "all"
-      )
-      result <- cached_query(
-        connection = db_conn,
-        query = query,
-        params = params,
-        ttl = 15 * 60,  # 15 minutes
-        cache_type = "geographic"
-      )
-    } else {
-      # Fallback if caching not available
-      result <- dbGetQuery(db_conn, query)
-    }
+    cat("[GEO-QUERY] Executing query...\n")
+    cat("[GEO-QUERY] Query:\n", substr(query, 1, 200), "...\n")
+
+    result <- tryCatch({
+      if (exists("cached_query")) {
+        params <- list(
+          level = level,
+          tipo = if (!is.null(filters$tipo)) filters$tipo else "Todos",
+          date_range = if (!is.null(filters$date_start)) paste(filters$date_start, filters$date_end, sep = "_") else "all"
+        )
+        cached_query(
+          connection = db_conn,
+          query = query,
+          params = params,
+          ttl = 15 * 60,  # 15 minutes
+          cache_type = "geographic"
+        )
+      } else {
+        # Fallback if caching not available
+        DBI::dbGetQuery(db_conn, query)
+      }
+    }, error = function(e) {
+      cat("[GEO-QUERY] ERROR:", e$message, "\n")
+      # Try simplified fallback query
+      tryCatch({
+        cat("[GEO-QUERY] Trying fallback query...\n")
+        fallback_query <- "SELECT estado, COUNT(*) as document_count FROM documents WHERE estado IS NOT NULL GROUP BY estado"
+        DBI::dbGetQuery(db_conn, fallback_query)
+      }, error = function(e2) {
+        cat("[GEO-QUERY] Fallback also failed:", e2$message, "\n")
+        NULL
+      })
+    })
+
+    cat("[GEO-QUERY] Result class:", class(result), "\n")
+    cat("[GEO-QUERY] Result nrow:", if (is.null(result)) "NULL" else nrow(result), "\n")
 
     if (is.null(result) || nrow(result) == 0) {
       cat("⚠️ No geographic data found\n")
