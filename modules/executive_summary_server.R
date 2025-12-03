@@ -366,25 +366,68 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   # 5. VISUALIZATION OUTPUTS
   # ============================================================================
   
-  # Advanced Trends Chart
-  # Advanced Trends Chart - TEMPORARILY DISABLED to prevent extent=0 crash
+  # Advanced Trends Chart - RE-ENABLED with safe error handling
   output$exec_advanced_trends <- renderPlotly({
-    cat("[EXEC-CHART] exec_advanced_trends: TEMPORARILY DISABLED\n", file = stderr())
+    cat("[EXEC-CHART] exec_advanced_trends: START\n", file = stderr())
 
-    # Return empty plot with message
-    plot_ly() %>%
-      add_annotations(
-        text = "Temporal analysis temporarily unavailable<br>Working on data loading optimization",
-        x = 0.5, y = 0.5,
-        showarrow = FALSE,
-        font = list(size = 14, color = "#6c757d"),
-        xref = "paper", yref = "paper"
-      ) %>%
-      layout(
-        xaxis = list(visible = FALSE, range = c(0, 1)),
-        yaxis = list(visible = FALSE, range = c(0, 1)),
-        margin = list(t = 50, b = 50, l = 50, r = 50)
-      )
+    tryCatch({
+      analytics <- analytics_data()
+
+      # Check if analytics and temporal data exist
+      if (is.null(analytics) || !is.list(analytics)) {
+        stop("Analytics not ready")
+      }
+
+      monthly_data <- analytics$temporal_analysis$monthly_trends
+
+      if (is.null(monthly_data) || !is.data.frame(monthly_data) || nrow(monthly_data) == 0) {
+        stop("No temporal data available")
+      }
+
+      # Ensure required columns exist
+      if (!"month" %in% names(monthly_data)) {
+        stop("Missing month column in temporal data")
+      }
+
+      # Use document_count or count column
+      count_col <- if ("document_count" %in% names(monthly_data)) "document_count" else "count"
+      if (!count_col %in% names(monthly_data)) {
+        stop("Missing count column in temporal data")
+      }
+
+      cat(sprintf("[EXEC-CHART] exec_advanced_trends: Rendering %d data points\n", nrow(monthly_data)), file = stderr())
+
+      # Create the chart
+      plot_ly(monthly_data, x = ~month, y = ~get(count_col), type = 'scatter', mode = 'lines+markers',
+              line = list(color = '#3498db', width = 2),
+              marker = list(color = '#3498db', size = 6),
+              name = 'Documents') %>%
+        layout(
+          title = list(text = "Monthly Document Trends", font = list(size = 14)),
+          xaxis = list(title = "Month", tickangle = -45),
+          yaxis = list(title = "Document Count"),
+          margin = list(t = 50, b = 80, l = 60, r = 30),
+          showlegend = FALSE
+        )
+
+    }, error = function(e) {
+      cat(sprintf("[EXEC-CHART] exec_advanced_trends ERROR: %s\n", e$message), file = stderr())
+
+      # Return informative placeholder
+      plot_ly() %>%
+        add_annotations(
+          text = paste0("Temporal analysis loading...<br><small>", e$message, "</small>"),
+          x = 0.5, y = 0.5,
+          showarrow = FALSE,
+          font = list(size = 12, color = "#6c757d"),
+          xref = "paper", yref = "paper"
+        ) %>%
+        layout(
+          xaxis = list(visible = FALSE, range = c(0, 1)),
+          yaxis = list(visible = FALSE, range = c(0, 1)),
+          margin = list(t = 50, b = 50, l = 50, r = 50)
+        )
+    })
   })
 
   # ORIGINAL CODE COMMENTED OUT - Re-enable after debugging data issue
@@ -393,24 +436,67 @@ init_executive_summary_server <- function(input, output, session, get_document_d
   #   [... original code removed for brevity ...]
   # })
   
-  # Geographic Analysis Chart - TEMPORARILY DISABLED to prevent extent=0 crash
+  # Geographic Analysis Chart - RE-ENABLED with safe error handling
   output$exec_geographic_analysis <- renderPlotly({
-    cat("[EXEC-CHART] exec_geographic_analysis: TEMPORARILY DISABLED\n", file = stderr())
+    cat("[EXEC-CHART] exec_geographic_analysis: START\n", file = stderr())
 
-    # Return empty plot with message
-    plot_ly() %>%
-      add_annotations(
-        text = "Geographic analysis temporarily unavailable<br>Working on data loading optimization",
-        x = 0.5, y = 0.5,
-        showarrow = FALSE,
-        font = list(size = 14, color = "#6c757d"),
-        xref = "paper", yref = "paper"
-      ) %>%
-      layout(
-        xaxis = list(visible = FALSE, range = c(0, 1)),
-        yaxis = list(visible = FALSE, range = c(0, 1)),
-        margin = list(t = 50, b = 50, l = 50, r = 50)
-      )
+    tryCatch({
+      analytics <- analytics_data()
+
+      # Check if analytics and geographic data exist
+      if (is.null(analytics) || !is.list(analytics)) {
+        stop("Analytics not ready")
+      }
+
+      geo_data <- analytics$geographic_analysis$state_analysis
+
+      if (is.null(geo_data) || !is.data.frame(geo_data) || nrow(geo_data) == 0) {
+        stop("No geographic data available")
+      }
+
+      # Ensure required columns exist
+      if (!"state_clean" %in% names(geo_data)) {
+        stop("Missing state_clean column in geographic data")
+      }
+
+      if (!"document_count" %in% names(geo_data)) {
+        stop("Missing document_count column in geographic data")
+      }
+
+      # Take top 15 states for bar chart
+      plot_data <- head(geo_data, 15)
+
+      cat(sprintf("[EXEC-CHART] exec_geographic_analysis: Rendering %d states\n", nrow(plot_data)), file = stderr())
+
+      # Create horizontal bar chart
+      plot_ly(plot_data, y = ~reorder(state_clean, document_count), x = ~document_count,
+              type = 'bar', orientation = 'h',
+              marker = list(color = '#27ae60')) %>%
+        layout(
+          title = list(text = "Documents by State (Top 15)", font = list(size = 14)),
+          xaxis = list(title = "Document Count"),
+          yaxis = list(title = "", tickfont = list(size = 10)),
+          margin = list(t = 50, b = 50, l = 60, r = 30)
+        )
+
+    }, error = function(e) {
+      cat(sprintf("[EXEC-CHART] exec_geographic_analysis ERROR: %s\n", e$message), file = stderr())
+
+      # Return informative placeholder
+      plot_ly() %>%
+        add_annotations(
+          text = paste0("Geographic analysis loading...<br><small>", e$message, "</small>"),
+          x = 0.5, y = 0.5,
+          showarrow = FALSE,
+          font = list(size = 12, color = "#6c757d"),
+          xref = "paper", yref = "paper"
+        ) %>%
+        layout(
+          xaxis = list(visible = FALSE, range = c(0, 1)),
+          yaxis = list(visible = FALSE, range = c(0, 1)),
+          margin = list(t = 50, b = 50, l = 50, r = 50)
+        )
+    })
   })
 
   # ORIGINAL CODE COMMENTED OUT - Re-enable after debugging data issue
