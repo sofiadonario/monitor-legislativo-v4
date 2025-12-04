@@ -151,7 +151,7 @@ cached_query <- function(connection, query, params = list(), ttl = 300, cache_ty
 #' @export
 cached_library_search <- function(connection, search_term = "", tipo = "Todos", limit = 100) {
   query <- sprintf("
-    SELECT titulo, tipo, data, orgao, estado, url
+    SELECT titulo, tipo, data, estado, urn
     FROM documents
     WHERE 1=1
     %s
@@ -159,7 +159,7 @@ cached_library_search <- function(connection, search_term = "", tipo = "Todos", 
     ORDER BY data DESC
     LIMIT %d
   ",
-    if (search_term != "") sprintf("AND (titulo ILIKE '%%%s%%' OR texto_completo ILIKE '%%%s%%')", search_term, search_term) else "",
+    if (search_term != "") sprintf("AND (titulo ILIKE '%%%s%%' OR ementa ILIKE '%%%s%%')", search_term, search_term) else "",
     if (tipo != "Todos") sprintf("AND tipo = '%s'", tipo) else "",
     as.integer(limit)
   )

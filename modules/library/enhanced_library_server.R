@@ -368,22 +368,26 @@ enhanced_library_server <- function(input, output, session, documents_data) {
       ))
     }
     
-    # Prepare display data
+    # Prepare display data - use actual database column names
+    # Database columns: id, titulo, tipo, data, estado, urn, ementa
     display_data <- filtered_data %>%
-      select(
-        Title = title,
-        Category = categoria,
-        State = estado, 
-        Date = data_documento,
-        Type = tipo_documento,
-        URN = urn
-      ) %>%
       mutate(
-        Date = format(as.Date(Date), "%d/%m/%Y"),
-        Title = ifelse(nchar(Title) > 80, paste0(substr(Title, 1, 80), "..."), Title),
-        Actions = sprintf('<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\'view_document\', \'%s\')">👁 View</button> <button class="btn btn-xs btn-info" onclick="Shiny.setInputValue(\'find_similar\', \'%s\')">🔗 Similar</button>', URN, URN)
+        # Create display columns from actual database columns
+        Title = if ("titulo" %in% names(.)) titulo else if ("title" %in% names(.)) title else "N/A",
+        Category = if ("tipo" %in% names(.)) tipo else if ("categoria" %in% names(.)) categoria else "N/A",
+        State = if ("estado" %in% names(.)) estado else "N/A",
+        Date = if ("data" %in% names(.)) data else if ("data_documento" %in% names(.)) data_documento else NA,
+        Type = if ("tipo" %in% names(.)) tipo else if ("tipo_documento" %in% names(.)) tipo_documento else "N/A",
+        URN_col = if ("urn" %in% names(.)) urn else "N/A"
       ) %>%
-      select(-URN)
+      select(Title, Category, State, Date, Type, URN_col) %>%
+      mutate(
+        Date = tryCatch(format(as.Date(Date), "%d/%m/%Y"), error = function(e) as.character(Date)),
+        Title = ifelse(is.na(Title) | nchar(as.character(Title)) == 0, "N/A",
+                       ifelse(nchar(as.character(Title)) > 80, paste0(substr(as.character(Title), 1, 80), "..."), as.character(Title))),
+        Actions = sprintf('<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\'view_document\', \'%s\')">👁 View</button> <button class="btn btn-xs btn-info" onclick="Shiny.setInputValue(\'find_similar\', \'%s\')">🔗 Similar</button>', URN_col, URN_col)
+      ) %>%
+      select(-URN_col)
     
     DT::datatable(
       display_data,
@@ -527,25 +531,32 @@ enhanced_library_server <- function(input, output, session, documents_data) {
     
     trending_items <- lapply(1:nrow(top_trending), function(i) {
       doc <- top_trending[i, ]
-      
+
+      # Get values using correct column names with fallbacks
+      doc_title <- if ("titulo" %in% names(doc)) doc$titulo else if ("title" %in% names(doc)) doc$title else "N/A"
+      doc_type <- if ("tipo" %in% names(doc)) doc$tipo else if ("categoria" %in% names(doc)) doc$categoria else "N/A"
+      doc_state <- if ("estado" %in% names(doc)) doc$estado else "N/A"
+      doc_date <- if ("data" %in% names(doc)) doc$data else if ("data_documento" %in% names(doc)) doc$data_documento else NA
+      doc_ementa <- if ("ementa" %in% names(doc)) doc$ementa else NULL
+
       div(
         class = "document-card",
         style = "border-left: 4px solid #e74c3c;",
-        
-        div(class = "document-title", doc$title),
-        
+
+        div(class = "document-title", doc_title),
+
         div(class = "document-metadata",
-          span(paste("📚", doc$categoria)),
-          span(paste("🗺️", doc$estado)),
-          span(paste("📅", format(as.Date(doc$data_documento), "%d/%m/%Y"))),
+          span(paste("📚", doc_type)),
+          span(paste("🗺️", doc_state)),
+          span(paste("📅", tryCatch(format(as.Date(doc_date), "%d/%m/%Y"), error = function(e) as.character(doc_date)))),
           span(class = "trending-badge", "TRENDING")
         ),
-        
-        if (!isTRUE(is.null(doc$ementa)) && isTRUE(length(doc$ementa) > 0) && !isTRUE(is.na(doc$ementa[1])) && nchar(doc$ementa[1]) > 0) {
+
+        if (!isTRUE(is.null(doc_ementa)) && isTRUE(length(doc_ementa) > 0) && !isTRUE(is.na(doc_ementa[1])) && nchar(as.character(doc_ementa[1])) > 0) {
           div(
             style = "margin-top: 8px; color: #555; font-size: 13px;",
-            substr(doc$ementa, 1, 150),
-            if (nchar(doc$ementa) > 150) "..."
+            substr(as.character(doc_ementa), 1, 150),
+            if (nchar(as.character(doc_ementa)) > 150) "..."
           )
         }
       )
@@ -662,19 +673,28 @@ enhanced_library_server <- function(input, output, session, documents_data) {
     }
     
     # Apply year filter - safe vector handling
+    # Use data (actual column) or fall back to data_documento
     if ("years" %in% names(filters) && length(filters$years) > 0) {
-      if (!isTRUE(is.null(filtered_data)) && is.data.frame(filtered_data) && isTRUE(nrow(filtered_data) > 0) && "data_documento" %in% names(filtered_data)) {
-        valid_rows <- !is.na(filtered_data$data_documento) &
-                      year(as.Date(filtered_data$data_documento)) %in% filters$years
-        # Ensure valid_rows is a logical vector with no NAs
-        valid_rows[is.na(valid_rows)] <- FALSE
-        filtered_data <- filtered_data[valid_rows, , drop = FALSE]
+      if (!isTRUE(is.null(filtered_data)) && is.data.frame(filtered_data) && isTRUE(nrow(filtered_data) > 0)) {
+        date_col <- if ("data" %in% names(filtered_data)) "data" else if ("data_documento" %in% names(filtered_data)) "data_documento" else NULL
+        if (!is.null(date_col)) {
+          valid_rows <- tryCatch({
+            !is.na(filtered_data[[date_col]]) &
+              year(as.Date(filtered_data[[date_col]])) %in% filters$years
+          }, error = function(e) rep(TRUE, nrow(filtered_data)))
+          # Ensure valid_rows is a logical vector with no NAs
+          valid_rows[is.na(valid_rows)] <- FALSE
+          filtered_data <- filtered_data[valid_rows, , drop = FALSE]
+        }
       }
     }
-    
-    # Apply document type filter
+
+    # Apply document type filter - use tipo (actual column) or fall back to tipo_documento
     if ("document_types" %in% names(filters) && length(filters$document_types) > 0) {
-      filtered_data <- filtered_data[filtered_data$tipo_documento %in% filters$document_types, ]
+      type_col <- if ("tipo" %in% names(filtered_data)) "tipo" else "tipo_documento"
+      if (type_col %in% names(filtered_data)) {
+        filtered_data <- filtered_data[filtered_data[[type_col]] %in% filters$document_types, ]
+      }
     }
     
     # Apply tribunal filter
@@ -710,13 +730,17 @@ enhanced_library_server <- function(input, output, session, documents_data) {
   
   # Simple search implementations for different modes
   perform_exact_search <- function(query, documents_df) {
-    matches <- documents_df[grepl(paste0("\\b", query, "\\b"), documents_df$title, ignore.case = TRUE), ]
+    # Use titulo (actual column) or fall back to title
+    title_col <- if ("titulo" %in% names(documents_df)) documents_df$titulo else documents_df$title
+    matches <- documents_df[grepl(paste0("\\b", query, "\\b"), title_col, ignore.case = TRUE), ]
     return(list(results = matches, search_time_ms = 50, total_matches = nrow(matches)))
   }
-  
+
   perform_fuzzy_search <- function(query, documents_df) {
     # Simple fuzzy search using agrep (approximate grep)
-    matches <- documents_df[agrep(query, documents_df$title, ignore.case = TRUE, max.distance = 0.2), ]
+    # Use titulo (actual column) or fall back to title
+    title_col <- if ("titulo" %in% names(documents_df)) documents_df$titulo else documents_df$title
+    matches <- documents_df[agrep(query, title_col, ignore.case = TRUE, max.distance = 0.2), ]
     return(list(results = matches, search_time_ms = 100, total_matches = nrow(matches)))
   }
   
