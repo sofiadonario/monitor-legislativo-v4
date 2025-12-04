@@ -114,15 +114,10 @@ cached_query <- function(connection, query, params = list(), ttl = 300, cache_ty
   # Log cache miss (optional)
   # cat(sprintf("❌ Cache MISS [%s] - Executing query\n", cache_type))
 
-  # Execute database query with parameterization
+  # Execute database query directly
+  # Note: params are used for cache key generation only, not SQL parameterization
   result <- tryCatch({
-    if (length(params) > 0) {
-      # Use parameterized query to prevent SQL injection
-      DBI::dbGetQuery(connection, query, params = params)
-    } else {
-      # No parameters - direct execution
-      DBI::dbGetQuery(connection, query)
-    }
+    DBI::dbGetQuery(connection, query)
   }, error = function(e) {
     warning(sprintf("Query execution failed: %s", e$message))
     return(NULL)
