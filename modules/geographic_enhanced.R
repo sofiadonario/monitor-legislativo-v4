@@ -132,28 +132,13 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
       query <- paste0(query, " GROUP BY estado, municipio HAVING COUNT(*) >= 2 ORDER BY document_count DESC LIMIT 500")
     }
 
-    # Execute query with caching (15-minute TTL for geographic data)
+    # Execute query directly (no caching to avoid param issues)
     cat("[GEO-QUERY] Executing query...\n")
     cat("[GEO-QUERY] Query:\n", substr(query, 1, 200), "...\n")
 
     result <- tryCatch({
-      if (exists("cached_query")) {
-        params <- list(
-          level = level,
-          tipo = if (!is.null(filters$tipo)) filters$tipo else "Todos",
-          date_range = if (!is.null(filters$date_start)) paste(filters$date_start, filters$date_end, sep = "_") else "all"
-        )
-        cached_query(
-          connection = db_conn,
-          query = query,
-          params = params,
-          ttl = 15 * 60,  # 15 minutes
-          cache_type = "geographic"
-        )
-      } else {
-        # Fallback if caching not available
-        DBI::dbGetQuery(db_conn, query)
-      }
+      # Use direct DBI query to avoid cached_query param issues
+      DBI::dbGetQuery(db_conn, query)
     }, error = function(e) {
       cat("[GEO-QUERY] ERROR:", e$message, "\n")
       # Try simplified fallback query
