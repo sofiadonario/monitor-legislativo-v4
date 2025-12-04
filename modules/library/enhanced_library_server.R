@@ -370,24 +370,35 @@ enhanced_library_server <- function(input, output, session, documents_data) {
     
     # Prepare display data - use actual database column names
     # Database columns: id, titulo, tipo, data, estado, urn, ementa
-    display_data <- filtered_data %>%
-      mutate(
-        # Create display columns from actual database columns
-        Title = if ("titulo" %in% names(.)) titulo else if ("title" %in% names(.)) title else "N/A",
-        Category = if ("tipo" %in% names(.)) tipo else if ("categoria" %in% names(.)) categoria else "N/A",
-        State = if ("estado" %in% names(.)) estado else "N/A",
-        Date = if ("data" %in% names(.)) data else if ("data_documento" %in% names(.)) data_documento else NA,
-        Type = if ("tipo" %in% names(.)) tipo else if ("tipo_documento" %in% names(.)) tipo_documento else "N/A",
-        URN_col = if ("urn" %in% names(.)) urn else "N/A"
-      ) %>%
-      select(Title, Category, State, Date, Type, URN_col) %>%
-      mutate(
-        Date = tryCatch(format(as.Date(Date), "%d/%m/%Y"), error = function(e) as.character(Date)),
-        Title = ifelse(is.na(Title) | nchar(as.character(Title)) == 0, "N/A",
-                       ifelse(nchar(as.character(Title)) > 80, paste0(substr(as.character(Title), 1, 80), "..."), as.character(Title))),
-        Actions = sprintf('<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\'view_document\', \'%s\')">👁 View</button> <button class="btn btn-xs btn-info" onclick="Shiny.setInputValue(\'find_similar\', \'%s\')">🔗 Similar</button>', URN_col, URN_col)
-      ) %>%
-      select(-URN_col)
+    # Determine which columns exist BEFORE mutate
+    cols <- names(filtered_data)
+
+    # Build display data with safe column access
+    display_data <- data.frame(
+      Title = if ("titulo" %in% cols) filtered_data$titulo else if ("title" %in% cols) filtered_data$title else rep("N/A", nrow(filtered_data)),
+      Category = if ("tipo" %in% cols) filtered_data$tipo else if ("categoria" %in% cols) filtered_data$categoria else rep("N/A", nrow(filtered_data)),
+      State = if ("estado" %in% cols) filtered_data$estado else rep("N/A", nrow(filtered_data)),
+      Date = if ("data" %in% cols) as.character(filtered_data$data) else if ("data_documento" %in% cols) as.character(filtered_data$data_documento) else rep(NA_character_, nrow(filtered_data)),
+      Type = if ("tipo" %in% cols) filtered_data$tipo else if ("tipo_documento" %in% cols) filtered_data$tipo_documento else rep("N/A", nrow(filtered_data)),
+      URN_col = if ("urn" %in% cols) filtered_data$urn else rep("N/A", nrow(filtered_data)),
+      stringsAsFactors = FALSE
+    )
+
+    # Format display columns
+    display_data$Title <- ifelse(
+      is.na(display_data$Title) | nchar(as.character(display_data$Title)) == 0,
+      "N/A",
+      ifelse(nchar(as.character(display_data$Title)) > 80,
+             paste0(substr(as.character(display_data$Title), 1, 80), "..."),
+             as.character(display_data$Title))
+    )
+
+    display_data$Actions <- sprintf(
+      '<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\'view_document\', \'%s\')">View</button> <button class="btn btn-xs btn-info" onclick="Shiny.setInputValue(\'find_similar\', \'%s\')">Similar</button>',
+      display_data$URN_col, display_data$URN_col
+    )
+
+    display_data <- display_data[, c("Title", "Category", "State", "Date", "Type", "Actions")]
     
     DT::datatable(
       display_data,
