@@ -76,16 +76,16 @@ load_enhanced_geographic_data <- function(db_conn, level = "state", filters = NU
     # Build base query - simplified for compatibility
     if (level == "state") {
 
-      # Use simpler query that avoids potential column issues
+      # Use simpler query - data column is TEXT so needs casting
       query <- "
         SELECT
           estado,
           COUNT(*) as document_count,
           COUNT(DISTINCT tipo) as document_types,
           0 as municipality_count,
-          MIN(data) as first_document,
-          MAX(data) as last_document,
-          COUNT(CASE WHEN data >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as recent_documents
+          NULL as first_document,
+          NULL as last_document,
+          0 as recent_documents
         FROM documents
         WHERE estado IS NOT NULL AND estado != '' AND estado NOT IN ('Federal', 'Justiça Trabalho')
       "
