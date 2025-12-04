@@ -101,8 +101,9 @@ topic_explorer_server <- function(id, db_pool) {
                    ORDER BY topic_number", model_id))
 
         # Get document-topic proportions (sample for performance)
+        # Use actual column names: data (not data_publicacao)
         doc_topics <- dbGetQuery(db_pool,
-          sprintf("SELECT dt.*, d.nivel, d.poder, EXTRACT(YEAR FROM d.data_publicacao)::integer as ano
+          sprintf("SELECT dt.*, COALESCE(d.nivel, 'N/A') as nivel, COALESCE(d.poder, 'N/A') as poder, COALESCE(EXTRACT(YEAR FROM d.data::date), 0)::integer as ano
                    FROM document_topics dt
                    JOIN documents d ON dt.document_id = d.id
                    WHERE dt.model_id = %d
@@ -440,10 +441,10 @@ topic_explorer_server <- function(id, db_pool) {
 
       if (nrow(top_docs) == 0) return(NULL)
 
-      # Fetch document details
+      # Fetch document details - use actual column names
       doc_ids <- paste(top_docs$document_id, collapse = ",")
       docs <- dbGetQuery(db_pool,
-        sprintf("SELECT id, titulo, tipo_documento, nivel, data_publicacao
+        sprintf("SELECT id, titulo, tipo as tipo_documento, COALESCE(nivel, 'N/A') as nivel, data as data_publicacao
                  FROM documents
                  WHERE id IN (%s)", doc_ids))
 
@@ -506,10 +507,10 @@ topic_explorer_server <- function(id, db_pool) {
           return(NULL)
         }
 
-        # Fetch document details
+        # Fetch document details - use actual column names
         doc_ids <- paste(matching_docs$document_id, collapse = ",")
         docs <- dbGetQuery(db_pool,
-          sprintf("SELECT id, titulo, tipo_documento, nivel, data_publicacao, ementa
+          sprintf("SELECT id, titulo, tipo as tipo_documento, COALESCE(nivel, 'N/A') as nivel, data as data_publicacao, ementa
                    FROM documents
                    WHERE id IN (%s)", doc_ids))
 

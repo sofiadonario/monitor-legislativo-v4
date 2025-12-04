@@ -897,13 +897,16 @@ amendment_server <- function(id, db_connection) {
     output$seasonality_plot <- renderPlotly({
       req(rv$amendments)
 
-      if (!"data_publicacao" %in% names(rv$amendments)) {
+      # Check for data column (actual name) or data_publicacao (alias)
+      date_col <- if ("data" %in% names(rv$amendments)) "data" else if ("data_publicacao" %in% names(rv$amendments)) "data_publicacao" else NULL
+      if (is.null(date_col)) {
         return(plotly_empty())
       }
 
       monthly <- rv$amendments %>%
-        filter(!is.na(data_publicacao)) %>%
-        mutate(month = month(data_publicacao)) %>%
+        filter(!is.na(.data[[date_col]])) %>%
+        mutate(month = tryCatch(month(as.Date(.data[[date_col]])), error = function(e) NA)) %>%
+        filter(!is.na(month)) %>%
         count(month, name = "count")
 
       month_names <- c("Jan", "Fev", "Mar", "Abr", "Mai", "Jun",

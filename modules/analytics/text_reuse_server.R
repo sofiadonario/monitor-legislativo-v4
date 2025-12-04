@@ -73,10 +73,10 @@ text_reuse_server <- function(id, db_connection) {
       ))
 
       tryCatch({
-        # Get focal document info
+        # Get focal document info - use actual column names
         focal_info <- dbGetQuery(
           db_connection(),
-          "SELECT id, titulo, ano, nivel, uf, tipo_documento FROM documents WHERE id = $1",
+          "SELECT id, titulo, COALESCE(ano, 0) as ano, COALESCE(nivel, 'N/A') as nivel, COALESCE(estado, 'N/A') as uf, tipo as tipo_documento FROM documents WHERE id = $1",
           params = list(input$focal_doc_id)
         )
 
@@ -721,10 +721,10 @@ text_reuse_server <- function(id, db_connection) {
 
       source("R/analytics/text_reuse_lsh.R")
 
-      # Get documents
+      # Get documents - use ementa instead of texto_completo
       docs <- dbGetQuery(
         db_connection(),
-        sprintf("SELECT id, titulo, texto_completo FROM documents WHERE id IN (%d, %d)",
+        sprintf("SELECT id, titulo, COALESCE(ementa, '') as texto_completo FROM documents WHERE id IN (%d, %d)",
                 input$compare_doc1, input$compare_doc2)
       )
 

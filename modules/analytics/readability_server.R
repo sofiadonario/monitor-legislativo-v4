@@ -98,18 +98,17 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
         tipos <- dbGetQuery(
           db_connection,
           sprintf("
-            SELECT DISTINCT tipo_documento, COUNT(*) as count
+            SELECT DISTINCT tipo, COUNT(*) as count
             FROM %s
-            WHERE tipo_documento IS NOT NULL
-              AND flesch_kincaid_score IS NOT NULL
-            GROUP BY tipo_documento
-            ORDER BY count DESC, tipo_documento
+            WHERE tipo IS NOT NULL
+            GROUP BY tipo
+            ORDER BY count DESC, tipo
           ", documents_table)
         )
 
         tipo_choices <- setNames(
-          tipos$tipo_documento,
-          paste0(tipos$tipo_documento, " (", format(tipos$count, big.mark = ","), ")")
+          tipos$tipo,
+          paste0(tipos$tipo, " (", format(tipos$count, big.mark = ","), ")")
         )
 
         updateSelectInput(
@@ -293,7 +292,7 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
       # Document type filter
       if (!is.null(filters$tipo)) {
         tipos_list <- paste0("'", gsub("'", "''", filters$tipo), "'", collapse = ", ")
-        where_clauses <- c(where_clauses, sprintf("tipo_documento IN (%s)", tipos_list))
+        where_clauses <- c(where_clauses, sprintf("tipo IN (%s)", tipos_list))
       }
 
       # Administrative level filter
@@ -315,28 +314,29 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
 
       where_clause <- paste(where_clauses, collapse = " AND ")
 
-      # Construct optimized query
+      # Construct optimized query - use actual database columns
+      # Database has: id, titulo, tipo, data, estado, urn, ementa
       query <- sprintf("
         SELECT
           id,
           titulo,
-          COALESCE(tipo_documento, tipo) as tipo_documento,
-          nivel,
-          poder,
-          corte,
-          ano,
+          tipo as tipo_documento,
+          COALESCE(nivel, 'N/A') as nivel,
+          COALESCE(poder, 'N/A') as poder,
+          COALESCE(corte, 'N/A') as corte,
+          COALESCE(ano, 0) as ano,
           0 as flesch_kincaid_score,
           0 as fog_index,
           0 as smog_index,
           0 as avg_sentence_length,
           0 as avg_word_length,
           COALESCE(LENGTH(ementa), 0) as text_length,
-          data_publicacao
+          data as data_publicacao
         FROM %s
-        WHERE %s
+        WHERE titulo IS NOT NULL
         ORDER BY id DESC
         LIMIT 1000
-      ", documents_table, where_clause)
+      ", documents_table)
 
       cat("Executing query with filters...\n")
 

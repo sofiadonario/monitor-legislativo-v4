@@ -41,9 +41,9 @@ bert_precedent_server <- function(id, db_pool) {
       )
 
       tryCatch({
-        # Load document
+        # Load document - use actual database columns
         doc <- dbGetQuery(db_pool,
-          sprintf("SELECT id, titulo, ementa, tipo_documento, nivel, poder, data_publicacao
+          sprintf("SELECT id, titulo, ementa, tipo as tipo_documento, COALESCE(nivel, 'N/A') as nivel, COALESCE(poder, 'N/A') as poder, data as data_publicacao
                    FROM documents
                    WHERE id = %d", input$reference_doc_id))
 
@@ -98,7 +98,7 @@ bert_precedent_server <- function(id, db_pool) {
           tags$dt("Tipo:"), tags$dd(doc$tipo_documento),
           tags$dt("Nível:"), tags$dd(doc$nivel),
           tags$dt("Poder:"), tags$dd(doc$poder),
-          tags$dt("Data:"), tags$dd(format(doc$data_publicacao, "%d/%m/%Y"))
+          tags$dt("Data:"), tags$dd(tryCatch(format(as.Date(doc$data_publicacao), "%d/%m/%Y"), error = function(e) as.character(doc$data_publicacao)))
         ),
         hr(),
         tags$strong("Ementa:"),
@@ -690,15 +690,16 @@ search_bert_by_embedding <- function(embedding, db_connection, top_n = 20,
 
   # Use materialized view or direct query
   # Placeholder implementation
+  # Use actual database columns: tipo (not tipo_documento), data (not data_publicacao)
   query <- sprintf("
     SELECT
       de.document_id,
       d.titulo,
-      d.tipo_documento,
-      d.nivel,
-      d.poder,
-      EXTRACT(YEAR FROM d.data_publicacao)::integer AS ano,
-      d.data_publicacao,
+      d.tipo as tipo_documento,
+      COALESCE(d.nivel, 'N/A') as nivel,
+      COALESCE(d.poder, 'N/A') as poder,
+      COALESCE(EXTRACT(YEAR FROM d.data::date), 0)::integer AS ano,
+      d.data as data_publicacao,
       1.0 - (de.embedding <=> $1) AS similarity_score,
       ROW_NUMBER() OVER (ORDER BY de.embedding <=> $1) AS rank_position
     FROM document_embeddings de
@@ -749,9 +750,9 @@ compare_bert_documents <- function(doc1_id, doc2_id, db_connection) {
     sprintf("SELECT embedding FROM document_embeddings
              WHERE document_id = %d AND embedding_type = 'bert'", doc2_id))
 
-  # Get document details
+  # Get document details - use actual column names
   docs <- dbGetQuery(db_connection,
-    sprintf("SELECT id, titulo, tipo_documento FROM documents WHERE id IN (%d, %d)",
+    sprintf("SELECT id, titulo, tipo as tipo_documento FROM documents WHERE id IN (%d, %d)",
            doc1_id, doc2_id))
 
   # Compute similarity (placeholder)
