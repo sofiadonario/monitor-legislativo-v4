@@ -475,9 +475,16 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         stop("No temporal data available")
       }
 
-      # Ensure required columns exist
-      if (!"month" %in% names(monthly_data)) {
-        stop("Missing month column in temporal data")
+      # Debug: log available columns
+      cat(sprintf("[EXEC-CHART] exec_advanced_trends: Columns available: %s\n", paste(names(monthly_data), collapse = ", ")), file = stderr())
+
+      # Check for date column - can be year_month or month
+      date_col <- if ("year_month" %in% names(monthly_data)) "year_month"
+                  else if ("month" %in% names(monthly_data)) "month"
+                  else NULL
+
+      if (is.null(date_col)) {
+        stop("Missing date column (year_month or month) in temporal data")
       }
 
       # Use document_count or count column
@@ -486,10 +493,10 @@ init_executive_summary_server <- function(input, output, session, get_document_d
         stop("Missing count column in temporal data")
       }
 
-      cat(sprintf("[EXEC-CHART] exec_advanced_trends: Rendering %d data points\n", nrow(monthly_data)), file = stderr())
+      cat(sprintf("[EXEC-CHART] exec_advanced_trends: Rendering %d data points using %s column\n", nrow(monthly_data), date_col), file = stderr())
 
-      # Create the chart
-      plot_ly(monthly_data, x = ~month, y = ~get(count_col), type = 'scatter', mode = 'lines+markers',
+      # Create the chart using the identified date column
+      plot_ly(monthly_data, x = ~get(date_col), y = ~get(count_col), type = 'scatter', mode = 'lines+markers',
               line = list(color = '#3498db', width = 2),
               marker = list(color = '#3498db', size = 6),
               name = 'Documents') %>%
