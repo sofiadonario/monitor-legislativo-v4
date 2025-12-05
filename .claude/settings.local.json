@@ -1,23 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gcloud secrets create:*)",
-      "Bash(PGPASSWORD=\"Sdonario1\" psql:*)",
+      "Bash(chmod:*)",
+      "Bash(Rscript:*)",
+      "Bash(cd:*)",
+      "Bash(cd /Users/sofiadonario/Library/CloudStorage/OneDrive-Personal/Doutorado\\ Stuff/MackIntegridade/monitor_legislativo_v4 && railway status:*)",
       "Bash(PGPASSWORD=\"BiRead2025Secure\" psql:*)",
-      "Bash(gcloud secrets versions add:*)",
-      "Bash(gcloud sql instances patch:*)",
-      "Bash(gcloud sql ssl-certs create:*)",
-      "Bash(/tmp/server-ca.pem)",
-      "Bash(gcloud sql ssl-certs describe:*)",
-      "Bash(/tmp/bi-tools-client-cert.pem)",
-      "Bash(perl -i.bak3 -pe:*)",
-      "Bash(gcloud run revisions describe:*)",
-      "Bash(if hexdump -v -e '/1 \"\"\"\"%02X\\n\"\"\"\"' R/database/query_optimizer.R)",
-      "Bash(then echo \"NUL byte found!\")",
-      "Bash(else echo \"No NUL bytes found\")",
-      "Bash(fi)",
-      "Bash(git ls-tree:*)",
-      "Bash(git config:*)"
+      "Bash(python3:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: Resolve Geographic and Analytics tab data issues\n\nGeographic tab:\n- Simplified state query to avoid column compatibility issues\n- Removed data::date casting that could cause type errors\n- Excluded ''Federal'' and ''Justiça Trabalho'' from state-level analysis\n- Added comprehensive debug logging for query execution\n- Added fallback query mechanism if main query fails\n\nAnalytics readability:\n- Fixed column texto_completo not found error\n- Using ementa column instead of texto_completo for text length\n- Made readability score columns return 0 (not calculated yet)\n- Added LIMIT 1000 to prevent memory issues\n- Used COALESCE for optional columns\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(gcloud logging read:*)",
+      "Bash(gcloud builds describe:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

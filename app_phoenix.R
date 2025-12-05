@@ -732,13 +732,13 @@ ui <- navbarPage(
         tags$button(
           id = "accept_cookies_btn",
           class = "cookie-btn accept",
-          onclick = "Shiny.setInputValue('cookie_accept', Math.random()); Cookies.set('cookie_consent', 'accepted', { expires: 365 });",
+          onclick = "Shiny.setInputValue('cookie_accept', Math.random()); Cookies.set('cookie_consent', 'accepted', { expires: 365 }); $('#cookie-consent-banner').removeClass('show').hide();",
           "✓ Aceitar Cookies"
         ),
         tags$button(
           id = "reject_cookies_btn",
           class = "cookie-btn reject",
-          onclick = "Shiny.setInputValue('cookie_reject', Math.random()); Cookies.set('cookie_consent', 'rejected', { expires: 365 });",
+          onclick = "Shiny.setInputValue('cookie_reject', Math.random()); Cookies.set('cookie_consent', 'rejected', { expires: 365 }); $('#cookie-consent-banner').removeClass('show').hide();",
           "✗ Rejeitar Não Essenciais"
         )
       )
