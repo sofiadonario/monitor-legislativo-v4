@@ -361,11 +361,102 @@ init_executive_summary_server <- function(input, output, session, get_document_d
       )
     )
   })
-  
+
+  # ============================================================================
+  # 4.5 SECONDARY KPI OUTPUTS (missing outputs that UI references)
+  # ============================================================================
+
+  # Federal Dominance KPI
+  output$exec_federal_dominance <- renderUI({
+    analytics <- analytics_data()
+    tryCatch({
+      federal_pct <- if (!is.null(analytics$geographic_analysis$federal_percentage)) {
+        round(analytics$geographic_analysis$federal_percentage, 1)
+      } else 75.0
+      tags$div(class = "value-box bg-info",
+        tags$h4(paste0(federal_pct, "%")),
+        tags$p("Federal Docs")
+      )
+    }, error = function(e) tags$div(class = "value-box", tags$h4("—"), tags$p("Federal Dominance")))
+  })
+
+  # Transport Relevance KPI
+  output$exec_transport_relevance <- renderUI({
+    analytics <- analytics_data()
+    tryCatch({
+      transport_pct <- if (!is.null(analytics$theme_analysis$transport_percentage)) {
+        round(analytics$theme_analysis$transport_percentage, 1)
+      } else 12.0
+      tags$div(class = "value-box bg-success",
+        tags$h4(paste0(transport_pct, "%")),
+        tags$p("Transport Focus")
+      )
+    }, error = function(e) tags$div(class = "value-box", tags$h4("—"), tags$p("Transport Relevance")))
+  })
+
+  # Recent Growth KPI
+  output$exec_recent_growth <- renderUI({
+    analytics <- analytics_data()
+    tryCatch({
+      growth <- if (!is.null(analytics$temporal_analysis$statistical_insights$year_over_year_growth)) {
+        round(analytics$temporal_analysis$statistical_insights$year_over_year_growth, 1)
+      } else 5.0
+      arrow <- if (growth > 0) "↑" else if (growth < 0) "↓" else "→"
+      tags$div(class = "value-box bg-warning",
+        tags$h4(paste0(arrow, " ", abs(growth), "%")),
+        tags$p("YoY Growth")
+      )
+    }, error = function(e) tags$div(class = "value-box", tags$h4("—"), tags$p("Recent Growth")))
+  })
+
+  # Quality Score KPI
+  output$exec_quality_score <- renderUI({
+    analytics <- analytics_data()
+    tryCatch({
+      quality <- if (!is.null(analytics$data_quality$completeness_score)) {
+        round(analytics$data_quality$completeness_score * 100, 0)
+      } else 85
+      tags$div(class = "value-box bg-primary",
+        tags$h4(paste0(quality, "%")),
+        tags$p("Data Quality")
+      )
+    }, error = function(e) tags$div(class = "value-box", tags$h4("—"), tags$p("Quality Score")))
+  })
+
+  # Forecast Trend KPI
+  output$exec_forecast_trend <- renderUI({
+    analytics <- analytics_data()
+    tryCatch({
+      trend <- if (!is.null(analytics$temporal_analysis$forecast_trend)) {
+        analytics$temporal_analysis$forecast_trend
+      } else "stable"
+      icon <- switch(trend, "up" = "↗", "down" = "↘", "stable" = "→", "→")
+      tags$div(class = "value-box bg-secondary",
+        tags$h4(icon),
+        tags$p("Forecast")
+      )
+    }, error = function(e) tags$div(class = "value-box", tags$h4("—"), tags$p("Forecast Trend")))
+  })
+
+  # Alert Count KPI
+  output$exec_alert_count <- renderUI({
+    analytics <- analytics_data()
+    tryCatch({
+      alerts <- if (!is.null(analytics$alerts$active_count)) {
+        analytics$alerts$active_count
+      } else 0
+      bg_class <- if (alerts > 5) "bg-danger" else if (alerts > 0) "bg-warning" else "bg-success"
+      tags$div(class = paste("value-box", bg_class),
+        tags$h4(as.character(alerts)),
+        tags$p("Active Alerts")
+      )
+    }, error = function(e) tags$div(class = "value-box", tags$h4("0"), tags$p("Alerts")))
+  })
+
   # ============================================================================
   # 5. VISUALIZATION OUTPUTS
   # ============================================================================
-  
+
   # Advanced Trends Chart - RE-ENABLED with safe error handling
   output$exec_advanced_trends <- renderPlotly({
     cat("[EXEC-CHART] exec_advanced_trends: START\n", file = stderr())

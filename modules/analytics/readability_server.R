@@ -58,7 +58,7 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
     # INITIALIZE FILTER CHOICES FROM DATABASE
     # =========================================================================
 
-    # Populate Year filter choices
+    # Populate Year filter choices - use EXTRACT(YEAR FROM data) since 'ano' column doesn't exist
     observe({
       if (!db_available) return()
 
@@ -66,10 +66,9 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
         years <- dbGetQuery(
           db_connection,
           sprintf("
-            SELECT DISTINCT ano
+            SELECT DISTINCT EXTRACT(YEAR FROM data::date)::integer as ano
             FROM %s
-            WHERE ano IS NOT NULL
-              AND flesch_kincaid_score IS NOT NULL
+            WHERE data IS NOT NULL
             ORDER BY ano DESC
           ", documents_table)
         )
@@ -122,26 +121,17 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
       })
     })
 
-    # Populate Power Branch filter choices
+    # Populate Power Branch filter choices - poder column doesn't exist, use placeholder values
     observe({
       if (!db_available) return()
 
       tryCatch({
-        poder <- dbGetQuery(
-          db_connection,
-          sprintf("
-            SELECT DISTINCT poder, COUNT(*) as count
-            FROM %s
-            WHERE poder IS NOT NULL
-              AND flesch_kincaid_score IS NOT NULL
-            GROUP BY poder
-            ORDER BY count DESC
-          ", documents_table)
-        )
-
-        poder_choices <- setNames(
-          tolower(poder$poder),
-          paste0(tools::toTitleCase(tolower(poder$poder)), " (", format(poder$count, big.mark = ","), ")")
+        # Note: 'poder' column doesn't exist in the database
+        # Provide static choices instead of querying non-existent column
+        poder_choices <- c(
+          "executivo" = "Executivo",
+          "legislativo" = "Legislativo",
+          "judiciario" = "Judiciário"
         )
 
         updateSelectInput(
@@ -314,24 +304,26 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
 
       where_clause <- paste(where_clauses, collapse = " AND ")
 
-      # Construct optimized query - use actual database columns
-      # Database has: id, titulo, tipo, data, estado, urn, ementa
+      # Construct optimized query - use ONLY actual database columns
+      # Database has: id, titulo, tipo, data, estado, urn, ementa (NOT nivel, poder, corte, ano)
       query <- sprintf("
         SELECT
           id,
           titulo,
           tipo as tipo_documento,
-          COALESCE(nivel, 'N/A') as nivel,
-          COALESCE(poder, 'N/A') as poder,
-          COALESCE(corte, 'N/A') as corte,
-          COALESCE(ano, 0) as ano,
+          'N/A' as nivel,
+          'N/A' as poder,
+          'N/A' as corte,
+          COALESCE(EXTRACT(YEAR FROM data::date), 0)::integer as ano,
           0 as flesch_kincaid_score,
           0 as fog_index,
           0 as smog_index,
           0 as avg_sentence_length,
           0 as avg_word_length,
           COALESCE(LENGTH(ementa), 0) as text_length,
-          data as data_publicacao
+          data as data_publicacao,
+          estado,
+          ementa
         FROM %s
         WHERE titulo IS NOT NULL
         ORDER BY id DESC

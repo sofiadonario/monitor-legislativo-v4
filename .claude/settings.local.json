@@ -14,7 +14,8 @@
       "Bash(gcloud logging read:*)",
       "Bash(gcloud builds describe:*)",
       "Bash(find:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(R --quiet --slave -e:*)"
     ],
     "deny": [],
     "ask": []

@@ -838,22 +838,22 @@ create_enhanced_executive_summary_ui <- function(id = "executive_summary_module"
     # Strategic Insights Panel (now with namespace)
     create_strategic_insights_ui(ns),
 
-    # Enhanced KPI Value Boxes Row
+    # Enhanced KPI Value Boxes Row (using uiOutput for bslib::value_box compatibility)
     fluidRow(
-      valueBoxOutput(ns("exec_enhanced_total_docs"), width = 3),
-      valueBoxOutput(ns("exec_enhanced_states_coverage"), width = 3),
-      valueBoxOutput(ns("exec_enhanced_monthly_activity"), width = 3),
-      valueBoxOutput(ns("exec_enhanced_data_freshness"), width = 3)
+      column(3, uiOutput(ns("exec_enhanced_total_docs"))),
+      column(3, uiOutput(ns("exec_enhanced_states_coverage"))),
+      column(3, uiOutput(ns("exec_enhanced_monthly_activity"))),
+      column(3, uiOutput(ns("exec_enhanced_data_freshness")))
     ),
 
-    # Secondary KPIs Row
+    # Secondary KPIs Row (using uiOutput for bslib::value_box compatibility)
     fluidRow(
-      valueBoxOutput(ns("exec_federal_dominance"), width = 2),
-      valueBoxOutput(ns("exec_transport_relevance"), width = 2),
-      valueBoxOutput(ns("exec_recent_growth"), width = 2),
-      valueBoxOutput(ns("exec_quality_score"), width = 2),
-      valueBoxOutput(ns("exec_forecast_trend"), width = 2),
-      valueBoxOutput(ns("exec_alert_count"), width = 2)
+      column(2, uiOutput(ns("exec_federal_dominance"))),
+      column(2, uiOutput(ns("exec_transport_relevance"))),
+      column(2, uiOutput(ns("exec_recent_growth"))),
+      column(2, uiOutput(ns("exec_quality_score"))),
+      column(2, uiOutput(ns("exec_forecast_trend"))),
+      column(2, uiOutput(ns("exec_alert_count")))
     ),
 
     # Advanced Visualizations (now with namespace)
