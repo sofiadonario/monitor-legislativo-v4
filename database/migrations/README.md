@@ -2,7 +2,7 @@
 
 ## Overview
 
-Production-ready PostgreSQL schema optimized for **Railway PostgreSQL** with **32GB RAM / 32GB vCPU**. Designed to handle **134k+ Brazilian legislative documents** with sub-second search performance.
+Production-ready PostgreSQL schema optimized for **Google Cloud SQL PostgreSQL** with high-performance configuration. Designed to handle **134k+ Brazilian legislative documents** with sub-second search performance.
 
 ## Features
 
@@ -60,18 +60,16 @@ Production-ready PostgreSQL schema optimized for **Railway PostgreSQL** with **3
 brew install postgresql@15  # macOS
 # apt-get install postgresql-client  # Linux
 
-# Set Railway database URL
-export DATABASE_URL='postgresql://postgres:PASSWORD@postgres.railway.internal:5432/railway'
+# Set Cloud SQL database URL (using Cloud SQL Proxy or direct connection)
+export DATABASE_URL='postgresql://postgres:PASSWORD@CLOUD_SQL_CONNECTION_NAME/database'
+# Or via Unix socket: postgresql://postgres:PASSWORD@/database?host=/cloudsql/CLOUD_SQL_CONNECTION_NAME
 ```
 
-### Deploy to Railway
+### Deploy to Cloud SQL
 ```bash
 cd database/migrations
 
-# Run deployment script
-./deploy_to_railway.sh
-
-# Or deploy manually
+# Deploy via Cloud SQL Proxy or Cloud Shell
 psql "$DATABASE_URL" -f high_performance_search_schema.sql
 ```
 
@@ -217,7 +215,7 @@ LIMIT 10;
 
 ## Performance Expectations
 
-With **32GB RAM / 32GB vCPU** on Railway:
+With properly configured Cloud SQL instance:
 
 | Operation | Dataset Size | Expected Time |
 |-----------|--------------|---------------|
@@ -271,11 +269,21 @@ SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0;
 library(DBI)
 library(RPostgres)
 
+# Option 1: Direct connection (requires allowlisting IPs)
 con <- dbConnect(
   RPostgres::Postgres(),
-  dbname = "railway",
-  host = "postgres.railway.internal",
+  dbname = "your_database",
+  host = "YOUR_INSTANCE_IP",
   port = 5432,
+  user = "postgres",
+  password = Sys.getenv("POSTGRES_PASSWORD")
+)
+
+# Option 2: Via Cloud SQL Proxy (recommended for Cloud Run)
+con <- dbConnect(
+  RPostgres::Postgres(),
+  dbname = "your_database",
+  host = "/cloudsql/CLOUD_SQL_CONNECTION_NAME",
   user = "postgres",
   password = Sys.getenv("POSTGRES_PASSWORD")
 )
@@ -299,10 +307,10 @@ dbDisconnect(con)
 ## Support
 
 For issues or questions:
-1. Check Railway PostgreSQL logs
+1. Check Cloud SQL logs in Google Cloud Console
 2. Review `v_slow_queries` for performance issues
 3. Verify extensions: `SELECT * FROM pg_extension;`
-4. Check disk space: `SELECT pg_size_pretty(pg_database_size('railway'));`
+4. Check disk space: `SELECT pg_size_pretty(pg_database_size(current_database()));`
 
 ## Architecture Notes
 
@@ -317,5 +325,5 @@ For issues or questions:
 
 **Last Updated**: 2025-10-16
 **Schema Version**: 1.0
-**Target Environment**: Railway PostgreSQL (32GB RAM / 32GB vCPU)
+**Target Environment**: Google Cloud SQL PostgreSQL
 **Data Scale**: 134k+ documents (50GB+ total)

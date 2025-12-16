@@ -3,7 +3,7 @@
 [![R](https://img.shields.io/badge/R-4.3.3+-blue.svg)](https://www.r-project.org/)
 [![Shiny](https://img.shields.io/badge/Shiny-1.8.1+-green.svg)](https://shiny.rstudio.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-blue.svg)](https://www.postgresql.org/)
-[![Railway](https://img.shields.io/badge/Deployed%20on-Railway-black.svg)](https://railway.app/)
+[![Cloud Run](https://img.shields.io/badge/Deployed%20on-Cloud%20Run-4285F4.svg)](https://cloud.google.com/run)
 [![LGPD](https://img.shields.io/badge/LGPD-Compliant-green.svg)](https://www.lgpd.com.br/)
 [![Tests](https://img.shields.io/badge/Tests-46%20Passing-brightgreen.svg)](tests/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
@@ -34,7 +34,7 @@
 ### Key Achievements
 
 ✅ **Comprehensive Error Protection**: Zero scalar value crashes with systematic guards across 25+ modules
-✅ **Production Stability**: Robust deployment on Railway with PostgreSQL connection pooling
+✅ **Production Stability**: Robust deployment on Google Cloud Run with PostgreSQL connection pooling
 ✅ **Security Hardening**: LGPD compliance, input validation, audit logging
 ✅ **Clean Architecture**: 100+ emergency patch files removed, modular design
 ✅ **Automated Testing**: 46 test assertions passing, CI/CD pipeline
@@ -55,7 +55,7 @@ The platform recently underwent a **comprehensive consolidation** that unified 1
    - Vector leak detection and logging system
    - Comprehensive test suite: `tests/testthat/test-scalar-safety.R`
 
-2. **Deployment Infrastructure** - Railway-optimized production environment
+2. **Deployment Infrastructure** - Google Cloud Run-optimized production environment
    - Docker configuration for Ubuntu 24.04 Noble
    - PostgreSQL connection pooling with proper cleanup
    - Health check endpoints and monitoring
@@ -78,7 +78,7 @@ The platform recently underwent a **comprehensive consolidation** that unified 1
 - **Stability**: Zero scalar value errors in production
 - **Test Coverage**: 46 assertions across 11 test cases (100% passing)
 - **Code Cleanup**: 255 files modified, 100+ legacy files removed
-- **Deploy Time**: <5 minutes cold start on Railway
+- **Deploy Time**: <5 minutes cold start on Google Cloud Run
 - **Uptime**: 99.9% target with automated health checks
 
 ### Recent Updates (November 2024)
@@ -582,7 +582,6 @@ gcloud builds submit \
 
 ### Deployment
 - **Google Cloud Run** - Current production hosting (southamerica-east1)
-- **Railway** - Alternative hosting platform
 - **Docker** - Containerization (Ubuntu 24.04)
 - **GitHub Actions** - CI/CD automation
 - **PostgreSQL** - Cloud SQL database (managed by Google Cloud)
@@ -788,21 +787,6 @@ gcloud run deploy mackmonitor \
 - Cloud SQL connection via Unix socket
 - Low-latency serving from São Paulo region
 
-### Railway (Alternative)
-
-The application is also configured for deployment on Railway:
-
-1. **Automatic Configuration** via `railway.toml`
-2. **Environment Variables** set in Railway dashboard
-3. **PostgreSQL** managed by Railway with connection pooling
-4. **Health Checks** configured at `/health`
-5. **Auto-scaling** based on resource usage
-
-**Railway Configuration:**
-- Build Command: `Rscript -e "renv::restore()"`
-- Start Command: `R -e "options(shiny.host='0.0.0.0', shiny.port=3838); shiny::runApp()"`
-- Health Check Path: `/health`
-- Restart Policy: `on-failure`
 
 ### Docker Deployment
 

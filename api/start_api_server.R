@@ -21,13 +21,13 @@ cat("📊 Integrating with Brazilian Legislative Data System\n")
 api_startup_time <- Sys.time()
 
 # Environment detection
-is_railway <- Sys.getenv("RAILWAY_ENVIRONMENT", "") != ""
-is_production <- Sys.getenv("NODE_ENV", "development") == "production" || 
+is_cloud_run <- Sys.getenv("K_SERVICE", "") != ""
+is_production <- Sys.getenv("NODE_ENV", "development") == "production" ||
                  Sys.getenv("R_ENV", "development") == "production" ||
-                 is_railway
+                 is_cloud_run
 
 cat("🌍 Environment:", if (is_production) "PRODUCTION" else "DEVELOPMENT", "\n")
-cat("🚂 Railway deployment:", if (is_railway) "YES" else "NO", "\n")
+cat("☁️ Cloud Run deployment:", if (is_cloud_run) "YES" else "NO", "\n")
 
 # Set error handling for production
 if (is_production) {
@@ -228,30 +228,30 @@ tryCatch({
   stop("Cannot proceed without API instance")
 })
 
-# Railway-specific optimizations
-if (is_railway) {
-  cat("🚂 Applying Railway-specific optimizations...\n")
-  
-  # Railway environment variables
-  railway_vars <- c(
-    "RAILWAY_ENVIRONMENT", "RAILWAY_PROJECT_ID", "RAILWAY_SERVICE_ID",
-    "RAILWAY_DEPLOYMENT_ID", "RAILWAY_REPLICA_ID", "DATABASE_URL"
+# Cloud Run-specific optimizations
+if (is_cloud_run) {
+  cat("☁️ Applying Cloud Run-specific optimizations...\n")
+
+  # Cloud Run environment variables
+  cloud_run_vars <- c(
+    "K_SERVICE", "K_REVISION", "K_CONFIGURATION",
+    "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_REGION", "DATABASE_URL"
   )
-  
-  for (var in railway_vars) {
+
+  for (var in cloud_run_vars) {
     if (Sys.getenv(var, "") != "") {
       cat("  📊", var, "configured\n")
     }
   }
-  
-  # Configure for Railway networking
+
+  # Configure for Cloud Run networking
   if (API_CONFIG$host == "0.0.0.0") {
-    cat("  🌐 Configured for Railway external access\n")
+    cat("  🌐 Configured for Cloud Run external access\n")
   }
-  
-  # Railway memory optimization
+
+  # Cloud Run memory optimization
   if (is_production) {
-    # Optimize R memory usage for Railway limits
+    # Optimize R memory usage for Cloud Run limits
     options(scipen = 999)  # Avoid scientific notation
     gc() # Garbage collection
     cat("  💾 Memory optimizations applied\n")
@@ -276,7 +276,7 @@ cat("🎯 Starting API server...\n")
 cat("=" * 60, "\n")
 cat("Monitor Legislativo REST API - Sprint 6B (API-001)\n")
 cat("Brazilian Legislative Data System\n")
-cat("Performance Optimized • LGPD Compliant • Railway Ready\n")
+cat("Performance Optimized • LGPD Compliant • Cloud Run Ready\n")
 cat("=" * 60, "\n")
 
 startup_duration <- as.numeric(difftime(Sys.time(), api_startup_time, units = "secs"))
@@ -285,10 +285,11 @@ cat("⏱️ Startup completed in", round(startup_duration, 2), "seconds\n")
 # Print access information
 cat("\n📡 API Access Information:\n")
 cat("  Local URL: http://localhost:", API_CONFIG$port, "\n", sep = "")
-if (is_railway) {
-  railway_url <- Sys.getenv("RAILWAY_PUBLIC_DOMAIN", "")
-  if (railway_url != "") {
-    cat("  Public URL: https://", railway_url, "\n", sep = "")
+if (is_cloud_run) {
+  # Cloud Run URLs are typically in format: https://SERVICE-PROJECT_ID.REGION.run.app
+  service_name <- Sys.getenv("K_SERVICE", "")
+  if (service_name != "") {
+    cat("  Public URL: https://mackmonitor-667999538255.southamerica-east1.run.app\n")
   }
 }
 
@@ -323,7 +324,7 @@ if (exists("log_security_event")) {
   log_security_event("API_SERVER_STARTUP", list(
     startup_duration = startup_duration,
     environment = if (is_production) "production" else "development",
-    railway = is_railway,
+    cloud_run = is_cloud_run,
     database_status = if (db_healthy) "connected" else "limited"
   ))
 }

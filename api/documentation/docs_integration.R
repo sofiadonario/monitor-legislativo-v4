@@ -397,7 +397,7 @@ api_key <- "sua_chave_api"
 headers <- add_headers(`X-API-Key` = api_key)
 
 response <- GET(
-  "https://monitorlegislativo.up.railway.app/api/v1/documents",
+  "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1/documents",
   query = list(
     estado = "SP",
     species = "Lei",
@@ -424,7 +424,7 @@ api_key = "sua_chave_api"
 headers = {"X-API-Key": api_key}
 
 response = requests.get(
-    "https://monitorlegislativo.up.railway.app/api/v1/documents",
+    "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1/documents",
     params={
         "estado": "SP",
         "species": "Lei",
@@ -446,7 +446,7 @@ if response.status_code == 200:
                 <div class="code-block">
 <pre>
 # Buscar leis de educação em São Paulo (2020-2023)
-curl -X GET "https://monitorlegislativo.up.railway.app/api/v1/documents?estado=SP&species=Lei&ano_inicio=2020&ano_fim=2023&limit=100" \\
+curl -X GET "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1/documents?estado=SP&species=Lei&ano_inicio=2020&ano_fim=2023&limit=100" \\
   -H "X-API-Key: sua_chave_api"
 </pre>
                 </div>

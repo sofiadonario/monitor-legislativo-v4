@@ -30,7 +30,7 @@ for (pkg in required_packages) {
 
 # Brazilian Legislative API Examples Configuration
 API_EXAMPLES_CONFIG <- list(
-  base_url = "https://monitorlegislativo.up.railway.app/api/v1",
+  base_url = "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1",
   dev_url = "http://localhost:8000/api/v1",
   demo_api_key = "demo_key_for_examples",
   academic_api_key = "academic_key_example",
@@ -81,7 +81,7 @@ library(jsonlite)
 
 # Configurar autenticação
 api_key <- "sua_chave_api_academica"
-base_url <- "https://monitorlegislativo.up.railway.app/api/v1"
+base_url <- "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
 headers <- add_headers(`X-API-Key` = api_key)
 
 # 1.1.1 Obter informações gerais da API
@@ -114,7 +114,7 @@ import json
 
 # Configurar autenticação
 api_key = "sua_chave_api_academica"
-base_url = "https://monitorlegislativo.up.railway.app/api/v1"
+base_url = "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
 headers = {"X-API-Key": api_key}
 
 # 1.1.1 Obter informações gerais da API
@@ -141,15 +141,15 @@ if response.status_code == 200:
 # Exemplo 1.1: Exploração inicial do dataset
 
 # 1.1.1 Obter informações gerais da API
-curl -X GET "https://monitorlegislativo.up.railway.app/api/v1/info" \\
+curl -X GET "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1/info" \\
   -H "X-API-Key: sua_chave_api_academica"
 
 # 1.1.2 Verificar categorias disponíveis
-curl -X GET "https://monitorlegislativo.up.railway.app/api/v1/documents/categories" \\
+curl -X GET "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1/documents/categories" \\
   -H "X-API-Key: sua_chave_api_academica"
 
 # 1.1.3 Obter estatísticas gerais
-curl -X GET "https://monitorlegislativo.up.railway.app/api/v1/documents/stats" \\
+curl -X GET "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1/documents/stats" \\
   -H "X-API-Key: sua_chave_api_academica"
         '
       ),
@@ -887,7 +887,7 @@ library(httr)
 library(jsonlite)
 
 api_key <- "sua_chave_api"
-base_url <- "https://monitorlegislativo.up.railway.app/api/v1"
+base_url <- "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
 headers <- add_headers(`X-API-Key` = api_key)
 '
   
@@ -954,7 +954,7 @@ import requests
 import json
 
 api_key = "sua_chave_api"
-base_url = "https://monitorlegislativo.up.railway.app/api/v1"
+base_url = "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
 headers = {"X-API-Key": api_key}
 '
   
@@ -1016,7 +1016,7 @@ generate_curl_example <- function(api_call) {
     }
     
     code <- paste0('# Requisição GET
-curl -X GET "https://monitorlegislativo.up.railway.app/api/v1', api_call$endpoint, query_string, '" \\
+curl -X GET "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1', api_call$endpoint, query_string, '" \\
   -H "X-API-Key: sua_chave_api" \\
   -H "Accept: application/json"')
     
@@ -1026,7 +1026,7 @@ curl -X GET "https://monitorlegislativo.up.railway.app/api/v1', api_call$endpoin
     body_json <- gsub('"', '\\"', body_json)
     
     code <- paste0('# Requisição POST
-curl -X POST "https://monitorlegislativo.up.railway.app/api/v1', api_call$endpoint, '" \\
+curl -X POST "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1', api_call$endpoint, '" \\
   -H "X-API-Key: sua_chave_api" \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json" \\
@@ -1059,7 +1059,7 @@ Este guia fornece um fluxo de trabalho completo para pesquisadores acadêmicos u
 ```', language, '
 # Configuração da API Monitor Legislativo
 api_key <- "sua_chave_api_academica"
-base_url <- "https://monitorlegislativo.up.railway.app/api/v1"
+base_url <- "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
 ```
 
 ---

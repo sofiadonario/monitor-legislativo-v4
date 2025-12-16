@@ -79,7 +79,7 @@ info:
   contact:
     name: Equipe de Desenvolvimento Monitor Legislativo
     email: api-suporte@monitor-legislativo.br
-    url: https://monitor-legislativo-unified-production.up.railway.app
+    url: https://mackmonitor-667999538255.southamerica-east1.run.app
     x-whatsapp: "+55 11 9999-9999"
     x-linkedin: "https://linkedin.com/company/monitor-legislativo"
   license:
@@ -92,8 +92,8 @@ info:
     altText: "Monitor Legislativo API"
 
 servers:
-  - url: https://monitor-legislativo-unified-production.up.railway.app/api/v1
-    description: Servidor de Produção (Railway)
+  - url: https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1
+    description: Servidor de Produção (Google Cloud Run)
     x-environment: production
     x-region: "South America (São Paulo)"
   - url: https://staging.monitor-legislativo.br/api/v1  

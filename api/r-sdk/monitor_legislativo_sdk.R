@@ -9,7 +9,7 @@ cat("📦 Initializing Monitor Legislativo R SDK\n")
 SDK_CONFIG <- list(
   name = "monitor_legislativo_sdk",
   version = "1.0.0",
-  base_url = "https://monitor-legislativo-unified-production.up.railway.app",
+  base_url = "https://mackmonitor-667999538255.southamerica-east1.run.app",
   api_version = "v1",
   user_agent = "MonitorLegislativoR-SDK/1.0.0",
   timeout = 30,

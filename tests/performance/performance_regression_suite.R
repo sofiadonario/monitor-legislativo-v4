@@ -13,7 +13,7 @@
 # - Git commit-level performance tracking
 # - Brazilian legislative workload-specific regression tests
 # - Performance trend analysis and alerting
-# - Railway infrastructure performance regression monitoring
+# - Cloud Run infrastructure performance regression monitoring
 # - Database query performance regression tracking
 # - Cache performance regression analysis
 # - Memory usage regression detection
@@ -66,9 +66,9 @@ REGRESSION_CONFIG <- list(
   performance_history_days = 90,     # Keep 90 days of performance history
   baseline_history_count = 10,      # Keep last 10 baselines
   
-  # Railway-specific regression monitoring
-  railway_memory_regression_mb = 100,   # 100MB memory increase on Railway
-  railway_response_time_regression_ms = 1000,  # 1 second response time increase
+  # Cloud Run-specific regression monitoring
+  cloudrun_memory_regression_mb = 100,   # 100MB memory increase on Cloud Run
+  cloudrun_response_time_regression_ms = 1000,  # 1 second response time increase
   
   # Brazilian legislative workload patterns for regression testing
   workload_patterns = list(
@@ -117,7 +117,7 @@ establish_performance_baseline <- function(baseline_name = paste0("baseline_", f
     geographic_benchmarks = list(),
     cache_benchmarks = list(),
     memory_benchmarks = list(),
-    railway_specific_benchmarks = list(),
+    cloudrun_specific_benchmarks = list(),
     workload_benchmarks = list()
   )
   
@@ -143,9 +143,9 @@ establish_performance_baseline <- function(baseline_name = paste0("baseline_", f
     cat("🧠 Establishing memory usage benchmarks...\n")
     baseline_data$memory_benchmarks <- establish_memory_benchmarks()
     
-    # 6. Railway-Specific Benchmarks
-    cat("🚄 Establishing Railway-specific benchmarks...\n")
-    baseline_data$railway_specific_benchmarks <- establish_railway_benchmarks()
+    # 6. Cloud Run-Specific Benchmarks
+    cat("☁️ Establishing Cloud Run-specific benchmarks...\n")
+    baseline_data$cloudrun_specific_benchmarks <- establish_cloudrun_benchmarks()
     
     # 7. Brazilian Legislative Workload Benchmarks
     cat("🇧🇷 Establishing Brazilian legislative workload benchmarks...\n")
@@ -184,7 +184,7 @@ capture_system_info <- function() {
     node_name = Sys.info()["nodename"],
     memory_total_mb = round(as.numeric(pryr::mem_used()) / 1024 / 1024, 1),
     working_directory = getwd(),
-    railway_environment = Sys.getenv("RAILWAY_ENVIRONMENT", "unknown"),
+    cloudrun_service = Sys.getenv("K_SERVICE", "unknown"),
     git_commit = get_git_commit_hash(),
     package_versions = get_key_package_versions(),
     environment_variables = capture_relevant_env_vars()
@@ -227,8 +227,8 @@ get_key_package_versions <- function() {
 #' Capture relevant environment variables (without exposing secrets)
 #' @return List of environment variable information
 capture_relevant_env_vars <- function() {
-  relevant_vars <- c("RAILWAY_ENVIRONMENT", "PORT", "R_LIBS_USER", "TZ")
-  
+  relevant_vars <- c("K_SERVICE", "K_REVISION", "GOOGLE_CLOUD_PROJECT", "PORT", "R_LIBS_USER", "TZ")
+
   env_info <- list()
   for (var in relevant_vars) {
     value <- Sys.getenv(var, "")
@@ -237,7 +237,7 @@ capture_relevant_env_vars <- function() {
       length = nchar(value)
     )
   }
-  
+
   return(env_info)
 }
 
@@ -542,7 +542,7 @@ establish_memory_benchmarks <- function() {
     baseline_memory = list(),
     memory_allocation = list(),
     memory_cleanup = list(),
-    railway_compliance = list()
+    cloudrun_compliance = list()
   )
   
   tryCatch({
@@ -596,12 +596,12 @@ establish_memory_benchmarks <- function() {
       cleanup_efficiency_pct = round(((post_allocation_memory - post_cleanup_memory) / (post_allocation_memory - pre_cleanup_memory)) * 100, 1)
     )
     
-    # Railway compliance check
+    # Cloud Run compliance check
     current_memory <- as.numeric(pryr::mem_used()) / 1024 / 1024
-    
-    memory_benchmarks$railway_compliance <- list(
+
+    memory_benchmarks$cloudrun_compliance <- list(
       current_memory_mb = round(current_memory, 1),
-      railway_limit_mb = 2048,
+      cloudrun_limit_mb = 2048,
       utilization_pct = round((current_memory / 2048) * 100, 1),
       within_limit = current_memory <= 2048,
       headroom_mb = 2048 - current_memory
@@ -615,28 +615,28 @@ establish_memory_benchmarks <- function() {
   return(memory_benchmarks)
 }
 
-#' Establish Railway-specific benchmarks
-#' @return Railway benchmark results
-establish_railway_benchmarks <- function() {
-  
-  railway_benchmarks <- list(
+#' Establish Cloud Run-specific benchmarks
+#' @return Cloud Run benchmark results
+establish_cloudrun_benchmarks <- function() {
+
+  cloudrun_benchmarks <- list(
     cold_start_simulation = list(),
     environment_check = list(),
     resource_constraints = list()
   )
-  
+
   tryCatch({
-    
+
     # Cold start simulation benchmark
     cold_start_benchmark <- microbenchmark(
       {
         # Simulate application initialization
         temp_env <- new.env()
         temp_env$startup_time <- Sys.time()
-        
+
         # Simulate library loading (already loaded, but measure impact)
         gc()
-        
+
         # Simulate database connection establishment
         if (exists("get_database_pool")) {
           pool <- get_database_pool()
@@ -644,44 +644,46 @@ establish_railway_benchmarks <- function() {
             dbGetQuery(pool, "SELECT 1")
           }
         }
-        
+
         rm(temp_env)
       },
       times = 3,  # Cold start is expensive, fewer samples
       unit = "ms"
     )
-    
-    railway_benchmarks$cold_start_simulation <- list(
+
+    cloudrun_benchmarks$cold_start_simulation <- list(
       median_ms = median(cold_start_benchmark$time / 1e6),
       mean_ms = mean(cold_start_benchmark$time / 1e6),
       max_ms = max(cold_start_benchmark$time / 1e6),
       samples = length(cold_start_benchmark$time)
     )
-    
+
     # Environment check
-    railway_benchmarks$environment_check <- list(
-      is_railway = Sys.getenv("RAILWAY_ENVIRONMENT", "") != "",
-      port = Sys.getenv("PORT", "3838"),
+    cloudrun_benchmarks$environment_check <- list(
+      is_cloudrun = Sys.getenv("K_SERVICE", "") != "",
+      port = Sys.getenv("PORT", "8080"),
       database_url_set = Sys.getenv("DATABASE_URL", "") != "",
-      environment_type = Sys.getenv("RAILWAY_ENVIRONMENT", "local")
+      environment_type = ifelse(Sys.getenv("K_SERVICE", "") != "", "cloudrun", "local"),
+      service_name = Sys.getenv("K_SERVICE", ""),
+      revision = Sys.getenv("K_REVISION", "")
     )
-    
+
     # Resource constraint validation
     current_memory <- as.numeric(pryr::mem_used()) / 1024 / 1024
-    
-    railway_benchmarks$resource_constraints <- list(
+
+    cloudrun_benchmarks$resource_constraints <- list(
       memory_utilization_pct = round((current_memory / 2048) * 100, 1),
       within_memory_limit = current_memory <= 2048,
       db_connection_limit = 100,
       estimated_connection_usage = 5  # Conservative estimate
     )
-    
+
   }, error = function(e) {
-    cat("❌ Error establishing Railway benchmarks:", e$message, "\n")
-    railway_benchmarks$error <- e$message
+    cat("❌ Error establishing Cloud Run benchmarks:", e$message, "\n")
+    cloudrun_benchmarks$error <- e$message
   })
-  
-  return(railway_benchmarks)
+
+  return(cloudrun_benchmarks)
 }
 
 #' Establish Brazilian legislative workload benchmarks
@@ -1032,7 +1034,7 @@ compare_memory_benchmarks <- function(baseline_memory, current_memory) {
     memory_increase_mb = current_memory$baseline_memory$memory_mb - baseline_memory$baseline_memory$memory_mb,
     memory_increase_pct = 0,
     is_memory_regression = FALSE,
-    railway_compliance_change = list()
+    cloudrun_compliance_change = list()
   )
   
   # Calculate memory increase percentage
@@ -1045,15 +1047,15 @@ compare_memory_benchmarks <- function(baseline_memory, current_memory) {
   # Check for memory regression
   memory_comparison$is_memory_regression <- memory_comparison$memory_increase_mb > REGRESSION_CONFIG$memory_increase_threshold_mb
   
-  # Compare Railway compliance
-  if (!isTRUE(is.null(baseline_memory$railway_compliance)) && !is.null(current_memory$railway_compliance)) {
-    memory_comparison$railway_compliance_change <- list(
-      baseline_utilization_pct = baseline_memory$railway_compliance$utilization_pct,
-      current_utilization_pct = current_memory$railway_compliance$utilization_pct,
-      utilization_change_pct = current_memory$railway_compliance$utilization_pct - baseline_memory$railway_compliance$utilization_pct,
-      baseline_within_limit = baseline_memory$railway_compliance$within_limit,
-      current_within_limit = current_memory$railway_compliance$within_limit,
-      compliance_degraded = baseline_memory$railway_compliance$within_limit && !current_memory$railway_compliance$within_limit
+  # Compare Cloud Run compliance
+  if (!isTRUE(is.null(baseline_memory$cloudrun_compliance)) && !is.null(current_memory$cloudrun_compliance)) {
+    memory_comparison$cloudrun_compliance_change <- list(
+      baseline_utilization_pct = baseline_memory$cloudrun_compliance$utilization_pct,
+      current_utilization_pct = current_memory$cloudrun_compliance$utilization_pct,
+      utilization_change_pct = current_memory$cloudrun_compliance$utilization_pct - baseline_memory$cloudrun_compliance$utilization_pct,
+      baseline_within_limit = baseline_memory$cloudrun_compliance$within_limit,
+      current_within_limit = current_memory$cloudrun_compliance$within_limit,
+      compliance_degraded = baseline_memory$cloudrun_compliance$within_limit && !current_memory$cloudrun_compliance$within_limit
     )
   }
   
@@ -1172,8 +1174,8 @@ calculate_composite_performance_score <- function(baseline_data) {
   }
   
   # Memory score (20% weight)
-  if (!is.null(baseline_data$memory_benchmarks$railway_compliance$utilization_pct)) {
-    memory_score <- max(0, 100 - baseline_data$memory_benchmarks$railway_compliance$utilization_pct)
+  if (!is.null(baseline_data$memory_benchmarks$cloudrun_compliance$utilization_pct)) {
+    memory_score <- max(0, 100 - baseline_data$memory_benchmarks$cloudrun_compliance$utilization_pct)
     score <- score + (memory_score * 0.20)
     components <- components + 1
   }
@@ -1394,7 +1396,7 @@ cat("✅ Performance Regression Testing Suite loaded successfully\n")
 cat("📈 Ready for comprehensive regression testing of Brazilian Legislative System\n")
 cat("📏 Baseline establishment and comparison system enabled\n")
 cat("🚨 Automated regression detection and alerting configured\n")
-cat("🎯 Railway-specific performance regression monitoring ready\n")
+cat("🎯 Cloud Run-specific performance regression monitoring ready\n")
 
 # Export main regression testing functions
 cat("📋 Available regression testing functions:\n")

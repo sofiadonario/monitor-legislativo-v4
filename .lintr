@@ -133,7 +133,7 @@ exclusions: list(
     ),
     
     # Specific problematic files
-    "RAILWAY_PRODUCTION_DB_FIX.R" = Inf,
+    "CLOUD_RUN_PRODUCTION_DB_FIX.R" = Inf,
     "app_backup.R" = Inf,
     "app_debug.R" = Inf,
     "app_minimal.R" = Inf,

@@ -1,5 +1,5 @@
 # Deploy SQL Fix Script
-# This script executes the IMMEDIATE_RAILWAY_FIX.sql to fix SQL type mismatches
+# This script executes the IMMEDIATE_SQL_FIX.sql to fix SQL type mismatches
 
 cat("🔧 DEPLOYING SQL FIX FOR TYPE MISMATCHES...\n")
 
@@ -16,8 +16,8 @@ deploy_sql_fix <- function() {
       on.exit(poolReturn(conn))
     } else if (Sys.getenv("DATABASE_URL") != "") {
       cat("🔄 Creating new database connection from DATABASE_URL\n")
-      conn <- dbConnect(RPostgres::Postgres(), 
-                       dbname = Sys.getenv("PGDATABASE", "railway"),
+      conn <- dbConnect(RPostgres::Postgres(),
+                       dbname = Sys.getenv("PGDATABASE", "postgres"),
                        host = Sys.getenv("PGHOST", "localhost"),
                        port = as.integer(Sys.getenv("PGPORT", 5432)),
                        user = Sys.getenv("PGUSER", "postgres"),
@@ -28,11 +28,11 @@ deploy_sql_fix <- function() {
     }
     
     # Read SQL fix file
-    if (!file.exists("IMMEDIATE_RAILWAY_FIX.sql")) {
-      stop("IMMEDIATE_RAILWAY_FIX.sql not found")
+    if (!file.exists("IMMEDIATE_SQL_FIX.sql")) {
+      stop("IMMEDIATE_SQL_FIX.sql not found")
     }
-    
-    sql_content <- readLines("IMMEDIATE_RAILWAY_FIX.sql", warn = FALSE)
+
+    sql_content <- readLines("IMMEDIATE_SQL_FIX.sql", warn = FALSE)
     sql_content <- paste(sql_content, collapse = "\n")
     
     # Split into individual statements (separated by semicolons)

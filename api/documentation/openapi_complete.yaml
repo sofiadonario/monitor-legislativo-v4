@@ -76,8 +76,8 @@ info:
     altText: Monitor Legislativo API
 
 servers:
-  - url: https://monitorlegislativo.up.railway.app/api/v1
-    description: Servidor de Produção (Railway)
+  - url: https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1
+    description: Servidor de Produção (Google Cloud Run)
     variables:
       version:
         default: v1
@@ -1645,16 +1645,16 @@ x-code-samples:
   - lang: 'curl'
     source: |
       # Buscar documentos de São Paulo
-      curl -X GET "https://monitorlegislativo.up.railway.app/api/v1/documents?estado=SP&limit=10" \
+      curl -X GET "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1/documents?estado=SP&limit=10" \
         -H "X-API-Key: SUA_CHAVE_API"
-  
+
   - lang: 'python'
     source: |
       import requests
-      
+
       # Configurar autenticação
       headers = {"X-API-Key": "SUA_CHAVE_API"}
-      base_url = "https://monitorlegislativo.up.railway.app/api/v1"
+      base_url = "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
       
       # Buscar documentos
       response = requests.get(f"{base_url}/documents", 
@@ -1673,7 +1673,7 @@ x-code-samples:
       
       # Configurar autenticação
       api_key <- "SUA_CHAVE_API"
-      base_url <- "https://monitorlegislativo.up.railway.app/api/v1"
+      base_url <- "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
       
       # Buscar documentos
       response <- GET(
@@ -1691,7 +1691,7 @@ x-code-samples:
     source: |
       // Configurar cliente
       const apiKey = 'SUA_CHAVE_API';
-      const baseUrl = 'https://monitorlegislativo.up.railway.app/api/v1';
+      const baseUrl = 'https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1';
       
       // Buscar documentos
       fetch(`${baseUrl}/documents?estado=SP&limit=10`, {

@@ -1,10 +1,10 @@
 # ============================================================================
-# SPRINT 6A: ADVANCED CONNECTION POOLING FOR RAILWAY POSTGRESQL
+# SPRINT 6A: ADVANCED CONNECTION POOLING FOR CLOUD RUN POSTGRESQL
 # Brazilian Legislative Monitoring System - Performance Optimization
 # ============================================================================
-# 
-# RAILWAY-OPTIMIZED CONNECTION POOLING STRATEGY
-# Purpose: Maximize database performance within Railway's 2GB memory constraints
+#
+# CLOUD RUN-OPTIMIZED CONNECTION POOLING STRATEGY
+# Purpose: Maximize database performance within Cloud Run's 2GB memory constraints
 # 
 # KEY OPTIMIZATIONS:
 # - Intelligent pool sizing based on Railway infrastructure
@@ -15,7 +15,7 @@
 # - LGPD-compliant connection logging
 # 
 # PERFORMANCE TARGETS:
-# - Support 50+ concurrent users on Railway 2GB
+# - Support 50+ concurrent users on Cloud Run 2GB
 # - Sub-200ms connection acquisition
 # - 99%+ connection pool utilization
 # - Zero connection leaks
@@ -51,15 +51,15 @@ cat("✅ Advanced connection pooling libraries loaded\n")
 # GLOBAL CONFIGURATION AND STATE MANAGEMENT
 # ============================================================================
 
-# Advanced pooling configuration optimized for Railway
-.railway_config <- list(
-  # Railway-specific memory constraints
-  max_memory_mb = 2048,      # Railway 2GB limit
+# Advanced pooling configuration optimized for Cloud Run
+.cloudrun_config <- list(
+  # Cloud Run-specific memory constraints
+  max_memory_mb = 2048,      # Cloud Run 2GB limit
   pool_memory_limit_mb = 512, # Reserve 25% of memory for connection pools
-  
+
   # Connection pool settings
   min_pool_size = 2,         # Minimum connections per pool
-  max_pool_size = 15,        # Maximum connections per pool (Railway limit ~20-25)
+  max_pool_size = 15,        # Maximum connections per pool (Cloud Run limit ~20-25)
   idle_timeout_ms = 1800000, # 30 minutes idle timeout
   connection_timeout_ms = 30000, # 30 seconds connection timeout
   
@@ -108,98 +108,98 @@ cat("✅ Advanced connection pooling libraries loaded\n")
 )
 
 # ============================================================================
-# RAILWAY DATABASE CONFIGURATION DETECTION
+# CLOUD RUN DATABASE CONFIGURATION DETECTION
 # ============================================================================
 
-#' Get optimized database configuration for Railway deployment
-#' @return List with connection parameters optimized for Railway
-get_railway_database_config <- function() {
-  cat("🔍 Detecting Railway database configuration...\n")
-  
-  # Priority 1: Railway DATABASE_URL
+#' Get optimized database configuration for Cloud Run deployment
+#' @return List with connection parameters optimized for Cloud Run
+get_cloudrun_database_config <- function() {
+  cat("🔍 Detecting Cloud Run database configuration...\n")
+
+  # Priority 1: Cloud Run DATABASE_URL
   database_url <- Sys.getenv("DATABASE_URL", unset = NA)
   if (!isTRUE(is.na(database_url)) && database_url != "") {
-    config <- parse_railway_database_url(database_url)
+    config <- parse_cloudrun_database_url(database_url)
     if (!is.null(config)) {
-      cat("✅ Using Railway DATABASE_URL configuration\n")
-      return(enhance_railway_config(config))
+      cat("✅ Using Cloud Run DATABASE_URL configuration\n")
+      return(enhance_cloudrun_config(config))
     }
   }
-  
-  # Priority 2: Railway-specific environment variables
-  railway_config <- list(
-    host = Sys.getenv("PGHOST", Sys.getenv("RAILWAY_HOST", "localhost")),
-    port = as.integer(Sys.getenv("PGPORT", Sys.getenv("RAILWAY_PORT", "5432"))),
-    dbname = Sys.getenv("PGDATABASE", Sys.getenv("RAILWAY_DATABASE", "railway")),
-    user = Sys.getenv("PGUSER", Sys.getenv("RAILWAY_USER", "postgres")),
-    password = Sys.getenv("PGPASSWORD", Sys.getenv("RAILWAY_PASSWORD", ""))
+
+  # Priority 2: Cloud Run environment variables
+  cloudrun_config <- list(
+    host = Sys.getenv("PGHOST", "localhost"),
+    port = as.integer(Sys.getenv("PGPORT", "5432")),
+    dbname = Sys.getenv("PGDATABASE", "postgres"),
+    user = Sys.getenv("PGUSER", "postgres"),
+    password = Sys.getenv("PGPASSWORD", "")
   )
-  
-  # Validate Railway configuration
-  if (isTRUE(is.na(railway_config$host)) || railway_config$host == "" ||
-      isTRUE(is.na(railway_config$password)) || railway_config$password == "") {
-    cat("❌ Railway database configuration incomplete\n")
+
+  # Validate Cloud Run configuration
+  if (isTRUE(is.na(cloudrun_config$host)) || cloudrun_config$host == "" ||
+      isTRUE(is.na(cloudrun_config$password)) || cloudrun_config$password == "") {
+    cat("❌ Cloud Run database configuration incomplete\n")
     return(NULL)
   }
-  
-  cat("✅ Using Railway environment variables configuration\n")
-  return(enhance_railway_config(railway_config))
+
+  cat("✅ Using Cloud Run environment variables configuration\n")
+  return(enhance_cloudrun_config(cloudrun_config))
 }
 
-#' Parse Railway DATABASE_URL with enhanced error handling
-#' @param database_url Railway-formatted database URL
+#' Parse Cloud Run DATABASE_URL with enhanced error handling
+#' @param database_url Cloud Run-formatted database URL
 #' @return List with parsed connection parameters
-parse_railway_database_url <- function(database_url) {
+parse_cloudrun_database_url <- function(database_url) {
   tryCatch({
     # Support both postgresql:// and postgres:// schemes
     if (!grepl("^postgres(ql)?://", database_url)) {
-      cat("⚠️ Invalid DATABASE_URL format for Railway\n")
+      cat("⚠️ Invalid DATABASE_URL format for Cloud Run\n")
       return(NULL)
     }
-    
-    # Enhanced URL parsing for Railway-specific formats
+
+    # Enhanced URL parsing for Cloud Run-specific formats
     url_pattern <- "^postgres(?:ql)?://([^:]+):([^@]+)@([^:]+):(\\d+)/(.+)$"
     matches <- regmatches(database_url, regexec(url_pattern, database_url))
-    
+
     if (length(matches[[1]]) != 6) {
-      cat("⚠️ Could not parse Railway DATABASE_URL\n")
+      cat("⚠️ Could not parse Cloud Run DATABASE_URL\n")
       return(NULL)
     }
-    
+
     config <- list(
       user = matches[[1]][2],
-      password = matches[[1]][3], 
+      password = matches[[1]][3],
       host = matches[[1]][4],
       port = as.integer(matches[[1]][5]),
       dbname = matches[[1]][6]
     )
-    
-    # Validate Railway-specific constraints
+
+    # Validate Cloud Run-specific constraints
     if (isTRUE(is.na(config$port)) || config$port <= 0 || config$port > 65535) {
-      cat("❌ Invalid port in Railway DATABASE_URL\n")
+      cat("❌ Invalid port in Cloud Run DATABASE_URL\n")
       return(NULL)
     }
-    
-    cat("✅ Railway DATABASE_URL parsed successfully\n")
+
+    cat("✅ Cloud Run DATABASE_URL parsed successfully\n")
     return(config)
-    
+
   }, error = function(e) {
-    cat("❌ Error parsing Railway DATABASE_URL:", e$message, "\n")
+    cat("❌ Error parsing Cloud Run DATABASE_URL:", e$message, "\n")
     return(NULL)
   })
 }
 
-#' Enhance database configuration with Railway-specific optimizations
+#' Enhance database configuration with Cloud Run-specific optimizations
 #' @param config Basic database configuration
-#' @return Enhanced configuration for Railway deployment
-enhance_railway_config <- function(config) {
+#' @return Enhanced configuration for Cloud Run deployment
+enhance_cloudrun_config <- function(config) {
   enhanced_config <- config
-  
-  # Railway-optimized connection parameters
-  enhanced_config$railway_optimizations <- list(
-    sslmode = "prefer",  # Railway supports SSL
+
+  # Cloud Run-optimized connection parameters
+  enhanced_config$cloudrun_optimizations <- list(
+    sslmode = "prefer",  # Cloud Run supports SSL
     connect_timeout = 30,
-    application_name = "railway_legislative_monitor",
+    application_name = "cloudrun_legislative_monitor",
     
     # Memory optimizations for 2GB limit
     work_mem = "4MB",
@@ -207,24 +207,24 @@ enhance_railway_config <- function(config) {
     shared_buffers = "128MB",
     effective_cache_size = "512MB",
     
-    # Railway-specific performance settings
+    # Cloud Run-specific performance settings
     random_page_cost = 1.1,  # SSD storage
     effective_io_concurrency = 200,
     max_parallel_workers_per_gather = 2,
-    
+
     # Connection pooling optimizations
     tcp_keepalives_idle = 600,
     tcp_keepalives_interval = 30,
     tcp_keepalives_count = 3,
-    
+
     # Query optimization
     enable_seqscan = "on",
-    enable_indexscan = "on", 
+    enable_indexscan = "on",
     enable_bitmapscan = "on",
     enable_hashjoin = "on"
   )
-  
-  cat("✅ Railway database configuration enhanced with performance optimizations\n")
+
+  cat("✅ Cloud Run database configuration enhanced with performance optimizations\n")
   return(enhanced_config)
 }
 
@@ -232,13 +232,13 @@ enhance_railway_config <- function(config) {
 # INTELLIGENT CONNECTION POOL CREATION
 # ============================================================================
 
-#' Create specialized connection pool with Railway optimizations
+#' Create specialized connection pool with Cloud Run optimizations
 #' @param pool_name Name/type of the pool (primary, analytics, maintenance, readonly)
 #' @param config Database configuration
 #' @param pool_size Size of the connection pool
 #' @return Connection pool object or NULL on failure
-create_railway_pool <- function(pool_name, config, pool_size = .railway_config$primary_pool_size) {
-  cat("🚀 Creating Railway-optimized connection pool:", pool_name, "\n")
+create_cloudrun_pool <- function(pool_name, config, pool_size = .cloudrun_config$primary_pool_size) {
+  cat("🚀 Creating Cloud Run-optimized connection pool:", pool_name, "\n")
   
   pool_config <- list(
     drv = RPostgres::Postgres(),
@@ -251,22 +251,22 @@ create_railway_pool <- function(pool_name, config, pool_size = .railway_config$p
     # Pool-specific settings
     minSize = max(1, floor(pool_size * 0.2)),  # 20% minimum
     maxSize = pool_size,
-    idleTimeout = .railway_config$idle_timeout_ms,
-    
-    # Railway-optimized connection parameters
-    sslmode = config$railway_optimizations$sslmode,
-    connect_timeout = .railway_config$connection_timeout_ms / 1000,
-    application_name = paste0(config$railway_optimizations$application_name, "_", pool_name),
-    
+    idleTimeout = .cloudrun_config$idle_timeout_ms,
+
+    # Cloud Run-optimized connection parameters
+    sslmode = config$cloudrun_optimizations$sslmode,
+    connect_timeout = .cloudrun_config$connection_timeout_ms / 1000,
+    application_name = paste0(config$cloudrun_optimizations$application_name, "_", pool_name),
+
     # Performance parameters
     options = paste(
-      "-c work_mem=" %+% config$railway_optimizations$work_mem,
-      "-c maintenance_work_mem=" %+% config$railway_optimizations$maintenance_work_mem,
-      "-c random_page_cost=" %+% config$railway_optimizations$random_page_cost,
-      "-c effective_io_concurrency=" %+% config$railway_optimizations$effective_io_concurrency,
-      "-c tcp_keepalives_idle=" %+% config$railway_optimizations$tcp_keepalives_idle,
-      "-c tcp_keepalives_interval=" %+% config$railway_optimizations$tcp_keepalives_interval,
-      "-c tcp_keepalives_count=" %+% config$railway_optimizations$tcp_keepalives_count,
+      "-c work_mem=" %+% config$cloudrun_optimizations$work_mem,
+      "-c maintenance_work_mem=" %+% config$cloudrun_optimizations$maintenance_work_mem,
+      "-c random_page_cost=" %+% config$cloudrun_optimizations$random_page_cost,
+      "-c effective_io_concurrency=" %+% config$cloudrun_optimizations$effective_io_concurrency,
+      "-c tcp_keepalives_idle=" %+% config$cloudrun_optimizations$tcp_keepalives_idle,
+      "-c tcp_keepalives_interval=" %+% config$cloudrun_optimizations$tcp_keepalives_interval,
+      "-c tcp_keepalives_count=" %+% config$cloudrun_optimizations$tcp_keepalives_count,
       sep = " "
     )
   )
@@ -285,9 +285,9 @@ create_railway_pool <- function(pool_name, config, pool_size = .railway_config$p
       test_conn <- poolCheckout(pool)
       test_result <- dbGetQuery(test_conn, "SELECT version() as version, current_setting('application_name') as app_name")
       poolReturn(test_conn)
-      
+
       if (nrow(test_result) == 1) {
-        cat("✅ Railway connection pool", pool_name, "created successfully\n")
+        cat("✅ Cloud Run connection pool", pool_name, "created successfully\n")
         cat("📊 Database version:", substr(test_result$version, 1, 30), "...\n")
         cat("🏷️  Application name:", test_result$app_name, "\n")
         
@@ -314,15 +314,15 @@ create_railway_pool <- function(pool_name, config, pool_size = .railway_config$p
       }
     })
   }
-  
-  cat("❌ Failed to create Railway connection pool:", pool_name, "\n")
+
+  cat("❌ Failed to create Cloud Run connection pool:", pool_name, "\n")
   .pool_metrics$connection_errors <<- .pool_metrics$connection_errors + 1
-  
+
   # Update health status
   .pool_health[[pool_name]] <<- list(
     status = "failed",
     last_check = Sys.time(),
-    failed_checks = .railway_config$max_failed_health_checks
+    failed_checks = .cloudrun_config$max_failed_health_checks
   )
   
   return(NULL)
@@ -457,14 +457,14 @@ pool_is_healthy <- function(pool_name) {
   # Check if health check is recent enough
   if (!is.null(health_info$last_check)) {
     minutes_since_check <- as.numeric(difftime(Sys.time(), health_info$last_check, units = "mins"))
-    if (minutes_since_check > (.railway_config$health_check_interval_ms / 60000)) {
+    if (minutes_since_check > (.cloudrun_config$health_check_interval_ms / 60000)) {
       # Health check is stale, perform new check
       return(perform_pool_health_check(pool_name))
     }
   }
-  
+
   # Check failed checks count
-  if (health_info$failed_checks >= .railway_config$max_failed_health_checks) {
+  if (health_info$failed_checks >= .cloudrun_config$max_failed_health_checks) {
     return(FALSE)
   }
   
@@ -578,22 +578,22 @@ check_all_pools_health <- function() {
 #' @return List of recovery results
 recover_failed_pools <- function(force_recovery = FALSE) {
   cat("🔧 Starting connection pool recovery process...\n")
-  
+
   recovery_results <- list()
-  config <- get_railway_database_config()
-  
+  config <- get_cloudrun_database_config()
+
   if (is.null(config)) {
     cat("❌ Cannot recover pools: Database configuration unavailable\n")
     return(list(error = "No database configuration"))
   }
-  
+
   for (pool_name in names(.connection_pools)) {
     pool_health <- .pool_health[[pool_name]]
-    
-    needs_recovery <- force_recovery || 
-                     isTRUE(is.null(pool_health)) || 
+
+    needs_recovery <- force_recovery ||
+                     isTRUE(is.null(pool_health)) ||
                      pool_health$status == "failed" ||
-                     pool_health$failed_checks >= .railway_config$max_failed_health_checks
+                     pool_health$failed_checks >= .cloudrun_config$max_failed_health_checks
     
     if (needs_recovery) {
       cat("🔄 Recovering pool:", pool_name, "\n")
@@ -609,14 +609,14 @@ recover_failed_pools <- function(force_recovery = FALSE) {
       
       # Create new pool
       pool_size <- switch(pool_name,
-        "primary" = .railway_config$primary_pool_size,
-        "analytics" = .railway_config$analytics_pool_size,  
-        "maintenance" = .railway_config$maintenance_pool_size,
-        "readonly" = .railway_config$readonly_pool_size,
-        .railway_config$primary_pool_size
+        "primary" = .cloudrun_config$primary_pool_size,
+        "analytics" = .cloudrun_config$analytics_pool_size,
+        "maintenance" = .cloudrun_config$maintenance_pool_size,
+        "readonly" = .cloudrun_config$readonly_pool_size,
+        .cloudrun_config$primary_pool_size
       )
-      
-      new_pool <- create_railway_pool(pool_name, config, pool_size)
+
+      new_pool <- create_cloudrun_pool(pool_name, config, pool_size)
       
       if (!is.null(new_pool)) {
         .connection_pools[[pool_name]] <<- new_pool
@@ -772,20 +772,20 @@ calculate_estimated_memory_usage <- function() {
     if (!is.null(pool)) {
       # Estimate based on pool size (rough calculation)
       pool_size <- switch(pool_name,
-        "primary" = .railway_config$primary_pool_size,
-        "analytics" = .railway_config$analytics_pool_size,
-        "maintenance" = .railway_config$maintenance_pool_size, 
-        "readonly" = .railway_config$readonly_pool_size,
+        "primary" = .cloudrun_config$primary_pool_size,
+        "analytics" = .cloudrun_config$analytics_pool_size,
+        "maintenance" = .cloudrun_config$maintenance_pool_size,
+        "readonly" = .cloudrun_config$readonly_pool_size,
         5
       )
       total_connections <- total_connections + pool_size
     }
   }
-  
+
   # Rough estimate: ~10-20MB per connection including buffers
   estimated_mb <- total_connections * 15
-  
-  return(min(estimated_mb, .railway_config$pool_memory_limit_mb))
+
+  return(min(estimated_mb, .cloudrun_config$pool_memory_limit_mb))
 }
 
 #' Calculate connection pool efficiency
@@ -839,7 +839,7 @@ generate_performance_recommendations <- function() {
   
   # Check memory usage
   memory_usage <- calculate_estimated_memory_usage()
-  if (memory_usage > (.railway_config$pool_memory_limit_mb * 0.9)) {
+  if (memory_usage > (.cloudrun_config$pool_memory_limit_mb * 0.9)) {
     recommendations <- c(recommendations,
                         "High memory usage - Consider reducing pool sizes")
   }
@@ -855,60 +855,60 @@ generate_performance_recommendations <- function() {
 # MAIN INITIALIZATION FUNCTION
 # ============================================================================
 
-#' Initialize all Railway connection pools with advanced configuration
+#' Initialize all Cloud Run connection pools with advanced configuration
 #' @param force_reinit Force re-initialization of existing pools
 #' @return Boolean indicating successful initialization
-init_railway_connection_pools <- function(force_reinit = FALSE) {
-  cat("🚀 Initializing Railway advanced connection pools...\n")
-  
-  # Get Railway database configuration
-  config <- get_railway_database_config()
+init_cloudrun_connection_pools <- function(force_reinit = FALSE) {
+  cat("🚀 Initializing Cloud Run advanced connection pools...\n")
+
+  # Get Cloud Run database configuration
+  config <- get_cloudrun_database_config()
   if (is.null(config)) {
-    cat("❌ Failed to get Railway database configuration\n")
+    cat("❌ Failed to get Cloud Run database configuration\n")
     return(FALSE)
   }
-  
+
   # Close existing pools if force reinit
   if (force_reinit) {
-    close_all_railway_pools()
+    close_all_cloudrun_pools()
   }
-  
+
   success_count <- 0
-  
+
   # Initialize primary pool (highest priority)
   if (isTRUE(is.null(.connection_pools$primary)) || force_reinit) {
-    .connection_pools$primary <<- create_railway_pool("primary", config, .railway_config$primary_pool_size)
+    .connection_pools$primary <<- create_cloudrun_pool("primary", config, .cloudrun_config$primary_pool_size)
     if (!is.null(.connection_pools$primary)) success_count <- success_count + 1
   }
-  
+
   # Initialize readonly pool
   if (isTRUE(is.null(.connection_pools$readonly)) || force_reinit) {
-    .connection_pools$readonly <<- create_railway_pool("readonly", config, .railway_config$readonly_pool_size)
+    .connection_pools$readonly <<- create_cloudrun_pool("readonly", config, .cloudrun_config$readonly_pool_size)
     if (!is.null(.connection_pools$readonly)) success_count <- success_count + 1
   }
-  
-  # Initialize analytics pool  
+
+  # Initialize analytics pool
   if (isTRUE(is.null(.connection_pools$analytics)) || force_reinit) {
-    .connection_pools$analytics <<- create_railway_pool("analytics", config, .railway_config$analytics_pool_size)
+    .connection_pools$analytics <<- create_cloudrun_pool("analytics", config, .cloudrun_config$analytics_pool_size)
     if (!is.null(.connection_pools$analytics)) success_count <- success_count + 1
   }
-  
+
   # Initialize maintenance pool
   if (isTRUE(is.null(.connection_pools$maintenance)) || force_reinit) {
-    .connection_pools$maintenance <<- create_railway_pool("maintenance", config, .railway_config$maintenance_pool_size)
+    .connection_pools$maintenance <<- create_cloudrun_pool("maintenance", config, .cloudrun_config$maintenance_pool_size)
     if (!is.null(.connection_pools$maintenance)) success_count <- success_count + 1
   }
-  
+
   # Reset metrics
   .pool_metrics$last_reset <<- Sys.time()
-  
-  cat("📊 Railway connection pool initialization summary:\n")
+
+  cat("📊 Cloud Run connection pool initialization summary:\n")
   cat("✅ Successful pools:", success_count, "/", length(.connection_pools), "\n")
   cat("💾 Estimated memory usage:", calculate_estimated_memory_usage(), "MB\n")
-  cat("🎯 Target Railway memory limit:", .railway_config$max_memory_mb, "MB\n")
-  
+  cat("🎯 Target Cloud Run memory limit:", .cloudrun_config$max_memory_mb, "MB\n")
+
   if (success_count >= 2) {  # At least primary and one backup
-    cat("🎉 Railway advanced connection pooling system is ready!\n")
+    cat("🎉 Cloud Run advanced connection pooling system is ready!\n")
     return(TRUE)
   } else {
     cat("⚠️ Limited connection pool availability - some features may be degraded\n")
@@ -916,10 +916,10 @@ init_railway_connection_pools <- function(force_reinit = FALSE) {
   }
 }
 
-#' Close all Railway connection pools safely
-close_all_railway_pools <- function() {
-  cat("🔐 Closing all Railway connection pools...\n")
-  
+#' Close all Cloud Run connection pools safely
+close_all_cloudrun_pools <- function() {
+  cat("🔐 Closing all Cloud Run connection pools...\n")
+
   for (pool_name in names(.connection_pools)) {
     pool <- .connection_pools[[pool_name]]
     if (!is.null(pool)) {
@@ -932,13 +932,13 @@ close_all_railway_pools <- function() {
       .connection_pools[[pool_name]] <<- NULL
     }
   }
-  
+
   # Reset health status
   for (pool_name in names(.pool_health)) {
     .pool_health[[pool_name]] <<- list(status = "disconnected", last_check = NULL, failed_checks = 0)
   }
-  
-  cat("🎯 All Railway connection pools closed\n")
+
+  cat("🎯 All Cloud Run connection pools closed\n")
 }
 
 # ============================================================================
@@ -954,32 +954,32 @@ close_all_railway_pools <- function() {
 # Export main functions
 list(
   # Main initialization
-  init_railway_connection_pools = init_railway_connection_pools,
-  close_all_railway_pools = close_all_railway_pools,
-  
+  init_cloudrun_connection_pools = init_cloudrun_connection_pools,
+  close_all_cloudrun_pools = close_all_cloudrun_pools,
+
   # Pool management
   get_optimal_pool = get_optimal_pool,
   recover_failed_pools = recover_failed_pools,
   check_all_pools_health = check_all_pools_health,
-  
+
   # Query execution
   execute_monitored_query = execute_monitored_query,
-  
+
   # Performance monitoring
   get_pool_performance_metrics = get_pool_performance_metrics,
   optimize_pool_sizes = optimize_pool_sizes,
-  
+
   # Configuration
-  get_railway_database_config = get_railway_database_config
+  get_cloudrun_database_config = get_cloudrun_database_config
 )
 
 # Auto-initialization on load
-cat("🔧 Railway advanced connection pooling system loaded\n")
-cat("📋 Run init_railway_connection_pools() to initialize pools\n")
+cat("🔧 Cloud Run advanced connection pooling system loaded\n")
+cat("📋 Run init_cloudrun_connection_pools() to initialize pools\n")
 cat("📊 Run get_pool_performance_metrics() to monitor performance\n")
 cat("🏥 Run check_all_pools_health() to check pool health\n")
 
 # Set up cleanup on exit
 reg.finalizer(globalenv(), function(e) {
-  close_all_railway_pools()
+  close_all_cloudrun_pools()
 }, onexit = TRUE)

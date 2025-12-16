@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 # API Configuration
-API_BASE = "https://monitor-legislativo-unified-production.up.railway.app/api/v1"
+API_BASE = "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
 API_KEY = os.getenv("MONITOR_LEGISLATIVO_API_KEY", "demo_key_12345")
 
 # Set up session with headers

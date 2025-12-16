@@ -80,43 +80,40 @@ validate_directory() {
     fi
 }
 
-# Validate Railway configuration
-validate_railway_config() {
-    log_info "Validating Railway configuration..."
-    
-    # Main railway.toml
-    if validate_file "$PROJECT_ROOT/railway.toml" "Main Railway configuration"; then
-        # Check for required sections
-        if grep -q "^\[build\]" "$PROJECT_ROOT/railway.toml"; then
-            log_success "Railway build section configured"
-        else
-            log_error "Railway build section missing"
-        fi
-        
-        if grep -q "^\[deploy\]" "$PROJECT_ROOT/railway.toml"; then
-            log_success "Railway deploy section configured"
-        else
-            log_error "Railway deploy section missing"
-        fi
-        
-        # Check for health check configuration
-        if grep -q "healthcheckPath" "$PROJECT_ROOT/railway.toml"; then
-            log_success "Health check endpoint configured"
-        else
-            log_warning "Health check endpoint not configured"
-        fi
-        
-        # Check Dockerfile path
-        local dockerfile_path=$(grep "dockerfilePath" "$PROJECT_ROOT/railway.toml" | cut -d'"' -f2 || echo "")
-        if [[ -n "$dockerfile_path" && -f "$PROJECT_ROOT/$dockerfile_path" ]]; then
-            log_success "Dockerfile path is valid: $dockerfile_path"
-        else
-            log_error "Dockerfile path is invalid or file missing: $dockerfile_path"
-        fi
+# Validate Cloud Run configuration
+validate_cloud_run_config() {
+    log_info "Validating Cloud Run configuration..."
+
+    # Check for app.yaml or Cloud Run configuration (optional)
+    if [[ -f "$PROJECT_ROOT/app.yaml" ]]; then
+        validate_file "$PROJECT_ROOT/app.yaml" "Cloud Run app.yaml configuration" "false"
+    else
+        log_info "No app.yaml found (using defaults from gcloud deploy)"
     fi
-    
-    # Production configuration
-    validate_file "$PROJECT_ROOT/.railway/railway-production.toml" "Production Railway configuration" "false"
+
+    # Validate gcloud configuration
+    if command -v gcloud &> /dev/null; then
+        local project_id=$(gcloud config get-value project 2>/dev/null || echo "")
+        if [[ -n "$project_id" ]]; then
+            log_success "GCP project configured: $project_id"
+        else
+            log_warning "GCP project not configured in gcloud"
+        fi
+
+        local region=$(gcloud config get-value run/region 2>/dev/null || echo "")
+        if [[ -n "$region" ]]; then
+            log_success "Cloud Run region configured: $region"
+        else
+            log_info "Cloud Run region not configured (will use default: southamerica-east1)"
+        fi
+    else
+        log_warning "gcloud CLI not available for configuration validation"
+    fi
+
+    # Check for service configuration
+    log_info "Expected Cloud Run service: mackmonitor"
+    log_info "Expected region: southamerica-east1"
+    log_info "Expected URL: https://mackmonitor-667999538255.southamerica-east1.run.app"
 }
 
 # Validate Docker configuration
@@ -167,11 +164,11 @@ validate_github_actions() {
             log_error "No jobs defined in production deployment workflow"
         fi
         
-        # Check for Railway token reference
-        if grep -q "RAILWAY_TOKEN" "$PROJECT_ROOT/.github/workflows/production-deploy.yml"; then
-            log_success "Railway token configured in workflow"
+        # Check for GCP credentials reference
+        if grep -q "GCP_SA_KEY\|GOOGLE_CREDENTIALS\|workload_identity_provider" "$PROJECT_ROOT/.github/workflows/production-deploy.yml"; then
+            log_success "GCP credentials configured in workflow"
         else
-            log_error "Railway token not configured in workflow"
+            log_warning "GCP credentials not configured in workflow"
         fi
     fi
 }
@@ -179,40 +176,29 @@ validate_github_actions() {
 # Validate application files
 validate_application() {
     log_info "Validating application files..."
-    
+
     # Main application file
     validate_file "$PROJECT_ROOT/app.R" "Main application file"
-    
-    # Railway startup scripts
-    validate_file "$PROJECT_ROOT/railway_full_app.R" "Railway production server"
-    
+
     # Health check system
     validate_file "$PROJECT_ROOT/health_check.R" "Health check system"
-    
+
     # Monitoring system
     validate_file "$PROJECT_ROOT/monitoring/production_monitoring.R" "Production monitoring system" "false"
-    
+
     # Essential directories
     validate_directory "$PROJECT_ROOT/db" "Database modules directory" "false"
     validate_directory "$PROJECT_ROOT/modules" "Application modules directory" "false"
     validate_directory "$PROJECT_ROOT/monitoring" "Monitoring directory" "false"
-    
+
     # Check R syntax for critical files
     if command -v Rscript &> /dev/null; then
         log_info "Validating R syntax..."
-        
+
         if Rscript -e "tryCatch({source('$PROJECT_ROOT/app.R', echo=FALSE); cat('OK\n')}, error=function(e){cat('ERROR:', e\$message, '\n'); quit(status=1)})" 2>/dev/null | grep -q "OK"; then
             log_success "app.R syntax is valid"
         else
             log_warning "app.R has syntax issues"
-        fi
-        
-        if [[ -f "$PROJECT_ROOT/railway_full_app.R" ]]; then
-            if Rscript -e "tryCatch({source('$PROJECT_ROOT/railway_full_app.R', echo=FALSE); cat('OK\n')}, error=function(e){cat('ERROR:', e\$message, '\n'); quit(status=1)})" 2>/dev/null | grep -q "OK"; then
-                log_success "railway_full_app.R syntax is valid"
-            else
-                log_warning "railway_full_app.R has syntax issues"
-            fi
         fi
     else
         log_warning "R not available for syntax validation"
@@ -222,31 +208,38 @@ validate_application() {
 # Validate deployment scripts
 validate_deployment_scripts() {
     log_info "Validating deployment scripts..."
-    
-    validate_file "$PROJECT_ROOT/scripts/deploy-production.sh" "Production deployment script"
-    
+
+    validate_file "$PROJECT_ROOT/scripts/deployment/zero_downtime_deploy.sh" "Zero-downtime deployment script" "false"
+
     # Check if deployment script is executable
-    if [[ -f "$PROJECT_ROOT/scripts/deploy-production.sh" && -x "$PROJECT_ROOT/scripts/deploy-production.sh" ]]; then
+    if [[ -f "$PROJECT_ROOT/scripts/deployment/zero_downtime_deploy.sh" && -x "$PROJECT_ROOT/scripts/deployment/zero_downtime_deploy.sh" ]]; then
         log_success "Deployment script is executable"
     else
         log_warning "Deployment script is not executable"
     fi
-    
+
     # Check for required tools
     log_info "Checking required tools..."
-    
-    if command -v railway &> /dev/null; then
-        log_success "Railway CLI is available"
+
+    if command -v gcloud &> /dev/null; then
+        log_success "gcloud CLI is available"
+
+        # Check gcloud authentication
+        if gcloud auth list --filter=status:ACTIVE --format="value(account)" &> /dev/null; then
+            log_success "gcloud is authenticated"
+        else
+            log_warning "gcloud is not authenticated (run: gcloud auth login)"
+        fi
     else
-        log_warning "Railway CLI not installed (install with: npm install -g @railway/cli)"
+        log_error "gcloud CLI not installed (install from: https://cloud.google.com/sdk/docs/install)"
     fi
-    
+
     if command -v docker &> /dev/null; then
         log_success "Docker is available"
     else
-        log_warning "Docker not available"
+        log_warning "Docker not available (optional for local testing)"
     fi
-    
+
     if command -v git &> /dev/null; then
         log_success "Git is available"
     else
@@ -290,27 +283,18 @@ validate_environment() {
 # Validate monitoring and health checks
 validate_monitoring() {
     log_info "Validating monitoring and health check system..."
-    
+
     # Health check endpoint
     validate_file "$PROJECT_ROOT/health_check.R" "Health check endpoint"
-    
+
     # Production monitoring
     validate_file "$PROJECT_ROOT/monitoring/production_monitoring.R" "Production monitoring system" "false"
-    
-    # Monitoring configuration in Railway config
-    if [[ -f "$PROJECT_ROOT/railway.toml" ]]; then
-        if grep -q "MONITORING_ENABLED" "$PROJECT_ROOT/railway.toml"; then
-            log_success "Monitoring enabled in Railway configuration"
-        else
-            log_warning "Monitoring not explicitly enabled in Railway configuration"
-        fi
-        
-        if grep -q "HEALTH_CHECK_DETAILED" "$PROJECT_ROOT/railway.toml"; then
-            log_success "Detailed health checks configured"
-        else
-            log_warning "Detailed health checks not configured"
-        fi
-    fi
+
+    # Cloud Run health checks are configured via service settings
+    log_info "Cloud Run health checks should be configured via:"
+    log_info "  - Startup probe: /health endpoint"
+    log_info "  - Liveness probe: /health endpoint"
+    log_info "  - Container port: 8080 (default Shiny port)"
 }
 
 # Generate deployment readiness report
@@ -337,9 +321,9 @@ generate_report() {
         
         echo ""
         echo "Next steps:"
-        echo "1. Run: ./scripts/deploy-production.sh"
-        echo "2. Monitor deployment at Railway dashboard"
-        echo "3. Verify health check: curl -f https://your-app.railway.app/health"
+        echo "1. Run: ./scripts/deployment/zero_downtime_deploy.sh"
+        echo "2. Monitor deployment at Cloud Run console"
+        echo "3. Verify health check: curl -f https://mackmonitor-667999538255.southamerica-east1.run.app/health"
         
         return 0
     else
@@ -362,15 +346,15 @@ main() {
     echo ""
     
     cd "$PROJECT_ROOT"
-    
-    validate_railway_config
+
+    validate_cloud_run_config
     validate_docker_config
     validate_github_actions
     validate_application
     validate_deployment_scripts
     validate_environment
     validate_monitoring
-    
+
     generate_report
 }
 

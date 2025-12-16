@@ -31,8 +31,8 @@ PERFORMANCE_CONFIG <- list(
     legislative_search_performance = 300  # <300ms legislative search
   ),
   
-  # Railway Platform Optimization Metrics
-  railway_metrics = list(
+  # Cloud Run Platform Optimization Metrics
+  cloud_run_metrics = list(
     memory_usage_mb = 512,       # CDN cache memory limit
     container_startup_time = 30,  # <30s container startup
     bandwidth_optimization = 0.70, # 70% bandwidth reduction target
@@ -65,7 +65,7 @@ initialize_performance_monitoring <- function(database_connection = NULL) {
   cat("📊 Initializing CDN Performance Monitoring System...\n")
   cat("🎓 Academic Research Performance Standards\n")
   cat("🇧🇷 Brazilian Government Compliance Monitoring\n")
-  cat("🚂 Railway Platform Optimization Tracking\n\n")
+  cat("☁️  Cloud Run Platform Optimization Tracking\n\n")
   
   # Setup metrics collection infrastructure
   setup_metrics_infrastructure(database_connection)
@@ -132,7 +132,7 @@ setup_metrics_infrastructure <- function(database_connection = NULL) {
     cache_rates = data.frame(timestamp = as.POSIXct(character()), hit_rate = numeric()),
     error_counts = data.frame(timestamp = as.POSIXct(character()), error_count = numeric()),
     brazilian_metrics = data.frame(timestamp = as.POSIXct(character()), metric = character(), value = numeric()),
-    railway_metrics = data.frame(timestamp = as.POSIXct(character()), metric = character(), value = numeric())
+    cloud_run_metrics = data.frame(timestamp = as.POSIXct(character()), metric = character(), value = numeric())
   )
   
   # Setup database tables if connection provided
@@ -201,7 +201,7 @@ test_cdn_response_time <- function() {
   base_url <- if (exists("CDN_INTEGRATION_CONFIG")) {
     CDN_INTEGRATION_CONFIG$primary_cdn$base_url
   } else {
-    "https://cdn.monitor-legislativo.railway.app"
+    "https://mackmonitor-667999538255.southamerica-east1.run.app"
   }
   
   if (base_url == "" || isTRUE(is.null(base_url))) {
@@ -688,7 +688,7 @@ generate_performance_report <- function(time_range = "1d") {
 #' Check if Running in Production Environment
 #' @return Boolean indicating production environment
 is_production_environment <- function() {
-  return(Sys.getenv("RAILWAY_ENVIRONMENT") == "production" ||
+  return(Sys.getenv("K_SERVICE") != "" ||
          Sys.getenv("R_CONFIG_ACTIVE") == "production")
 }
 
@@ -721,7 +721,7 @@ get_current_performance_status <- function() {
 
 # Auto-initialize performance monitoring if in production
 if (!interactive() && is_production_environment()) {
-  cat("🚀 Auto-initializing CDN Performance Monitoring for Railway production...\n")
+  cat("🚀 Auto-initializing CDN Performance Monitoring for Cloud Run production...\n")
   tryCatch({
     init_result <- initialize_performance_monitoring()
     cat("✅ CDN Performance Monitoring System Ready for Production\n")
@@ -731,11 +731,11 @@ if (!interactive() && is_production_environment()) {
   })
 }
 
-# Export for Railway deployment
+# Export for Cloud Run deployment
 if (!interactive()) {
   cat("📊 Brazilian Legislative CDN Performance Monitoring System Ready\n")
   cat("🎓 Academic Research Performance Standards: <500ms target\n")
   cat("🇧🇷 Brazilian Compliance Monitoring: eMAG + WCAG 2.1 AA\n")
-  cat("🚂 Railway Platform Optimized | Real-time Alerts Active\n")
+  cat("☁️  Cloud Run Platform Optimized | Real-time Alerts Active\n")
   cat("⚡ São Paulo Edge Focus | LGPD Compliant Monitoring\n\n")
 }

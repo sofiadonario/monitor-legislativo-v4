@@ -53,7 +53,7 @@ library(jsonlite)
 
 # Configurar autenticação
 api_key <- "sua_api_key_aqui"
-base_url <- "https://monitor-legislativo-unified-production.up.railway.app/api/v1"
+base_url <- "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
 
 # Buscar documentos sobre transporte público em São Paulo
 response <- GET(
@@ -93,7 +93,7 @@ import json
 
 # Configurar autenticação
 api_key = "sua_api_key_aqui"
-base_url = "https://monitor-legislativo-unified-production.up.railway.app/api/v1"
+base_url = "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
 
 # Headers para autenticação
 headers = {
@@ -127,13 +127,13 @@ else:
     curl = list(
       search_basic = '
 # Buscar documentos sobre transporte público em São Paulo
-curl -X GET "https://monitor-legislativo-unified-production.up.railway.app/api/v1/legislation/search?q=transporte%20público&estado=SP&limit=10" \\
+curl -X GET "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1/legislation/search?q=transporte%20público&estado=SP&limit=10" \\
   -H "X-API-Key: sua_api_key_aqui" \\
   -H "Accept: application/json"
 ',
       export_data = '
 # Exportar dados em formato CSV
-curl -X GET "https://monitor-legislativo-unified-production.up.railway.app/api/v1/export/data?format=csv&estado=SP&ano=2023&limit=100" \\
+curl -X GET "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1/export/data?format=csv&estado=SP&ano=2023&limit=100" \\
   -H "X-API-Key: sua_api_key_aqui" \\
   -H "Accept: text/csv" \\
   -o "legislacao_sp_2023.csv"

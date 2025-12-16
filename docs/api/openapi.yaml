@@ -35,18 +35,18 @@ info:
     - Reproducible research workflows
     
   version: "4.0.0"
-  termsOfService: "https://monitor-legislativo.railway.app/terms"
+  termsOfService: "https://mackmonitor-667999538255.southamerica-east1.run.app/terms"
   contact:
     name: Monitor Legislativo Research Team
     email: research@monitor-legislativo.org
-    url: "https://monitor-legislativo.railway.app"
+    url: "https://mackmonitor-667999538255.southamerica-east1.run.app"
   license:
     name: Academic Research License
-    url: "https://monitor-legislativo.railway.app/license"
+    url: "https://mackmonitor-667999538255.southamerica-east1.run.app/license"
 
 servers:
-  - url: https://monitor-legislativo.railway.app/api/v1
-    description: Production server (Railway)
+  - url: https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1
+    description: Production server (Google Cloud Run)
   - url: http://localhost:8080/api/v1
     description: Development server
 

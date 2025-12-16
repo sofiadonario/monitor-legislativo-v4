@@ -303,11 +303,11 @@ initialize_app_security <- function() {
   # Configure secure session options
   options(
     shiny.maxRequestSize = 10 * 1024^2,  # 10MB
-    shiny.sanitize.errors = Sys.getenv("RAILWAY_ENVIRONMENT") == "production"
+    shiny.sanitize.errors = Sys.getenv("K_SERVICE", "") != ""
   )
-  
+
   cat("✅ Security initialization complete!\n")
-  
+
   return(security_system)
 }
 
@@ -375,11 +375,11 @@ security_health_check <- function() {
   }
 }
 
-# Auto-initialize in Railway environment
-if (Sys.getenv("RAILWAY_ENVIRONMENT") != "" && isTRUE(is.null(.GlobalEnv$security_system))) {
-  
-  cat("🚂 Railway environment detected - auto-initializing security...\n")
-  
+# Auto-initialize in Cloud Run environment
+if (Sys.getenv("K_SERVICE", "") != "" && isTRUE(is.null(.GlobalEnv$security_system))) {
+
+  cat("☁️ Cloud Run environment detected - auto-initializing security...\n")
+
   tryCatch({
     initialize_app_security()
   }, error = function(e) {

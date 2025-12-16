@@ -8,10 +8,10 @@
 # =============================================
 
 # Dangerous database fix files (CRITICAL - contains hardcoded credentials)
-RAILWAY_PRODUCTION_DB_FIX.R
-**/RAILWAY_PRODUCTION_DB_FIX.R
-RAILWAY_PRODUCTION_DB_FIX.*
-**/RAILWAY_*_DB_FIX.*
+CLOUD_RUN_PRODUCTION_DB_FIX.R
+**/CLOUD_RUN_PRODUCTION_DB_FIX.R
+CLOUD_RUN_PRODUCTION_DB_FIX.*
+**/CLOUD_RUN_*_DB_FIX.*
 *production*fix*
 *emergency*fix*
 *nuclear*fix*
@@ -44,7 +44,7 @@ secrets.json
 private.json
 
 # Database connection files
-railway_db_connection.log
+cloud_sql_connection.log
 *connection*.log
 db_*.log
 database_*.log
@@ -227,13 +227,12 @@ bin/
 obj/
 
 # =============================================
-# RAILWAY-SPECIFIC EXCLUSIONS
+# CLOUD RUN-SPECIFIC EXCLUSIONS
 # =============================================
 
-# Railway configuration (use secure version instead)
+# Legacy Railway configuration (no longer used)
 railway.toml
 railway.json
-!railway/railway-secure.toml
 
 # Nixpacks configuration
 nixpacks.toml
@@ -284,7 +283,7 @@ vendor/
 bower_components/
 
 # =============================================================================
-# ADDITIONAL SECURITY EXCLUSIONS FOR RAILWAY DEPLOYMENT
+# ADDITIONAL SECURITY EXCLUSIONS FOR CLOUD RUN DEPLOYMENT
 # =============================================================================
 
 # Backup files and temporary fixes

@@ -3,7 +3,7 @@
 # ============================================================================
 # 
 # Comprehensive REST API for Brazilian Legislative Monitoring System
-# Built on R Plumber with performance optimizations and Railway deployment
+# Built on R Plumber with performance optimizations and Cloud Run deployment
 # NOW WITH COMPLETE AUTHENTICATION FRAMEWORK (Sprint 6B API-002)
 # 
 # Features:
@@ -19,7 +19,7 @@
 # - OpenAPI 3.0 specification compliance
 # - Brazilian Portuguese language support
 # - Academic research workflow support
-# - Railway deployment optimization
+# - Cloud Run deployment optimization
 # 
 # API Structure:
 # - /api/v1/auth/* - Authentication and user management endpoints
@@ -147,8 +147,8 @@ API_CONFIG <- list(
   ),
   servers = list(
     list(
-      url = "https://monitorlegislativo.up.railway.app/api/v1",
-      description = "Production server on Railway"
+      url = "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1",
+      description = "Production server on Cloud Run"
     ),
     list(
       url = "http://localhost:8000/api/v1",

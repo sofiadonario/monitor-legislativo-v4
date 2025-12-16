@@ -964,7 +964,7 @@ find_annotation_in_workspaces <- function(annotation_id) {
 }
 
 generate_workspace_invite_link <- function(workspace_id, privacy_level) {
-  base_url <- "https://monitor-legislativo-unified-production.up.railway.app"
+  base_url <- "https://mackmonitor-667999538255.southamerica-east1.run.app"
   invite_token <- digest::digest(paste(workspace_id, Sys.time()), algo = "sha256")
   paste0(base_url, "/workspace/join/", workspace_id, "?token=", substr(invite_token, 1, 16))
 }

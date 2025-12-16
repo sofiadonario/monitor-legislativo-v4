@@ -117,21 +117,21 @@ setup_notification_channels <- function() {
       discord_webhook = Sys.getenv("DISCORD_WEBHOOK_URL", "")
     )
     
-    # Railway-specific notifications
-    railway_config <- list(
-      enabled = nchar(Sys.getenv("RAILWAY_PROJECT_ID", "")) > 0,
-      project_id = Sys.getenv("RAILWAY_PROJECT_ID", ""),
-      service_id = Sys.getenv("RAILWAY_SERVICE_ID", ""),
-      api_token = Sys.getenv("RAILWAY_API_TOKEN", "")
+    # Cloud Run-specific notifications
+    cloud_run_config <- list(
+      enabled = nchar(Sys.getenv("K_SERVICE", "")) > 0,
+      service_name = Sys.getenv("K_SERVICE", ""),
+      revision = Sys.getenv("K_REVISION", ""),
+      project_id = Sys.getenv("GCP_PROJECT", "")
     )
-    
+
     .alerting_state$notification_channels <- list(
       email = email_config,
       webhook = webhook_config,
-      railway = railway_config
+      cloud_run = cloud_run_config
     )
-    
-    enabled_channels <- sum(email_config$enabled, webhook_config$enabled, railway_config$enabled)
+
+    enabled_channels <- sum(email_config$enabled, webhook_config$enabled, cloud_run_config$enabled)
     log_event(paste("Notification channels configured:", enabled_channels, "enabled"))
     
   }, error = function(e) {
@@ -453,10 +453,10 @@ send_alert_notifications <- function(rule, alert_record, alert_result) {
       notifications_sent$webhook <- webhook_result
     }
     
-    # Railway-specific notifications
-    if (.alerting_state$notification_channels$railway$enabled) {
-      railway_result <- send_railway_alert(rule, alert_message, alert_result)
-      notifications_sent$railway <- railway_result
+    # Cloud Run-specific notifications
+    if (.alerting_state$notification_channels$cloud_run$enabled) {
+      cloud_run_result <- send_cloud_run_alert(rule, alert_message, alert_result)
+      notifications_sent$cloud_run <- cloud_run_result
     }
     
     # Update alert record with notification status
@@ -492,7 +492,7 @@ format_alert_message <- function(rule, alert_record, alert_result) {
     "Metric: ", rule$metric_name, " (", rule$metric_type, ")\n\n",
     "Time: ", format(alert_result$timestamp, "%Y-%m-%d %H:%M:%S %Z"), "\n",
     "Alert ID: ", alert_record$id, "\n\n",
-    "Platform: Railway Deployment\n",
+    "Platform: Cloud Run Deployment\n",
     "Service: Monitor Legislativo v4\n\n",
     "This is an automated alert from the performance monitoring system."
   )
@@ -569,7 +569,7 @@ send_webhook_alert <- function(rule, message, alert_result) {
       ),
       system = list(
         name = "Monitor Legislativo v4",
-        platform = "Railway",
+        platform = "Cloud Run",
         environment = Sys.getenv("R_CONFIG_ACTIVE", "production")
       ),
       message = message
@@ -629,42 +629,43 @@ send_webhook_alert <- function(rule, message, alert_result) {
   })
 }
 
-#' Send Railway-specific Alert
+#' Send Cloud Run-specific Alert
 #' @param rule Alert rule
 #' @param message Alert message
 #' @param alert_result Evaluation result
 #' @return Boolean indicating success
-send_railway_alert <- function(rule, message, alert_result) {
+send_cloud_run_alert <- function(rule, message, alert_result) {
   tryCatch({
-    railway_config <- .alerting_state$notification_channels$railway
-    
-    if (!railway_config$enabled) {
+    cloud_run_config <- .alerting_state$notification_channels$cloud_run
+
+    if (!cloud_run_config$enabled) {
       return(FALSE)
     }
-    
-    # Railway doesn't have direct alerting API, but we can log structured data
-    # that Railway's logging system can pick up
-    
-    railway_alert <- list(
+
+    # Cloud Run uses Cloud Logging for structured logs
+    # that can be used for alerting
+
+    cloud_run_alert <- list(
       type = "PERFORMANCE_ALERT",
       level = toupper(alert_result$alert_level),
       rule = rule$rule_name,
       metric = rule$metric_name,
       value = alert_result$metric_value,
       threshold = alert_result$threshold_value,
-      project_id = railway_config$project_id,
-      service_id = railway_config$service_id,
+      service_name = cloud_run_config$service_name,
+      revision = cloud_run_config$revision,
+      project_id = cloud_run_config$project_id,
       timestamp = format(alert_result$timestamp, "%Y-%m-%dT%H:%M:%SZ")
     )
-    
-    # Log as structured JSON for Railway to process
-    cat("RAILWAY_ALERT:", toJSON(railway_alert, auto_unbox = TRUE), "\n")
-    
-    log_event("Railway alert logged successfully")
+
+    # Log as structured JSON for Cloud Logging to process
+    cat("CLOUD_RUN_ALERT:", toJSON(cloud_run_alert, auto_unbox = TRUE), "\n")
+
+    log_event("Cloud Run alert logged successfully")
     return(TRUE)
-    
+
   }, error = function(e) {
-    log_event(paste("Railway alert error:", e$message), "ERROR")
+    log_event(paste("Cloud Run alert error:", e$message), "ERROR")
     return(FALSE)
   })
 }
@@ -976,7 +977,7 @@ test_alert_system <- function(rule_name = NULL) {
     # Test notification channels
     test_results$notification_channels$email <- .alerting_state$notification_channels$email$enabled
     test_results$notification_channels$webhook <- .alerting_state$notification_channels$webhook$enabled
-    test_results$notification_channels$railway <- .alerting_state$notification_channels$railway$enabled
+    test_results$notification_channels$cloud_run <- .alerting_state$notification_channels$cloud_run$enabled
     
     # Test metric collection
     test_results$metrics_collection <- tryCatch({

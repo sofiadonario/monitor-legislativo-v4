@@ -1,19 +1,19 @@
-# RAILWAY DEPLOYMENT SCRIPT FOR ADVANCED TEXT MINING DASHBOARD
+# CLOUD RUN DEPLOYMENT SCRIPT FOR ADVANCED TEXT MINING DASHBOARD
 # =============================================================
 # Production deployment script for MackMonitor with text mining capabilities
-# Ensures Railway compatibility with proper error handling and fallbacks
+# Ensures Cloud Run compatibility with proper error handling and fallbacks
 
-cat("🚀 Railway Advanced Text Mining Deployment Script\n")
+cat("🚀 Cloud Run Advanced Text Mining Deployment Script\n")
 cat(paste(rep("=", 50), collapse = ""), "\n")
 
-# Check if we're in Railway environment
-is_railway_env <- function() {
-  return(!is.null(Sys.getenv("RAILWAY_ENVIRONMENT_NAME", unset = NULL)))
+# Check if we're in Cloud Run environment
+is_cloud_run_env <- function() {
+  return(!is.null(Sys.getenv("K_SERVICE", unset = NULL)))
 }
 
-# Install required packages for Railway deployment
-install_railway_packages <- function() {
-  cat("📦 Installing packages for Railway deployment...\n")
+# Install required packages for Cloud Run deployment
+install_cloud_run_packages <- function() {
+  cat("📦 Installing packages for Cloud Run deployment...\n")
   
   # Core packages needed for the application
   required_packages <- c(
@@ -21,7 +21,7 @@ install_railway_packages <- function() {
     "shiny", "shinydashboard", "DT", "plotly", "dplyr",
     # Database
     "DBI", "RPostgres", "pool",
-    # Text mining (core essentials only for Railway)
+    # Text mining (core essentials only for Cloud Run)
     "tm", "quanteda", "tidytext", "stringr", "SnowballC",
     # Visualization
     "ggplot2", "wordcloud", "RColorBrewer", "viridis",
@@ -41,45 +41,28 @@ install_railway_packages <- function() {
   cat("✅ All required packages are available\n")
 }
 
-# Create Railway-optimized app.R that replaces the current one
-create_railway_app <- function() {
-  cat("📝 Creating Railway-optimized app.R...\n")
-  
-  # Read the advanced app and modify for Railway
+# Create Cloud Run-optimized app.R that replaces the current one
+create_cloud_run_app <- function() {
+  cat("📝 Creating Cloud Run-optimized app.R...\n")
+
+  # Read the advanced app and modify for Cloud Run
   if (file.exists("app_with_text_mining.R")) {
     file.copy("app.R", "app_backup.R", overwrite = TRUE)
     file.copy("app_with_text_mining.R", "app.R", overwrite = TRUE)
-    cat("✅ Railway-optimized app.R created\n")
+    cat("✅ Cloud Run-optimized app.R created\n")
   } else {
     cat("⚠️ app_with_text_mining.R not found, keeping current app.R\n")
   }
 }
 
-# Create Railway startup script
-create_railway_startup <- function() {
-  cat("📝 Creating Railway startup configuration...\n")
-  
-  # Create or update railway.toml
-  railway_config <- '
-[build]
-builder = "NIXPACKS"
+# Create Cloud Run startup script
+create_cloud_run_startup <- function() {
+  cat("📝 Creating Cloud Run startup configuration...\n")
 
-[deploy]
-healthcheckPath = "/"
-healthcheckTimeout = 300
-restartPolicyType = "ON_FAILURE"
-
-[environments.production.variables]
-R_VERSION = "4.3.0"
-RENV_ACTIVATE = "FALSE"
-PORT = "8080"'
-  
-  writeLines(railway_config, "railway.toml")
-  
   # Create startup script
   startup_script <- '#!/bin/bash
 echo "🚀 Starting MackMonitor Advanced Text Mining Dashboard"
-echo "Railway Environment: $RAILWAY_ENVIRONMENT_NAME"
+echo "Cloud Run Service: $K_SERVICE"
 
 # Set R environment
 export R_LIBS_USER=/workspace/R/library
@@ -87,21 +70,21 @@ export R_LIBS_SITE=/workspace/R/library
 
 # Start the Shiny application
 Rscript -e "shiny::runApp(host=\'0.0.0.0\', port=as.integer(Sys.getenv(\'PORT\', 8080)))"'
-  
+
   writeLines(startup_script, "start.sh")
   Sys.chmod("start.sh", mode = "0755")
-  
-  cat("✅ Railway configuration files created\n")
+
+  cat("✅ Cloud Run configuration files created\n")
 }
 
-# Create lightweight text mining for Railway
-create_railway_text_mining <- function() {
-  cat("📝 Creating Railway-compatible text mining pipeline...\n")
-  
-  railway_text_mining <- '# RAILWAY-OPTIMIZED TEXT MINING PIPELINE
-# Lightweight version for Railway deployment with proper error handling
+# Create lightweight text mining for Cloud Run
+create_cloud_run_text_mining <- function() {
+  cat("📝 Creating Cloud Run-compatible text mining pipeline...\n")
 
-cat("🧠 Loading Railway-compatible text mining...\n")
+  cloud_run_text_mining <- '# CLOUD RUN-OPTIMIZED TEXT MINING PIPELINE
+# Lightweight version for Cloud Run deployment with proper error handling
+
+cat("🧠 Loading Cloud Run-compatible text mining...\n")
 
 # Load only essential packages
 suppressPackageStartupMessages({
@@ -111,11 +94,11 @@ suppressPackageStartupMessages({
   library(DBI)
 })
 
-# Global cache for Railway
-.railway_text_cache <- list()
+# Global cache for Cloud Run
+.cloud_run_text_cache <- list()
 
 # Lightweight Portuguese preprocessing
-preprocess_text_railway <- function(texts, max_docs = 1000) {
+preprocess_text_cloud_run <- function(texts, max_docs = 1000) {
   tryCatch({
     # Sample for performance
     if (length(texts) > max_docs) {
@@ -135,8 +118,8 @@ preprocess_text_railway <- function(texts, max_docs = 1000) {
   })
 }
 
-# Simplified sentiment analysis for Railway
-analyze_sentiment_railway <- function(texts) {
+# Simplified sentiment analysis for Cloud Run
+analyze_sentiment_cloud_run <- function(texts) {
   tryCatch({
     # Simple keyword-based sentiment
     positive_words <- c("aprovação", "benefício", "melhoria", "desenvolvimento", "modernização")
@@ -165,23 +148,23 @@ analyze_sentiment_railway <- function(texts) {
   })
 }
 
-# Railway dashboard data functions with caching
+# Cloud Run dashboard data functions with caching
 get_sentiment_dashboard_data <- function(connection = NULL) {
   tryCatch({
     # Use cache if available
-    if (!is.null(.railway_text_cache$sentiment)) {
-      return(.railway_text_cache$sentiment)
+    if (!is.null(.cloud_run_text_cache$sentiment)) {
+      return(.cloud_run_text_cache$sentiment)
     }
-    
+
     # Generate from database or use fallback
     if (!is.null(connection)) {
       sample_query <- "SELECT titulo, ementa FROM documents WHERE titulo IS NOT NULL LIMIT 500"
       sample_data <- dbGetQuery(connection, sample_query)
-      
+
       if (nrow(sample_data) > 0) {
         combined_text <- paste(sample_data$titulo, sample_data$ementa, sep = " ")
-        preprocessed <- preprocess_text_railway(combined_text)
-        sentiment_result <- analyze_sentiment_railway(preprocessed)
+        preprocessed <- preprocess_text_cloud_run(combined_text)
+        sentiment_result <- analyze_sentiment_cloud_run(preprocessed)
         
         result <- list(
           total_analyzed = length(preprocessed),
@@ -193,7 +176,7 @@ get_sentiment_dashboard_data <- function(connection = NULL) {
           last_updated = Sys.time()
         )
         
-        .railway_text_cache$sentiment <<- result
+        .cloud_run_text_cache$sentiment <<- result
         return(result)
       }
     }
@@ -270,31 +253,31 @@ get_entities_dashboard_data <- function(connection = NULL) {
   })
 }
 
-# Simplified pipeline execution for Railway
+# Simplified pipeline execution for Cloud Run
 run_advanced_text_mining_pipeline <- function(sample_size = 500, connection = NULL, force_recompute = FALSE) {
-  cat("🚀 Running Railway-optimized text mining pipeline\n")
-  
+  cat("🚀 Running Cloud Run-optimized text mining pipeline\n")
+
   tryCatch({
     if (is.null(connection)) {
       cat("⚠️ No database connection, using cached results\n")
       return(NULL)
     }
-    
-    # Get small sample for Railway processing
+
+    # Get small sample for Cloud Run processing
     query <- sprintf("SELECT titulo, ementa, categoria FROM documents LIMIT %d", sample_size)
     data <- dbGetQuery(connection, query)
-    
+
     if (nrow(data) == 0) {
       cat("⚠️ No data available\n")
       return(NULL)
     }
-    
+
     # Quick processing
     combined_text <- paste(data$titulo, data$ementa, sep = " ")
-    preprocessed <- preprocess_text_railway(combined_text, max_docs = sample_size)
-    sentiment_result <- analyze_sentiment_railway(preprocessed)
-    
-    cat("✅ Railway text mining completed:", length(preprocessed), "documents processed\n")
+    preprocessed <- preprocess_text_cloud_run(combined_text, max_docs = sample_size)
+    sentiment_result <- analyze_sentiment_cloud_run(preprocessed)
+
+    cat("✅ Cloud Run text mining completed:", length(preprocessed), "documents processed\n")
     
     return(list(
       sentiment_analysis = sentiment_result,
@@ -305,49 +288,49 @@ run_advanced_text_mining_pipeline <- function(sample_size = 500, connection = NU
     ))
     
   }, error = function(e) {
-    cat("❌ Error in Railway text mining:", e$message, "\n")
+    cat("❌ Error in Cloud Run text mining:", e$message, "\n")
     return(NULL)
   })
 }
 
-cat("✅ Railway-compatible text mining pipeline loaded\n")'
-  
-  writeLines(railway_text_mining, "advanced_text_mining_pipeline_railway.R")
-  cat("✅ Railway text mining pipeline created\n")
+cat("✅ Cloud Run-compatible text mining pipeline loaded\n")'
+
+  writeLines(cloud_run_text_mining, "advanced_text_mining_pipeline_cloud_run.R")
+  cat("✅ Cloud Run text mining pipeline created\n")
 }
 
 # Main deployment function
-deploy_to_railway <- function() {
-  cat("🚀 DEPLOYING ADVANCED TEXT MINING TO RAILWAY\n")
+deploy_to_cloud_run <- function() {
+  cat("🚀 DEPLOYING ADVANCED TEXT MINING TO CLOUD RUN\n")
   cat(paste(rep("=", 50), collapse = ""), "\n")
-  
+
   # Step 1: Install packages
-  install_railway_packages()
-  
-  # Step 2: Create Railway-optimized files
-  create_railway_startup()
-  create_railway_text_mining()
-  create_railway_app()
-  
-  # Step 3: Update advanced_text_mining_pipeline.R to use Railway version
-  if (file.exists("advanced_text_mining_pipeline_railway.R")) {
+  install_cloud_run_packages()
+
+  # Step 2: Create Cloud Run-optimized files
+  create_cloud_run_startup()
+  create_cloud_run_text_mining()
+  create_cloud_run_app()
+
+  # Step 3: Update advanced_text_mining_pipeline.R to use Cloud Run version
+  if (file.exists("advanced_text_mining_pipeline_cloud_run.R")) {
     file.copy("advanced_text_mining_pipeline.R", "advanced_text_mining_pipeline_full.R", overwrite = TRUE)
-    file.copy("advanced_text_mining_pipeline_railway.R", "advanced_text_mining_pipeline.R", overwrite = TRUE)
-    cat("✅ Text mining pipeline optimized for Railway\n")
+    file.copy("advanced_text_mining_pipeline_cloud_run.R", "advanced_text_mining_pipeline.R", overwrite = TRUE)
+    cat("✅ Text mining pipeline optimized for Cloud Run\n")
   }
-  
+
   # Step 4: Test configuration
-  cat("🧪 Testing Railway configuration...\n")
+  cat("🧪 Testing Cloud Run configuration...\n")
   
   # Test database connection
   tryCatch({
-    source("RAILWAY_DATABASE_FIX.R")
+    source("CLOUD_RUN_DATABASE_FIX.R")
     test_total <- get_total_documents()
     cat("✅ Database connection test passed:", test_total, "documents\n")
   }, error = function(e) {
     cat("⚠️ Database connection test warning:", e$message, "\n")
   })
-  
+
   # Test text mining
   tryCatch({
     source("advanced_text_mining_pipeline.R")
@@ -355,26 +338,25 @@ deploy_to_railway <- function() {
   }, error = function(e) {
     cat("⚠️ Text mining pipeline test warning:", e$message, "\n")
   })
-  
-  cat("\n✅ RAILWAY DEPLOYMENT PREPARATION COMPLETE!\n")
+
+  cat("\n✅ CLOUD RUN DEPLOYMENT PREPARATION COMPLETE!\n")
   cat(paste(rep("=", 50), collapse = ""), "\n")
   cat("📝 Files created/updated:\n")
-  cat("  • app.R (Railway-optimized with text mining)\n")
-  cat("  • advanced_text_mining_pipeline.R (Railway-compatible)\n")
-  cat("  • railway.toml (Railway configuration)\n")
+  cat("  • app.R (Cloud Run-optimized with text mining)\n")
+  cat("  • advanced_text_mining_pipeline.R (Cloud Run-compatible)\n")
   cat("  • start.sh (Startup script)\n")
-  cat("\n🚀 Ready for Railway deployment!\n")
+  cat("\n🚀 Ready for Cloud Run deployment!\n")
   cat("Next steps:\n")
   cat("1. Commit changes to Git\n")
-  cat("2. Push to Railway-connected repository\n")
-  cat("3. Railway will automatically deploy\n")
+  cat("2. Push to Cloud Run-connected repository\n")
+  cat("3. Cloud Run will automatically deploy\n")
   cat("4. Monitor deployment logs for any issues\n")
 }
 
 # Execute deployment if script is run directly
 if (!interactive()) {
-  deploy_to_railway()
+  deploy_to_cloud_run()
 }
 
-cat("✅ Railway deployment script loaded\n")
-cat("📋 Run deploy_to_railway() to execute deployment preparation\n")
+cat("✅ Cloud Run deployment script loaded\n")
+cat("📋 Run deploy_to_cloud_run() to execute deployment preparation\n")

@@ -24,13 +24,13 @@ TEST_RUNNER_CONFIG <- list(
   project_name = "Monitor Legislativo v4",
   sprint = "Sprint 8A",
   test_environment = ifelse(
-    Sys.getenv("RAILWAY_ENVIRONMENT") == "production",
-    "Production (Railway)",
+    Sys.getenv("K_SERVICE") != "",
+    "Production (Cloud Run)",
     "Development"
   ),
   base_url = ifelse(
-    Sys.getenv("RAILWAY_ENVIRONMENT") == "production",
-    "https://monitor-legislativo-unified-production.up.railway.app",
+    Sys.getenv("K_SERVICE") != "",
+    "https://mackmonitor-667999538255.southamerica-east1.run.app",
     "http://localhost:8000"
   ),
   output_dir = "tests/reports",

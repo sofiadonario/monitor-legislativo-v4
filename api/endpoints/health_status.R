@@ -21,7 +21,7 @@ SYSTEM_CONFIG <- list(
   build_date = "2024-01-15",
   environment = Sys.getenv("ENVIRONMENT", "development"),
   region = "South America (São Paulo)",
-  deployment_platform = "Railway",
+  deployment_platform = "Cloud Run",
   start_time = Sys.time(),
   
   # Health check thresholds
@@ -478,7 +478,7 @@ function(req, res) {
     ),
     
     endpoints = list(
-      base_url = "https://monitor-legislativo-unified-production.up.railway.app/api/v1",
+      base_url = "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1",
       documentation_url = "https://monitor-legislativo.br/docs",
       openapi_spec_url = "/api/v1/docs/openapi.yaml",
       available_endpoints = list(

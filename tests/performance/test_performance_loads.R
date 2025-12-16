@@ -27,8 +27,8 @@ library(microbenchmark)
 # Performance Testing Configuration
 PERF_CONFIG <- list(
   base_url = ifelse(
-    Sys.getenv("RAILWAY_ENVIRONMENT") == "production",
-    "https://monitor-legislativo-unified-production.up.railway.app",
+    Sys.getenv("K_SERVICE") != "",
+    "https://mackmonitor-667999538255.southamerica-east1.run.app",
     "http://localhost:8000"
   ),
   api_version = "v1",
@@ -36,7 +36,7 @@ PERF_CONFIG <- list(
   max_concurrent_users = 25,  # Maximum for stress testing
   timeout = 60,
   test_duration_seconds = 30,
-  memory_limit_mb = 2048,  # Railway 2GB limit
+  memory_limit_mb = 2048,  # Cloud Run 2GB limit
   response_time_targets = list(
     dashboard = 2,    # 2 seconds for dashboard
     search = 5,       # 5 seconds for search
@@ -323,14 +323,14 @@ test_that("Database Query Performance Under Load", {
   cat("✅ Database Query Performance testing completed\n")
 })
 
-# MEMORY USAGE VALIDATION (RAILWAY 2GB COMPLIANCE)
+# MEMORY USAGE VALIDATION (CLOUD RUN 2GB COMPLIANCE)
 # ================================================
 
-test_that("Memory Usage Validation - Railway 2GB Compliance", {
+test_that("Memory Usage Validation - Cloud Run 2GB Compliance", {
   skip_on_cran()
   skip_if_offline()
-  
-  cat("\n💾 Testing Memory Usage - Railway 2GB Compliance\n")
+
+  cat("\n💾 Testing Memory Usage - Cloud Run 2GB Compliance\n")
   
   # Monitor memory before testing
   initial_memory <- monitor_memory_usage()
@@ -377,10 +377,10 @@ test_that("Memory Usage Validation - Railway 2GB Compliance", {
     cat(paste("📈 Average memory during test:", round(avg_memory, 2), "MB\n"))
     cat(paste("📊 Peak memory during test:", round(max_memory, 2), "MB\n"))
     cat(paste("🔢 Total requests made:", request_count, "\n"))
-    
-    # Railway has 2GB (2048MB) limit
+
+    # Cloud Run has 2GB (2048MB) limit
     expect_true(max_memory <= PERF_CONFIG$memory_limit_mb,
-                info = paste("Memory usage should stay under", PERF_CONFIG$memory_limit_mb, 
+                info = paste("Memory usage should stay under", PERF_CONFIG$memory_limit_mb,
                            "MB, peak was:", round(max_memory, 2), "MB"))
     
     # Memory should be reasonable for normal operations
@@ -841,7 +841,7 @@ cat("🎯 Sprint 8A Performance Testing Suite loaded successfully\n")
 cat("📋 Performance test suites available:\n")
 cat("   1. Concurrent User Testing (Academic Researchers)\n")
 cat("   2. Database Query Performance Under Load\n")
-cat("   3. Memory Usage Validation (Railway 2GB Compliance)\n")
+cat("   3. Memory Usage Validation (Cloud Run 2GB Compliance)\n")
 cat("   4. Response Time Validation (Performance Targets)\n")
 cat("   5. API Throughput Testing (Academic Usage Patterns)\n")
 cat("   6. Geographic Analysis Performance (Brazilian Municipalities)\n")

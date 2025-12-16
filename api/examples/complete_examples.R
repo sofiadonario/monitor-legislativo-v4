@@ -17,7 +17,7 @@ library(ggplot2)
 library(leaflet)
 
 # API Configuration
-API_BASE <- "https://monitor-legislativo-unified-production.up.railway.app/api/v1"
+API_BASE <- "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1"
 API_KEY <- Sys.getenv("MONITOR_LEGISLATIVO_API_KEY", "demo_key_12345")
 
 # Helper function for API requests
@@ -438,5 +438,5 @@ cat("✅ Complete academic research workflows\n")
 cat("✅ Performance monitoring and analytics\n")
 cat("✅ Brazilian legislative data compliance\n")
 cat("\n📚 For more examples, see the API documentation at:\n")
-cat("https://monitor-legislativo-unified-production.up.railway.app/api/docs\n")
+cat("https://mackmonitor-667999538255.southamerica-east1.run.app/api/docs\n")
 cat(rep("=", 60), "\n")

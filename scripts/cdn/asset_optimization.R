@@ -1,5 +1,5 @@
 # CDN Asset Optimization Pipeline for Brazilian Legislative Monitoring System
-# Comprehensive asset compilation, compression, and optimization for Railway deployment
+# Comprehensive asset compilation, compression, and optimization for Cloud Run deployment
 # Maintains LGPD compliance and Brazilian data sovereignty requirements
 # Academic research performance optimization - Sprint 6A PERF-004
 
@@ -29,8 +29,8 @@ CDN_CONFIG <- list(
   data_residency = "brazil",
   logging_minimal = TRUE,
   
-  # Railway Platform Integration
-  railway_compatible = TRUE,
+  # Cloud Run Platform Integration
+  cloud_run_compatible = TRUE,
   no_infrastructure_changes = TRUE,
   memory_efficient = TRUE,
   bandwidth_optimized = TRUE
@@ -471,14 +471,14 @@ apply_brazilian_optimizations <- function(file_path, optimization_result) {
   return(optimizations)
 }
 
-#' Generate CDN URL (Railway-compatible simulation)
+#' Generate CDN URL (Cloud Run-compatible simulation)
 #' @param asset_path Relative asset path
 #' @param content_hash Hash for cache busting
 #' @return Simulated CDN URL
 generate_cdn_url <- function(asset_path, content_hash) {
-  # For Railway deployment, simulate CDN structure
+  # For Cloud Run deployment, simulate CDN structure
   # In production, this would generate actual Cloudflare URLs
-  base_url <- "https://cdn.monitor-legislativo.railway.app"
+  base_url <- "https://mackmonitor-667999538255.southamerica-east1.run.app"
   versioned_path <- paste0(asset_path, "?v=", substr(content_hash, 1, 8))
   return(paste0(base_url, "/", versioned_path))
 }
@@ -509,7 +509,7 @@ generate_optimization_report <- function(optimization_results) {
     performance_impact = list(
       estimated_load_time_reduction = paste0(round(overall_compression * 0.7, 1), "%"),
       bandwidth_savings_per_request = total_original_size - total_optimized_size,
-      railway_memory_impact = "Minimal - static assets cached"
+      cloud_run_memory_impact = "Minimal - static assets cached"
     ),
     timestamp = format(Sys.time(), tz = "America/Sao_Paulo")
   )
@@ -548,10 +548,10 @@ setup_performance_monitoring <- function() {
   return(monitor_config)
 }
 
-# Export main functions for Railway deployment
+# Export main functions for Cloud Run deployment
 if (!interactive()) {
   cat("🏛️  Brazilian Legislative CDN Asset Optimization System Ready\n")
-  cat("📊 Academic Research Performance Target: <500ms\n") 
+  cat("📊 Academic Research Performance Target: <500ms\n")
   cat("🇧🇷 LGPD Compliant | Government Accessibility Ready\n")
-  cat("🚀 Railway Platform Optimized\n\n")
+  cat("🚀 Cloud Run Platform Optimized\n\n")
 }

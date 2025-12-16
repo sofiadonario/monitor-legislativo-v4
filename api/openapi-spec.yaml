@@ -38,15 +38,15 @@ info:
   contact:
     name: Monitor Legislativo Research Team
     email: api-support@monitor-legislativo.br
-    url: https://monitor-legislativo-unified-production.up.railway.app
+    url: https://mackmonitor-667999538255.southamerica-east1.run.app
   license:
     name: Academic Research License
     url: https://monitor-legislativo.br/license
   termsOfService: https://monitor-legislativo.br/terms
 
 servers:
-  - url: https://monitor-legislativo-unified-production.up.railway.app/api/v4
-    description: Production API Server (Railway)
+  - url: https://mackmonitor-667999538255.southamerica-east1.run.app/api/v4
+    description: Production API Server (Cloud Run)
   - url: https://staging.monitor-legislativo.br/api/v4  
     description: Staging API Server
   - url: http://localhost:3838/api/v4
@@ -3618,7 +3618,7 @@ x-code-samples:
       library(jsonlite)
       
       # Set up API configuration
-      api_base <- "https://monitor-legislativo-unified-production.up.railway.app/api/v4"
+      api_base <- "https://mackmonitor-667999538255.southamerica-east1.run.app/api/v4"
       api_key <- "your_api_key_here"
       
       # Search for transport legislation in São Paulo

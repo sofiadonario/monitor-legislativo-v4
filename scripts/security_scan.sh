@@ -118,10 +118,10 @@ validate_files() {
     log_success ".dockerignore file found"
     
     # Validate .dockerignore excludes dangerous files
-    if grep -q "RAILWAY_PRODUCTION_DB_FIX.R" "$DOCKERIGNORE_FILE"; then
-        log_success "Dangerous file RAILWAY_PRODUCTION_DB_FIX.R properly excluded in .dockerignore"
+    if grep -q "CLOUD_RUN_PRODUCTION_DB_FIX.R" "$DOCKERIGNORE_FILE"; then
+        log_success "Dangerous file CLOUD_RUN_PRODUCTION_DB_FIX.R properly excluded in .dockerignore"
     else
-        log_error "RAILWAY_PRODUCTION_DB_FIX.R not excluded in .dockerignore - SECURITY RISK!"
+        log_error "CLOUD_RUN_PRODUCTION_DB_FIX.R not excluded in .dockerignore - SECURITY RISK!"
         exit 1
     fi
 }
@@ -228,8 +228,8 @@ check_secrets_exposure() {
         fi
         
         # Check for dangerous files that should have been excluded
-        if find "$temp_dir/app" -name "RAILWAY_PRODUCTION_DB_FIX.R" 2>/dev/null | grep -q .; then
-            log_error "CRITICAL: RAILWAY_PRODUCTION_DB_FIX.R found in image! This contains hardcoded credentials!"
+        if find "$temp_dir/app" -name "CLOUD_RUN_PRODUCTION_DB_FIX.R" 2>/dev/null | grep -q .; then
+            log_error "CRITICAL: CLOUD_RUN_PRODUCTION_DB_FIX.R found in image! This contains hardcoded credentials!"
             secrets_found=true
         fi
         
@@ -258,45 +258,45 @@ check_secrets_exposure() {
 
 validate_security_configuration() {
     log_header "Validating Security Configuration"
-    
+
     # Check if running as non-root
     local user_check
     user_check=$(docker run --rm "$FULL_IMAGE_NAME" whoami)
-    
+
     if [ "$user_check" = "shinyapp" ]; then
         log_success "Container runs as non-root user: $user_check"
     else
         log_error "Container running as: $user_check (should be 'shinyapp')"
         return 1
     fi
-    
+
     # Check file permissions
     local permissions_check
     permissions_check=$(docker run --rm "$FULL_IMAGE_NAME" ls -la /app/app.R | awk '{print $1}')
-    
+
     if [[ "$permissions_check" =~ ^-rwxr--r-- ]] || [[ "$permissions_check" =~ ^-rw-r--r-- ]]; then
         log_success "App files have secure permissions: $permissions_check"
     else
         log_warning "App file permissions may be too permissive: $permissions_check"
     fi
-    
+
     # Test health check
     log_info "Testing application health check..."
     local container_id
-    container_id=$(docker run -d -p 0:3838 "$FULL_IMAGE_NAME")
-    
+    container_id=$(docker run -d -p 0:8080 "$FULL_IMAGE_NAME")
+
     if [ -n "$container_id" ]; then
         sleep 10  # Wait for app to start
-        
+
         local port
-        port=$(docker port "$container_id" 3838 | cut -d: -f2)
-        
+        port=$(docker port "$container_id" 8080 | cut -d: -f2)
+
         if curl -f "http://localhost:$port/" > /dev/null 2>&1; then
             log_success "Health check endpoint responding"
         else
             log_warning "Health check endpoint not responding (may need more time to start)"
         fi
-        
+
         # Clean up
         docker stop "$container_id" > /dev/null
         docker rm "$container_id" > /dev/null
@@ -334,9 +334,9 @@ This report details the security analysis of the Monitor Legislativo R Shiny app
 ### 🔍 Key Security Features
 - **Multi-stage build**: Minimizes attack surface
 - **Non-root execution**: Runs as 'shinyapp' user (UID: 1001)
-- **Dangerous file exclusion**: RAILWAY_PRODUCTION_DB_FIX.R properly excluded
+- **Dangerous file exclusion**: CLOUD_RUN_PRODUCTION_DB_FIX.R properly excluded
 - **Minimal base image**: Only runtime dependencies included
-- **Health checks**: Configured for Railway deployment
+- **Health checks**: Configured for Cloud Run deployment
 - **Resource limits**: Memory and CPU constraints defined
 
 ### 📊 Vulnerability Analysis
@@ -350,8 +350,8 @@ fi)
 1. Regularly update base images to include security patches
 2. Monitor for new vulnerabilities in dependencies
 3. Implement container image signing for production deployments
-4. Use Railway's secrets management for sensitive configuration
-5. Enable security headers in the Railway deployment configuration
+4. Use Google Cloud Secret Manager for sensitive configuration
+5. Enable security headers in the Cloud Run service configuration
 
 ### 📋 Build Information
 - **Build Date:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -401,7 +401,7 @@ main() {
     if [ $exit_code -eq 0 ]; then
         log_success "🎉 All security checks passed!"
         log_info "Image $FULL_IMAGE_NAME is ready for secure deployment"
-        log_info "Use this image with Railway: railway/railway-secure.toml"
+        log_info "Deploy to Cloud Run with: gcloud run deploy mackmonitor --image $FULL_IMAGE_NAME"
     else
         log_error "❌ Security validation failed!"
         log_error "Please address the issues above before deploying"

@@ -229,16 +229,11 @@ validate_geospatial_cache <- function(cache_dir = "cache/boundaries", max_age_da
 #' @return List with boundaries and geojson, or NULL components if failed
 initialize_geospatial_system <- function() {
   cat("🚀 Initializing Brazilian geospatial system...\n")
-  
-  # Railway-aware cache directory management
-  railway_volume <- Sys.getenv("RAILWAY_VOLUME_MOUNT_PATH", "")
-  if (railway_volume != "") {
-    cache_dir <- file.path(railway_volume, "geospatial_cache")
-    cat("🚂 Using Railway persistent volume for geospatial cache\n")
-  } else {
-    cache_dir <- "cache/boundaries"
-    cat("💻 Using local cache directory\n")
-  }
+
+  # Cloud Run-aware cache directory management
+  # Cloud Run doesn't have persistent volumes, use local cache
+  cache_dir <- "cache/boundaries"
+  cat("💻 Using local cache directory\n")
   
   # Create cache directory with proper permissions
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE, mode = "0755")

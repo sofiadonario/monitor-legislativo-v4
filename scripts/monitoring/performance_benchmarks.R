@@ -1,22 +1,22 @@
 # ============================================================================
 # COMPREHENSIVE PERFORMANCE BENCHMARKS AND MONITORING SYSTEM
 # ============================================================================
-# 
+#
 # This system provides comprehensive performance benchmarking and continuous
-# monitoring for the Brazilian Legislative Monitoring System running on Railway.
+# monitoring for the Brazilian Legislative Monitoring System running on Cloud Run.
 # It establishes performance baselines, tracks real-time metrics, and provides
 # detailed performance analysis and alerting.
 #
 # Key Features:
 # - Real-time performance monitoring with configurable thresholds
 # - Comprehensive performance baseline establishment and tracking
-# - Railway infrastructure performance monitoring (memory, connections, response times)
+# - Cloud Run infrastructure performance monitoring (memory, connections, response times)
 # - Brazilian legislative workload-specific performance metrics
 # - Automated performance alerting and notification system
 # - Historical performance trend analysis and visualization
 # - Database query performance tracking and optimization recommendations
 # - Cache performance monitoring and efficiency analysis
-# - Memory usage tracking with Railway 2GB limit compliance
+# - Memory usage tracking with Cloud Run 2GB limit compliance
 # - Integration with load testing and regression testing systems
 #
 # Designed for production monitoring and performance optimization
@@ -52,9 +52,9 @@ MONITORING_CONFIG <- list(
   # Performance thresholds for alerting
   critical_response_time_seconds = 10,      # Critical response time threshold
   warning_response_time_seconds = 5,        # Warning response time threshold
-  critical_memory_usage_mb = 1800,          # Critical memory usage (Railway 2GB limit)
+  critical_memory_usage_mb = 1800,          # Critical memory usage (Cloud Run 2GB limit)
   warning_memory_usage_mb = 1500,           # Warning memory usage
-  critical_db_connections = 90,             # Critical DB connections (Railway 100 limit)
+  critical_db_connections = 90,             # Critical DB connections (Cloud Run 100 limit)
   warning_db_connections = 70,              # Warning DB connections
   critical_error_rate_pct = 5,              # Critical error rate percentage
   warning_error_rate_pct = 2,               # Warning error rate percentage
@@ -81,7 +81,7 @@ MONITORING_CONFIG <- list(
     search_operations = list(weight = 0.25, critical = TRUE),
     cache_performance = list(weight = 0.15, critical = FALSE),
     memory_efficiency = list(weight = 0.15, critical = TRUE),
-    railway_compliance = list(weight = 0.10, critical = TRUE)
+    cloud_run_compliance = list(weight = 0.10, critical = TRUE)
   )
 )
 
@@ -197,7 +197,7 @@ collect_current_performance_metrics <- function() {
     database_metrics = collect_database_metrics(),
     cache_metrics = collect_cache_metrics(),
     application_metrics = collect_application_metrics(),
-    railway_metrics = collect_railway_metrics(),
+    cloud_run_metrics = collect_cloud_run_metrics(),
     workload_metrics = collect_workload_metrics()
   )
   
@@ -382,37 +382,37 @@ collect_application_metrics <- function() {
   return(application_metrics)
 }
 
-#' Collect Railway-specific performance metrics
-#' @return Railway metrics
-collect_railway_metrics <- function() {
-  
-  railway_metrics <- list(
-    is_railway_environment = FALSE,
+#' Collect Cloud Run-specific performance metrics
+#' @return Cloud Run metrics
+collect_cloud_run_metrics <- function() {
+
+  cloud_run_metrics <- list(
+    is_cloud_run_environment = FALSE,
     environment_type = "unknown",
     memory_compliance = list(),
     connection_compliance = list(),
     deployment_info = list()
   )
-  
-  # Check Railway environment
-  railway_env <- Sys.getenv("RAILWAY_ENVIRONMENT", "")
-  railway_metrics$is_railway_environment <- railway_env != ""
-  railway_metrics$environment_type <- ifelse(railway_env != "", railway_env, "local")
-  
-  # Railway deployment info
-  railway_metrics$deployment_info <- list(
-    project_id = Sys.getenv("RAILWAY_PROJECT_ID", "not_set"),
-    service_name = Sys.getenv("RAILWAY_SERVICE_NAME", "not_set"),
-    deployment_id = Sys.getenv("RAILWAY_DEPLOYMENT_ID", "not_set"),
-    port = Sys.getenv("PORT", "3838")
+
+  # Check Cloud Run environment
+  k_service <- Sys.getenv("K_SERVICE", "")
+  cloud_run_metrics$is_cloud_run_environment <- k_service != ""
+  cloud_run_metrics$environment_type <- ifelse(k_service != "", "cloud_run", "local")
+
+  # Cloud Run deployment info
+  cloud_run_metrics$deployment_info <- list(
+    service_name = Sys.getenv("K_SERVICE", "not_set"),
+    revision = Sys.getenv("K_REVISION", "not_set"),
+    project_id = Sys.getenv("GOOGLE_CLOUD_PROJECT", "not_set"),
+    port = Sys.getenv("PORT", "8080")
   )
   
   # Memory compliance check
   current_memory_mb <- as.numeric(pryr::mem_used()) / 1024 / 1024
-  
-  railway_metrics$memory_compliance <- list(
+
+  cloud_run_metrics$memory_compliance <- list(
     current_memory_mb = round(current_memory_mb, 1),
-    railway_limit_mb = 2048,
+    cloud_run_limit_mb = 2048,
     utilization_pct = round((current_memory_mb / 2048) * 100, 1),
     within_limit = current_memory_mb <= 2048,
     headroom_mb = round(2048 - current_memory_mb, 1),
@@ -430,10 +430,10 @@ collect_railway_metrics <- function() {
       active_connections <- pool::poolGetActive(secure_db_pool)
       idle_connections <- pool::poolGetIdle(secure_db_pool)
       total_connections <- active_connections + idle_connections
-      
-      railway_metrics$connection_compliance <- list(
+
+      cloud_run_metrics$connection_compliance <- list(
         current_connections = total_connections,
-        railway_limit = 100,
+        cloud_run_limit = 100,
         utilization_pct = round((total_connections / 100) * 100, 1),
         within_limit = total_connections <= 100,
         headroom = 100 - total_connections,
@@ -445,11 +445,11 @@ collect_railway_metrics <- function() {
         )
       )
     }, error = function(e) {
-      railway_metrics$connection_compliance <- list(error = e$message)
+      cloud_run_metrics$connection_compliance <- list(error = e$message)
     })
   }
-  
-  return(railway_metrics)
+
+  return(cloud_run_metrics)
 }
 
 #' Collect workload-specific performance metrics for Brazilian legislative system
@@ -558,9 +558,9 @@ check_performance_alerts <- function(current_metrics) {
       db_connections <- current_metrics$database_metrics$total_connections
       if (db_connections >= MONITORING_CONFIG$critical_db_connections) {
         alerts_triggered$db_connections_critical <- create_performance_alert(
-          "CRITICAL", 
-          "Database Connections Critical", 
-          paste0("Database connections (", db_connections, ") near Railway limit (100)"),
+          "CRITICAL",
+          "Database Connections Critical",
+          paste0("Database connections (", db_connections, ") near Cloud Run limit (100)"),
           current_metrics
         )
       } else if (db_connections >= MONITORING_CONFIG$warning_db_connections) {
@@ -613,14 +613,14 @@ check_performance_alerts <- function(current_metrics) {
       }
     }
     
-    # Railway compliance alerts
-    if (!is.null(current_metrics$railway_metrics$memory_compliance)) {
-      memory_compliance <- current_metrics$railway_metrics$memory_compliance
+    # Cloud Run compliance alerts
+    if (!is.null(current_metrics$cloud_run_metrics$memory_compliance)) {
+      memory_compliance <- current_metrics$cloud_run_metrics$memory_compliance
       if (memory_compliance$compliance_status == "NON_COMPLIANT") {
-        alerts_triggered$railway_memory_critical <- create_performance_alert(
-          "CRITICAL", 
-          "Railway Memory Limit Exceeded", 
-          paste0("Memory usage exceeds Railway 2GB limit: ", memory_compliance$current_memory_mb, "MB"),
+        alerts_triggered$cloud_run_memory_critical <- create_performance_alert(
+          "CRITICAL",
+          "Cloud Run Memory Limit Exceeded",
+          paste0("Memory usage exceeds Cloud Run 2GB limit: ", memory_compliance$current_memory_mb, "MB"),
           current_metrics
         )
       }
@@ -709,7 +709,7 @@ establish_comprehensive_benchmarks <- function(benchmark_name = paste0("benchmar
     search_benchmarks = establish_search_performance_benchmarks(),
     cache_benchmarks = establish_cache_performance_benchmarks(),
     memory_benchmarks = establish_memory_performance_benchmarks(),
-    railway_benchmarks = establish_railway_performance_benchmarks(),
+    cloud_run_benchmarks = establish_cloud_run_performance_benchmarks(),
     workload_benchmarks = establish_workload_performance_benchmarks()
   )
   
@@ -737,7 +737,7 @@ capture_benchmark_system_info <- function() {
     r_version = R.version.string,
     platform = R.Version()$platform,
     memory_total_mb = round(as.numeric(pryr::mem_used()) / 1024 / 1024, 1),
-    railway_environment = Sys.getenv("RAILWAY_ENVIRONMENT", "local"),
+    cloud_run_environment = Sys.getenv("K_SERVICE", "local"),
     git_commit = get_git_commit_info(),
     package_versions = get_benchmark_relevant_package_versions()
   )
@@ -1021,7 +1021,7 @@ establish_memory_performance_benchmarks <- function() {
   memory_benchmarks <- list(
     baseline_memory = list(),
     allocation_performance = list(),
-    railway_compliance = list()
+    cloud_run_compliance = list()
   )
   
   tryCatch({
@@ -1051,12 +1051,12 @@ establish_memory_performance_benchmarks <- function() {
       samples = length(allocation_benchmark$time)
     )
     
-    # Railway compliance assessment
+    # Cloud Run compliance assessment
     current_memory <- as.numeric(pryr::mem_used()) / 1024 / 1024
-    
-    memory_benchmarks$railway_compliance <- list(
+
+    memory_benchmarks$cloud_run_compliance <- list(
       current_memory_mb = round(current_memory, 1),
-      railway_limit_mb = 2048,
+      cloud_run_limit_mb = 2048,
       utilization_pct = round((current_memory / 2048) * 100, 1),
       within_limit = current_memory <= 2048,
       headroom_mb = 2048 - current_memory,
@@ -1077,49 +1077,49 @@ establish_memory_performance_benchmarks <- function() {
   return(memory_benchmarks)
 }
 
-#' Establish Railway-specific performance benchmarks
-#' @return Railway benchmark results
-establish_railway_performance_benchmarks <- function() {
-  
-  cat("🚄 Establishing Railway-specific benchmarks...\n")
-  
-  railway_benchmarks <- list(
+#' Establish Cloud Run-specific performance benchmarks
+#' @return Cloud Run benchmark results
+establish_cloud_run_performance_benchmarks <- function() {
+
+  cat("☁️ Establishing Cloud Run-specific benchmarks...\n")
+
+  cloud_run_benchmarks <- list(
     environment_validation = list(),
     resource_compliance = list(),
     deployment_performance = list()
   )
-  
+
   # Environment validation
-  railway_benchmarks$environment_validation <- list(
-    is_railway = Sys.getenv("RAILWAY_ENVIRONMENT", "") != "",
-    environment = Sys.getenv("RAILWAY_ENVIRONMENT", "local"),
-    project_id = Sys.getenv("RAILWAY_PROJECT_ID", "not_set") != "not_set",
+  cloud_run_benchmarks$environment_validation <- list(
+    is_cloud_run = Sys.getenv("K_SERVICE", "") != "",
+    service_name = Sys.getenv("K_SERVICE", "local"),
+    project_id = Sys.getenv("GOOGLE_CLOUD_PROJECT", "not_set") != "not_set",
     database_url_configured = Sys.getenv("DATABASE_URL", "") != ""
   )
   
   # Resource compliance
   current_memory <- as.numeric(pryr::mem_used()) / 1024 / 1024
-  
-  railway_benchmarks$resource_compliance <- list(
+
+  cloud_run_benchmarks$resource_compliance <- list(
     memory_compliance = current_memory <= 2048,
     memory_utilization_pct = round((current_memory / 2048) * 100, 1)
   )
-  
+
   # Add database connection compliance if available
   if (exists("secure_db_pool") && !is.null(secure_db_pool)) {
     tryCatch({
       active_connections <- pool::poolGetActive(secure_db_pool)
       idle_connections <- pool::poolGetIdle(secure_db_pool)
       total_connections <- active_connections + idle_connections
-      
-      railway_benchmarks$resource_compliance$db_connection_compliance <- total_connections <= 100
-      railway_benchmarks$resource_compliance$db_connection_utilization_pct <- round((total_connections / 100) * 100, 1)
+
+      cloud_run_benchmarks$resource_compliance$db_connection_compliance <- total_connections <= 100
+      cloud_run_benchmarks$resource_compliance$db_connection_utilization_pct <- round((total_connections / 100) * 100, 1)
     }, error = function(e) {
       # Connection metrics not available
     })
   }
-  
-  return(railway_benchmarks)
+
+  return(cloud_run_benchmarks)
 }
 
 #' Establish workload-specific performance benchmarks
@@ -1271,29 +1271,29 @@ calculate_benchmark_composite_score <- function(benchmarks) {
   }
   
   # Memory efficiency score (15% weight)
-  if (!is.null(benchmarks$memory_benchmarks$railway_compliance$utilization_pct)) {
-    memory_score <- max(0, 100 - benchmarks$memory_benchmarks$railway_compliance$utilization_pct)
+  if (!is.null(benchmarks$memory_benchmarks$cloud_run_compliance$utilization_pct)) {
+    memory_score <- max(0, 100 - benchmarks$memory_benchmarks$cloud_run_compliance$utilization_pct)
     score <- score + (memory_score * 0.15)
     total_weight <- total_weight + 0.15
   }
-  
+
   # Cache performance score (15% weight)
   if (!is.null(benchmarks$cache_benchmarks$cache_efficiency$hit_rate_pct)) {
     cache_score <- benchmarks$cache_benchmarks$cache_efficiency$hit_rate_pct
     score <- score + (cache_score * 0.15)
     total_weight <- total_weight + 0.15
   }
-  
-  # Railway compliance score (10% weight)
-  railway_score <- 100  # Default full score
-  if (!is.null(benchmarks$railway_benchmarks$resource_compliance)) {
-    compliance <- benchmarks$railway_benchmarks$resource_compliance
-    if (!compliance$memory_compliance) railway_score <- railway_score - 50
+
+  # Cloud Run compliance score (10% weight)
+  cloud_run_score <- 100  # Default full score
+  if (!is.null(benchmarks$cloud_run_benchmarks$resource_compliance)) {
+    compliance <- benchmarks$cloud_run_benchmarks$resource_compliance
+    if (!compliance$memory_compliance) cloud_run_score <- cloud_run_score - 50
     if (!isTRUE(is.null(compliance$db_connection_compliance)) && !compliance$db_connection_compliance) {
-      railway_score <- railway_score - 30
+      cloud_run_score <- cloud_run_score - 30
     }
   }
-  score <- score + (railway_score * 0.10)
+  score <- score + (cloud_run_score * 0.10)
   total_weight <- total_weight + 0.10
   
   # Normalize score
@@ -1348,20 +1348,20 @@ get_current_performance_summary <- function() {
     memory_utilization_pct = current_metrics$system_metrics$memory_utilization_pct,
     database_connected = current_metrics$database_metrics$connection_status == "connected",
     cache_hit_rate = current_metrics$cache_metrics$cache_hit_rate,
-    railway_compliant = TRUE
+    cloud_run_compliant = TRUE
   )
   
-  # Railway compliance check
-  if (!is.null(current_metrics$railway_metrics$memory_compliance)) {
-    summary$railway_compliant <- current_metrics$railway_metrics$memory_compliance$compliance_status %in% c("COMPLIANT", "GOOD", "EXCELLENT")
+  # Cloud Run compliance check
+  if (!is.null(current_metrics$cloud_run_metrics$memory_compliance)) {
+    summary$cloud_run_compliant <- current_metrics$cloud_run_metrics$memory_compliance$compliance_status %in% c("COMPLIANT", "GOOD", "EXCELLENT")
   }
-  
+
   # Performance rating
   issues <- 0
   if (summary$memory_utilization_pct > 80) issues <- issues + 1
   if (!summary$database_connected) issues <- issues + 2
   if (summary$cache_hit_rate < 70) issues <- issues + 1
-  if (!summary$railway_compliant) issues <- issues + 2
+  if (!summary$cloud_run_compliant) issues <- issues + 2
   
   summary$performance_rating <- case_when(
     issues == 0 ~ "Excellent",
@@ -1387,7 +1387,7 @@ cat("✅ Comprehensive Performance Benchmarks and Monitoring System loaded succe
 cat("📊 Real-time monitoring system ready\n")
 cat("📏 Performance benchmarking system enabled\n")
 cat("🚨 Automated alerting system configured\n")
-cat("🚄 Railway-specific monitoring active\n")
+cat("☁️ Cloud Run-specific monitoring active\n")
 cat("🇧🇷 Brazilian legislative workload monitoring ready\n")
 
 # Export main monitoring functions

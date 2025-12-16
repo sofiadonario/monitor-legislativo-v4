@@ -32,13 +32,13 @@ if (!exists("AuditLogger")) {
 # =================================
 
 .security_integration_config <- list(
-  # Railway Deployment Settings
-  railway = list(
-    environment = Sys.getenv("RAILWAY_ENVIRONMENT", "development"),
+  # Cloud Run Deployment Settings
+  cloud_run = list(
+    environment = ifelse(Sys.getenv("K_SERVICE", "") != "", "production", "development"),
     database_url = Sys.getenv("DATABASE_URL"),
     redis_url = Sys.getenv("REDIS_URL"),
-    app_base_url = Sys.getenv("RAILWAY_STATIC_URL", "http://localhost:3838"),
-    enable_https = Sys.getenv("RAILWAY_ENVIRONMENT") == "production"
+    app_base_url = Sys.getenv("CLOUD_RUN_URL", "http://localhost:3838"),
+    enable_https = Sys.getenv("K_SERVICE", "") != ""
   ),
   
   # Security Component Configuration
@@ -122,11 +122,11 @@ SecurityIntegrationManager <- R6::R6Class(
       private$setup_security_monitoring()
       
       self$initialized <- TRUE
-      
+
       message("🔐 Security Integration Manager initialized successfully")
-      message("   Environment: ", self$config$railway$environment)
+      message("   Environment: ", self$config$cloud_run$environment)
       message("   Database: ", if(!is.null(self$db_connection)) "Connected" else "Not connected")
-      message("   HTTPS: ", if(self$config$railway$enable_https) "Enabled" else "Disabled")
+      message("   HTTPS: ", if(self$config$cloud_run$enable_https) "Enabled" else "Disabled")
     },
     
     # Shiny Integration Methods
@@ -459,20 +459,20 @@ SecurityIntegrationManager <- R6::R6Class(
     
     # Create database connection
     create_database_connection = function() {
-      if (isTRUE(is.null(self$config$railway$database_url)) || self$config$railway$database_url == "") {
+      if (isTRUE(is.null(self$config$cloud_run$database_url)) || self$config$cloud_run$database_url == "") {
         message("⚠️ No database URL configured - running in fallback mode")
         return(NULL)
       }
-      
+
       tryCatch({
         db_connection <- DBI::dbConnect(
           RPostgres::Postgres(),
-          self$config$railway$database_url
+          self$config$cloud_run$database_url
         )
-        
+
         message("✅ Database connection established")
         return(db_connection)
-        
+
       }, error = function(e) {
         warning("Failed to connect to database: ", e$message)
         return(NULL)
@@ -542,7 +542,7 @@ SecurityIntegrationManager <- R6::R6Class(
       # Set secure session configuration
       options(
         shiny.maxRequestSize = 10 * 1024^2,  # 10MB max request size
-        shiny.sanitize.errors = self$config$railway$environment == "production"
+        shiny.sanitize.errors = self$config$cloud_run$environment == "production"
       )
     },
     
@@ -583,9 +583,9 @@ SecurityIntegrationManager <- R6::R6Class(
               error_class = class(e)[1]
             ), log_level = "ERROR")
           }
-          
+
           # In production, don't expose internal errors
-          if (self$config$railway$environment == "production") {
+          if (self$config$cloud_run$environment == "production") {
             stop("An internal error occurred. Please contact support.")
           } else {
             stop(e)
@@ -686,11 +686,11 @@ init_shiny_security <- function(session = NULL) {
 # Export security integration for global use
 .GlobalEnv$security_integration <- NULL
 
-# Auto-initialize if in Railway environment
-if (Sys.getenv("RAILWAY_ENVIRONMENT") != "") {
+# Auto-initialize if in Cloud Run environment
+if (Sys.getenv("K_SERVICE", "") != "") {
   tryCatch({
     .GlobalEnv$security_integration <- init_security_integration()
-    message("🚀 Security integration auto-initialized for Railway deployment")
+    message("🚀 Security integration auto-initialized for Cloud Run deployment")
   }, error = function(e) {
     warning("Failed to auto-initialize security integration: ", e$message)
   })
@@ -699,6 +699,6 @@ if (Sys.getenv("RAILWAY_ENVIRONMENT") != "") {
 # Initialize on module load
 .onLoad <- function(libname, pkgname) {
   message("🔐 Security Integration module loaded")
-  message("   Railway Environment: ", Sys.getenv("RAILWAY_ENVIRONMENT", "not set"))
+  message("   Cloud Run Service: ", Sys.getenv("K_SERVICE", "not set"))
   message("   Security Status: Ready for initialization")
 }

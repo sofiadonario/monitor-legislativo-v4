@@ -1,10 +1,10 @@
 # Geographic System Testing Suite
-# Monitor Legislativo v4 - Railway Performance Validation
+# Monitor Legislativo v4 - Cloud Run Performance Validation
 # =======================================================
 
 #' Comprehensive Testing Suite for Geographic Analysis System
-#' 
-#' Tests the complete geographic analysis system with focus on Railway deployment
+#'
+#' Tests the complete geographic analysis system with focus on Cloud Run deployment
 #' constraints, performance with 134k+ documents, and memory optimization.
 
 library(testthat)
@@ -20,7 +20,7 @@ source("R/utils/brazilian_divisions.R", local = TRUE)
 
 # Test configuration
 TEST_DATA_SIZE <- 1000  # Reduced for testing
-RAILWAY_MEMORY_LIMIT <- 2 * 1024^3  # 2GB
+CLOUD_RUN_MEMORY_LIMIT <- 2 * 1024^3  # 2GB
 PERFORMANCE_THRESHOLD_SECONDS <- 30
 
 #' Initialize Test Environment
@@ -88,12 +88,12 @@ test_ibge_integration <- function() {
   })
   
   # Test 3: Memory Usage Check
-  test_that("Memory usage within Railway limits", {
+  test_that("Memory usage within Cloud Run limits", {
     current_memory <- as.numeric(object.size(ls(envir = globalenv())))
-    memory_percentage <- (current_memory / RAILWAY_MEMORY_LIMIT) * 100
-    
-    expect_lt(memory_percentage, 50)  # Should be less than 50% of Railway limit
-    
+    memory_percentage <- (current_memory / CLOUD_RUN_MEMORY_LIMIT) * 100
+
+    expect_lt(memory_percentage, 50)  # Should be less than 50% of Cloud Run limit
+
     test_results$memory_usage <<- paste0(round(memory_percentage, 1), "%")
   })
   
@@ -341,15 +341,15 @@ test_full_system_integration <- function() {
   # Test 2: Memory Usage During Integration
   test_that("Memory usage during full integration", {
     monitor <- init_performance_monitor()
-    
+
     # Simulate full system usage
     mapped_data <- map_to_administrative_divisions(sample_data)
     regional_analysis <- analyze_regional_distribution(mapped_data)
-    
+
     memory_status <- monitor$check_memory()
-    
-    expect_lt(memory_status$percentage, 80)  # Should stay under 80% of Railway limit
-    
+
+    expect_lt(memory_status$percentage, 80)  # Should stay under 80% of Cloud Run limit
+
     test_results$peak_memory_usage <<- paste0(memory_status$percentage, "%")
   })
   
@@ -377,7 +377,7 @@ generate_test_report <- function() {
   report <- list(
     test_summary = list(
       total_test_time = paste0(round(total_test_time, 2), "s"),
-      railway_ready = total_test_time < 60,  # Should complete tests in under 1 minute
+      cloud_run_ready = total_test_time < 60,  # Should complete tests in under 1 minute
       timestamp = Sys.time()
     ),
     
@@ -400,7 +400,7 @@ generate_test_report <- function() {
   cat("=" %R% rep("=", 60) %R% "\\n\\n")
   
   cat("🕐 Total Test Time:", report$test_summary$total_test_time, "\\n")
-  cat("🚂 Railway Ready:", ifelse(report$test_summary$railway_ready, "✅ YES", "❌ NO"), "\\n")
+  cat("☁️ Cloud Run Ready:", ifelse(report$test_summary$cloud_run_ready, "✅ YES", "❌ NO"), "\\n")
   cat("📅 Test Date:", format(report$test_summary$timestamp, "%Y-%m-%d %H:%M:%S"), "\\n\\n")
   
   cat("📡 IBGE Integration:", ifelse("PASS" %in% ibge_results, "✅ PASS", "❌ FAIL"), "\\n")
@@ -422,7 +422,7 @@ generate_test_report <- function() {
 generate_recommendations <- function(...) {
   recommendations <- c(
     "✅ Geographic system successfully tested with sample data",
-    "🚂 System appears ready for Railway deployment",
+    "☁️ System appears ready for Cloud Run deployment",
     "📊 Monitor memory usage during production with 134k+ documents",
     "🎯 Consider implementing progressive loading for large datasets",
     "🔄 Regular cleanup of geographic objects recommended",
@@ -430,7 +430,7 @@ generate_recommendations <- function(...) {
     "🗺️ Choropleth mapping system handles visualization efficiently",
     "⚡ Performance optimization handles chunked processing well"
   )
-  
+
   return(recommendations)
 }
 

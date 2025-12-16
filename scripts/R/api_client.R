@@ -381,9 +381,9 @@ fetch_lexml_data <- function(query = NULL, state = NULL, municipality = NULL,
                             date_from = NULL, max_results = 1000) {
   
   flog.info("Searching application database with query: %s", query %||% "all")
-  
+
   # CORRECTED: Point to our own backend service, not the external LexML API
-  base_url <- "https://monitor-legislativo-v4-production.up.railway.app"
+  base_url <- "https://mackmonitor-667999538255.southamerica-east1.run.app"
   full_url <- paste0(base_url, "/lexml/search")
   
   params <- list()

@@ -1,6 +1,6 @@
 # Real-Time Performance Monitoring System
 # Monitor Legislativo v4 - Phase 2 Enhancement
-# Railway Deployment with PostgreSQL/Redis Integration
+# Cloud Run Deployment with PostgreSQL/Redis Integration
 # Created: 2025-07-29
 
 library(DBI)
@@ -95,11 +95,11 @@ collect_system_health_metrics <- function() {
     # Application uptime (since R session started)
     uptime_seconds <- as.numeric(difftime(Sys.time(), .GlobalEnv$.app_start_time %||% Sys.time(), units = "secs"))
     
-    # Collect network activity (Railway specific)
-    network_info <- get_railway_network_stats()
-    
+    # Collect network activity (Cloud Run specific)
+    network_info <- get_cloudrun_network_stats()
+
     collection_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs")) * 1000
-    
+
     metrics <- list(
       cpu_usage_percent = get_cpu_usage_estimate(),
       memory_usage_mb = r_memory_mb,
@@ -110,7 +110,8 @@ collect_system_health_metrics <- function() {
       network_in_mb = network_info$in_mb,
       network_out_mb = network_info$out_mb,
       collection_duration_ms = collection_time,
-      railway_service_id = Sys.getenv("RAILWAY_SERVICE_ID", "unknown"),
+      cloudrun_service = Sys.getenv("K_SERVICE", "unknown"),
+      project_id = Sys.getenv("GOOGLE_CLOUD_PROJECT", "unknown"),
       timestamp = Sys.time()
     )
     
@@ -276,13 +277,13 @@ store_system_health_metrics <- function(metrics) {
         cpu_usage_percent, memory_usage_mb, memory_usage_percent,
         network_in_mb, network_out_mb, active_connections,
         app_status, uptime_seconds, collection_duration_ms,
-        railway_service_id, timestamp
+        cloudrun_service, timestamp
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
       params = list(
         metrics$cpu_usage_percent, metrics$memory_usage_mb, metrics$memory_usage_percent,
         metrics$network_in_mb, metrics$network_out_mb, metrics$active_connections,
         metrics$app_status, metrics$uptime_seconds, metrics$collection_duration_ms,
-        metrics$railway_service_id, metrics$timestamp
+        metrics$cloudrun_service, metrics$timestamp
       )
     )
   }, error = function(e) {
@@ -388,16 +389,12 @@ get_cpu_usage_estimate <- function() {
 #' @param memory_mb Memory usage in MB
 #' @return Memory usage percentage
 calculate_memory_percentage <- function(memory_mb) {
-  # Railway containers typically have 512MB-8GB
+  # Cloud Run containers typically have 512MB-8GB
   # We'll assume 1GB as baseline and calculate from there
   estimated_total_mb <- 1024 # 1GB default
-  
-  # Try to get actual memory limit from Railway
-  railway_memory <- Sys.getenv("RAILWAY_MEMORY_LIMIT_MB", "")
-  if (nchar(railway_memory) > 0) {
-    estimated_total_mb <- as.numeric(railway_memory)
-  }
-  
+
+  # Try to get actual memory limit from Cloud Run environment
+  # Cloud Run doesn't expose memory limits directly, use default
   percentage <- (memory_mb / estimated_total_mb) * 100
   return(min(percentage, 100))
 }
@@ -435,16 +432,16 @@ determine_app_health_status <- function() {
   })
 }
 
-#' Get Railway Network Statistics
+#' Get Cloud Run Network Statistics
 #' @return List with network usage data
-get_railway_network_stats <- function() {
-  # Railway doesn't expose network stats directly
+get_cloudrun_network_stats <- function() {
+  # Cloud Run doesn't expose network stats directly
   # We'll estimate based on application activity
   tryCatch({
     # Estimate network usage based on database queries and HTTP requests
     estimated_in_mb <- runif(1, 0.1, 5.0)
     estimated_out_mb <- runif(1, 0.1, 10.0)
-    
+
     list(
       in_mb = estimated_in_mb,
       out_mb = estimated_out_mb

@@ -1059,8 +1059,8 @@ start_api_server <- function(host = "0.0.0.0", port = 8000) {
 #    - API_HOST=0.0.0.0  
 #    - API_PORT=8000
 #
-# 5. Deploy with your Railway configuration:
-#    The API will be accessible at: https://your-railway-app.up.railway.app/api/v4
+# 5. Deploy with your Cloud Run configuration:
+#    The API will be accessible at: https://mackmonitor-667999538255.southamerica-east1.run.app/api/v4
 
 cat("✅ Monitor Legislativo v4 API Implementation Template Loaded\n")
 cat("📝 Review integration points marked with 'INTEGRATION POINT' comments\n")

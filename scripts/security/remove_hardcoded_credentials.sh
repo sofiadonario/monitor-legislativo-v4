@@ -17,7 +17,7 @@ echo ""
 
 # List of files to remove (containing hardcoded credentials)
 FILES_TO_REMOVE=(
-    "RAILWAY_PRODUCTION_DB_FIX.R"
+    "CLOUD_RUN_PRODUCTION_DB_FIX.R"
     "diagnose_library_issue.R"
     "municipality_investigation.py"
     "municipality_deep_investigation.R"
@@ -48,11 +48,11 @@ FILES_TO_REMOVE=(
     "database/migrations/migrate_from_csv.py"
     "database/migrations/migrate_to_railway.py"
     "database/migrations/verify_migration.py"
-    "archive/database_fixes/RAILWAY_DATABASE_FINAL_FIX.R"
-    "archive/database_fixes/RAILWAY_DATABASE_CONNECTION_FIX.R"
-    "archive/database_fixes/RAILWAY_DATABASE_FIX_CORRECTED.R"
-    "archive/database_fixes/RAILWAY_STARTUP_FIX.R"
-    "archive/database_fixes/RAILWAY_DATABASE_FIX.R"
+    "archive/database_fixes/CLOUD_RUN_DATABASE_FINAL_FIX.R"
+    "archive/database_fixes/CLOUD_RUN_DATABASE_CONNECTION_FIX.R"
+    "archive/database_fixes/CLOUD_RUN_DATABASE_FIX_CORRECTED.R"
+    "archive/database_fixes/CLOUD_RUN_STARTUP_FIX.R"
+    "archive/database_fixes/CLOUD_RUN_DATABASE_FIX.R"
     "archive/diagnostic_files/startup_diagnostics.R"
     "archive/diagnostic_files/fixed_table_analysis.py"
     "archive/diagnostic_files/detailed_table_analysis.py"
@@ -99,7 +99,7 @@ FILES_TO_REMOVE=(
     "scripts/shell/run_deployment.sh"
     "scripts/shell/deploy_background.sh"
     "implementation/complete_migration.py"
-    "RAILWAY_DEPLOYMENT_CHECKLIST.md"
+    "CLOUD_RUN_DEPLOYMENT_CHECKLIST.md"
 )
 
 # Counter for removed files
@@ -147,7 +147,7 @@ echo "Files removed: $REMOVED_COUNT"
 echo "Backup location: $BACKUP_DIR"
 echo ""
 echo "IMPORTANT NEXT STEPS:"
-echo "1. Rotate the database password in Railway dashboard"
+echo "1. Rotate the database password in Google Cloud Console"
 echo "2. Update DATABASE_URL environment variable with new password"
 echo "3. Test the application with secure connection module"
 echo "4. Delete the backup directory after confirming everything works"

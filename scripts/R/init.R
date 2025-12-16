@@ -1,12 +1,12 @@
-# INITIALIZATION SCRIPT FOR RAILWAY DEPLOYMENT
+# INITIALIZATION SCRIPT FOR CLOUD RUN DEPLOYMENT
 # This ensures all components load in the correct order
 
-cat("🚀 INITIALIZING MACKMONITOR FOR RAILWAY...\n")
+cat("🚀 INITIALIZING MACKMONITOR FOR CLOUD RUN...\n")
 
-# 1. First, load the Railway database fix (most critical)
-if (file.exists("RAILWAY_DATABASE_FIX.R")) {
-  cat("✅ Loading Railway database connection...\n")
-  source("RAILWAY_DATABASE_FIX.R", local = FALSE)
+# 1. First, load the Cloud Run database fix (most critical)
+if (file.exists("CLOUD_RUN_DATABASE_FIX.R")) {
+  cat("✅ Loading Cloud Run database connection...\n")
+  source("CLOUD_RUN_DATABASE_FIX.R", local = FALSE)
 }
 
 # 2. Then load the dashboard NULL fix
@@ -16,7 +16,7 @@ if (file.exists("dashboard_null_fix.R")) {
 }
 
 # 3. Skip other integrations that might interfere
-cat("✅ Skipping conflicting integrations for Railway deployment\n")
+cat("✅ Skipping conflicting integrations for Cloud Run deployment\n")
 
 # 4. Load the main app
 if (file.exists("app.R")) {

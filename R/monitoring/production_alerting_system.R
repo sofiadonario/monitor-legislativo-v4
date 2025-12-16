@@ -33,7 +33,7 @@ alerting_config <- list(
   # Alert types
   alert_types = c(
     "system", "performance", "security", "database",
-    "application", "compliance", "academic", "railway"
+    "application", "compliance", "academic", "cloud_run"
   ),
 
   # Delivery channels
@@ -45,10 +45,10 @@ alerting_config <- list(
     sms = FALSE     # Disabled for budget tier
   ),
 
-  # Alert thresholds (Railway $15-30/month optimized)
+  # Alert thresholds (Cloud Run $15-30/month optimized)
   thresholds = list(
-    memory_warning = 75,      # % - Railway memory warning
-    memory_critical = 90,     # % - Railway memory critical
+    memory_warning = 75,      # % - Cloud Run memory warning
+    memory_critical = 90,     # % - Cloud Run memory critical
     cpu_warning = 80,         # % - CPU usage warning
     cpu_critical = 95,        # % - CPU usage critical
     response_time_warning = 3000,  # ms - Response time warning
@@ -85,10 +85,11 @@ alerting_config <- list(
     data_minimization = TRUE
   ),
 
-  # Railway specific
-  railway_settings = list(
-    environment = Sys.getenv("RAILWAY_ENVIRONMENT", "production"),
-    service_id = Sys.getenv("RAILWAY_SERVICE_ID", ""),
+  # Cloud Run specific
+  cloud_run_settings = list(
+    environment = ifelse(Sys.getenv("K_SERVICE", "") != "", "production", "development"),
+    service_id = Sys.getenv("K_SERVICE", ""),
+    project_id = Sys.getenv("GOOGLE_CLOUD_PROJECT", ""),
     webhook_retries = 3,
     budget_alerts = TRUE,
     cost_threshold_warning = 20,  # USD - 20 USD warning
@@ -99,7 +100,7 @@ alerting_config <- list(
 cat("🚨 PRODUCTION ALERTING SYSTEM INITIALIZED\n")
 cat("==========================================\n")
 cat("🇧🇷 Brazilian Academic Context | 🛡️ LGPD Compliant\n")
-cat("🚂 Railway Optimized | 💰 Budget: $15-30/month\n\n")
+cat("☁️ Cloud Run Optimized | 💰 Budget: $15-30/month\n\n")
 
 # Alert Management State
 # ======================
@@ -179,8 +180,8 @@ create_production_alert <- function(alert_type, severity, title, message,
     auto_resolve = auto_resolve,
     timestamp = Sys.time(),
     timestamp_brt = format(Sys.time(), "%Y-%m-%d %H:%M:%S", tz = alerting_config$academic_settings$timezone),
-    environment = alerting_config$railway_settings$environment,
-    railway_service = alerting_config$railway_settings$service_id,
+    environment = alerting_config$cloud_run_settings$environment,
+    cloud_run_service = alerting_config$cloud_run_settings$service_id,
     resolved = FALSE,
     resolution_time = NULL,
     escalated = FALSE,
@@ -235,8 +236,8 @@ determine_alert_tags <- function(alert_type, severity, source) {
     tags <- c(tags, "weekend")
   }
 
-  # Add Railway environment tag
-  tags <- c(tags, paste0("railway_", alerting_config$railway_settings$environment))
+  # Add Cloud Run environment tag
+  tags <- c(tags, paste0("cloud_run_", alerting_config$cloud_run_settings$environment))
 
   return(unique(tags))
 }
@@ -262,8 +263,8 @@ deliver_alert <- function(alert) {
     delivery_results$webhook <- deliver_to_webhook(alert)
   }
 
-  # Railway environment variable (for Railway monitoring)
-  delivery_results$railway_env <- deliver_to_railway_env(alert)
+  # Cloud Run environment variable (for Cloud Run monitoring)
+  delivery_results$cloud_run_env <- deliver_to_cloud_run_env(alert)
 
   # Store delivery results
   alert$delivery_results <- delivery_results
@@ -387,7 +388,7 @@ deliver_to_webhook <- function(alert) {
       source = alert$source,
       timestamp = format(alert$timestamp, "%Y-%m-%dT%H:%M:%SZ"),
       environment = alert$environment,
-      railway_service = alert$railway_service,
+      cloud_run_service = alert$cloud_run_service,
       metric_value = alert$metric_value,
       threshold = alert$threshold,
       tags = alert$tags,
@@ -430,13 +431,13 @@ deliver_to_webhook <- function(alert) {
   })
 }
 
-#' Deliver Alert to Railway Environment Variables
+#' Deliver Alert to Cloud Run Environment Variables
 #'
 #' @param alert Alert object
 #' @return Success status
-deliver_to_railway_env <- function(alert) {
+deliver_to_cloud_run_env <- function(alert) {
   tryCatch({
-    # Set environment variables for Railway monitoring
+    # Set environment variables for Cloud Run monitoring
     Sys.setenv(LAST_ALERT_ID = alert$id)
     Sys.setenv(LAST_ALERT_SEVERITY = alert$severity)
     Sys.setenv(LAST_ALERT_TYPE = alert$type)
@@ -455,7 +456,7 @@ deliver_to_railway_env <- function(alert) {
     return(TRUE)
 
   }, error = function(e) {
-    cat("⚠️ Failed to set Railway environment variables:", e$message, "\n")
+    cat("⚠️ Failed to set Cloud Run environment variables:", e$message, "\n")
     return(FALSE)
   })
 }
@@ -726,22 +727,22 @@ alert_academic_workflow <- function(workflow_issue, severity, impact = "") {
   )
 }
 
-#' Railway Infrastructure Alert
+#' Cloud Run Infrastructure Alert
 #'
-#' @param railway_issue Description of Railway issue
+#' @param cloud_run_issue Description of Cloud Run issue
 #' @param severity Severity level
 #' @param service_impact Service impact description
-alert_railway_infrastructure <- function(railway_issue, severity, service_impact = "") {
-  title <- sprintf("Railway Infrastructure: %s", railway_issue)
-  message <- sprintf("Railway infrastructure issue: %s. Service impact: %s",
-                    railway_issue, service_impact)
+alert_cloud_run_infrastructure <- function(cloud_run_issue, severity, service_impact = "") {
+  title <- sprintf("Cloud Run Infrastructure: %s", cloud_run_issue)
+  message <- sprintf("Cloud Run infrastructure issue: %s. Service impact: %s",
+                    cloud_run_issue, service_impact)
 
   create_production_alert(
-    alert_type = "railway",
+    alert_type = "cloud_run",
     severity = severity,
     title = title,
     message = message,
-    source = "railway_monitor"
+    source = "cloud_run_monitor"
   )
 }
 
@@ -765,7 +766,7 @@ resolve_alert <- function(alert_id, resolution_note = "") {
 
     cat("✅ Alert resolved:", alert_id, "-", alert$title, "\n")
 
-    # Clear Railway environment variables for critical alerts
+    # Clear Cloud Run environment variables for critical alerts
     if (alert$severity %in% c("critical", "emergency")) {
       active_critical <- length(Filter(function(a) a$severity %in% c("critical", "emergency") && !a$resolved,
                                       alert_state$active_alerts))
@@ -855,7 +856,7 @@ get_alert_summary <- function() {
       as.numeric(difftime(Sys.time(), a$timestamp, units = "hours")) <= 24
     }, alert_state$alert_history)),
     system_uptime_hours = round(as.numeric(difftime(Sys.time(), alert_state$system_start_time, units = "hours")), 1),
-    environment = alerting_config$railway_settings$environment
+    environment = alerting_config$cloud_run_settings$environment
   )
 
   return(summary)
@@ -923,7 +924,7 @@ initialize_alerting_system <- function() {
   )
 
   cat("✅ Production alerting system initialized successfully\n")
-  cat("   Environment:", alerting_config$railway_settings$environment, "\n")
+  cat("   Environment:", alerting_config$cloud_run_settings$environment, "\n")
   cat("   Timezone:", alerting_config$academic_settings$timezone, "\n")
   cat("   LGPD Compliance: Enabled\n")
   cat("   Delivery Channels:", paste(names(which(unlist(alerting_config$delivery_channels))), collapse = ", "), "\n\n")
@@ -949,11 +950,11 @@ production_alerting <- list(
   alert_security = alert_security,
   alert_lgpd_compliance = alert_lgpd_compliance,
   alert_academic_workflow = alert_academic_workflow,
-  alert_railway_infrastructure = alert_railway_infrastructure
+  alert_cloud_run_infrastructure = alert_cloud_run_infrastructure
 )
 
 # Auto-initialize if in production
-if (Sys.getenv("RAILWAY_ENVIRONMENT", "") == "production" ||
+if (Sys.getenv("K_SERVICE", "") != "" ||
     Sys.getenv("R_CONFIG_ACTIVE", "") == "production") {
   initialize_alerting_system()
 }

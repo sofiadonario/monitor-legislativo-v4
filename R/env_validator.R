@@ -14,13 +14,13 @@ ENV_CONFIG <- list(
     ),
     DATABASE_PUBLIC_URL = list(
       required = FALSE,
-      description = "Railway public PostgreSQL connection string (TCP Proxy)",
-      example = "postgresql://user:pass@viaduct.proxy.rlwy.net:port/dbname"
+      description = "Cloud SQL public connection string (TCP)",
+      example = "postgresql://user:pass@public-ip:5432/dbname"
     ),
     DATABASE_PRIVATE_URL = list(
       required = FALSE,
-      description = "Railway private PostgreSQL connection string (internal)",
-      example = "postgresql://user:pass@postgres.railway.internal:5432/dbname"
+      description = "Cloud SQL private connection string (internal)",
+      example = "postgresql://user:pass@/cloudsql/project:region:instance/dbname"
     ),
     PGHOST = list(
       required = FALSE,
@@ -100,17 +100,22 @@ ENV_CONFIG <- list(
     )
   ),
 
-  # Railway-specific variables
-  railway = list(
+  # Cloud Run-specific variables
+  cloud_run = list(
     PORT = list(
       required = TRUE,
       description = "Port for the Shiny application",
-      default = function() "3838"
+      default = function() "8080"
     ),
-    RAILWAY_ENVIRONMENT = list(
+    K_SERVICE = list(
       required = FALSE,
-      description = "Railway environment (production/staging)",
-      default = function() "production"
+      description = "Cloud Run service name",
+      default = function() ""
+    ),
+    GOOGLE_CLOUD_PROJECT = list(
+      required = FALSE,
+      description = "Google Cloud project ID",
+      default = function() ""
     )
   ),
 
@@ -214,7 +219,7 @@ validate_environment <- function(mode = "production") {
     cat("\n")
   }
 
-  # Special checks for Railway database availability
+  # Special checks for Cloud SQL database availability
   database_urls <- c(
     Sys.getenv("DATABASE_PUBLIC_URL"),
     Sys.getenv("DATABASE_PRIVATE_URL"),
@@ -227,12 +232,12 @@ validate_environment <- function(mode = "production") {
     validation_results$database_available <- TRUE
     cat("✅ Database configuration detected (", length(available_urls), "connection options)\n")
 
-    # Validate Railway-specific database URLs
-    railway_validation <- validate_railway_database_urls(available_urls)
-    if (!railway_validation$valid) {
+    # Validate Cloud SQL-specific database URLs
+    cloud_sql_validation <- validate_cloud_sql_database_urls(available_urls)
+    if (!cloud_sql_validation$valid) {
       validation_results$warnings <- c(
         validation_results$warnings,
-        railway_validation$warnings
+        cloud_sql_validation$warnings
       )
     }
   } else {
@@ -306,12 +311,13 @@ show_env_help <- function() {
     cat("\n")
   }
 
-  cat("## Setting Variables in Railway\n")
-  cat("1. Go to your Railway project dashboard\n")
-  cat("2. Click on your service\n")
-  cat("3. Navigate to the 'Variables' tab\n")
-  cat("4. Add each variable with its value\n")
-  cat("5. Railway will automatically redeploy with new configuration\n\n")
+  cat("## Setting Variables in Cloud Run\n")
+  cat("1. Go to Google Cloud Console\n")
+  cat("2. Navigate to Cloud Run > Services\n")
+  cat("3. Select your service and click 'Edit & Deploy New Revision'\n")
+  cat("4. Navigate to the 'Variables & Secrets' tab\n")
+  cat("5. Add each variable with its value\n")
+  cat("6. Deploy the new revision\n\n")
 
   cat("## Local Development\n")
   cat("Create a .env file in your project root with:\n")
@@ -320,9 +326,9 @@ show_env_help <- function() {
   cat("... other variables\n\n")
 }
 
-# Validate Railway-specific database URLs
-validate_railway_database_urls <- function(urls) {
-  cat("🔍 Validating Railway database URLs...\n")
+# Validate Cloud SQL-specific database URLs
+validate_cloud_sql_database_urls <- function(urls) {
+  cat("🔍 Validating Cloud SQL database URLs...\n")
 
   validation_result <- list(
     valid = TRUE,
@@ -360,28 +366,18 @@ validate_railway_database_urls <- function(urls) {
       cat("  ✅ Host:", parsed$host, "Port:", parsed$port, "\n")
       cat("  🗄️ Database:", parsed$database, "User:", parsed$user, "\n")
 
-      # Check for Railway-specific patterns
-      if (grepl("railway", parsed$host, ignore.case = TRUE)) {
-        cat("  🚂 Railway host detected\n")
+      # Check for Cloud SQL-specific patterns
+      if (grepl("cloudsql", parsed$host, ignore.case = TRUE)) {
+        cat("  ☁️ Cloud SQL Unix socket connection detected\n")
+      } else if (grepl("\\d+\\.\\d+\\.\\d+\\.\\d+", parsed$host)) {
+        cat("  📡 Cloud SQL public IP connection detected\n")
+      }
 
-        # Check for common Railway patterns
-        if (grepl("proxy\\.rlwy\\.net", parsed$host)) {
-          cat("  📡 TCP Proxy connection (external access)\n")
-        } else if (grepl("railway\\.internal", parsed$host)) {
-          cat("  🏠 Internal Railway connection\n")
-        }
-
-        # Validate port range
-        if (parsed$port < 1024 || parsed$port > 65535) {
-          validation_result$warnings <- c(
-            validation_result$warnings,
-            paste("Unusual port number:", parsed$port, "for URL", i)
-          )
-        }
-      } else {
+      # Validate port range
+      if (parsed$port < 1024 || parsed$port > 65535) {
         validation_result$warnings <- c(
           validation_result$warnings,
-          paste("Non-Railway host detected:", parsed$host, "for URL", i)
+          paste("Unusual port number:", parsed$port, "for URL", i)
         )
       }
 
@@ -405,9 +401,9 @@ validate_railway_database_urls <- function(urls) {
   return(validation_result)
 }
 
-# Test Railway database connectivity
-test_railway_database_connection <- function(urls) {
-  cat("🧪 Testing Railway database connectivity...\n")
+# Test Cloud SQL database connectivity
+test_cloud_sql_database_connection <- function(urls) {
+  cat("🧪 Testing Cloud SQL database connectivity...\n")
 
   if (!requireNamespace("RPostgres", quietly = TRUE)) {
     return(list(
@@ -482,7 +478,7 @@ list(
   validate_environment = validate_environment,
   get_env_var = get_env_var,
   show_env_help = show_env_help,
-  validate_railway_database_urls = validate_railway_database_urls,
-  test_railway_database_connection = test_railway_database_connection,
+  validate_cloud_sql_database_urls = validate_cloud_sql_database_urls,
+  test_cloud_sql_database_connection = test_cloud_sql_database_connection,
   ENV_CONFIG = ENV_CONFIG
 )

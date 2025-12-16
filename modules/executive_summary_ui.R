@@ -27,7 +27,7 @@ required_ui_packages <- c("shiny", "shinydashboard", "shinydashboardPlus",
                          "shinycssloaders", "shinyjs")
 
 # Never install packages at runtime in production
-if (identical(tolower(Sys.getenv("RAILWAY_ENVIRONMENT")), "production")) {
+if (identical(tolower(Sys.getenv("K_SERVICE")), "production") || nzchar(Sys.getenv("K_SERVICE"))) {
   # Load only if available, skip if not
   for (pkg in required_ui_packages) {
     if (requireNamespace(pkg, quietly = TRUE)) {

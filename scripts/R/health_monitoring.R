@@ -1,5 +1,5 @@
 # Health Monitoring System for Brazilian Legislative Monitor v4
-# Optimized for Railway deployment and production monitoring
+# Optimized for Cloud Run deployment and production monitoring
 
 # Load required libraries
 library(shiny)
@@ -17,7 +17,7 @@ monitoring_data$db_status <- "unknown"
 monitoring_data$memory_usage <- list()
 
 #' Database Health Check
-#' @description Checks Railway PostgreSQL connection and basic queries
+#' @description Checks Cloud SQL PostgreSQL connection and basic queries
 #' @return list with status and details
 check_database_health <- function() {
     tryCatch({
@@ -147,19 +147,19 @@ check_application_health <- function() {
 }
 
 #' System Resource Check
-#' @description Monitors system resources for Railway deployment
+#' @description Monitors system resources for Cloud Run deployment
 #' @return list with resource usage information
 check_system_resources <- function() {
     tryCatch({
         # Memory usage
         memory_info <- gc()
         memory_used <- sum(memory_info[, "used"] * c(8, 8)) / 1024 / 1024  # MB
-        
+
         # Check available disk space
         disk_info <- system("df -h .", intern = TRUE)
-        
-        # Railway specific checks
-        railway_env <- Sys.getenv("RAILWAY_ENVIRONMENT") != ""
+
+        # Cloud Run specific checks
+        cloud_run_env <- Sys.getenv("K_SERVICE") != ""
         port <- Sys.getenv("PORT", "3838")
         
         # Store memory usage for trending
@@ -180,19 +180,19 @@ check_system_resources <- function() {
             warnings <- c(warnings, "High memory usage")
         }
         
-        if (memory_used > 1900) {  # > 1.9GB (close to Railway limit)
+        if (memory_used > 1900) {  # > 1.9GB (close to Cloud Run limit)
             status <- "error"
             warnings <- c(warnings, "Critical memory usage")
         }
-        
+
         return(list(
             status = status,
             message = if (length(warnings) > 0) paste(warnings, collapse = ", ") else "System resources OK",
             details = list(
                 memory_mb = round(memory_used, 2),
-                memory_limit_mb = if (railway_env) 2048 else "unlimited",
+                memory_limit_mb = if (cloud_run_env) 2048 else "unlimited",
                 port = port,
-                railway_environment = railway_env,
+                cloud_run_service = Sys.getenv("K_SERVICE", "unknown"),
                 uptime_seconds = as.numeric(Sys.time() - monitoring_data$start_time, units = "secs"),
                 timezone = Sys.timezone(),
                 r_version = R.version.string
@@ -239,7 +239,7 @@ comprehensive_health_check <- function() {
         check_duration_seconds = round(check_duration, 3),
         service = "Brazilian Legislative Monitor v4",
         version = "4.0.0",
-        environment = Sys.getenv("RAILWAY_ENVIRONMENT", "development"),
+        environment = Sys.getenv("K_SERVICE", "development"),
         checks = list(
             database = db_health,
             application = app_health,
@@ -249,7 +249,7 @@ comprehensive_health_check <- function() {
 }
 
 #' Health Endpoint Handler
-#' @description Creates a health endpoint for Railway and monitoring systems
+#' @description Creates a health endpoint for Cloud Run and monitoring systems
 #' @param req Shiny request object (if called from Shiny)
 #' @return JSON response with health status
 health_endpoint_handler <- function(req = NULL) {

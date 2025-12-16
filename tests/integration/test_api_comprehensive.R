@@ -24,8 +24,8 @@ library(stringr)
 # API Testing Configuration
 API_TEST_CONFIG <- list(
   base_url = ifelse(
-    Sys.getenv("RAILWAY_ENVIRONMENT") == "production",
-    "https://monitor-legislativo-unified-production.up.railway.app",
+    Sys.getenv("K_SERVICE") != "",
+    "https://mackmonitor-667999538255.southamerica-east1.run.app",
     "http://localhost:8000"
   ),
   api_version = "v1",

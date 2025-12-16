@@ -22,7 +22,7 @@ client <- MonitorLegislativoClient()
 
 # Or create client with custom settings
 client_custom <- MonitorLegislativoClient(
-  base_url = "https://monitor-legislativo-unified-production.up.railway.app",
+  base_url = "https://mackmonitor-667999538255.southamerica-east1.run.app",
   api_key = NULL,  # Set your API key here if you have one
   timeout = 45
 )

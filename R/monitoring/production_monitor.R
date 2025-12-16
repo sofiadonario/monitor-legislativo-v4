@@ -1,6 +1,6 @@
 # MONITOR LEGISLATIVO V4 - PRODUCTION MONITORING SYSTEM
 # =====================================================
-# Advanced monitoring and alerting for Railway deployment
+# Advanced monitoring and alerting for Cloud Run deployment
 # Brazilian Legislative Monitoring - Academic Institution Focus
 
 # Load required libraries
@@ -10,12 +10,12 @@ library(lubridate)
 library(dplyr)
 
 # =============================================================================
-# RAILWAY PRODUCTION MONITORING CONFIGURATION
+# CLOUD RUN PRODUCTION MONITORING CONFIGURATION
 # =============================================================================
 
 # Environment detection
 is_production <- function() {
-  Sys.getenv("RAILWAY_ENVIRONMENT", "development") == "production"
+  Sys.getenv("K_SERVICE", "") != ""
 }
 
 is_monitoring_enabled <- function() {
@@ -80,15 +80,18 @@ collect_system_metrics <- function() {
       disk = disk_info,
       r_metrics = r_metrics,
       app_metrics = app_metrics,
-      environment = Sys.getenv("RAILWAY_ENVIRONMENT", "unknown")
+      environment = ifelse(Sys.getenv("K_SERVICE", "") != "", "production", "development"),
+      k_service = Sys.getenv("K_SERVICE", "unknown"),
+      k_revision = Sys.getenv("K_REVISION", "unknown")
     ))
-    
+
   }, error = function(e) {
     cat("⚠️ Error collecting system metrics:", e$message, "\n")
     return(list(
       timestamp = Sys.time(),
       error = e$message,
-      environment = Sys.getenv("RAILWAY_ENVIRONMENT", "unknown")
+      environment = ifelse(Sys.getenv("K_SERVICE", "") != "", "production", "development"),
+      k_service = Sys.getenv("K_SERVICE", "unknown")
     ))
   })
 }
@@ -227,7 +230,9 @@ send_alert <- function(message, level = "warning", metrics = NULL) {
     timestamp = Sys.time(),
     level = level,
     message = message,
-    environment = Sys.getenv("RAILWAY_ENVIRONMENT", "unknown"),
+    environment = ifelse(Sys.getenv("K_SERVICE", "") != "", "production", "development"),
+    k_service = Sys.getenv("K_SERVICE", "unknown"),
+    k_revision = Sys.getenv("K_REVISION", "unknown"),
     metrics = metrics,
     app_version = "4.1",
     source = "monitor_legislativo_v4"
@@ -277,11 +282,11 @@ monitor_performance <- function() {
   # Memory alert thresholds
   memory_threshold <- as.numeric(Sys.getenv("ALERT_MEMORY_THRESHOLD", "80"))
   critical_memory_threshold <- as.numeric(Sys.getenv("CRITICAL_MEMORY_THRESHOLD", "95"))
-  
+
   if (!is.null(metrics$memory$usage_percent)) {
     if (metrics$memory$usage_percent > critical_memory_threshold) {
       send_alert(
-        paste("CRITICAL: Memory usage at", metrics$memory$usage_percent, "% - Railway 3GB limit"),
+        paste("CRITICAL: Memory usage at", metrics$memory$usage_percent, "% - Cloud Run memory limit"),
         level = "critical",
         metrics = metrics
       )

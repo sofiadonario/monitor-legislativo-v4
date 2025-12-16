@@ -1,5 +1,5 @@
 # CDN Integration System for R Shiny - Brazilian Legislative Monitoring
-# Railway-Compatible CDN with Failover and Academic Performance Optimization
+# Cloud Run-Compatible CDN with Failover and Academic Performance Optimization
 # LGPD Compliant | Brazilian Data Sovereignty | Government Accessibility
 # Sprint 6A PERF-004 Implementation
 
@@ -13,13 +13,13 @@ CDN_INTEGRATION_CONFIG <- list(
   # Primary CDN Configuration (Cloudflare Free Tier - Academic Budget)
   primary_cdn = list(
     provider = "cloudflare",
-    base_url = "https://cdn.monitor-legislativo.railway.app",
+    base_url = "https://mackmonitor-667999538255.southamerica-east1.run.app",
     edge_location = "sao-paulo",
     zone_id = Sys.getenv("CLOUDFLARE_ZONE_ID", ""),
     api_token = Sys.getenv("CLOUDFLARE_API_TOKEN", "")
   ),
-  
-  # Failover Configuration (Railway Direct Serving)
+
+  # Failover Configuration (Cloud Run Direct Serving)
   failover = list(
     enabled = TRUE,
     fallback_to_local = TRUE,
@@ -46,8 +46,8 @@ CDN_INTEGRATION_CONFIG <- list(
     locale = "pt-BR"
   ),
   
-  # Railway Platform Optimization
-  railway_optimization = list(
+  # Cloud Run Platform Optimization
+  cloud_run_optimization = list(
     memory_efficient = TRUE,
     bandwidth_optimized = TRUE,
     no_infrastructure_changes = TRUE,
@@ -71,7 +71,7 @@ initialize_cdn_integration <- function(shiny_session = NULL) {
   cat("🌐 Initializing CDN Integration for Brazilian Legislative System...\n")
   cat("🇧🇷 Compliance: LGPD + Government Accessibility Standards\n")
   cat("🎓 Academic Research Performance Target: <500ms\n")
-  cat("🚂 Railway Platform: No Infrastructure Changes Required\n\n")
+  cat("☁️  Cloud Run Platform: No Infrastructure Changes Required\n\n")
   
   # Load asset manifest
   manifest_result <- load_asset_manifest()
@@ -344,8 +344,8 @@ initialize_performance_monitoring <- function() {
   # Setup periodic health checks for academic research reliability
   if (CDN_INTEGRATION_CONFIG$failover$enabled) {
     # In a production environment, this would be handled by a background process
-    # For Railway compatibility, we'll do on-demand health checks
-    cat("🔄 Health check system configured (on-demand for Railway)\n")
+    # For Cloud Run compatibility, we'll do on-demand health checks
+    cat("🔄 Health check system configured (on-demand for Cloud Run)\n")
   }
   
   return(list(active = TRUE, metrics_initialized = TRUE))
@@ -499,17 +499,17 @@ reset_cdn_status <- function() {
 # Initialize helper functions
 create_cdn_ui_helpers()
 
-# Export initialization for Railway deployment
+# Export initialization for Cloud Run deployment
 if (!interactive()) {
   cat("🌐 Brazilian Legislative CDN Integration System Ready\n")
-  cat("🇧🇷 LGPD Compliant | Government Accessibility | Academic Research Optimized\n")  
-  cat("🚂 Railway Compatible | No Infrastructure Changes Required\n")
+  cat("🇧🇷 LGPD Compliant | Government Accessibility | Academic Research Optimized\n")
+  cat("☁️  Cloud Run Compatible | No Infrastructure Changes Required\n")
   cat("⚡ Failover Ready | <500ms Performance Target\n\n")
-  
+
   # Auto-initialize if not in interactive mode
   tryCatch({
     init_result <- initialize_cdn_integration()
-    cat("🚀 CDN Integration auto-initialized for Railway deployment\n")
+    cat("🚀 CDN Integration auto-initialized for Cloud Run deployment\n")
   }, error = function(e) {
     cat("⚠️  CDN auto-initialization failed, manual initialization required\n")
     cat("Error:", e$message, "\n")

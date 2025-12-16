@@ -143,11 +143,11 @@ perform_health_check <- function(detailed = .health_config$detailed_response) {
     timestamp = Sys.time(),
     status = "healthy",
     version = "4.0.0",
-    environment = Sys.getenv("RAILWAY_ENVIRONMENT", "development"),
+    environment = ifelse(Sys.getenv("K_SERVICE", "") != "", "production", "development"),
     checks = list(),
     metrics = list(),
     response_time_ms = 0,
-    railway_optimized = TRUE
+    cloud_run_optimized = TRUE
   )
   
   # 1. Database Health Check

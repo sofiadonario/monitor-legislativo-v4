@@ -3,7 +3,7 @@
 # ZERO-DOWNTIME DEPLOYMENT FOR MONITOR LEGISLATIVO V4
 # ===================================================
 # Production deployment with health checks and rollback capability
-# Railway platform optimized for Brazilian academic usage
+# Cloud Run platform optimized for Brazilian academic usage
 
 set -euo pipefail
 
@@ -67,48 +67,44 @@ generate_deployment_id() {
 # Pre-deployment validation
 validate_environment() {
     log_step "Validating deployment environment..."
-    
-    # Check Railway CLI
-    if ! command -v railway >/dev/null 2>&1; then
-        log_error "Railway CLI not found. Please install: npm install -g @railway/cli"
+
+    # Check gcloud CLI
+    if ! command -v gcloud >/dev/null 2>&1; then
+        log_error "gcloud CLI not found. Please install: https://cloud.google.com/sdk/docs/install"
         return 1
     fi
-    
-    # Check Railway authentication
-    if ! railway status >/dev/null 2>&1; then
-        log_error "Railway authentication failed. Please run: railway login"
+
+    # Check gcloud authentication
+    if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" >/dev/null 2>&1; then
+        log_error "gcloud authentication failed. Please run: gcloud auth login"
         return 1
     fi
-    
+
     # Check required environment variables
-    if [[ -z "${RAILWAY_TOKEN:-}" ]] && ! railway whoami >/dev/null 2>&1; then
-        log_error "Railway authentication required"
+    local project_id="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
+    if [[ -z "${project_id}" ]]; then
+        log_error "GCP project not configured. Please run: gcloud config set project PROJECT_ID"
         return 1
     fi
-    
-    # Validate Railway project
-    local project_info
-    if project_info=$(railway status 2>/dev/null); then
-        log_info "Railway project validated"
-        echo "${project_info}" | head -5
-    else
-        log_error "Failed to get Railway project information"
-        return 1
-    fi
-    
+
+    # Validate GCP project
+    log_info "GCP Project: ${project_id}"
+    log_info "Service: mackmonitor"
+    log_info "Region: southamerica-east1"
+
     # Check if we're in the correct directory
-    if [[ ! -f "app.R" ]] || [[ ! -f "railway.toml" ]]; then
+    if [[ ! -f "app.R" ]]; then
         log_error "Deployment must be run from project root directory"
-        log_error "Required files: app.R, railway.toml"
+        log_error "Required file: app.R"
         return 1
     fi
-    
+
     # Validate Dockerfile
     if [[ ! -f "Dockerfile" ]]; then
         log_error "Dockerfile not found"
         return 1
     fi
-    
+
     log_success "Environment validation completed"
     return 0
 }
@@ -116,9 +112,9 @@ validate_environment() {
 # Pre-deployment backup
 create_pre_deployment_backup() {
     log_step "Creating pre-deployment backup..."
-    
-    if [[ -f "scripts/backup/railway_production_backup.sh" ]]; then
-        if bash scripts/backup/railway_production_backup.sh; then
+
+    if [[ -f "scripts/backup/cloud_run_production_backup.sh" ]]; then
+        if bash scripts/backup/cloud_run_production_backup.sh; then
             BACKUP_CREATED="true"
             log_success "Pre-deployment backup created"
             return 0
@@ -157,129 +153,94 @@ check_service_health() {
 # Get current deployment info
 get_current_deployment() {
     log_info "Getting current deployment information..."
-    
-    if railway status --json >/dev/null 2>&1; then
-        local current_info
-        current_info=$(railway status --json 2>/dev/null | jq -r '.deployments[0].id // "unknown"' 2>/dev/null || echo "unknown")
-        
-        if [[ "${current_info}" != "unknown" && "${current_info}" != "null" ]]; then
+
+    local project_id="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
+    local service_name="mackmonitor"
+    local region="southamerica-east1"
+
+    if current_info=$(gcloud run revisions list \
+        --service="${service_name}" \
+        --region="${region}" \
+        --project="${project_id}" \
+        --format="value(name)" \
+        --limit=1 2>/dev/null); then
+
+        if [[ -n "${current_info}" ]]; then
             PREVIOUS_DEPLOYMENT_ID="${current_info}"
-            log_info "Current deployment ID: ${PREVIOUS_DEPLOYMENT_ID}"
+            log_info "Current revision: ${PREVIOUS_DEPLOYMENT_ID}"
         else
-            log_info "No previous deployment found or unable to retrieve ID"
+            log_info "No previous revision found"
             PREVIOUS_DEPLOYMENT_ID=""
         fi
+    else
+        log_warning "Unable to retrieve current revision"
+        PREVIOUS_DEPLOYMENT_ID=""
     fi
 }
 
-# Deploy to Railway with monitoring
-deploy_to_railway() {
-    log_step "Starting Railway deployment..."
-    
-    # Start deployment
-    local deploy_cmd="railway deploy --detach"
-    
-    log_info "Executing: ${deploy_cmd}"
-    
-    if railway deploy --detach; then
-        log_success "Deployment initiated successfully"
+# Deploy to Cloud Run with monitoring
+deploy_to_cloud_run() {
+    log_step "Starting Cloud Run deployment..."
+
+    local project_id="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
+    local service_name="mackmonitor"
+    local region="southamerica-east1"
+
+    log_info "Building and deploying to Cloud Run..."
+    log_info "Project: ${project_id}"
+    log_info "Service: ${service_name}"
+    log_info "Region: ${region}"
+
+    # Deploy using gcloud run deploy
+    if gcloud run deploy "${service_name}" \
+        --source . \
+        --region="${region}" \
+        --project="${project_id}" \
+        --platform=managed \
+        --allow-unauthenticated \
+        --quiet 2>&1 | tee /tmp/deploy.log; then
+        log_success "Deployment completed successfully"
+        return 0
     else
-        log_error "Failed to initiate deployment"
+        log_error "Deployment failed"
+        cat /tmp/deploy.log
         return 1
     fi
-    
-    # Monitor deployment progress
-    log_info "Monitoring deployment progress..."
-    
-    local deployment_end_time=$((SECONDS + DEPLOYMENT_TIMEOUT))
-    local last_status=""
-    
-    while [[ $SECONDS -lt $deployment_end_time ]]; do
-        local current_status
-        current_status=$(railway status --json 2>/dev/null | jq -r '.deployments[0].status // "unknown"' 2>/dev/null || echo "unknown")
-        
-        if [[ "${current_status}" != "${last_status}" ]]; then
-            log_info "Deployment status: ${current_status}"
-            last_status="${current_status}"
-        fi
-        
-        case "${current_status}" in
-            "SUCCESS"|"ACTIVE")
-                log_success "Deployment completed successfully"
-                return 0
-                ;;
-            "FAILED"|"CRASHED")
-                log_error "Deployment failed with status: ${current_status}"
-                return 1
-                ;;
-            "QUEUED"|"BUILDING"|"DEPLOYING")
-                log_info "Deployment in progress: ${current_status}"
-                sleep 10
-                ;;
-            *)
-                log_info "Deployment status: ${current_status}"
-                sleep 5
-                ;;
-        esac
-    done
-    
-    log_error "Deployment timeout reached"
-    return 1
 }
 
 # Wait for service to be healthy
 wait_for_healthy_service() {
     log_step "Waiting for service to become healthy..."
-    
-    # Get service URL
+
+    # Get service URL from Cloud Run
+    local project_id="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
+    local service_name="mackmonitor"
+    local region="southamerica-east1"
+
     local service_url
-    service_url=$(railway status --json 2>/dev/null | jq -r '.deployments[0].url // ""' 2>/dev/null || echo "")
-    
+    service_url=$(gcloud run services describe "${service_name}" \
+        --region="${region}" \
+        --project="${project_id}" \
+        --format="value(status.url)" 2>/dev/null || echo "")
+
     if [[ -z "${service_url}" ]]; then
-        log_warning "Unable to determine service URL - checking Railway status"
-        railway status
-        log_warning "Attempting health check with Railway domain patterns..."
-        
-        # Try common Railway domain patterns
-        local service_name
-        service_name=$(railway status | grep -o "Service:.*" | cut -d' ' -f2 || echo "monitor-legislativo")
-        
-        # Common Railway URL patterns
-        local potential_urls=(
-            "https://${service_name}-production.up.railway.app"
-            "https://${service_name}.up.railway.app"
-            "https://monitor-legislativo-production.up.railway.app"
-            "https://monitor-legislativo-v4-production.up.railway.app"
-        )
-        
-        for url in "${potential_urls[@]}"; do
-            log_info "Testing potential URL: ${url}"
-            if curl -f --max-time 5 --silent "${url}/health" >/dev/null 2>&1; then
-                service_url="${url}"
-                log_success "Found working service URL: ${service_url}"
-                break
-            fi
-        done
+        # Fallback to known URL
+        service_url="https://mackmonitor-667999538255.southamerica-east1.run.app"
+        log_warning "Unable to retrieve service URL from gcloud, using known URL: ${service_url}"
     fi
-    
-    if [[ -z "${service_url}" ]]; then
-        log_error "Unable to determine service URL for health checks"
-        log_warning "Please verify deployment manually"
-        return 1
-    fi
-    
+
     log_info "Service URL: ${service_url}"
-    
+
     # Wait for health checks to pass
     local health_check_end_time=$((SECONDS + HEALTH_CHECK_TIMEOUT))
     local consecutive_successes=0
     local required_successes=3
-    
+
     while [[ $SECONDS -lt $health_check_end_time ]]; do
         if curl -f --max-time 10 --silent "${service_url}/health" >/dev/null 2>&1; then
             ((consecutive_successes++))
             log_success "Health check passed (${consecutive_successes}/${required_successes})"
-            
+
             if [[ ${consecutive_successes} -ge ${required_successes} ]]; then
                 log_success "Service is healthy and ready"
                 return 0
@@ -288,10 +249,10 @@ wait_for_healthy_service() {
             consecutive_successes=0
             log_info "Health check failed - retrying..."
         fi
-        
+
         sleep "${HEALTH_CHECK_INTERVAL}"
     done
-    
+
     log_error "Service failed to become healthy within timeout"
     return 1
 }
@@ -299,13 +260,20 @@ wait_for_healthy_service() {
 # Run smoke tests
 run_smoke_tests() {
     log_step "Running smoke tests..."
-    
+
+    local project_id="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
+    local service_name="mackmonitor"
+    local region="southamerica-east1"
+
     local service_url
-    service_url=$(railway status --json 2>/dev/null | jq -r '.deployments[0].url // ""' 2>/dev/null || echo "")
-    
+    service_url=$(gcloud run services describe "${service_name}" \
+        --region="${region}" \
+        --project="${project_id}" \
+        --format="value(status.url)" 2>/dev/null || echo "")
+
     if [[ -z "${service_url}" ]]; then
-        log_warning "Service URL not available - skipping smoke tests"
-        return 0
+        service_url="https://mackmonitor-667999538255.southamerica-east1.run.app"
+        log_warning "Using fallback URL for smoke tests: ${service_url}"
     fi
     
     local tests_passed=0
@@ -362,43 +330,38 @@ run_smoke_tests() {
 # Rollback deployment
 rollback_deployment() {
     log_step "Initiating deployment rollback..."
-    
+
     if [[ -z "${PREVIOUS_DEPLOYMENT_ID}" ]]; then
-        log_error "No previous deployment ID available for rollback"
+        log_error "No previous revision available for rollback"
         return 1
     fi
-    
-    log_info "Rolling back to deployment: ${PREVIOUS_DEPLOYMENT_ID}"
-    
-    # Attempt rollback using Railway CLI
-    if railway rollback "${PREVIOUS_DEPLOYMENT_ID}" --detach 2>/dev/null; then
-        log_success "Rollback initiated"
-        
-        # Wait for rollback to complete
-        local rollback_end_time=$((SECONDS + ROLLBACK_TIMEOUT))
-        
-        while [[ $SECONDS -lt $rollback_end_time ]]; do
-            local current_status
-            current_status=$(railway status --json 2>/dev/null | jq -r '.deployments[0].status // "unknown"' 2>/dev/null || echo "unknown")
-            
-            case "${current_status}" in
-                "SUCCESS"|"ACTIVE")
-                    log_success "Rollback completed successfully"
-                    return 0
-                    ;;
-                "FAILED"|"CRASHED")
-                    log_error "Rollback failed"
-                    return 1
-                    ;;
-                *)
-                    log_info "Rollback in progress: ${current_status}"
-                    sleep 10
-                    ;;
-            esac
-        done
-        
-        log_error "Rollback timeout reached"
-        return 1
+
+    log_info "Rolling back to revision: ${PREVIOUS_DEPLOYMENT_ID}"
+
+    local project_id="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
+    local service_name="mackmonitor"
+    local region="southamerica-east1"
+
+    # Attempt rollback by routing traffic to previous revision
+    if gcloud run services update-traffic "${service_name}" \
+        --region="${region}" \
+        --project="${project_id}" \
+        --to-revisions="${PREVIOUS_DEPLOYMENT_ID}=100" \
+        --quiet 2>/dev/null; then
+
+        log_success "Rollback initiated - traffic routed to previous revision"
+
+        # Wait for rollback to stabilize
+        sleep 10
+
+        # Verify the rollback
+        if curl -f --max-time 10 --silent "https://mackmonitor-667999538255.southamerica-east1.run.app/health" >/dev/null 2>&1; then
+            log_success "Rollback completed successfully"
+            return 0
+        else
+            log_error "Rollback completed but health check failed"
+            return 1
+        fi
     else
         log_error "Failed to initiate rollback"
         return 1
@@ -417,7 +380,7 @@ send_deployment_notification() {
     log "Start Time: ${DEPLOYMENT_START_TIME}"
     log "Duration: $((SECONDS)) seconds"
     log "Backup Created: ${BACKUP_CREATED:-false}"
-    log "Environment: ${RAILWAY_ENVIRONMENT_NAME:-production}"
+    log "Environment: ${K_SERVICE:-production}"
     log "Project: Monitor Legislativo v4"
     log "Context: Brazilian Academic Research Platform"
     log "Timezone: ${BRAZILIAN_TZ}"
@@ -430,7 +393,7 @@ main() {
     
     log "=== ZERO-DOWNTIME DEPLOYMENT STARTING ==="
     log "Monitor Legislativo v4 - Brazilian Academic Research Platform"
-    log "Target: Railway Production Environment"
+    log "Target: Cloud Run Production Environment"
     log "Timezone: ${BRAZILIAN_TZ}"
     log "Strategy: Rolling deployment with health validation"
     
@@ -449,10 +412,10 @@ main() {
     
     # Step 3: Create pre-deployment backup
     create_pre_deployment_backup
-    
-    # Step 4: Deploy to Railway
-    if ! deploy_to_railway; then
-        log_error "Railway deployment failed"
+
+    # Step 4: Deploy to Cloud Run
+    if ! deploy_to_cloud_run; then
+        log_error "Cloud Run deployment failed"
         deployment_success=false
     fi
     
@@ -478,10 +441,14 @@ main() {
         log_success "Monitor Legislativo v4 is now live in production"
         log_success "Deployment ID: ${DEPLOYMENT_ID}"
         log_success "Duration: $((SECONDS)) seconds"
-        
+
         # Show final status
-        railway status
-        
+        local project_id="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
+        gcloud run services describe mackmonitor \
+            --region=southamerica-east1 \
+            --project="${project_id}" \
+            --format="yaml(status)" 2>/dev/null || true
+
         send_deployment_notification "SUCCESS" "Zero-downtime deployment completed successfully"
         
         log_info "Next steps:"
@@ -504,8 +471,12 @@ main() {
         fi
         
         log_error "Deployment failed. System status:"
-        railway status
-        
+        local project_id="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
+        gcloud run services describe mackmonitor \
+            --region=southamerica-east1 \
+            --project="${project_id}" \
+            --format="yaml(status)" 2>/dev/null || true
+
         exit 1
     fi
 }
@@ -525,15 +496,15 @@ Options:
   --help, -h    Show this help message
   --dry-run     Validate environment without deploying
   --force       Skip confirmation prompts
-  
+
 Environment Variables:
-  RAILWAY_TOKEN        Railway API token (optional if logged in)
+  GOOGLE_CLOUD_PROJECT GCP project ID (optional if configured in gcloud)
   DEPLOYMENT_TIMEOUT   Deployment timeout in seconds (default: 600)
   HEALTH_CHECK_TIMEOUT Health check timeout in seconds (default: 120)
 
 Requirements:
-- Railway CLI installed and authenticated
-- Project root directory with app.R and railway.toml
+- gcloud CLI installed and authenticated
+- Project root directory with app.R
 - Dockerfile present for containerized deployment
 
 This script provides:

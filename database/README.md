@@ -8,7 +8,7 @@ Run database scripts in this specific order for proper setup:
 ```sql
 \i database/000_install_extensions.sql
 ```
-**OR** Install via Railway PostgreSQL Extensions UI:
+**OR** Install via Cloud SQL Extensions:
 - ✅ `pg_trgm` (CRITICAL)
 - ✅ `unaccent` (CRITICAL)
 - ⭐ `pg_stat_statements` (RECOMMENDED)
@@ -93,17 +93,18 @@ Creates optimized indexes for common query patterns.
 
 ---
 
-## 🚀 Quick Start (Railway Production)
+## 🚀 Quick Start (Cloud SQL Production)
 
-### Via Railway UI (Recommended)
-1. Go to Railway → Your PostgreSQL service → **Extensions** tab
-2. Click **Install** next to:
+### Via Cloud SQL Console (Recommended)
+1. Go to Google Cloud Console → Cloud SQL → Your instance
+2. Navigate to **Database flags** or connect via Cloud Shell
+3. Install extensions via psql:
    - `pg_trgm`
    - `unaccent`
    - `pg_stat_statements`
    - `btree_gin`
-3. Run `database/000_install_extensions.sql` to verify
-4. Proceed with other setup scripts
+4. Run `database/000_install_extensions.sql` to verify
+5. Proceed with other setup scripts
 
 ### Via SQL Script (Development)
 ```bash
@@ -177,12 +178,12 @@ ORDER BY idx_scan DESC;
 ## 🔧 Troubleshooting
 
 ### "extension does not exist" error
-**Problem**: Extension not installed in Railway
-**Solution**: Install via Railway PostgreSQL Extensions UI, then re-run script
+**Problem**: Extension not installed in Cloud SQL
+**Solution**: Install via Cloud SQL console or psql with appropriate permissions, then re-run script
 
 ### "must be owner of extension" error
 **Problem**: Trying to create extension without superuser privileges
-**Solution**: Use Railway Extensions UI (doesn't require superuser)
+**Solution**: Connect as postgres user or use Cloud SQL superuser account
 
 ### Search queries are slow
 **Solutions**:
@@ -244,7 +245,7 @@ SELECT * FROM v_slow_queries WHERE calls > 100;
 - [PostgreSQL Full-Text Search](https://www.postgresql.org/docs/current/textsearch.html)
 - [pg_trgm Documentation](https://www.postgresql.org/docs/current/pgtrgm.html)
 - [Portuguese Snowball Stemmer](https://www.postgresql.org/docs/current/textsearch-dictionaries.html)
-- [Railway PostgreSQL Guide](https://docs.railway.app/databases/postgresql)
+- [Google Cloud SQL PostgreSQL](https://cloud.google.com/sql/docs/postgres)
 
 ---
 

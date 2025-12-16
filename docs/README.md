@@ -16,7 +16,7 @@ Monitor Legislativo v4 is a unified R-Shiny application for academic research on
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### **Deployment & Operations**
-- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Railway production deployment
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Google Cloud Run production deployment
 - **[SECURITY_COMPLIANCE.md](./SECURITY_COMPLIANCE.md)** - Security and LGPD compliance
 
 ### **Research & Academic**
@@ -31,10 +31,10 @@ Monitor Legislativo v4 is a unified R-Shiny application for academic research on
 
 **Unified Service Stack:**
 - **Frontend**: R-Shiny application with responsive UI
-- **Backend**: Integrated R modules and functions  
-- **Database**: PostgreSQL (Railway managed) with 134,014+ documents
+- **Backend**: Integrated R modules and functions
+- **Database**: PostgreSQL (Cloud SQL) with 134,014+ documents
 - **Cache**: Redis for performance optimization
-- **Deployment**: Railway platform with automated CI/CD
+- **Deployment**: Google Cloud Run with automated CI/CD
 
 ## 🎯 Academic Focus
 
@@ -62,7 +62,7 @@ Monitor Legislativo v4 is a unified R-Shiny application for academic research on
 
 ## 🚀 Quick Links
 
-- **Live Platform**: [Railway Deployment](https://monitor-legislativo-unified-production.up.railway.app)
+- **Live Platform**: [Cloud Run Deployment](https://mackmonitor-667999538255.southamerica-east1.run.app)
 - **GitHub Repository**: Current repository
 - **API Endpoints**: See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
 - **Research Papers**: See [ACADEMIC_PAPERS.md](./ACADEMIC_PAPERS.md)

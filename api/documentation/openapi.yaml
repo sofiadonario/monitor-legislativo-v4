@@ -49,8 +49,8 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://monitorlegislativo.up.railway.app/api/v1
-    description: Production server on Railway
+  - url: https://mackmonitor-667999538255.southamerica-east1.run.app/api/v1
+    description: Production server on Google Cloud Run
   - url: http://localhost:8000/api/v1
     description: Development server
 

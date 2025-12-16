@@ -148,7 +148,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://monitor-legislativo-unified-production.up.railway.app',
+        target: 'https://mackmonitor-667999538255.southamerica-east1.run.app',
         changeOrigin: true,
       }
     }
@@ -316,7 +316,7 @@ cd web
 npm install
 
 # Set API base URL (optional, defaults to proxy)
-echo "VITE_API_BASE=https://monitor-legislativo-unified-production.up.railway.app" > .env
+echo "VITE_API_BASE=https://mackmonitor-667999538255.southamerica-east1.run.app" > .env
 
 # Start development server
 npm run dev
@@ -341,7 +341,7 @@ The skeleton uses inline styles for simplicity. You can add:
 Create `.env` in the `web/` directory:
 
 ```env
-VITE_API_BASE=https://monitor-legislativo-unified-production.up.railway.app
+VITE_API_BASE=https://mackmonitor-667999538255.southamerica-east1.run.app
 ```
 
 ### Development Proxy
@@ -395,10 +395,11 @@ The Vite config proxies `/api/*` requests to avoid CORS issues during developmen
 
 ## 📖 Documentation
 
-- **API Documentation**: `../RAILWAY_API_ENDPOINTS.md`
+- **API Documentation**: See Cloud Run service documentation
 - **API Types**: `src/types/api.ts`
 - **React Query**: https://tanstack.com/query
 - **Vite**: https://vitejs.dev
+- **Google Cloud Run**: https://cloud.google.com/run/docs
 
 ## 🐛 Troubleshooting
 
@@ -409,7 +410,7 @@ Add proxy in `vite.config.ts` or use `VITE_API_BASE` with full URL.
 Run `npm run type-check` to see all type errors.
 
 ### API Errors
-Check `RAILWAY_API_ENDPOINTS.md` for correct endpoint format.
+Check Cloud Run service logs for endpoint debugging.
 
 ---
 

@@ -26,7 +26,7 @@ required_packages <- c(
 )
 
 # Never install packages at runtime in production
-if (identical(tolower(Sys.getenv("RAILWAY_ENVIRONMENT")), "production")) {
+if (identical(tolower(Sys.getenv("K_SERVICE")), "production") || nzchar(Sys.getenv("K_SERVICE"))) {
   missing_packages <- setdiff(required_packages, rownames(installed.packages()))
   if (length(missing_packages) > 0) {
     message("[exec_summary_analytics] Runtime install disabled in production. Missing: ",

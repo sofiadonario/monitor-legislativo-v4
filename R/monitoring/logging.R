@@ -12,7 +12,7 @@ library(jsonlite)
   max_log_size_mb = 50,
   retention_days = 30,
   include_performance_metrics = TRUE,
-  railway_optimized = TRUE
+  cloud_run_optimized = TRUE
 )
 
 # Log levels hierarchy
@@ -35,26 +35,26 @@ library(jsonlite)
 )
 
 #' Initialize Production Logging System
-#' 
+#'
 #' Sets up LGPD-compliant logging for academic research platform
-#' Optimized for Railway deployment with structured logging
-#' 
+#' Optimized for Cloud Run deployment with structured logging
+#'
 #' @export
 init_logging_system <- function() {
-  
+
   cat("📊 Initializing production logging system (LGPD compliant)...\n")
-  
+
   # Set timezone for Brazilian context
   Sys.setenv(TZ = "America/Sao_Paulo")
-  
+
   # Create logs directory if it doesn't exist
   if (!dir.exists("logs")) {
     dir.create("logs", recursive = TRUE)
   }
-  
+
   # Initialize performance monitoring
   .perf_metrics$session_start <<- Sys.time()
-  .perf_metrics$environment <<- Sys.getenv("RAILWAY_ENVIRONMENT", "development")
+  .perf_metrics$environment <<- ifelse(Sys.getenv("K_SERVICE", "") != "", "production", "development")
   
   # Log system initialization
   log_info("logging_system_initialized", list(
@@ -91,7 +91,8 @@ log_event <- function(level, event, data = NULL, performance_data = NULL) {
     timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),
     level = level,
     event = event,
-    environment = Sys.getenv("RAILWAY_ENVIRONMENT", "development"),
+    environment = ifelse(Sys.getenv("K_SERVICE", "") != "", "production", "development"),
+    k_service = Sys.getenv("K_SERVICE", ""),
     session_id = get_session_id()
   )
   
@@ -114,11 +115,11 @@ log_event <- function(level, event, data = NULL, performance_data = NULL) {
                           ifelse(is.null(data), "", paste(data, collapse = " ")))
   }
   
-  # Output to console (Railway logs)
+  # Output to console (Cloud Run logs)
   cat(log_message, "\n")
-  
+
   # Write to log file (if in production)
-  if (Sys.getenv("RAILWAY_ENVIRONMENT") == "production") {
+  if (Sys.getenv("K_SERVICE", "") != "") {
     write_to_log_file(log_message, level)
   }
   
@@ -550,7 +551,7 @@ cleanup_performance_metrics <- function() {
 }
 
 # Initialize logging system when module is loaded
-if (Sys.getenv("RAILWAY_ENVIRONMENT") != "") {
+if (Sys.getenv("K_SERVICE", "") != "") {
   init_logging_system()
 }
 

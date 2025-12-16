@@ -20,8 +20,8 @@ library(rvest)
 # Test Configuration
 TEST_CONFIG <- list(
   base_url = ifelse(
-    Sys.getenv("RAILWAY_ENVIRONMENT") == "production",
-    "https://monitor-legislativo-unified-production.up.railway.app",
+    Sys.getenv("K_SERVICE") != "",
+    "https://mackmonitor-667999538255.southamerica-east1.run.app",
     "http://localhost:3838"
   ),
   timeout = 30,

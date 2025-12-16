@@ -1,8 +1,8 @@
-# STRUCTURED LOGGING SYSTEM FOR R SHINY RAILWAY DEPLOYMENT
+# STRUCTURED LOGGING SYSTEM FOR R SHINY CLOUD RUN DEPLOYMENT
 # ===========================================================
 # Production-ready structured logging with JSON format
 # LGPD-compliant with data sanitization
-# Railway platform optimized
+# Cloud Run platform optimized
 
 library(jsonlite)
 library(digest)
@@ -17,7 +17,7 @@ LOGGER_CONFIG <- list(
   include_ip = FALSE,  # LGPD compliance - IP logging disabled by default
   sanitize_sensitive = TRUE,
   max_message_length = 1000,
-  railway_compatible = TRUE
+  cloud_run_compatible = TRUE
 )
 
 # Log Levels (numeric for filtering)
@@ -93,8 +93,8 @@ get_session_context <- function(session = NULL) {
   
   # Add server context
   context$hostname <- Sys.getenv("HOSTNAME", "unknown")
-  context$railway_service <- Sys.getenv("RAILWAY_SERVICE_NAME", "shiny-app")
-  context$railway_env <- Sys.getenv("RAILWAY_ENVIRONMENT_NAME", "production")
+  context$cloud_run_service <- Sys.getenv("K_SERVICE", "shiny-app")
+  context$cloud_run_revision <- Sys.getenv("K_REVISION", "unknown")
   
   return(context)
 }
@@ -150,9 +150,9 @@ write_log <- function(level, message, context = list(), session = NULL,
     )
   }
   
-  # Format for Railway logs
-  if (LOGGER_CONFIG$railway_compatible) {
-    # Railway prefers structured JSON on stdout
+  # Format for Cloud Run logs
+  if (LOGGER_CONFIG$cloud_run_compatible) {
+    # Cloud Run (Cloud Logging) prefers structured JSON on stdout
     json_log <- jsonlite::toJSON(log_entry, auto_unbox = TRUE, pretty = FALSE)
     cat(json_log, "\n", file = stdout())
   } else {
@@ -227,7 +227,7 @@ log_performance <- function(operation_name, func, context = list(), session = NU
 log_db_operation <- function(query_type, table = NULL, session = NULL) {
   context <- list(
     query_type = query_type,
-    database = "railway_postgres"
+    database = "cloud_sql_postgres"
   )
   
   if (!is.null(table)) {
@@ -276,8 +276,8 @@ log_app_start <- function() {
     r_version = R.version.string,
     platform = Sys.info()["sysname"],
     hostname = Sys.getenv("HOSTNAME", "unknown"),
-    railway_service = Sys.getenv("RAILWAY_SERVICE_NAME", "unknown"),
-    railway_environment = Sys.getenv("RAILWAY_ENVIRONMENT_NAME", "unknown")
+    cloud_run_service = Sys.getenv("K_SERVICE", "unknown"),
+    cloud_run_revision = Sys.getenv("K_REVISION", "unknown")
   )
   
   log_info("Application starting", context)

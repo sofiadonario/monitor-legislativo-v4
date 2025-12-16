@@ -3,13 +3,13 @@
 # PRODUCTION STARTUP SCRIPT - MONITOR LEGISLATIVO V4
 # ==================================================
 # Complete production deployment and monitoring activation
-# Brazilian Academic Context with Railway Integration
+# Brazilian Academic Context with Cloud Run Integration
 
 set -euo pipefail
 
 # Configuration
 BRAZILIAN_TZ="America/Sao_Paulo"
-DEPLOYMENT_ENV="${RAILWAY_ENVIRONMENT_NAME:-production}"
+DEPLOYMENT_ENV="${K_SERVICE:-production}"
 SERVICE_NAME="monitor-legislativo-v4"
 
 # Colors
@@ -66,22 +66,23 @@ EOF
 # Check environment and dependencies
 check_environment() {
     log_step "Checking production environment..."
-    
-    # Check if we're in Railway
-    if [[ -n "${RAILWAY_ENVIRONMENT_NAME:-}" ]]; then
-        log_success "Running in Railway ${RAILWAY_ENVIRONMENT_NAME} environment"
+
+    # Check if we're in Cloud Run
+    if [[ -n "${K_SERVICE:-}" ]]; then
+        log_success "Running in Cloud Run service: ${K_SERVICE}"
+        log_info "Cloud Run revision: ${K_REVISION:-unknown}"
+        log_info "GCP Project: ${GOOGLE_CLOUD_PROJECT:-unknown}"
     else
-        log_warning "Railway environment not detected"
+        log_warning "Cloud Run environment not detected"
     fi
-    
+
     # Check required files
     local required_files=(
         "app.R"
-        "railway.toml" 
         "health_check.R"
         "Dockerfile"
     )
-    
+
     for file in "${required_files[@]}"; do
         if [[ -f "${file}" ]]; then
             log_info "✓ ${file} found"
@@ -90,15 +91,15 @@ check_environment() {
             return 1
         fi
     done
-    
-    # Check Railway CLI (if available)
-    if command -v railway >/dev/null 2>&1; then
-        log_info "✓ Railway CLI available"
-        railway status 2>/dev/null || log_warning "Railway status not available"
+
+    # Check gcloud CLI (if available)
+    if command -v gcloud >/dev/null 2>&1; then
+        log_info "✓ gcloud CLI available"
+        gcloud config get-value project 2>/dev/null || log_warning "gcloud project not configured"
     else
-        log_info "- Railway CLI not installed (not required for production)"
+        log_info "- gcloud CLI not installed (not required for production)"
     fi
-    
+
     log_success "Environment check completed"
 }
 
@@ -114,7 +115,7 @@ initialize_monitoring() {
     fi
     
     # Initialize backup monitoring
-    if [[ -f "scripts/backup/railway_production_backup.sh" ]]; then
+    if [[ -f "scripts/backup/cloud_run_production_backup.sh" ]]; then
         log_info "✓ Backup system ready"
     else
         log_warning "✗ Backup system not found"
@@ -164,14 +165,14 @@ start_services() {
     # Set production environment variables
     export R_CONFIG_ACTIVE="production"
     export SHINY_LOG_LEVEL="${SHINY_LOG_LEVEL:-WARN}"
-    export RAILWAY_DEPLOYMENT="true"
+    export CLOUD_RUN_DEPLOYMENT="true"
     export TZ="${BRAZILIAN_TZ}"
-    
+
     log_info "Environment variables configured:"
     log_info "  - R_CONFIG_ACTIVE: ${R_CONFIG_ACTIVE}"
     log_info "  - SHINY_LOG_LEVEL: ${SHINY_LOG_LEVEL}"
     log_info "  - TZ: ${TZ}"
-    log_info "  - DEPLOYMENT: ${RAILWAY_DEPLOYMENT}"
+    log_info "  - DEPLOYMENT: ${CLOUD_RUN_DEPLOYMENT}"
     
     # Start the main application
     log_info "Starting Monitor Legislativo v4..."
@@ -239,7 +240,7 @@ activate_backup_automation() {
         log_success "Backup automation enabled"
         log_info "  - Schedule: ${backup_schedule} (daily at 2 AM Brazilian time)"
         log_info "  - Retention: ${backup_retention} days"
-        log_info "  - Storage: Railway ephemeral (with external export)"
+        log_info "  - Storage: Cloud Storage with versioning"
     else
         log_warning "Backup automation disabled"
     fi
@@ -314,7 +315,7 @@ main() {
     
     log "=== PRODUCTION STARTUP INITIATED ==="
     log "Monitor Legislativo v4 - Brazilian Academic Research Platform"
-    log "Deploying to Railway Production Environment"
+    log "Deploying to Cloud Run Production Environment"
     log "Optimized for Brazilian Academic Institutions"
     
     # Execute startup sequence
@@ -336,10 +337,10 @@ main() {
     log_success "Monitor Legislativo v4 is now live and operational"
     log_success "Brazilian academic researchers can now access the platform"
     log_info "Monitoring will continue in the background"
-    log_info "Check Railway logs for ongoing operational status"
-    
-    # Keep the container running (for Railway deployment)
-    if [[ -n "${RAILWAY_ENVIRONMENT_NAME:-}" ]]; then
+    log_info "Check Cloud Run logs for ongoing operational status"
+
+    # Keep the container running (for Cloud Run deployment)
+    if [[ -n "${K_SERVICE:-}" ]]; then
         log_info "Handing control to main application..."
         # The actual Shiny app will be started by the CMD in Dockerfile
     else

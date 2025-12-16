@@ -1,6 +1,6 @@
 name: Emergency Rollback - Monitor Legislativo v4
 
-# Emergency rollback workflow for Railway blue-green deployment
+# Emergency rollback workflow for Cloud Run deployment
 # Provides immediate rollback capability for production issues
 
 on:
@@ -28,7 +28,9 @@ on:
         type: boolean
 
 env:
-  RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: monitor-legislativo-production
 
 jobs:
   # =====================================
@@ -41,8 +43,8 @@ jobs:
 
     outputs:
       rollback_approved: ${{ steps.validation.outputs.approved }}
-      current_environment: ${{ steps.check_env.outputs.current }}
-      target_environment: ${{ steps.check_env.outputs.target }}
+      current_revision: ${{ steps.check_revision.outputs.current }}
+      target_revision: ${{ steps.check_revision.outputs.target }}
 
     steps:
       - name: Validate Rollback Confirmation
@@ -56,32 +58,42 @@ jobs:
           echo "✅ Emergency rollback confirmation validated"
           echo "approved=true" >> $GITHUB_OUTPUT
 
-      - name: Check Current Environment
-        id: check_env
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Check Current Revision
+        id: check_revision
         run: |
-          curl -L https://railway.app/install.sh | sh
-          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+          # Get current serving revision
+          CURRENT_REVISION=$(gcloud run services describe $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --format='value(status.traffic[0].revisionName)')
 
-          railway login --token $RAILWAY_TOKEN
+          # Get previous revision (second in traffic list or from history)
+          TARGET_REVISION=$(gcloud run revisions list \
+            --service $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --format='value(name)' \
+            --limit=2 | tail -n 1)
 
-          # Get current active environment
-          CURRENT_ENV=$(railway variables get CURRENT_DEPLOYMENT_COLOR || echo "unknown")
-
-          if [ "$CURRENT_ENV" == "blue" ]; then
-            TARGET_ENV="green"
-          elif [ "$CURRENT_ENV" == "green" ]; then
-            TARGET_ENV="blue"
-          else
-            echo "❌ Cannot determine current environment"
+          if [ -z "$TARGET_REVISION" ] || [ "$CURRENT_REVISION" == "$TARGET_REVISION" ]; then
+            echo "❌ Cannot determine previous revision for rollback"
             exit 1
           fi
 
-          echo "current=$CURRENT_ENV" >> $GITHUB_OUTPUT
-          echo "target=$TARGET_ENV" >> $GITHUB_OUTPUT
+          echo "current=$CURRENT_REVISION" >> $GITHUB_OUTPUT
+          echo "target=$TARGET_REVISION" >> $GITHUB_OUTPUT
 
-          echo "🔍 Environment Status:"
-          echo "   Current Active: $CURRENT_ENV"
-          echo "   Rollback Target: $TARGET_ENV"
+          echo "🔍 Revision Status:"
+          echo "   Current Active: $CURRENT_REVISION"
+          echo "   Rollback Target: $TARGET_REVISION"
 
       - name: Log Emergency Rollback Initiation
         run: |
@@ -90,8 +102,8 @@ jobs:
           echo "Timestamp: $(date -Iseconds)"
           echo "Reason: ${{ inputs.rollback_reason }}"
           echo "Triggered by: ${{ github.actor }}"
-          echo "Current Environment: ${{ steps.check_env.outputs.current }}"
-          echo "Rollback Target: ${{ steps.check_env.outputs.target }}"
+          echo "Current Revision: ${{ steps.check_revision.outputs.current }}"
+          echo "Rollback Target: ${{ steps.check_revision.outputs.target }}"
 
   # =====================================
   # PRE-ROLLBACK HEALTH CHECK
@@ -104,61 +116,73 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Install Railway CLI
-        run: |
-          curl -L https://railway.app/install.sh | sh
-          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      - name: Check Target Environment Health
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Check Target Revision Health
         env:
-          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+          TARGET_REVISION: ${{ needs.validate-rollback.outputs.target_revision }}
         run: |
-          railway login --token $RAILWAY_TOKEN
-          railway environment $TARGET_ENV
+          echo "🔍 Checking rollback target revision health: $TARGET_REVISION"
 
-          # Determine target URL
-          if [ "$TARGET_ENV" == "blue" ]; then
-            TARGET_URL="https://monitor-legislativo-blue.railway.app"
-          else
-            TARGET_URL="https://monitor-legislativo-green.railway.app"
+          # Get the URL for the target revision
+          TARGET_URL=$(gcloud run revisions describe $TARGET_REVISION \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --format='value(status.url)')
+
+          if [ -z "$TARGET_URL" ]; then
+            # If revision doesn't have direct URL, use service URL
+            TARGET_URL=$(gcloud run services describe $SERVICE_NAME \
+              --region $GCP_REGION \
+              --project $GCP_PROJECT_ID \
+              --format='value(status.url)')
           fi
 
-          echo "🔍 Checking rollback target environment health: $TARGET_URL"
+          echo "Target URL: $TARGET_URL"
 
-          # Check if target environment is responsive
+          # Check if target revision is responsive
           for i in {1..5}; do
-            if curl -f -m 15 "$TARGET_URL/health"; then
-              echo "✅ Target environment ($TARGET_ENV) is healthy"
+            if curl -f -m 15 "$TARGET_URL/health" -H "X-Cloud-Run-Revision: $TARGET_REVISION"; then
+              echo "✅ Target revision ($TARGET_REVISION) is healthy"
               break
             else
-              echo "⚠️ Target environment health check failed (attempt $i/5)"
+              echo "⚠️ Target revision health check failed (attempt $i/5)"
               sleep 10
             fi
           done
 
           # Verify application content
-          RESPONSE=$(curl -s -f "$TARGET_URL/" || echo "FAILED")
+          RESPONSE=$(curl -s -f "$TARGET_URL/" -H "X-Cloud-Run-Revision: $TARGET_REVISION" || echo "FAILED")
           if [[ $RESPONSE == *"Monitor Legislativo"* ]]; then
-            echo "✅ Target environment application content verified"
+            echo "✅ Target revision application content verified"
           else
-            echo "❌ Target environment application validation failed"
-            echo "🚨 ROLLBACK ABORTED - Target environment not healthy"
+            echo "❌ Target revision application validation failed"
+            echo "🚨 ROLLBACK ABORTED - Target revision not healthy"
             exit 1
           fi
 
       - name: Document Current Production State
         env:
-          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
+          CURRENT_REVISION: ${{ needs.validate-rollback.outputs.current_revision }}
         run: |
           echo "📋 Documenting current production state before rollback..."
 
-          PRODUCTION_URL="https://monitor-legislativo.railway.app"
+          PRODUCTION_URL=$(gcloud run services describe $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --format='value(status.url)')
 
           # Get current production metrics
           echo "Current Production Metrics:" > rollback_state.log
           echo "=========================" >> rollback_state.log
           echo "Timestamp: $(date -Iseconds)" >> rollback_state.log
-          echo "Active Environment: $CURRENT_ENV" >> rollback_state.log
+          echo "Active Revision: $CURRENT_REVISION" >> rollback_state.log
 
           # Try to get health status
           HEALTH_STATUS=$(curl -s -w "%{http_code}" "$PRODUCTION_URL/health" || echo "FAILED")
@@ -183,42 +207,41 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Install Railway CLI
-        run: |
-          curl -L https://railway.app/install.sh | sh
-          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Execute Traffic Switch
         env:
-          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
-          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+          CURRENT_REVISION: ${{ needs.validate-rollback.outputs.current_revision }}
+          TARGET_REVISION: ${{ needs.validate-rollback.outputs.target_revision }}
         run: |
           echo "🔄 Executing emergency rollback..."
-          echo "   From: $CURRENT_ENV"
-          echo "   To: $TARGET_ENV"
+          echo "   From: $CURRENT_REVISION"
+          echo "   To: $TARGET_REVISION"
 
-          railway login --token $RAILWAY_TOKEN
+          # Update traffic to route 100% to target (previous) revision
+          gcloud run services update-traffic $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --to-revisions=$TARGET_REVISION=100
 
-          # Switch to production environment to update traffic routing
-          railway environment production
-
-          # Update deployment color to point to target (rollback) environment
-          railway variables set CURRENT_DEPLOYMENT_COLOR=$TARGET_ENV
-          railway variables set ROLLBACK_EXECUTED=true
-          railway variables set ROLLBACK_TIMESTAMP="$(date -Iseconds)"
-          railway variables set ROLLBACK_REASON="${{ inputs.rollback_reason }}"
-          railway variables set ROLLBACK_TRIGGERED_BY="${{ github.actor }}"
-          railway variables set PREVIOUS_DEPLOYMENT_COLOR=$CURRENT_ENV
-
-          echo "✅ Traffic routing updated to $TARGET_ENV environment"
+          echo "✅ Traffic routing updated to $TARGET_REVISION revision"
 
       - name: Verify Rollback Success
         env:
-          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+          TARGET_REVISION: ${{ needs.validate-rollback.outputs.target_revision }}
         run: |
           echo "🔍 Verifying rollback success..."
 
-          PRODUCTION_URL="https://monitor-legislativo.railway.app"
+          PRODUCTION_URL=$(gcloud run services describe $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --format='value(status.url)')
 
           # Wait for traffic switch to take effect
           sleep 30
@@ -251,44 +274,41 @@ jobs:
 
           echo "📊 Post-rollback metrics:"
           echo "   Response time: ${RESPONSE_TIME}s"
-          echo "   Active environment: $TARGET_ENV"
+          echo "   Active revision: $TARGET_REVISION"
+          echo "   Production URL: $PRODUCTION_URL"
 
-      - name: Update Environment Status
+      - name: Update Revision Labels
         env:
-          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
-          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+          CURRENT_REVISION: ${{ needs.validate-rollback.outputs.current_revision }}
+          TARGET_REVISION: ${{ needs.validate-rollback.outputs.target_revision }}
         run: |
-          echo "📝 Updating environment status..."
+          echo "📝 Updating revision labels..."
 
-          railway login --token $RAILWAY_TOKEN
+          # Label target revision as active after rollback
+          gcloud run revisions update-labels $TARGET_REVISION \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --update-labels=deployment-status=active-rollback,rollback-timestamp=$(date +%s),rollback-reason=${{ inputs.rollback_reason }},rollback-by=${{ github.actor }}
 
-          # Update target environment (now active)
-          railway environment $TARGET_ENV
-          railway variables set DEPLOYMENT_STATUS="active_rollback"
-          railway variables set ROLLBACK_ACTIVATED_TIME="$(date -Iseconds)"
+          # Label previous revision as inactive
+          gcloud run revisions update-labels $CURRENT_REVISION \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --update-labels=deployment-status=inactive-rollback,rollback-deactivated=$(date +%s)
 
-          # Update previous environment (now inactive)
-          railway environment $CURRENT_ENV
-          railway variables set DEPLOYMENT_STATUS="inactive_rollback"
-          railway variables set ROLLBACK_DEACTIVATED_TIME="$(date -Iseconds)"
-
-          echo "✅ Environment status updated"
+          echo "✅ Revision labels updated"
 
       - name: Enable Emergency Monitoring
         env:
-          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+          TARGET_REVISION: ${{ needs.validate-rollback.outputs.target_revision }}
         run: |
           echo "📊 Enabling emergency monitoring..."
 
-          railway login --token $RAILWAY_TOKEN
-          railway environment $TARGET_ENV
-
-          # Enable intensive monitoring after rollback
-          railway variables set MONITORING_ENABLED=true
-          railway variables set EMERGENCY_MONITORING=true
-          railway variables set ALERTING_ENABLED=true
-          railway variables set LOG_LEVEL=DEBUG
-          railway variables set ERROR_TRACKING=true
+          # Update service with emergency monitoring environment variables
+          gcloud run services update $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --update-env-vars MONITORING_ENABLED=true,EMERGENCY_MONITORING=true,ALERTING_ENABLED=true,LOG_LEVEL=DEBUG,ERROR_TRACKING=true
 
           echo "✅ Emergency monitoring enabled"
 
@@ -302,13 +322,24 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
       - name: Comprehensive System Check
         env:
-          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+          TARGET_REVISION: ${{ needs.validate-rollback.outputs.target_revision }}
         run: |
           echo "🧪 Running comprehensive post-rollback validation..."
 
-          PRODUCTION_URL="https://monitor-legislativo.railway.app"
+          PRODUCTION_URL=$(gcloud run services describe $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --format='value(status.url)')
 
           # Test 1: Multiple health checks
           echo "Test 1: Health check consistency"
@@ -357,7 +388,10 @@ jobs:
         run: |
           echo "🔒 Running security quick scan..."
 
-          PRODUCTION_URL="https://monitor-legislativo.railway.app"
+          PRODUCTION_URL=$(gcloud run services describe $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --format='value(status.url)')
 
           # Check for security headers
           HEADERS=$(curl -s -I "$PRODUCTION_URL")
@@ -387,12 +421,25 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
       - name: Generate Rollback Report
         env:
-          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
-          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+          CURRENT_REVISION: ${{ needs.validate-rollback.outputs.current_revision }}
+          TARGET_REVISION: ${{ needs.validate-rollback.outputs.target_revision }}
         run: |
           echo "📋 Generating emergency rollback report..."
+
+          PRODUCTION_URL=$(gcloud run services describe $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --format='value(status.url)')
 
           cat > rollback_report.md << EOF
           # 🚨 EMERGENCY ROLLBACK REPORT
@@ -403,10 +450,12 @@ jobs:
           - **Triggered By**: ${{ github.actor }}
           - **Workflow Run**: ${{ github.run_id }}
 
-          ## Environment Changes
-          - **Previous Active**: $CURRENT_ENV
-          - **New Active**: $TARGET_ENV (rolled back)
-          - **Production URL**: https://monitor-legislativo.railway.app
+          ## Revision Changes
+          - **Previous Active**: $CURRENT_REVISION
+          - **New Active**: $TARGET_REVISION (rolled back)
+          - **Production URL**: $PRODUCTION_URL
+          - **GCP Project**: $GCP_PROJECT_ID
+          - **GCP Region**: $GCP_REGION
 
           ## Validation Status
           - **Pre-rollback Check**: ${{ needs.pre-rollback-check.result }}
@@ -430,15 +479,21 @@ jobs:
       - name: Update GitHub Summary
         if: always()
         env:
-          CURRENT_ENV: ${{ needs.validate-rollback.outputs.current_environment }}
-          TARGET_ENV: ${{ needs.validate-rollback.outputs.target_environment }}
+          CURRENT_REVISION: ${{ needs.validate-rollback.outputs.current_revision }}
+          TARGET_REVISION: ${{ needs.validate-rollback.outputs.target_revision }}
         run: |
+          PRODUCTION_URL=$(gcloud run services describe $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --format='value(status.url)')
+
           if [ "${{ needs.execute-rollback.result }}" == "success" ] && [ "${{ needs.post-rollback-validation.result }}" == "success" ]; then
             echo "## 🚨 Emergency Rollback Completed Successfully" >> $GITHUB_STEP_SUMMARY
-            echo "✅ Monitor Legislativo v4 rolled back from $CURRENT_ENV to $TARGET_ENV" >> $GITHUB_STEP_SUMMARY
-            echo "🌐 **Production URL**: https://monitor-legislativo.railway.app" >> $GITHUB_STEP_SUMMARY
-            echo "🔄 **Active Environment**: $TARGET_ENV (rollback)" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Monitor Legislativo v4 rolled back from $CURRENT_REVISION to $TARGET_REVISION" >> $GITHUB_STEP_SUMMARY
+            echo "🌐 **Production URL**: $PRODUCTION_URL" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 **Active Revision**: $TARGET_REVISION (rollback)" >> $GITHUB_STEP_SUMMARY
             echo "📊 **Emergency Monitoring**: Enabled" >> $GITHUB_STEP_SUMMARY
+            echo "☁️ **Cloud Platform**: Google Cloud Run" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### Rollback Details" >> $GITHUB_STEP_SUMMARY
             echo "- **Reason**: ${{ inputs.rollback_reason }}" >> $GITHUB_STEP_SUMMARY
@@ -453,7 +508,7 @@ jobs:
           else
             echo "## ❌ Emergency Rollback Failed" >> $GITHUB_STEP_SUMMARY
             echo "🚨 Critical: Rollback process encountered errors" >> $GITHUB_STEP_SUMMARY
-            echo "🔄 Production may still be on $CURRENT_ENV" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 Production may still be on $CURRENT_REVISION" >> $GITHUB_STEP_SUMMARY
             echo "📞 **IMMEDIATE ACTION REQUIRED**: Contact emergency response team" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### Failed Steps" >> $GITHUB_STEP_SUMMARY
@@ -462,18 +517,13 @@ jobs:
             echo "- Post-rollback Validation: ${{ needs.post-rollback-validation.result }}" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Set Environment Variables for Monitoring
+      - name: Update Service Labels for Monitoring
         if: success()
         run: |
-          # Set emergency rollback status for monitoring systems
-          curl -L https://railway.app/install.sh | sh
-          echo "$HOME/.railway/bin" >> $GITHUB_PATH
-
-          railway login --token $RAILWAY_TOKEN
-          railway environment production
-
-          railway variables set EMERGENCY_ROLLBACK_STATUS="completed"
-          railway variables set EMERGENCY_ROLLBACK_SUCCESS="true"
-          railway variables set LAST_EMERGENCY_ROLLBACK="$(date -Iseconds)"
+          # Update service labels to indicate emergency rollback status
+          gcloud run services update $SERVICE_NAME \
+            --region $GCP_REGION \
+            --project $GCP_PROJECT_ID \
+            --update-labels emergency-rollback-status=completed,emergency-rollback-success=true,last-emergency-rollback=$(date +%s)
 
           echo "✅ Emergency rollback status updated for monitoring"

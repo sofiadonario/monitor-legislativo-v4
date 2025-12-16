@@ -7,7 +7,7 @@
 # LGPD compliant logging with data anonymization
 # 
 # Features:
-# - Structured JSON logging for Railway log aggregation
+# - Structured JSON logging for Cloud Run log aggregation
 # - Request/response logging with performance metrics
 # - Error logging with stack traces
 # - Security event logging
@@ -108,7 +108,7 @@ create_log_entry <- function(level, message, context = list()) {
     message = message,
     service = "monitor-legislativo-api",
     version = API_CONFIG$version,
-    environment = Sys.getenv("RAILWAY_ENVIRONMENT", "development")
+    environment = Sys.getenv("K_SERVICE", Sys.getenv("GOOGLE_CLOUD_PROJECT", "development"))
   )
   
   # Add context information
@@ -128,7 +128,7 @@ write_log_entry <- function(log_entry) {
   # Convert to JSON
   json_log <- jsonlite::toJSON(log_entry, auto_unbox = TRUE, pretty = FALSE)
   
-  # Write to console (Railway will capture this)
+  # Write to console (Cloud Run will capture this)
   cat(json_log, "\n")
   
   # Also write to file if configured
@@ -404,7 +404,7 @@ tryCatch({
   # Log startup event
   startup_context <- list(
     version = API_CONFIG$version,
-    environment = Sys.getenv("RAILWAY_ENVIRONMENT", "development"),
+    environment = Sys.getenv("K_SERVICE", Sys.getenv("GOOGLE_CLOUD_PROJECT", "development")),
     log_level = LOG_CONFIG$log_level,
     anonymization_enabled = LOG_CONFIG$anonymize_ip
   )

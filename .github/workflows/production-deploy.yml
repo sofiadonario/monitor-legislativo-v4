@@ -3,10 +3,10 @@ name: Production Deployment - Monitor Legislativo v4
 on:
   push:
     branches: [main]
-    paths: ['app.R', 'Dockerfile', 'railway*.toml', 'railway_*.R', '**.R']
+    paths: ['app.R', 'Dockerfile', '**.R']
   pull_request:
     branches: [main]
-    paths: ['app.R', 'Dockerfile', 'railway*.toml', 'railway_*.R', '**.R']
+    paths: ['app.R', 'Dockerfile', '**.R']
   workflow_dispatch:
 
 env:
@@ -147,17 +147,25 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v5
 
-    - name: Install Railway CLI
-      run: |
-        npm install -g @railway/cli
-        
-    - name: Deploy to Railway Staging
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Deploy to Cloud Run Staging
       run: |
         echo "Deploying to staging environment..."
-        railway login --token ${{ secrets.RAILWAY_TOKEN }}
-        railway deploy --service staging --detach
+        gcloud run deploy monitor-legislativo-staging \
+          --image ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }} \
+          --platform managed \
+          --region ${{ vars.GCP_REGION }} \
+          --project ${{ vars.GCP_PROJECT_ID }} \
+          --allow-unauthenticated
       env:
-        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
 
   deploy-production:
     name: Deploy to Production
@@ -175,26 +183,37 @@ jobs:
         echo "Running pre-deployment checks..."
         # Add any pre-deployment verification scripts here
 
-    - name: Install Railway CLI
-      run: |
-        npm install -g @railway/cli
-        
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
     - name: Deploy to Production
       run: |
         echo "Deploying to production environment..."
-        railway login --token ${{ secrets.RAILWAY_TOKEN }}
-        railway deploy --service production --detach
+        gcloud run deploy monitor-legislativo-production \
+          --image ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }} \
+          --platform managed \
+          --region ${{ vars.GCP_REGION }} \
+          --project ${{ vars.GCP_PROJECT_ID }} \
+          --allow-unauthenticated
       env:
-        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
 
     - name: Run smoke tests
       run: |
         echo "Running smoke tests..."
         sleep 30  # Wait for deployment to stabilize
-        # Get Railway service URL and test health endpoint
-        railway status --service production
-        # Note: Replace with actual production URL when available
-        # curl -f https://monitor-legislativo-production.up.railway.app/health
+        # Get Cloud Run service URL and test health endpoint
+        SERVICE_URL=$(gcloud run services describe monitor-legislativo-production \
+          --region ${{ vars.GCP_REGION }} \
+          --project ${{ vars.GCP_PROJECT_ID }} \
+          --format='value(status.url)')
+        echo "Service URL: $SERVICE_URL"
+        curl -f $SERVICE_URL/health || echo "Health check endpoint not available"
 
     - name: Notify deployment
       uses: 8398a7/action-slack@v3

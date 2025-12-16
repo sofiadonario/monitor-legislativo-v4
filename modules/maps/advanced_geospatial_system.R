@@ -1,6 +1,6 @@
 # Advanced Geospatial Visualization System for Brazilian Legislative Monitoring
 # High-performance implementation with multi-scale geographic analysis
-# Optimized for Railway deployment with <1500MB memory usage
+# Optimized for Cloud Run deployment with <1500MB memory usage
 
 # Essential packages with graceful fallbacks
 if (!exists("%>%")) {
@@ -18,9 +18,10 @@ initialize_advanced_geospatial <- function() {
   gc()
   
   tryCatch({
-    # Railway-aware cache management
-    cache_base <- if (Sys.getenv("RAILWAY_VOLUME_MOUNT_PATH") != "") {
-      file.path(Sys.getenv("RAILWAY_VOLUME_MOUNT_PATH"), "geospatial_cache")
+    # Cloud Run-aware cache management
+    cache_base <- if (nzchar(Sys.getenv("K_SERVICE"))) {
+      # On Cloud Run, use /tmp for temporary cache
+      file.path("/tmp", "geospatial_cache")
     } else {
       "cache/geospatial"
     }

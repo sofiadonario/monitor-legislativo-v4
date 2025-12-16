@@ -5,7 +5,7 @@
 #
 # Automated compliance validation for CI/CD pipeline integration
 # Validates LGPD compliance, security posture, and regulatory requirements
-# Designed for Railway deployment with Brazilian academic compliance
+# Designed for Cloud Run deployment with Brazilian academic compliance
 #
 # Author: Monitor Legislativo v4 Team
 # Version: 4.0.0
@@ -81,7 +81,7 @@ VALIDATION_CONFIG <- list(
     "lgpd_comprehensive",
     "security_comprehensive",
     "academic_comprehensive",
-    "railway_compliance",
+    "cloud_run_compliance",
     "vulnerability_assessment"
   ),
   thresholds = list(
@@ -92,17 +92,17 @@ VALIDATION_CONFIG <- list(
   ),
   environments = list(
     production = list(
-      railway_url = "https://monitor-legislativo.railway.app",
+      cloud_run_url = "https://mackmonitor-667999538255.southamerica-east1.run.app",
       strict_compliance = TRUE,
       automated_reporting = TRUE
     ),
     staging = list(
-      railway_url = "https://monitor-legislativo-staging.railway.app",
+      cloud_run_url = "https://mackmonitor-staging-667999538255.southamerica-east1.run.app",
       strict_compliance = FALSE,
       automated_reporting = FALSE
     ),
     development = list(
-      railway_url = "http://localhost:3838",
+      cloud_run_url = "http://localhost:8080",
       strict_compliance = FALSE,
       automated_reporting = FALSE
     )
@@ -209,8 +209,8 @@ AutomatedComplianceValidator <- R6::R6Class(
       # Environment security validation
       ci_results$checks_performed$environment_security <- private$validate_environment_security()
 
-      # Railway platform compliance
-      ci_results$checks_performed$railway_compliance <- private$validate_railway_compliance()
+      # Cloud Run platform compliance
+      ci_results$checks_performed$cloud_run_compliance <- private$validate_cloud_run_compliance()
 
       ci_results$end_time <- Sys.time()
       ci_results$duration <- as.numeric(difftime(ci_results$end_time, ci_results$start_time, units = "secs"))
@@ -247,8 +247,8 @@ AutomatedComplianceValidator <- R6::R6Class(
       # Academic compliance validation
       full_results$checks_performed$academic_comprehensive <- private$validate_academic_comprehensive()
 
-      # Railway platform assessment
-      full_results$checks_performed$railway_comprehensive <- private$validate_railway_comprehensive()
+      # Cloud Run platform assessment
+      full_results$checks_performed$cloud_run_comprehensive <- private$validate_cloud_run_comprehensive()
 
       # Performance and reliability checks
       full_results$checks_performed$performance_reliability <- private$validate_performance_reliability()
@@ -382,33 +382,36 @@ AutomatedComplianceValidator <- R6::R6Class(
       return(env_security)
     },
 
-    # Validate Railway compliance
-    validate_railway_compliance = function() {
-      railway_compliance <- list(
-        check_name = "railway_platform_compliance",
+    # Validate Cloud Run compliance
+    validate_cloud_run_compliance = function() {
+      cloud_run_compliance <- list(
+        check_name = "cloud_run_platform_compliance",
         timestamp = Sys.time(),
         findings = list()
       )
 
-      # Check Railway-specific configurations
-      railway_token <- Sys.getenv("RAILWAY_TOKEN", "")
-      railway_env <- Sys.getenv("RAILWAY_ENVIRONMENT", "")
+      # Check Cloud Run-specific configurations
+      k_service <- Sys.getenv("K_SERVICE", "")
+      k_revision <- Sys.getenv("K_REVISION", "")
+      gcp_project <- Sys.getenv("GOOGLE_CLOUD_PROJECT", "")
 
-      railway_compliance$findings$token_configured <- nchar(railway_token) > 0
-      railway_compliance$findings$environment_set <- nchar(railway_env) > 0
-      railway_compliance$findings$deployment_ready <- railway_compliance$findings$token_configured &&
-                                                      railway_compliance$findings$environment_set
+      cloud_run_compliance$findings$service_configured <- nchar(k_service) > 0
+      cloud_run_compliance$findings$revision_set <- nchar(k_revision) > 0
+      cloud_run_compliance$findings$project_configured <- nchar(gcp_project) > 0
+      cloud_run_compliance$findings$deployment_ready <- cloud_run_compliance$findings$service_configured &&
+                                                        cloud_run_compliance$findings$project_configured
 
-      # Calculate Railway compliance score
-      railway_score <- 0
-      if (railway_compliance$findings$token_configured) railway_score <- railway_score + 50
-      if (railway_compliance$findings$environment_set) railway_score <- railway_score + 30
-      if (railway_compliance$findings$deployment_ready) railway_score <- railway_score + 20
+      # Calculate Cloud Run compliance score
+      cloud_run_score <- 0
+      if (cloud_run_compliance$findings$service_configured) cloud_run_score <- cloud_run_score + 40
+      if (cloud_run_compliance$findings$revision_set) cloud_run_score <- cloud_run_score + 20
+      if (cloud_run_compliance$findings$project_configured) cloud_run_score <- cloud_run_score + 20
+      if (cloud_run_compliance$findings$deployment_ready) cloud_run_score <- cloud_run_score + 20
 
-      railway_compliance$findings$score <- railway_score
-      railway_compliance$findings$compliant <- railway_score >= 80
+      cloud_run_compliance$findings$score <- cloud_run_score
+      cloud_run_compliance$findings$compliant <- cloud_run_score >= 80
 
-      return(railway_compliance)
+      return(cloud_run_compliance)
     },
 
     # Validate academic comprehensive
@@ -447,40 +450,40 @@ AutomatedComplianceValidator <- R6::R6Class(
       return(academic_compliance)
     },
 
-    # Validate Railway comprehensive
-    validate_railway_comprehensive = function() {
-      railway_comprehensive <- list(
-        check_name = "railway_comprehensive_assessment",
+    # Validate Cloud Run comprehensive
+    validate_cloud_run_comprehensive = function() {
+      cloud_run_comprehensive <- list(
+        check_name = "cloud_run_comprehensive_assessment",
         timestamp = Sys.time(),
         findings = list()
       )
 
-      # Railway platform comprehensive checks
-      railway_comprehensive$findings$deployment_configuration <- list(
+      # Cloud Run platform comprehensive checks
+      cloud_run_comprehensive$findings$deployment_configuration <- list(
         compliant = TRUE,
         score = 85,
-        details = "Railway deployment properly configured"
+        details = "Cloud Run deployment properly configured"
       )
 
-      railway_comprehensive$findings$resource_optimization <- list(
+      cloud_run_comprehensive$findings$resource_optimization <- list(
         compliant = TRUE,
         score = 80,
         details = "Resource usage optimized for budget constraints"
       )
 
-      railway_comprehensive$findings$monitoring_integration <- list(
+      cloud_run_comprehensive$findings$monitoring_integration <- list(
         compliant = TRUE,
         score = 90,
         details = "Monitoring and alerting properly integrated"
       )
 
-      # Calculate overall Railway compliance score
-      scores <- sapply(railway_comprehensive$findings, function(x) if (is.list(x) && "score" %in% names(x)) x$score else NULL)
+      # Calculate overall Cloud Run compliance score
+      scores <- sapply(cloud_run_comprehensive$findings, function(x) if (is.list(x) && "score" %in% names(x)) x$score else NULL)
       scores <- scores[!sapply(scores, is.null)]
-      railway_comprehensive$findings$overall_score <- if (length(scores) > 0) mean(unlist(scores)) else 0
-      railway_comprehensive$findings$overall_compliant <- railway_comprehensive$findings$overall_score >= 85
+      cloud_run_comprehensive$findings$overall_score <- if (length(scores) > 0) mean(unlist(scores)) else 0
+      cloud_run_comprehensive$findings$overall_compliant <- cloud_run_comprehensive$findings$overall_score >= 85
 
-      return(railway_comprehensive)
+      return(cloud_run_comprehensive)
     },
 
     # Validate performance and reliability
@@ -553,8 +556,8 @@ AutomatedComplianceValidator <- R6::R6Class(
         if (!is.null(validation_results$checks_performed$environment_security)) {
           scores$environment <- validation_results$checks_performed$environment_security$findings$score
         }
-        if (!is.null(validation_results$checks_performed$railway_compliance)) {
-          scores$railway <- validation_results$checks_performed$railway_compliance$findings$score
+        if (!is.null(validation_results$checks_performed$cloud_run_compliance)) {
+          scores$cloud_run <- validation_results$checks_performed$cloud_run_compliance$findings$score
         }
       } else {
         # Full mode scoring
@@ -567,8 +570,8 @@ AutomatedComplianceValidator <- R6::R6Class(
         if (!is.null(validation_results$checks_performed$academic_comprehensive)) {
           scores$academic <- validation_results$checks_performed$academic_comprehensive$findings$overall_score
         }
-        if (!is.null(validation_results$checks_performed$railway_comprehensive)) {
-          scores$railway <- validation_results$checks_performed$railway_comprehensive$findings$overall_score
+        if (!is.null(validation_results$checks_performed$cloud_run_comprehensive)) {
+          scores$cloud_run <- validation_results$checks_performed$cloud_run_comprehensive$findings$overall_score
         }
         if (!is.null(validation_results$checks_performed$performance_reliability)) {
           scores$performance <- validation_results$checks_performed$performance_reliability$findings$overall_score

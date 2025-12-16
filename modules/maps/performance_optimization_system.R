@@ -1,4 +1,4 @@
-# Performance Optimization System for Railway Geospatial Deployment
+# Performance Optimization System for Cloud Run Geospatial Deployment
 # Memory-efficient geospatial operations with <1500MB usage limit
 # WebGL acceleration and intelligent caching strategies
 
@@ -35,7 +35,7 @@ initialize_performance_optimization <- function(memory_limit_mb = 1400) {
       perform_memory_cleanup()
     },
     
-    optimize_for_railway = function() {
+    optimize_for_cloud_run = function() {
       apply_railway_optimizations()
     }
   )
@@ -51,8 +51,9 @@ initialize_performance_optimization <- function(memory_limit_mb = 1400) {
 
 #' Initialize intelligent cache manager
 initialize_cache_manager <- function() {
-  cache_base <- if (Sys.getenv("RAILWAY_VOLUME_MOUNT_PATH") != "") {
-    file.path(Sys.getenv("RAILWAY_VOLUME_MOUNT_PATH"), "performance_cache")
+  cache_base <- if (nzchar(Sys.getenv("K_SERVICE"))) {
+    # On Cloud Run, use /tmp for temporary cache
+    file.path("/tmp", "performance_cache")
   } else {
     "cache/performance"
   }
@@ -325,10 +326,10 @@ check_memory_usage <- function(memory_limit_mb) {
   })
 }
 
-#' Apply Railway-specific optimizations
+#' Apply Cloud Run-specific optimizations
 apply_railway_optimizations <- function() {
   tryCatch({
-    cat("🚂 Applying Railway deployment optimizations...\n")
+    cat("☁️ Applying Cloud Run deployment optimizations...\n")
     
     # Set environment variables for R optimization
     Sys.setenv(
@@ -336,27 +337,27 @@ apply_railway_optimizations <- function() {
       "R_GCTORTURE" = "0",     # Disable GC torture for performance
       "R_KEEP_PKG_SOURCE" = "no" # Don't keep package sources in memory
     )
-    
-    # Configure garbage collection for Railway
+
+    # Configure garbage collection for Cloud Run
     # More frequent but smaller GC cycles
     gc(verbose = FALSE)
-    
-    # Set plotly options for Railway
+
+    # Set plotly options for Cloud Run
     options(
       plotly.trace.max = 3000,      # Limit trace complexity
       plotly.autorange = TRUE,       # Enable autorange for better performance
       plotly.mathjax = FALSE        # Disable MathJax to save memory
     )
-    
-    # Configure sf options for Railway
+
+    # Configure sf options for Cloud Run
     if (requireNamespace("sf", quietly = TRUE)) {
-      sf::sf_use_s2(FALSE) # Disable S2 for better performance on Railway
+      sf::sf_use_s2(FALSE) # Disable S2 for better performance on Cloud Run
     }
-    
-    cat("✅ Railway optimizations applied successfully\n")
+
+    cat("✅ Cloud Run optimizations applied successfully\n")
     
   }, error = function(e) {
-    cat("❌ Railway optimization failed:", e$message, "\n")
+    cat("❌ Cloud Run optimization failed:", e$message, "\n")
   })
 }
 
@@ -517,4 +518,4 @@ render_progressively <- function(data, render_function) {
 
 cat("⚡ Performance Optimization System loaded successfully\n")
 cat("📊 Functions: optimize_data_for_memory, create_progressive_map, enable_webgl_rendering\n")
-cat("🎯 Features: Memory monitoring, Railway optimization, WebGL acceleration\n")
+cat("🎯 Features: Memory monitoring, Cloud Run optimization, WebGL acceleration\n")
