@@ -6,6 +6,15 @@
 # Date: January 2025
 # =============================================================================
 
+# Helper for optional visNetwork output
+safe_visNetworkOutput <- function(...) {
+  if (requireNamespace("visNetwork", quietly = TRUE)) {
+    visNetwork::visNetworkOutput(...)
+  } else {
+    shiny::div(class = "alert alert-warning", "Network visualization requires visNetwork package")
+  }
+}
+
 #' Topic Explorer UI Module
 #'
 #' UI for exploring STM topics, prevalence, and covariate effects
@@ -148,7 +157,7 @@ topic_explorer_ui <- function(id) {
             "Correlações",
             icon = icon("project-diagram"),
             br(),
-            visNetwork::visNetworkOutput(ns("correlation_network"), height = "600px"),
+            safe_visNetworkOutput(ns("correlation_network"), height = "600px"),
             hr(),
             p(class = "text-muted",
               "Rede mostrando correlações entre tópicos. Tópicos conectados tendem a aparecer juntos.")

@@ -8,9 +8,14 @@
 library(shiny)
 library(DBI)
 library(dplyr)
-library(visNetwork)
 library(plotly)
 library(DT)
+
+# visNetwork is optional
+VISNETWORK_AVAILABLE <- requireNamespace("visNetwork", quietly = TRUE)
+if (VISNETWORK_AVAILABLE) {
+  library(visNetwork)
+}
 
 #' Amendment Analysis Server
 #'

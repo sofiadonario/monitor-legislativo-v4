@@ -8,6 +8,15 @@
 # parameters, filtering, and interactive visualizations.
 # ==============================================================================
 
+# Helper for optional visNetwork output
+safe_visNetworkOutput <- function(...) {
+  if (requireNamespace("visNetwork", quietly = TRUE)) {
+    visNetwork::visNetworkOutput(...)
+  } else {
+    shiny::div(class = "alert alert-warning", "Network visualization requires visNetwork package")
+  }
+}
+
 #' Network Backbone UI Module
 #'
 #' @param id Module namespace ID
@@ -315,7 +324,7 @@ network_backbone_ui <- function(id) {
             fluidRow(
               column(12,
                 shinycssloaders::withSpinner(
-                  visNetworkOutput(ns("interactive_network"), height = "600px"),
+                  safe_visNetworkOutput(ns("interactive_network"), height = "600px"),
                   type = 4,
                   color = "#3498db"
                 )

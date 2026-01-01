@@ -6,10 +6,30 @@
 #' @date 2025-01-13
 
 library(shiny)
-library(shinydashboard)
-library(visNetwork)
 library(plotly)
 library(DT)
+
+# Optional packages - make visNetwork and shinydashboard optional
+if (requireNamespace("shinydashboard", quietly = TRUE)) {
+  library(shinydashboard)
+} else {
+  # Fallback box function when shinydashboard not available
+  box <- function(..., title = NULL, status = NULL, solidHeader = FALSE,
+                  width = 12, collapsible = FALSE, collapsed = FALSE) {
+    content <- list(...)
+    title_elem <- if (!is.null(title)) shiny::h4(title) else NULL
+    shiny::wellPanel(title_elem, content)
+  }
+}
+
+# Helper for optional visNetwork output
+safe_visNetworkOutput <- function(...) {
+  if (requireNamespace("visNetwork", quietly = TRUE)) {
+    visNetwork::visNetworkOutput(...)
+  } else {
+    shiny::div(class = "alert alert-warning", "Network visualization requires visNetwork package")
+  }
+}
 
 #' Amendment Analysis UI
 #'
@@ -262,7 +282,7 @@ amendment_ui <- function(id) {
             fluidRow(
               column(6,
                 h4(icon("project-diagram"), "Rede de Emendas"),
-                visNetworkOutput(ns("timeline_network"), height = "500px")
+                safe_visNetworkOutput(ns("timeline_network"), height = "500px")
               ),
               column(6,
                 h4(icon("chart-line"), "Timeline Temporal"),
@@ -317,7 +337,7 @@ amendment_ui <- function(id) {
             fluidRow(
               column(6,
                 h4(icon("sitemap"), "Visualização de Cascatas"),
-                visNetworkOutput(ns("cascade_network"), height = "500px")
+                safe_visNetworkOutput(ns("cascade_network"), height = "500px")
               ),
               column(6,
                 h4(icon("chart-bar"), "Distribuição de Complexidade"),

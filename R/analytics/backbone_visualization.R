@@ -15,19 +15,22 @@
 # - High-performance rendering for large networks
 # ==============================================================================
 
+# Core packages (required)
 suppressPackageStartupMessages({
-  library(igraph)
-  library(visNetwork)
-  library(networkD3)
   library(ggplot2)
-  library(ggraph)
-  library(tidygraph)
   library(dplyr)
   library(tidyr)
   library(scales)
-  library(gridExtra)
   library(RColorBrewer)
 })
+
+# Optional network visualization packages
+if (requireNamespace("igraph", quietly = TRUE)) library(igraph)
+if (requireNamespace("visNetwork", quietly = TRUE)) library(visNetwork)
+if (requireNamespace("networkD3", quietly = TRUE)) library(networkD3)
+if (requireNamespace("ggraph", quietly = TRUE)) library(ggraph)
+if (requireNamespace("tidygraph", quietly = TRUE)) library(tidygraph)
+if (requireNamespace("gridExtra", quietly = TRUE)) library(gridExtra)
 
 # ==============================================================================
 # INTERACTIVE NETWORK VISUALIZATION

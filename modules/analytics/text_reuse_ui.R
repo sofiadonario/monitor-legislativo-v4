@@ -7,7 +7,29 @@
 
 library(shiny)
 library(bslib)
-library(shinyWidgets)
+
+# shinyWidgets is optional
+if (requireNamespace("shinyWidgets", quietly = TRUE)) {
+  library(shinyWidgets)
+}
+
+# Helper for optional visNetwork output
+safe_visNetworkOutput <- function(...) {
+  if (requireNamespace("visNetwork", quietly = TRUE)) {
+    visNetwork::visNetworkOutput(...)
+  } else {
+    div(class = "alert alert-warning", "Network visualization requires visNetwork package")
+  }
+}
+
+# Helper for optional sankeyNetwork output
+safe_sankeyNetworkOutput <- function(...) {
+  if (requireNamespace("networkD3", quietly = TRUE)) {
+    networkD3::sankeyNetworkOutput(...)
+  } else {
+    div(class = "alert alert-warning", "Sankey diagram requires networkD3 package")
+  }
+}
 
 text_reuse_ui <- function(id) {
   ns <- NS(id)
@@ -218,7 +240,7 @@ text_reuse_ui <- function(id) {
             ),
             card_body(
               height = "600px",
-              visNetworkOutput(ns("network_viz"), height = "100%")
+              safe_visNetworkOutput(ns("network_viz"), height = "100%")
             )
           )
         ),
@@ -230,7 +252,7 @@ text_reuse_ui <- function(id) {
             card_header("Cross-Jurisdiction Text Flow"),
             card_body(
               height = "600px",
-              networkD3::sankeyNetworkOutput(ns("sankey_viz"), height = "100%")
+              safe_sankeyNetworkOutput(ns("sankey_viz"), height = "100%")
             )
           )
         ),

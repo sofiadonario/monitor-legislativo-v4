@@ -8,12 +8,14 @@
 library(shiny)
 library(DBI)
 library(dplyr)
-library(visNetwork)
-library(networkD3)
 library(plotly)
 library(DT)
-library(igraph)
 library(htmltools)
+
+# Optional packages for network visualization
+if (requireNamespace("visNetwork", quietly = TRUE)) library(visNetwork)
+if (requireNamespace("networkD3", quietly = TRUE)) library(networkD3)
+if (requireNamespace("igraph", quietly = TRUE)) library(igraph)
 
 text_reuse_server <- function(id, db_connection) {
   moduleServer(id, function(input, output, session) {

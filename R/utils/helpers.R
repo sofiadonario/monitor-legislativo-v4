@@ -122,15 +122,15 @@ safe_html <- function(content, max_length = 500, allow_basic_formatting = TRUE) 
   }
   
   # 3. Remove javascript: and data: protocols
-  content <- gsub("javascript:\s*[^\s]*", "", content, ignore.case = TRUE, perl = TRUE)
-  content <- gsub("data:\s*[^\s]*", "", content, ignore.case = TRUE, perl = TRUE)
-  content <- gsub("vbscript:\s*[^\s]*", "", content, ignore.case = TRUE, perl = TRUE)
-  
+  content <- gsub("javascript:\\s*[^\\s]*", "", content, ignore.case = TRUE, perl = TRUE)
+  content <- gsub("data:\\s*[^\\s]*", "", content, ignore.case = TRUE, perl = TRUE)
+  content <- gsub("vbscript:\\s*[^\\s]*", "", content, ignore.case = TRUE, perl = TRUE)
+
   # 4. Remove on* event handlers
-  content <- gsub("\s*on[a-zA-Z]+\s*=\s*['\"][^'\"]*['\"]?", "", content, ignore.case = TRUE, perl = TRUE)
-  
+  content <- gsub("\\s*on[a-zA-Z]+\\s*=\\s*['\"][^'\"]*['\"]?", "", content, ignore.case = TRUE, perl = TRUE)
+
   # 5. Remove style attributes that could contain expressions
-  content <- gsub("\s*style\s*=\s*['\"][^'\"]*['\"]?", "", content, ignore.case = TRUE, perl = TRUE)
+  content <- gsub("\\s*style\\s*=\\s*['\"][^'\"]*['\"]?", "", content, ignore.case = TRUE, perl = TRUE)
   
   # 6. Whitelist allowed tags if basic formatting is enabled
   if (allow_basic_formatting) {

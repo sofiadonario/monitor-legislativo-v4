@@ -2,6 +2,20 @@
 # Sprint 4 - PRD 4.2: Legislative Voting Behavior Prediction
 # UI components for voting behavior prediction and ideology visualization
 
+library(shiny)
+
+# shinydashboard is optional - provide fallback for box()
+if (requireNamespace("shinydashboard", quietly = TRUE)) {
+  library(shinydashboard)
+} else {
+  box <- function(..., title = NULL, status = NULL, solidHeader = FALSE,
+                  width = 12, collapsible = FALSE, collapsed = FALSE) {
+    content <- list(...)
+    title_elem <- if (!is.null(title)) shiny::h4(title) else NULL
+    shiny::wellPanel(title_elem, content)
+  }
+}
+
 #' UI for Voting Prediction Module
 #'
 #' @param id Module namespace ID

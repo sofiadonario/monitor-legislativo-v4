@@ -21,8 +21,8 @@
 # multiscale backbone of complex weighted networks. PNAS, 106(16), 6483-6488.
 # ==============================================================================
 
+# Core packages
 suppressPackageStartupMessages({
-  library(igraph)
   library(dplyr)
   library(tidyr)
   library(stringr)
@@ -30,6 +30,14 @@ suppressPackageStartupMessages({
   library(data.table)
   library(jsonlite)
 })
+
+# igraph is optional but needed for network analysis
+IGRAPH_AVAILABLE <- requireNamespace("igraph", quietly = TRUE)
+if (IGRAPH_AVAILABLE) {
+  library(igraph)
+} else {
+  cat("⚠️ Network Backbone: igraph package not available - network features disabled\n")
+}
 
 # Source database connection utilities
 if (!exists("execute_secure_query")) {

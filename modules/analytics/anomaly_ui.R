@@ -16,10 +16,38 @@
 # ==============================================================================
 
 library(shiny)
-library(shinyWidgets)
 library(bslib)
 library(plotly)
 library(DT)
+
+# shinyWidgets is optional
+SHINYWIDGETS_AVAILABLE <- requireNamespace("shinyWidgets", quietly = TRUE)
+if (SHINYWIDGETS_AVAILABLE) {
+  library(shinyWidgets)
+}
+
+# Helper for optional pickerInput - falls back to selectInput if shinyWidgets not available
+safe_pickerInput <- function(inputId, label, choices, selected = NULL, multiple = FALSE, options = list(), ...) {
+  if (SHINYWIDGETS_AVAILABLE) {
+    shinyWidgets::pickerInput(
+      inputId = inputId,
+      label = label,
+      choices = choices,
+      selected = selected,
+      multiple = multiple,
+      options = options,
+      ...
+    )
+  } else {
+    selectInput(
+      inputId = inputId,
+      label = label,
+      choices = choices,
+      selected = selected,
+      multiple = multiple
+    )
+  }
+}
 
 #' Anomaly Detection UI Module
 #'
@@ -141,7 +169,7 @@ anomalyUI <- function(id) {
       class = "control-panel",
       fluidRow(
         column(4,
-          pickerInput(
+          safe_pickerInput(
             inputId = ns("anomaly_type"),
             label = tags$b("Tipo de Anomalia"),
             choices = list(

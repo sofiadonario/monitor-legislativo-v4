@@ -7,11 +7,19 @@
 #' @date 2025-01-13
 
 library(DBI)
-library(textreuse)
 library(digest)
 library(dplyr)
 library(stringr)
 library(data.table)
+
+# textreuse is optional - check if available
+TEXTREUSE_AVAILABLE <- requireNamespace("textreuse", quietly = TRUE)
+if (TEXTREUSE_AVAILABLE) {
+  library(textreuse)
+  cat("✅ Text Reuse LSH: textreuse package loaded\n")
+} else {
+  cat("⚠️ Text Reuse LSH: textreuse package not available - using fallback implementations\n")
+}
 
 # ============================================================================
 # CORE LSH FUNCTIONS

@@ -6,6 +6,15 @@
 # Date: January 2025
 # =============================================================================
 
+# Helper for optional visNetwork output
+safe_visNetworkOutput <- function(...) {
+  if (requireNamespace("visNetwork", quietly = TRUE)) {
+    visNetwork::visNetworkOutput(...)
+  } else {
+    shiny::div(class = "alert alert-warning", "Network visualization requires visNetwork package")
+  }
+}
+
 #' Semantic Search UI Module
 #'
 #' UI for semantic similarity search using Word2Vec or GloVe embeddings
@@ -215,7 +224,7 @@ semantic_search_ui <- function(id) {
             icon = icon("share-alt"),
             br(),
             p("Rede de similaridade (em desenvolvimento)"),
-            visNetwork::visNetworkOutput(ns("similarity_network"), height = "600px")
+            safe_visNetworkOutput(ns("similarity_network"), height = "600px")
           )
         )
       )
