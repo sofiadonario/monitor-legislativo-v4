@@ -51,6 +51,14 @@ if (file.exists("R/utils/scalar_utils.R")) {
   cat("⚠️ Scalar utilities not found - some features may fail\n")
 }
 
+# Load helper utilities (required by database connection module)
+if (file.exists("R/utils/helpers.R")) {
+  source("R/utils/helpers.R")
+  cat("✅ Helper utilities loaded\n")
+} else {
+  cat("⚠️ Helper utilities not found - some features may fail\n")
+}
+
 # Load input validation module
 if (file.exists("R/security/input_validation.R")) {
   source("R/security/input_validation.R")
@@ -340,20 +348,7 @@ if (file.exists("modules/analytics/library_analytics_dashboard.R")) {
   cat("⚠️ Library Analytics Dashboard Module not found\n")
 }
 
-# Network Backbone Extraction Module (Sprint 2 - Network Analytics)
-if (file.exists("modules/analytics/network_backbone_ui.R")) {
-  source("modules/analytics/network_backbone_ui.R")
-  cat("✅ Network Backbone UI Module loaded\n")
-} else {
-  cat("⚠️ Network Backbone UI Module not found\n")
-}
-
-if (file.exists("modules/analytics/network_backbone_server.R")) {
-  source("modules/analytics/network_backbone_server.R")
-  cat("✅ Network Backbone Server Module loaded\n")
-} else {
-  cat("⚠️ Network Backbone Server Module not found\n")
-}
+# NOTE: Network Backbone modules already loaded above (Sprint 2 section)
 
 # Amendment Pattern Analysis Module (Sprint 2 - Network Analytics)
 # TEMPORARILY DISABLED: Amendment modules load shinydashboard which conflicts with navbarPage
@@ -407,20 +402,7 @@ if (file.exists("R/modules/executive_export_module.R")) {
   cat("⚠️ Executive Export Module not found\n")
 }
 
-# Anomaly Detection Module (Sprint 2 - Network Analytics)
-if (file.exists("modules/analytics/anomaly_ui.R")) {
-  source("modules/analytics/anomaly_ui.R")
-  cat("✅ Anomaly Detection UI Module loaded\n")
-} else {
-  cat("⚠️ Anomaly Detection UI Module not found\n")
-}
-
-if (file.exists("modules/analytics/anomaly_server.R")) {
-  source("modules/analytics/anomaly_server.R")
-  cat("✅ Anomaly Detection Server Module loaded\n")
-} else {
-  cat("⚠️ Anomaly Detection Server Module not found\n")
-}
+# NOTE: Anomaly Detection modules already loaded above (Sprint 2 section)
 
 # Sprint 4 - Predictive Analytics Modules
 # Survival Analysis Module (Sprint 4 - PRD 4.1)
@@ -1736,7 +1718,7 @@ server <- function(input, output, session) {
   # Module now navbarPage-compatible with panel_box layout
   if (exists("executive_summary_server")) {
     cat("✅ Initializing Executive Summary Module\n")
-    moduleServer("executive_summary_module", executive_summary_server)
+    callModule(executive_summary_server, "executive_summary_module")
   } else {
     cat("⚠️ Executive Summary Module not available\n")
   }
@@ -1745,7 +1727,7 @@ server <- function(input, output, session) {
   if (exists("executive_export_server") && DB_AVAILABLE) {
     tryCatch({
       cat("✅ Initializing Executive Export Module\n")
-      executive_export_server("executive_export_module", db_pool = pool)
+      executive_export_server("executive_export_module", db_pool = db_pool)
     }, error = function(e) {
       cat("⚠️ Executive Export Module initialization failed:", e$message, "\n")
       cat("⚠️ Export features will be disabled\n")

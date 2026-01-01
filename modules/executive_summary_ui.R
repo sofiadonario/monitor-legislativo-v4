@@ -22,9 +22,9 @@
 # ============================================================================
 
 # Load required UI libraries
-required_ui_packages <- c("shiny", "shinydashboard", "shinydashboardPlus",
-                         "shinyWidgets", "DT", "plotly", "leaflet", "htmltools",
-                         "shinycssloaders", "shinyjs")
+# NOTE: Removed shinydashboard/shinydashboardPlus - conflicts with navbarPage layout
+required_ui_packages <- c("shiny", "bslib", "shinyWidgets", "DT", "plotly",
+                         "leaflet", "htmltools", "shinycssloaders", "shinyjs")
 
 # Never install packages at runtime in production
 if (identical(tolower(Sys.getenv("K_SERVICE")), "production") || nzchar(Sys.getenv("K_SERVICE"))) {
