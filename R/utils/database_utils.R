@@ -149,7 +149,10 @@ init_db_pool <- function(force = FALSE) {
 }
 
 # Global connection pool variable for reuse across modules
-.db_pool <- NULL
+# Only initialize if not already set by pool_manager.R (primary source)
+if (!exists(".db_pool", envir = .GlobalEnv)) {
+  .db_pool <- NULL
+}
 .db_connection_stats <- list(
   created_at = NULL,
   total_queries = 0,

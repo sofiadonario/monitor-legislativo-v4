@@ -68,18 +68,11 @@ if (file.exists("R/security/input_validation.R")) {
 }
 
 # ==============================================================================
-# 1.5.5 CONFIGURE SECURITY HEADERS
+# 1.5.5 SECURITY HEADERS (configured later in section 3.5 with full CSP)
 # ==============================================================================
-options(shiny.http.response.filter = function(request, response) {
-  response$headers[["X-Frame-Options"]] <- "DENY"
-  response$headers[["X-Content-Type-Options"]] <- "nosniff"
-  response$headers[["X-XSS-Protection"]] <- "1; mode=block"
-  response$headers[["Strict-Transport-Security"]] <- "max-age=31536000; includeSubDomains"
-  response$headers[["Content-Security-Policy"]] <- "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline';"
-  response$headers[["Referrer-Policy"]] <- "strict-origin-when-cross-origin"
-  response
-})
-cat("✅ Security headers configured\n")
+# Note: Security headers are configured in section 3.5 with environment-aware
+# HSTS and a more comprehensive Content Security Policy. This avoids duplicate
+# options(shiny.http.response.filter) calls.
 
 # ==============================================================================
 # 1.6 LOAD ENHANCED MODULES
