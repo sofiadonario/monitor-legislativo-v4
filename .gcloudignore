@@ -1,0 +1,11 @@
+# .gcloudignore - Custom rules for Google Cloud Build uploads
+# First include all rules from .gitignore
+#!include:.gitignore
+
+# Additional exclusions for cloud builds
+.git
+.gcloudignore
+.playwright-mcp/
+
+# Override: explicitly include favicon.svg despite .gitignore *.svg rule
+!www/favicon.svg
