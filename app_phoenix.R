@@ -923,7 +923,9 @@ ui <- navbarPage(
           ),
           column(4,
             dateRangeInput("geo_date_range", "Período:",
-                          start = NULL, end = DATA_EXTRACTION_DATE,
+                          start = NULL, end = NULL,
+                          min = as.Date("1900-01-01"),
+                          max = DATA_EXTRACTION_DATE,
                           format = "dd/mm/yyyy",
                           language = "pt-BR",
                           separator = " até ")
@@ -2020,10 +2022,11 @@ server <- function(input, output, session) {
 
     tryCatch({
       query <- paste0(
-        "SELECT tipo AS \"Type\", ",
-        "data AS \"Date\", ",
+        "SELECT COALESCE(NULLIF(tipo, ''), 'Não classificado') AS \"Type\", ",
+        "COALESCE(data::text, 'N/A') AS \"Date\", ",
         "LEFT(titulo, 50) || '...' AS \"Title\" ",
         "FROM ", DOCUMENTS_TABLE, " ",
+        "WHERE data IS NOT NULL ",
         "ORDER BY data DESC ",
         "LIMIT 10"
       )
