@@ -817,21 +817,30 @@ libraryEnhancedServer <- function(id, db_connection, db_available, documents_tab
       current_page <- filters$current_page
       per_page <- filters$results_per_page
 
-      if (total == 0) {
+      # Robust check for empty/invalid total
+      if (is.null(total) || length(total) == 0 || is.na(total) || total <= 0) {
         return(NULL)
       }
 
+      # Ensure values are valid integers
+      total <- as.integer(total)
+      current_page <- as.integer(current_page)
+      per_page <- as.integer(per_page)
+
+      total_pages <- ceiling(total / per_page)
       start_idx <- (current_page - 1) * per_page + 1
       end_idx <- min(current_page * per_page, total)
-      total_pages <- ceiling(total / per_page)
+
+      # Format numbers with Portuguese locale (dots as thousands separator)
+      total_fmt <- format(total, big.mark = ".", decimal.mark = ",", scientific = FALSE)
 
       div(
         class = "search-stats",
         role = "status",
         `aria-live` = "polite",
         icon("info-circle"),
-        sprintf(" Mostrando %.0f-%.0f de %.0f documentos | Página %.0f de %.0f",
-                start_idx, end_idx, total, current_page, total_pages)
+        sprintf(" Mostrando %d-%d de %s documentos | Página %d de %d",
+                start_idx, end_idx, total_fmt, current_page, total_pages)
       )
     })
 
@@ -841,9 +850,15 @@ libraryEnhancedServer <- function(id, db_connection, db_available, documents_tab
       current_page <- filters$current_page
       per_page <- filters$results_per_page
 
-      if (total == 0) {
+      # Robust check for empty/invalid total
+      if (is.null(total) || length(total) == 0 || is.na(total) || total <= 0) {
         return(NULL)
       }
+
+      # Ensure values are valid integers
+      total <- as.integer(total)
+      current_page <- as.integer(current_page)
+      per_page <- as.integer(per_page)
 
       total_pages <- ceiling(total / per_page)
 
@@ -861,7 +876,7 @@ libraryEnhancedServer <- function(id, db_connection, db_available, documents_tab
 
         span(
           style = "font-weight: bold;",
-          sprintf("Página %.0f de %.0f", current_page, total_pages)
+          sprintf("Página %d de %d", current_page, total_pages)
         ),
 
         if (current_page < total_pages) {

@@ -577,6 +577,9 @@ ui <- navbarPage(
 
   # -- Custom CSS and Scripts --
   header = tags$head(
+    # Favicon to prevent 404 errors
+    tags$link(rel = "icon", type = "image/svg+xml", href = "favicon.svg"),
+    tags$link(rel = "shortcut icon", href = "favicon.svg"),
     tags$style(HTML("
       body {
         -webkit-font-smoothing: antialiased;
@@ -1994,12 +1997,13 @@ server <- function(input, output, session) {
     }
 
     tryCatch({
+      # Use COALESCE to label NULL/empty document types as "Não classificado"
       query <- paste0(
-        "SELECT tipo AS \"Document Type\", ",
+        "SELECT COALESCE(NULLIF(tipo, ''), 'Não classificado') AS \"Document Type\", ",
         "COUNT(*) as \"Count\", ",
         "ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM ", DOCUMENTS_TABLE, "), 2) as \"Percentage\" ",
         "FROM ", DOCUMENTS_TABLE, " ",
-        "GROUP BY tipo ",
+        "GROUP BY COALESCE(NULLIF(tipo, ''), 'Não classificado') ",
         "ORDER BY COUNT(*) DESC"
       )
       pool::dbGetQuery(db_pool, query)

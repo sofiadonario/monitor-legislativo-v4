@@ -203,9 +203,9 @@ estadoMapeadoUI <- function(id) {
 
         # RIGHT PANEL: Map and Data Table
         column(8,
-          # Map
+          # Map - use explicit pixel height to avoid rendering issues on lazy-loaded tabs
           div(class = "geo-map-container",
-            leafletOutput(ns("main_map"), height = "100%") %>%
+            leafletOutput(ns("main_map"), height = "600px") %>%
               shinycssloaders::withSpinner(type = 6, color = "#007bff")
           ),
 

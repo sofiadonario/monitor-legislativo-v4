@@ -267,16 +267,15 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
       cat("\n=== LOADING READABILITY DATA (Trigger:", current_trigger, ") ===\n")
 
       # Build WHERE clause from active filters
+      # Base conditions for readability data
       where_clauses <- c(
-        "flesch_kincaid_score IS NOT NULL",
-        "fog_index IS NOT NULL",
-        "smog_index IS NOT NULL"
+        "flesch_kincaid_score IS NOT NULL"
       )
 
-      # Year filter
+      # Year filter - use EXTRACT since 'ano' column doesn't exist
       if (!is.null(filters$ano)) {
-        years_list <- paste0("'", filters$ano, "'", collapse = ", ")
-        where_clauses <- c(where_clauses, sprintf("ano IN (%s)", years_list))
+        years_list <- paste(filters$ano, collapse = ", ")
+        where_clauses <- c(where_clauses, sprintf("EXTRACT(YEAR FROM data::date)::integer IN (%s)", years_list))
       }
 
       # Document type filter
@@ -285,25 +284,23 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
         where_clauses <- c(where_clauses, sprintf("tipo IN (%s)", tipos_list))
       }
 
-      # Administrative level filter
-      if (filters$nivel != "all") {
-        where_clauses <- c(where_clauses, sprintf("LOWER(nivel) = '%s'", tolower(filters$nivel)))
+      # Administrative level filter - use 'estado' column (mapped to 'nivel' in output)
+      if (!is.null(filters$nivel) && filters$nivel != "all") {
+        where_clauses <- c(where_clauses, sprintf("LOWER(estado) = '%s'", tolower(gsub("'", "''", filters$nivel))))
       }
 
-      # Power branch filter
-      if (!is.null(filters$poder)) {
-        poder_list <- paste0("'", tolower(filters$poder), "'", collapse = ", ")
-        where_clauses <- c(where_clauses, sprintf("LOWER(poder) IN (%s)", poder_list))
-      }
+      # Note: 'poder' and 'corte' columns don't exist in the database schema
+      # These filters are disabled until the schema is updated
+      # Power branch filter (disabled - column doesn't exist)
+      # if (!is.null(filters$poder)) { ... }
+      # Court type filter (disabled - column doesn't exist)
+      # if (!is.null(filters$corte)) { ... }
 
-      # Court type filter
-      if (!is.null(filters$corte)) {
-        corte_list <- paste0("'", gsub("'", "''", filters$corte), "'", collapse = ", ")
-        where_clauses <- c(where_clauses, sprintf("corte IN (%s)", corte_list))
-      }
+      # Build the complete WHERE clause
+      where_clause <- paste(where_clauses, collapse = " AND ")
 
       # Query readability data directly from documents table (Migration 011 schema)
-      cat("Building readability query...\n")
+      cat("Building readability query with filters:", where_clause, "\n")
 
       query <- sprintf("
         SELECT
@@ -324,10 +321,10 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
           estado,
           ementa
         FROM %s
-        WHERE flesch_kincaid_score IS NOT NULL
+        WHERE %s
         ORDER BY flesch_kincaid_score DESC
         LIMIT 1000
-      ", documents_table)
+      ", documents_table, where_clause)
 
       cat("Executing readability query...\n")
 
