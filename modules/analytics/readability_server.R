@@ -302,43 +302,43 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
         where_clauses <- c(where_clauses, sprintf("corte IN (%s)", corte_list))
       }
 
-      where_clause <- paste(where_clauses, collapse = " AND ")
+      # Query readability data directly from documents table (Migration 011 schema)
+      cat("Building readability query...\n")
 
-      # Construct optimized query - use ONLY actual database columns
-      # Database has: id, titulo, tipo, data, estado, urn, ementa (NOT nivel, poder, corte, ano)
       query <- sprintf("
         SELECT
           id,
           titulo,
           tipo as tipo_documento,
-          'N/A' as nivel,
+          COALESCE(estado, 'N/A') as nivel,
           'N/A' as poder,
           'N/A' as corte,
-          COALESCE(EXTRACT(YEAR FROM data::date), 0)::integer as ano,
-          0 as flesch_kincaid_score,
-          0 as fog_index,
-          0 as smog_index,
-          0 as avg_sentence_length,
-          0 as avg_word_length,
+          COALESCE(EXTRACT(YEAR FROM data::date)::integer, 0) as ano,
+          COALESCE(flesch_kincaid_score, 0) as flesch_kincaid_score,
+          COALESCE(fog_index, 0) as fog_index,
+          COALESCE(smog_index, 0) as smog_index,
+          COALESCE(avg_sentence_length, 0) as avg_sentence_length,
+          COALESCE(avg_word_length, 0) as avg_word_length,
           COALESCE(LENGTH(ementa), 0) as text_length,
           data as data_publicacao,
           estado,
           ementa
         FROM %s
-        WHERE titulo IS NOT NULL
-        ORDER BY id DESC
+        WHERE flesch_kincaid_score IS NOT NULL
+        ORDER BY flesch_kincaid_score DESC
         LIMIT 1000
       ", documents_table)
 
-      cat("Executing query with filters...\n")
+      cat("Executing readability query...\n")
 
       tryCatch({
         data <- dbGetQuery(db_connection, query)
         cat("Query returned", nrow(data), "documents\n")
 
         if (nrow(data) == 0) {
-          showNotification("Nenhum documento encontrado com os filtros selecionados",
-                          type = "warning", duration = 3)
+          showNotification(
+            "Nenhuma métrica de legibilidade encontrada. Execute o script de cálculo primeiro.",
+            type = "warning", duration = 5)
           return(NULL)
         }
 
@@ -349,8 +349,9 @@ readabilityServer <- function(id, db_connection, db_available, documents_table) 
 
       }, error = function(e) {
         cat("Error in readability query:", e$message, "\n")
-        showNotification(paste("Erro ao carregar dados:", e$message),
-                        type = "error", duration = 5)
+        showNotification(
+          paste("Erro ao carregar dados de legibilidade:", e$message),
+          type = "error", duration = 5)
         return(NULL)
       })
     })
