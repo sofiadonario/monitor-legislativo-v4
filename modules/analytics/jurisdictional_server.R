@@ -149,7 +149,8 @@ jurisdictionalServer <- function(id, db_connection, db_available, documents_tabl
             end_year = input$year_range[2]
           )
         }, error = function(e) {
-          showNotification(paste("Erro:", e$message), type = "error", duration = 5)
+          cat("Jurisdictional query error:", e$message, "\n")
+          showNotification("Erro ao carregar dados. Tente novamente.", type = "error", duration = 5)
           return(NULL)
         })
 
@@ -188,7 +189,8 @@ jurisdictionalServer <- function(id, db_connection, db_available, documents_tabl
             end_year = input$year_range[2]
           )
         }, error = function(e) {
-          showNotification(paste("Erro:", e$message), type = "error", duration = 5)
+          cat("Jurisdictional query error:", e$message, "\n")
+          showNotification("Erro ao carregar dados. Tente novamente.", type = "error", duration = 5)
           return(NULL)
         })
 
@@ -230,7 +232,8 @@ jurisdictionalServer <- function(id, db_connection, db_available, documents_tabl
         data <- tryCatch({
           cross_level_analysis(conn, keywords)
         }, error = function(e) {
-          showNotification(paste("Erro:", e$message), type = "error", duration = 5)
+          cat("Jurisdictional query error:", e$message, "\n")
+          showNotification("Erro ao carregar dados. Tente novamente.", type = "error", duration = 5)
           return(NULL)
         })
 
@@ -261,7 +264,8 @@ jurisdictionalServer <- function(id, db_connection, db_available, documents_tabl
             end_year = input$year_range[2]
           )
         }, error = function(e) {
-          showNotification(paste("Erro:", e$message), type = "error", duration = 5)
+          cat("Jurisdictional query error:", e$message, "\n")
+          showNotification("Erro ao carregar dados. Tente novamente.", type = "error", duration = 5)
           return(NULL)
         })
 
@@ -291,7 +295,8 @@ jurisdictionalServer <- function(id, db_connection, db_available, documents_tabl
             end_year = input$year_range[2]
           )
         }, error = function(e) {
-          showNotification(paste("Erro ao realizar clustering:", e$message), type = "error", duration = 5)
+          cat("Clustering error:", e$message, "\n")
+          showNotification("Erro ao realizar clustering. Tente com menos dados.", type = "error", duration = 5)
           return(NULL)
         })
 

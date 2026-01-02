@@ -286,10 +286,13 @@ estadoMapeadoServer <- function(id, db_connection, table_name = "documents") {
       # If we have state geometries, create choropleth
       if (!is.null(states_sf) && nrow(geo_counts) > 0) {
 
-        # Filter out Nacional and Não Identificado for state mapping
-        # Note: DF (Distrito Federal) is a valid state and should NOT be filtered
+        # Filter to keep only valid 2-letter state codes for choropleth mapping
+        # Exclude non-geographic categories: Federal, Bibliografia, Justiça Trabalho, etc.
+        valid_states <- c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
+                         "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
+                         "RS", "RO", "RR", "SC", "SP", "SE", "TO")
         state_counts <- geo_counts %>%
-          filter(!estado %in% c("Nacional", "Não Identificado", "Estadual"))
+          filter(estado %in% valid_states)
 
         # Join with state geometries
         # Check which column name is used for state abbreviation
