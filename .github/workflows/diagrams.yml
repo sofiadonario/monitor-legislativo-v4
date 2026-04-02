@@ -70,7 +70,7 @@ jobs:
 
       - name: Upload Diagram Artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: rendered-diagrams
           path: docs/architecture/png
